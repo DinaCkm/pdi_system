@@ -176,3 +176,15 @@
 - [x] Implementar ordenação clicável na tabela de Macros (por bloco, nome e descrição)
 - [x] Implementar ordenação clicável na tabela de Micros (por bloco, macro, nome e descrição)
 - [x] Adicionar ícones visuais para indicar direção da ordenação (ascendente/descendente)
+
+## Implementação da Página de Ciclos Semestrais
+- [x] Criar página /ciclos com layout DashboardLayout
+- [x] Implementar formulário de criação de ciclo (nome, data início, data fim)
+- [x] Implementar validação de datas (fim > início)
+- [x] Implementar listagem de ciclos com status visual (Ativo/Encerrado/Futuro)
+- [x] Implementar edição de ciclos existentes
+- [x] Implementar exclusão de ciclos com modal de confirmação
+- [x] Adicionar filtros e busca por nome/período
+- [x] Adicionar indicador visual do ciclo atualmente ativo
+- [x] Adicionar rota /ciclos no App.tsx
+- [x] Adicionar link de navegação no DashboardLayout
