@@ -29,6 +29,11 @@ export default function Competencias() {
   const [blocoForm, setBlocoForm] = useState({ nome: "", descricao: "" });
   const [macroForm, setMacroForm] = useState({ nome: "", descricao: "", blocoId: "" });
   const [microForm, setMicroForm] = useState({ nome: "", descricao: "", macroId: "" });
+  
+  // Estados para busca
+  const [searchBloco, setSearchBloco] = useState("");
+  const [searchMacro, setSearchMacro] = useState("");
+  const [searchMicro, setSearchMicro] = useState("");
 
   // Queries
   const { data: blocos, isLoading: loadingBlocos } = trpc.competencias.listBlocos.useQuery();
@@ -222,6 +227,22 @@ export default function Competencias() {
     return macros?.find(m => m.id === macroId)?.nome || "N/A";
   };
 
+  // Filtrar competências por busca
+  const filteredBlocos = blocos?.filter(bloco =>
+    bloco.nome.toLowerCase().includes(searchBloco.toLowerCase()) ||
+    (bloco.descricao && bloco.descricao.toLowerCase().includes(searchBloco.toLowerCase()))
+  ) || [];
+
+  const filteredMacros = macros?.filter(macro =>
+    macro.nome.toLowerCase().includes(searchMacro.toLowerCase()) ||
+    (macro.descricao && macro.descricao.toLowerCase().includes(searchMacro.toLowerCase()))
+  ) || [];
+
+  const filteredMicros = micros?.filter(micro =>
+    micro.nome.toLowerCase().includes(searchMicro.toLowerCase()) ||
+    (micro.descricao && micro.descricao.toLowerCase().includes(searchMicro.toLowerCase()))
+  ) || [];
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -244,29 +265,38 @@ export default function Competencias() {
           {/* TAB BLOCOS */}
           <TabsContent value="blocos" className="space-y-4">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Competências Bloco</CardTitle>
-                  <CardDescription>Nível mais alto da hierarquia de competências</CardDescription>
-                </div>
-                <Dialog open={blocoDialogOpen} onOpenChange={(open) => {
-                  setBlocoDialogOpen(open);
-                  if (!open) {
-                    setEditingBloco(null);
-                    setBlocoForm({ nome: "", descricao: "" });
-                  }
-                }}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-gradient-to-r from-blue-600 to-orange-600">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Novo Bloco
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>{editingBloco ? "Editar Bloco" : "Novo Bloco"}</DialogTitle>
-                      <DialogDescription>
-                        {editingBloco ? "Atualize as informações do bloco" : "Crie um novo bloco de competências"}
+              <CardHeader>
+                <div className="flex flex-row items-center justify-between mb-4">
+                  <div>
+                    <CardTitle>Competências Bloco</CardTitle>
+                    <CardDescription>Nível mais alto da hierarquia de competências ({filteredBlocos.length} {searchBloco && 'filtrados'})</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Buscar blocos..."
+                      value={searchBloco}
+                      onChange={(e) => setSearchBloco(e.target.value)}
+                      className="w-64"
+                    />
+                    <Dialog open={blocoDialogOpen} onOpenChange={(open) => {
+                      setBlocoDialogOpen(open);
+                      if (!open) {
+                        setEditingBloco(null);
+                        setBlocoForm({ nome: "", descricao: "" });
+                      }
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button className="bg-gradient-to-r from-blue-600 to-orange-600">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Novo Bloco
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>{editingBloco ? "Editar Bloco" : "Novo Bloco"}</DialogTitle>
+                          <DialogDescription>
+                            {editingBloco ? "Atualize as informações do bloco" : "Crie um novo bloco de competências"}
+
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
@@ -302,6 +332,8 @@ export default function Competencias() {
                     </div>
                   </DialogContent>
                 </Dialog>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {loadingBlocos ? (
@@ -318,8 +350,8 @@ export default function Competencias() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {blocos && blocos.length > 0 ? (
-                        blocos.map((bloco) => (
+                      {filteredBlocos && filteredBlocos.length > 0 ? (
+                        filteredBlocos.map((bloco) => (
                           <TableRow key={bloco.id}>
                             <TableCell className="font-medium">{bloco.nome}</TableCell>
                             <TableCell>{bloco.descricao || "-"}</TableCell>
@@ -345,7 +377,7 @@ export default function Competencias() {
                       ) : (
                         <TableRow>
                           <TableCell colSpan={3} className="text-center text-muted-foreground">
-                            Nenhum bloco cadastrado
+                            {searchBloco ? 'Nenhum bloco encontrado com esse filtro' : 'Nenhum bloco cadastrado'}
                           </TableCell>
                         </TableRow>
                       )}
@@ -437,6 +469,14 @@ export default function Competencias() {
                 </Dialog>
               </CardHeader>
               <CardContent>
+                <div className="mb-4">
+                  <Input
+                    placeholder="Buscar por nome ou descrição..."
+                    value={searchMacro}
+                    onChange={(e) => setSearchMacro(e.target.value)}
+                    className="max-w-sm"
+                  />
+                </div>
                 {loadingMacros ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -452,8 +492,8 @@ export default function Competencias() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {macros && macros.length > 0 ? (
-                        macros.map((macro) => (
+                      {filteredMacros && filteredMacros.length > 0 ? (
+                        filteredMacros.map((macro) => (
                           <TableRow key={macro.id}>
                             <TableCell className="font-medium text-blue-600">{getBlocoNome(macro.blocoId)}</TableCell>
                             <TableCell className="font-medium">{macro.nome}</TableCell>
@@ -480,7 +520,7 @@ export default function Competencias() {
                       ) : (
                         <TableRow>
                           <TableCell colSpan={4} className="text-center text-muted-foreground">
-                            Nenhuma macro cadastrada
+                            {searchMacro ? 'Nenhuma macro encontrada com esse filtro' : 'Nenhuma macro cadastrada'}
                           </TableCell>
                         </TableRow>
                       )}
@@ -572,6 +612,14 @@ export default function Competencias() {
                 </Dialog>
               </CardHeader>
               <CardContent>
+                <div className="mb-4">
+                  <Input
+                    placeholder="Buscar por nome ou descrição..."
+                    value={searchMicro}
+                    onChange={(e) => setSearchMicro(e.target.value)}
+                    className="max-w-sm"
+                  />
+                </div>
                 {loadingMicros ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -587,8 +635,8 @@ export default function Competencias() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {micros && micros.length > 0 ? (
-                        micros.map((micro) => (
+                      {filteredMicros && filteredMicros.length > 0 ? (
+                        filteredMicros.map((micro) => (
                           <TableRow key={micro.id}>
                             <TableCell className="font-medium text-orange-600">{getMacroNome(micro.macroId)}</TableCell>
                             <TableCell className="font-medium">{micro.nome}</TableCell>
@@ -615,7 +663,7 @@ export default function Competencias() {
                       ) : (
                         <TableRow>
                           <TableCell colSpan={4} className="text-center text-muted-foreground">
-                            Nenhuma micro cadastrada
+                            {searchMicro ? 'Nenhuma micro encontrada com esse filtro' : 'Nenhuma micro cadastrada'}
                           </TableCell>
                         </TableRow>
                       )}

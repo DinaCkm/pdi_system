@@ -162,3 +162,8 @@
 - [x] Implementar paginação na lista de usuários (10 itens por página)
 - [x] Adicionar campo de busca para filtrar por nome ou e-mail
 - [x] Criar modal de confirmação antes de excluir ou inativar usuário
+## Melhorias Solicitadas - Página de Competências
+
+- [x] Adicionar campo de busca para filtrar Blocos por nome
+- [x] Adicionar campo de busca para filtrar Macros por nome
+- [x] Adicionar campo de busca para filtrar Micros por nome
