@@ -42,6 +42,16 @@ export default function Users() {
   const selectedDepartamentoId = watch("departamentoId");
   const selectedLeaderId = watch("leaderId");
 
+  // Resetar líder quando departamento mudar
+  useEffect(() => {
+    if (selectedDepartamentoId && selectedLeaderId) {
+      const leader = users?.find(u => u.id === selectedLeaderId);
+      if (leader && leader.departamentoId !== selectedDepartamentoId) {
+        setValue("leaderId", undefined as any);
+      }
+    }
+  }, [selectedDepartamentoId, selectedLeaderId, users, setValue]);
+
   const onSubmit = async (data: UserFormData) => {
     try {
       if (editingUser) {
@@ -243,23 +253,39 @@ export default function Users() {
                         name="leaderId"
                         control={control}
                         rules={{ required: true }}
-                        render={({ field }) => (
-                          <Select 
-                            value={field.value?.toString()} 
-                            onValueChange={(value) => field.onChange(parseInt(value))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione o líder" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {users?.filter(u => u.role === "lider" || u.role === "admin").map(user => (
-                                <SelectItem key={user.id} value={user.id.toString()}>
-                                  {user.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
+                        render={({ field }) => {
+                          // Filtrar líderes pelo departamento selecionado
+                          const availableLeaders = users?.filter(u => {
+                            const isLeaderOrAdmin = u.role === "lider" || u.role === "admin";
+                            const sameDepartment = !selectedDepartamentoId || u.departamentoId === selectedDepartamentoId;
+                            return isLeaderOrAdmin && sameDepartment;
+                          }) || [];
+
+                          return (
+                            <Select 
+                              value={field.value?.toString()} 
+                              onValueChange={(value) => field.onChange(parseInt(value))}
+                              disabled={!selectedDepartamentoId}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={!selectedDepartamentoId ? "Selecione o departamento primeiro" : "Selecione o líder"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableLeaders.length === 0 ? (
+                                  <div className="p-2 text-sm text-muted-foreground">
+                                    Nenhum líder disponível neste departamento
+                                  </div>
+                                ) : (
+                                  availableLeaders.map(user => (
+                                    <SelectItem key={user.id} value={user.id.toString()}>
+                                      {user.name}
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                          );
+                        }}
                       />
                     </div>
                   </>

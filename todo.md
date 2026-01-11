@@ -248,3 +248,13 @@
 - [x] Refatorar Select de Departamento usando Controller com field.value e field.onChange
 - [x] Refatorar Select de Líder usando Controller com field.value e field.onChange
 - [x] Remover watches manuais (selectedDepartamentoId, selectedLeaderId) - não mais necessários
+
+## Bug Reportado + Regra de Negócio - Departamento e Líder
+- [x] Verificar se erro ao selecionar departamento ainda existe após refatoração com Controller
+- [x] Implementar validação backend: departamento do usuário DEVE ser igual ao departamento do líder (create)
+- [x] Implementar validação backend: departamento do usuário DEVE ser igual ao departamento do líder (update)
+- [x] Filtrar lista de líderes no frontend: mostrar apenas líderes do departamento selecionado
+- [x] Desabilitar campo Líder até que departamento seja selecionado
+- [x] Adicionar mensagem "Nenhum líder disponível neste departamento" quando não houver líderes
+- [x] Adicionar useEffect para resetar líder quando departamento mudar
+- [x] Mensagem de erro clara no backend: "O usuário deve estar no mesmo departamento do seu líder"

@@ -100,13 +100,21 @@ export const appRouter = router({
           }
         }
 
-        // Verificar se líder existe
+        // Verificar se líder existe e se está no mesmo departamento
         if (input.leaderId) {
           const leader = await db.getUserById(input.leaderId);
           if (!leader) {
             throw new TRPCError({ 
               code: 'BAD_REQUEST', 
               message: 'Líder não encontrado.' 
+            });
+          }
+          
+          // VALIDAÇÃO: Departamento do usuário DEVE ser igual ao departamento do líder
+          if (input.departamentoId && leader.departamentoId && input.departamentoId !== leader.departamentoId) {
+            throw new TRPCError({ 
+              code: 'BAD_REQUEST', 
+              message: 'O usuário deve estar no mesmo departamento do seu líder.' 
             });
           }
         }
@@ -199,6 +207,17 @@ export const appRouter = router({
             code: 'BAD_REQUEST', 
             message: 'Um usuário não pode ser seu próprio líder.' 
           });
+        }
+
+        // VALIDAÇÃO: Departamento do usuário DEVE ser igual ao departamento do líder
+        if (finalLeaderId) {
+          const leader = await db.getUserById(finalLeaderId);
+          if (leader && finalDepartamentoId && leader.departamentoId && finalDepartamentoId !== leader.departamentoId) {
+            throw new TRPCError({ 
+              code: 'BAD_REQUEST', 
+              message: 'O usuário deve estar no mesmo departamento do seu líder.' 
+            });
+          }
         }
 
         await db.updateUser(id, updateData);
