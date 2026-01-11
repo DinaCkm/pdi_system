@@ -64,7 +64,9 @@ export default function ConfigurarUsuario() {
         const dept = departamentos?.find(d => d.id === formData.departamentoId);
         leaderIdToSet = dept?.leaderId || null;
         
-        if (!leaderIdToSet && (formData.role === "lider" || formData.role === "colaborador")) {
+        // Apenas COLABORADORES precisam de líder
+        // Líderes podem não ter líder (topo da hierarquia)
+        if (!leaderIdToSet && formData.role === "colaborador") {
           toast.error("O departamento selecionado não possui um líder definido. Configure o líder do departamento primeiro.");
           return;
         }
@@ -222,7 +224,9 @@ export default function ConfigurarUsuario() {
                   })()}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  🔒 Líder é definido automaticamente pelo departamento
+                  {formData.role === "colaborador" 
+                    ? "🔒 Líder é definido automaticamente pelo departamento"
+                    : "🔒 Líderes podem não ter líder (topo da hierarquia)"}
                 </p>
               </div>
             )}
