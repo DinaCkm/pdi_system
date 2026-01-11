@@ -227,6 +227,12 @@ export default function Competencias() {
     return macros?.find(m => m.id === macroId)?.nome || "N/A";
   };
 
+  const getBlocoNomeFromMacro = (macroId: number) => {
+    const macro = macros?.find(m => m.id === macroId);
+    if (!macro) return "N/A";
+    return getBlocoNome(macro.blocoId);
+  };
+
   // Filtrar competências por busca
   const filteredBlocos = blocos?.filter(bloco =>
     bloco.nome.toLowerCase().includes(searchBloco.toLowerCase()) ||
@@ -628,6 +634,7 @@ export default function Competencias() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead>Bloco</TableHead>
                         <TableHead>Macro</TableHead>
                         <TableHead>Nome</TableHead>
                         <TableHead>Descrição</TableHead>
@@ -638,6 +645,7 @@ export default function Competencias() {
                       {filteredMicros && filteredMicros.length > 0 ? (
                         filteredMicros.map((micro) => (
                           <TableRow key={micro.id}>
+                            <TableCell className="font-medium text-blue-600">{getBlocoNomeFromMacro(micro.macroId)}</TableCell>
                             <TableCell className="font-medium text-orange-600">{getMacroNome(micro.macroId)}</TableCell>
                             <TableCell className="font-medium">{micro.nome}</TableCell>
                             <TableCell>{micro.descricao || "-"}</TableCell>
@@ -662,7 +670,7 @@ export default function Competencias() {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          <TableCell colSpan={5} className="text-center text-muted-foreground">
                             {searchMicro ? 'Nenhuma micro encontrada com esse filtro' : 'Nenhuma micro cadastrada'}
                           </TableCell>
                         </TableRow>

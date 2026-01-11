@@ -167,3 +167,6 @@
 - [x] Adicionar campo de busca para filtrar Blocos por nome
 - [x] Adicionar campo de busca para filtrar Macros por nome
 - [x] Adicionar campo de busca para filtrar Micros por nome
+
+## Melhorias Solicitadas - Visualização de Micros
+- [x] Adicionar coluna "Bloco" na tabela de Micros para mostrar hierarquia completa (Bloco → Macro → Micro)
