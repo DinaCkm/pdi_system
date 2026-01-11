@@ -427,3 +427,13 @@
 - [x] Botão "Editar" aparecendo no modal de visualização
 - [x] Botão "Fechar" funcionando
 - [x] Texto longo com scroll visível e funcional
+
+## Bug Reportado - Lista de macros não atualiza automaticamente após criar
+- [x] Acessar página de Competências
+- [x] Verificar se macrocompetências cadastradas estão no banco de dados
+- [x] Identificar problema: lista não atualiza automaticamente, precisa recarregar página
+- [x] Adicionar invalidação de cache do tRPC após criar macrocompetência
+- [x] Substituir invalidate() por refetch() para atualização imediata
+- [x] Aplicar mesma correção para blocos e microcompetências
+- [x] Aplicar em create, update e delete de todas as competências
+- [ ] Testar criação e verificar se lista atualiza automaticamente

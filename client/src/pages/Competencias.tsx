@@ -51,9 +51,9 @@ export default function Competencias() {
 
   // Mutations - Blocos
   const createBlocoMutation = trpc.competencias.createBloco.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Bloco criado com sucesso!");
-      utils.competencias.listBlocos.invalidate();
+      await utils.competencias.listBlocos.refetch();
       setBlocoDialogOpen(false);
       setBlocoForm({ nome: "", descricao: "" });
     },
@@ -61,9 +61,9 @@ export default function Competencias() {
   });
 
   const updateBlocoMutation = trpc.competencias.updateBloco.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Bloco atualizado com sucesso!");
-      utils.competencias.listBlocos.invalidate();
+      await utils.competencias.listBlocos.refetch();
       setBlocoDialogOpen(false);
       setEditingBloco(null);
       setBlocoForm({ nome: "", descricao: "" });
@@ -72,50 +72,57 @@ export default function Competencias() {
   });
 
   const deleteBlocoMutation = trpc.competencias.deleteBloco.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Bloco excluído com sucesso!");
-      utils.competencias.listBlocos.invalidate();
-      utils.competencias.listMacros.invalidate();
+      await utils.competencias.listBlocos.refetch();
+      await utils.competencias.listMacros.refetch();
     },
     onError: (error) => toast.error(error.message),
   });
 
   // Mutations - Macros
   const createMacroMutation = trpc.competencias.createMacro.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Macro criada com sucesso!");
-      utils.competencias.listMacros.invalidate();
       setMacroDialogOpen(false);
       setMacroForm({ nome: "", descricao: "", blocoId: "" });
+      // Aguardar um pouco antes de refetch para garantir que a UI atualize
+      setTimeout(async () => {
+        await utils.competencias.listMacros.refetch();
+      }, 100);
     },
     onError: (error) => toast.error(error.message),
   });
 
   const updateMacroMutation = trpc.competencias.updateMacro.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Macro atualizada com sucesso!");
-      utils.competencias.listMacros.invalidate();
       setMacroDialogOpen(false);
       setEditingMacro(null);
       setMacroForm({ nome: "", descricao: "", blocoId: "" });
+      setTimeout(async () => {
+        await utils.competencias.listMacros.refetch();
+      }, 100);
     },
     onError: (error) => toast.error(error.message),
   });
 
   const deleteMacroMutation = trpc.competencias.deleteMacro.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Macro excluída com sucesso!");
-      utils.competencias.listMacros.invalidate();
-      utils.competencias.listMicros.invalidate();
+      setTimeout(async () => {
+        await utils.competencias.listMacros.refetch();
+        await utils.competencias.listMicros.refetch();
+      }, 100);
     },
     onError: (error) => toast.error(error.message),
   });
 
   // Mutations - Micros
   const createMicroMutation = trpc.competencias.createMicro.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Micro criada com sucesso!");
-      utils.competencias.listMicros.invalidate();
+      await utils.competencias.listMicros.refetch();
       setMicroDialogOpen(false);
       setMicroForm({ nome: "", descricao: "", macroId: "" });
     },
@@ -123,9 +130,9 @@ export default function Competencias() {
   });
 
   const updateMicroMutation = trpc.competencias.updateMicro.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Micro atualizada com sucesso!");
-      utils.competencias.listMicros.invalidate();
+      await utils.competencias.listMicros.refetch();
       setMicroDialogOpen(false);
       setEditingMicro(null);
       setMicroForm({ nome: "", descricao: "", macroId: "" });
@@ -134,9 +141,9 @@ export default function Competencias() {
   });
 
   const deleteMicroMutation = trpc.competencias.deleteMicro.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Micro excluída com sucesso!");
-      utils.competencias.listMicros.invalidate();
+      await utils.competencias.listMicros.refetch();
     },
     onError: (error) => toast.error(error.message),
   });
