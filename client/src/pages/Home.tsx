@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getLoginUrl } from "@/const";
 import { ArrowRight, CheckCircle, Users as UsersIcon, Target, FileText, Bell } from "lucide-react";
 import { useLocation } from "wouter";
+import { useEffect } from "react";
 
 export default function Home() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -20,15 +21,20 @@ export default function Home() {
     );
   }
 
-  if (isAuthenticated && user) {
-    // Redirecionar para dashboard apropriado baseado no perfil
-    if (user.role === "admin") {
-      setLocation("/usuarios");
-    } else if (user.role === "lider") {
-      setLocation("/pendencias");
-    } else {
-      setLocation("/pdis");
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Redirecionar para dashboard apropriado baseado no perfil
+      if (user.role === "admin") {
+        setLocation("/usuarios");
+      } else if (user.role === "lider") {
+        setLocation("/pendencias");
+      } else {
+        setLocation("/pdis");
+      }
     }
+  }, [isAuthenticated, user, setLocation]);
+
+  if (isAuthenticated && user) {
     return null;
   }
 
