@@ -478,3 +478,10 @@
 - [x] Adicionar adjustmentCount em getActionsByColaboradorId (área do colaborador)
 - [x] Adicionar adjustmentCount em getActionsByPDIId (visualização de PDI)
 - [x] Adicionar adjustmentCount em getPendingActionsForLeader (área do líder)
+
+## Bloqueio de Solicitação de Ajustes Após Limite
+- [x] Verificar validação existente no backend (procedure solicitarAjuste)
+- [x] Adicionar feedback visual no componente SolicitarAjusteDialog quando limite atingido
+- [x] Desabilitar botão de envio quando adjustmentCount >= 5
+- [x] Testar bloqueio tentando criar 6ª solicitação
+- [x] Validar mensagem de erro retornada pelo backend
