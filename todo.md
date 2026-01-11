@@ -258,3 +258,28 @@
 - [x] Adicionar mensagem "Nenhum líder disponível neste departamento" quando não houver líderes
 - [x] Adicionar useEffect para resetar líder quando departamento mudar
 - [x] Mensagem de erro clara no backend: "O usuário deve estar no mesmo departamento do seu líder"
+
+## Correção de Entendimento - PDI e Ações
+- [ ] Reescrever análise completa com modelo correto
+- [ ] Validar que backend implementa regra: 1 PDI por colaborador por ciclo
+- [ ] Implementar cálculo automático de status do PDI baseado em ações
+- [ ] Remover possibilidade de Admin alterar status do PDI manualmente
+- [ ] Status do PDI muda para "concluido" apenas quando todas as evidências são aprovadas
+
+## Documentação Visual do Sistema
+- [x] Criar diagrama de arquitetura (entidades e relacionamentos)
+- [x] Criar fluxograma de status de ações (todos os 12 status)
+- [x] Documentar impacto de cada status no PDI
+- [x] Documentar impacto de cada status no ciclo de desenvolvimento
+- [x] Explicar regras de transição entre status
+
+## Sistema de Solicitação de Ajuste de Ações
+- [x] Criar tabela `acoes_historico` no schema para registrar todas as alterações
+- [ ] Adicionar procedure tRPC para colaborador solicitar ajuste
+- [ ] Adicionar procedure tRPC para admin aprovar ajuste
+- [ ] Adicionar procedure tRPC para admin reprovar ajuste
+- [ ] Implementar atualização automática de status para `em_discussao`
+- [ ] Implementar notificação para Admin quando solicitação é feita
+- [ ] Implementar notificação informativa para Líder quando solicitação é feita
+- [ ] Implementar registro de histórico em todas as alterações de ação
+- [ ] Documentar fluxo completo de solicitação de ajuste

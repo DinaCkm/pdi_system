@@ -326,6 +326,39 @@ export const adjustmentRequestsRelations = relations(adjustmentRequests, ({ one 
 }));
 
 /**
+ * HISTÓRICO DE ALTERAÇÕES DE AÇÕES
+ */
+export const acoesHistorico = mysqlTable("acoes_historico", {
+  id: int("id").autoincrement().primaryKey(),
+  actionId: int("actionId").notNull(),
+  campo: varchar("campo", { length: 50 }).notNull(), // nome, descricao, prazo, status, etc.
+  valorAnterior: text("valorAnterior"),
+  valorNovo: text("valorNovo"),
+  motivoAlteracao: text("motivoAlteracao"),
+  alteradoPor: int("alteradoPor").notNull(), // Admin que fez a alteração
+  solicitacaoAjusteId: int("solicitacaoAjusteId"), // Se foi por solicitação
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const acoesHistoricoRelations = relations(acoesHistorico, ({ one }) => ({
+  action: one(actions, {
+    fields: [acoesHistorico.actionId],
+    references: [actions.id],
+  }),
+  alterador: one(users, {
+    fields: [acoesHistorico.alteradoPor],
+    references: [users.id],
+  }),
+  solicitacaoAjuste: one(adjustmentRequests, {
+    fields: [acoesHistorico.solicitacaoAjusteId],
+    references: [adjustmentRequests.id],
+  }),
+}));
+
+export type AcaoHistorico = typeof acoesHistorico.$inferSelect;
+export type InsertAcaoHistorico = typeof acoesHistorico.$inferInsert;
+
+/**
  * NOTIFICAÇÕES
  */
 export const notifications = mysqlTable("notifications", {
