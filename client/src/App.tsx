@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import Setup from "./pages/Setup";
 import Login from "./pages/Login";
 import Users from "./pages/Users";
+import ConfigurarUsuario from "./pages/ConfigurarUsuario";
 import Competencias from "./pages/Competencias";
 import Departamentos from "./pages/Departamentos";
 import Ciclos from "./pages/Ciclos";
@@ -30,6 +31,12 @@ function Router() {  return (
       <Route path={"/usuarios"}>
         <DashboardLayout>
           <Users />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/usuarios/:id/configurar"}>
+        <DashboardLayout>
+          <ConfigurarUsuario />
         </DashboardLayout>
       </Route>
       
