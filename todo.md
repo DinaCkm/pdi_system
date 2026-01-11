@@ -240,3 +240,11 @@
 - [x] Adicionar value prop no Select de Líder (formulário de criação)
 - [x] Adicionar watches para selectedDepartamentoId e selectedLeaderId
 - [x] Tornar ambos os Selects controlados com value={...?.toString()}
+
+## Correção Definitiva - Usar Controller do react-hook-form
+- [x] Importar Controller do react-hook-form
+- [x] Adicionar control ao useForm
+- [x] Refatorar Select de Perfil usando Controller com field.value e field.onChange
+- [x] Refatorar Select de Departamento usando Controller com field.value e field.onChange
+- [x] Refatorar Select de Líder usando Controller com field.value e field.onChange
+- [x] Remover watches manuais (selectedDepartamentoId, selectedLeaderId) - não mais necessários

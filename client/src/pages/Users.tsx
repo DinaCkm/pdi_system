@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Loader2, Power, Search, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 
 type UserFormData = {
   name: string;
@@ -37,7 +37,7 @@ export default function Users() {
   const updateMutation = trpc.users.update.useMutation();
   const deleteMutation = trpc.users.delete.useMutation();
 
-  const { register, handleSubmit, reset, watch, setValue } = useForm<UserFormData>();
+  const { register, handleSubmit, reset, watch, setValue, control } = useForm<UserFormData>();
   const selectedRole = watch("role");
   const selectedDepartamentoId = watch("departamentoId");
   const selectedLeaderId = watch("leaderId");
@@ -192,54 +192,75 @@ export default function Users() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="role">Perfil *</Label>
-                  <Select value={selectedRole} onValueChange={(value) => setValue("role", value as any)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o perfil" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Administrador</SelectItem>
-                      <SelectItem value="lider">Líder</SelectItem>
-                      <SelectItem value="colaborador">Colaborador</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Controller
+                    name="role"
+                    control={control}
+                    rules={{ required: true }}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o perfil" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Administrador</SelectItem>
+                          <SelectItem value="lider">Líder</SelectItem>
+                          <SelectItem value="colaborador">Colaborador</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                 </div>
                 {(selectedRole === "lider" || selectedRole === "colaborador") && (
                   <>
                     <div className="grid gap-2">
                       <Label htmlFor="departamentoId">Departamento *</Label>
-                      <Select 
-                        value={selectedDepartamentoId?.toString()} 
-                        onValueChange={(value) => setValue("departamentoId", parseInt(value))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o departamento" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {departamentos?.filter(d => d.status === "ativo").map(dept => (
-                            <SelectItem key={dept.id} value={dept.id.toString()}>
-                              {dept.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Controller
+                        name="departamentoId"
+                        control={control}
+                        rules={{ required: true }}
+                        render={({ field }) => (
+                          <Select 
+                            value={field.value?.toString()} 
+                            onValueChange={(value) => field.onChange(parseInt(value))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o departamento" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {departamentos?.filter(d => d.status === "ativo").map(dept => (
+                                <SelectItem key={dept.id} value={dept.id.toString()}>
+                                  {dept.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="leaderId">Líder *</Label>
-                      <Select 
-                        value={selectedLeaderId?.toString()} 
-                        onValueChange={(value) => setValue("leaderId", parseInt(value))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o líder" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {users?.filter(u => u.role === "lider" || u.role === "admin").map(user => (
-                            <SelectItem key={user.id} value={user.id.toString()}>
-                              {user.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Controller
+                        name="leaderId"
+                        control={control}
+                        rules={{ required: true }}
+                        render={({ field }) => (
+                          <Select 
+                            value={field.value?.toString()} 
+                            onValueChange={(value) => field.onChange(parseInt(value))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o líder" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {users?.filter(u => u.role === "lider" || u.role === "admin").map(user => (
+                                <SelectItem key={user.id} value={user.id.toString()}>
+                                  {user.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
                     </div>
                   </>
                 )}
