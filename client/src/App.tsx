@@ -16,6 +16,8 @@ import PDIs from "./pages/PDIs";
 import Acoes from "./pages/Acoes";
 import MinhasPendencias from "./pages/MinhasPendencias";
 import Relatorios from "./pages/Relatorios";
+import SolicitacoesAjuste from "./pages/SolicitacoesAjuste";
+import SolicitacoesEquipe from "./pages/SolicitacoesEquipe";
 
 function Router() {  return (
     <Switch>
@@ -58,6 +60,18 @@ function Router() {  return (
       <Route path={"/acoes"}>
         <DashboardLayout>
           <Acoes />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/solicitacoes-ajuste"}>
+        <DashboardLayout>
+          <SolicitacoesAjuste />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/solicitacoes-equipe"}>
+        <DashboardLayout>
+          <SolicitacoesEquipe />
         </DashboardLayout>
       </Route>
       

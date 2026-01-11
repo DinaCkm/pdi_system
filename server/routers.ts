@@ -1084,6 +1084,65 @@ export const appRouter = router({
         };
       }),
 
+    // ============= COMENTÁRIOS DE SOLICITAÇÕES =============
+
+    addComment: protectedProcedure
+      .input(z.object({
+        adjustmentRequestId: z.number(),
+        comentario: z.string().min(1, "Comentário não pode estar vazio"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Verificar se a solicitação existe
+        const solicitacao = await db.getAdjustmentRequestById(input.adjustmentRequestId);
+        if (!solicitacao) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
+        }
+
+        // Criar comentário
+        const comment = await db.createAdjustmentComment({
+          adjustmentRequestId: input.adjustmentRequestId,
+          autorId: ctx.user!.id,
+          comentario: input.comentario,
+        });
+
+        // Notificar solicitante (se não for ele mesmo comentando)
+        if (ctx.user!.id !== solicitacao.solicitanteId) {
+          await db.createNotification({
+            destinatarioId: solicitacao.solicitanteId,
+            tipo: 'novo_comentario_ajuste',
+            titulo: '💬 Novo Comentário na Solicitação',
+            mensagem: `${ctx.user!.name} comentou na sua solicitação de ajuste.`,
+            referenciaId: solicitacao.actionId,
+          });
+        }
+
+        return comment;
+      }),
+
+    getComments: protectedProcedure
+      .input(z.object({ adjustmentRequestId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getCommentsByAdjustmentRequestId(input.adjustmentRequestId);
+      }),
+
+    getPendingAdjustmentsWithDetails: adminProcedure.query(async () => {
+      return await db.getPendingAdjustmentRequestsWithDetails();
+    }),
+
+    getAdjustmentRequestById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getAdjustmentRequestById(input.id);
+      }),
+
+    getPendingAdjustmentsByLeader: protectedProcedure.query(async ({ ctx }) => {
+      // Apenas líderes podem acessar
+      if (ctx.user!.role !== 'lider' && ctx.user!.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Acesso negado' });
+      }
+      return await db.getPendingAdjustmentRequestsByLeaderId(ctx.user!.id);
+    }),
+
     suggestWithAI: protectedProcedure
       .input(z.object({
         blocoId: z.number(),

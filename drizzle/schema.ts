@@ -359,6 +359,31 @@ export type AcaoHistorico = typeof acoesHistorico.$inferSelect;
 export type InsertAcaoHistorico = typeof acoesHistorico.$inferInsert;
 
 /**
+ * COMENTÁRIOS DE SOLICITAÇÕES DE AJUSTE
+ */
+export const adjustmentComments = mysqlTable("adjustment_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  adjustmentRequestId: int("adjustmentRequestId").notNull(),
+  autorId: int("autorId").notNull(),
+  comentario: text("comentario").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const adjustmentCommentsRelations = relations(adjustmentComments, ({ one }) => ({
+  adjustmentRequest: one(adjustmentRequests, {
+    fields: [adjustmentComments.adjustmentRequestId],
+    references: [adjustmentRequests.id],
+  }),
+  autor: one(users, {
+    fields: [adjustmentComments.autorId],
+    references: [users.id],
+  }),
+}));
+
+export type AdjustmentComment = typeof adjustmentComments.$inferSelect;
+export type InsertAdjustmentComment = typeof adjustmentComments.$inferInsert;
+
+/**
  * NOTIFICAÇÕES
  */
 export const notifications = mysqlTable("notifications", {

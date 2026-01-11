@@ -14,6 +14,8 @@ import {
   evidenceFiles,
   evidenceTexts,
   adjustmentRequests,
+  adjustmentComments,
+  InsertAdjustmentComment,
   notifications,
   acoesHistorico
 } from "../drizzle/schema";
@@ -863,4 +865,107 @@ export async function getAllMicrosWithMacroAndBloco() {
     .innerJoin(competenciasMacros, eq(competenciasMicros.macroId, competenciasMacros.id))
     .innerJoin(competenciasBlocos, eq(competenciasMacros.blocoId, competenciasBlocos.id))
     .orderBy(asc(competenciasMicros.nome));
+}
+
+// ============= FUNÇÕES PARA COMENTÁRIOS DE SOLICITAÇÕES DE AJUSTE =============
+
+export async function createAdjustmentComment(data: InsertAdjustmentComment) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [comment] = await db.insert(adjustmentComments).values(data).$returningId();
+  return await getAdjustmentCommentById(comment.id);
+}
+
+export async function getAdjustmentCommentById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const [comment] = await db
+    .select({
+      id: adjustmentComments.id,
+      adjustmentRequestId: adjustmentComments.adjustmentRequestId,
+      autorId: adjustmentComments.autorId,
+      autorNome: users.name,
+      autorRole: users.role,
+      comentario: adjustmentComments.comentario,
+      createdAt: adjustmentComments.createdAt,
+    })
+    .from(adjustmentComments)
+    .innerJoin(users, eq(adjustmentComments.autorId, users.id))
+    .where(eq(adjustmentComments.id, id));
+  
+  return comment || null;
+}
+
+export async function getCommentsByAdjustmentRequestId(adjustmentRequestId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select({
+      id: adjustmentComments.id,
+      adjustmentRequestId: adjustmentComments.adjustmentRequestId,
+      autorId: adjustmentComments.autorId,
+      autorNome: users.name,
+      autorRole: users.role,
+      comentario: adjustmentComments.comentario,
+      createdAt: adjustmentComments.createdAt,
+    })
+    .from(adjustmentComments)
+    .innerJoin(users, eq(adjustmentComments.autorId, users.id))
+    .where(eq(adjustmentComments.adjustmentRequestId, adjustmentRequestId))
+    .orderBy(asc(adjustmentComments.createdAt));
+}
+
+export async function getPendingAdjustmentRequestsWithDetails() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select({
+      id: adjustmentRequests.id,
+      actionId: adjustmentRequests.actionId,
+      actionNome: actions.nome,
+      solicitanteId: adjustmentRequests.solicitanteId,
+      solicitanteNome: users.name,
+      tipoSolicitante: adjustmentRequests.tipoSolicitante,
+      justificativa: adjustmentRequests.justificativa,
+      camposAjustar: adjustmentRequests.camposAjustar,
+      status: adjustmentRequests.status,
+      createdAt: adjustmentRequests.createdAt,
+    })
+    .from(adjustmentRequests)
+    .innerJoin(actions, eq(adjustmentRequests.actionId, actions.id))
+    .innerJoin(users, eq(adjustmentRequests.solicitanteId, users.id))
+    .where(eq(adjustmentRequests.status, 'pendente'))
+    .orderBy(desc(adjustmentRequests.createdAt));
+}
+
+export async function getPendingAdjustmentRequestsByLeaderId(leaderId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select({
+      id: adjustmentRequests.id,
+      actionId: adjustmentRequests.actionId,
+      actionNome: actions.nome,
+      solicitanteId: adjustmentRequests.solicitanteId,
+      solicitanteNome: users.name,
+      tipoSolicitante: adjustmentRequests.tipoSolicitante,
+      justificativa: adjustmentRequests.justificativa,
+      camposAjustar: adjustmentRequests.camposAjustar,
+      status: adjustmentRequests.status,
+      createdAt: adjustmentRequests.createdAt,
+    })
+    .from(adjustmentRequests)
+    .innerJoin(actions, eq(adjustmentRequests.actionId, actions.id))
+    .innerJoin(pdis, eq(actions.pdiId, pdis.id))
+    .innerJoin(users, eq(adjustmentRequests.solicitanteId, users.id))
+    .where(and(
+      eq(adjustmentRequests.status, 'pendente'),
+      eq(users.leaderId, leaderId)
+    ))
+    .orderBy(desc(adjustmentRequests.createdAt));
 }

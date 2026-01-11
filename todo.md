@@ -485,3 +485,15 @@
 - [x] Desabilitar botão de envio quando adjustmentCount >= 5
 - [x] Testar bloqueio tentando criar 6ª solicitação
 - [x] Validar mensagem de erro retornada pelo backend
+
+## Sistema de Aprovação de Solicitações de Ajuste
+- [x] Criar tabela adjustment_comments no schema para comentários
+- [x] Criar procedures para adicionar/listar comentários
+- [x] Criar procedure reprovarAjuste com campo justificativa obrigatório
+- [x] Criar página /solicitacoes-ajuste para Admin gerenciar solicitações
+- [x] Adicionar visualização de detalhes da solicitação com histórico de comentários
+- [x] Implementar formulário de aprovação/reprovação para Admin
+- [x] Criar página /solicitacoes-equipe para Líder visualizar solicitações da equipe
+- [x] Adicionar campo de comentários para Líder dar feedback
+- [x] Testar fluxo completo: solicitar → comentar → aprovar/reprovar
+- [x] Adicionar notificações quando há novos comentários
