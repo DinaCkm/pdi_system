@@ -120,3 +120,7 @@
 - [x] Validar se banco está vazio antes de permitir acesso
 - [x] Bloquear página após primeiro admin ser criado
 - [x] Redirecionar para /setup se não houver usuários no banco
+
+## Bugs a Corrigir
+- [x] Corrigir erro 404 ao acessar sistema publicado
+- [x] Verificar roteamento e redirecionamentos

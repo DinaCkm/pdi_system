@@ -18,6 +18,7 @@ import Relatorios from "./pages/Relatorios";
 function Router() {  return (
     <Switch>
       <Route path={"/setup"} component={Setup} />
+      <Route path={"/login"} component={Login} />
       <Route path={"/"} component={Home} />
       <Route path={"/404"} component={NotFound} />
       
