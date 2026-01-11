@@ -145,33 +145,46 @@ export default function ConfigurarUsuario() {
             </div>
 
             {/* Perfil */}
-            <div className="space-y-2">
-              <Label htmlFor="role">Perfil *</Label>
-              <select
-                id="role"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={formData.role}
-                onChange={(e) => {
-                  const newRole = e.target.value;
-                  setFormData({
-                    ...formData,
-                    role: newRole,
-                    // Resetar departamento e líder se mudar para admin
-                    departamentoId: newRole === "admin" ? null : formData.departamentoId,
-                    leaderId: newRole === "admin" ? null : formData.leaderId,
-                  });
-                }}
-                required
-              >
-                <option value="colaborador">Colaborador</option>
-                <option value="lider">Líder</option>
-                <option value="admin">Administrador</option>
-              </select>
-              <p className="text-sm text-muted-foreground">
-                {formData.role === "admin" && "Administradores têm acesso total ao sistema"}
-                {formData.role === "lider" && "Líderes gerenciam suas equipes e aprovam ações"}
-                {formData.role === "colaborador" && "Colaboradores executam ações e enviam evidências"}
-              </p>
+            <div className="space-y-3">
+              <Label>Perfil *</Label>
+              <div className="space-y-2">
+                {[
+                  { value: "colaborador", label: "Colaborador", desc: "Executam ações e enviam evidências" },
+                  { value: "lider", label: "Líder", desc: "Gerenciam suas equipes e aprovam ações" },
+                  { value: "admin", label: "Administrador", desc: "Têm acesso total ao sistema" },
+                ].map((option) => (
+                  <label
+                    key={option.value}
+                    className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                      formData.role === option.value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="role"
+                      value={option.value}
+                      checked={formData.role === option.value}
+                      onChange={(e) => {
+                        const newRole = e.target.value;
+                        setFormData({
+                          ...formData,
+                          role: newRole,
+                          departamentoId: newRole === "admin" ? null : formData.departamentoId,
+                          leaderId: newRole === "admin" ? null : formData.leaderId,
+                        });
+                      }}
+                      className="mt-1"
+                      required
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium">{option.label}</div>
+                      <div className="text-sm text-muted-foreground">{option.desc}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
 
             {/* Departamento (condicional) */}
