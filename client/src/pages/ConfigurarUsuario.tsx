@@ -53,7 +53,7 @@ export default function ConfigurarUsuario() {
 
     try {
       // Validações
-      if ((formData.role === "lider" || formData.role === "user") && !formData.departamentoId) {
+      if ((formData.role === "lider" || formData.role === "colaborador") && !formData.departamentoId) {
         toast.error(`${formData.role === "lider" ? "Líderes" : "Colaboradores"} devem estar vinculados a um departamento.`);
         return;
       }
@@ -64,7 +64,7 @@ export default function ConfigurarUsuario() {
         const dept = departamentos?.find(d => d.id === formData.departamentoId);
         leaderIdToSet = dept?.leaderId || null;
         
-        if (!leaderIdToSet && (formData.role === "lider" || formData.role === "user")) {
+        if (!leaderIdToSet && (formData.role === "lider" || formData.role === "colaborador")) {
           toast.error("O departamento selecionado não possui um líder definido. Configure o líder do departamento primeiro.");
           return;
         }
@@ -161,19 +161,19 @@ export default function ConfigurarUsuario() {
                 }}
                 required
               >
-                <option value="user">Colaborador</option>
+                <option value="colaborador">Colaborador</option>
                 <option value="lider">Líder</option>
                 <option value="admin">Administrador</option>
               </select>
               <p className="text-sm text-muted-foreground">
                 {formData.role === "admin" && "Administradores têm acesso total ao sistema"}
                 {formData.role === "lider" && "Líderes gerenciam suas equipes e aprovam ações"}
-                {formData.role === "user" && "Colaboradores executam ações e enviam evidências"}
+                {formData.role === "colaborador" && "Colaboradores executam ações e enviam evidências"}
               </p>
             </div>
 
             {/* Departamento (condicional) */}
-            {(formData.role === "lider" || formData.role === "user") && (
+            {(formData.role === "lider" || formData.role === "colaborador") && (
               <div className="space-y-2">
                 <Label htmlFor="departamento">Departamento *</Label>
                 <select
@@ -204,7 +204,7 @@ export default function ConfigurarUsuario() {
             )}
 
             {/* Líder (automático pelo departamento) */}
-            {(formData.role === "lider" || formData.role === "user") && formData.departamentoId && (
+            {(formData.role === "lider" || formData.role === "colaborador") && formData.departamentoId && (
               <div className="space-y-2">
                 <Label>Líder do Departamento</Label>
                 <div className="flex h-10 items-center rounded-md border border-input bg-muted px-3 py-2 text-sm">
