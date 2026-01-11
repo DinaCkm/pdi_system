@@ -198,3 +198,10 @@
 - [x] Adicionar campo Departamento no formulário de criação
 - [x] Adicionar campo Departamento no formulário de edição
 - [x] Campos aparecem apenas quando perfil é Líder ou Colaborador
+
+## Bug Reportado - Campos de Departamento e Líder
+- [x] Investigar por que campos de Departamento e Líder não aparecem no formulário
+- [x] Verificar se selectedRole está funcionando corretamente
+- [x] Verificar se a condição de exibição está correta
+- [x] Criar departamentos de teste no banco de dados
+- [x] Criar novo checkpoint para atualizar publicação
