@@ -188,3 +188,13 @@
 - [x] Adicionar indicador visual do ciclo atualmente ativo
 - [x] Adicionar rota /ciclos no App.tsx
 - [x] Adicionar link de navegação no DashboardLayout
+
+## Validação Obrigatória de Líder e Departamento
+- [x] Adicionar validação no backend: Líder e Colaborador DEVEM ter departamento
+- [x] Adicionar validação no backend: Líder e Colaborador DEVEM ter líder
+- [x] Atualizar formulário de usuários: campos obrigatórios para Líder/Colaborador
+- [x] Atualizar formulário de usuários: campos opcionais para Admin
+- [x] Adicionar mensagens de erro claras quando validação falhar
+- [x] Adicionar campo Departamento no formulário de criação
+- [x] Adicionar campo Departamento no formulário de edição
+- [x] Campos aparecem apenas quando perfil é Líder ou Colaborador

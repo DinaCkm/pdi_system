@@ -72,6 +72,7 @@ export const appRouter = router({
         role: z.enum(["admin", "lider", "colaborador"]),
         cargo: z.string().min(1, "Cargo é obrigatório"),
         leaderId: z.number().optional(),
+        departamentoId: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
         // Verificar se CPF já existe
@@ -83,13 +84,40 @@ export const appRouter = router({
           });
         }
 
-        // Verificar auto-atribuição de líder
+        // VALIDAÇÃO: Líder e Colaborador DEVEM ter departamento e líder
+        if (input.role === 'lider' || input.role === 'colaborador') {
+          if (!input.departamentoId) {
+            throw new TRPCError({ 
+              code: 'BAD_REQUEST', 
+              message: `${input.role === 'lider' ? 'Líderes' : 'Colaboradores'} devem estar vinculados a um departamento.` 
+            });
+          }
+          if (!input.leaderId) {
+            throw new TRPCError({ 
+              code: 'BAD_REQUEST', 
+              message: `${input.role === 'lider' ? 'Líderes' : 'Colaboradores'} devem ter um líder atribuído.` 
+            });
+          }
+        }
+
+        // Verificar se líder existe
         if (input.leaderId) {
           const leader = await db.getUserById(input.leaderId);
           if (!leader) {
             throw new TRPCError({ 
               code: 'BAD_REQUEST', 
               message: 'Líder não encontrado.' 
+            });
+          }
+        }
+
+        // Verificar se departamento existe
+        if (input.departamentoId) {
+          const departamento = await db.getDepartamentoById(input.departamentoId);
+          if (!departamento) {
+            throw new TRPCError({ 
+              code: 'BAD_REQUEST', 
+              message: 'Departamento não encontrado.' 
             });
           }
         }
@@ -102,6 +130,7 @@ export const appRouter = router({
           role: input.role,
           cargo: input.cargo,
           leaderId: input.leaderId,
+          departamentoId: input.departamentoId,
           status: "ativo",
         });
 
@@ -117,10 +146,41 @@ export const appRouter = router({
         role: z.enum(["admin", "lider", "colaborador"]).optional(),
         cargo: z.string().min(1).optional(),
         leaderId: z.number().optional(),
+        departamentoId: z.number().optional(),
         status: z.enum(["ativo", "inativo"]).optional(),
       }))
       .mutation(async ({ input }) => {
         const { id, ...updateData } = input;
+
+        // Buscar usuário atual
+        const currentUser = await db.getUserById(id);
+        if (!currentUser) {
+          throw new TRPCError({ 
+            code: 'NOT_FOUND', 
+            message: 'Usuário não encontrado.' 
+          });
+        }
+
+        // Determinar o role final (atual ou atualizado)
+        const finalRole = updateData.role || currentUser.role;
+        const finalLeaderId = updateData.leaderId !== undefined ? updateData.leaderId : currentUser.leaderId;
+        const finalDepartamentoId = updateData.departamentoId !== undefined ? updateData.departamentoId : currentUser.departamentoId;
+
+        // VALIDAÇÃO: Líder e Colaborador DEVEM ter departamento e líder
+        if (finalRole === 'lider' || finalRole === 'colaborador') {
+          if (!finalDepartamentoId) {
+            throw new TRPCError({ 
+              code: 'BAD_REQUEST', 
+              message: `${finalRole === 'lider' ? 'Líderes' : 'Colaboradores'} devem estar vinculados a um departamento.` 
+            });
+          }
+          if (!finalLeaderId) {
+            throw new TRPCError({ 
+              code: 'BAD_REQUEST', 
+              message: `${finalRole === 'lider' ? 'Líderes' : 'Colaboradores'} devem ter um líder atribuído.` 
+            });
+          }
+        }
 
         // Se CPF está sendo atualizado, verificar duplicidade
         if (updateData.cpf) {
