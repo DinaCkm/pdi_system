@@ -507,3 +507,9 @@
 - [x] Remover botão de logout duplicado do footer da sidebar
 - [x] Manter apenas o botão de logout no header
 - [x] Testar logout sem erros de removeChild
+
+## Bug - Erro ao Editar Líder de Usuário
+- [x] Investigar código do formulário de edição de usuários
+- [x] Identificar causa do erro removeChild ao selecionar líder
+- [x] Corrigir manipulação do DOM no formulário
+- [x] Testar edição de líder sem erros
