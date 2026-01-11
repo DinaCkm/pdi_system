@@ -515,6 +515,17 @@ export const appRouter = router({
         objetivoGeral: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
+        // Validar se já existe PDI para este colaborador neste ciclo
+        const existingPDIs = await db.getPDIsByColaboradorId(input.colaboradorId);
+        const duplicatePDI = existingPDIs.find(pdi => pdi.cicloId === input.cicloId);
+        
+        if (duplicatePDI) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Já existe um PDI para este colaborador neste ciclo. Cada colaborador pode ter apenas 1 PDI por ciclo.',
+          });
+        }
+
         await db.createPDI({
           ...input,
           createdBy: ctx.user!.id,

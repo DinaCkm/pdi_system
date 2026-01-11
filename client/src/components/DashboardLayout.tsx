@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2 } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2, CheckSquare } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -37,6 +37,7 @@ const getMenuItems = (userRole: string) => {
       { icon: Target, label: "Competências", path: "/competencias" },
       { icon: Calendar, label: "Ciclos", path: "/ciclos" },
       { icon: FileText, label: "PDIs", path: "/pdis" },
+      { icon: CheckSquare, label: "Ações", path: "/acoes" },
       { icon: Bell, label: "Pendências", path: "/pendencias" },
       { icon: BarChart, label: "Relatórios", path: "/relatorios" },
     );

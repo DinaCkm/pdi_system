@@ -334,3 +334,21 @@
 - [x] Dialog de reprovação com campo de justificativa obrigatório
 - [x] Loading states e tratamento de erros
 - [x] Estado vazio com mensagem amigável
+
+## Bugs Reportados pelo Usuário
+
+### Bug 1: Link de Ações não está no menu de navegação
+- [x] Adicionar link "Ações" no DashboardLayout
+- [x] Verificar se rota /acoes está funcionando
+- [x] Testar navegação para página de Ações
+- [x] Link "Ações" aparece no menu de navegação
+- [x] Página de Ações carrega corretamente ao clicar no link
+
+### Bug 2: Validação de PDI duplicado não está funcionando
+- [x] Verificar procedure de criação de PDI no routers.ts
+- [x] Adicionar validação para impedir PDI duplicado (mesmo colaborador + mesmo ciclo)
+- [x] Retornar erro claro quando tentar criar PDI duplicado
+- [x] Testar criação de PDI duplicado e verificar se erro é exibido
+- [x] Remover PDIs duplicados existentes no banco de dados
+- [x] PDI duplicado excluído com sucesso
+- [x] Agora resta apenas 1 PDI para MANEZINHO DA SILVA no Ciclo Teste PDI
