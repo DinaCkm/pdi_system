@@ -85,21 +85,9 @@ export const appRouter = router({
           });
         }
 
-        // VALIDAÇÃO: Líder e Colaborador DEVEM ter departamento e líder
-        if (input.role === 'lider' || input.role === 'colaborador') {
-          if (!input.departamentoId) {
-            throw new TRPCError({ 
-              code: 'BAD_REQUEST', 
-              message: `${input.role === 'lider' ? 'Líderes' : 'Colaboradores'} devem estar vinculados a um departamento.` 
-            });
-          }
-          if (!input.leaderId) {
-            throw new TRPCError({ 
-              code: 'BAD_REQUEST', 
-              message: `${input.role === 'lider' ? 'Líderes' : 'Colaboradores'} devem ter um líder atribuído.` 
-            });
-          }
-        }
+        // NOTA: Validações de departamento e líder foram movidas para users.update
+        // Na criação inicial, usuário pode ser criado sem departamento/líder
+        // Configuração será feita posteriormente na página /usuarios/:id/configurar
 
         // Verificar se líder existe e se está no mesmo departamento
         if (input.leaderId) {
