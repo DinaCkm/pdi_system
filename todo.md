@@ -284,3 +284,12 @@
 - [x] Implementar registro de histórico em todas as alterações de ação
 - [x] Documentar fluxo completo de solicitação de ajuste
 - [x] Criar testes unitários para procedures de solicitação de ajuste (7 testes passando)
+
+## Bug Reportado - Página de PDI em Branco
+- [x] Investigar qual rota de PDI está sendo acessada
+- [x] Verificar se existe página PDI implementada
+- [x] Verificar se rota está registrada no App.tsx
+- [x] Verificar se há erros no console do navegador
+- [x] Implementar página de PDI se não existir
+- [x] Corrigir erros se página existir mas não carregar
+- [x] Página completa de gestão de PDIs implementada com sucesso
