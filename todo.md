@@ -205,3 +205,10 @@
 - [x] Verificar se a condição de exibição está correta
 - [x] Criar departamentos de teste no banco de dados
 - [x] Criar novo checkpoint para atualizar publicação
+
+## Bug Crítico - Campos Não Aparecem Após Seleção
+- [x] Investigar por que campos não aparecem mesmo após selecionar Líder/Colaborador
+- [x] Verificar se watch("role") está capturando a mudança do Select
+- [x] Verificar se há problema com o componente Select do shadcn/ui
+- [x] Adicionar value prop no Select de criação para tornar componente controlado
+- [x] Correção aplicada: Select agora é controlado com value={selectedRole}

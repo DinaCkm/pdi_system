@@ -185,7 +185,7 @@ export default function Users() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="role">Perfil *</Label>
-                  <Select onValueChange={(value) => setValue("role", value as any)}>
+                  <Select value={selectedRole} onValueChange={(value) => setValue("role", value as any)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o perfil" />
                     </SelectTrigger>
