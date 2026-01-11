@@ -1,445 +1,530 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Power, Search, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useForm, Controller } from "react-hook-form";
 
-type UserRole = "admin" | "lider" | "user";
-
-interface UserFormData {
-  nome: string;
+type UserFormData = {
+  name: string;
   email: string;
   cpf: string;
+  role: "admin" | "lider" | "colaborador";
   cargo: string;
-  role: UserRole;
-  departamentoId: number | null;
-  leaderId: number | null;
-}
+  leaderId?: number;
+  departamentoId?: number;
+};
 
 export default function Users() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<number | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; userId?: number; userName?: string }>({ open: false });
-  
-  // Form state
-  const [formData, setFormData] = useState<UserFormData>({
-    nome: "",
-    email: "",
-    cpf: "",
-    cargo: "",
-    role: "user",
-    departamentoId: null,
-    leaderId: null,
-  });
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; type: 'delete' | 'toggle'; userId?: number; currentStatus?: string }>({ open: false, type: 'delete' });
+  const ITEMS_PER_PAGE = 10;
 
-  // Queries
-  const { data: users, refetch: refetchUsers } = trpc.users.getAll.useQuery();
-  const { data: departamentos } = trpc.departamentos.getAll.useQuery();
+  const { data: users, isLoading, refetch } = trpc.users.list.useQuery();
+  const { data: departamentos } = trpc.departamentos.list.useQuery();
+  const createMutation = trpc.users.create.useMutation();
+  const updateMutation = trpc.users.update.useMutation();
+  const deleteMutation = trpc.users.delete.useMutation();
 
-  // Mutations
-  const createMutation = trpc.users.create.useMutation({
-    onSuccess: () => {
-      toast.success("Usuário criado com sucesso!");
-      refetchUsers();
-      closeDialog();
-    },
-    onError: (error) => {
-      toast.error(`Erro ao criar usuário: ${error.message}`);
-    },
-  });
+  const { register, handleSubmit, reset, watch, setValue, control } = useForm<UserFormData>();
+  const selectedRole = watch("role");
+  const selectedDepartamentoId = watch("departamentoId");
+  const selectedLeaderId = watch("leaderId");
 
-  const updateMutation = trpc.users.update.useMutation({
-    onSuccess: () => {
-      toast.success("Usuário atualizado com sucesso!");
-      refetchUsers();
-      closeDialog();
-    },
-    onError: (error) => {
-      toast.error(`Erro ao atualizar usuário: ${error.message}`);
-    },
-  });
+  // Resetar líder quando departamento mudar
+  useEffect(() => {
+    if (selectedDepartamentoId && selectedLeaderId) {
+      const leader = users?.find(u => u.id === selectedLeaderId);
+      if (leader && leader.departamentoId !== selectedDepartamentoId) {
+        setValue("leaderId", undefined as any);
+      }
+    }
+  }, [selectedDepartamentoId, selectedLeaderId, users, setValue]);
 
-  const deleteMutation = trpc.users.delete.useMutation({
-    onSuccess: () => {
+  const onSubmit = async (data: UserFormData) => {
+    try {
+      if (editingUser) {
+        await updateMutation.mutateAsync({ id: editingUser.id, ...data });
+        toast.success("Usuário atualizado com sucesso!");
+        setEditingUser(null);
+      } else {
+        await createMutation.mutateAsync(data);
+        toast.success("Usuário criado com sucesso!");
+        setIsCreateOpen(false);
+      }
+      reset();
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao salvar usuário");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDialog.userId) return;
+    
+    try {
+      await deleteMutation.mutateAsync({ id: confirmDialog.userId });
       toast.success("Usuário excluído com sucesso!");
-      refetchUsers();
-      setDeleteConfirm({ open: false });
-    },
-    onError: (error) => {
-      toast.error(`Erro ao excluir usuário: ${error.message}`);
-    },
-  });
-
-  // Filtered leaders based on selected department
-  const availableLeaders = users?.filter(
-    (u) =>
-      u.role === "lider" &&
-      u.departamentoId === formData.departamentoId &&
-      u.id !== editingUserId
-  ) || [];
-
-  const openCreateDialog = () => {
-    setEditingUserId(null);
-    setFormData({
-      nome: "",
-      email: "",
-      cpf: "",
-      cargo: "",
-      role: "user",
-      departamentoId: null,
-      leaderId: null,
-    });
-    setIsDialogOpen(true);
-  };
-
-  const openEditDialog = (user: any) => {
-    setEditingUserId(user.id);
-    setFormData({
-      nome: user.nome,
-      email: user.email,
-      cpf: user.cpf,
-      cargo: user.cargo,
-      role: user.role,
-      departamentoId: user.departamentoId,
-      leaderId: user.leaderId,
-    });
-    setIsDialogOpen(true);
-  };
-
-  const closeDialog = () => {
-    setIsDialogOpen(false);
-    setEditingUserId(null);
-    setFormData({
-      nome: "",
-      email: "",
-      cpf: "",
-      cargo: "",
-      role: "user",
-      departamentoId: null,
-      leaderId: null,
-    });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.nome || !formData.email || !formData.cpf || !formData.cargo) {
-      toast.error("Preencha todos os campos obrigatórios");
-      return;
-    }
-
-    const payload = {
-      ...formData,
-      departamentoId: formData.departamentoId || undefined,
-      leaderId: formData.leaderId || undefined,
-    };
-
-    if (editingUserId) {
-      updateMutation.mutate({ id: editingUserId, ...payload });
-    } else {
-      createMutation.mutate(payload);
+      setConfirmDialog({ open: false, type: 'delete' });
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao excluir usuário");
     }
   };
 
-  const handleDelete = (userId: number) => {
-    deleteMutation.mutate({ id: userId });
+  const handleEdit = (user: any) => {
+    setEditingUser(user);
+    setValue("name", user.name);
+    setValue("email", user.email);
+    setValue("cpf", user.cpf);
+    setValue("role", user.role);
+    setValue("cargo", user.cargo);
+    setValue("leaderId", user.leaderId);
+    setValue("departamentoId", user.departamentoId);
   };
 
-  const getRoleLabel = (role: string) => {
-    const labels: Record<string, string> = {
-      admin: "Administrador",
-      lider: "Líder",
-      user: "Colaborador",
-    };
-    return labels[role] || role;
+  const handleToggleStatus = async () => {
+    if (!confirmDialog.userId || !confirmDialog.currentStatus) return;
+    
+    const newStatus = confirmDialog.currentStatus === "ativo" ? "inativo" : "ativo";
+    const action = newStatus === "ativo" ? "ativado" : "inativado";
+    
+    try {
+      await updateMutation.mutateAsync({ id: confirmDialog.userId, status: newStatus });
+      toast.success(`Usuário ${action} com sucesso!`);
+      setConfirmDialog({ open: false, type: 'toggle' });
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || `Erro ao ${action === "ativado" ? "ativar" : "inativar"} usuário`);
+    }
   };
 
-  const getRoleBadgeVariant = (role: string) => {
+  const getRoleBadge = (role: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive"> = {
       admin: "destructive",
       lider: "default",
-      user: "secondary",
+      colaborador: "secondary",
     };
-    return variants[role] || "secondary";
+    const labels: Record<string, string> = {
+      admin: "Administrador",
+      lider: "Líder",
+      colaborador: "Colaborador",
+    };
+    return <Badge variant={variants[role] || "default"}>{labels[role] || role}</Badge>;
   };
 
+  const getStatusBadge = (status: string) => {
+    return status === "ativo" ? (
+      <Badge variant="default" className="bg-green-500">Ativo</Badge>
+    ) : (
+      <Badge variant="secondary">Inativo</Badge>
+    );
+  };
+
+  const getDepartamentoNome = (departamentoId: number) => {
+    const dept = departamentos?.find(d => d.id === departamentoId);
+    return dept?.nome || "N/A";
+  };
+
+  // Filtrar usuários por busca
+  const filteredUsers = users?.filter(user => 
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  // Paginação
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset para página 1 quando busca mudar
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="container py-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Usuários</h1>
-          <p className="text-muted-foreground">Gerencie os usuários do sistema</p>
+          <h1 className="text-3xl font-bold">Gestão de Usuários</h1>
+          <p className="text-muted-foreground">Gerencie administradores, líderes e colaboradores</p>
         </div>
-        <Button onClick={openCreateDialog}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Usuário
-        </Button>
-      </div>
-
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>CPF</TableHead>
-              <TableHead>Cargo</TableHead>
-              <TableHead>Perfil</TableHead>
-              <TableHead>Departamento</TableHead>
-              <TableHead>Líder</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users?.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.nome}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.cpf}</TableCell>
-                <TableCell>{user.cargo}</TableCell>
-                <TableCell>
-                  <Badge variant={getRoleBadgeVariant(user.role)}>
-                    {getRoleLabel(user.role)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {user.departamento?.nome || "-"}
-                </TableCell>
-                <TableCell>
-                  {user.leader?.nome || "-"}
-                </TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => openEditDialog(user)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() =>
-                      setDeleteConfirm({
-                        open: true,
-                        userId: user.id,
-                        userName: user.nome,
-                      })
-                    }
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Create/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editingUserId ? "Editar Usuário" : "Novo Usuário"}
-            </DialogTitle>
-            <DialogDescription>
-              {editingUserId
-                ? "Atualize as informações do usuário"
-                : "Preencha os dados para criar um novo usuário"}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="nome">Nome *</Label>
-                <Input
-                  id="nome"
-                  value={formData.nome}
-                  onChange={(e) =>
-                    setFormData({ ...formData, nome: e.target.value })
-                  }
-                  placeholder="Nome completo"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  placeholder="email@exemplo.com"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cpf">CPF *</Label>
-                <Input
-                  id="cpf"
-                  value={formData.cpf}
-                  onChange={(e) =>
-                    setFormData({ ...formData, cpf: e.target.value })
-                  }
-                  placeholder="000.000.000-00"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cargo">Cargo *</Label>
-                <Input
-                  id="cargo"
-                  value={formData.cargo}
-                  onChange={(e) =>
-                    setFormData({ ...formData, cargo: e.target.value })
-                  }
-                  placeholder="Ex: Analista de Sistemas"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="role">Perfil *</Label>
-                <select
-                  id="role"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  value={formData.role}
-                  onChange={(e) =>
-                    setFormData({ ...formData, role: e.target.value as UserRole })
-                  }
-                  required
-                >
-                  <option value="user">Colaborador</option>
-                  <option value="lider">Líder</option>
-                  <option value="admin">Administrador</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="departamento">Departamento</Label>
-                <select
-                  id="departamento"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  value={formData.departamentoId?.toString() || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      departamentoId: e.target.value ? parseInt(e.target.value) : null,
-                      leaderId: null,
-                    })
-                  }
-                >
-                  <option value="">Nenhum</option>
-                  {departamentos?.map((dept) => (
-                    <option key={dept.id} value={dept.id.toString()}>
-                      {dept.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {formData.role === "user" && formData.departamentoId && (
-                <div className="space-y-2">
-                  <Label htmlFor="leader">Líder</Label>
-                  <select
-                    id="leader"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    value={formData.leaderId?.toString() || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        leaderId: e.target.value ? parseInt(e.target.value) : null,
-                      })
-                    }
-                  >
-                    <option value="">Nenhum</option>
-                    {availableLeaders.map((leader) => (
-                      <option key={leader.id} value={leader.id.toString()}>
-                        {leader.nome}
-                      </option>
-                    ))}
-                  </select>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Usuário
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <DialogHeader>
+                <DialogTitle>Criar Novo Usuário</DialogTitle>
+                <DialogDescription>
+                  Preencha os dados do novo usuário. CPF deve ser único no sistema.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="name">Nome Completo *</Label>
+                  <Input id="name" {...register("name", { required: true })} />
                 </div>
-              )}
-            </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email *</Label>
+                  <Input id="email" type="email" {...register("email", { required: true })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="cpf">CPF *</Label>
+                  <Input id="cpf" {...register("cpf", { required: true })} placeholder="000.000.000-00" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="cargo">Cargo *</Label>
+                  <Input id="cargo" {...register("cargo", { required: true })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="role">Perfil *</Label>
+                  <Controller
+                    name="role"
+                    control={control}
+                    rules={{ required: true }}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o perfil" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Administrador</SelectItem>
+                          <SelectItem value="lider">Líder</SelectItem>
+                          <SelectItem value="colaborador">Colaborador</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                {(selectedRole === "lider" || selectedRole === "colaborador") && (
+                  <>
+                    <div className="grid gap-2">
+                      <Label htmlFor="departamentoId">Departamento *</Label>
+                      <Controller
+                        name="departamentoId"
+                        control={control}
+                        rules={{ required: true }}
+                        render={({ field }) => (
+                          <Select 
+                            value={field.value?.toString()} 
+                            onValueChange={(value) => field.onChange(parseInt(value))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o departamento" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {departamentos?.filter(d => d.status === "ativo").map(dept => (
+                                <SelectItem key={dept.id} value={dept.id.toString()}>
+                                  {dept.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="leaderId">Líder *</Label>
+                      <Controller
+                        name="leaderId"
+                        control={control}
+                        rules={{ required: true }}
+                        render={({ field }) => {
+                          // Filtrar líderes pelo departamento selecionado
+                          const availableLeaders = users?.filter(u => {
+                            const isLeaderOrAdmin = u.role === "lider" || u.role === "admin";
+                            const sameDepartment = !selectedDepartamentoId || u.departamentoId === selectedDepartamentoId;
+                            return isLeaderOrAdmin && sameDepartment;
+                          }) || [];
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={closeDialog}>
-                Cancelar
+                          return (
+                            <Select 
+                              value={field.value?.toString()} 
+                              onValueChange={(value) => field.onChange(parseInt(value))}
+                              disabled={!selectedDepartamentoId}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={!selectedDepartamentoId ? "Selecione o departamento primeiro" : "Selecione o líder"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableLeaders.length === 0 ? (
+                                  <div className="p-2 text-sm text-muted-foreground">
+                                    Nenhum líder disponível neste departamento
+                                  </div>
+                                ) : (
+                                  availableLeaders.map(user => (
+                                    <SelectItem key={user.id} value={user.id.toString()}>
+                                      {user.name}
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                          );
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => { setIsCreateOpen(false); reset(); }}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Criar Usuário
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Usuários Cadastrados</CardTitle>
+              <CardDescription>
+                {filteredUsers.length} de {users?.length || 0} usuários {searchTerm && '(filtrados)'}
+              </CardDescription>
+            </div>
+            <div className="relative w-80">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou e-mail..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>CPF</TableHead>
+                <TableHead>Cargo</TableHead>
+                <TableHead>Departamento</TableHead>
+                <TableHead>Perfil</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    {searchTerm ? 'Nenhum usuário encontrado com esse filtro' : 'Nenhum usuário cadastrado'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.cpf}</TableCell>
+                  <TableCell>{user.cargo}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {user.departamentoId ? getDepartamentoNome(user.departamentoId) : '-'}
+                  </TableCell>
+                  <TableCell>{getRoleBadge(user.role)}</TableCell>
+                  <TableCell>{getStatusBadge(user.status)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => setConfirmDialog({ open: true, type: 'toggle', userId: user.id, currentStatus: user.status })}
+                        title={user.status === "ativo" ? "Inativar usuário" : "Ativar usuário"}
+                      >
+                        <Power className={`w-4 h-4 ${user.status === "ativo" ? "text-green-600" : "text-gray-400"}`} />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(user)} title="Editar usuário">
+                        <Pencil className="w-4 h-4 text-blue-600" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => setConfirmDialog({ open: true, type: 'delete', userId: user.id })} title="Excluir usuário">
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Página {currentPage} de {totalPages} ({filteredUsers.length} usuários)
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Anterior
               </Button>
               <Button
-                type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
               >
-                {editingUserId ? "Atualizar" : "Criar"}
+                Próxima
+                <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+            </div>
+          </div>
+        )}
+      </Card>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        open={deleteConfirm.open}
-        onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}
-      >
+      {/* Modal de Confirmação */}
+      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false, type: 'delete' })}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-orange-500" />
+              {confirmDialog.type === 'delete' ? 'Confirmar Exclusão' : 'Confirmar Alteração de Status'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o usuário{" "}
-              <strong>{deleteConfirm.userName}</strong>? Esta ação não pode ser
-              desfeita.
+              {confirmDialog.type === 'delete' 
+                ? 'Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.'
+                : `Tem certeza que deseja ${confirmDialog.currentStatus === 'ativo' ? 'inativar' : 'ativar'} este usuário?`
+              }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteConfirm.userId && handleDelete(deleteConfirm.userId)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={confirmDialog.type === 'delete' ? handleDelete : handleToggleStatus}
+              className={confirmDialog.type === 'delete' ? 'bg-red-600 hover:bg-red-700' : ''}
             >
-              Excluir
+              {confirmDialog.type === 'delete' ? 'Excluir' : 'Confirmar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog de Edição */}
+      <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent className="max-w-2xl">
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <DialogHeader>
+              <DialogTitle>Editar Usuário</DialogTitle>
+              <DialogDescription>
+                Atualize os dados do usuário
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-name">Nome Completo *</Label>
+                <Input id="edit-name" {...register("name", { required: true })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-email">Email *</Label>
+                <Input id="edit-email" type="email" {...register("email", { required: true })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-cpf">CPF *</Label>
+                <Input id="edit-cpf" {...register("cpf", { required: true })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-cargo">Cargo *</Label>
+                <Input id="edit-cargo" {...register("cargo", { required: true })} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-role">Perfil *</Label>
+                <Select value={watch("role")} onValueChange={(value) => setValue("role", value as any)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                    <SelectItem value="lider">Líder</SelectItem>
+                    <SelectItem value="colaborador">Colaborador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {(selectedRole === "lider" || selectedRole === "colaborador") && (
+                <>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-departamentoId">Departamento *</Label>
+                    <Select value={watch("departamentoId")?.toString()} onValueChange={(value) => setValue("departamentoId", parseInt(value))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o departamento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departamentos?.filter(d => d.status === "ativo").map(dept => (
+                          <SelectItem key={dept.id} value={dept.id.toString()}>
+                            {dept.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-leaderId">Líder *</Label>
+                    <Select value={watch("leaderId")?.toString()} onValueChange={(value) => setValue("leaderId", parseInt(value))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o líder" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users?.filter(u => (u.role === "lider" || u.role === "admin") && u.id !== editingUser?.id).map(user => (
+                          <SelectItem key={user.id} value={user.id.toString()}>
+                            {user.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => { setEditingUser(null); reset(); }}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Salvar Alterações
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
