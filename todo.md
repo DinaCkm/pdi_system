@@ -170,3 +170,9 @@
 
 ## Melhorias Solicitadas - Visualização de Micros
 - [x] Adicionar coluna "Bloco" na tabela de Micros para mostrar hierarquia completa (Bloco → Macro → Micro)
+
+## Melhorias Solicitadas - Ordenação de Competências
+- [x] Implementar ordenação clicável na tabela de Blocos (por nome e descrição)
+- [x] Implementar ordenação clicável na tabela de Macros (por bloco, nome e descrição)
+- [x] Implementar ordenação clicável na tabela de Micros (por bloco, macro, nome e descrição)
+- [x] Adicionar ícones visuais para indicar direção da ordenação (ascendente/descendente)

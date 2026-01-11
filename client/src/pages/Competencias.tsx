@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Competencias() {
@@ -34,6 +34,15 @@ export default function Competencias() {
   const [searchBloco, setSearchBloco] = useState("");
   const [searchMacro, setSearchMacro] = useState("");
   const [searchMicro, setSearchMicro] = useState("");
+
+  // Estados para ordenação
+  type SortDirection = 'asc' | 'desc' | null;
+  const [blocoSortField, setBlocoSortField] = useState<string | null>(null);
+  const [blocoSortDirection, setBlocoSortDirection] = useState<SortDirection>(null);
+  const [macroSortField, setMacroSortField] = useState<string | null>(null);
+  const [macroSortDirection, setMacroSortDirection] = useState<SortDirection>(null);
+  const [microSortField, setMicroSortField] = useState<string | null>(null);
+  const [microSortDirection, setMicroSortDirection] = useState<SortDirection>(null);
 
   // Queries
   const { data: blocos, isLoading: loadingBlocos } = trpc.competencias.listBlocos.useQuery();
@@ -233,21 +242,90 @@ export default function Competencias() {
     return getBlocoNome(macro.blocoId);
   };
 
-  // Filtrar competências por busca
-  const filteredBlocos = blocos?.filter(bloco =>
-    bloco.nome.toLowerCase().includes(searchBloco.toLowerCase()) ||
-    (bloco.descricao && bloco.descricao.toLowerCase().includes(searchBloco.toLowerCase()))
-  ) || [];
+  // Funções de ordenação
+  const handleSort = (field: string, currentField: string | null, currentDirection: SortDirection, setField: (f: string | null) => void, setDirection: (d: SortDirection) => void) => {
+    if (currentField === field) {
+      // Ciclo: asc -> desc -> null
+      if (currentDirection === 'asc') {
+        setDirection('desc');
+      } else if (currentDirection === 'desc') {
+        setField(null);
+        setDirection(null);
+      }
+    } else {
+      setField(field);
+      setDirection('asc');
+    }
+  };
 
-  const filteredMacros = macros?.filter(macro =>
-    macro.nome.toLowerCase().includes(searchMacro.toLowerCase()) ||
-    (macro.descricao && macro.descricao.toLowerCase().includes(searchMacro.toLowerCase()))
-  ) || [];
+  const sortData = <T extends Record<string, any>>(data: T[], sortField: string | null, sortDirection: SortDirection, getExtraField?: (item: T) => string): T[] => {
+    if (!sortField || !sortDirection) return data;
+    
+    return [...data].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
 
-  const filteredMicros = micros?.filter(micro =>
-    micro.nome.toLowerCase().includes(searchMicro.toLowerCase()) ||
-    (micro.descricao && micro.descricao.toLowerCase().includes(searchMicro.toLowerCase()))
-  ) || [];
+      if (getExtraField && sortField === 'extra') {
+        aValue = getExtraField(a);
+        bValue = getExtraField(b);
+      } else {
+        aValue = a[sortField];
+        bValue = b[sortField];
+      }
+
+      // Tratar valores nulos/undefined
+      if (aValue === null || aValue === undefined) aValue = '';
+      if (bValue === null || bValue === undefined) bValue = '';
+
+      // Comparação
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        const comparison = aValue.toLowerCase().localeCompare(bValue.toLowerCase());
+        return sortDirection === 'asc' ? comparison : -comparison;
+      }
+      
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const getSortIcon = (field: string, currentField: string | null, currentDirection: SortDirection) => {
+    if (currentField !== field) return <ArrowUpDown className="h-4 w-4 ml-1 inline" />;
+    if (currentDirection === 'asc') return <ArrowUp className="h-4 w-4 ml-1 inline" />;
+    if (currentDirection === 'desc') return <ArrowDown className="h-4 w-4 ml-1 inline" />;
+    return <ArrowUpDown className="h-4 w-4 ml-1 inline" />;
+  };
+
+  // Filtrar e ordenar competências
+  const filteredBlocos = sortData(
+    blocos?.filter(bloco =>
+      bloco.nome.toLowerCase().includes(searchBloco.toLowerCase()) ||
+      (bloco.descricao && bloco.descricao.toLowerCase().includes(searchBloco.toLowerCase()))
+    ) || [],
+    blocoSortField,
+    blocoSortDirection
+  );
+
+  const filteredMacros = sortData(
+    macros?.filter(macro =>
+      macro.nome.toLowerCase().includes(searchMacro.toLowerCase()) ||
+      (macro.descricao && macro.descricao.toLowerCase().includes(searchMacro.toLowerCase()))
+    ) || [],
+    macroSortField === 'bloco' ? 'extra' : macroSortField,
+    macroSortDirection,
+    macroSortField === 'bloco' ? (macro: any) => getBlocoNome(macro.blocoId) : undefined
+  );
+
+  const filteredMicros = sortData(
+    micros?.filter(micro =>
+      micro.nome.toLowerCase().includes(searchMicro.toLowerCase()) ||
+      (micro.descricao && micro.descricao.toLowerCase().includes(searchMicro.toLowerCase()))
+    ) || [],
+    microSortField === 'bloco' ? 'extra' : microSortField === 'macro' ? 'extra' : microSortField,
+    microSortDirection,
+    microSortField === 'bloco' ? (micro: any) => getBlocoNomeFromMacro(micro.macroId) : 
+    microSortField === 'macro' ? (micro: any) => getMacroNome(micro.macroId) : undefined
+  );
 
   return (
     <DashboardLayout>
@@ -350,8 +428,18 @@ export default function Competencias() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Descrição</TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50" 
+                          onClick={() => handleSort('nome', blocoSortField, blocoSortDirection, setBlocoSortField, setBlocoSortDirection)}
+                        >
+                          Nome {getSortIcon('nome', blocoSortField, blocoSortDirection)}
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50" 
+                          onClick={() => handleSort('descricao', blocoSortField, blocoSortDirection, setBlocoSortField, setBlocoSortDirection)}
+                        >
+                          Descrição {getSortIcon('descricao', blocoSortField, blocoSortDirection)}
+                        </TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -491,9 +579,24 @@ export default function Competencias() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Bloco</TableHead>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Descrição</TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50" 
+                          onClick={() => handleSort('bloco', macroSortField, macroSortDirection, setMacroSortField, setMacroSortDirection)}
+                        >
+                          Bloco {getSortIcon('bloco', macroSortField, macroSortDirection)}
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50" 
+                          onClick={() => handleSort('nome', macroSortField, macroSortDirection, setMacroSortField, setMacroSortDirection)}
+                        >
+                          Nome {getSortIcon('nome', macroSortField, macroSortDirection)}
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50" 
+                          onClick={() => handleSort('descricao', macroSortField, macroSortDirection, setMacroSortField, setMacroSortDirection)}
+                        >
+                          Descrição {getSortIcon('descricao', macroSortField, macroSortDirection)}
+                        </TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -634,10 +737,30 @@ export default function Competencias() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Bloco</TableHead>
-                        <TableHead>Macro</TableHead>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Descrição</TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50" 
+                          onClick={() => handleSort('bloco', microSortField, microSortDirection, setMicroSortField, setMicroSortDirection)}
+                        >
+                          Bloco {getSortIcon('bloco', microSortField, microSortDirection)}
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50" 
+                          onClick={() => handleSort('macro', microSortField, microSortDirection, setMicroSortField, setMicroSortDirection)}
+                        >
+                          Macro {getSortIcon('macro', microSortField, microSortDirection)}
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50" 
+                          onClick={() => handleSort('nome', microSortField, microSortDirection, setMicroSortField, setMicroSortDirection)}
+                        >
+                          Nome {getSortIcon('nome', microSortField, microSortDirection)}
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-muted/50" 
+                          onClick={() => handleSort('descricao', microSortField, microSortDirection, setMicroSortField, setMicroSortDirection)}
+                        >
+                          Descrição {getSortIcon('descricao', microSortField, microSortDirection)}
+                        </TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
