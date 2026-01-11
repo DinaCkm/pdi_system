@@ -459,3 +459,11 @@
 - [x] Adicionar validação: máximo 5 solicitações totais por ação
 - [x] Testar validações com casos de uso
 - [x] Atualizar mensagens de erro para serem claras e informativas
+
+## Aviso de Limitações no Formulário de Solicitação de Ajuste
+- [x] Criar procedure para buscar estatísticas de solicitações por ação
+- [x] Adicionar Alert/Banner informativo no formulário mostrando solicitações utilizadas
+- [x] Exibir aviso se há solicitação pendente (bloqueando formulário)
+- [x] Mostrar contador visual (ex: "2/5 solicitações utilizadas")
+- [x] Testar exibição do aviso em diferentes cenários
+- [x] Criar componente SolicitarAjusteDialog completo com todos os avisos

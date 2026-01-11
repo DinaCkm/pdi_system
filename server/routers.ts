@@ -1065,6 +1065,25 @@ export const appRouter = router({
       return await db.getPendingAdjustmentRequests();
     }),
 
+    getAdjustmentStats: protectedProcedure
+      .input(z.object({ actionId: z.number() }))
+      .query(async ({ input }) => {
+        const total = await db.countAdjustmentRequestsByAction(input.actionId);
+        const pendentes = await db.getPendingAdjustmentRequestsByAction(input.actionId);
+        
+        return {
+          total,
+          pendentes: pendentes.length,
+          restantes: Math.max(0, 5 - total),
+          podeAdicionar: pendentes.length === 0 && total < 5,
+          motivoBloqueio: pendentes.length > 0 
+            ? 'pending' 
+            : total >= 5 
+            ? 'limit' 
+            : null
+        };
+      }),
+
     suggestWithAI: protectedProcedure
       .input(z.object({
         blocoId: z.number(),
