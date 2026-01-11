@@ -365,3 +365,32 @@
 - [x] PDI "DESENVOLVIMENTO PESSOAL - teste" aparece selecionado no dropdown
 - [x] Formulário completo pronto para preenchimento
 - [x] Fluxo intuitivo e funcional
+
+## Ajustes no Formulário de Criação de Ações
+- [x] Renomear campo "Descrição" para "Ação a ser realizada"
+- [x] Atualizar botão IA para refletir novo nome do campo
+- [ ] Corrigir carregamento de opções no select de Bloco de Competência
+- [ ] Corrigir carregamento de opções no select de Macrocompetência
+- [ ] Corrigir carregamento de opções no select de Microcompetência
+- [ ] Substituir select de PDI por combobox com campo de busca/pesquisa
+- [ ] Testar seleção de PDI com busca (simular 200+ PDIs)
+- [ ] Testar seleção hierárquica de competências
+- [ ] Testar botão IA no campo "Ação a ser realizada"
+
+## Refazer Formulário de Cadastro de Ação (do zero)
+- [x] Atualizar procedure tRPC para retornar todas as microcompetências com bloco e macro
+- [x] Reescrever formulário de criação com select único de microcompetência
+- [x] Adicionar campo de busca no select de PDI
+- [x] Adicionar campo de busca no select de microcompetência
+- [x] Exibir informação de Bloco e Macro após selecionar micro (apenas visual)
+- [x] Manter botão "✨ Sugerir com IA" funcionando
+- [x] Validar prazo dentro do ciclo do PDI
+- [x] Testar formulário completo sem erros
+- [x] Formulário funcionando perfeitamente com selects nativos
+- [x] Campo de busca para PDI operacional
+- [x] Campo de busca para Microcompetência operacional
+- [x] Select único de microcompetência mostrando formato correto
+- [x] Informação de ciclo do PDI exibida corretamente
+- [x] Validação de prazo funcionando
+- [x] Sem erros de TypeScript
+- [x] Sem problemas de z-index

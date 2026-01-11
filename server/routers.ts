@@ -341,6 +341,10 @@ export const appRouter = router({
       return await db.getAllMicros();
     }),
 
+    listAllMicrosWithDetails: protectedProcedure.query(async () => {
+      return await db.getAllMicrosWithMacroAndBloco();
+    }),
+
     getMicroById: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {

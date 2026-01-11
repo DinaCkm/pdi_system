@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Controller, useForm } from "react-hook-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { NovoFormularioAcao } from "./AcoesNovoFormulario";
 
 type AcaoFormData = {
   pdiId: number;
@@ -351,7 +352,7 @@ export default function Acoes() {
                   {getStatusBadge(acao.status)}
                 </div>
                 <CardDescription className="line-clamp-2">
-                  {acao.descricao || "Sem descrição"}
+                  {acao.descricao || "Ação não especificada"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -385,8 +386,15 @@ export default function Acoes() {
         </div>
       )}
 
-      {/* Dialog de Criação */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      {/* Novo Formulário de Criação */}
+      <NovoFormularioAcao 
+        open={showCreateDialog} 
+        onOpenChange={setShowCreateDialog}
+        pdiIdProp={pdiIdFromUrl ? parseInt(pdiIdFromUrl) : undefined}
+      />
+
+      {/* Dialog de Criação ANTIGO - REMOVER */}
+      <Dialog open={false} onOpenChange={setShowCreateDialog}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Criar Nova Ação</DialogTitle>
@@ -409,7 +417,7 @@ export default function Acoes() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o PDI" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
                       {pdis?.map((pdi) => (
                         <SelectItem key={pdi.id} value={pdi.id.toString()}>
                           {pdi.titulo} - {pdi.colaborador?.nome || "Colaborador desconhecido"}
@@ -447,7 +455,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o bloco" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
                         {blocosCompetencias?.map((bloco) => (
                           <SelectItem key={bloco.id} value={bloco.id.toString()}>
                             {bloco.nome}
@@ -472,12 +480,12 @@ export default function Acoes() {
                         field.onChange(parseInt(value));
                         setValue("microCompetenciaId", 0);
                       }}
-                      disabled={!selectedBlocoId}
-                    >
+                    disabled={!selectedBlocoId}
+                  >
                       <SelectTrigger>
                         <SelectValue placeholder={selectedBlocoId ? "Selecione a macrocompetência" : "Selecione um bloco primeiro"} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
                         {macroCompetencias?.map((macro) => (
                           <SelectItem key={macro.id} value={macro.id.toString()}>
                             {macro.nome}
@@ -499,12 +507,12 @@ export default function Acoes() {
                     <Select
                       value={field.value?.toString()}
                       onValueChange={(value) => field.onChange(parseInt(value))}
-                      disabled={!selectedMacroId}
-                    >
+                    disabled={!selectedMacroId}
+                  >
                       <SelectTrigger>
                         <SelectValue placeholder={selectedMacroId ? "Selecione a microcompetência" : "Selecione uma macrocompetência primeiro"} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
                         {microCompetencias?.map((micro) => (
                           <SelectItem key={micro.id} value={micro.id.toString()}>
                             {micro.nome}
@@ -544,12 +552,12 @@ export default function Acoes() {
                     </>
                   ) : (
                     <>
-                      ✨ Sugerir Nome e Descrição com IA
+                      ✨ Sugerir Nome e Ação com IA
                     </>
                   )}
                 </Button>
                 <p className="text-sm text-muted-foreground mt-2 text-center">
-                  A IA vai gerar sugestões baseadas nas competências selecionadas
+                  A IA vai gerar sugestões de nome e ação baseadas nas competências selecionadas
                 </p>
               </div>
             )}
@@ -570,14 +578,14 @@ export default function Acoes() {
             </div>
 
             <div>
-              <Label htmlFor="descricao">Descrição</Label>
+              <Label htmlFor="descricao">Ação a ser realizada</Label>
               <Controller
                 name="descricao"
                 control={control}
                 render={({ field }) => (
                   <Textarea
                     {...field}
-                    placeholder="Descreva os detalhes da ação..."
+                    placeholder="Descreva a ação que será realizada..."
                     rows={3}
                   />
                 )}
@@ -636,7 +644,7 @@ export default function Acoes() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o PDI" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
                       {pdis?.map((pdi) => (
                         <SelectItem key={pdi.id} value={pdi.id.toString()}>
                           {pdi.titulo} - {pdi.colaborador?.nome || "Colaborador desconhecido"}
@@ -669,7 +677,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o bloco" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
                         {blocosCompetencias?.map((bloco) => (
                           <SelectItem key={bloco.id} value={bloco.id.toString()}>
                             {bloco.nome}
@@ -694,12 +702,12 @@ export default function Acoes() {
                         field.onChange(parseInt(value));
                         setEditValue("microCompetenciaId", 0);
                       }}
-                      disabled={!editSelectedBlocoId}
-                    >
+                    disabled={!editSelectedBlocoId}
+                  >
                       <SelectTrigger>
                         <SelectValue placeholder={editSelectedBlocoId ? "Selecione a macrocompetência" : "Selecione um bloco primeiro"} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
                         {editMacroCompetencias?.map((macro) => (
                           <SelectItem key={macro.id} value={macro.id.toString()}>
                             {macro.nome}
@@ -721,12 +729,12 @@ export default function Acoes() {
                     <Select
                       value={field.value?.toString()}
                       onValueChange={(value) => field.onChange(parseInt(value))}
-                      disabled={!editSelectedMacroId}
-                    >
+                    disabled={!editSelectedMacroId}
+                  >
                       <SelectTrigger>
                         <SelectValue placeholder={editSelectedMacroId ? "Selecione a microcompetência" : "Selecione uma macrocompetência primeiro"} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
                         {editMicroCompetencias?.map((micro) => (
                           <SelectItem key={micro.id} value={micro.id.toString()}>
                             {micro.nome}
@@ -755,14 +763,14 @@ export default function Acoes() {
             </div>
 
             <div>
-              <Label htmlFor="descricao">Descrição</Label>
+              <Label htmlFor="descricao">Ação a ser realizada</Label>
               <Controller
                 name="descricao"
                 control={editControl}
                 render={({ field }) => (
                   <Textarea
                     {...field}
-                    placeholder="Descreva os detalhes da ação..."
+                    placeholder="Descreva a ação que será realizada..."
                     rows={3}
                   />
                 )}
@@ -827,8 +835,8 @@ export default function Acoes() {
               </div>
 
               <div>
-                <Label className="text-muted-foreground">Descrição</Label>
-                <p className="mt-1">{selectedAcao.descricao || "Sem descrição"}</p>
+                <Label className="text-muted-foreground">Ação a ser realizada</Label>
+                <p className="mt-1">{selectedAcao.descricao || "Não especificada"}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

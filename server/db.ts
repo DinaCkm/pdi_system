@@ -769,3 +769,22 @@ export async function markAllNotificationsAsRead(userId: number) {
     eq(notifications.lida, false)
   ));
 }
+
+export async function getAllMicrosWithMacroAndBloco() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select({
+      id: competenciasMicros.id,
+      nome: competenciasMicros.nome,
+      macroId: competenciasMicros.macroId,
+      macroNome: competenciasMacros.nome,
+      blocoId: competenciasMacros.blocoId,
+      blocoNome: competenciasBlocos.nome,
+    })
+    .from(competenciasMicros)
+    .innerJoin(competenciasMacros, eq(competenciasMicros.macroId, competenciasMacros.id))
+    .innerJoin(competenciasBlocos, eq(competenciasMacros.blocoId, competenciasBlocos.id))
+    .orderBy(asc(competenciasMicros.nome));
+}
