@@ -52,31 +52,11 @@ export default function ConfigurarUsuario() {
     if (!userId) return;
 
     try {
-      // Validações
-      if ((formData.role === "lider" || formData.role === "colaborador") && !formData.departamentoId) {
-        toast.error(`${formData.role === "lider" ? "Líderes" : "Colaboradores"} devem estar vinculados a um departamento.`);
-        return;
-      }
-
-      // Buscar líder automaticamente do departamento
-      let leaderIdToSet: number | null = null;
-      if (formData.departamentoId) {
-        const dept = departamentos?.find(d => d.id === formData.departamentoId);
-        leaderIdToSet = dept?.leaderId || null;
-        
-        // Apenas COLABORADORES precisam de líder
-        // Líderes podem não ter líder (topo da hierarquia)
-        if (!leaderIdToSet && formData.role === "colaborador") {
-          toast.error("O departamento selecionado não possui um líder definido. Configure o líder do departamento primeiro.");
-          return;
-        }
-      }
-
+      // Apenas salvar o perfil
+      // Departamento e líder serão definidos na página de Departamentos
       await updateMutation.mutateAsync({
         id: userId,
         role: formData.role as any,
-        departamentoId: formData.departamentoId,
-        leaderId: leaderIdToSet,
       });
 
       toast.success("Configuração salva com sucesso!");
@@ -187,62 +167,12 @@ export default function ConfigurarUsuario() {
               </div>
             </div>
 
-            {/* Departamento (condicional) */}
-            {(formData.role === "lider" || formData.role === "colaborador") && (
-              <div className="space-y-2">
-                <Label htmlFor="departamento">Departamento *</Label>
-                <select
-                  id="departamento"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  value={formData.departamentoId?.toString() || ""}
-                  onChange={(e) => {
-                    const newDeptId = e.target.value ? parseInt(e.target.value) : null;
-                    setFormData({
-                      ...formData,
-                      departamentoId: newDeptId,
-                      leaderId: null, // Resetar líder ao mudar departamento
-                    });
-                  }}
-                  required
-                >
-                  <option value="">Selecione um departamento</option>
-                  {departamentos?.filter(d => d.status === "ativo").map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.nome}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-sm text-muted-foreground">
-                  {formData.role === "lider" ? "Líderes" : "Colaboradores"} devem estar vinculados a um departamento
-                </p>
-              </div>
-            )}
-
-            {/* Líder (automático pelo departamento) */}
-            {(formData.role === "lider" || formData.role === "colaborador") && formData.departamentoId && (
-              <div className="space-y-2">
-                <Label>Líder do Departamento</Label>
-                <div className="flex h-10 items-center rounded-md border border-input bg-muted px-3 py-2 text-sm">
-                  {(() => {
-                    const dept = departamentos?.find(d => d.id === formData.departamentoId);
-                    if (!dept?.leaderId) {
-                      return <span className="text-muted-foreground italic">Departamento sem líder definido</span>;
-                    }
-                    const leader = users?.find(u => u.id === dept.leaderId);
-                    return leader ? (
-                      <span>{leader.name} ({leader.role === "admin" ? "Admin" : "Líder"})</span>
-                    ) : (
-                      <span className="text-muted-foreground italic">Líder não encontrado</span>
-                    );
-                  })()}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {formData.role === "colaborador" 
-                    ? "🔒 Líder é definido automaticamente pelo departamento"
-                    : "🔒 Líderes podem não ter líder (topo da hierarquia)"}
-                </p>
-              </div>
-            )}
+            {/* Informação sobre departamento */}
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <p className="text-sm text-blue-900">
+                📌 <strong>Próximo passo:</strong> Após definir o perfil, vá em <strong>Departamentos</strong> para vincular este usuário a um departamento e definir hierarquia.
+              </p>
+            </div>
 
             {/* Botões */}
             <div className="flex gap-4 pt-4">
