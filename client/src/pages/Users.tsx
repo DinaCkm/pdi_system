@@ -39,6 +39,8 @@ export default function Users() {
 
   const { register, handleSubmit, reset, watch, setValue } = useForm<UserFormData>();
   const selectedRole = watch("role");
+  const selectedDepartamentoId = watch("departamentoId");
+  const selectedLeaderId = watch("leaderId");
 
   const onSubmit = async (data: UserFormData) => {
     try {
@@ -205,7 +207,10 @@ export default function Users() {
                   <>
                     <div className="grid gap-2">
                       <Label htmlFor="departamentoId">Departamento *</Label>
-                      <Select onValueChange={(value) => setValue("departamentoId", parseInt(value))}>
+                      <Select 
+                        value={selectedDepartamentoId?.toString()} 
+                        onValueChange={(value) => setValue("departamentoId", parseInt(value))}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o departamento" />
                         </SelectTrigger>
@@ -220,7 +225,10 @@ export default function Users() {
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="leaderId">Líder *</Label>
-                      <Select onValueChange={(value) => setValue("leaderId", parseInt(value))}>
+                      <Select 
+                        value={selectedLeaderId?.toString()} 
+                        onValueChange={(value) => setValue("leaderId", parseInt(value))}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione o líder" />
                         </SelectTrigger>
