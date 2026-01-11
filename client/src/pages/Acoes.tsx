@@ -269,15 +269,22 @@ export default function Acoes() {
   }, [acoes, searchTerm, filterPDI, filterStatus, filterUsuario, filterLider, filterDepartamento, filterBloco, filterMacro, filterMicro]);
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
-      pendente: { variant: "secondary", label: "Pendente" },
-      em_andamento: { variant: "default", label: "Em Andamento" },
-      concluida: { variant: "outline", label: "Concluída" },
+    const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string, className?: string }> = {
+      pendente_aprovacao_lider: { variant: "secondary", label: "Pendente Aprovação", className: "bg-orange-100 text-orange-700 border-orange-300" },
+      aprovada_lider: { variant: "outline", label: "Aprovada pelo Líder", className: "bg-green-50 text-green-700 border-green-300" },
+      reprovada_lider: { variant: "destructive", label: "Reprovada pelo Líder" },
+      em_andamento: { variant: "default", label: "Em Andamento", className: "bg-blue-500 text-white" },
+      em_discussao: { variant: "outline", label: "Em Discussão", className: "bg-yellow-50 text-yellow-700 border-yellow-300" },
+      evidencia_enviada: { variant: "outline", label: "Evidência Enviada", className: "bg-purple-50 text-purple-700 border-purple-300" },
+      evidencia_aprovada: { variant: "outline", label: "Evidência Aprovada", className: "bg-green-50 text-green-700 border-green-300" },
+      evidencia_reprovada: { variant: "destructive", label: "Evidência Reprovada" },
+      correcao_solicitada: { variant: "outline", label: "Correção Solicitada", className: "bg-orange-50 text-orange-700 border-orange-300" },
+      concluida: { variant: "outline", label: "Concluída", className: "bg-gray-100 text-gray-700 border-gray-300" },
+      vencida: { variant: "destructive", label: "Vencida" },
       cancelada: { variant: "destructive", label: "Cancelada" },
-      em_discussao: { variant: "outline", label: "Em Discussão" },
     };
-    const config = variants[status] || variants.pendente;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const config = variants[status] || variants.pendente_aprovacao_lider;
+    return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
   };
 
   if (isLoading) {

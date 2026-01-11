@@ -437,3 +437,17 @@
 - [x] Aplicar mesma correção para blocos e microcompetências
 - [x] Aplicar em create, update e delete de todas as competências
 - [ ] Testar criação e verificar se lista atualiza automaticamente
+
+## Correção de Auto-Atualização de Listas
+- [x] Corrigir problema de auto-atualização nas listas de Blocos após criação
+- [x] Corrigir problema de auto-atualização nas listas de Macros após criação
+- [x] Corrigir problema de auto-atualização nas listas de Micros após criação
+- [x] Implementar setTimeout antes de refetch para resolver problema de timing
+
+## Bug Crítico - Status Inicial de Ações
+- [x] Investigar por que ações estão sendo criadas com status "em_andamento" ao invés de "pendente_aprovacao_lider"
+- [x] Corrigir status inicial no backend (procedure de criação)
+- [x] Corrigir status inicial no frontend (formulário de criação)
+- [x] Validar que ações novas sempre começam com "pendente_aprovacao_lider"
+- [x] Corrigir mapeamento de status no frontend para reconhecer todos os 12 status
+- [x] Corrigir status da "Ação Teste" no banco de dados
