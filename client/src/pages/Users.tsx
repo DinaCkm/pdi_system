@@ -120,6 +120,11 @@ export default function Users() {
     );
   };
 
+  const getDepartamentoNome = (departamentoId: number) => {
+    const dept = departamentos?.find(d => d.id === departamentoId);
+    return dept?.nome || "N/A";
+  };
+
   // Filtrar usuários por busca
   const filteredUsers = users?.filter(user => 
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -273,6 +278,7 @@ export default function Users() {
                 <TableHead>Email</TableHead>
                 <TableHead>CPF</TableHead>
                 <TableHead>Cargo</TableHead>
+                <TableHead>Departamento</TableHead>
                 <TableHead>Perfil</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -281,7 +287,7 @@ export default function Users() {
             <TableBody>
               {paginatedUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     {searchTerm ? 'Nenhum usuário encontrado com esse filtro' : 'Nenhum usuário cadastrado'}
                   </TableCell>
                 </TableRow>
@@ -292,6 +298,9 @@ export default function Users() {
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.cpf}</TableCell>
                   <TableCell>{user.cargo}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {user.departamentoId ? getDepartamentoNome(user.departamentoId) : '-'}
+                  </TableCell>
                   <TableCell>{getRoleBadge(user.role)}</TableCell>
                   <TableCell>{getStatusBadge(user.status)}</TableCell>
                   <TableCell className="text-right">

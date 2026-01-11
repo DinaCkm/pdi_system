@@ -10,6 +10,7 @@ import Setup from "./pages/Setup";
 import Login from "./pages/Login";
 import Users from "./pages/Users";
 import Competencias from "./pages/Competencias";
+import Departamentos from "./pages/Departamentos";
 import Ciclos from "./pages/Ciclos";
 import PDIs from "./pages/PDIs";
 import MinhasPendencias from "./pages/MinhasPendencias";
@@ -32,6 +33,12 @@ function Router() {  return (
       <Route path={"/competencias"}>
         <DashboardLayout>
           <Competencias />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/departamentos"}>
+        <DashboardLayout>
+          <Departamentos />
         </DashboardLayout>
       </Route>
       

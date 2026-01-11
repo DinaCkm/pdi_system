@@ -212,3 +212,19 @@
 - [x] Verificar se há problema com o componente Select do shadcn/ui
 - [x] Adicionar value prop no Select de criação para tornar componente controlado
 - [x] Correção aplicada: Select agora é controlado com value={selectedRole}
+
+## Implementação da Página de Departamentos
+- [x] Verificar procedures tRPC de departamentos no backend
+- [x] Criar página /departamentos com layout DashboardLayout
+- [x] Implementar listagem de departamentos com busca e filtros
+- [x] Implementar formulário de criação de departamento
+- [x] Implementar formulário de edição de departamento
+- [x] Implementar exclusão de departamento com modal de confirmação
+- [x] Implementar toggle de status (ativo/inativo)
+- [x] Adicionar rota /departamentos no App.tsx
+- [x] Adicionar link de navegação no DashboardLayout
+
+## Melhoria na Tabela de Usuários
+- [x] Adicionar coluna "Departamento" na tabela de usuários
+- [x] Exibir nome do departamento entre Cargo e Perfil
+- [x] Criar função getDepartamentoNome para buscar nome do departamento
