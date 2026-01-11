@@ -792,7 +792,25 @@ export const appRouter = router({
           });
         }
 
-        // 3. Criar solicitação de ajuste
+        // 3. VALIDAÇÃO: Verificar se já existe solicitação pendente
+        const solicitacoesPendentes = await db.getPendingAdjustmentRequestsByAction(input.actionId);
+        if (solicitacoesPendentes.length > 0) {
+          throw new TRPCError({ 
+            code: 'BAD_REQUEST', 
+            message: 'Já existe uma solicitação de ajuste pendente para esta ação. Aguarde a avaliação do Admin antes de solicitar um novo ajuste.' 
+          });
+        }
+
+        // 4. VALIDAÇÃO: Verificar limite total de solicitações (máximo 5)
+        const totalSolicitacoes = await db.countAdjustmentRequestsByAction(input.actionId);
+        if (totalSolicitacoes >= 5) {
+          throw new TRPCError({ 
+            code: 'BAD_REQUEST', 
+            message: 'Limite de 5 solicitações de ajuste atingido para esta ação. Não é possível solicitar mais ajustes.' 
+          });
+        }
+
+        // 5. Criar solicitação de ajuste
         const solicitacao = await db.createAdjustmentRequest({
           actionId: input.actionId,
           solicitanteId: ctx.user!.id,
@@ -802,10 +820,10 @@ export const appRouter = router({
           status: 'pendente',
         });
 
-        // 4. Atualizar status da ação para "em_discussao"
+        // 6. Atualizar status da ação para "em_discussao"
         await db.updateAction(input.actionId, { status: 'em_discussao' });
 
-        // 5. Registrar no histórico
+        // 7. Registrar no histórico
         await db.createAcaoHistorico({
           actionId: input.actionId,
           campo: 'status',
@@ -816,7 +834,7 @@ export const appRouter = router({
           solicitacaoAjusteId: solicitacao.id,
         });
 
-        // 6. Notificar Admin
+        // 8. Notificar Admin
         await db.createNotification({
           destinatarioId: acao.createdBy,
           tipo: 'solicitacao_ajuste',
@@ -825,7 +843,7 @@ export const appRouter = router({
           referenciaId: input.actionId,
         });
 
-        // 7. Notificar Líder (informativo)
+        // 9. Notificar Líder (informativo)
         const colaborador = await db.getUserById(pdi.colaboradorId);
         if (colaborador && colaborador.leaderId) {
           await db.createNotification({

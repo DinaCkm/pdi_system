@@ -451,3 +451,11 @@
 - [x] Validar que ações novas sempre começam com "pendente_aprovacao_lider"
 - [x] Corrigir mapeamento de status no frontend para reconhecer todos os 12 status
 - [x] Corrigir status da "Ação Teste" no banco de dados
+
+## Validação de Solicitações de Ajuste
+- [x] Criar função countAdjustmentRequestsByAction no db.ts
+- [x] Criar função getPendingAdjustmentRequestsByAction no db.ts
+- [x] Adicionar validação: apenas 1 solicitação pendente por vez
+- [x] Adicionar validação: máximo 5 solicitações totais por ação
+- [x] Testar validações com casos de uso
+- [x] Atualizar mensagens de erro para serem claras e informativas

@@ -765,6 +765,28 @@ export async function updateAdjustmentRequest(id: number, data: Partial<{
   await db.update(adjustmentRequests).set(data).where(eq(adjustmentRequests.id, id));
 }
 
+export async function countAdjustmentRequestsByAction(actionId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const result = await db.select().from(adjustmentRequests)
+    .where(eq(adjustmentRequests.actionId, actionId));
+  
+  return result.length;
+}
+
+export async function getPendingAdjustmentRequestsByAction(actionId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(adjustmentRequests)
+    .where(and(
+      eq(adjustmentRequests.actionId, actionId),
+      eq(adjustmentRequests.status, "pendente")
+    ))
+    .orderBy(desc(adjustmentRequests.createdAt));
+}
+
 // ============= FUNÇÕES AUXILIARES PARA NOTIFICAÇÕES =============
 
 export async function getUnreadNotificationsByUserId(userId: number) {
