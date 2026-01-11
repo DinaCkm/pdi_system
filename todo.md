@@ -128,3 +128,26 @@
 ## Bugs Reportados
 - [x] Página de setup não está aparecendo no primeiro acesso (resolvido: precisa publicar)
 - [x] Investigar redirecionamento Home → Setup (funcionando corretamente)
+
+## Auditoria de Setup Inicial
+- [ ] Verificar se rota /setup está acessível
+- [ ] Testar criação de primeiro usuário via formulário
+- [ ] Verificar se login automático funciona após criar admin
+- [ ] Confirmar que /setup fica bloqueado após primeiro admin
+- [ ] Testar fluxo completo: setup → login → dashboard
+
+## Próximas Implementações (Ordem da Arquitetura)
+- [ ] Criar página de gestão de Departamentos (CRUD completo)
+- [ ] Atualizar página de usuários para incluir seleção de departamento
+- [x] Criar páginas de gestão de Competências (Bloco, Macro, Micro)
+- [ ] Criar página de gestão de Ciclos Semestrais
+- [ ] Criar página de gestão de PDIs
+- [ ] Criar página de gestão de Ações
+- [ ] Implementar interface de aprovação para Líder
+- [ ] Implementar interface de execução para Colaborador
+- [ ] Implementar sistema de evidências com upload S3
+- [ ] Implementar avaliação de evidências pelo Admin
+- [ ] Implementar sistema de solicitação de ajustes
+- [ ] Implementar job automático de vencimento
+- [ ] Implementar dashboards específicos por perfil
+- [ ] Implementar relatórios de acompanhamento

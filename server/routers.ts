@@ -209,6 +209,10 @@ export const appRouter = router({
         return await db.getMacrosByBlocoId(input.blocoId);
       }),
 
+    listAllMacros: protectedProcedure.query(async () => {
+      return await db.getAllMacros();
+    }),
+
     getMacroById: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
@@ -252,6 +256,10 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getMicrosByMacroId(input.macroId);
       }),
+
+    listAllMicros: protectedProcedure.query(async () => {
+      return await db.getAllMicros();
+    }),
 
     getMicroById: protectedProcedure
       .input(z.object({ id: z.number() }))

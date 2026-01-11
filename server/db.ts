@@ -256,6 +256,12 @@ export async function deleteBloco(id: number) {
   await db.delete(competenciasBlocos).where(eq(competenciasBlocos.id, id));
 }
 
+export async function getAllMacros() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(competenciasMacros).orderBy(asc(competenciasMacros.nome));
+}
+
 export async function getMacrosByBlocoId(blocoId: number) {
   const db = await getDb();
   if (!db) return [];
@@ -289,6 +295,12 @@ export async function deleteMacro(id: number) {
   if (!db) throw new Error("Database not available");
   
   await db.delete(competenciasMacros).where(eq(competenciasMacros.id, id));
+}
+
+export async function getAllMicros() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(competenciasMicros).orderBy(asc(competenciasMicros.nome));
 }
 
 export async function getMicrosByMacroId(macroId: number) {
