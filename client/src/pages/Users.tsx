@@ -42,18 +42,15 @@ export default function Users() {
   const selectedDepartamentoId = watch("departamentoId");
   const selectedLeaderId = watch("leaderId");
 
-  // Resetar líder quando departamento mudar (apenas em criação, não em edição)
+  // Resetar líder quando departamento mudar
   useEffect(() => {
-    // Não executar durante edição para evitar conflitos com Select aberto
-    if (editingUser) return;
-    
     if (selectedDepartamentoId && selectedLeaderId) {
       const leader = users?.find(u => u.id === selectedLeaderId);
       if (leader && leader.departamentoId !== selectedDepartamentoId) {
         setValue("leaderId", undefined as any);
       }
     }
-  }, [selectedDepartamentoId, selectedLeaderId, users, setValue, editingUser]);
+  }, [selectedDepartamentoId, selectedLeaderId, users, setValue]);
 
   const onSubmit = async (data: UserFormData) => {
     try {
