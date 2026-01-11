@@ -3,6 +3,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, adminOrLeaderProcedure, router } from "./_core/customTrpc";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
+import { invokeLLM } from "./_core/llm";
 import { authRouter } from "./authRouters";
 
 export const appRouter = router({
@@ -1030,6 +1031,77 @@ export const appRouter = router({
     getPendingAdjustments: adminProcedure.query(async () => {
       return await db.getPendingAdjustmentRequests();
     }),
+
+    suggestWithAI: protectedProcedure
+      .input(z.object({
+        blocoId: z.number(),
+        macroId: z.number(),
+        microId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        // Buscar informações das competências
+        const bloco = await db.getBlocoById(input.blocoId);
+        const macro = await db.getMacroById(input.macroId);
+        const micro = await db.getMicroById(input.microId);
+
+        if (!bloco || !macro || !micro) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Competência não encontrada' });
+        }
+
+        // Chamar LLM para gerar sugestões
+        const prompt = `Você é um especialista em desenvolvimento profissional e gestão de competências.
+
+Baseado na seguinte hierarquia de competências:
+- Bloco: ${bloco.nome} - ${bloco.descricao || 'Sem descrição'}
+- Macrocompetência: ${macro.nome} - ${macro.descricao || 'Sem descrição'}
+- Microcompetência: ${micro.nome} - ${micro.descricao || 'Sem descrição'}
+
+Gere uma sugestão de ação de desenvolvimento profissional que ajude o colaborador a desenvolver essa microcompetência.
+
+A sugestão deve incluir:
+1. Um nome curto e objetivo para a ação (máximo 80 caracteres)
+2. Uma descrição detalhada da ação (2-3 parágrafos) explicando:
+   - O que fazer
+   - Como fazer
+   - Resultados esperados
+
+Formato de resposta (JSON):
+{
+  "nome": "Nome da ação",
+  "descricao": "Descrição detalhada da ação"
+}`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "Você é um especialista em desenvolvimento profissional. Sempre responda em JSON válido." },
+            { role: "user", content: prompt },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "action_suggestion",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  nome: { type: "string", description: "Nome curto da ação" },
+                  descricao: { type: "string", description: "Descrição detalhada da ação" },
+                },
+                required: ["nome", "descricao"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const content = response.choices[0].message.content;
+        if (!content || typeof content !== 'string') {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Falha ao gerar sugestão' });
+        }
+
+        const suggestion = JSON.parse(content);
+        return suggestion;
+      }),
 
     delete: adminProcedure
       .input(z.object({ id: z.number() }))

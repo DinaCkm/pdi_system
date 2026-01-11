@@ -293,3 +293,44 @@
 - [x] Implementar página de PDI se não existir
 - [x] Corrigir erros se página existir mas não carregar
 - [x] Página completa de gestão de PDIs implementada com sucesso
+
+## Página de Ações com Seleção Hierárquica de Competências
+- [x] Verificar página de Ações existente
+- [x] Implementar seleção hierárquica de competências (Bloco → Macro → Micro)
+- [x] Adicionar validação de prazo dentro do ciclo do PDI
+- [x] Implementar filtros por PDI e status
+- [x] Adicionar busca por nome de ação
+- [x] Implementar criação de nova ação
+- [x] Implementar edição de ação existente
+- [x] Implementar exclusão de ação com confirmação
+- [x] Adicionar visualização detalhada de ação
+- [x] Atualizar getAllActions no db.ts com joins para PDI e competências
+- [x] Registrar rota /acoes no App.tsx
+- [x] Testar funcionalidade completa no navegador
+
+## Botão "✨ Sugerir com IA" para Ações
+- [x] Adicionar botão "Sugerir com IA" no formulário de criação de ação
+- [x] Implementar procedure tRPC para gerar sugestões com LLM
+- [x] Gerar nome da ação baseado nas competências selecionadas
+- [x] Gerar descrição detalhada da ação baseado nas competências
+- [x] Adicionar loading state durante geração
+- [x] Permitir edição das sugestões geradas
+- [x] Adicionar tratamento de erros
+- [x] Botão aparece apenas após selecionar as 3 competências
+- [x] Preenchimento automático dos campos nome e descrição
+- [x] Toast de sucesso/erro após geração
+
+## Painel de Solicitações de Ajuste para Admin
+- [x] Criar página de pendências (/pendencias)
+- [x] Listar todas as solicitações pendentes
+- [x] Mostrar campos originais vs campos propostos
+- [x] Exibir histórico de alterações
+- [x] Implementar botão de aprovar solicitação
+- [x] Implementar botão de reprovar solicitação com motivo
+- [x] Card de solicitação com informações completas (ID, ação, solicitante, justificativa)
+- [x] Badge de status "Pendente" com ícone
+- [x] Modal de detalhes com comparação lado a lado
+- [x] Dialog de confirmação de aprovação
+- [x] Dialog de reprovação com campo de justificativa obrigatório
+- [x] Loading states e tratamento de erros
+- [x] Estado vazio com mensagem amigável

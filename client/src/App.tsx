@@ -13,6 +13,7 @@ import Competencias from "./pages/Competencias";
 import Departamentos from "./pages/Departamentos";
 import Ciclos from "./pages/Ciclos";
 import PDIs from "./pages/PDIs";
+import Acoes from "./pages/Acoes";
 import MinhasPendencias from "./pages/MinhasPendencias";
 import Relatorios from "./pages/Relatorios";
 
@@ -51,6 +52,12 @@ function Router() {  return (
       <Route path={"/pdis"}>
         <DashboardLayout>
           <PDIs />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/acoes"}>
+        <DashboardLayout>
+          <Acoes />
         </DashboardLayout>
       </Route>
       

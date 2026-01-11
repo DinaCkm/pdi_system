@@ -422,7 +422,36 @@ export async function getUnreadNotificationsCount(userId: number) {
 export async function getAllPDIs() {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(pdis).orderBy(desc(pdis.createdAt));
+  
+  const result = await db
+    .select({
+      id: pdis.id,
+      colaboradorId: pdis.colaboradorId,
+      cicloId: pdis.cicloId,
+      titulo: pdis.titulo,
+      objetivoGeral: pdis.objetivoGeral,
+      status: pdis.status,
+      createdAt: pdis.createdAt,
+      updatedAt: pdis.updatedAt,
+      createdBy: pdis.createdBy,
+      colaborador: {
+        id: users.id,
+        nome: users.name,
+        email: users.email,
+      },
+      ciclo: {
+        id: ciclos.id,
+        nome: ciclos.nome,
+        dataInicio: ciclos.dataInicio,
+        dataFim: ciclos.dataFim,
+      },
+    })
+    .from(pdis)
+    .leftJoin(users, eq(pdis.colaboradorId, users.id))
+    .leftJoin(ciclos, eq(pdis.cicloId, ciclos.id))
+    .orderBy(desc(pdis.createdAt));
+  
+  return result;
 }
 
 export async function getPDIById(id: number) {
@@ -483,7 +512,47 @@ export async function deletePDI(id: number) {
 export async function getAllActions() {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(actions).orderBy(desc(actions.createdAt));
+  
+  const result = await db
+    .select({
+      id: actions.id,
+      pdiId: actions.pdiId,
+      blocoCompetenciaId: actions.blocoId,
+      macroCompetenciaId: actions.macroId,
+      microCompetenciaId: actions.microId,
+      nome: actions.nome,
+      descricao: actions.descricao,
+      prazo: actions.prazo,
+      status: actions.status,
+      createdAt: actions.createdAt,
+      updatedAt: actions.updatedAt,
+      createdBy: actions.createdBy,
+      pdi: {
+        id: pdis.id,
+        titulo: pdis.titulo,
+        colaboradorId: pdis.colaboradorId,
+      },
+      blocoCompetencia: {
+        id: competenciasBlocos.id,
+        nome: competenciasBlocos.nome,
+      },
+      macroCompetencia: {
+        id: competenciasMacros.id,
+        nome: competenciasMacros.nome,
+      },
+      microCompetencia: {
+        id: competenciasMicros.id,
+        nome: competenciasMicros.nome,
+      },
+    })
+    .from(actions)
+    .leftJoin(pdis, eq(actions.pdiId, pdis.id))
+    .leftJoin(competenciasBlocos, eq(actions.blocoId, competenciasBlocos.id))
+    .leftJoin(competenciasMacros, eq(actions.macroId, competenciasMacros.id))
+    .leftJoin(competenciasMicros, eq(actions.microId, competenciasMicros.id))
+    .orderBy(desc(actions.createdAt));
+  
+  return result;
 }
 
 export async function getActionById(id: number) {
