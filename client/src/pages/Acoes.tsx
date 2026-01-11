@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +24,12 @@ type AcaoFormData = {
 };
 
 export default function Acoes() {
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  // Ler query params da URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const pdiIdFromUrl = urlParams.get('pdiId');
+  const acaoIdFromUrl = urlParams.get('acaoId');
+  
+  const [showCreateDialog, setShowCreateDialog] = useState(!!pdiIdFromUrl);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -37,6 +42,29 @@ export default function Acoes() {
   const { data: acoes, refetch, isLoading } = trpc.actions.list.useQuery();
   const { data: pdis } = trpc.pdis.list.useQuery();
   const { data: blocosCompetencias } = trpc.competencias.listBlocos.useQuery();
+  
+  // Efeito para abrir modal de criação com PDI pré-selecionado
+  useEffect(() => {
+    if (pdiIdFromUrl && pdis) {
+      setShowCreateDialog(true);
+      setValue('pdiId', parseInt(pdiIdFromUrl));
+      // Limpar query param da URL
+      window.history.replaceState({}, '', '/acoes');
+    }
+  }, [pdiIdFromUrl, pdis]);
+  
+  // Efeito para abrir modal de visualização de ação específica
+  useEffect(() => {
+    if (acaoIdFromUrl && acoes) {
+      const acao = acoes.find((a: any) => a.id === parseInt(acaoIdFromUrl));
+      if (acao) {
+        setSelectedAcao(acao);
+        setShowViewDialog(true);
+        // Limpar query param da URL
+        window.history.replaceState({}, '', '/acoes');
+      }
+    }
+  }, [acaoIdFromUrl, acoes]);
 
   const suggestWithAIMutation = trpc.actions.suggestWithAI.useMutation({
     onSuccess: (data) => {

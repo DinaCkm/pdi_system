@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Plus, Eye, Edit, Trash2, FileText, Target } from "lucide-react";
+import { Loader2, Plus, Eye, Edit, Trash2, FileText, Target, CheckSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Controller, useForm } from "react-hook-form";
@@ -435,6 +435,56 @@ export default function PDIs() {
               <div>
                 <Label className="text-muted-foreground">Criado em</Label>
                 <p className="text-sm">{new Date(selectedPDI.createdAt).toLocaleString()}</p>
+              </div>
+              
+              {/* Lista de Ações Vinculadas */}
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-muted-foreground">Ações Vinculadas ({getAcoesCount(selectedPDI.id)})</Label>
+                  <Button 
+                    size="sm" 
+                    onClick={() => {
+                      setShowViewDialog(false);
+                      window.location.href = `/acoes?pdiId=${selectedPDI.id}`;
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Adicionar Ação
+                  </Button>
+                </div>
+                {actions && actions.filter((a: any) => a.pdiId === selectedPDI.id).length > 0 ? (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {actions.filter((a: any) => a.pdiId === selectedPDI.id).map((acao: any) => (
+                      <div key={acao.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <CheckSquare className="w-4 h-4 text-muted-foreground" />
+                            <p className="font-medium text-sm">{acao.nome}</p>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Prazo: {new Date(acao.prazo).toLocaleDateString()} • Status: {acao.status}
+                          </p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setShowViewDialog(false);
+                            window.location.href = `/acoes?acaoId=${acao.id}`;
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>Nenhuma ação vinculada ainda.</p>
+                    <p className="text-xs mt-1">Clique em "Adicionar Ação" para criar a primeira.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

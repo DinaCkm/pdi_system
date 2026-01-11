@@ -352,3 +352,16 @@
 - [x] Remover PDIs duplicados existentes no banco de dados
 - [x] PDI duplicado excluído com sucesso
 - [x] Agora resta apenas 1 PDI para MANEZINHO DA SILVA no Ciclo Teste PDI
+
+## Bug Reportado - Não há como cadastrar ações para um PDI específico
+- [x] Adicionar botão "Adicionar Ação" no modal de visualização do PDI
+- [x] Implementar navegação para página de Ações com PDI pré-selecionado via query param
+- [x] Exibir lista de ações vinculadas ao PDI no modal de visualização
+- [x] Adicionar botão de visualizar ação individual
+- [x] Implementar pré-seleção de PDI na página de Ações quando vier com query param
+- [x] Implementar abertura automática de modal de visualização quando vier com acaoId
+- [x] Testar fluxo completo de criação de ação a partir do PDI
+- [x] Modal de criação abre automaticamente com PDI pré-selecionado
+- [x] PDI "DESENVOLVIMENTO PESSOAL - teste" aparece selecionado no dropdown
+- [x] Formulário completo pronto para preenchimento
+- [x] Fluxo intuitivo e funcional
