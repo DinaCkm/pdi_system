@@ -228,3 +228,8 @@
 - [x] Adicionar coluna "Departamento" na tabela de usuários
 - [x] Exibir nome do departamento entre Cargo e Perfil
 - [x] Criar função getDepartamentoNome para buscar nome do departamento
+
+## Bug - Link de Departamentos Não Aparece no Menu
+- [x] Adicionar link "Departamentos" no menu lateral do DashboardLayout
+- [x] Adicionar ícone Building2 para Departamentos
+- [x] Posicionado entre Usuários e Competências
