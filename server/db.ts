@@ -547,34 +547,41 @@ export async function getAllActions() {
     .leftJoin(competenciasMicros, eq(actions.microId, competenciasMicros.id))
     .orderBy(desc(actions.createdAt));
   
-  // Reorganizar em objetos aninhados
-  return result.map(row => ({
-    id: row.id,
-    pdiId: row.pdiId,
-    blocoCompetenciaId: row.blocoCompetenciaId,
-    macroCompetenciaId: row.macroCompetenciaId,
-    microCompetenciaId: row.microCompetenciaId,
-    nome: row.nome,
-    descricao: row.descricao,
-    prazo: row.prazo,
-    status: row.status,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-    createdBy: row.createdBy,
-    pdi: row.pdiTitulo ? {
-      id: row.pdiId,
-      titulo: row.pdiTitulo,
-      colaboradorId: row.pdiColaboradorId,
-      colaborador: row.colaboradorNome ? {
-        nome: row.colaboradorNome,
-        leaderId: row.colaboradorLeaderId,
-        departamentoId: row.colaboradorDepartamentoId,
+  // Reorganizar em objetos aninhados e adicionar contagem de solicitações
+  const actionsWithAdjustments = await Promise.all(result.map(async (row) => {
+    const adjustmentCount = await countAdjustmentRequestsByAction(row.id);
+    
+    return {
+      id: row.id,
+      pdiId: row.pdiId,
+      blocoCompetenciaId: row.blocoCompetenciaId,
+      macroCompetenciaId: row.macroCompetenciaId,
+      microCompetenciaId: row.microCompetenciaId,
+      nome: row.nome,
+      descricao: row.descricao,
+      prazo: row.prazo,
+      status: row.status,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      createdBy: row.createdBy,
+      adjustmentCount, // Adicionar contagem
+      pdi: row.pdiTitulo ? {
+        id: row.pdiId,
+        titulo: row.pdiTitulo,
+        colaboradorId: row.pdiColaboradorId,
+        colaborador: row.colaboradorNome ? {
+          nome: row.colaboradorNome,
+          leaderId: row.colaboradorLeaderId,
+          departamentoId: row.colaboradorDepartamentoId,
+        } : null,
       } : null,
-    } : null,
-    blocoCompetencia: row.blocoNome ? { id: row.blocoCompetenciaId, nome: row.blocoNome } : null,
-    macroCompetencia: row.macroNome ? { id: row.macroCompetenciaId, nome: row.macroNome } : null,
-    microCompetencia: row.microNome ? { id: row.microCompetenciaId, nome: row.microNome } : null,
+      blocoCompetencia: row.blocoNome ? { id: row.blocoCompetenciaId, nome: row.blocoNome } : null,
+      macroCompetencia: row.macroNome ? { id: row.macroCompetenciaId, nome: row.macroNome } : null,
+      microCompetencia: row.microNome ? { id: row.microCompetenciaId, nome: row.microNome } : null,
+    };
   }));
+  
+  return actionsWithAdjustments;
 }
 
 export async function getActionById(id: number) {
@@ -587,9 +594,18 @@ export async function getActionById(id: number) {
 export async function getActionsByPDIId(pdiId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(actions)
+  
+  const result = await db.select().from(actions)
     .where(eq(actions.pdiId, pdiId))
     .orderBy(desc(actions.createdAt));
+  
+  // Adicionar contagem de solicitações de ajuste
+  const actionsWithAdjustments = await Promise.all(result.map(async (action) => {
+    const adjustmentCount = await countAdjustmentRequestsByAction(action.id);
+    return { ...action, adjustmentCount };
+  }));
+  
+  return actionsWithAdjustments;
 }
 
 export async function getActionsByColaboradorId(colaboradorId: number) {
@@ -605,9 +621,17 @@ export async function getActionsByColaboradorId(colaboradorId: number) {
   const pdiIds = colaboradorPDIs.map(p => p.id);
   
   // Buscar ações desses PDIs
-  return await db.select().from(actions)
+  const result = await db.select().from(actions)
     .where(sql`${actions.pdiId} IN (${sql.join(pdiIds.map(id => sql`${id}`), sql`, `)})`)
     .orderBy(desc(actions.createdAt));
+  
+  // Adicionar contagem de solicitações de ajuste
+  const actionsWithAdjustments = await Promise.all(result.map(async (action) => {
+    const adjustmentCount = await countAdjustmentRequestsByAction(action.id);
+    return { ...action, adjustmentCount };
+  }));
+  
+  return actionsWithAdjustments;
 }
 
 export async function getPendingActionsForLeader(leaderId: number) {
@@ -631,12 +655,20 @@ export async function getPendingActionsForLeader(leaderId: number) {
   const pdiIds = colaboradorPDIs.map(p => p.id);
   
   // Buscar ações pendentes de aprovação
-  return await db.select().from(actions)
+  const result = await db.select().from(actions)
     .where(and(
       sql`${actions.pdiId} IN (${sql.join(pdiIds.map(id => sql`${id}`), sql`, `)})`,
       eq(actions.status, "pendente_aprovacao_lider")
     ))
     .orderBy(desc(actions.createdAt));
+  
+  // Adicionar contagem de solicitações de ajuste
+  const actionsWithAdjustments = await Promise.all(result.map(async (action) => {
+    const adjustmentCount = await countAdjustmentRequestsByAction(action.id);
+    return { ...action, adjustmentCount };
+  }));
+  
+  return actionsWithAdjustments;
 }
 
 export async function createAction(data: {

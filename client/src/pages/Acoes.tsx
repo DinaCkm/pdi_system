@@ -287,6 +287,30 @@ export default function Acoes() {
     return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
   };
 
+  const getAdjustmentBadge = (count: number) => {
+    // Não exibir se count for 0
+    if (count === 0) return null;
+    
+    // Definir cor baseado na quantidade
+    let className = "";
+    if (count >= 5) {
+      // Vermelho: limite atingido
+      className = "bg-red-100 text-red-700 border-red-300";
+    } else if (count >= 3) {
+      // Amarelo: próximo do limite
+      className = "bg-yellow-100 text-yellow-700 border-yellow-300";
+    } else {
+      // Verde: ainda tem bastante margem
+      className = "bg-green-100 text-green-700 border-green-300";
+    }
+    
+    return (
+      <Badge variant="outline" className={`text-xs ${className}`}>
+        {count}/5 ajustes
+      </Badge>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -467,7 +491,10 @@ export default function Acoes() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <CardTitle className="text-lg">{acao.nome}</CardTitle>
-                  {getStatusBadge(acao.status)}
+                  <div className="flex flex-col gap-1 items-end">
+                    {getStatusBadge(acao.status)}
+                    {getAdjustmentBadge(acao.adjustmentCount || 0)}
+                  </div>
                 </div>
                 <CardDescription className="line-clamp-2">
                   {acao.descricao || "Ação não especificada"}

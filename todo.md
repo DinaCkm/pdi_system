@@ -467,3 +467,14 @@
 - [x] Mostrar contador visual (ex: "2/5 solicitações utilizadas")
 - [x] Testar exibição do aviso em diferentes cenários
 - [x] Criar componente SolicitarAjusteDialog completo com todos os avisos
+
+## Contador de Ajustes nos Cards de Ações
+- [x] Modificar procedure de listagem de ações para incluir contagem de solicitações
+- [x] Adicionar badge visual "X/5 ajustes" nos cards
+- [x] Aplicar cores diferentes baseado na quantidade (verde: 0-2, amarelo: 3-4, vermelho: 5)
+- [x] Testar exibição em diferentes cenários
+
+## Estender Contador de Ajustes para Todas as Queries
+- [x] Adicionar adjustmentCount em getActionsByColaboradorId (área do colaborador)
+- [x] Adicionar adjustmentCount em getActionsByPDIId (visualização de PDI)
+- [x] Adicionar adjustmentCount em getPendingActionsForLeader (área do líder)
