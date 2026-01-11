@@ -736,6 +736,301 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // ============= SOLICITAÇÃO DE AJUSTE =============
+    
+    solicitarAjuste: protectedProcedure
+      .input(z.object({
+        actionId: z.number(),
+        justificativa: z.string().min(10, "Justificativa deve ter pelo menos 10 caracteres"),
+        camposAjustar: z.object({
+          nome: z.string().optional(),
+          descricao: z.string().optional(),
+          prazo: z.string().optional(), // ISO date string
+          blocoId: z.number().optional(),
+          macroId: z.number().optional(),
+          microId: z.number().optional(),
+        }),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // 1. Verificar se a ação existe e pertence ao colaborador
+        const acao = await db.getActionById(input.actionId);
+        if (!acao) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
+        }
+
+        const pdi = await db.getPDIById(acao.pdiId);
+        if (!pdi) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'PDI não encontrado' });
+        }
+
+        if (pdi.colaboradorId !== ctx.user!.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Você não tem permissão para solicitar ajuste nesta ação' });
+        }
+
+        // 2. Verificar se ação está em status válido para solicitação
+        const statusValidos = ['aprovada_lider', 'em_andamento'];
+        if (!statusValidos.includes(acao.status)) {
+          throw new TRPCError({ 
+            code: 'BAD_REQUEST', 
+            message: 'Ação não está em status válido para solicitação de ajuste' 
+          });
+        }
+
+        // 3. Criar solicitação de ajuste
+        const solicitacao = await db.createAdjustmentRequest({
+          actionId: input.actionId,
+          solicitanteId: ctx.user!.id,
+          tipoSolicitante: 'colaborador',
+          justificativa: input.justificativa,
+          camposAjustar: JSON.stringify(input.camposAjustar),
+          status: 'pendente',
+        });
+
+        // 4. Atualizar status da ação para "em_discussao"
+        await db.updateAction(input.actionId, { status: 'em_discussao' });
+
+        // 5. Registrar no histórico
+        await db.createAcaoHistorico({
+          actionId: input.actionId,
+          campo: 'status',
+          valorAnterior: acao.status,
+          valorNovo: 'em_discussao',
+          motivoAlteracao: `Colaborador solicitou ajuste: ${input.justificativa}`,
+          alteradoPor: ctx.user!.id,
+          solicitacaoAjusteId: solicitacao.id,
+        });
+
+        // 6. Notificar Admin
+        await db.createNotification({
+          destinatarioId: acao.createdBy,
+          tipo: 'solicitacao_ajuste',
+          titulo: '🔄 Solicitação de Ajuste de Ação',
+          mensagem: `${ctx.user!.name} solicitou ajuste na ação "${acao.nome}". Justificativa: ${input.justificativa}`,
+          referenciaId: input.actionId,
+        });
+
+        // 7. Notificar Líder (informativo)
+        const colaborador = await db.getUserById(pdi.colaboradorId);
+        if (colaborador && colaborador.leaderId) {
+          await db.createNotification({
+            destinatarioId: colaborador.leaderId,
+            tipo: 'solicitacao_ajuste_info',
+            titulo: 'ℹ️ Solicitação de Ajuste (Informativo)',
+            mensagem: `Seu liderado ${ctx.user!.name} solicitou ajuste na ação "${acao.nome}".`,
+            referenciaId: input.actionId,
+          });
+        }
+
+        return { success: true, solicitacaoId: solicitacao.id };
+      }),
+
+    aprovarAjuste: adminProcedure
+      .input(z.object({
+        solicitacaoId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // 1. Buscar solicitação
+        const solicitacao = await db.getAdjustmentRequestById(input.solicitacaoId);
+        if (!solicitacao) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
+        }
+
+        if (solicitacao.status !== 'pendente') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação já foi avaliada' });
+        }
+
+        // 2. Buscar ação
+        const acao = await db.getActionById(solicitacao.actionId);
+        if (!acao) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
+        }
+
+        const camposAjustar = JSON.parse(solicitacao.camposAjustar);
+
+        // 3. Aplicar alterações e registrar histórico
+        const updates: any = {};
+        
+        if (camposAjustar.nome) {
+          await db.createAcaoHistorico({
+            actionId: acao.id,
+            campo: 'nome',
+            valorAnterior: acao.nome,
+            valorNovo: camposAjustar.nome,
+            motivoAlteracao: `Ajuste aprovado. Justificativa: ${solicitacao.justificativa}`,
+            alteradoPor: ctx.user!.id,
+            solicitacaoAjusteId: solicitacao.id,
+          });
+          updates.nome = camposAjustar.nome;
+        }
+
+        if (camposAjustar.descricao) {
+          await db.createAcaoHistorico({
+            actionId: acao.id,
+            campo: 'descricao',
+            valorAnterior: acao.descricao,
+            valorNovo: camposAjustar.descricao,
+            motivoAlteracao: `Ajuste aprovado. Justificativa: ${solicitacao.justificativa}`,
+            alteradoPor: ctx.user!.id,
+            solicitacaoAjusteId: solicitacao.id,
+          });
+          updates.descricao = camposAjustar.descricao;
+        }
+
+        if (camposAjustar.prazo) {
+          await db.createAcaoHistorico({
+            actionId: acao.id,
+            campo: 'prazo',
+            valorAnterior: acao.prazo.toISOString(),
+            valorNovo: camposAjustar.prazo,
+            motivoAlteracao: `Ajuste aprovado. Justificativa: ${solicitacao.justificativa}`,
+            alteradoPor: ctx.user!.id,
+            solicitacaoAjusteId: solicitacao.id,
+          });
+          updates.prazo = new Date(camposAjustar.prazo);
+        }
+
+        if (camposAjustar.blocoId) {
+          updates.blocoId = camposAjustar.blocoId;
+        }
+
+        if (camposAjustar.macroId) {
+          updates.macroId = camposAjustar.macroId;
+        }
+
+        if (camposAjustar.microId) {
+          updates.microId = camposAjustar.microId;
+        }
+
+        // Aplicar updates
+        if (Object.keys(updates).length > 0) {
+          await db.updateAction(acao.id, updates);
+        }
+
+        // 4. Atualizar status da ação para "aprovada_lider"
+        await db.updateAction(acao.id, { status: 'aprovada_lider' });
+        await db.createAcaoHistorico({
+          actionId: acao.id,
+          campo: 'status',
+          valorAnterior: 'em_discussao',
+          valorNovo: 'aprovada_lider',
+          motivoAlteracao: 'Ajuste aprovado pelo Admin',
+          alteradoPor: ctx.user!.id,
+          solicitacaoAjusteId: solicitacao.id,
+        });
+
+        // 5. Atualizar solicitação
+        await db.updateAdjustmentRequest(solicitacao.id, {
+          status: 'aprovada',
+          evaluatedAt: new Date(),
+          evaluatedBy: ctx.user!.id,
+        });
+
+        // 6. Notificar Colaborador
+        await db.createNotification({
+          destinatarioId: solicitacao.solicitanteId,
+          tipo: 'ajuste_aprovado',
+          titulo: '✅ Ajuste Aprovado',
+          mensagem: `Seu ajuste na ação "${acao.nome}" foi aprovado pelo Admin.`,
+          referenciaId: acao.id,
+        });
+
+        // 7. Notificar Líder (informativo)
+        const pdi = await db.getPDIById(acao.pdiId);
+        if (pdi) {
+          const colaborador = await db.getUserById(pdi.colaboradorId);
+          if (colaborador && colaborador.leaderId) {
+            await db.createNotification({
+              destinatarioId: colaborador.leaderId,
+              tipo: 'ajuste_aprovado_info',
+              titulo: 'ℹ️ Ajuste Aprovado (Informativo)',
+              mensagem: `Ajuste na ação "${acao.nome}" do seu liderado foi aprovado.`,
+              referenciaId: acao.id,
+            });
+          }
+        }
+
+        return { success: true };
+      }),
+
+    reprovarAjuste: adminProcedure
+      .input(z.object({
+        solicitacaoId: z.number(),
+        justificativa: z.string().min(10, "Justificativa deve ter pelo menos 10 caracteres"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // 1. Buscar solicitação
+        const solicitacao = await db.getAdjustmentRequestById(input.solicitacaoId);
+        if (!solicitacao) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
+        }
+
+        if (solicitacao.status !== 'pendente') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação já foi avaliada' });
+        }
+
+        // 2. Buscar ação
+        const acao = await db.getActionById(solicitacao.actionId);
+        if (!acao) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
+        }
+
+        // 3. Atualizar status da ação para "em_andamento"
+        await db.updateAction(acao.id, { status: 'em_andamento' });
+        await db.createAcaoHistorico({
+          actionId: acao.id,
+          campo: 'status',
+          valorAnterior: 'em_discussao',
+          valorNovo: 'em_andamento',
+          motivoAlteracao: `Ajuste reprovado pelo Admin. Justificativa: ${input.justificativa}`,
+          alteradoPor: ctx.user!.id,
+          solicitacaoAjusteId: solicitacao.id,
+        });
+
+        // 4. Atualizar solicitação
+        await db.updateAdjustmentRequest(solicitacao.id, {
+          status: 'reprovada',
+          justificativaAdmin: input.justificativa,
+          evaluatedAt: new Date(),
+          evaluatedBy: ctx.user!.id,
+        });
+
+        // 5. Notificar Colaborador
+        await db.createNotification({
+          destinatarioId: solicitacao.solicitanteId,
+          tipo: 'ajuste_reprovado',
+          titulo: '❌ Ajuste Reprovado',
+          mensagem: `Seu ajuste na ação "${acao.nome}" foi reprovado. Justificativa: ${input.justificativa}`,
+          referenciaId: acao.id,
+        });
+
+        // 6. Notificar Líder (informativo)
+        const pdi = await db.getPDIById(acao.pdiId);
+        if (pdi) {
+          const colaborador = await db.getUserById(pdi.colaboradorId);
+          if (colaborador && colaborador.leaderId) {
+            await db.createNotification({
+              destinatarioId: colaborador.leaderId,
+              tipo: 'ajuste_reprovado_info',
+              titulo: 'ℹ️ Ajuste Reprovado (Informativo)',
+              mensagem: `Ajuste na ação "${acao.nome}" do seu liderado foi reprovado.`,
+              referenciaId: acao.id,
+            });
+          }
+        }
+
+        return { success: true };
+      }),
+
+    getHistorico: protectedProcedure
+      .input(z.object({ actionId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getAcaoHistorico(input.actionId);
+      }),
+
+    getPendingAdjustments: adminProcedure.query(async () => {
+      return await db.getPendingAdjustmentRequests();
+    }),
+
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {

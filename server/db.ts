@@ -14,7 +14,8 @@ import {
   evidenceFiles,
   evidenceTexts,
   adjustmentRequests,
-  notifications
+  notifications,
+  acoesHistorico
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -589,4 +590,113 @@ export async function deleteAction(id: number) {
   if (!db) throw new Error("Database not available");
   
   await db.delete(actions).where(eq(actions.id, id));
+}
+
+// ============= HISTÓRICO DE AÇÕES =============
+
+export async function createAcaoHistorico(data: {
+  actionId: number;
+  campo: string;
+  valorAnterior: string | null;
+  valorNovo: string | null;
+  motivoAlteracao: string | null;
+  alteradoPor: number;
+  solicitacaoAjusteId?: number | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(acoesHistorico).values(data);
+  return result;
+}
+
+export async function getAcaoHistorico(actionId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(acoesHistorico)
+    .where(eq(acoesHistorico.actionId, actionId))
+    .orderBy(desc(acoesHistorico.createdAt));
+}
+
+// ============= SOLICITAÇÕES DE AJUSTE =============
+
+export async function createAdjustmentRequest(data: {
+  actionId: number;
+  solicitanteId: number;
+  tipoSolicitante: "colaborador" | "lider";
+  justificativa: string;
+  camposAjustar: string; // JSON stringified
+  status?: "pendente" | "aprovada" | "reprovada";
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(adjustmentRequests).values({
+    ...data,
+    status: data.status || "pendente"
+  });
+  
+  // Retornar o ID inserido
+  const insertId = (result as any)[0]?.insertId || (result as any).insertId;
+  return { id: insertId, ...data };
+}
+
+export async function getAdjustmentRequestById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const result = await db.select().from(adjustmentRequests)
+    .where(eq(adjustmentRequests.id, id))
+    .limit(1);
+  
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getPendingAdjustmentRequests() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(adjustmentRequests)
+    .where(eq(adjustmentRequests.status, "pendente"))
+    .orderBy(desc(adjustmentRequests.createdAt));
+}
+
+export async function updateAdjustmentRequest(id: number, data: Partial<{
+  status: "pendente" | "aprovada" | "reprovada";
+  justificativaAdmin: string;
+  evaluatedAt: Date;
+  evaluatedBy: number;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(adjustmentRequests).set(data).where(eq(adjustmentRequests.id, id));
+}
+
+// ============= FUNÇÕES AUXILIARES PARA NOTIFICAÇÕES =============
+
+export async function getUnreadNotificationsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(notifications)
+    .where(and(
+      eq(notifications.destinatarioId, userId),
+      eq(notifications.lida, false)
+    ))
+    .orderBy(desc(notifications.createdAt));
+}
+
+export async function markAllNotificationsAsRead(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(notifications).set({
+    lida: true,
+    readAt: new Date()
+  }).where(and(
+    eq(notifications.destinatarioId, userId),
+    eq(notifications.lida, false)
+  ));
 }

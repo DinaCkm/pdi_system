@@ -275,11 +275,12 @@
 
 ## Sistema de Solicitação de Ajuste de Ações
 - [x] Criar tabela `acoes_historico` no schema para registrar todas as alterações
-- [ ] Adicionar procedure tRPC para colaborador solicitar ajuste
-- [ ] Adicionar procedure tRPC para admin aprovar ajuste
-- [ ] Adicionar procedure tRPC para admin reprovar ajuste
-- [ ] Implementar atualização automática de status para `em_discussao`
-- [ ] Implementar notificação para Admin quando solicitação é feita
-- [ ] Implementar notificação informativa para Líder quando solicitação é feita
-- [ ] Implementar registro de histórico em todas as alterações de ação
-- [ ] Documentar fluxo completo de solicitação de ajuste
+- [x] Adicionar procedure tRPC para colaborador solicitar ajuste
+- [x] Adicionar procedure tRPC para admin aprovar ajuste
+- [x] Adicionar procedure tRPC para admin reprovar ajuste
+- [x] Implementar atualização automática de status para `em_discussao`
+- [x] Implementar notificação para Admin quando solicitação é feita
+- [x] Implementar notificação informativa para Líder quando solicitação é feita
+- [x] Implementar registro de histórico em todas as alterações de ação
+- [x] Documentar fluxo completo de solicitação de ajuste
+- [x] Criar testes unitários para procedures de solicitação de ajuste (7 testes passando)
