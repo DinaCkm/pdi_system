@@ -1,3 +1,3 @@
 export default function MinhasPendencias() {
-  return <div>Minhas Pendências - Em desenvolvimento</div>;
+  return <div>Minhas Pendências</div>;
 }

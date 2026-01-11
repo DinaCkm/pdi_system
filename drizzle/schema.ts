@@ -14,6 +14,7 @@ export const users = mysqlTable("users", {
   role: mysqlEnum("role", ["admin", "lider", "colaborador"]).notNull(),
   cargo: varchar("cargo", { length: 255 }).notNull(),
   leaderId: int("leaderId"), // ID do líder (para colaboradores e líderes)
+  departamentoId: int("departamentoId"), // ID do departamento
   status: mysqlEnum("status", ["ativo", "inativo"]).default("ativo").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -27,6 +28,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     relationName: "leader_subordinates",
   }),
   subordinates: many(users, { relationName: "leader_subordinates" }),
+  departamento: one(departamentos, {
+    fields: [users.departamentoId],
+    references: [departamentos.id],
+  }),
   pdis: many(pdis),
   notifications: many(notifications),
   createdActions: many(actions),
@@ -36,6 +41,24 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+/**
+ * DEPARTAMENTOS - Organização de usuários
+ */
+export const departamentos = mysqlTable("departamentos", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 255 }).notNull().unique(),
+  descricao: text("descricao"),
+  status: mysqlEnum("status", ["ativo", "inativo"]).default("ativo").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const departamentosRelations = relations(departamentos, ({ many }) => ({
+  users: many(users),
+}));
+
+export type Departamento = typeof departamentos.$inferSelect;
+export type InsertDepartamento = typeof departamentos.$inferInsert;
 
 /**
  * COMPETÊNCIAS - Hierarquia Bloco → Macro → Micro

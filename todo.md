@@ -84,3 +84,29 @@
 - [ ] Criar testes unitários para validações de negócio
 - [ ] Criar testes unitários para permissões por perfil
 - [ ] Testar sistema completo end-to-end
+
+## Autenticação Customizada (NOVA FUNCIONALIDADE)
+- [x] Implementar autenticação customizada com Email + CPF (sem senha)
+- [x] Criar página de login customizada
+- [x] Criar sistema de sessão customizado
+- [x] Remover dependência do Manus OAuth
+- [x] Atualizar fluxo de login no frontend
+
+## Departamentos (NOVA FUNCIONALIDADE)
+- [x] Adicionar tabela "departamentos" ao schema
+- [ ] Implementar CRUD de departamentos
+- [ ] Vincular usuários a departamentos
+- [ ] Atualizar página de gestão de usuários com departamentos
+- [ ] Atualizar relatórios para incluir filtro por departamento
+
+## Importação em Massa (NOVA FUNCIONALIDADE)
+- [ ] Criar página de importação em massa
+- [ ] Implementar upload de arquivo Excel/CSV
+- [ ] Criar parser para planilhas de usuários
+- [ ] Criar parser para planilhas de departamentos
+- [ ] Criar parser para planilhas de competências (Bloco/Macro/Micro)
+- [ ] Criar parser para planilhas de ações de PDI
+- [ ] Implementar validação de dados antes da importação
+- [ ] Implementar preview dos dados a serem importados
+- [ ] Criar templates de planilha para download
+- [ ] Implementar feedback de sucesso/erro após importação

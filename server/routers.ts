@@ -1,37 +1,55 @@
 import { z } from "zod";
-import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, adminOrLeaderProcedure, router } from "./_core/customTrpc";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
-
-// Middleware para verificar se o usuário é admin
-const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== 'admin') {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'Acesso negado. Apenas administradores.' });
-  }
-  return next({ ctx });
-});
-
-// Middleware para verificar se o usuário é admin ou líder
-const adminOrLeaderProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== 'admin' && ctx.user.role !== 'lider') {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'Acesso negado. Apenas administradores ou líderes.' });
-  }
-  return next({ ctx });
-});
+import { authRouter } from "./authRouters";
 
 export const appRouter = router({
   system: systemRouter,
-  
-  auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return { success: true } as const;
+  auth: authRouter,
+
+  // ============= GESTÃO DE DEPARTAMENTOS =============
+  departamentos: router({
+    list: adminProcedure.query(async () => {
+      return await db.getAllDepartamentos();
     }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getDepartamentoById(input.id);
+      }),
+
+    create: adminProcedure
+      .input(z.object({
+        nome: z.string().min(1, "Nome é obrigatório"),
+        descricao: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await db.createDepartamento(input);
+        return { success: true };
+      }),
+
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        nome: z.string().min(1).optional(),
+        descricao: z.string().optional(),
+        status: z.enum(["ativo", "inativo"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await db.updateDepartamento(id, data);
+        return { success: true };
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteDepartamento(input.id);
+        return { success: true };
+      }),
   }),
 
   // ============= GESTÃO DE USUÁRIOS =============
@@ -325,7 +343,7 @@ export const appRouter = router({
           nome: input.nome,
           dataInicio,
           dataFim,
-          createdBy: ctx.user.id,
+          createdBy: ctx.user!.id,
         });
 
         return { success: true };
@@ -376,7 +394,7 @@ export const appRouter = router({
   // ============= NOTIFICAÇÕES =============
   notifications: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      return await db.getNotificationsByUserId(ctx.user.id);
+      return await db.getNotificationsByUserId(ctx.user!.id);
     }),
 
     markAsRead: protectedProcedure
@@ -387,7 +405,7 @@ export const appRouter = router({
       }),
 
     unreadCount: protectedProcedure.query(async ({ ctx }) => {
-      return await db.getUnreadNotificationsCount(ctx.user.id);
+      return await db.getUnreadNotificationsCount(ctx.user!.id);
     }),
   }),
 });

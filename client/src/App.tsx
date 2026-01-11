@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
 import Home from "./pages/Home";
+import Login from "./pages/Login";
 import Users from "./pages/Users";
 import Competencias from "./pages/Competencias";
 import Ciclos from "./pages/Ciclos";
@@ -17,6 +18,7 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/login"} component={Login} />
       
       {/* Rotas protegidas com DashboardLayout */}
       <Route path={"/usuarios"}>

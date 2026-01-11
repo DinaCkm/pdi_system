@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, 
   users,
+  departamentos,
   competenciasBlocos,
   competenciasMacros,
   competenciasMicros,
@@ -137,6 +138,15 @@ export async function getUserByCpf(cpf: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getUserByEmailAndCpf(email: string, cpf: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users)
+    .where(and(eq(users.email, email), eq(users.cpf, cpf)))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
 export async function createUser(userData: InsertUser) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -163,6 +173,43 @@ export async function getSubordinates(leaderId: number) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(users).where(eq(users.leaderId, leaderId));
+}
+
+// ============= GESTÃO DE DEPARTAMENTOS =============
+
+export async function getAllDepartamentos() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(departamentos).orderBy(asc(departamentos.nome));
+}
+
+export async function getDepartamentoById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(departamentos).where(eq(departamentos.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createDepartamento(data: { nome: string; descricao?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(departamentos).values(data);
+  return result;
+}
+
+export async function updateDepartamento(id: number, data: Partial<{ nome: string; descricao: string; status: "ativo" | "inativo" }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(departamentos).set(data).where(eq(departamentos.id, id));
+}
+
+export async function deleteDepartamento(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.delete(departamentos).where(eq(departamentos.id, id));
 }
 
 // ============= GESTÃO DE COMPETÊNCIAS =============

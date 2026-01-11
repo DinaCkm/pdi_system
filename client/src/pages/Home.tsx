@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getLoginUrl } from "@/const";
+
 import { ArrowRight, CheckCircle, Users as UsersIcon, Target, FileText, Bell } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
@@ -10,9 +10,16 @@ export default function Home() {
   const { user, loading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
 
+  // Redirecionar para login se não autenticado
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      setLocation("/login");
+    }
+  }, [loading, isAuthenticated, setLocation]);
+
+  // Redirecionar para dashboard apropriado se autenticado
   useEffect(() => {
     if (isAuthenticated && user) {
-      // Redirecionar para dashboard apropriado baseado no perfil
       if (user.role === "admin") {
         setLocation("/usuarios");
       } else if (user.role === "lider") {
@@ -51,10 +58,8 @@ export default function Home() {
               Sistema PDI
             </h1>
           </div>
-          <Button asChild>
-            <a href={getLoginUrl()}>
-              Entrar <ArrowRight className="ml-2 w-4 h-4" />
-            </a>
+          <Button onClick={() => setLocation("/login")}>
+            Entrar <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
         </div>
       </header>
@@ -69,10 +74,8 @@ export default function Home() {
             Sistema completo para gerenciar o desenvolvimento de competências de colaboradores através de ações estruturadas, 
             com ciclos semestrais, aprovações hierárquicas e evidências de conclusão.
           </p>
-          <Button size="lg" asChild className="text-lg px-8">
-            <a href={getLoginUrl()}>
-              Começar Agora <ArrowRight className="ml-2 w-5 h-5" />
-            </a>
+          <Button size="lg" onClick={() => setLocation("/login")} className="text-lg px-8">
+            Começar Agora <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
         </div>
       </section>
@@ -150,10 +153,8 @@ export default function Home() {
             <p className="text-lg mb-6 text-white/90">
               Acesse o sistema e comece a gerenciar os planos de desenvolvimento da sua equipe.
             </p>
-            <Button size="lg" variant="secondary" asChild className="text-lg px-8">
-              <a href={getLoginUrl()}>
-                Acessar Sistema <ArrowRight className="ml-2 w-5 h-5" />
-              </a>
+            <Button size="lg" variant="secondary" onClick={() => setLocation("/login")} className="text-lg px-8">
+              Acessar Sistema <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </CardContent>
         </Card>

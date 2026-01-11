@@ -15,6 +15,13 @@
       "when": 1768093810686,
       "tag": "0001_secret_exodus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1768096110242,
+      "tag": "0002_huge_kang",
+      "breakpoints": true
     }
   ]
 }

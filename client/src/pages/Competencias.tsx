@@ -1,3 +1,3 @@
 export default function Competencias() {
-  return <div>Competências - Em desenvolvimento</div>;
+  return <div>Competências</div>;
 }

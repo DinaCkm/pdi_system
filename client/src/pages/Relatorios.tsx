@@ -1,3 +1,3 @@
 export default function Relatorios() {
-  return <div>Relatórios - Em desenvolvimento</div>;
+  return <div>Relatórios</div>;
 }
