@@ -17,6 +17,7 @@ export default function ConfigurarUsuario() {
     departamentoId: null as number | null,
     leaderId: null as number | null,
   });
+  const [saved, setSaved] = useState(false);
 
   const { data: user, isLoading: loadingUser } = trpc.users.getById.useQuery(
     { id: userId! },
@@ -59,11 +60,7 @@ export default function ConfigurarUsuario() {
         role: formData.role as any,
       });
 
-      toast.success("Configuração salva com sucesso!");
-      // Aguardar um pouco antes de navegar para evitar conflito com toast
-      setTimeout(() => {
-        navigate("/usuarios");
-      }, 100);
+      setSaved(true);
     } catch (error: any) {
       toast.error(error.message || "Erro ao salvar configuração");
     }
@@ -84,6 +81,36 @@ export default function ConfigurarUsuario() {
         <Button onClick={() => navigate("/usuarios")} className="mt-4">
           Voltar
         </Button>
+      </div>
+    );
+  }
+
+  // Tela de sucesso
+  if (saved) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="pt-12 pb-12 text-center">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <Save className="h-8 w-8 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Perfil Configurado!</h2>
+            <p className="text-muted-foreground mb-6">
+              O perfil de <strong>{user.name}</strong> foi atualizado com sucesso.
+            </p>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => navigate("/usuarios")} 
+                className="w-full max-w-xs bg-gradient-to-r from-blue-600 to-orange-500"
+              >
+                Voltar para Usuários
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                📌 <strong>Próximo passo:</strong> Vá em <strong>Departamentos</strong> para vincular este usuário
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
