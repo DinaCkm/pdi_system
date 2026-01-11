@@ -60,7 +60,10 @@ export default function ConfigurarUsuario() {
       });
 
       toast.success("Configuração salva com sucesso!");
-      navigate("/usuarios");
+      // Aguardar um pouco antes de navegar para evitar conflito com toast
+      setTimeout(() => {
+        navigate("/usuarios");
+      }, 100);
     } catch (error: any) {
       toast.error(error.message || "Erro ao salvar configuração");
     }
