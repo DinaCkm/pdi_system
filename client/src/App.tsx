@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
 import Home from "./pages/Home";
+import Setup from "./pages/Setup";
 import Login from "./pages/Login";
 import Users from "./pages/Users";
 import Competencias from "./pages/Competencias";
@@ -14,11 +15,11 @@ import PDIs from "./pages/PDIs";
 import MinhasPendencias from "./pages/MinhasPendencias";
 import Relatorios from "./pages/Relatorios";
 
-function Router() {
-  return (
+function Router() {  return (
     <Switch>
+      <Route path={"/setup"} component={Setup} />
       <Route path={"/"} component={Home} />
-      <Route path={"/login"} component={Login} />
+      <Route path={"/404"} component={NotFound} />
       
       {/* Rotas protegidas com DashboardLayout */}
       <Route path={"/usuarios"}>

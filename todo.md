@@ -114,3 +114,9 @@
 - [ ] Implementar preview dos dados a serem importados
 - [ ] Criar templates de planilha para download
 - [ ] Implementar feedback de sucesso/erro após importação
+
+## Setup Inicial (NOVA FUNCIONALIDADE)
+- [x] Criar página /setup para cadastro do primeiro admin
+- [x] Validar se banco está vazio antes de permitir acesso
+- [x] Bloquear página após primeiro admin ser criado
+- [x] Redirecionar para /setup se não houver usuários no banco

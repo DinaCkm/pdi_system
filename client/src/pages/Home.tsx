@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
+import { trpc } from "@/lib/trpc";
 import { ArrowRight, CheckCircle, Users as UsersIcon, Target, FileText, Bell } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
@@ -9,17 +9,28 @@ import { useEffect } from "react";
 export default function Home() {
   const { user, loading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+  
+  // Verificar se sistema precisa de setup
+  const { data: setupData, isLoading: setupLoading } = trpc.auth.needsSetup.useQuery();
 
-  // Redirecionar para login se não autenticado
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      setLocation("/login");
+    // Aguardar verificação de setup e autenticação
+    if (setupLoading || loading) return;
+    
+    // Se precisa de setup, redirecionar para /setup
+    if (setupData?.needsSetup) {
+      setLocation("/setup");
+      return;
     }
-  }, [loading, isAuthenticated, setLocation]);
-
-  // Redirecionar para dashboard apropriado se autenticado
-  useEffect(() => {
-    if (isAuthenticated && user) {
+    
+    // Se não está autenticado, redirecionar para login
+    if (!isAuthenticated) {
+      setLocation("/login");
+      return;
+    }
+    
+    // Se está autenticado, redirecionar baseado no perfil
+    if (user) {
       if (user.role === "admin") {
         setLocation("/usuarios");
       } else if (user.role === "lider") {
@@ -28,7 +39,7 @@ export default function Home() {
         setLocation("/pdis");
       }
     }
-  }, [isAuthenticated, user, setLocation]);
+  }, [setupLoading, setupData, loading, isAuthenticated, user, setLocation]);
 
   if (loading) {
     return (

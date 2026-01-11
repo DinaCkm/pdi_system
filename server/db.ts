@@ -118,6 +118,13 @@ export async function getUserByOpenId(openId: string) {
 
 // ============= GESTÃO DE USUÁRIOS =============
 
+export async function countUsers() {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select().from(users);
+  return result.length;
+}
+
 export async function getAllUsers() {
   const db = await getDb();
   if (!db) return [];
