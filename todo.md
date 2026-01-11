@@ -502,3 +502,8 @@
 - [x] Adicionar botão de logout no cabeçalho da página (SidebarInset header)
 - [x] Garantir que o botão seja visível em todas as páginas
 - [x] Testar funcionalidade de logout e redirecionamento
+
+## Bug - Erro ao Clicar em Sair
+- [x] Remover botão de logout duplicado do footer da sidebar
+- [x] Manter apenas o botão de logout no header
+- [x] Testar logout sem erros de removeChild
