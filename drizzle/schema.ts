@@ -16,7 +16,6 @@ export const users = mysqlTable("users", {
   leaderId: int("leaderId"), // ID do líder (para colaboradores e líderes)
   departamentoId: int("departamentoId"), // ID do departamento
   status: mysqlEnum("status", ["ativo", "inativo"]).default("ativo").notNull(),
-  deletedAt: timestamp("deletedAt"), // Soft delete: quando foi excluído (NULL = ativo)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

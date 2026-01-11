@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2, CheckSquare, MessageSquarePlus, UserX } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2, CheckSquare, MessageSquarePlus } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -33,7 +33,6 @@ const getMenuItems = (userRole: string) => {
   if (userRole === "admin") {
     items.push(
       { icon: Users, label: "Usuários", path: "/usuarios" },
-      { icon: UserX, label: "Usuários Inativos", path: "/usuarios-inativos" },
       { icon: Building2, label: "Departamentos", path: "/departamentos" },
       { icon: Target, label: "Competências", path: "/competencias" },
       { icon: Calendar, label: "Ciclos", path: "/ciclos" },
@@ -283,15 +282,6 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={logout}
-              className="text-destructive hover:text-destructive"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="ml-2">Sair</span>
-            </Button>
           </div>
         )}
         <main className="flex-1 p-4">{children}</main>

@@ -1,4 +1,4 @@
-import { eq, and, or, desc, asc, sql, isNotNull, lt } from "drizzle-orm";
+import { eq, and, or, desc, asc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, 
@@ -131,12 +131,7 @@ export async function countUsers() {
 export async function getAllUsers() {
   const db = await getDb();
   if (!db) return [];
-  // Filtrar apenas usuários não excluídos (deletedAt IS NULL)
-  return await db
-    .select()
-    .from(users)
-    .where(sql`${users.deletedAt} IS NULL`)
-    .orderBy(asc(users.name));
+  return await db.select().from(users).orderBy(asc(users.name));
 }
 
 export async function getUserById(id: number) {
@@ -181,11 +176,7 @@ export async function deleteUser(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  // Soft delete: marcar como excluído ao invés de deletar permanentemente
-  await db.update(users).set({ 
-    deletedAt: new Date(),
-    status: "inativo" 
-  }).where(eq(users.id, id));
+  await db.delete(users).where(eq(users.id, id));
 }
 
 export async function getSubordinates(leaderId: number) {
@@ -977,66 +968,4 @@ export async function getPendingAdjustmentRequestsByLeaderId(leaderId: number) {
       eq(users.leaderId, leaderId)
     ))
     .orderBy(desc(adjustmentRequests.createdAt));
-}
-
-// ============= GERENCIAMENTO DE USUÁRIOS EXCLUÍDOS =============
-
-export async function getDeletedUsers() {
-  const db = await getDb();
-  if (!db) return [];
-  
-  return await db
-    .select()
-    .from(users)
-    .where(isNotNull(users.deletedAt))
-    .orderBy(desc(users.deletedAt));
-}
-
-export async function restoreUser(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  
-  // Buscar usuário excluído
-  const [user] = await db.select().from(users).where(eq(users.id, id));
-  
-  if (!user) {
-    throw new Error("Usuário não encontrado");
-  }
-  
-  if (!user.deletedAt) {
-    throw new Error("Usuário não está excluído");
-  }
-  
-  // Verificar se passou 6 meses
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  
-  if (user.deletedAt < sixMonthsAgo) {
-    throw new Error("Não é possível reativar usuário excluído há mais de 6 meses");
-  }
-  
-  // Reativar usuário
-  await db.update(users).set({ 
-    deletedAt: null,
-    status: "ativo" 
-  }).where(eq(users.id, id));
-}
-
-export async function permanentlyDeleteOldUsers() {
-  const db = await getDb();
-  if (!db) return 0;
-  
-  // Calcular data de 6 meses atrás
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  
-  // Deletar permanentemente usuários excluídos há mais de 6 meses
-  await db
-    .delete(users)
-    .where(and(
-      isNotNull(users.deletedAt),
-      lt(users.deletedAt, sixMonthsAgo)
-    ));
-  
-  return 0; // Retorna 0 por enquanto (pode ser melhorado com contagem)
 }

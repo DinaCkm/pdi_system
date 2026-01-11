@@ -75,7 +75,7 @@ export default function Users() {
     
     try {
       await deleteMutation.mutateAsync({ id: confirmDialog.userId });
-      toast.success("Usuário inativado com sucesso!");
+      toast.success("Usuário excluído com sucesso!");
       setConfirmDialog({ open: false, type: 'delete' });
       refetch();
     } catch (error: any) {
@@ -371,8 +371,8 @@ export default function Users() {
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(user)} title="Editar usuário">
                         <Pencil className="w-4 h-4 text-blue-600" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setConfirmDialog({ open: true, type: 'delete', userId: user.id })} title="Inativar usuário">
-                        <Trash2 className="w-4 h-4 text-orange-600" />
+                      <Button variant="ghost" size="icon" onClick={() => setConfirmDialog({ open: true, type: 'delete', userId: user.id })} title="Excluir usuário">
+                        <Trash2 className="w-4 h-4 text-red-600" />
                       </Button>
                     </div>
                   </TableCell>
@@ -417,11 +417,11 @@ export default function Users() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-orange-500" />
-              {confirmDialog.type === 'delete' ? 'Confirmar Inativação' : 'Confirmar Alteração de Status'}
+              {confirmDialog.type === 'delete' ? 'Confirmar Exclusão' : 'Confirmar Alteração de Status'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmDialog.type === 'delete' 
-                ? 'Tem certeza que deseja inativar este usuário? Ele poderá ser reativado dentro de 6 meses.'
+                ? 'Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.'
                 : `Tem certeza que deseja ${confirmDialog.currentStatus === 'ativo' ? 'inativar' : 'ativar'} este usuário?`
               }
             </AlertDialogDescription>
@@ -432,7 +432,7 @@ export default function Users() {
               onClick={confirmDialog.type === 'delete' ? handleDelete : handleToggleStatus}
               className={confirmDialog.type === 'delete' ? 'bg-red-600 hover:bg-red-700' : ''}
             >
-              {confirmDialog.type === 'delete' ? 'Inativar' : 'Confirmar'}
+              {confirmDialog.type === 'delete' ? 'Excluir' : 'Confirmar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
