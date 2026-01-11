@@ -124,3 +124,7 @@
 ## Bugs a Corrigir
 - [x] Corrigir erro 404 ao acessar sistema publicado
 - [x] Verificar roteamento e redirecionamentos
+
+## Bugs Reportados
+- [x] Página de setup não está aparecendo no primeiro acesso (resolvido: precisa publicar)
+- [x] Investigar redirecionamento Home → Setup (funcionando corretamente)

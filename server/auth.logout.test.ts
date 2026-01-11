@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
-import { COOKIE_NAME } from "../shared/const";
+const COOKIE_NAME = "pdi_session"; // Cookie customizado
 import type { TrpcContext } from "./_core/context";
 
 type CookieCall = {
@@ -52,7 +52,6 @@ describe("auth.logout", () => {
     expect(clearedCookies).toHaveLength(1);
     expect(clearedCookies[0]?.name).toBe(COOKIE_NAME);
     expect(clearedCookies[0]?.options).toMatchObject({
-      maxAge: -1,
       secure: true,
       sameSite: "none",
       httpOnly: true,

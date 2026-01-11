@@ -31,32 +31,38 @@ describe("PDI e Ações", () => {
   let actionId: number;
 
   beforeAll(async () => {
-    // Criar usuários de teste
+    const timestamp = Date.now();
+    
+    // Criar usuários de teste com CPFs únicos
+    const adminCpf = "111" + timestamp.toString().slice(-8);
+    const liderCpf = "222" + timestamp.toString().slice(-8);
+    const colaboradorCpf = "333" + timestamp.toString().slice(-8);
+    
     const adminCreated = await db.createUser({
-      openId: "test-admin-pdi-" + Date.now(),
+      openId: "test-admin-pdi-" + timestamp,
       name: "Admin Teste PDI",
-      email: "admin.pdi@test.com",
-      cpf: "11111111111",
+      email: "admin.pdi" + timestamp + "@test.com",
+      cpf: adminCpf,
       role: "admin",
       cargo: "Administrador",
       status: "ativo",
     });
 
     const liderCreated = await db.createUser({
-      openId: "test-lider-pdi-" + Date.now(),
+      openId: "test-lider-pdi-" + timestamp,
       name: "Líder Teste PDI",
-      email: "lider.pdi@test.com",
-      cpf: "22222222222",
+      email: "lider.pdi" + timestamp + "@test.com",
+      cpf: liderCpf,
       role: "lider",
       cargo: "Líder",
       status: "ativo",
     });
 
     const colaboradorCreated = await db.createUser({
-      openId: "test-colab-pdi-" + Date.now(),
+      openId: "test-colab-pdi-" + timestamp,
       name: "Colaborador Teste PDI",
-      email: "colab.pdi@test.com",
-      cpf: "33333333333",
+      email: "colab.pdi" + timestamp + "@test.com",
+      cpf: colaboradorCpf,
       role: "colaborador",
       cargo: "Colaborador",
       status: "ativo",
@@ -64,9 +70,9 @@ describe("PDI e Ações", () => {
     });
 
     // Buscar usuários criados
-    const admin = await db.getUserByEmailAndCpf("admin.pdi@test.com", "11111111111");
-    const lider = await db.getUserByEmailAndCpf("lider.pdi@test.com", "22222222222");
-    const colaborador = await db.getUserByEmailAndCpf("colab.pdi@test.com", "33333333333");
+    const admin = await db.getUserByEmailAndCpf("admin.pdi" + timestamp + "@test.com", adminCpf);
+    const lider = await db.getUserByEmailAndCpf("lider.pdi" + timestamp + "@test.com", liderCpf);
+    const colaborador = await db.getUserByEmailAndCpf("colab.pdi" + timestamp + "@test.com", colaboradorCpf);
 
     if (admin && lider && colaborador) {
       adminUser = admin;
