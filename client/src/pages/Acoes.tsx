@@ -472,6 +472,22 @@ export default function Acoes() {
                   <span className="line-clamp-1">{acao.pdi?.titulo || "PDI não encontrado"}</span>
                 </div>
                 <div className="flex items-center text-sm text-muted-foreground">
+                  <User className="h-4 w-4 mr-2" />
+                  <span className="line-clamp-1">Colaborador: {acao.pdi?.colaborador?.nome || "N/A"}</span>
+                </div>
+                {acao.pdi?.colaborador?.leaderId && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <User className="h-4 w-4 mr-2" />
+                    <span className="line-clamp-1">Líder: {usuarios?.find(u => u.id === acao.pdi?.colaborador?.leaderId)?.name || "N/A"}</span>
+                  </div>
+                )}
+                {acao.pdi?.colaborador?.departamentoId && (
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <User className="h-4 w-4 mr-2" />
+                    <span className="line-clamp-1">Departamento: {departamentos?.find(d => d.id === acao.pdi?.colaborador?.departamentoId)?.nome || "N/A"}</span>
+                  </div>
+                )}
+                <div className="flex items-center text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4 mr-2" />
                   <span>Prazo: {new Date(acao.prazo).toLocaleDateString()}</span>
                 </div>
@@ -918,13 +934,13 @@ export default function Acoes() {
 
       {/* Dialog de Visualização */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>{selectedAcao?.nome}</DialogTitle>
             <DialogDescription>Detalhes da Ação de Desenvolvimento</DialogDescription>
           </DialogHeader>
           {selectedAcao && (
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto pr-2">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">PDI</Label>
@@ -962,8 +978,15 @@ export default function Acoes() {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button onClick={() => setShowViewDialog(false)}>Fechar</Button>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowViewDialog(false)}>Fechar</Button>
+            <Button onClick={() => {
+              setShowViewDialog(false);
+              handleEdit(selectedAcao);
+            }}>
+              <Edit className="h-4 w-4 mr-2" />
+              Editar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

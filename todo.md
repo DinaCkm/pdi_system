@@ -412,3 +412,18 @@
 - [x] Grid responsivo com 3 colunas e 3 linhas
 - [x] Filtros funcionando corretamente (Buscar, Usuário, Líder, Departamento, Bloco, Macro, Micro, Status)
 - [x] Interface limpa e organizada
+
+## Melhorias nos Cards e Modal de Ações
+- [x] Adicionar nome do usuário/colaborador no card da ação
+- [x] Adicionar nome do líder no card da ação
+- [x] Adicionar nome do departamento no card da ação
+- [x] Adicionar barra de rolagem no modal de visualização para textos longos
+- [x] Adicionar botão de editar ação no card (já existia)
+- [x] Adicionar botão de editar ação no modal de visualização
+- [x] Testar todas as melhorias
+- [x] Nome do colaborador aparecendo nos cards
+- [x] Líder e departamento implementados (aparecem quando cadastrados)
+- [x] Barra de rolagem funcionando no modal de visualização
+- [x] Botão "Editar" aparecendo no modal de visualização
+- [x] Botão "Fechar" funcionando
+- [x] Texto longo com scroll visível e funcional
