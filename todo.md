@@ -12,30 +12,34 @@
 - [x] Implementar controle de permissões por perfil
 
 ## Gestão de Competências
-- [x] Implementar CRUD de Competências Bloco
-- [x] Implementar CRUD de Competências Macro
-- [x] Implementar CRUD de Competências Micro
-- [x] Implementar hierarquia Bloco → Macro → Micro
+- [x] Implementar CRUD de Competências Bloco (backend)
+- [x] Implementar CRUD de Competências Macro (backend)
+- [x] Implementar CRUD de Competências Micro (backend)
+- [x] Implementar hierarquia Bloco → Macro → Micro (backend)
+- [ ] Criar páginas de gestão de competências (frontend)
 
 ## Ciclos Semestrais
 - [x] Implementar CRUD de ciclos semestrais
 - [x] Implementar validação de datas (fim > início)
 - [x] Implementar bloqueio de sobreposição de ciclos
 
-## PDI e Ações
-- [ ] Implementar criação de PDI por Admin
-- [ ] Implementar criação de ações dentro do PDI
-- [ ] Implementar validação de prazo dentro do ciclo
-- [ ] Implementar 11 status de ações
-- [ ] Implementar edição de ações pelo Admin
+## Sistema de PDI
+- [x] Implementar criação de PDI por Admin (backend)
+- [x] Implementar adição de ações ao PDI (backend)
+- [x] Implementar validação de prazo dentro do ciclo (backend)
+- [x] Implementar exclusão de ações pelo Admin (backend)
+- [ ] Criar página de gestão de PDIs (frontend)
+- [ ] Criar página de gestão de Ações (frontend)] Implementar edição de ações pelo Admin
 - [ ] Implementar exclusão de ações pelo Admin
 
 ## Fluxo de Aprovação
-- [ ] Implementar aprovação de ações pelo Líder
-- [ ] Implementar reprovação de ações pelo Líder
-- [ ] Implementar execução de ações pelo Colaborador
+- [x] Implementar aprovação de ações pelo Líder (backend)
+- [x] Implementar reprovação de ações pelo Líder (backend)
+- [x] Implementar início de execução pelo Colaborador (backend)
 - [ ] Implementar envio de evidências (arquivos + textos)
 - [ ] Implementar avaliação de evidências pelo Admin (aprovar/reprovar/solicitar correção)
+- [ ] Criar interface de aprovação para Líder (frontend)
+- [ ] Criar interface de execução para Colaborador (frontend)
 
 ## Solicitações de Ajuste
 - [ ] Implementar solicitação de ajuste por Colaborador
@@ -45,8 +49,8 @@
 
 ## Sistema de Notificações
 - [x] Implementar notificações in-app (estrutura base)
-- [ ] Implementar notificações para criação de ações
-- [ ] Implementar notificações para aprovação/reprovação
+- [x] Implementar notificações para criação de ações
+- [x] Implementar notificações para aprovação/reprovação
 - [ ] Implementar notificações para envio de evidências
 - [ ] Implementar notificações para avaliação de evidências
 - [ ] Implementar notificações para solicitações de ajuste

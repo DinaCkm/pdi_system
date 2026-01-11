@@ -1,4 +1,4 @@
-import { eq, and, or, desc, asc } from "drizzle-orm";
+import { eq, and, or, desc, asc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, 
@@ -395,4 +395,179 @@ export async function getUnreadNotificationsCount(userId: number) {
       eq(notifications.lida, false)
     ));
   return result.length;
+}
+
+// ============= GESTÃO DE PDIs =============
+
+export async function getAllPDIs() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(pdis).orderBy(desc(pdis.createdAt));
+}
+
+export async function getPDIById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(pdis).where(eq(pdis.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getPDIsByColaboradorId(colaboradorId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(pdis)
+    .where(eq(pdis.colaboradorId, colaboradorId))
+    .orderBy(desc(pdis.createdAt));
+}
+
+export async function getPDIsByCicloId(cicloId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(pdis)
+    .where(eq(pdis.cicloId, cicloId))
+    .orderBy(desc(pdis.createdAt));
+}
+
+export async function createPDI(data: {
+  colaboradorId: number;
+  cicloId: number;
+  titulo: string;
+  objetivoGeral?: string;
+  createdBy: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(pdis).values(data);
+  return result;
+}
+
+export async function updatePDI(id: number, data: Partial<{
+  status: "em_andamento" | "concluido" | "cancelado";
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(pdis).set(data).where(eq(pdis.id, id));
+}
+
+export async function deletePDI(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.delete(pdis).where(eq(pdis.id, id));
+}
+
+// ============= GESTÃO DE AÇÕES =============
+
+export async function getAllActions() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(actions).orderBy(desc(actions.createdAt));
+}
+
+export async function getActionById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(actions).where(eq(actions.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getActionsByPDIId(pdiId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(actions)
+    .where(eq(actions.pdiId, pdiId))
+    .orderBy(desc(actions.createdAt));
+}
+
+export async function getActionsByColaboradorId(colaboradorId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Buscar PDIs do colaborador
+  const colaboradorPDIs = await db.select().from(pdis)
+    .where(eq(pdis.colaboradorId, colaboradorId));
+  
+  if (colaboradorPDIs.length === 0) return [];
+  
+  const pdiIds = colaboradorPDIs.map(p => p.id);
+  
+  // Buscar ações desses PDIs
+  return await db.select().from(actions)
+    .where(sql`${actions.pdiId} IN (${sql.join(pdiIds.map(id => sql`${id}`), sql`, `)})`)
+    .orderBy(desc(actions.createdAt));
+}
+
+export async function getPendingActionsForLeader(leaderId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Buscar colaboradores deste líder
+  const colaboradores = await db.select().from(users)
+    .where(eq(users.leaderId, leaderId));
+  
+  if (colaboradores.length === 0) return [];
+  
+  const colaboradorIds = colaboradores.map(c => c.id);
+  
+  // Buscar PDIs desses colaboradores
+  const colaboradorPDIs = await db.select().from(pdis)
+    .where(sql`${pdis.colaboradorId} IN (${sql.join(colaboradorIds.map(id => sql`${id}`), sql`, `)})`);
+  
+  if (colaboradorPDIs.length === 0) return [];
+  
+  const pdiIds = colaboradorPDIs.map(p => p.id);
+  
+  // Buscar ações pendentes de aprovação
+  return await db.select().from(actions)
+    .where(and(
+      sql`${actions.pdiId} IN (${sql.join(pdiIds.map(id => sql`${id}`), sql`, `)})`,
+      eq(actions.status, "pendente_aprovacao_lider")
+    ))
+    .orderBy(desc(actions.createdAt));
+}
+
+export async function createAction(data: {
+  pdiId: number;
+  blocoId: number;
+  macroId: number;
+  microId: number;
+  nome: string;
+  descricao: string;
+  prazo: Date;
+  createdBy: number;
+  status?: "pendente_aprovacao_lider" | "aprovada_lider" | "reprovada_lider" | "em_andamento" | "em_discussao" | "evidencia_enviada" | "evidencia_aprovada" | "evidencia_reprovada" | "correcao_solicitada" | "concluida" | "vencida" | "cancelada";
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(actions).values({
+    ...data,
+    status: data.status || "pendente_aprovacao_lider"
+  });
+  return result;
+}
+
+export async function updateAction(id: number, data: Partial<{
+  nome: string;
+  descricao: string;
+  blocoId: number;
+  macroId: number;
+  microId: number;
+  prazo: Date;
+  status: "pendente_aprovacao_lider" | "aprovada_lider" | "reprovada_lider" | "em_andamento" | "em_discussao" | "evidencia_enviada" | "evidencia_aprovada" | "evidencia_reprovada" | "correcao_solicitada" | "concluida" | "vencida" | "cancelada";
+  justificativaReprovacaoLider: string;
+}>)  {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(actions).set(data).where(eq(actions.id, id));
+}
+
+export async function deleteAction(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.delete(actions).where(eq(actions.id, id));
 }
