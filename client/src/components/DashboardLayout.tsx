@@ -282,6 +282,15 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={logout}
+              className="text-destructive hover:text-destructive"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="ml-2">Sair</span>
+            </Button>
           </div>
         )}
         <main className="flex-1 p-4">{children}</main>
