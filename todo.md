@@ -509,3 +509,10 @@
 - [x] Trocar botão "Excluir" para "Inativar" na interface
 - [x] Atualizar mensagens para refletir "inativar" ao invés de "excluir"
 - [x] Adicionar link "Usuários Inativos" no menu do Admin
+
+## Bug - Erro removeChild na Página Usuários Inativos
+- [x] Investigar causa do erro ao abrir /usuarios-inativos
+- [x] Verificar se há problema com formatDistanceToNow ou renderização condicional
+- [x] Corrigir manipulação do DOM
+- [x] Testar página sem erros
+- [x] Remover date-fns e usar toLocaleDateString nativo

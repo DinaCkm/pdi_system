@@ -7,8 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { RotateCcw, AlertCircle, Clock } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+
 
 export default function UsuariosInativos() {
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; userId?: number; userName?: string }>({ open: false });
@@ -114,10 +113,7 @@ export default function UsuariosInativos() {
                       <TableCell>
                         {user.deletedAt && (
                           <span className={!canBeRestored ? "text-red-600 font-medium" : ""}>
-                            {formatDistanceToNow(new Date(user.deletedAt), { 
-                              addSuffix: true, 
-                              locale: ptBR 
-                            })}
+                            {new Date(user.deletedAt).toLocaleDateString('pt-BR')}
                           </span>
                         )}
                       </TableCell>
