@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Power } from "lucide-react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 
@@ -71,6 +71,21 @@ export default function Users() {
     setValue("role", user.role);
     setValue("cargo", user.cargo);
     setValue("leaderId", user.leaderId);
+  };
+
+  const handleToggleStatus = async (id: number, currentStatus: string) => {
+    const newStatus = currentStatus === "ativo" ? "inativo" : "ativo";
+    const action = newStatus === "ativo" ? "ativar" : "inativar";
+    
+    if (!confirm(`Tem certeza que deseja ${action} este usuário?`)) return;
+    
+    try {
+      await updateMutation.mutateAsync({ id, status: newStatus });
+      toast.success(`Usuário ${action === "ativar" ? "ativado" : "inativado"} com sucesso!`);
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || `Erro ao ${action} usuário`);
+    }
   };
 
   const getRoleBadge = (role: string) => {
@@ -218,11 +233,19 @@ export default function Users() {
                   <TableCell>{getStatusBadge(user.status)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(user)}>
-                        <Pencil className="w-4 h-4" />
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleToggleStatus(user.id, user.status)}
+                        title={user.status === "ativo" ? "Inativar usuário" : "Ativar usuário"}
+                      >
+                        <Power className={`w-4 h-4 ${user.status === "ativo" ? "text-green-600" : "text-gray-400"}`} />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)}>
-                        <Trash2 className="w-4 h-4 text-destructive" />
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(user)} title="Editar usuário">
+                        <Pencil className="w-4 h-4 text-blue-600" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)} title="Excluir usuário">
+                        <Trash2 className="w-4 h-4 text-red-600" />
                       </Button>
                     </div>
                   </TableCell>

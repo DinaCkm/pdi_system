@@ -151,3 +151,9 @@
 - [ ] Implementar job automático de vencimento
 - [ ] Implementar dashboards específicos por perfil
 - [ ] Implementar relatórios de acompanhamento
+
+## Bugs e Funcionalidades Faltantes Reportadas
+- [x] Garantir que botões de EDITAR e EXCLUIR usuário estão VISÍVEIS na tabela
+- [x] Adicionar funcionalidade de INATIVAR/ATIVAR usuário (status ativo/inativo)
+- [x] Adicionar coluna de STATUS na tabela de usuários
+- [x] Adicionar botão toggle para ativar/inativar usuário
