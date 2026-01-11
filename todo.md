@@ -497,3 +497,8 @@
 - [x] Adicionar campo de comentários para Líder dar feedback
 - [x] Testar fluxo completo: solicitar → comentar → aprovar/reprovar
 - [x] Adicionar notificações quando há novos comentários
+
+## Botão de Logout Visível no Header
+- [x] Adicionar botão de logout no cabeçalho da página (SidebarInset header)
+- [x] Garantir que o botão seja visível em todas as páginas
+- [x] Testar funcionalidade de logout e redirecionamento
