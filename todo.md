@@ -157,3 +157,8 @@
 - [x] Adicionar funcionalidade de INATIVAR/ATIVAR usuário (status ativo/inativo)
 - [x] Adicionar coluna de STATUS na tabela de usuários
 - [x] Adicionar botão toggle para ativar/inativar usuário
+
+## Melhorias Solicitadas - Página de Usuários
+- [x] Implementar paginação na lista de usuários (10 itens por página)
+- [x] Adicionar campo de busca para filtrar por nome ou e-mail
+- [x] Criar modal de confirmação antes de excluir ou inativar usuário

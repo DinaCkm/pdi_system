@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Loader2, Power } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Power, Search, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 
@@ -24,6 +25,10 @@ type UserFormData = {
 export default function Users() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; type: 'delete' | 'toggle'; userId?: number; currentStatus?: string }>({ open: false, type: 'delete' });
+  const ITEMS_PER_PAGE = 10;
 
   const { data: users, isLoading, refetch } = trpc.users.list.useQuery();
   const createMutation = trpc.users.create.useMutation();
@@ -51,12 +56,13 @@ export default function Users() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Tem certeza que deseja excluir este usuário?")) return;
+  const handleDelete = async () => {
+    if (!confirmDialog.userId) return;
     
     try {
-      await deleteMutation.mutateAsync({ id });
+      await deleteMutation.mutateAsync({ id: confirmDialog.userId });
       toast.success("Usuário excluído com sucesso!");
+      setConfirmDialog({ open: false, type: 'delete' });
       refetch();
     } catch (error: any) {
       toast.error(error.message || "Erro ao excluir usuário");
@@ -73,18 +79,19 @@ export default function Users() {
     setValue("leaderId", user.leaderId);
   };
 
-  const handleToggleStatus = async (id: number, currentStatus: string) => {
-    const newStatus = currentStatus === "ativo" ? "inativo" : "ativo";
-    const action = newStatus === "ativo" ? "ativar" : "inativar";
+  const handleToggleStatus = async () => {
+    if (!confirmDialog.userId || !confirmDialog.currentStatus) return;
     
-    if (!confirm(`Tem certeza que deseja ${action} este usuário?`)) return;
+    const newStatus = confirmDialog.currentStatus === "ativo" ? "inativo" : "ativo";
+    const action = newStatus === "ativo" ? "ativado" : "inativado";
     
     try {
-      await updateMutation.mutateAsync({ id, status: newStatus });
-      toast.success(`Usuário ${action === "ativar" ? "ativado" : "inativado"} com sucesso!`);
+      await updateMutation.mutateAsync({ id: confirmDialog.userId, status: newStatus });
+      toast.success(`Usuário ${action} com sucesso!`);
+      setConfirmDialog({ open: false, type: 'toggle' });
       refetch();
     } catch (error: any) {
-      toast.error(error.message || `Erro ao ${action} usuário`);
+      toast.error(error.message || `Erro ao ${action === "ativado" ? "ativar" : "inativar"} usuário`);
     }
   };
 
@@ -109,6 +116,22 @@ export default function Users() {
       <Badge variant="secondary">Inativo</Badge>
     );
   };
+
+  // Filtrar usuários por busca
+  const filteredUsers = users?.filter(user => 
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  // Paginação
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Reset para página 1 quando busca mudar
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   if (isLoading) {
     return (
@@ -204,10 +227,23 @@ export default function Users() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Usuários Cadastrados</CardTitle>
-          <CardDescription>
-            Total de {users?.length || 0} usuários no sistema
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Usuários Cadastrados</CardTitle>
+              <CardDescription>
+                {filteredUsers.length} de {users?.length || 0} usuários {searchTerm && '(filtrados)'}
+              </CardDescription>
+            </div>
+            <div className="relative w-80">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou e-mail..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -223,7 +259,14 @@ export default function Users() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users?.map((user) => (
+              {paginatedUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    {searchTerm ? 'Nenhum usuário encontrado com esse filtro' : 'Nenhum usuário cadastrado'}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
@@ -236,7 +279,7 @@ export default function Users() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        onClick={() => handleToggleStatus(user.id, user.status)}
+                        onClick={() => setConfirmDialog({ open: true, type: 'toggle', userId: user.id, currentStatus: user.status })}
                         title={user.status === "ativo" ? "Inativar usuário" : "Ativar usuário"}
                       >
                         <Power className={`w-4 h-4 ${user.status === "ativo" ? "text-green-600" : "text-gray-400"}`} />
@@ -244,17 +287,72 @@ export default function Users() {
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(user)} title="Editar usuário">
                         <Pencil className="w-4 h-4 text-blue-600" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(user.id)} title="Excluir usuário">
+                      <Button variant="ghost" size="icon" onClick={() => setConfirmDialog({ open: true, type: 'delete', userId: user.id })} title="Excluir usuário">
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </Button>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Página {currentPage} de {totalPages} ({filteredUsers.length} usuários)
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Próxima
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
+
+      {/* Modal de Confirmação */}
+      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog({ open: false, type: 'delete' })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-orange-500" />
+              {confirmDialog.type === 'delete' ? 'Confirmar Exclusão' : 'Confirmar Alteração de Status'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialog.type === 'delete' 
+                ? 'Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.'
+                : `Tem certeza que deseja ${confirmDialog.currentStatus === 'ativo' ? 'inativar' : 'ativar'} este usuário?`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDialog.type === 'delete' ? handleDelete : handleToggleStatus}
+              className={confirmDialog.type === 'delete' ? 'bg-red-600 hover:bg-red-700' : ''}
+            >
+              {confirmDialog.type === 'delete' ? 'Excluir' : 'Confirmar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Dialog de Edição */}
       <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
