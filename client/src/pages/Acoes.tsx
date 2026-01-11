@@ -38,11 +38,20 @@ export default function Acoes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPDI, setFilterPDI] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterUsuario, setFilterUsuario] = useState<string>("all");
+  const [filterLider, setFilterLider] = useState<string>("all");
+  const [filterDepartamento, setFilterDepartamento] = useState<string>("all");
+  const [filterBloco, setFilterBloco] = useState<string>("all");
+  const [filterMacro, setFilterMacro] = useState<string>("all");
+  const [filterMicro, setFilterMicro] = useState<string>("all");
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
 
   const { data: acoes, refetch, isLoading } = trpc.actions.list.useQuery();
   const { data: pdis } = trpc.pdis.list.useQuery();
+  const { data: usuarios } = trpc.users.list.useQuery();
+  const { data: departamentos } = trpc.departamentos.list.useQuery();
   const { data: blocosCompetencias } = trpc.competencias.listBlocos.useQuery();
+  const { data: microsCompetencias } = trpc.competencias.listAllMicrosWithDetails.useQuery();
   
   // Efeito para abrir modal de criação com PDI pré-selecionado
   useEffect(() => {
@@ -229,6 +238,18 @@ export default function Acoes() {
   };
 
   // Filtrar ações
+  // Extrair listas únicas de macros e blocos das micros
+  const macrosCompetencias = useMemo(() => {
+    if (!microsCompetencias) return [];
+    const uniqueMacros = new Map();
+    microsCompetencias.forEach(micro => {
+      if (!uniqueMacros.has(micro.macroId)) {
+        uniqueMacros.set(micro.macroId, { id: micro.macroId, nome: micro.macroNome });
+      }
+    });
+    return Array.from(uniqueMacros.values());
+  }, [microsCompetencias]);
+
   const filteredAcoes = useMemo(() => {
     if (!acoes) return [];
     
@@ -236,10 +257,16 @@ export default function Acoes() {
       const matchesSearch = acao.nome.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPDI = filterPDI === "all" || acao.pdiId === parseInt(filterPDI);
       const matchesStatus = filterStatus === "all" || acao.status === filterStatus;
+      const matchesUsuario = filterUsuario === "all" || acao.pdi?.colaboradorId === parseInt(filterUsuario);
+      const matchesLider = filterLider === "all" || acao.pdi?.colaborador?.leaderId === parseInt(filterLider);
+      const matchesDepartamento = filterDepartamento === "all" || acao.pdi?.colaborador?.departamentoId === parseInt(filterDepartamento);
+      const matchesBloco = filterBloco === "all" || acao.blocoCompetencia?.id === parseInt(filterBloco);
+      const matchesMacro = filterMacro === "all" || acao.macroCompetencia?.id === parseInt(filterMacro);
+      const matchesMicro = filterMicro === "all" || acao.microCompetencia?.id === parseInt(filterMicro);
       
-      return matchesSearch && matchesPDI && matchesStatus;
+      return matchesSearch && matchesPDI && matchesStatus && matchesUsuario && matchesLider && matchesDepartamento && matchesBloco && matchesMacro && matchesMicro;
     });
-  }, [acoes, searchTerm, filterPDI, filterStatus]);
+  }, [acoes, searchTerm, filterPDI, filterStatus, filterUsuario, filterLider, filterDepartamento, filterBloco, filterMacro, filterMicro]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
@@ -295,16 +322,100 @@ export default function Acoes() {
               />
             </div>
             <div>
-              <Label>PDI</Label>
-              <Select value={filterPDI} onValueChange={setFilterPDI}>
+              <Label>Usuário/Colaborador</Label>
+              <Select value={filterUsuario} onValueChange={setFilterUsuario}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  {pdis?.map((pdi) => (
-                    <SelectItem key={pdi.id} value={pdi.id.toString()}>
-                      {pdi.titulo}
+                  {usuarios?.map((user) => (
+                    <SelectItem key={user.id} value={user.id.toString()}>
+                      {user.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Líder</Label>
+              <Select value={filterLider} onValueChange={setFilterLider}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {usuarios?.filter(u => u.role === 'lider' || u.role === 'admin').map((lider) => (
+                    <SelectItem key={lider.id} value={lider.id.toString()}>
+                      {lider.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>Departamento</Label>
+              <Select value={filterDepartamento} onValueChange={setFilterDepartamento}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {departamentos?.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id.toString()}>
+                      {dept.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Bloco de Competência</Label>
+              <Select value={filterBloco} onValueChange={setFilterBloco}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {blocosCompetencias?.map((bloco) => (
+                    <SelectItem key={bloco.id} value={bloco.id.toString()}>
+                      {bloco.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Macrocompetência</Label>
+              <Select value={filterMacro} onValueChange={setFilterMacro}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {macrosCompetencias?.map((macro) => (
+                    <SelectItem key={macro.id} value={macro.id.toString()}>
+                      {macro.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>Microcompetência</Label>
+              <Select value={filterMicro} onValueChange={setFilterMicro}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {microsCompetencias?.map((micro) => (
+                    <SelectItem key={micro.id} value={micro.id.toString()}>
+                      {micro.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>

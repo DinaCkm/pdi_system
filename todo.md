@@ -394,3 +394,21 @@
 - [x] Validação de prazo funcionando
 - [x] Sem erros de TypeScript
 - [x] Sem problemas de z-index
+
+## Filtros Avançados na Página de Ações
+- [x] Adicionar filtro por Usuário/Colaborador
+- [x] Adicionar filtro por Líder
+- [x] Adicionar filtro por Departamento
+- [x] Adicionar filtro por Bloco de Competência
+- [x] Adicionar filtro por Macrocompetência
+- [x] Adicionar filtro por Microcompetência
+- [x] Manter filtro por Status (já existe)
+- [x] Atualizar query de ações para suportar todos os filtros
+- [x] Atualizar getAllActions no db.ts com joins de colaborador e departamento
+- [x] Reorganizar dados em objetos aninhados no backend
+- [x] Implementar lógica de filtros no frontend
+- [x] Testar filtros combinados
+- [x] Todos os 8 filtros implementados e visíveis na interface
+- [x] Grid responsivo com 3 colunas e 3 linhas
+- [x] Filtros funcionando corretamente (Buscar, Usuário, Líder, Departamento, Bloco, Macro, Micro, Status)
+- [x] Interface limpa e organizada

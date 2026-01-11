@@ -527,32 +527,54 @@ export async function getAllActions() {
       createdAt: actions.createdAt,
       updatedAt: actions.updatedAt,
       createdBy: actions.createdBy,
-      pdi: {
-        id: pdis.id,
-        titulo: pdis.titulo,
-        colaboradorId: pdis.colaboradorId,
-      },
-      blocoCompetencia: {
-        id: competenciasBlocos.id,
-        nome: competenciasBlocos.nome,
-      },
-      macroCompetencia: {
-        id: competenciasMacros.id,
-        nome: competenciasMacros.nome,
-      },
-      microCompetencia: {
-        id: competenciasMicros.id,
-        nome: competenciasMicros.nome,
-      },
+      // PDI
+      pdiTitulo: pdis.titulo,
+      pdiColaboradorId: pdis.colaboradorId,
+      // Colaborador
+      colaboradorNome: users.name,
+      colaboradorLeaderId: users.leaderId,
+      colaboradorDepartamentoId: users.departamentoId,
+      // Competências
+      blocoNome: competenciasBlocos.nome,
+      macroNome: competenciasMacros.nome,
+      microNome: competenciasMicros.nome,
     })
     .from(actions)
     .leftJoin(pdis, eq(actions.pdiId, pdis.id))
+    .leftJoin(users, eq(pdis.colaboradorId, users.id))
     .leftJoin(competenciasBlocos, eq(actions.blocoId, competenciasBlocos.id))
     .leftJoin(competenciasMacros, eq(actions.macroId, competenciasMacros.id))
     .leftJoin(competenciasMicros, eq(actions.microId, competenciasMicros.id))
     .orderBy(desc(actions.createdAt));
   
-  return result;
+  // Reorganizar em objetos aninhados
+  return result.map(row => ({
+    id: row.id,
+    pdiId: row.pdiId,
+    blocoCompetenciaId: row.blocoCompetenciaId,
+    macroCompetenciaId: row.macroCompetenciaId,
+    microCompetenciaId: row.microCompetenciaId,
+    nome: row.nome,
+    descricao: row.descricao,
+    prazo: row.prazo,
+    status: row.status,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    createdBy: row.createdBy,
+    pdi: row.pdiTitulo ? {
+      id: row.pdiId,
+      titulo: row.pdiTitulo,
+      colaboradorId: row.pdiColaboradorId,
+      colaborador: row.colaboradorNome ? {
+        nome: row.colaboradorNome,
+        leaderId: row.colaboradorLeaderId,
+        departamentoId: row.colaboradorDepartamentoId,
+      } : null,
+    } : null,
+    blocoCompetencia: row.blocoNome ? { id: row.blocoCompetenciaId, nome: row.blocoNome } : null,
+    macroCompetencia: row.macroNome ? { id: row.macroCompetenciaId, nome: row.macroNome } : null,
+    microCompetencia: row.microNome ? { id: row.microCompetenciaId, nome: row.microNome } : null,
+  }));
 }
 
 export async function getActionById(id: number) {
