@@ -969,3 +969,20 @@ export async function getPendingAdjustmentRequestsByLeaderId(leaderId: number) {
     ))
     .orderBy(desc(adjustmentRequests.createdAt));
 }
+
+// ============= SINCRONIZAÇÃO DE LÍDER POR DEPARTAMENTO =============
+
+/**
+ * Sincroniza o líder de todos os usuários de um departamento
+ * Quando o líder do departamento é alterado, todos os usuários daquele departamento
+ * automaticamente herdam o novo líder
+ */
+export async function syncDepartmentLeader(departamentoId: number, leaderId: number | null) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Atualizar leaderId de todos os usuários do departamento
+  await db.update(users)
+    .set({ leaderId: leaderId })
+    .where(eq(users.departamentoId, departamentoId));
+}

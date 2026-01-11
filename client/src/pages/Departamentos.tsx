@@ -38,6 +38,7 @@ import { toast } from "sonner";
 type DepartamentoFormData = {
   nome: string;
   descricao: string;
+  leaderId: number | null;
 };
 
 export default function Departamentos() {
@@ -49,9 +50,11 @@ export default function Departamentos() {
   const [formData, setFormData] = useState<DepartamentoFormData>({
     nome: "",
     descricao: "",
+    leaderId: null,
   });
 
   const { data: departamentos, isLoading, refetch } = trpc.departamentos.list.useQuery();
+  const { data: users } = trpc.users.list.useQuery();
   const createMutation = trpc.departamentos.create.useMutation();
   const updateMutation = trpc.departamentos.update.useMutation();
   const deleteMutation = trpc.departamentos.delete.useMutation();
@@ -71,7 +74,7 @@ export default function Departamentos() {
       await createMutation.mutateAsync(formData);
       toast.success("Departamento criado com sucesso!");
       setIsCreateOpen(false);
-      setFormData({ nome: "", descricao: "" });
+      setFormData({ nome: "", descricao: "", leaderId: null });
       refetch();
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar departamento");
@@ -83,6 +86,7 @@ export default function Departamentos() {
     setFormData({
       nome: dept.nome,
       descricao: dept.descricao || "",
+      leaderId: dept.leaderId || null,
     });
     setIsEditOpen(true);
   };
@@ -101,7 +105,7 @@ export default function Departamentos() {
       toast.success("Departamento atualizado com sucesso!");
       setIsEditOpen(false);
       setSelectedDepartamento(null);
-      setFormData({ nome: "", descricao: "" });
+      setFormData({ nome: "", descricao: "", leaderId: null });
       refetch();
     } catch (error: any) {
       toast.error(error.message || "Erro ao atualizar departamento");
@@ -173,6 +177,7 @@ export default function Departamentos() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Descrição</TableHead>
+                <TableHead>Líder</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -180,7 +185,7 @@ export default function Departamentos() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center">
+                  <TableCell colSpan={5} className="text-center">
                     Carregando...
                   </TableCell>
                 </TableRow>
@@ -190,6 +195,13 @@ export default function Departamentos() {
                     <TableCell className="font-medium">{dept.nome}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {dept.descricao || "-"}
+                    </TableCell>
+                    <TableCell>
+                      {dept.leaderId ? (
+                        users?.find(u => u.id === dept.leaderId)?.name || "-"
+                      ) : (
+                        <span className="text-muted-foreground italic">Sem líder</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={dept.status === "ativo" ? "default" : "secondary"}>
@@ -230,7 +242,7 @@ export default function Departamentos() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
                     {searchTerm
                       ? "Nenhum departamento encontrado com esse termo de busca"
                       : "Nenhum departamento cadastrado"}
@@ -271,6 +283,30 @@ export default function Departamentos() {
                 rows={3}
               />
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="leader">Líder do Departamento</Label>
+              <select
+                id="leader"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={formData.leaderId?.toString() || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    leaderId: e.target.value ? parseInt(e.target.value) : null,
+                  })
+                }
+              >
+                <option value="">Nenhum líder atribuído</option>
+                {users?.filter(u => u.status === "ativo" && (u.role === "admin" || u.role === "lider")).map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.role === "admin" ? "Admin" : "Líder"})
+                  </option>
+                ))}
+              </select>
+              <p className="text-sm text-muted-foreground">
+                Todos os usuários deste departamento terão este líder automaticamente
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
@@ -309,6 +345,30 @@ export default function Departamentos() {
                 onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
                 rows={3}
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-leader">Líder do Departamento</Label>
+              <select
+                id="edit-leader"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={formData.leaderId?.toString() || ""}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    leaderId: e.target.value ? parseInt(e.target.value) : null,
+                  })
+                }
+              >
+                <option value="">Nenhum líder atribuído</option>
+                {users?.filter(u => u.status === "ativo" && (u.role === "admin" || u.role === "lider")).map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.role === "admin" ? "Admin" : "Líder"})
+                  </option>
+                ))}
+              </select>
+              <p className="text-sm text-muted-foreground">
+                Ao mudar o líder, todos os usuários deste departamento terão o novo líder
+              </p>
             </div>
           </div>
           <DialogFooter>

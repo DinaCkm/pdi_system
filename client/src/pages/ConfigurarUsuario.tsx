@@ -58,16 +58,23 @@ export default function ConfigurarUsuario() {
         return;
       }
 
-      if ((formData.role === "lider" || formData.role === "user") && !formData.leaderId) {
-        toast.error(`${formData.role === "lider" ? "Líderes" : "Colaboradores"} devem ter um líder atribuído.`);
-        return;
+      // Buscar líder automaticamente do departamento
+      let leaderIdToSet: number | null = null;
+      if (formData.departamentoId) {
+        const dept = departamentos?.find(d => d.id === formData.departamentoId);
+        leaderIdToSet = dept?.leaderId || null;
+        
+        if (!leaderIdToSet && (formData.role === "lider" || formData.role === "user")) {
+          toast.error("O departamento selecionado não possui um líder definido. Configure o líder do departamento primeiro.");
+          return;
+        }
       }
 
       await updateMutation.mutateAsync({
         id: userId,
         role: formData.role as any,
         departamentoId: formData.departamentoId,
-        leaderId: formData.leaderId,
+        leaderId: leaderIdToSet,
       });
 
       toast.success("Configuração salva com sucesso!");
@@ -196,31 +203,26 @@ export default function ConfigurarUsuario() {
               </div>
             )}
 
-            {/* Líder (condicional) */}
+            {/* Líder (automático pelo departamento) */}
             {(formData.role === "lider" || formData.role === "user") && formData.departamentoId && (
               <div className="space-y-2">
-                <Label htmlFor="leader">Líder *</Label>
-                <select
-                  id="leader"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  value={formData.leaderId?.toString() || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      leaderId: e.target.value ? parseInt(e.target.value) : null,
-                    })
-                  }
-                  required
-                >
-                  <option value="">Selecione um líder</option>
-                  {availableLeaders.map((leader) => (
-                    <option key={leader.id} value={leader.id}>
-                      {leader.name} ({leader.role === "admin" ? "Admin" : "Líder"})
-                    </option>
-                  ))}
-                </select>
+                <Label>Líder do Departamento</Label>
+                <div className="flex h-10 items-center rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                  {(() => {
+                    const dept = departamentos?.find(d => d.id === formData.departamentoId);
+                    if (!dept?.leaderId) {
+                      return <span className="text-muted-foreground italic">Departamento sem líder definido</span>;
+                    }
+                    const leader = users?.find(u => u.id === dept.leaderId);
+                    return leader ? (
+                      <span>{leader.name} ({leader.role === "admin" ? "Admin" : "Líder"})</span>
+                    ) : (
+                      <span className="text-muted-foreground italic">Líder não encontrado</span>
+                    );
+                  })()}
+                </div>
                 <p className="text-sm text-muted-foreground">
-                  Líder deve estar no mesmo departamento
+                  🔒 Líder é definido automaticamente pelo departamento
                 </p>
               </div>
             )}

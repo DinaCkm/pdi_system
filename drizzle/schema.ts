@@ -49,12 +49,17 @@ export const departamentos = mysqlTable("departamentos", {
   id: int("id").autoincrement().primaryKey(),
   nome: varchar("nome", { length: 255 }).notNull().unique(),
   descricao: text("descricao"),
+  leaderId: int("leaderId"), // Líder do departamento (Admin ou Líder)
   status: mysqlEnum("status", ["ativo", "inativo"]).default("ativo").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export const departamentosRelations = relations(departamentos, ({ many }) => ({
+export const departamentosRelations = relations(departamentos, ({ one, many }) => ({
   users: many(users),
+  leader: one(users, {
+    fields: [departamentos.leaderId],
+    references: [users.id],
+  }),
 }));
 
 export type Departamento = typeof departamentos.$inferSelect;

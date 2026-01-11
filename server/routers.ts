@@ -26,6 +26,7 @@ export const appRouter = router({
       .input(z.object({
         nome: z.string().min(1, "Nome é obrigatório"),
         descricao: z.string().optional(),
+        leaderId: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
         await db.createDepartamento(input);
@@ -37,11 +38,20 @@ export const appRouter = router({
         id: z.number(),
         nome: z.string().min(1).optional(),
         descricao: z.string().optional(),
+        leaderId: z.number().optional().nullable(),
         status: z.enum(["ativo", "inativo"]).optional(),
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
+        
+        // Atualizar departamento
         await db.updateDepartamento(id, data);
+        
+        // Se o líder foi alterado, sincronizar todos os usuários do departamento
+        if (data.leaderId !== undefined) {
+          await db.syncDepartmentLeader(id, data.leaderId);
+        }
+        
         return { success: true };
       }),
 

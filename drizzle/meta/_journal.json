@@ -50,6 +50,13 @@
       "when": 1768169254497,
       "tag": "0006_lumpy_ozymandias",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1768172221116,
+      "tag": "0007_clean_prowler",
+      "breakpoints": true
     }
   ]
 }
