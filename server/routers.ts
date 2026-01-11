@@ -237,6 +237,17 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getSubordinates(input.leaderId);
       }),
+
+    listDeleted: adminProcedure.query(async () => {
+      return await db.getDeletedUsers();
+    }),
+
+    restore: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.restoreUser(input.id);
+        return { success: true };
+      }),
   }),
 
   // ============= GESTÃO DE COMPETÊNCIAS =============

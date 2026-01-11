@@ -497,3 +497,15 @@
 - [x] Adicionar campo de comentários para Líder dar feedback
 - [x] Testar fluxo completo: solicitar → comentar → aprovar/reprovar
 - [x] Adicionar notificações quando há novos comentários
+
+## Soft Delete de Usuários com Retenção de 6 Meses
+- [x] Adicionar campo deletedAt (timestamp nullable) no schema de users
+- [x] Modificar procedure de exclusão para setar deletedAt ao invés de DELETE
+- [x] Criar procedure de reativação (limpar deletedAt se dentro de 6 meses)
+- [x] Modificar listagem de usuários para filtrar deletedAt IS NULL
+- [x] Criar página /usuarios-inativos para Admin visualizar e reativar
+- [x] Adicionar validação: não permitir reativação após 6 meses
+- [x] Criar função permanentlyDeleteOldUsers para exclusão permanente após 6 meses
+- [x] Trocar botão "Excluir" para "Inativar" na interface
+- [x] Atualizar mensagens para refletir "inativar" ao invés de "excluir"
+- [x] Adicionar link "Usuários Inativos" no menu do Admin
