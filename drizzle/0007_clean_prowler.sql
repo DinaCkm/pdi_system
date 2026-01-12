@@ -1,0 +1,1 @@
+ALTER TABLE `departamentos` ADD `leaderId` int;

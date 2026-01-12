@@ -21,16 +21,43 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2, CheckSquare, MessageSquarePlus } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
-];
+const getMenuItems = (userRole: string) => {
+  const items = [];
+  
+  if (userRole === "admin") {
+    items.push(
+      { icon: Users, label: "Usuários", path: "/usuarios" },
+      { icon: Building2, label: "Departamentos", path: "/departamentos" },
+      { icon: Target, label: "Competências", path: "/competencias" },
+      { icon: Calendar, label: "Ciclos", path: "/ciclos" },
+      { icon: FileText, label: "PDIs", path: "/pdis" },
+      { icon: CheckSquare, label: "Ações", path: "/acoes" },
+      { icon: MessageSquarePlus, label: "Solicitações de Ajuste", path: "/solicitacoes-ajuste" },
+      { icon: Bell, label: "Pendências", path: "/pendencias" },
+      { icon: BarChart, label: "Relatórios", path: "/relatorios" },
+    );
+  } else if (userRole === "lider") {
+    items.push(
+      { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
+      { icon: Target, label: "PDIs da Equipe", path: "/pdis-equipe" },
+      { icon: MessageSquarePlus, label: "Solicitações da Equipe", path: "/solicitacoes-equipe" },
+      { icon: Bell, label: "Pendências", path: "/pendencias" },
+    );
+  } else {
+    items.push(
+      { icon: FileText, label: "Meu PDI", path: "/pdis" },
+      { icon: Bell, label: "Pendências", path: "/pendencias" },
+    );
+  }
+  
+  return items;
+};
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
@@ -112,7 +139,8 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const menuItems = getMenuItems(user?.role || "colaborador");
+  const activeMenuItem = menuItems.find((item: any) => item.path === location);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -180,7 +208,7 @@ function DashboardLayoutContent({
 
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
+              {menuItems.map((item: any) => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
@@ -257,7 +285,7 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-6 max-w-full overflow-x-hidden">{children}</main>
       </SidebarInset>
     </>
   );

@@ -1,0 +1,45 @@
+{
+  "query": "SELECT * FROM competencias_blocos LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT * FROM competencias_blocos LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "nome": "Bloco Teste",
+      "descricao": "Bloco para testes",
+      "status": "ativo",
+      "createdAt": "2026-01-11 02:03:39"
+    },
+    {
+      "id": "4",
+      "nome": "Competências Técnicas",
+      "descricao": "Habilidades técnicas e conhecimentos específicos",
+      "status": "ativo",
+      "createdAt": "2026-01-11 03:25:30"
+    },
+    {
+      "id": "5",
+      "nome": "Competências Comportamentais",
+      "descricao": "Habilidades interpessoais e comportamentais",
+      "status": "ativo",
+      "createdAt": "2026-01-11 03:25:30"
+    },
+    {
+      "id": "6",
+      "nome": "Competências de Liderança",
+      "descricao": "Habilidades de gestão e liderança de equipes",
+      "status": "ativo",
+      "createdAt": "2026-01-11 03:25:30"
+    },
+    {
+      "id": "30002",
+      "nome": "Liderança",
+      "descricao": "Competências relacionadas a liderança e gestão de pessoas",
+      "status": "ativo",
+      "createdAt": "2026-01-11 17:33:14"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnome\tdescricao\tstatus\tcreatedAt\n1\tBloco Teste\tBloco para testes\tativo\t2026-01-11 02:03:39\n4\tCompetências Técnicas\tHabilidades técnicas e conhecimentos específicos\tativo\t2026-01-11 03:25:30\n5\tCompetências Comportamentais\tHabilidades interpessoais e comportamentais\tativo\t2026-01-11 03:25:30\n6\tCompetências de Liderança\tHabilidades de gestão e liderança de equipes\tativo\t2026-01-11 03:25:30\n30002\tLiderança\tCompetências relacionadas a liderança e gestão de pessoas\tativo\t2026-01-11 17:33:14\n",
+  "stderr": "",
+  "execution_time_ms": 421
+}
