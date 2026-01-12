@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft, Save, CheckCircle2 } from "lucide-react";
+import { Loader2, ArrowLeft, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
@@ -16,7 +16,6 @@ export default function ConfigurarUsuario() {
 
   const [selectedRole, setSelectedRole] = useState<"colaborador" | "lider" | "admin">("colaborador");
   const [selectedDepartamento, setSelectedDepartamento] = useState<number | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
 
   const { data: user, isLoading: loadingUser } = trpc.users.getById.useQuery(
     { id: userId! },
@@ -53,7 +52,19 @@ export default function ConfigurarUsuario() {
         departamentoId: selectedDepartamento,
       });
 
-      setShowSuccess(true);
+      toast.success(`Perfil de ${user?.name} atualizado com sucesso!`);
+      
+      // Mostrar mensagem adicional para líderes
+      if (selectedRole === "lider") {
+        setTimeout(() => {
+          toast.info("Próximo passo: Vá em Departamentos e defina este usuário como líder do departamento.");
+        }, 1500);
+      }
+      
+      // Navegar de volta após sucesso
+      setTimeout(() => {
+        navigate("/usuarios");
+      }, 2000);
     } catch (error: any) {
       toast.error(error.message || "Erro ao salvar configuração");
     }
@@ -83,47 +94,8 @@ export default function ConfigurarUsuario() {
     );
   }
 
-  // Tela de sucesso
-  if (showSuccess) {
-    return (
-      <div key="success-screen" className="container max-w-2xl py-8">
-        <Card className="border-green-200 bg-green-50">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center gap-4 text-center">
-              <div className="rounded-full bg-green-100 p-3">
-                <CheckCircle2 className="h-8 w-8 text-green-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-green-900">Perfil Configurado!</h3>
-                <p className="text-sm text-green-700 mt-1">
-                  O perfil de <strong>{user.name}</strong> foi atualizado com sucesso.
-                </p>
-              </div>
-              <Button
-                onClick={() => navigate("/usuarios")}
-                className="mt-2"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar para Usuários
-              </Button>
-              
-              {selectedRole === "lider" && (
-                <Alert key="success-lider-alert" className="mt-4">
-                  <InfoIcon className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Próximo passo:</strong> Vá em <strong>Departamentos</strong> e defina este usuário como líder do departamento selecionado.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div key="form-screen" className="container max-w-4xl py-8">
+    <div className="container max-w-4xl py-8">
       <Button
         variant="ghost"
         onClick={() => navigate("/usuarios")}
@@ -242,7 +214,7 @@ export default function ConfigurarUsuario() {
 
             {/* Seleção de Departamento (condicional) */}
             {(selectedRole === "lider" || selectedRole === "colaborador") && (
-              <div key="departamento-section" className="space-y-2">
+              <div className="space-y-2">
                 <Label htmlFor="departamento">Departamento *</Label>
                 <select
                   id="departamento"
@@ -268,7 +240,7 @@ export default function ConfigurarUsuario() {
 
             {/* Informação sobre líder automático */}
             {selectedRole === "lider" && (
-              <Alert key="lider-alert">
+              <Alert>
                 <InfoIcon className="h-4 w-4" />
                 <AlertDescription>
                   <strong>Importante:</strong> Após salvar, vá em <strong>Departamentos</strong> e defina este usuário como líder do departamento. Todos os colaboradores desse departamento terão este usuário como líder automaticamente.

@@ -520,6 +520,6 @@
 - [x] Garantir consistência de layout em todas as páginas
 
 ## Bug Crítico - ConfigurarUsuario
-- [x] Corrigir erro NotFoundError ao atribuir departamento ao colaborador
-- [x] Problema de renderização condicional ao SALVAR (transição formulário -> sucesso)
-- [x] Adicionar keys únicas em todas as telas (form-screen, success-screen)
+- [x] Tentativa 1: Adicionar keys em elementos condicionais (NÃO funcionou)
+- [x] Tentativa 2: Adicionar keys nas telas principais (NÃO funcionou)
+- [x] Tentativa 3: Refatorar para usar navegação + toast ao invés de tela de sucesso condicional (RESOLVIDO)
