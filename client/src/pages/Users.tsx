@@ -14,9 +14,11 @@ import { useLocation } from "wouter";
 
 export default function Users() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; userId?: number }>({ open: false });
+  const [editingUser, setEditingUser] = useState<number | null>(null);
   const ITEMS_PER_PAGE = 10;
   const [, navigate] = useLocation();
 
@@ -31,6 +33,7 @@ export default function Users() {
   const { data: users, isLoading, refetch } = trpc.users.list.useQuery();
   const { data: departamentos } = trpc.departamentos.list.useQuery();
   const createMutation = trpc.users.create.useMutation();
+  const updateMutation = trpc.users.update.useMutation();
   const deleteMutation = trpc.users.delete.useMutation();
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -49,6 +52,37 @@ export default function Users() {
       refetch();
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar usuário");
+    }
+  };
+
+  const handleEdit = (user: any) => {
+    setEditingUser(user.id);
+    setFormData({
+      name: user.name,
+      email: user.email,
+      cpf: user.cpf,
+      cargo: user.cargo,
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    
+    try {
+      await updateMutation.mutateAsync({
+        id: editingUser,
+        ...formData,
+      });
+      
+      toast.success("Dados do usuário atualizados com sucesso!");
+      setIsEditOpen(false);
+      setEditingUser(null);
+      setFormData({ name: "", email: "", cpf: "", cargo: "" });
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao atualizar usuário");
     }
   };
 
@@ -185,6 +219,14 @@ export default function Users() {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => handleEdit(user)}
+                            title="Editar Dados"
+                          >
+                            <Pencil className="h-4 w-4 text-green-600" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => navigate(`/usuarios/${user.id}/configurar`)}
                             title="Configurar Perfil"
                           >
@@ -248,9 +290,9 @@ export default function Users() {
           <form onSubmit={handleCreate}>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nome Completo *</Label>
+                <Label htmlFor="create-name">Nome Completo *</Label>
                 <Input
-                  id="name"
+                  id="create-name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
@@ -258,9 +300,9 @@ export default function Users() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">E-mail *</Label>
+                <Label htmlFor="create-email">E-mail *</Label>
                 <Input
-                  id="email"
+                  id="create-email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -269,9 +311,9 @@ export default function Users() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cpf">CPF *</Label>
+                <Label htmlFor="create-cpf">CPF *</Label>
                 <Input
-                  id="cpf"
+                  id="create-cpf"
                   value={formData.cpf}
                   onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
                   placeholder="000.000.000-00"
@@ -280,9 +322,9 @@ export default function Users() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="cargo">Cargo *</Label>
+                <Label htmlFor="create-cargo">Cargo *</Label>
                 <Input
-                  id="cargo"
+                  id="create-cargo"
                   value={formData.cargo}
                   onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
                   required
@@ -296,6 +338,73 @@ export default function Users() {
               </Button>
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending ? "Criando..." : "Criar Usuário"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Edição de Usuário */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Dados do Usuário</DialogTitle>
+            <DialogDescription>
+              Atualize os dados básicos do usuário (nome, email, CPF, cargo).
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleUpdate}>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Nome Completo *</Label>
+                <Input
+                  id="edit-name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-email">E-mail *</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-cpf">CPF *</Label>
+                <Input
+                  id="edit-cpf"
+                  value={formData.cpf}
+                  onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
+                  placeholder="000.000.000-00"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-cargo">Cargo *</Label>
+                <Input
+                  id="edit-cargo"
+                  value={formData.cargo}
+                  onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="mt-6">
+              <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
               </Button>
             </DialogFooter>
           </form>

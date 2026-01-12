@@ -529,3 +529,10 @@
 - [x] Remover validação que exige seleção manual de líder
 - [x] Líder deve vir automaticamente do departamento selecionado
 - [x] Buscar leaderId do departamento e atribuir automaticamente
+
+## Feature - Editar Dados do Usuário
+- [x] Adicionar botão "Editar" na tabela de usuários
+- [x] Criar modal/dialog para edição de dados básicos (nome, email, CPF, cargo)
+- [x] Implementar validação de CPF duplicado (backend já valida)
+- [x] Implementar validação de email válido (HTML5 type="email")
+- [x] Testar fluxo completo de edição
