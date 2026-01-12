@@ -522,4 +522,5 @@
 ## Bug Crítico - ConfigurarUsuario
 - [x] Tentativa 1: Adicionar keys em elementos condicionais (NÃO funcionou)
 - [x] Tentativa 2: Adicionar keys nas telas principais (NÃO funcionou)
-- [x] Tentativa 3: Refatorar para usar navegação + toast ao invés de tela de sucesso condicional (RESOLVIDO)
+- [x] Tentativa 3: Refatorar para usar navegação + toast (NÃO funcionou)
+- [x] Tentativa 4: Forçar remontagem completa usando key={userId} no wrapper do App.tsx

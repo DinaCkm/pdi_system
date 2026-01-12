@@ -35,9 +35,11 @@ function Router() {  return (
       </Route>
       
       <Route path={"/usuarios/:id/configurar"}>
-        <DashboardLayout>
-          <ConfigurarUsuario />
-        </DashboardLayout>
+        {(params) => (
+          <DashboardLayout>
+            <ConfigurarUsuario key={params.id} />
+          </DashboardLayout>
+        )}
       </Route>
       
       <Route path={"/competencias"}>
