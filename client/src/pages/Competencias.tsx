@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
+import SimilarityWarning from "@/components/SimilarityWarning";
+import { useEffect } from "react";
 
 export default function Competencias() {
   const utils = trpc.useUtils();
@@ -34,6 +36,11 @@ export default function Competencias() {
   const [searchBloco, setSearchBloco] = useState("");
   const [searchMacro, setSearchMacro] = useState("");
   const [searchMicro, setSearchMicro] = useState("");
+  
+  // Estados para detecção de similaridade
+  const [showBlocoSimilarity, setShowBlocoSimilarity] = useState(false);
+  const [showMacroSimilarity, setShowMacroSimilarity] = useState(false);
+  const [showMicroSimilarity, setShowMicroSimilarity] = useState(false);
 
   // Estados para ordenação
   type SortDirection = 'asc' | 'desc' | null;
@@ -48,69 +55,131 @@ export default function Competencias() {
   const { data: blocos, isLoading: loadingBlocos } = trpc.competencias.listBlocos.useQuery();
   const { data: macros, isLoading: loadingMacros } = trpc.competencias.listAllMacros.useQuery();
   const { data: micros, isLoading: loadingMicros } = trpc.competencias.listAllMicros.useQuery();
+  
+  // Queries de similaridade (apenas quando nome tem 3+ caracteres)
+  const { data: similarBlocos, isLoading: loadingSimilarBlocos } = trpc.competencias.findSimilarBlocos.useQuery(
+    { nome: blocoForm.nome },
+    { enabled: blocoForm.nome.length >= 3 && !editingBloco }
+  );
+  
+  const { data: similarMacros, isLoading: loadingSimilarMacros } = trpc.competencias.findSimilarMacros.useQuery(
+    { nome: macroForm.nome, blocoId: macroForm.blocoId ? parseInt(macroForm.blocoId) : undefined },
+    { enabled: macroForm.nome.length >= 3 && !editingMacro }
+  );
+  
+  const { data: similarMicros, isLoading: loadingSimilarMicros } = trpc.competencias.findSimilarMicros.useQuery(
+    { nome: microForm.nome, macroId: microForm.macroId ? parseInt(microForm.macroId) : undefined },
+    { enabled: microForm.nome.length >= 3 && !editingMicro }
+  );
+  
+  // Atualizar visibilidade de avisos de similaridade
+  useEffect(() => {
+    setShowBlocoSimilarity(blocoForm.nome.length >= 3 && !editingBloco);
+  }, [blocoForm.nome, editingBloco]);
+  
+  useEffect(() => {
+    setShowMacroSimilarity(macroForm.nome.length >= 3 && !editingMacro);
+  }, [macroForm.nome, editingMacro]);
+  
+  useEffect(() => {
+    setShowMicroSimilarity(microForm.nome.length >= 3 && !editingMicro);
+  }, [microForm.nome, editingMicro]);
 
   // Mutations - Blocos
   const createBlocoMutation = trpc.competencias.createBloco.useMutation({
-    onSuccess: () => {
-      window.location.reload();
+    onSuccess: async () => {
+      toast.success("Bloco criado com sucesso!");
+      await utils.competencias.listBlocos.refetch();
+      setBlocoDialogOpen(false);
+      setBlocoForm({ nome: "", descricao: "" });
     },
     onError: (error) => toast.error(error.message),
   });
 
   const updateBlocoMutation = trpc.competencias.updateBloco.useMutation({
-    onSuccess: () => {
-      window.location.reload();
+    onSuccess: async () => {
+      toast.success("Bloco atualizado com sucesso!");
+      await utils.competencias.listBlocos.refetch();
+      setBlocoDialogOpen(false);
+      setEditingBloco(null);
+      setBlocoForm({ nome: "", descricao: "" });
     },
     onError: (error) => toast.error(error.message),
   });
 
   const deleteBlocoMutation = trpc.competencias.deleteBloco.useMutation({
-    onSuccess: () => {
-      window.location.reload();
+    onSuccess: async () => {
+      toast.success("Bloco excluído com sucesso!");
+      await utils.competencias.listBlocos.refetch();
+      await utils.competencias.listMacros.refetch();
     },
     onError: (error) => toast.error(error.message),
   });
 
   // Mutations - Macros
   const createMacroMutation = trpc.competencias.createMacro.useMutation({
-    onSuccess: () => {
-      window.location.reload();
+    onSuccess: async () => {
+      toast.success("Macro criada com sucesso!");
+      setMacroDialogOpen(false);
+      setMacroForm({ nome: "", descricao: "", blocoId: "" });
+      // Aguardar um pouco antes de refetch para garantir que a UI atualize
+      setTimeout(async () => {
+        await utils.competencias.listMacros.refetch();
+      }, 100);
     },
     onError: (error) => toast.error(error.message),
   });
 
   const updateMacroMutation = trpc.competencias.updateMacro.useMutation({
-    onSuccess: () => {
-      window.location.reload();
+    onSuccess: async () => {
+      toast.success("Macro atualizada com sucesso!");
+      setMacroDialogOpen(false);
+      setEditingMacro(null);
+      setMacroForm({ nome: "", descricao: "", blocoId: "" });
+      setTimeout(async () => {
+        await utils.competencias.listMacros.refetch();
+      }, 100);
     },
     onError: (error) => toast.error(error.message),
   });
 
   const deleteMacroMutation = trpc.competencias.deleteMacro.useMutation({
-    onSuccess: () => {
-      window.location.reload();
+    onSuccess: async () => {
+      toast.success("Macro excluída com sucesso!");
+      setTimeout(async () => {
+        await utils.competencias.listMacros.refetch();
+        await utils.competencias.listMicros.refetch();
+      }, 100);
     },
     onError: (error) => toast.error(error.message),
   });
 
   // Mutations - Micros
   const createMicroMutation = trpc.competencias.createMicro.useMutation({
-    onSuccess: () => {
-      window.location.reload();
+    onSuccess: async () => {
+      toast.success("Micro criada com sucesso!");
+      await utils.competencias.listMicros.refetch();
+      setMicroDialogOpen(false);
+      setMicroForm({ nome: "", descricao: "", macroId: "" });
     },
     onError: (error) => toast.error(error.message),
   });
 
   const updateMicroMutation = trpc.competencias.updateMicro.useMutation({
-    onSuccess: () => {
-      window.location.reload();
+    onSuccess: async () => {
+      toast.success("Micro atualizada com sucesso!");
+      await utils.competencias.listMicros.refetch();
+      setMicroDialogOpen(false);
+      setEditingMicro(null);
+      setMicroForm({ nome: "", descricao: "", macroId: "" });
     },
     onError: (error) => toast.error(error.message),
   });
 
   const deleteMicroMutation = trpc.competencias.deleteMicro.useMutation({
-    onSuccess: () => {
-      window.location.reload();
+    onSuccess: async () => {
+      toast.success("Micro excluída com sucesso!");
+      await utils.competencias.listMicros.refetch();
     },
     onError: (error) => toast.error(error.message),
   });
@@ -376,6 +445,16 @@ export default function Competencias() {
                           placeholder="Descrição opcional"
                         />
                       </div>
+                      
+                      {/* Aviso de Similaridade */}
+                      {showBlocoSimilarity && (
+                        <SimilarityWarning 
+                          items={similarBlocos || []} 
+                          type="Bloco"
+                          isLoading={loadingSimilarBlocos}
+                        />
+                      )}
+                      
                       <Button
                         onClick={editingBloco ? handleUpdateBloco : handleCreateBloco}
                         className="w-full bg-gradient-to-r from-blue-600 to-orange-600"
@@ -489,11 +568,7 @@ export default function Competencias() {
                         <Label htmlFor="macro-bloco">Bloco *</Label>
                         <Select
                           value={macroForm.blocoId}
-                          onValueChange={(value) => {
-                            setTimeout(() => {
-                              setMacroForm({ ...macroForm, blocoId: value });
-                            }, 0);
-                          }}
+                          onValueChange={(value) => setMacroForm({ ...macroForm, blocoId: value })}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um bloco" />
@@ -525,6 +600,16 @@ export default function Competencias() {
                           placeholder="Descrição opcional"
                         />
                       </div>
+                      
+                      {/* Aviso de Similaridade */}
+                      {showMacroSimilarity && (
+                        <SimilarityWarning 
+                          items={similarMacros || []} 
+                          type="Macro"
+                          isLoading={loadingSimilarMacros}
+                        />
+                      )}
+                      
                       <Button
                         onClick={editingMacro ? handleUpdateMacro : handleCreateMacro}
                         className="w-full bg-gradient-to-r from-blue-600 to-orange-600"
@@ -651,11 +736,7 @@ export default function Competencias() {
                         <Label htmlFor="micro-macro">Macro *</Label>
                         <Select
                           value={microForm.macroId}
-                          onValueChange={(value) => {
-                            setTimeout(() => {
-                              setMicroForm({ ...microForm, macroId: value });
-                            }, 0);
-                          }}
+                          onValueChange={(value) => setMicroForm({ ...microForm, macroId: value })}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione uma macro" />
@@ -687,6 +768,16 @@ export default function Competencias() {
                           placeholder="Descrição opcional"
                         />
                       </div>
+                      
+                      {/* Aviso de Similaridade */}
+                      {showMicroSimilarity && (
+                        <SimilarityWarning 
+                          items={similarMicros || []} 
+                          type="Micro"
+                          isLoading={loadingSimilarMicros}
+                        />
+                      )}
+                      
                       <Button
                         onClick={editingMicro ? handleUpdateMicro : handleCreateMicro}
                         className="w-full bg-gradient-to-r from-blue-600 to-orange-600"

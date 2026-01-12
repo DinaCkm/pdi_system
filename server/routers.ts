@@ -6,6 +6,45 @@ import * as db from "./db";
 import { invokeLLM } from "./_core/llm";
 import { authRouter } from "./authRouters";
 
+// Função auxiliar para calcular similaridade entre strings (Levenshtein simplificado)
+function calculateSimilarity(str1: string, str2: string): number {
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+  
+  if (longer.length === 0) return 1.0;
+  
+  const editDistance = levenshteinDistance(longer, shorter);
+  return (longer.length - editDistance) / longer.length;
+}
+
+function levenshteinDistance(str1: string, str2: string): number {
+  const matrix: number[][] = [];
+  
+  for (let i = 0; i <= str2.length; i++) {
+    matrix[i] = [i];
+  }
+  
+  for (let j = 0; j <= str1.length; j++) {
+    matrix[0][j] = j;
+  }
+  
+  for (let i = 1; i <= str2.length; i++) {
+    for (let j = 1; j <= str1.length; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  
+  return matrix[str2.length][str1.length];
+}
+
 export const appRouter = router({
   system: systemRouter,
   auth: authRouter,
@@ -594,6 +633,82 @@ export const appRouter = router({
           skipped,
           total: competencias.length 
         };
+      }),
+
+    // BUSCA POR SIMILARIDADE
+    findSimilarBlocos: adminProcedure
+      .input(z.object({ nome: z.string().min(2) }))
+      .query(async ({ input }) => {
+        const allBlocos = await db.getAllBlocos();
+        const searchTerm = input.nome.toLowerCase().trim();
+        
+        // Calcular similaridade simples (contém substring ou Levenshtein básico)
+        const similar = allBlocos
+          .filter(bloco => {
+            const blocoNome = bloco.nome.toLowerCase();
+            // Verifica se contém a substring ou vice-versa
+            return blocoNome.includes(searchTerm) || 
+                   searchTerm.includes(blocoNome) ||
+                   calculateSimilarity(blocoNome, searchTerm) > 0.6;
+          })
+          .map(bloco => ({
+            ...bloco,
+            similarity: calculateSimilarity(bloco.nome.toLowerCase(), searchTerm)
+          }))
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, 5);
+        
+        return similar;
+      }),
+
+    findSimilarMacros: adminProcedure
+      .input(z.object({ nome: z.string().min(2), blocoId: z.number().optional() }))
+      .query(async ({ input }) => {
+        const allMacros = input.blocoId 
+          ? await db.getMacrosByBlocoId(input.blocoId)
+          : await db.getAllMacros();
+        const searchTerm = input.nome.toLowerCase().trim();
+        
+        const similar = allMacros
+          .filter(macro => {
+            const macroNome = macro.nome.toLowerCase();
+            return macroNome.includes(searchTerm) || 
+                   searchTerm.includes(macroNome) ||
+                   calculateSimilarity(macroNome, searchTerm) > 0.6;
+          })
+          .map(macro => ({
+            ...macro,
+            similarity: calculateSimilarity(macro.nome.toLowerCase(), searchTerm)
+          }))
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, 5);
+        
+        return similar;
+      }),
+
+    findSimilarMicros: adminProcedure
+      .input(z.object({ nome: z.string().min(2), macroId: z.number().optional() }))
+      .query(async ({ input }) => {
+        const allMicros = input.macroId 
+          ? await db.getMicrosByMacroId(input.macroId)
+          : await db.getAllMicros();
+        const searchTerm = input.nome.toLowerCase().trim();
+        
+        const similar = allMicros
+          .filter(micro => {
+            const microNome = micro.nome.toLowerCase();
+            return microNome.includes(searchTerm) || 
+                   searchTerm.includes(microNome) ||
+                   calculateSimilarity(microNome, searchTerm) > 0.6;
+          })
+          .map(micro => ({
+            ...micro,
+            similarity: calculateSimilarity(micro.nome.toLowerCase(), searchTerm)
+          }))
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, 5);
+        
+        return similar;
       }),
   }),
 
