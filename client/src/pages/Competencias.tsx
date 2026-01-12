@@ -562,7 +562,11 @@ export default function Competencias() {
                         <Label htmlFor="macro-bloco">Bloco *</Label>
                         <Select
                           value={macroForm.blocoId}
-                          onValueChange={(value) => setMacroForm({ ...macroForm, blocoId: value })}
+                          onValueChange={(value) => {
+                            setTimeout(() => {
+                              setMacroForm({ ...macroForm, blocoId: value });
+                            }, 0);
+                          }}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um bloco" />
@@ -730,7 +734,11 @@ export default function Competencias() {
                         <Label htmlFor="micro-macro">Macro *</Label>
                         <Select
                           value={microForm.macroId}
-                          onValueChange={(value) => setMicroForm({ ...microForm, macroId: value })}
+                          onValueChange={(value) => {
+                            setTimeout(() => {
+                              setMicroForm({ ...microForm, macroId: value });
+                            }, 0);
+                          }}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione uma macro" />
