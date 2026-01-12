@@ -189,18 +189,15 @@ export default function Users() {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>CPF</TableHead>
-                  <TableHead>Cargo</TableHead>
                   <TableHead>Departamento</TableHead>
                   <TableHead>Perfil</TableHead>
-                  <TableHead>Líder</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       Nenhum usuário encontrado
                     </TableCell>
                   </TableRow>
@@ -209,11 +206,12 @@ export default function Users() {
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.cpf}</TableCell>
-                      <TableCell>{user.cargo}</TableCell>
-                      <TableCell>{getDepartamentoNome(user.departamentoId)}</TableCell>
+                      <TableCell>
+                        <span className="max-w-[200px] truncate block" title={getDepartamentoNome(user.departamentoId)}>
+                          {getDepartamentoNome(user.departamentoId)}
+                        </span>
+                      </TableCell>
                       <TableCell>{getRoleBadge(user.role)}</TableCell>
-                      <TableCell>{getLiderNome(user.leaderId)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button

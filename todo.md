@@ -598,3 +598,8 @@
 - [x] Criar 18 líderes e vincular aos departamentos
 - [x] Criar 131 colaboradores e vincular aos líderes
 - [x] Criar ciclo "1º CICLO DE 2026" (01/01/2026 a 30/06/2026)
+
+## Melhorias de UX/UI - Layout Responsivo
+- [x] Otimizar layout da tabela de usuários (remover colunas CPF e Cargo)
+- [x] Truncar textos longos de departamento com tooltip
+- [ ] Melhorar visualização em telas menores
