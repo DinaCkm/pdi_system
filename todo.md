@@ -569,3 +569,11 @@
 - [x] Usar procedure teamPDIs já criado no backend
 - [x] Mostrar: colaborador, ciclo, título, status, ações vinculadas
 - [x] Adicionar também link "Meu PDI" para líder ver seu próprio PDI
+
+## Verificação do Menu - Concluída
+- [x] Sistema voltou a funcionar após rollback para cf0cfb68
+- [x] Menu do admin com 9 itens verificado e funcionando
+- [x] Página de usuários carregando corretamente
+- [x] Sem erros 404
+- [x] Layout e navegação funcionando
+- [x] Sistema pronto para criar checkpoint final
