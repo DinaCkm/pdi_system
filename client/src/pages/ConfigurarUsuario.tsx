@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo, startTransition } from "react";
-import { flushSync } from "react-dom";
+import { useState, useEffect, useMemo } from "react";
 import { useRoute, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -69,16 +68,14 @@ export default function ConfigurarUsuario() {
     }
   }, [user]);
 
-  // Handler para mudança de departamento com flushSync para renderização síncrona
+  // Handler para mudança de departamento
   const handleDepartamentoChange = (value: string) => {
     const newDeptId = value ? parseInt(value) : undefined;
-    flushSync(() => {
-      setSelectedDepartamento(newDeptId);
-      // Resetar líder quando departamento mudar para evitar conflito de validação
-      if (newDeptId !== selectedDepartamento) {
-        setSelectedLeader(undefined);
-      }
-    });
+    setSelectedDepartamento(newDeptId);
+    // Resetar líder quando departamento mudar
+    if (newDeptId !== selectedDepartamento) {
+      setSelectedLeader(undefined);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -266,9 +263,8 @@ export default function ConfigurarUsuario() {
               </div>
             </div>
 
-            {/* Seleção de Departamento (condicional) */}
-            {(selectedRole === "lider" || selectedRole === "colaborador") && (
-              <div key="departamento-section" className="space-y-2">
+            {/* Seleção de Departamento - SEMPRE RENDERIZADO */}
+            <div className="space-y-2" style={{ display: (selectedRole === "lider" || selectedRole === "colaborador") ? 'block' : 'none' }}>
                 <Label htmlFor="departamento">Departamento *</Label>
                 <select
                   id="departamento"
@@ -286,12 +282,10 @@ export default function ConfigurarUsuario() {
                       </option>
                     ))}
                 </select>
-              </div>
-            )}
+            </div>
 
-            {/* Seleção de Líder (sempre renderizado, desabilitado quando necessário) */}
-            {(selectedRole === "lider" || selectedRole === "colaborador") && (
-              <div className="space-y-2">
+            {/* Seleção de Líder - SEMPRE RENDERIZADO */}
+            <div className="space-y-2" style={{ display: (selectedRole === "lider" || selectedRole === "colaborador") ? 'block' : 'none' }}>
                 <Label htmlFor="lider">Líder {selectedRole === "colaborador" ? "*" : "(opcional)"}</Label>
                 <select
                   id="lider"
@@ -324,18 +318,17 @@ export default function ConfigurarUsuario() {
                     Selecione o líder direto deste {selectedRole === "colaborador" ? "colaborador" : "líder"}.
                   </p>
                 )}
-              </div>
-            )}
+            </div>
 
-            {/* Informação sobre líder automático */}
-            {selectedRole === "lider" && (
-              <Alert key="lider-info-alert">
+            {/* Informação sobre líder automático - SEMPRE RENDERIZADO */}
+            <div style={{ display: selectedRole === "lider" ? 'block' : 'none' }}>
+              <Alert>
                 <InfoIcon className="h-4 w-4" />
                 <AlertDescription>
                   <strong>Importante:</strong> Após salvar, vá em <strong>Departamentos</strong> e defina este usuário como líder do departamento. Todos os colaboradores desse departamento terão este usuário como líder automaticamente.
                 </AlertDescription>
               </Alert>
-            )}
+            </div>
 
             {/* Botões */}
             <div className="flex gap-3 pt-4">
