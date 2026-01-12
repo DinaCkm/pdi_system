@@ -1,0 +1,115 @@
+{
+  "query": "SELECT id, nome, leaderId FROM departamentos;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, nome, leaderId FROM departamentos;",
+  "rows": [
+    {
+      "id": "1",
+      "nome": "RBP-REGIONAL BICO DO PAPAGAIO",
+      "leaderId": "180002"
+    },
+    {
+      "id": "2",
+      "nome": "RME-REGIONAL METROPOLITANA",
+      "leaderId": "180003"
+    },
+    {
+      "id": "3",
+      "nome": "RMN-REGIONAL MÉDIO NORTE COLINAS",
+      "leaderId": "180004"
+    },
+    {
+      "id": "4",
+      "nome": "RNO-REGIONAL NORTE",
+      "leaderId": "180005"
+    },
+    {
+      "id": "5",
+      "nome": "RPJ-REGIONAL PORTAL DO JALAPÃO",
+      "leaderId": "180006"
+    },
+    {
+      "id": "6",
+      "nome": "RSG-REGIONAL SERRAS GERAIS",
+      "leaderId": "180007"
+    },
+    {
+      "id": "7",
+      "nome": "RSU-REGIONAL SUL",
+      "leaderId": "180008"
+    },
+    {
+      "id": "8",
+      "nome": "RVA-REGIONAL VALE DO ARAGUAIA",
+      "leaderId": "180009"
+    },
+    {
+      "id": "9",
+      "nome": "UAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE",
+      "leaderId": "180010"
+    },
+    {
+      "id": "10",
+      "nome": "UAS-UNIDADE DE ADMINISTRAÇÃO E SUPRIMENTOS",
+      "leaderId": "NULL"
+    },
+    {
+      "id": "11",
+      "nome": "CDE-ASSESSORIA",
+      "leaderId": "180011"
+    },
+    {
+      "id": "12",
+      "nome": "SECRETARIA DIREX",
+      "leaderId": "NULL"
+    },
+    {
+      "id": "13",
+      "nome": "UAUD-UNIDADE DE AUDITORIA INTERNA",
+      "leaderId": "180012"
+    },
+    {
+      "id": "14",
+      "nome": "UGE-UNIDADE DE GESTÃO ESTRATÉGICA E INTEGRIDADE",
+      "leaderId": "180013"
+    },
+    {
+      "id": "15",
+      "nome": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS",
+      "leaderId": "180014"
+    },
+    {
+      "id": "16",
+      "nome": "UGP-UNIDADE DE GESTÃO DE PESSOAS",
+      "leaderId": "180015"
+    },
+    {
+      "id": "17",
+      "nome": "UMC-UNIDADE DE MARKETING E COMUNICAÇÃO",
+      "leaderId": "180016"
+    },
+    {
+      "id": "18",
+      "nome": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE",
+      "leaderId": "180017"
+    },
+    {
+      "id": "19",
+      "nome": "URI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL",
+      "leaderId": "180018"
+    },
+    {
+      "id": "20",
+      "nome": "UTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS",
+      "leaderId": "180019"
+    },
+    {
+      "id": "21",
+      "nome": "Ckm Talents - Administradora/UGP",
+      "leaderId": "150008"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnome\tleaderId\n1\tRBP-REGIONAL BICO DO PAPAGAIO\t180002\n2\tRME-REGIONAL METROPOLITANA\t180003\n3\tRMN-REGIONAL MÉDIO NORTE COLINAS\t180004\n4\tRNO-REGIONAL NORTE\t180005\n5\tRPJ-REGIONAL PORTAL DO JALAPÃO\t180006\n6\tRSG-REGIONAL SERRAS GERAIS\t180007\n7\tRSU-REGIONAL SUL\t180008\n8\tRVA-REGIONAL VALE DO ARAGUAIA\t180009\n9\tUAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE\t180010\n10\tUAS-UNIDADE DE ADMINISTRAÇÃO E SUPRIMENTOS\tNULL\n11\tCDE-ASSESSORIA\t180011\n12\tSECRETARIA DIREX\tNULL\n13\tUAUD-UNIDADE DE AUDITORIA INTERNA\t180012\n14\tUGE-UNIDADE DE GESTÃO ESTRATÉGICA E INTEGRIDADE\t180013\n15\tUGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS\t180014\n16\tUGP-UNIDADE DE GESTÃO DE PESSOAS\t180015\n17\tUMC-UNIDADE DE MARKETING E COMUNICAÇÃO\t180016\n18\tURC - UNIDADE DE RELACIONAMENTO COM O CLIENTE\t180017\n19\tURI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL\t180018\n20\tUTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS\t180019\n21\tCkm Talents - Administradora/UGP\t150008\n",
+  "stderr": "",
+  "execution_time_ms": 395
+}

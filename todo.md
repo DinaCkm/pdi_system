@@ -610,3 +610,8 @@
 - [x] Simplificar atualizações de estado no formulário
 - [x] Adicionar campo de seleção de líder na página ConfigurarUsuario
 - [x] Adicionar coluna Líder na tabela de usuários para visualização
+
+## Bug - Líderes Não Aparecem na Seleção
+- [x] Investigar dados de Dina Makiyama no banco (role, departamentoId)
+- [x] Verificar lógica de filtro availableLeaders em ConfigurarUsuario
+- [x] Corrigir inconsistência entre departamento.leaderId e user.departamentoId

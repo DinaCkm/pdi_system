@@ -1,4 +1,4 @@
-import { useState, useEffect, startTransition } from "react";
+import React, { useState, useEffect, startTransition, useMemo } from "react";
 import { useRoute, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -28,15 +28,36 @@ export default function ConfigurarUsuario() {
   // Buscar todos os usuários para selecionar líder
   const { data: allUsers = [] } = trpc.users.list.useQuery();
   
+  // Buscar departamentos para pegar o líder oficial
+  const { data: allDepartamentos = [] } = trpc.departamentos.list.useQuery();
+  
   const updateMutation = trpc.users.update.useMutation();
 
   // Filtrar líderes disponíveis do departamento selecionado
-  const availableLeaders = allUsers.filter(
-    (u) => 
-      u.id !== userId && // Não pode ser líder de si mesmo
-      u.departamentoId === selectedDepartamento && // Mesmo departamento
-      (u.role === "lider" || u.role === "admin") // Apenas líderes ou admins
-  );
+  const availableLeaders = useMemo(() => {
+    if (!selectedDepartamento) return [];
+    
+    // Buscar líder oficial do departamento
+    const departamento = allDepartamentos.find(d => d.id === selectedDepartamento);
+    const leaderIds = new Set<number>();
+    
+    // Adicionar líder oficial do departamento (se existir)
+    if (departamento?.leaderId && departamento.leaderId !== userId) {
+      leaderIds.add(departamento.leaderId);
+    }
+    
+    // Adicionar usuários com role líder/admin que pertencem ao departamento
+    allUsers.forEach(u => {
+      if (u.id !== userId && 
+          u.departamentoId === selectedDepartamento && 
+          (u.role === "lider" || u.role === "admin")) {
+        leaderIds.add(u.id);
+      }
+    });
+    
+    // Retornar lista de usuários que são líderes
+    return allUsers.filter(u => leaderIds.has(u.id));
+  }, [allUsers, allDepartamentos, selectedDepartamento, userId]);
 
   // Carregar dados atuais do usuário
   useEffect(() => {
