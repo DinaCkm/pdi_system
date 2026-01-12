@@ -1,0 +1,9 @@
+{
+  "query": "\nCREATE TABLE IF NOT EXISTS `ciclos` (\n  `id` INT AUTO_INCREMENT PRIMARY KEY,\n  `nome` VARCHAR(255) NOT NULL,\n  `dataInicio` TIMESTAMP NOT NULL,\n  `dataFim` TIMESTAMP NOT NULL,\n  `status` ENUM('ativo', 'encerrado') NOT NULL DEFAULT 'ativo',\n  `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `createdBy` INT NOT NULL\n);\n\nINSERT INTO `ciclos` (`nome`, `dataInicio`, `dataFim`, `status`, `createdBy`)\nVALUES ('1º CICLO DE 2026', '2026-01-01 00:00:00', '2026-06-30 23:59:59', 'ativo', 1);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute \nCREATE TABLE IF NOT EXISTS `ciclos` (\n  `id` INT AUTO_INCREMENT PRIMARY KEY,\n  `nome` VARCHAR(255) NOT NULL,\n  `dataInicio` TIMESTAMP NOT NULL,\n  `dataFim` TIMESTAMP NOT NULL,\n  `status` ENUM('ativo', 'encerrado') NOT NULL DEFAULT 'ativo',\n  `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `createdBy` INT NOT NULL\n);\n\nINSERT INTO `ciclos` (`nome`, `dataInicio`, `dataFim`, `status`, `createdBy`)\nVALUES ('1º CICLO DE 2026', '2026-01-01 00:00:00', '2026-06-30 23:59:59', 'ativo', 1);\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 588
+}

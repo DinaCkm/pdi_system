@@ -20,6 +20,7 @@ import Relatorios from "./pages/Relatorios";
 import SolicitacoesAjuste from "./pages/SolicitacoesAjuste";
 import SolicitacoesEquipe from "./pages/SolicitacoesEquipe";
 import PDIsEquipe from "./pages/PDIsEquipe";
+import ImportarUsuarios from "./pages/ImportarUsuarios";
 
 function Router() {  return (
     <Switch>
@@ -41,6 +42,12 @@ function Router() {  return (
             <ConfigurarUsuario key={params.id} />
           </DashboardLayout>
         )}
+      </Route>
+      
+      <Route path={"/importar-usuarios"}>
+        <DashboardLayout>
+          <ImportarUsuarios />
+        </DashboardLayout>
       </Route>
       
       <Route path={"/competencias"}>

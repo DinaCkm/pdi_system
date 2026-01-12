@@ -577,3 +577,24 @@
 - [x] Sem erros 404
 - [x] Layout e navegação funcionando
 - [x] Sistema pronto para criar checkpoint final
+
+## FEATURE - Importação em Massa de Colaboradores
+- [ ] Analisar estrutura do arquivo Excel (149 colaboradores)
+- [ ] Criar procedure backend para importação em massa
+- [ ] Validar e limpar dados (CPF, email, perfil)
+- [ ] Criar departamentos automaticamente
+- [ ] Estabelecer hierarquia (vincular colaboradores aos líderes)
+- [ ] Criar página frontend de importação com upload
+- [ ] Processar arquivo e importar dados
+- [ ] Testar importação completa
+- [ ] Validar hierarquia criada
+
+## Criar Ciclo 2026
+- [ ] Criar ciclo "1º CICLO DE 2026" de 01/01/2026 a 30/06/2026
+
+## ✅ Importação Concluída
+- [x] Processar arquivo Excel com 149 colaboradores
+- [x] Criar 20 departamentos automaticamente
+- [x] Criar 18 líderes e vincular aos departamentos
+- [x] Criar 131 colaboradores e vincular aos líderes
+- [x] Criar ciclo "1º CICLO DE 2026" (01/01/2026 a 30/06/2026)

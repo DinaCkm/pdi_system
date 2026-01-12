@@ -1,0 +1,1192 @@
+[
+  {
+    "name": "WANDERSON DA SILVA PIMENTEL CHAGAS",
+    "email": "wanderson.chagas@to.sebrae.com.br",
+    "cpf": "03804969178",
+    "cargo": "ASSISTENTE REGIONAL",
+    "role": "colaborador",
+    "departamento": "RBP-REGIONAL BICO DO PAPAGAIO"
+  },
+  {
+    "name": "EDVALDO PEREIRA LIMA JÚNIOR",
+    "email": "edvaldopljr86@gmail.com",
+    "cpf": "01547689102",
+    "cargo": "GERENTE REGIONAL",
+    "role": "lider",
+    "departamento": "RBP-REGIONAL BICO DO PAPAGAIO"
+  },
+  {
+    "name": "JULIANA MASSON PREDIGER",
+    "email": "juliana.prediger@to.sebrae.com.br",
+    "cpf": "92391842287",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RBP-REGIONAL BICO DO PAPAGAIO"
+  },
+  {
+    "name": "ROMISSON MATIAS SANTOS",
+    "email": "romisson.santos@to.sebrae.com.br",
+    "cpf": "88349195134",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RBP-REGIONAL BICO DO PAPAGAIO"
+  },
+  {
+    "name": "VALCI PEREIRA DA SILVA JUNIOR",
+    "email": "valci.junior@to.sebrae.com.br",
+    "cpf": "00870879103",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RBP-REGIONAL BICO DO PAPAGAIO"
+  },
+  {
+    "name": "ANA ESTELA GOETTEN",
+    "email": "ana.goetten@to.sebrae.com.br",
+    "cpf": "85682306104",
+    "cargo": "ASSISTENTE REGIONAL",
+    "role": "colaborador",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "RENATO ALBUQUERQUE DA CUNHA",
+    "cpf": "88922880163",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "JANAINA MIRANDA XAVIER",
+    "email": "janaina.miranda@to.sebrae.com.br",
+    "cpf": "01900479176",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "MYRLLA CATARINE MATOS PARENTE",
+    "email": "myrlla.parente@to.sebrae.com.br",
+    "cpf": "81065159153",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "ELIGENETH RESPLANDES PIMENTEL GOMES",
+    "email": "eligeneth@to.sebrae.com.br",
+    "cpf": "56076797134",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "AMAGGELDO BARBOSA",
+    "email": "amaggeldo@to.sebrae.com.br",
+    "cpf": "76727025134",
+    "cargo": "GERENTE REGIONAL",
+    "role": "lider",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "CLARICE DA ROSA CORREA SOARES",
+    "email": "clarice@to.sebrae.com.br",
+    "cpf": "57590664049",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "VIVIANE FERNANDES DE ALBUQUERQUE TEIXEIRA",
+    "email": "viviane.albuquerque@to.sebrae.com.br",
+    "cpf": "88126692391",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "WALBENIA LEMOS DA SILVA TORRES",
+    "email": "walbenia.lemos@to.sebrae.com.br",
+    "cpf": "49954237372",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "MONIQUE SILVA DE ALBUQUERQUE",
+    "email": "monique.albuquerque@to.sebrae.com.br",
+    "cpf": "02644259444",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "WIURY PEREIRA DE AGUIAR",
+    "email": "wiury.aguiar@to.sebrae.com.br",
+    "cpf": "06035815103",
+    "cargo": "ASSISTENTE REGIONAL",
+    "role": "colaborador",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "ODILO JUNIOR OLIVEIRA CARVALHO",
+    "email": "odilo.carvalho@to.sebrae.com.br",
+    "cpf": "03634062126",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "MARIA DIVINA ALVES FEITOSA",
+    "email": "maria.feitosa@to.sebrae.com.br",
+    "cpf": "04573619135",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "ANTONIA GELMA PEREIRA DA SILVA CARVALHO",
+    "email": "antonia.carvalho@to.sebrae.com.br",
+    "cpf": "00925595144",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RME-REGIONAL METROPOLITANA"
+  },
+  {
+    "name": "WERICA SOUZA SILVA",
+    "email": "werica.silva@to.sebrae.com.br",
+    "cpf": "02722539101",
+    "cargo": "ASSISTENTE REGIONAL",
+    "role": "colaborador",
+    "departamento": "RMN-REGIONAL MÉDIO NORTE COLINAS"
+  },
+  {
+    "name": "JACIRLEY PEREIRA DO NASCIMENTO",
+    "email": "jacirley.nascimento@to.sebrae.com.br",
+    "cpf": "00925591157",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RMN-REGIONAL MÉDIO NORTE COLINAS"
+  },
+  {
+    "name": "ALDENI BATISTA TORRES",
+    "email": "aldeni.torres@to.sebrae.com.br",
+    "cpf": "00658585142",
+    "cargo": "GERENTE REGIONAL",
+    "role": "lider",
+    "departamento": "RMN-REGIONAL MÉDIO NORTE COLINAS"
+  },
+  {
+    "name": "MAILENE ALENCAR RODRIGUES TORRES",
+    "email": "mailene.torres@to.sebrae.com.br",
+    "cpf": "00585213135",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RMN-REGIONAL MÉDIO NORTE COLINAS"
+  },
+  {
+    "name": "ANA MARIA LEAL CUNHA DE FREITAS",
+    "email": "ana.freitas@to.sebrae.com.br",
+    "cpf": "01457503107",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RMN-REGIONAL MÉDIO NORTE COLINAS"
+  },
+  {
+    "name": "ITALLO BRANDAÕ FERREIRA",
+    "email": "itallo.ferreira@to.sebrae.com.br",
+    "cpf": "05756234381",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RMN-REGIONAL MÉDIO NORTE COLINAS"
+  },
+  {
+    "name": "GLAUCIA DE GODOI SOUZA FERREIRA",
+    "email": "glaucia.ferreira@to.sebrae.com.br",
+    "cpf": "00982462166",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RMN-REGIONAL MÉDIO NORTE COLINAS"
+  },
+  {
+    "name": "RAFAEL COELHO LIMA",
+    "email": "rafael.lima@to.sebrae.com.br",
+    "cpf": "02393517111",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RNO-REGIONAL NORTE"
+  },
+  {
+    "name": "ANDRESSA IBIAPINA",
+    "email": "andressa.ibiapina@to.sebrae.com.br",
+    "cpf": "03331188123",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RNO-REGIONAL NORTE"
+  },
+  {
+    "name": "INGRID PAMELA ALVES AMORIM",
+    "email": "ingrid.amorim@to.sebrae.com.br",
+    "cpf": "03568395169",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RNO-REGIONAL NORTE"
+  },
+  {
+    "name": "DEILANE RODRIGUES VIEIRA",
+    "email": "deilane.vieira@to.sebrae.com.br",
+    "cpf": "01710584106",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RNO-REGIONAL NORTE"
+  },
+  {
+    "name": "THIAGO DIAS DA SILVA",
+    "email": "thiago.silva@to.sebrae.com.br",
+    "cpf": "04436929124",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RNO-REGIONAL NORTE"
+  },
+  {
+    "name": "JOAO MARCOS FERREIRA DOS SANTOS",
+    "email": "joao.santos@to.sebrae.com.br",
+    "cpf": "03063762105",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RNO-REGIONAL NORTE"
+  },
+  {
+    "name": "ILMA LOPES DA SILVA",
+    "email": "ilma@to.sebrae.com.br",
+    "cpf": "22805419391",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RNO-REGIONAL NORTE"
+  },
+  {
+    "name": "MARCUS VINICIUS VIEIRA QUEIROZ",
+    "email": "marcus.queiroz@to.sebrae.com.br",
+    "cpf": "01479169170",
+    "cargo": "GERENTE REGIONAL",
+    "role": "lider",
+    "departamento": "RNO-REGIONAL NORTE"
+  },
+  {
+    "name": "MILLENA PEREIRA LIMA RODRIGUES",
+    "email": "millena.rodrigues@to.sebrae.com.br",
+    "cpf": "84781971172",
+    "cargo": "GERENTE REGIONAL",
+    "role": "lider",
+    "departamento": "RPJ-REGIONAL PORTAL DO JALAPÃO"
+  },
+  {
+    "name": "ADMARY MONTEIRO BARBOSA",
+    "email": "admary.monteiro@to.sebrae.com.br",
+    "cpf": "83845186100",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RPJ-REGIONAL PORTAL DO JALAPÃO"
+  },
+  {
+    "name": "FABIANE CAPPELLESSO",
+    "email": "fabiane.cappellesso@to.sebrae.com.br",
+    "cpf": "02387300181",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RPJ-REGIONAL PORTAL DO JALAPÃO"
+  },
+  {
+    "name": "CARLUCIA SARAIVA DE BRITO",
+    "email": "carlucia.brito@to.sebrae.com.br",
+    "cpf": "85845345120",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RPJ-REGIONAL PORTAL DO JALAPÃO"
+  },
+  {
+    "name": "RAFAEL CAMELO AYRES",
+    "email": "rafael.ayres@to.sebrae.com.br",
+    "cpf": "06143895180",
+    "cargo": "ASSISTENTE REGIONAL",
+    "role": "colaborador",
+    "departamento": "RPJ-REGIONAL PORTAL DO JALAPÃO"
+  },
+  {
+    "name": "ANDRE SILVA GOMES",
+    "email": "andre.gomes@to.sebrae.com.br",
+    "cpf": "00888269102",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RPJ-REGIONAL PORTAL DO JALAPÃO"
+  },
+  {
+    "name": "BRUNO DE JESUS RODRIGUES",
+    "email": "bruno.rodrigues@to.sebrae.com.br",
+    "cpf": "06463327328",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RSG-REGIONAL SERRAS GERAIS"
+  },
+  {
+    "name": "ANTONIO LOUÇA CURCINO",
+    "email": "antonio.curcino@to.sebrae.com.br",
+    "cpf": "97641227104",
+    "cargo": "GERENTE REGIONAL",
+    "role": "lider",
+    "departamento": "RSG-REGIONAL SERRAS GERAIS"
+  },
+  {
+    "name": "GABRIEL MARTINS LIRA",
+    "email": "gabriel.lira@to.sebrae.com.br",
+    "cpf": "02128644160",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RSG-REGIONAL SERRAS GERAIS"
+  },
+  {
+    "name": "RODRIGO ALVES DOS SANTOS",
+    "email": "rodrigo.santos@to.sebrae.com.br",
+    "cpf": "02289029165",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RSG-REGIONAL SERRAS GERAIS"
+  },
+  {
+    "name": "CRISTYANE FONSECA CARDOSO",
+    "email": "cristyane.cardoso@to.sebrae.com.br",
+    "cpf": "01410684180",
+    "cargo": "ASSISTENTE REGIONAL",
+    "role": "colaborador",
+    "departamento": "RSG-REGIONAL SERRAS GERAIS"
+  },
+  {
+    "name": "ALICE SOUSA SANTOS COSTA",
+    "email": "alice.costa@to.sebrae.com.br",
+    "cpf": "06155699194",
+    "cargo": "ASSISTENTE REGIONAL",
+    "role": "colaborador",
+    "departamento": "RSU-REGIONAL SUL"
+  },
+  {
+    "name": "FRANCIELLY QUITERIA GUIMARAES ALVES",
+    "email": "francielly.alves@to.sebrae.com.br",
+    "cpf": "08946172657",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RSU-REGIONAL SUL"
+  },
+  {
+    "name": "JOSE TAVARES PIRES",
+    "email": "jose.pires@to.sebrae.com.br",
+    "cpf": "96270454115",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RSU-REGIONAL SUL"
+  },
+  {
+    "name": "DJALES DOS SANTOS OLIVEIRA",
+    "email": "djales.santos@to.sebrae.com.br",
+    "cpf": "92409717187",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RSU-REGIONAL SUL"
+  },
+  {
+    "name": "PAULA DOS REIS COELHO ALENCAR SOUSA",
+    "email": "paula.alencar@to.sebrae.com.br",
+    "cpf": "02242849166",
+    "cargo": "GERENTE REGIONAL",
+    "role": "lider",
+    "departamento": "RSU-REGIONAL SUL"
+  },
+  {
+    "name": "STEFANE CARDOSO SANTANA",
+    "email": "stefane@to.sebrae.com.br",
+    "cpf": "62324560178",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RSU-REGIONAL SUL"
+  },
+  {
+    "name": "THIAGO MILHOMEM SOARES",
+    "email": "thiago.soares@to.sebrae.com.br",
+    "cpf": "71877282120",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RSU-REGIONAL SUL"
+  },
+  {
+    "name": "PATRICIA SOARES FEITOSA",
+    "email": "patricia.feitosa@to.sebrae.com.br",
+    "cpf": "01503052141",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RVA-REGIONAL VALE DO ARAGUAIA"
+  },
+  {
+    "name": "CLAUDETE PINTO CARMO SOUSA",
+    "email": "claudete.carmo@to.sebrae.com.br",
+    "cpf": "77768400178",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RVA-REGIONAL VALE DO ARAGUAIA"
+  },
+  {
+    "name": "RENATA MOURA ALVES SIMAS",
+    "email": "renata.alves@to.sebrae.com.br",
+    "cpf": "01056384123",
+    "cargo": "GERENTE REGIONAL",
+    "role": "lider",
+    "departamento": "RVA-REGIONAL VALE DO ARAGUAIA"
+  },
+  {
+    "name": "CESAR AUGUSTO DE SA MOREIRA",
+    "email": "cesar.moreira@to.sebrae.com.br",
+    "cpf": "01626149186",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RVA-REGIONAL VALE DO ARAGUAIA"
+  },
+  {
+    "name": "ADEMIR WHITMAN GOMES REGO",
+    "email": "ademir@to.sebrae.com.br",
+    "cpf": "83225919187",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RVA-REGIONAL VALE DO ARAGUAIA"
+  },
+  {
+    "name": "FABIO HENRIQUE DA CRUZ",
+    "email": "fabio.cruz@to.sebrae.com.br",
+    "cpf": "51803364149",
+    "cargo": "ANALISTA REGIONAL",
+    "role": "colaborador",
+    "departamento": "RVA-REGIONAL VALE DO ARAGUAIA"
+  },
+  {
+    "name": "WILLIAM MELO DOS SANTOS",
+    "email": "william.santos@to.sebrae.com.br",
+    "cpf": "00760659109",
+    "cargo": "ASSISTENTE REGIONAL",
+    "role": "colaborador",
+    "departamento": "RVA-REGIONAL VALE DO ARAGUAIA"
+  },
+  {
+    "name": "ANA FLAVIA MENDES BORGES",
+    "email": "ana.borges@to.sebrae.com.br",
+    "cpf": "99343134134",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE"
+  },
+  {
+    "name": "BRUNO MARTINS VIEIRA",
+    "email": "bruno.vieira@to.sebrae.com.br",
+    "cpf": "06668878610",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "lider",
+    "departamento": "UAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE"
+  },
+  {
+    "name": "JOSE DANIEL TAVARES RODRIGUES",
+    "email": "jdaniel.tavares@to.sebrae.com.br",
+    "cpf": "71942513020",
+    "cargo": "ANALISTA TÉCNICO III",
+    "role": "colaborador",
+    "departamento": "UAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE"
+  },
+  {
+    "name": "IZANA DE ASSUNCAO ALVES",
+    "email": "izana.assuncao@to.sebrae.com.br",
+    "cpf": "25443186353",
+    "cargo": "ANALISTA TÉCNICO III",
+    "role": "colaborador",
+    "departamento": "UAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE"
+  },
+  {
+    "name": "EDGLEI DIAS RODRIGUES",
+    "email": "edglei.rodrigues@to.sebrae.com.br",
+    "cpf": "61687448434",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE"
+  },
+  {
+    "name": "ADELICE THOMAZ SOARES NOVAK",
+    "email": "adelice@to.sebrae.com.br",
+    "cpf": "65961021149",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE"
+  },
+  {
+    "name": "CELINA SOARES",
+    "email": "celina@to.sebrae.com.br",
+    "cpf": "27878074100",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE"
+  },
+  {
+    "name": "FRANCISCO DE ASSIS DIAS RAMOS",
+    "email": "francisco.ramos@to.sebrae.com.br",
+    "cpf": "58693408453",
+    "cargo": "ANALISTA TÉCNICO III",
+    "role": "colaborador",
+    "departamento": "UAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE"
+  },
+  {
+    "name": "CLAUDIA NARCISO SAKAI",
+    "email": "claudia.sakai@to.sebrae.com.br",
+    "cpf": "00716157179",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE"
+  },
+  {
+    "name": "DIOGO SANTOS BARRETO",
+    "email": "diogo.barreto@to.sebrae.com.br",
+    "cpf": "05848154171",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UAS-UNIDADE DE ADMINISTRAÇÃO E SUPRIMENTOS"
+  },
+  {
+    "name": "ALENCAR HUBNER BORELLI",
+    "email": "alencar.borelli@to.sebrae.com.br",
+    "cpf": "01017472173",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UAS-UNIDADE DE ADMINISTRAÇÃO E SUPRIMENTOS"
+  },
+  {
+    "name": "EMERSON EDUARDO AIRES NUNES",
+    "email": "emerson.nunes@to.sebrae.com.br",
+    "cpf": "03154888160",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UAS-UNIDADE DE ADMINISTRAÇÃO E SUPRIMENTOS"
+  },
+  {
+    "name": "THAINA SILVA DE ALENCAR",
+    "email": "thaina.alencar@to.sebrae.com.br",
+    "cpf": "05362462113",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UAS-UNIDADE DE ADMINISTRAÇÃO E SUPRIMENTOS"
+  },
+  {
+    "name": "HIGOR NICHOLLAS DE OLIVEIRA",
+    "email": "higor.oliveira@to.sebrae.com.br",
+    "cpf": "03419311109",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UAS-UNIDADE DE ADMINISTRAÇÃO E SUPRIMENTOS"
+  },
+  {
+    "name": "SEBASTIAO GERALDO DE OLIVEIRA",
+    "email": "sebastiaogeraldo34@gmail.com",
+    "cpf": "85624314191",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UAS-UNIDADE DE ADMINISTRAÇÃO E SUPRIMENTOS"
+  },
+  {
+    "name": "ANA PAULA ALVES SANTOS",
+    "email": "paula.alves@to.sebrae.com.br",
+    "cpf": "01433867192",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UAS-UNIDADE DE ADMINISTRAÇÃO E SUPRIMENTOS"
+  },
+  {
+    "name": "GETULIO RODRIGUES DE MENDONCA",
+    "email": "getulio.mendonca@to.sebrae.com.br",
+    "cpf": "37081330134",
+    "cargo": "ASSISTENTE II",
+    "role": "colaborador",
+    "departamento": "UAS-UNIDADE DE ADMINISTRAÇÃO E SUPRIMENTOS"
+  },
+  {
+    "name": "ANA PAULA CUNHA SOARES",
+    "email": "paula.soares@to.sebrae.com.br",
+    "cpf": "82760233391",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UAS-UNIDADE DE ADMINISTRAÇÃO E SUPRIMENTOS"
+  },
+  {
+    "name": "LUDMILA SANTANA BARBOSA",
+    "email": "ludmila.santana@to.sebrae.com.br",
+    "cpf": "00667836152",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UAS-UNIDADE DE ADMINISTRAÇÃO E SUPRIMENTOS"
+  },
+  {
+    "name": "REGINA QUEIROZ AZEVEDO",
+    "email": "regina.azevedo@to.sebrae.com.br",
+    "cpf": "80027750159",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "CDE-ASSESSORIA"
+  },
+  {
+    "name": "DANIEL NUNES DE CARVALHO",
+    "email": "daniel.carvalho@to.sebrae.com.br",
+    "cpf": "06315191142",
+    "cargo": "ASSISTENTE I",
+    "role": "colaborador",
+    "departamento": "CDE-ASSESSORIA"
+  },
+  {
+    "name": "JACKELINE DE SOUZA LIMA",
+    "email": "jackeline.lima@to.sebrae.com.br",
+    "cpf": "02224365144",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "lider",
+    "departamento": "CDE-ASSESSORIA"
+  },
+  {
+    "name": "DURVAL REGO NUNES",
+    "email": "durval.nunes@to.sebrae.com.br",
+    "cpf": "84907479115",
+    "cargo": "ASSISTENTE II",
+    "role": "colaborador",
+    "departamento": "SECRETARIA DIREX"
+  },
+  {
+    "name": "HIDE SENNA DE SOUSA SOARES",
+    "email": "hide.senna@to.sebrae.com.br",
+    "cpf": "57389241187",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "SECRETARIA DIREX"
+  },
+  {
+    "name": "ELIWANIA DOS SANTOS SILVA",
+    "email": "eliwania.santos@to.sebrae.com.br",
+    "cpf": "01206149361",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "lider",
+    "departamento": "UAUD-UNIDADE DE AUDITORIA INTERNA"
+  },
+  {
+    "name": "WESLEY CARDOSO BATISTA",
+    "email": "wesley.cardoso@to.sebrae.com.br",
+    "cpf": "03319840592",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UAUD-UNIDADE DE AUDITORIA INTERNA"
+  },
+  {
+    "name": "ANTONIO NETO DOS SANTOS",
+    "email": "antonio.santos@to.sebrae.com.br",
+    "cpf": "84707003168",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGE-UNIDADE DE GESTÃO ESTRATÉGICA E INTEGRIDADE"
+  },
+  {
+    "name": "PEDRO JUNIOR DA ROCHA SILVA",
+    "email": "pedro.junior@to.sebrae.com.br",
+    "cpf": "00706433181",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "lider",
+    "departamento": "UGE-UNIDADE DE GESTÃO ESTRATÉGICA E INTEGRIDADE"
+  },
+  {
+    "name": "BRUNO HENRIQUE VILA VERDE",
+    "email": "bruno.vilaverde@to.sebrae.com.br",
+    "cpf": "00912378158",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UGE-UNIDADE DE GESTÃO ESTRATÉGICA E INTEGRIDADE"
+  },
+  {
+    "name": "LUCIANA CARVALHO DE AGUIAR",
+    "email": "luciana@to.sebrae.com.br",
+    "cpf": "00151959102",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UGE-UNIDADE DE GESTÃO ESTRATÉGICA E INTEGRIDADE"
+  },
+  {
+    "name": "MIRELLE SOARES MILHOMENS",
+    "email": "mirellysara@gmail.com",
+    "cpf": "99743485104",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGE-UNIDADE DE GESTÃO ESTRATÉGICA E INTEGRIDADE"
+  },
+  {
+    "name": "WANDEMBERG PEREIRA RODRIGUES",
+    "email": "wandemberg.rodrigues@to.sebrae.com.br",
+    "cpf": "03005691144",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGE-UNIDADE DE GESTÃO ESTRATÉGICA E INTEGRIDADE"
+  },
+  {
+    "name": "MICHELE RAQUEL DE MATTOS SILVA",
+    "email": "michele.silva@to.sebrae.com.br",
+    "cpf": "30069966826",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGE-UNIDADE DE GESTÃO ESTRATÉGICA E INTEGRIDADE"
+  },
+  {
+    "name": "VICTOR OTAVIO ANDRADE DAS NEVES",
+    "email": "victor.neves@to.sebrae.com.br",
+    "cpf": "04253311130",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGE-UNIDADE DE GESTÃO ESTRATÉGICA E INTEGRIDADE"
+  },
+  {
+    "name": "SOLIVANIA DANTAS DE ARAUJO PIRETT",
+    "email": "solivania.pirett@to.sebrae.com.br",
+    "cpf": "64385647100",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UGE-UNIDADE DE GESTÃO ESTRATÉGICA E INTEGRIDADE"
+  },
+  {
+    "name": "LIVIA TENORIO DE SOUZA LEAO",
+    "email": "livia.leao@to.sebrae.com.br",
+    "cpf": "02378635109",
+    "cargo": "ASSISTENTE II",
+    "role": "colaborador",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "JUAREZ QUIRINO DE OLIVEIRA",
+    "email": "juarez.oliveira@to.sebrae.com.br",
+    "cpf": "04217398190",
+    "cargo": "ASSISTENTE II",
+    "role": "colaborador",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "ANTEIA DE CASSIA ANDRADE TAVARES",
+    "email": "anteia.tavares@to.sebrae.com.br",
+    "cpf": "01323242104",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "ANDREIA RODRIGUES FACUNDES",
+    "email": "andreia.facundes@to.sebrae.com.br",
+    "cpf": "90944267149",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "lider",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "DENISE DA SILVA NUNES",
+    "email": "denise.nunes@to.sebrae.com.br",
+    "cpf": "96606266068",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "ELISABETE LACERDA EUSTAQUIO",
+    "email": "elizabete@to.sebrae.com.br",
+    "cpf": "23757515234",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "JOSE ROBERTO MIOLA",
+    "email": "jose.miola@to.sebrae.com.br",
+    "cpf": "39646955800",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "LIVIA PEDREIRA SIMÕES",
+    "email": "livia.simoes@to.sebrae.com.br",
+    "cpf": "02362943186",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "AMANDA SOARES SANTOS",
+    "email": "amanda.santos@to.sebrae.com.br",
+    "cpf": "60636478300",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "FABRICIO RODRIGUES DA SILVA LUSTOSA",
+    "email": "fabricio.lustosa@to.sebrae.com.br",
+    "cpf": "02725069157",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "RENNAN JACINTO DA SILVA MENEZES",
+    "email": "rennan.menezes@to.sebrae.com.br",
+    "cpf": "02657817106",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "THAIS NERES VIEIRA",
+    "email": "thaisvneres@gmail.com",
+    "cpf": "02728855170",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "EUZEBIO OLIVEIRA DE ALMEIDA",
+    "email": "euzebio.almeida@to.sebrae.com.br",
+    "cpf": "83315195153",
+    "cargo": "ASSISTENTE II",
+    "role": "colaborador",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "THAMARA RODRIGUES DE FREITAS FACUNDES",
+    "email": "thamara.rodrigues@to.sebrae.com.br",
+    "cpf": "02327468183",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTABILIDADE E FINANÇAS"
+  },
+  {
+    "name": "KIVIA RAQUEL PEREIRA LEITE",
+    "email": "kivia.leite@to.sebrae.com.br",
+    "cpf": "07513556156",
+    "cargo": "ASSISTENTE II",
+    "role": "colaborador",
+    "departamento": "UGP-UNIDADE DE GESTÃO DE PESSOAS"
+  },
+  {
+    "name": "VERA LUCIA TEODORO BRAGA",
+    "email": "vera.braga@to.sebrae.com.br",
+    "cpf": "48483389134",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "lider",
+    "departamento": "UGP-UNIDADE DE GESTÃO DE PESSOAS"
+  },
+  {
+    "name": "JOSEANE RODRIGUES LEITE",
+    "email": "joseane@to.sebrae.com.br",
+    "cpf": "78954231187",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UGP-UNIDADE DE GESTÃO DE PESSOAS"
+  },
+  {
+    "name": "VIVIAN NASCIMENTO REIS",
+    "email": "vivian.reis@to.sebrae.com.br",
+    "cpf": "00888307136",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGP-UNIDADE DE GESTÃO DE PESSOAS"
+  },
+  {
+    "name": "ELIZETH CRISTIANE COUTINHO LIMA",
+    "email": "elizeth.coutinho@to.sebrae.com.br",
+    "cpf": "02499403101",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGP-UNIDADE DE GESTÃO DE PESSOAS"
+  },
+  {
+    "name": "FRANCISMEIRE FERREIRA LIMA DE MORAIS",
+    "email": "francismeire.morais@to.sebrae.com.br",
+    "cpf": "64374831134",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UGP-UNIDADE DE GESTÃO DE PESSOAS"
+  },
+  {
+    "name": "ELISANGELA TAVARES ALVES VARANDA",
+    "email": "elisangela.varanda@to.sebrae.com.br",
+    "cpf": "94111820115",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UGP-UNIDADE DE GESTÃO DE PESSOAS"
+  },
+  {
+    "name": "MARCELLE SOARES FELIX",
+    "email": "marcelle.felix@to.sebrae.com.br",
+    "cpf": "02716939322",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UMC-UNIDADE DE MARKETING E COMUNICAÇÃO"
+  },
+  {
+    "name": "WANESSA SOBREIRA DOS SANTOS MARTINS",
+    "email": "wanessa.martins@to.sebrae.com.br",
+    "cpf": "03651646157",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UMC-UNIDADE DE MARKETING E COMUNICAÇÃO"
+  },
+  {
+    "name": "LUANA FERNANDA ROSA MARTINS",
+    "email": "wanessa.martins@to.sebrae.com.br",
+    "cpf": "01763287181",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UMC-UNIDADE DE MARKETING E COMUNICAÇÃO"
+  },
+  {
+    "name": "ELIENILSON GONCALVES DA CONCEICAO",
+    "email": "elienilson.conceicao@to.sebrae.com.br",
+    "cpf": "01354878116",
+    "cargo": "ASSISTENTE II",
+    "role": "colaborador",
+    "departamento": "UMC-UNIDADE DE MARKETING E COMUNICAÇÃO"
+  },
+  {
+    "name": "ANA CASSIA DE OLIVEIRA COSTA",
+    "email": "ana.costa@to.sebrae.com.br",
+    "cpf": "03313815162",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UMC-UNIDADE DE MARKETING E COMUNICAÇÃO"
+  },
+  {
+    "name": "NEMIAS GOMES",
+    "email": "nemias.gomes@to.sebrae.com.br",
+    "cpf": "38906210159",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "lider",
+    "departamento": "UMC-UNIDADE DE MARKETING E COMUNICAÇÃO"
+  },
+  {
+    "name": "GEOVANE ALMEIDA NEPOMUCENO",
+    "email": "falecomgeovane@gmail.com",
+    "cpf": "00595687121",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UMC-UNIDADE DE MARKETING E COMUNICAÇÃO"
+  },
+  {
+    "name": "DORIVAL GONCALVES DE SOUSA JUNIOR",
+    "email": "dorival.junior@to.sebrae.com.br",
+    "cpf": "03866199139",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "UMC-UNIDADE DE MARKETING E COMUNICAÇÃO"
+  },
+  {
+    "name": "TIAGO CARVALHO CAMARGO",
+    "email": "dorival.junior@to.sebrae.com.br",
+    "cpf": "04244883100",
+    "cargo": "ASSISTENTE II",
+    "role": "colaborador",
+    "departamento": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+  },
+  {
+    "name": "ANTONIO LUIS FERREIRA DOS ANJOS FILHO",
+    "email": "antonio.filho@to.sebrae.com.br",
+    "cpf": "01027817297",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+  },
+  {
+    "name": "LAURENICE COELHO MESQUITA CASTILHO",
+    "email": "laurenice.mesquita@gmail.com",
+    "cpf": "01999809343",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+  },
+  {
+    "name": "GABRIELA TOMASI",
+    "cpf": "00792361113",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "lider",
+    "departamento": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+  },
+  {
+    "name": "EMERSON MONTENEGRO LIMA",
+    "email": "emerson.lima@to.sebrae.com.br",
+    "cpf": "87238314487",
+    "cargo": "ANALISTA TÉCNICO III",
+    "role": "colaborador",
+    "departamento": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+  },
+  {
+    "name": "NORMI MARIA DOS SANTOS",
+    "email": "normi.santos@to.sebrae.com.br",
+    "cpf": "27059286187",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+  },
+  {
+    "name": "LAYALA CARDOSO DA SILVA ISTOFEL",
+    "email": "layala.cardoso@to.sebrae.com.br",
+    "cpf": "87809575104",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+  },
+  {
+    "name": "RAQUEL MONTELO MOURA CARVALHO",
+    "email": "raquel.carvalho@to.sebrae.com.br",
+    "cpf": "00254252184",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+  },
+  {
+    "name": "JIRENE PINHEIRO LISBOA E SILVA",
+    "email": "jirene.pinheiro@to.sebrae.com.br",
+    "cpf": "00633238180",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+  },
+  {
+    "name": "VANLUCY OLIVEIRA CORREIA",
+    "email": "vanlucy.oliveira@to.sebrae.com.br",
+    "cpf": "00737192186",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+  },
+  {
+    "name": "BARBARA DE MOURA NUNES REZENDE",
+    "email": "barbara.nunes@to.sebrae.com.br",
+    "cpf": "02105678130",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+  },
+  {
+    "name": "SIRLENE MARTINS DA SILVA",
+    "email": "sirlene.martins@to.sebrae.com.br",
+    "cpf": "72659424187",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+  },
+  {
+    "name": "CYNTHIA NUNES ALVES FRANCA",
+    "email": "cynthia.franca@to.sebrae.com.br",
+    "cpf": "03178068155",
+    "cargo": "ASSISTENTE II",
+    "role": "colaborador",
+    "departamento": "URI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL"
+  },
+  {
+    "name": "LUCIANA SOARES PIRES RETES",
+    "email": "luciana.retes@to.sebrae.com.br",
+    "cpf": "99904632634",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "URI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL"
+  },
+  {
+    "name": "ALEX VERAS DIAS",
+    "email": "alex.dias@to.sebrae.com.br",
+    "cpf": "00740706144",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "URI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL"
+  },
+  {
+    "name": "MAISA FERNANDES RIBEIRO",
+    "email": "maisa.ribeiro@to.sebrae.com.br",
+    "cpf": "04653993122",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "URI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL"
+  },
+  {
+    "name": "GILZANE PEREIRA AMARAL",
+    "email": "gilzane.pereira@to.sebrae.com.br",
+    "cpf": "81183500106",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "lider",
+    "departamento": "URI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL"
+  },
+  {
+    "name": "MONIQUE HEVELLYN DE BRITO MENEZES",
+    "email": "monique.menezes@to.sebrae.com.br",
+    "cpf": "02410232116",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "URI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL"
+  },
+  {
+    "name": "PEDRO EMILIO RODRIGUES ALVES DE ARAUJO",
+    "email": "pedro.araujo@to.sebrae.com.br",
+    "cpf": "00973002174",
+    "cargo": "ANALISTA TÉCNICO I",
+    "role": "colaborador",
+    "departamento": "URI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL"
+  },
+  {
+    "name": "DANIEL CAIO LEMOS PENNO",
+    "email": "daniel.penno@to.sebrae.com.br",
+    "cpf": "01523606118",
+    "cargo": "ASSISTENTE II",
+    "role": "colaborador",
+    "departamento": "UTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS"
+  },
+  {
+    "name": "ALORRAN DE FREITAS BARBOSA",
+    "email": "alorran.barbosa@to.sebrae.com.br",
+    "cpf": "86622536104",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS"
+  },
+  {
+    "name": "GABRIEL BORGES ARAUJO",
+    "email": "gabriel.araujo@to.sebrae.com.br",
+    "cpf": "70082097119",
+    "cargo": "ASSISTENTE II",
+    "role": "colaborador",
+    "departamento": "UTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS"
+  },
+  {
+    "name": "JADER LINCOLN DO NASCIMENTO",
+    "email": "jader.nascimento@to.sebrae.com.br",
+    "cpf": "02455963136",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS"
+  },
+  {
+    "name": "LEONARDO CAMPELO LEITE GUEDES",
+    "email": "leonardo.campelo@to.sebrae.com.br",
+    "cpf": "88020673253",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "lider",
+    "departamento": "UTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS"
+  },
+  {
+    "name": "ELLEN CASSIA CARVALHO CUSTODIO",
+    "email": "ellen.custodio@to.sebrae.com.br",
+    "cpf": "03421363137",
+    "cargo": "ASSISTENTE II",
+    "role": "colaborador",
+    "departamento": "UTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS"
+  },
+  {
+    "name": "ANA PAULA ALVES DE LIMA ROCHA",
+    "email": "anapaula.lima@to.sebrae.com.br",
+    "cpf": "00702288179",
+    "cargo": "ANALISTA TÉCNICO II",
+    "role": "colaborador",
+    "departamento": "UTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS"
+  }
+]
