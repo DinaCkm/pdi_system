@@ -177,13 +177,7 @@ export default function ConfigurarUsuario() {
                       value={option.value}
                       checked={formData.role === option.value}
                       onChange={(e) => {
-                        const newRole = e.target.value;
-                        setFormData({
-                          ...formData,
-                          role: newRole,
-                          departamentoId: newRole === "admin" ? null : formData.departamentoId,
-                          leaderId: newRole === "admin" ? null : formData.leaderId,
-                        });
+                        setFormData({ ...formData, role: e.target.value });
                       }}
                       className="mt-1"
                       required
