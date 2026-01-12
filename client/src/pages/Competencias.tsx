@@ -54,7 +54,8 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Bloco criado com sucesso!");
       await utils.competencias.listBlocos.invalidate();
-      setBlocoDialogOpen(false);
+      // Delay para permitir cleanup do Dialog antes de fechar
+      setTimeout(() => setBlocoDialogOpen(false), 100);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -63,7 +64,8 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Bloco atualizado com sucesso!");
       await utils.competencias.listBlocos.invalidate();
-      setBlocoDialogOpen(false);
+      // Delay para permitir cleanup do Dialog antes de fechar
+      setTimeout(() => setBlocoDialogOpen(false), 100);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -82,7 +84,8 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Macro criada com sucesso!");
       await utils.competencias.listAllMacros.invalidate();
-      setMacroDialogOpen(false);
+      // Delay para permitir cleanup do Select/Portal antes de fechar Dialog
+      setTimeout(() => setMacroDialogOpen(false), 100);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -91,7 +94,8 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Macro atualizada com sucesso!");
       await utils.competencias.listAllMacros.invalidate();
-      setMacroDialogOpen(false);
+      // Delay para permitir cleanup do Select/Portal antes de fechar Dialog
+      setTimeout(() => setMacroDialogOpen(false), 100);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -110,7 +114,8 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Micro criada com sucesso!");
       await utils.competencias.listAllMicros.invalidate();
-      setMicroDialogOpen(false);
+      // Delay para permitir cleanup do Select/Portal antes de fechar Dialog
+      setTimeout(() => setMicroDialogOpen(false), 100);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -119,7 +124,8 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Micro atualizada com sucesso!");
       await utils.competencias.listAllMicros.invalidate();
-      setMicroDialogOpen(false);
+      // Delay para permitir cleanup do Select/Portal antes de fechar Dialog
+      setTimeout(() => setMicroDialogOpen(false), 100);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -180,7 +186,7 @@ export default function Competencias() {
       nome: macroForm.nome,
       descricao: macroForm.descricao,
       blocoId: parseInt(macroForm.blocoId),
-    });
+    } as any);
   };
 
   const handleEditMacro = (macro: any) => {
@@ -371,7 +377,7 @@ export default function Competencias() {
                           Novo Bloco
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
                         <DialogHeader>
                           <DialogTitle>{editingBloco ? "Editar Bloco" : "Novo Bloco"}</DialogTitle>
                           <DialogDescription>
@@ -499,7 +505,7 @@ export default function Competencias() {
                       Nova Macro
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
                     <DialogHeader>
                       <DialogTitle>{editingMacro ? "Editar Macro" : "Nova Macro"}</DialogTitle>
                       <DialogDescription>
@@ -516,7 +522,7 @@ export default function Competencias() {
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um bloco" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent position="popper" sideOffset={4}>
                             {blocos?.map((bloco) => (
                               <SelectItem key={bloco.id} value={bloco.id.toString()}>
                                 {bloco.nome}
@@ -657,7 +663,7 @@ export default function Competencias() {
                       Nova Micro
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
                     <DialogHeader>
                       <DialogTitle>{editingMicro ? "Editar Micro" : "Nova Micro"}</DialogTitle>
                       <DialogDescription>
@@ -674,7 +680,7 @@ export default function Competencias() {
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione uma macro" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent position="popper" sideOffset={4}>
                             {macros?.map((macro) => (
                               <SelectItem key={macro.id} value={macro.id.toString()}>
                                 {macro.nome} ({getBlocoNome(macro.blocoId)})

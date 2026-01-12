@@ -628,3 +628,14 @@
 - [x] Implementar importação em massa de competências via CSV (Bloco, Macro, Micro)
 - [x] Implementar solução definitiva com window.location.reload() para erro removeChild
 - [x] Implementar solução correta: remover reset do onSuccess e usar invalidate
+
+## Correção de Bug Crítico - Erro removeChild
+- [x] Investigar causa raiz do erro removeChild ao criar competências
+- [x] Identificar conflito entre Dialog e Select (Radix UI) durante desmontagem
+- [x] Implementar solução: delay de 100ms antes de fechar Dialog
+- [x] Implementar solução: onOpenAutoFocus={(e) => e.preventDefault()} nos DialogContent
+- [x] Implementar solução: position="popper" nos SelectContent para estabilizar portal
+- [x] Testar criação de Bloco sem erro
+- [x] Testar criação de Macro (com Select) sem erro
+- [x] Testar criação de Micro (com 2 Selects) sem erro
+- [x] Validar console limpo em todos os cenários
