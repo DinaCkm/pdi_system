@@ -569,3 +569,21 @@
 - [x] Usar procedure teamPDIs já criado no backend
 - [x] Mostrar: colaborador, ciclo, título, status, ações vinculadas
 - [x] Adicionar também link "Meu PDI" para líder ver seu próprio PDI
+
+## BUG CRÍTICO - Admin não consegue alterar perfil de usuário
+- [ ] Investigar validação no procedure users.update
+- [ ] Corrigir validação para permitir admin alterar perfil
+- [ ] Mensagem de erro: "Somente administradores podem fazer isto"
+- [ ] Admin estava logado mas validação falhou
+
+## BUG - Erro de DOM ao selecionar perfil
+- [x] Erro: NotFoundError insertBefore ao clicar em selecionar perfil
+- [x] Erro começou após últimas alterações
+- [x] Reverter para checkpoint cf0cfb68 onde estava funcionando
+- [ ] Investigar causa do erro após reversão
+
+## Checkpoint de Reversão
+- [x] Sistema revertido para versão estável cf0cfb68
+- [x] Menu do líder com "PDIs da Equipe" preservado
+- [x] Erro de DOM corrigido através da reversão
+- [x] Sistema pronto para publicação
