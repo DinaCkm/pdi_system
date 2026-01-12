@@ -103,8 +103,10 @@ export default function ConfigurarUsuario() {
         leaderId: selectedLeader,
       });
 
-      // Forçar reload completo da página para evitar conflitos de estado React
-      window.location.href = "/usuarios";
+      // Aguardar um momento para React finalizar processamento antes do redirect
+      setTimeout(() => {
+        window.location.href = "/usuarios";
+      }, 50);
     } catch (error: any) {
       alert(error.message || "Erro ao salvar configuração");
     }
