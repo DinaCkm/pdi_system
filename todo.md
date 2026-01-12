@@ -639,3 +639,10 @@
 - [x] Testar criação de Macro (com Select) sem erro
 - [x] Testar criação de Micro (com 2 Selects) sem erro
 - [x] Validar console limpo em todos os cenários
+
+## BUG CRÍTICO - Erro removeChild Persiste Após Primeira Correção
+- [ ] Investigar por que setTimeout + onOpenAutoFocus não resolveu completamente
+- [ ] Analisar se problema está no invalidate após mutation
+- [ ] Implementar solução mais robusta (possivelmente remover invalidate ou usar flushSync)
+- [ ] Testar em ambiente de desenvolvimento
+- [ ] Validar na versão publicada
