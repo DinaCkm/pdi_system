@@ -508,3 +508,8 @@
 - [x] Remover campo de seleção de líder (líder vem automaticamente do departamento)
 - [x] Líder é definido na página de Departamentos e sincronizado automaticamente
 - [x] Inserir 20 líderes e departamentos conforme lista fornecida
+
+## Bug de Layout - Página Departamentos
+- [x] Corrigir espaço branco à esquerda da página
+- [x] Evitar corte da tabela no lado direito
+- [x] Melhorar responsividade e padding da página
