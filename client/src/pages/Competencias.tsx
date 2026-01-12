@@ -426,8 +426,8 @@ export default function Competencias() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                {loadingBlocos ? (
+              <CardContent className="overflow-x-auto">
+                {loadingMicros ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                   </div>

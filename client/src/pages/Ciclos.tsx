@@ -243,7 +243,7 @@ export default function Ciclos() {
               Visualize e gerencie todos os ciclos semestrais cadastrados
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <div className="mb-4">
               <Input
                 placeholder="Buscar por nome do ciclo..."

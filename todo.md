@@ -513,3 +513,8 @@
 - [x] Corrigir espaço branco à esquerda da página
 - [x] Evitar corte da tabela no lado direito
 - [x] Melhorar responsividade e padding da página
+
+## Bug de Layout - Páginas Competências e Ciclos
+- [x] Aplicar overflow-x-auto nas tabelas de Competências
+- [x] Aplicar overflow-x-auto nas tabelas de Ciclos
+- [x] Garantir consistência de layout em todas as páginas
