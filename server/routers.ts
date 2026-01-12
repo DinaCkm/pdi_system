@@ -173,21 +173,8 @@ export const appRouter = router({
         const finalLeaderId = updateData.leaderId !== undefined ? updateData.leaderId : currentUser.leaderId;
         const finalDepartamentoId = updateData.departamentoId !== undefined ? updateData.departamentoId : currentUser.departamentoId;
 
-        // VALIDAÇÃO: Líder e Colaborador DEVEM ter departamento e líder
-        if (finalRole === 'lider' || finalRole === 'colaborador') {
-          if (!finalDepartamentoId) {
-            throw new TRPCError({ 
-              code: 'BAD_REQUEST', 
-              message: `${finalRole === 'lider' ? 'Líderes' : 'Colaboradores'} devem estar vinculados a um departamento.` 
-            });
-          }
-          if (!finalLeaderId) {
-            throw new TRPCError({ 
-              code: 'BAD_REQUEST', 
-              message: `${finalRole === 'lider' ? 'Líderes' : 'Colaboradores'} devem ter um líder atribuído.` 
-            });
-          }
-        }
+        // VALIDAÇÃO REMOVIDA: Departamento e líder são opcionais
+        // Serão definidos posteriormente na página de Departamentos
 
         // Se CPF está sendo atualizado, verificar duplicidade
         if (updateData.cpf) {
