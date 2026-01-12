@@ -497,3 +497,14 @@
 - [x] Adicionar campo de comentários para Líder dar feedback
 - [x] Testar fluxo completo: solicitar → comentar → aprovar/reprovar
 - [x] Adicionar notificações quando há novos comentários
+
+## Bug: Campos de Departamento na Página ConfigurarUsuario
+- [ ] Remover campos de Departamento e Líder da página ConfigurarUsuario
+- [ ] Garantir que apenas o campo Perfil (role) seja salvo
+- [ ] Testar fluxo: Criar usuário → Definir perfil Líder → Ir em Departamentos → Atribuir líder
+
+## Ajuste ConfigurarUsuario - Perfil + Departamento (sem Líder)
+- [x] Modificar ConfigurarUsuario para ter seleção de PERFIL + DEPARTAMENTO
+- [x] Remover campo de seleção de líder (líder vem automaticamente do departamento)
+- [x] Líder é definido na página de Departamentos e sincronizado automaticamente
+- [x] Inserir 20 líderes e departamentos conforme lista fornecida

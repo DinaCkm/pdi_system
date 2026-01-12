@@ -4,231 +4,280 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft, Save } from "lucide-react";
+import { Loader2, ArrowLeft, Save, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 export default function ConfigurarUsuario() {
   const [, params] = useRoute("/usuarios/:id/configurar");
   const [, navigate] = useLocation();
   const userId = params?.id ? parseInt(params.id) : null;
 
-  const [formData, setFormData] = useState({
-    role: "user",
-    departamentoId: null as number | null,
-    leaderId: null as number | null,
-  });
+  const [selectedRole, setSelectedRole] = useState<"colaborador" | "lider" | "admin">("colaborador");
+  const [selectedDepartamento, setSelectedDepartamento] = useState<number | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const { data: user, isLoading: loadingUser } = trpc.users.getById.useQuery(
     { id: userId! },
     { enabled: !!userId }
   );
-  const { data: users } = trpc.users.list.useQuery();
-  const { data: departamentos } = trpc.departamentos.list.useQuery();
+  
+  const { data: departamentos = [] } = trpc.departamentos.list.useQuery();
+  
   const updateMutation = trpc.users.update.useMutation();
 
   // Carregar dados atuais do usuário
   useEffect(() => {
     if (user) {
-      setFormData({
-        role: user.role,
-        departamentoId: user.departamentoId,
-        leaderId: user.leaderId,
-      });
+      setSelectedRole(user.role);
+      setSelectedDepartamento(user.departamentoId);
     }
   }, [user]);
-
-  // Filtrar líderes disponíveis (mesmo departamento, exceto o próprio usuário)
-  const availableLeaders = users?.filter(
-    (u) =>
-      u.id !== userId &&
-      u.deletedAt === null &&
-      (u.role === "admin" || u.role === "lider") &&
-      (!formData.departamentoId || u.departamentoId === formData.departamentoId)
-  ) || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!userId) return;
 
+    // Validação: Líder e Colaborador precisam de departamento
+    if ((selectedRole === "lider" || selectedRole === "colaborador") && !selectedDepartamento) {
+      toast.error("Líderes e Colaboradores devem estar vinculados a um departamento.");
+      return;
+    }
+
     try {
-      // Validações
-      if ((formData.role === "lider" || formData.role === "user") && !formData.departamentoId) {
-        toast.error(`${formData.role === "lider" ? "Líderes" : "Colaboradores"} devem estar vinculados a um departamento.`);
-        return;
-      }
-
-      // Buscar líder automaticamente do departamento
-      let leaderIdToSet: number | null = null;
-      if (formData.departamentoId) {
-        const dept = departamentos?.find(d => d.id === formData.departamentoId);
-        leaderIdToSet = dept?.leaderId || null;
-        
-        if (!leaderIdToSet && (formData.role === "lider" || formData.role === "user")) {
-          toast.error("O departamento selecionado não possui um líder definido. Configure o líder do departamento primeiro.");
-          return;
-        }
-      }
-
       await updateMutation.mutateAsync({
         id: userId,
-        role: formData.role as any,
-        departamentoId: formData.departamentoId,
-        leaderId: leaderIdToSet,
+        role: selectedRole,
+        departamentoId: selectedDepartamento,
       });
 
-      toast.success("Configuração salva com sucesso!");
-      navigate("/usuarios");
+      setShowSuccess(true);
     } catch (error: any) {
       toast.error(error.message || "Erro ao salvar configuração");
     }
   };
 
+  if (!userId) {
+    return (
+      <div className="p-8">
+        <p className="text-muted-foreground">ID de usuário inválido</p>
+      </div>
+    );
+  }
+
   if (loadingUser) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="text-center py-12">
+      <div className="p-8">
         <p className="text-muted-foreground">Usuário não encontrado</p>
-        <Button onClick={() => navigate("/usuarios")} className="mt-4">
-          Voltar
-        </Button>
+      </div>
+    );
+  }
+
+  // Tela de sucesso
+  if (showSuccess) {
+    return (
+      <div className="container max-w-2xl py-8">
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center gap-4 text-center">
+              <div className="rounded-full bg-green-100 p-3">
+                <CheckCircle2 className="h-8 w-8 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-green-900">Perfil Configurado!</h3>
+                <p className="text-sm text-green-700 mt-1">
+                  O perfil de <strong>{user.name}</strong> foi atualizado com sucesso.
+                </p>
+              </div>
+              <Button
+                onClick={() => navigate("/usuarios")}
+                className="mt-2"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar para Usuários
+              </Button>
+              
+              {selectedRole === "lider" && (
+                <Alert className="mt-4">
+                  <InfoIcon className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Próximo passo:</strong> Vá em <strong>Departamentos</strong> e defina este usuário como líder do departamento selecionado.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Button variant="outline" onClick={() => navigate("/usuarios")}>
+    <div className="container max-w-4xl py-8">
+      <Button
+        variant="ghost"
+        onClick={() => navigate("/usuarios")}
+        className="mb-6"
+      >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Voltar
       </Button>
 
       <Card>
-        <CardHeader className="bg-gradient-to-r from-blue-600 to-orange-500 text-white">
-          <CardTitle className="text-2xl">Configurar Perfil e Hierarquia</CardTitle>
-          <CardDescription className="text-blue-50">
-            Defina o perfil, departamento e líder de {user.name}
+        <CardHeader>
+          <CardTitle>Configurar Perfil do Usuário</CardTitle>
+          <CardDescription>
+            Defina o perfil de acesso do usuário no sistema.
           </CardDescription>
         </CardHeader>
-        <CardContent className="pt-6">
+        <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Informações do Usuário */}
-            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-              <h3 className="font-semibold text-lg">Informações Básicas</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Nome:</span>
-                  <p className="font-medium">{user.name}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Email:</span>
-                  <p className="font-medium">{user.email}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">CPF:</span>
-                  <p className="font-medium">{user.cpf}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Cargo:</span>
-                  <p className="font-medium">{user.cargo}</p>
-                </div>
+            {/* Informações Básicas */}
+            <div className="grid grid-cols-2 gap-6 p-4 bg-muted/30 rounded-lg">
+              <div>
+                <p className="text-sm text-muted-foreground">Nome:</p>
+                <p className="font-medium">{user.name}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Email:</p>
+                <p className="font-medium">{user.email}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">CPF:</p>
+                <p className="font-medium">{user.cpf}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Cargo:</p>
+                <p className="font-medium">{user.cargo}</p>
               </div>
             </div>
 
-            {/* Perfil */}
-            <div className="space-y-2">
-              <Label htmlFor="role">Perfil *</Label>
-              <select
-                id="role"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={formData.role}
-                onChange={(e) => {
-                  const newRole = e.target.value;
-                  setFormData({
-                    ...formData,
-                    role: newRole,
-                    // Resetar departamento e líder se mudar para admin
-                    departamentoId: newRole === "admin" ? null : formData.departamentoId,
-                    leaderId: newRole === "admin" ? null : formData.leaderId,
-                  });
-                }}
-                required
-              >
-                <option value="user">Colaborador</option>
-                <option value="lider">Líder</option>
-                <option value="admin">Administrador</option>
-              </select>
-              <p className="text-sm text-muted-foreground">
-                {formData.role === "admin" && "Administradores têm acesso total ao sistema"}
-                {formData.role === "lider" && "Líderes gerenciam suas equipes e aprovam ações"}
-                {formData.role === "user" && "Colaboradores executam ações e enviam evidências"}
-              </p>
+            {/* Seleção de Perfil */}
+            <div className="space-y-3">
+              <Label className="text-base">Perfil *</Label>
+              <div className="grid gap-3">
+                {/* Colaborador */}
+                <label
+                  className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    selectedRole === "colaborador"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value="colaborador"
+                    checked={selectedRole === "colaborador"}
+                    onChange={(e) => setSelectedRole(e.target.value as any)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <p className="font-medium">Colaborador</p>
+                    <p className="text-sm text-muted-foreground">
+                      Acessa e gerencia seu próprio PDI
+                    </p>
+                  </div>
+                </label>
+
+                {/* Líder */}
+                <label
+                  className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    selectedRole === "lider"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value="lider"
+                    checked={selectedRole === "lider"}
+                    onChange={(e) => setSelectedRole(e.target.value as any)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <p className="font-medium">Líder</p>
+                    <p className="text-sm text-muted-foreground">
+                      Gerencia sua equipe e aprova ações
+                    </p>
+                  </div>
+                </label>
+
+                {/* Administrador */}
+                <label
+                  className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    selectedRole === "admin"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value="admin"
+                    checked={selectedRole === "admin"}
+                    onChange={(e) => setSelectedRole(e.target.value as any)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <p className="font-medium">Administrador</p>
+                    <p className="text-sm text-muted-foreground">
+                      Acesso total ao sistema e gestão completa
+                    </p>
+                  </div>
+                </label>
+              </div>
             </div>
 
-            {/* Departamento (condicional) */}
-            {(formData.role === "lider" || formData.role === "user") && (
+            {/* Seleção de Departamento (condicional) */}
+            {(selectedRole === "lider" || selectedRole === "colaborador") && (
               <div className="space-y-2">
                 <Label htmlFor="departamento">Departamento *</Label>
                 <select
                   id="departamento"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  value={formData.departamentoId?.toString() || ""}
-                  onChange={(e) => {
-                    const newDeptId = e.target.value ? parseInt(e.target.value) : null;
-                    setFormData({
-                      ...formData,
-                      departamentoId: newDeptId,
-                      leaderId: null, // Resetar líder ao mudar departamento
-                    });
-                  }}
+                  value={selectedDepartamento || ""}
+                  onChange={(e) => setSelectedDepartamento(e.target.value ? parseInt(e.target.value) : null)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   required
                 >
                   <option value="">Selecione um departamento</option>
-                  {departamentos?.filter(d => d.status === "ativo").map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.nome}
-                    </option>
-                  ))}
+                  {departamentos
+                    .filter((d) => d.status === "ativo")
+                    .map((dept) => (
+                      <option key={dept.id} value={dept.id}>
+                        {dept.nome}
+                      </option>
+                    ))}
                 </select>
                 <p className="text-sm text-muted-foreground">
-                  {formData.role === "lider" ? "Líderes" : "Colaboradores"} devem estar vinculados a um departamento
+                  🔒 O líder será atribuído automaticamente com base no líder do departamento selecionado.
                 </p>
               </div>
             )}
 
-            {/* Líder (automático pelo departamento) */}
-            {(formData.role === "lider" || formData.role === "user") && formData.departamentoId && (
-              <div className="space-y-2">
-                <Label>Líder do Departamento</Label>
-                <div className="flex h-10 items-center rounded-md border border-input bg-muted px-3 py-2 text-sm">
-                  {(() => {
-                    const dept = departamentos?.find(d => d.id === formData.departamentoId);
-                    if (!dept?.leaderId) {
-                      return <span className="text-muted-foreground italic">Departamento sem líder definido</span>;
-                    }
-                    const leader = users?.find(u => u.id === dept.leaderId);
-                    return leader ? (
-                      <span>{leader.name} ({leader.role === "admin" ? "Admin" : "Líder"})</span>
-                    ) : (
-                      <span className="text-muted-foreground italic">Líder não encontrado</span>
-                    );
-                  })()}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  🔒 Líder é definido automaticamente pelo departamento
-                </p>
-              </div>
+            {/* Informação sobre líder automático */}
+            {selectedRole === "lider" && (
+              <Alert>
+                <InfoIcon className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Importante:</strong> Após salvar, vá em <strong>Departamentos</strong> e defina este usuário como líder do departamento. Todos os colaboradores desse departamento terão este usuário como líder automaticamente.
+                </AlertDescription>
+              </Alert>
             )}
 
             {/* Botões */}
-            <div className="flex gap-4 pt-4">
+            <div className="flex gap-3 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -240,7 +289,7 @@ export default function ConfigurarUsuario() {
               <Button
                 type="submit"
                 disabled={updateMutation.isPending}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-orange-500"
+                className="flex-1 bg-gradient-to-r from-blue-600 via-purple-600 to-orange-500 hover:opacity-90"
               >
                 {updateMutation.isPending ? (
                   <>
