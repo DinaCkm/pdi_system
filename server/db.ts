@@ -208,7 +208,7 @@ export async function createDepartamento(data: { nome: string; descricao?: strin
   return result;
 }
 
-export async function updateDepartamento(id: number, data: Partial<{ nome: string; descricao: string; status: "ativo" | "inativo" }>) {
+export async function updateDepartamento(id: number, data: Partial<{ nome: string; descricao: string; status: "ativo" | "inativo"; leaderId: number | null }>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   

@@ -235,6 +235,143 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getSubordinates(input.leaderId);
       }),
+
+    importBulk: adminProcedure
+      .input(z.object({
+        users: z.array(z.object({
+          name: z.string(),
+          email: z.string().optional(),
+          cpf: z.string(),
+          cargo: z.string(),
+          role: z.enum(["admin", "lider", "colaborador"]),
+          departamento: z.string(),
+        }))
+      }))
+      .mutation(async ({ input }) => {
+        const results = {
+          success: 0,
+          errors: [] as string[],
+          departamentosCreated: 0,
+          lidersCreated: 0,
+          colaboradoresCreated: 0,
+        };
+
+        try {
+          // 1. Criar todos os departamentos únicos
+          const departamentosUnicos = Array.from(new Set(input.users.map(u => u.departamento)));
+          const departamentosMap = new Map<string, number>();
+
+          for (const deptNome of departamentosUnicos) {
+            try {
+              // Verificar se departamento já existe
+              const existingDepts = await db.getAllDepartamentos();
+              const existing = existingDepts.find(d => d.nome === deptNome);
+              
+              if (existing) {
+                departamentosMap.set(deptNome, existing.id);
+              } else {
+                await db.createDepartamento({ nome: deptNome });
+                const newDepts = await db.getAllDepartamentos();
+                const newDept = newDepts.find(d => d.nome === deptNome);
+                if (newDept) {
+                  departamentosMap.set(deptNome, newDept.id);
+                  results.departamentosCreated++;
+                }
+              }
+            } catch (error: any) {
+              results.errors.push(`Erro ao criar departamento ${deptNome}: ${error.message}`);
+            }
+          }
+
+          // 2. Primeiro, criar todos os líderes
+          const lideres = input.users.filter(u => u.role === 'lider');
+          const lideresMap = new Map<string, number>();
+
+          for (const lider of lideres) {
+            try {
+              // Verificar se usuário já existe
+              const existing = await db.getUserByCpf(lider.cpf);
+              if (existing) {
+                lideresMap.set(`${lider.departamento}`, existing.id);
+                continue;
+              }
+
+              const departamentoId = departamentosMap.get(lider.departamento);
+              if (!departamentoId) {
+                results.errors.push(`Departamento não encontrado para líder ${lider.name}`);
+                continue;
+              }
+
+              await db.createUser({
+                openId: `local_${lider.cpf}`,
+                name: lider.name,
+                email: lider.email || `${lider.cpf}@temp.com`,
+                cpf: lider.cpf,
+                role: 'lider',
+                cargo: lider.cargo,
+                departamentoId,
+                status: 'ativo',
+              });
+
+              const newUser = await db.getUserByCpf(lider.cpf);
+              if (newUser) {
+                lideresMap.set(`${lider.departamento}`, newUser.id);
+                results.lidersCreated++;
+                results.success++;
+
+                // Atualizar departamento com o líder
+                await db.updateDepartamento(departamentoId, { leaderId: newUser.id });
+              }
+            } catch (error: any) {
+              results.errors.push(`Erro ao criar líder ${lider.name}: ${error.message}`);
+            }
+          }
+
+          // 3. Criar colaboradores e vinculá-los aos líderes
+          const colaboradores = input.users.filter(u => u.role === 'colaborador');
+
+          for (const colab of colaboradores) {
+            try {
+              // Verificar se usuário já existe
+              const existing = await db.getUserByCpf(colab.cpf);
+              if (existing) {
+                continue;
+              }
+
+              const departamentoId = departamentosMap.get(colab.departamento);
+              if (!departamentoId) {
+                results.errors.push(`Departamento não encontrado para ${colab.name}`);
+                continue;
+              }
+              const leaderId = lideresMap.get(`${colab.departamento}`);
+
+              await db.createUser({
+                openId: `local_${colab.cpf}`,
+                name: colab.name,
+                email: colab.email || `${colab.cpf}@temp.com`,
+                cpf: colab.cpf,
+                role: 'colaborador',
+                cargo: colab.cargo,
+                departamentoId,
+                leaderId,
+                status: 'ativo',
+              });
+
+              results.colaboradoresCreated++;
+              results.success++;
+            } catch (error: any) {
+              results.errors.push(`Erro ao criar colaborador ${colab.name}: ${error.message}`);
+            }
+          }
+
+          return results;
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro na importação: ${error.message}`,
+          });
+        }
+      }),
   }),
 
   // ============= GESTÃO DE COMPETÊNCIAS =============
@@ -567,147 +704,10 @@ export const appRouter = router({
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
-        await db.softDeleteUser(input.id);
+        await db.deleteUser(input.id);
         return { success: true };
       }),
 
-    importBulk: adminProcedure
-      .input(z.object({
-        users: z.array(z.object({
-          name: z.string(),
-          email: z.string().optional(),
-          cpf: z.string(),
-          cargo: z.string(),
-          role: z.enum(["admin", "lider", "colaborador"]),
-          departamento: z.string(),
-        }))
-      }))
-      .mutation(async ({ input }) => {
-        const results = {
-          success: 0,
-          errors: [] as string[],
-          departamentosCreated: 0,
-          lidersCreated: 0,
-          colaboradoresCreated: 0,
-        };
-
-        try {
-          // 1. Criar todos os departamentos únicos
-          const departamentosUnicos = [...new Set(input.users.map(u => u.departamento))];
-          const departamentosMap = new Map<string, number>();
-
-          for (const deptNome of departamentosUnicos) {
-            try {
-              // Verificar se departamento já existe
-              const existingDepts = await db.getAllDepartamentos();
-              const existing = existingDepts.find(d => d.nome === deptNome);
-              
-              if (existing) {
-                departamentosMap.set(deptNome, existing.id);
-              } else {
-                await db.createDepartamento({ nome: deptNome });
-                const newDepts = await db.getAllDepartamentos();
-                const newDept = newDepts.find(d => d.nome === deptNome);
-                if (newDept) {
-                  departamentosMap.set(deptNome, newDept.id);
-                  results.departamentosCreated++;
-                }
-              }
-            } catch (error: any) {
-              results.errors.push(`Erro ao criar departamento ${deptNome}: ${error.message}`);
-            }
-          }
-
-          // 2. Primeiro, criar todos os líderes
-          const lideres = input.users.filter(u => u.role === 'lider');
-          const lideresMap = new Map<string, number>();
-
-          for (const lider of lideres) {
-            try {
-              // Verificar se usuário já existe
-              const existing = await db.getUserByCpf(lider.cpf);
-              if (existing) {
-                lideresMap.set(`${lider.departamento}`, existing.id);
-                continue;
-              }
-
-              const departamentoId = departamentosMap.get(lider.departamento);
-              if (!departamentoId) {
-                results.errors.push(`Departamento não encontrado para líder ${lider.name}`);
-                continue;
-              }
-
-              await db.createUser({
-                openId: `local_${lider.cpf}`,
-                name: lider.name,
-                email: lider.email || `${lider.cpf}@temp.com`,
-                cpf: lider.cpf,
-                role: 'lider',
-                cargo: lider.cargo,
-                departamentoId,
-                status: 'ativo',
-              });
-
-              const newUser = await db.getUserByCpf(lider.cpf);
-              if (newUser) {
-                lideresMap.set(`${lider.departamento}`, newUser.id);
-                results.lidersCreated++;
-                results.success++;
-
-                // Atualizar departamento com o líder
-                await db.updateDepartamento(departamentoId, { leaderId: newUser.id });
-              }
-            } catch (error: any) {
-              results.errors.push(`Erro ao criar líder ${lider.name}: ${error.message}`);
-            }
-          }
-
-          // 3. Criar colaboradores e vinculá-los aos líderes
-          const colaboradores = input.users.filter(u => u.role === 'colaborador');
-
-          for (const colab of colaboradores) {
-            try {
-              // Verificar se usuário já existe
-              const existing = await db.getUserByCpf(colab.cpf);
-              if (existing) {
-                continue;
-              }
-
-              const departamentoId = departamentosMap.get(colab.departamento);
-              if (!departamentoId) {
-                results.errors.push(`Departamento não encontrado para ${colab.name}`);
-                continue;
-              }
-
-              const leaderId = lideresMap.get(`${colab.departamento}`);
-
-              await db.createUser({
-                openId: `local_${colab.cpf}`,
-                name: colab.name,
-                email: colab.email || `${colab.cpf}@temp.com`,
-                cpf: colab.cpf,
-                role: 'colaborador',
-                cargo: colab.cargo,
-                departamentoId,
-                leaderId,
-                status: 'ativo',
-              });
-
-              results.colaboradoresCreated++;
-              results.success++;
-            } catch (error: any) {
-              results.errors.push(`Erro ao criar colaborador ${colab.name}: ${error.message}`);
-            }
-          }
-
-          return results;
-        } catch (error: any) {
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: `Erro na importação: ${error.message}`,
-          });
-        }
-      }),
   }),
 
   // ============= GESTÃO DE AÇÕES =============

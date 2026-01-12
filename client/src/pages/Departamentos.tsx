@@ -38,7 +38,7 @@ import { toast } from "sonner";
 type DepartamentoFormData = {
   nome: string;
   descricao: string;
-  leaderId: number | null;
+  leaderId?: number | undefined;
 };
 
 export default function Departamentos() {
@@ -50,7 +50,7 @@ export default function Departamentos() {
   const [formData, setFormData] = useState<DepartamentoFormData>({
     nome: "",
     descricao: "",
-    leaderId: null,
+    leaderId: undefined,
   });
 
   const { data: departamentos, isLoading, refetch } = trpc.departamentos.list.useQuery();
@@ -74,7 +74,7 @@ export default function Departamentos() {
       await createMutation.mutateAsync(formData);
       toast.success("Departamento criado com sucesso!");
       setIsCreateOpen(false);
-      setFormData({ nome: "", descricao: "", leaderId: null });
+      setFormData({ nome: "", descricao: "", leaderId: undefined });
       refetch();
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar departamento");
@@ -105,7 +105,7 @@ export default function Departamentos() {
       toast.success("Departamento atualizado com sucesso!");
       setIsEditOpen(false);
       setSelectedDepartamento(null);
-      setFormData({ nome: "", descricao: "", leaderId: null });
+      setFormData({ nome: "", descricao: "", leaderId: undefined });
       refetch();
     } catch (error: any) {
       toast.error(error.message || "Erro ao atualizar departamento");
@@ -292,7 +292,7 @@ export default function Departamentos() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    leaderId: e.target.value ? parseInt(e.target.value) : null,
+                    leaderId: e.target.value ? parseInt(e.target.value) : undefined,
                   })
                 }
               >
@@ -355,7 +355,7 @@ export default function Departamentos() {
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    leaderId: e.target.value ? parseInt(e.target.value) : null,
+                    leaderId: e.target.value ? parseInt(e.target.value) : undefined,
                   })
                 }
               >

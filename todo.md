@@ -615,3 +615,8 @@
 - [x] Investigar dados de Dina Makiyama no banco (role, departamentoId)
 - [x] Verificar lógica de filtro availableLeaders em ConfigurarUsuario
 - [x] Corrigir inconsistência entre departamento.leaderId e user.departamentoId
+
+## Correção de Erros TypeScript para Publicação
+- [x] Corrigir erro: Types of property leaderId are incompatible (number | null vs number | undefined)
+- [x] Corrigir erro: Property importBulk does not exist em ImportarUsuarios.tsx
+- [x] Testar build de produção sem erros

@@ -15,8 +15,8 @@ export default function ConfigurarUsuario() {
   const userId = params?.id ? parseInt(params.id) : null;
 
   const [selectedRole, setSelectedRole] = useState<"colaborador" | "lider" | "admin">("colaborador");
-  const [selectedDepartamento, setSelectedDepartamento] = useState<number | null>(null);
-  const [selectedLeader, setSelectedLeader] = useState<number | null>(null);
+  const [selectedDepartamento, setSelectedDepartamento] = useState<number | undefined>(undefined);
+  const [selectedLeader, setSelectedLeader] = useState<number | undefined>(undefined);
 
   const { data: user, isLoading: loadingUser } = trpc.users.getById.useQuery(
     { id: userId! },
@@ -63,19 +63,19 @@ export default function ConfigurarUsuario() {
   useEffect(() => {
     if (user) {
       setSelectedRole(user.role);
-      setSelectedDepartamento(user.departamentoId);
-      setSelectedLeader(user.leaderId);
+      setSelectedDepartamento(user.departamentoId ?? undefined);
+      setSelectedLeader(user.leaderId ?? undefined);
     }
   }, [user]);
 
   // Handler para mudança de departamento com startTransition
   const handleDepartamentoChange = (value: string) => {
-    const newDeptId = value ? parseInt(value) : null;
+    const newDeptId = value ? parseInt(value) : undefined;
     startTransition(() => {
       setSelectedDepartamento(newDeptId);
       // Resetar líder quando departamento mudar para evitar conflito de validação
       if (newDeptId !== selectedDepartamento) {
-        setSelectedLeader(null);
+        setSelectedLeader(undefined);
       }
     });
   };
@@ -295,7 +295,7 @@ export default function ConfigurarUsuario() {
                 <select
                   id="lider"
                   value={selectedLeader || ""}
-                  onChange={(e) => startTransition(() => setSelectedLeader(e.target.value ? parseInt(e.target.value) : null))}
+                  onChange={(e) => startTransition(() => setSelectedLeader(e.target.value ? parseInt(e.target.value) : undefined))}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   required={selectedRole === "colaborador"}
                 >
