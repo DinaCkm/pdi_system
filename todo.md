@@ -626,6 +626,7 @@
 - [x] Implementar solução definitiva insertBefore: usar flushSync + select sempre renderizado (não condicional)
 - [ ] Adicionar indicador de carregamento (spinner) no botão Salvar Configuração
 - [x] Implementar importação em massa de competências via CSV (Bloco, Macro, Micro)
-- [x] Implementar detecção inteligente de duplicatas com sugestões de competências similares
+- [ ] Implementar detecção inteligente de duplicatas com sugestões de competências similares
 - [x] Corrigir erro removeChild ao criar Macro/Micro usando window.location.reload()
 - [x] Corrigir erro removeChild ao selecionar Bloco no dropdown
+- [x] Remover funcionalidade de detecção de duplicatas que estava causando erros
