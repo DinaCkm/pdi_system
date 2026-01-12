@@ -103,21 +103,10 @@ export default function ConfigurarUsuario() {
         leaderId: selectedLeader,
       });
 
-      toast.success(`Perfil de ${user?.name} atualizado com sucesso!`);
-      
-      // Mostrar mensagem adicional para líderes
-      if (selectedRole === "lider") {
-        setTimeout(() => {
-          toast.info("Próximo passo: Vá em Departamentos e defina este usuário como líder do departamento.");
-        }, 1500);
-      }
-      
-      // Navegar de volta após sucesso
-      setTimeout(() => {
-        navigate("/usuarios");
-      }, 2000);
+      // Forçar reload completo da página para evitar conflitos de estado React
+      window.location.href = "/usuarios";
     } catch (error: any) {
-      toast.error(error.message || "Erro ao salvar configuração");
+      alert(error.message || "Erro ao salvar configuração");
     }
   };
 
