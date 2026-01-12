@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { useRoute, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ export default function ConfigurarUsuario() {
 
   const [selectedRole, setSelectedRole] = useState<"colaborador" | "lider" | "admin">("colaborador");
   const [selectedDepartamento, setSelectedDepartamento] = useState<number | null>(null);
+  const [selectedLeader, setSelectedLeader] = useState<number | null>(null);
 
   const { data: user, isLoading: loadingUser } = trpc.users.getById.useQuery(
     { id: userId! },
@@ -24,15 +25,39 @@ export default function ConfigurarUsuario() {
   
   const { data: departamentos = [] } = trpc.departamentos.list.useQuery();
   
+  // Buscar todos os usuários para selecionar líder
+  const { data: allUsers = [] } = trpc.users.list.useQuery();
+  
   const updateMutation = trpc.users.update.useMutation();
+
+  // Filtrar líderes disponíveis do departamento selecionado
+  const availableLeaders = allUsers.filter(
+    (u) => 
+      u.id !== userId && // Não pode ser líder de si mesmo
+      u.departamentoId === selectedDepartamento && // Mesmo departamento
+      (u.role === "lider" || u.role === "admin") // Apenas líderes ou admins
+  );
 
   // Carregar dados atuais do usuário
   useEffect(() => {
     if (user) {
       setSelectedRole(user.role);
       setSelectedDepartamento(user.departamentoId);
+      setSelectedLeader(user.leaderId);
     }
   }, [user]);
+
+  // Handler para mudança de departamento com startTransition
+  const handleDepartamentoChange = (value: string) => {
+    const newDeptId = value ? parseInt(value) : null;
+    startTransition(() => {
+      setSelectedDepartamento(newDeptId);
+      // Resetar líder quando departamento mudar para evitar conflito de validação
+      if (newDeptId !== selectedDepartamento) {
+        setSelectedLeader(null);
+      }
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,11 +70,18 @@ export default function ConfigurarUsuario() {
       return;
     }
 
+    // Validação: Colaborador precisa de líder
+    if (selectedRole === "colaborador" && !selectedLeader) {
+      toast.error("Colaboradores devem ter um líder atribuído.");
+      return;
+    }
+
     try {
       await updateMutation.mutateAsync({
         id: userId,
         role: selectedRole,
         departamentoId: selectedDepartamento,
+        leaderId: selectedLeader,
       });
 
       toast.success(`Perfil de ${user?.name} atualizado com sucesso!`);
@@ -214,12 +246,12 @@ export default function ConfigurarUsuario() {
 
             {/* Seleção de Departamento (condicional) */}
             {(selectedRole === "lider" || selectedRole === "colaborador") && (
-              <div className="space-y-2">
+              <div key="departamento-section" className="space-y-2">
                 <Label htmlFor="departamento">Departamento *</Label>
                 <select
                   id="departamento"
                   value={selectedDepartamento || ""}
-                  onChange={(e) => setSelectedDepartamento(e.target.value ? parseInt(e.target.value) : null)}
+                  onChange={(e) => handleDepartamentoChange(e.target.value)}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   required
                 >
@@ -232,15 +264,43 @@ export default function ConfigurarUsuario() {
                       </option>
                     ))}
                 </select>
-                <p className="text-sm text-muted-foreground">
-                  🔒 O líder será atribuído automaticamente com base no líder do departamento selecionado.
-                </p>
+              </div>
+            )}
+
+            {/* Seleção de Líder (condicional) */}
+            {(selectedRole === "lider" || selectedRole === "colaborador") && selectedDepartamento && (
+              <div key="lider-section" className="space-y-2">
+                <Label htmlFor="lider">Líder {selectedRole === "colaborador" ? "*" : "(opcional)"}</Label>
+                <select
+                  id="lider"
+                  value={selectedLeader || ""}
+                  onChange={(e) => startTransition(() => setSelectedLeader(e.target.value ? parseInt(e.target.value) : null))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  required={selectedRole === "colaborador"}
+                >
+                  <option value="">{availableLeaders.length === 0 ? "Nenhum líder disponível neste departamento" : "Selecione um líder"}</option>
+                  {availableLeaders.map((leader) => (
+                    <option key={leader.id} value={leader.id}>
+                      {leader.name} ({leader.role === "admin" ? "Administrador" : "Líder"})
+                    </option>
+                  ))}
+                </select>
+                {availableLeaders.length === 0 && (
+                  <p className="text-sm text-amber-600">
+                    ⚠️ Não há líderes cadastrados neste departamento. Configure um líder primeiro.
+                  </p>
+                )}
+                {availableLeaders.length > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Selecione o líder direto deste {selectedRole === "colaborador" ? "colaborador" : "líder"}.
+                  </p>
+                )}
               </div>
             )}
 
             {/* Informação sobre líder automático */}
             {selectedRole === "lider" && (
-              <Alert>
+              <Alert key="lider-info-alert">
                 <InfoIcon className="h-4 w-4" />
                 <AlertDescription>
                   <strong>Importante:</strong> Após salvar, vá em <strong>Departamentos</strong> e defina este usuário como líder do departamento. Todos os colaboradores desse departamento terão este usuário como líder automaticamente.

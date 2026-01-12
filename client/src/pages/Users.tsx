@@ -191,13 +191,14 @@ export default function Users() {
                   <TableHead>Email</TableHead>
                   <TableHead>Departamento</TableHead>
                   <TableHead>Perfil</TableHead>
+                  <TableHead>Líder</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
                       Nenhum usuário encontrado
                     </TableCell>
                   </TableRow>
@@ -212,6 +213,11 @@ export default function Users() {
                         </span>
                       </TableCell>
                       <TableCell>{getRoleBadge(user.role)}</TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {getLiderNome(user.leaderId)}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button

@@ -603,3 +603,10 @@
 - [x] Otimizar layout da tabela de usuários (remover colunas CPF e Cargo)
 - [x] Truncar textos longos de departamento com tooltip
 - [ ] Melhorar visualização em telas menores
+
+## Bug Crítico - Erro insertBefore ao Configurar Usuário
+- [x] Corrigir erro insertBefore ao selecionar departamento na página ConfigurarUsuario
+- [x] Adicionar keys estáveis em elementos condicionais
+- [x] Simplificar atualizações de estado no formulário
+- [x] Adicionar campo de seleção de líder na página ConfigurarUsuario
+- [x] Adicionar coluna Líder na tabela de usuários para visualização
