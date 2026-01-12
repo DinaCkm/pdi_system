@@ -536,3 +536,21 @@
 - [x] Implementar validação de CPF duplicado (backend já valida)
 - [x] Implementar validação de email válido (HTML5 type="email")
 - [x] Testar fluxo completo de edição
+
+## Feature - PDI para Líderes com Validação Hierárquica
+- [x] Permitir que líderes tenham PDI próprio (estrutura já suporta)
+- [x] Ajustar mensagem de erro para ser genérica ("usuário" ao invés de "colaborador")
+- [x] Implementar validação hierárquica na aprovação de ações
+- [x] Validar que apenas líder direto ou admin pode aprovar ações
+- [x] Criar procedure teamPDIs para líder ver PDIs da equipe
+- [x] Procedure myPDIs já retorna PDI do usuário logado (colaborador ou líder)
+- [x] Admin vê TODOS os PDIs e ações via procedure list
+- [ ] Criar interface frontend para visualização de PDI próprio + equipe
+- [ ] Testar fluxo completo: Colaborador → Líder → Líder Superior → Admin
+
+## Feature - Líder Acompanha Solicitações de Ajuste da Equipe
+- [x] Ajustar notificações para incluir justificativa do admin (aprovação/reprovação)
+- [x] Incluir nome do colaborador e campos alterados nas notificações
+- [x] Criar procedure teamAdjustmentRequests para líder buscar solicitações pendentes da equipe
+- [ ] Criar interface frontend para líder visualizar solicitações com detalhes
+- [ ] Mostrar: colaborador, ação, justificativa, status, resposta do admin

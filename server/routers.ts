@@ -509,6 +509,24 @@ export const appRouter = router({
       return await db.getPDIsByColaboradorId(ctx.user!.id);
     }),
 
+    teamPDIs: protectedProcedure.query(async ({ ctx }) => {
+      // Buscar subordinados diretos do líder
+      const subordinados = await db.getSubordinates(ctx.user!.id);
+      
+      if (subordinados.length === 0) {
+        return [];
+      }
+      
+      // Buscar PDIs de todos os subordinados
+      const teamPDIs = [];
+      for (const subordinado of subordinados) {
+        const pdis = await db.getPDIsByColaboradorId(subordinado.id);
+        teamPDIs.push(...pdis);
+      }
+      
+      return teamPDIs;
+    }),
+
     create: adminProcedure
       .input(z.object({
         colaboradorId: z.number(),
@@ -524,7 +542,7 @@ export const appRouter = router({
         if (duplicatePDI) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Já existe um PDI para este colaborador neste ciclo. Cada colaborador pode ter apenas 1 PDI por ciclo.',
+            message: 'Já existe um PDI para este usuário neste ciclo. Cada usuário pode ter apenas 1 PDI por ciclo.',
           });
         }
 
@@ -679,20 +697,36 @@ export const appRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Ação não está pendente de aprovação' });
         }
         
+        // Buscar PDI e dono (pode ser colaborador ou líder)
+        const pdi = await db.getPDIById(action.pdiId);
+        if (!pdi) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'PDI não encontrado' });
+        }
+        
+        const donoPDI = await db.getUserById(pdi.colaboradorId);
+        if (!donoPDI) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Usuário não encontrado' });
+        }
+        
+        // Validar hierarquia: apenas admin ou líder direto pode aprovar
+        if (ctx.user!.role !== 'admin' && donoPDI.leaderId !== ctx.user!.id) {
+          throw new TRPCError({ 
+            code: 'FORBIDDEN', 
+            message: 'Apenas o líder direto ou admin pode aprovar esta ação' 
+          });
+        }
+        
         await db.updateAction(input.id, { 
           status: "aprovada_lider",
         });
         
-        // Notificar colaborador e admin
-        const pdi = await db.getPDIById(action.pdiId);
-        if (pdi) {
-          await db.createNotification({
-            destinatarioId: pdi.colaboradorId,
-            tipo: "acao_aprovada",
-            titulo: "Ação aprovada",
-            mensagem: `Sua ação "${action.nome}" foi aprovada pelo líder`,
-          });
-        }
+        // Notificar dono do PDI
+        await db.createNotification({
+          destinatarioId: pdi.colaboradorId,
+          tipo: "acao_aprovada",
+          titulo: "Ação aprovada",
+          mensagem: `Sua ação "${action.nome}" foi aprovada`,
+        });
         
         return { success: true };
       }),
@@ -751,6 +785,11 @@ export const appRouter = router({
       }),
 
     // ============= SOLICITAÇÃO DE AJUSTE =============
+    
+    teamAdjustmentRequests: protectedProcedure.query(async ({ ctx }) => {
+      // Retorna solicitações de ajuste pendentes dos subordinados do líder
+      return await db.getPendingAdjustmentRequestsByLeaderId(ctx.user!.id);
+    }),
     
     solicitarAjuste: protectedProcedure
       .input(z.object({
@@ -966,7 +1005,7 @@ export const appRouter = router({
           referenciaId: acao.id,
         });
 
-        // 7. Notificar Líder (informativo)
+        // 7. Notificar Líder com detalhes
         const pdi = await db.getPDIById(acao.pdiId);
         if (pdi) {
           const colaborador = await db.getUserById(pdi.colaboradorId);
@@ -974,8 +1013,8 @@ export const appRouter = router({
             await db.createNotification({
               destinatarioId: colaborador.leaderId,
               tipo: 'ajuste_aprovado_info',
-              titulo: 'ℹ️ Ajuste Aprovado (Informativo)',
-              mensagem: `Ajuste na ação "${acao.nome}" do seu liderado foi aprovado.`,
+              titulo: '✅ Ajuste Aprovado',
+              mensagem: `Ajuste na ação "${acao.nome}" do seu liderado ${colaborador.name} foi aprovado pelo Admin.\n\nCampos alterados: ${Object.keys(camposAjustar).join(', ')}`,
               referenciaId: acao.id,
             });
           }
@@ -1035,7 +1074,7 @@ export const appRouter = router({
           referenciaId: acao.id,
         });
 
-        // 6. Notificar Líder (informativo)
+        // 6. Notificar Líder com justificativa do admin
         const pdi = await db.getPDIById(acao.pdiId);
         if (pdi) {
           const colaborador = await db.getUserById(pdi.colaboradorId);
@@ -1043,8 +1082,8 @@ export const appRouter = router({
             await db.createNotification({
               destinatarioId: colaborador.leaderId,
               tipo: 'ajuste_reprovado_info',
-              titulo: 'ℹ️ Ajuste Reprovado (Informativo)',
-              mensagem: `Ajuste na ação "${acao.nome}" do seu liderado foi reprovado.`,
+              titulo: '❌ Ajuste Reprovado',
+              mensagem: `Ajuste na ação "${acao.nome}" do seu liderado ${colaborador.name} foi reprovado pelo Admin.\n\nJustificativa do Admin: ${input.justificativa}`,
               referenciaId: acao.id,
             });
           }
