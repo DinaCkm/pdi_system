@@ -4,121 +4,32 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import DashboardLayout from "./components/DashboardLayout";
 import Home from "./pages/Home";
-import Setup from "./pages/Setup";
-import Login from "./pages/Login";
-import Users from "./pages/Users";
-import ConfigurarUsuario from "./pages/ConfigurarUsuario";
-import Competencias from "./pages/Competencias";
-import Departamentos from "./pages/Departamentos";
-import Ciclos from "./pages/Ciclos";
-import PDIs from "./pages/PDIs";
-import Acoes from "./pages/Acoes";
-import MinhasPendencias from "./pages/MinhasPendencias";
-import Relatorios from "./pages/Relatorios";
-import SolicitacoesAjuste from "./pages/SolicitacoesAjuste";
-import SolicitacoesEquipe from "./pages/SolicitacoesEquipe";
-import PDIsEquipe from "./pages/PDIsEquipe";
 
-function Router() {  return (
+function Router() {
+  // make sure to consider if you need authentication for certain routes
+  return (
     <Switch>
-      <Route path={"/setup"} component={Setup} />
-      <Route path={"/login"} component={Login} />
       <Route path={"/"} component={Home} />
       <Route path={"/404"} component={NotFound} />
-      
-      {/* Rotas protegidas com DashboardLayout */}
-      <Route path={"/usuarios"}>
-        <DashboardLayout>
-          <Users />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/usuarios/:id/configurar"}>
-        {(params) => (
-          <DashboardLayout>
-            <ConfigurarUsuario key={params.id} />
-          </DashboardLayout>
-        )}
-      </Route>
-      
-      <Route path={"/competencias"}>
-        <DashboardLayout>
-          <Competencias />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/departamentos"}>
-        <DashboardLayout>
-          <Departamentos />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/ciclos"}>
-        <DashboardLayout>
-          <Ciclos />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/pdis"}>
-        <DashboardLayout>
-          <PDIs />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/meu-pdi"}>
-        <DashboardLayout>
-          <PDIs />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/pdis-equipe"}>
-        <DashboardLayout>
-          <PDIsEquipe />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/acoes"}>
-        <DashboardLayout>
-          <Acoes />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/solicitacoes-ajuste"}>
-        <DashboardLayout>
-          <SolicitacoesAjuste />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/solicitacoes-equipe"}>
-        <DashboardLayout>
-          <SolicitacoesEquipe />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/pendencias"}>
-        <DashboardLayout>
-          <MinhasPendencias />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/relatorios"}>
-        <DashboardLayout>
-          <Relatorios />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/404"} component={NotFound} />
+      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
   );
 }
 
+// NOTE: About Theme
+// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
+//   to keep consistent foreground/background color across components
+// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
+
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider
+        defaultTheme="light"
+        // switchable
+      >
         <TooltipProvider>
           <Toaster />
           <Router />

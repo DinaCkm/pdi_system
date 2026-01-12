@@ -1,9 +1,0 @@
-{
-  "query": "INSERT INTO departamentos (nome, descricao, status, createdAt) VALUES \n('Tecnologia da Informação', 'Departamento responsável por desenvolvimento e infraestrutura', 'ativo', NOW()),\n('Recursos Humanos', 'Departamento responsável por gestão de pessoas', 'ativo', NOW()),\n('Financeiro', 'Departamento responsável por finanças e contabilidade', 'ativo', NOW());",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute INSERT INTO departamentos (nome, descricao, status, createdAt) VALUES \n('Tecnologia da Informação', 'Departamento responsável por desenvolvimento e infraestrutura', 'ativo', NOW()),\n('Recursos Humanos', 'Departamento responsável por gestão de pessoas', 'ativo', NOW()),\n('Financeiro', 'Departamento responsável por finanças e contabilidade', 'ativo', NOW());",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 96
-}
