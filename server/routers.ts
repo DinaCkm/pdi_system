@@ -173,7 +173,7 @@ export const appRouter = router({
         const finalLeaderId = updateData.leaderId !== undefined ? updateData.leaderId : currentUser.leaderId;
         const finalDepartamentoId = updateData.departamentoId !== undefined ? updateData.departamentoId : currentUser.departamentoId;
 
-        // VALIDAÇÃO: Líder e Colaborador DEVEM ter departamento e líder
+        // VALIDAÇÃO: Líder e Colaborador DEVEM ter departamento
         if (finalRole === 'lider' || finalRole === 'colaborador') {
           if (!finalDepartamentoId) {
             throw new TRPCError({ 
@@ -181,11 +181,11 @@ export const appRouter = router({
               message: `${finalRole === 'lider' ? 'Líderes' : 'Colaboradores'} devem estar vinculados a um departamento.` 
             });
           }
-          if (!finalLeaderId) {
-            throw new TRPCError({ 
-              code: 'BAD_REQUEST', 
-              message: `${finalRole === 'lider' ? 'Líderes' : 'Colaboradores'} devem ter um líder atribuído.` 
-            });
+          
+          // Buscar líder automaticamente do departamento
+          const departamento = await db.getDepartamentoById(finalDepartamentoId);
+          if (departamento && departamento.leaderId) {
+            updateData.leaderId = departamento.leaderId;
           }
         }
 
