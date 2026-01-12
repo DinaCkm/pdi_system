@@ -120,12 +120,9 @@ export default function Competencias() {
   const createMacroMutation = trpc.competencias.createMacro.useMutation({
     onSuccess: async () => {
       toast.success("Macro criada com sucesso!");
-      setMacroDialogOpen(false);
-      setMacroForm({ nome: "", descricao: "", blocoId: "" });
-      // Aguardar um pouco antes de refetch para garantir que a UI atualize
-      setTimeout(async () => {
-        await utils.competencias.listMacros.refetch();
-      }, 100);
+      setTimeout(() => {
+        window.location.reload();
+      }, 50);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -133,12 +130,9 @@ export default function Competencias() {
   const updateMacroMutation = trpc.competencias.updateMacro.useMutation({
     onSuccess: async () => {
       toast.success("Macro atualizada com sucesso!");
-      setMacroDialogOpen(false);
-      setEditingMacro(null);
-      setMacroForm({ nome: "", descricao: "", blocoId: "" });
-      setTimeout(async () => {
-        await utils.competencias.listMacros.refetch();
-      }, 100);
+      setTimeout(() => {
+        window.location.reload();
+      }, 50);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -146,10 +140,9 @@ export default function Competencias() {
   const deleteMacroMutation = trpc.competencias.deleteMacro.useMutation({
     onSuccess: async () => {
       toast.success("Macro excluída com sucesso!");
-      setTimeout(async () => {
-        await utils.competencias.listMacros.refetch();
-        await utils.competencias.listMicros.refetch();
-      }, 100);
+      setTimeout(() => {
+        window.location.reload();
+      }, 50);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -158,9 +151,9 @@ export default function Competencias() {
   const createMicroMutation = trpc.competencias.createMicro.useMutation({
     onSuccess: async () => {
       toast.success("Micro criada com sucesso!");
-      await utils.competencias.listMicros.refetch();
-      setMicroDialogOpen(false);
-      setMicroForm({ nome: "", descricao: "", macroId: "" });
+      setTimeout(() => {
+        window.location.reload();
+      }, 50);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -168,10 +161,9 @@ export default function Competencias() {
   const updateMicroMutation = trpc.competencias.updateMicro.useMutation({
     onSuccess: async () => {
       toast.success("Micro atualizada com sucesso!");
-      await utils.competencias.listMicros.refetch();
-      setMicroDialogOpen(false);
-      setEditingMicro(null);
-      setMicroForm({ nome: "", descricao: "", macroId: "" });
+      setTimeout(() => {
+        window.location.reload();
+      }, 50);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -179,7 +171,9 @@ export default function Competencias() {
   const deleteMicroMutation = trpc.competencias.deleteMicro.useMutation({
     onSuccess: async () => {
       toast.success("Micro excluída com sucesso!");
-      await utils.competencias.listMicros.refetch();
+      setTimeout(() => {
+        window.location.reload();
+      }, 50);
     },
     onError: (error) => toast.error(error.message),
   });
