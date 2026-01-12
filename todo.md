@@ -624,3 +624,5 @@
 - [x] Corrigir erro insertBefore ao selecionar líder no dropdown (adicionar key estável)
 
 - [x] Implementar solução definitiva insertBefore: usar flushSync + select sempre renderizado (não condicional)
+- [ ] Adicionar indicador de carregamento (spinner) no botão Salvar Configuração
+- [x] Implementar importação em massa de competências via CSV (Bloco, Macro, Micro)

@@ -237,12 +237,20 @@ export async function getBlocoById(id: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getBlocoByNome(nome: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(competenciasBlocos).where(eq(competenciasBlocos.nome, nome)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
 export async function createBloco(data: { nome: string; descricao?: string; status?: "ativo" | "inativo" }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   const result = await db.insert(competenciasBlocos).values(data);
-  return result;
+  const insertId = (result as any).insertId || (result as any)[0]?.insertId;
+  return { id: insertId };
 }
 
 export async function updateBloco(id: number, data: Partial<{ nome: string; descricao: string; status: "ativo" | "inativo" }>) {
@@ -278,12 +286,22 @@ export async function getMacroById(id: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getMacroByNomeAndBlocoId(nome: string, blocoId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(competenciasMacros)
+    .where(and(eq(competenciasMacros.nome, nome), eq(competenciasMacros.blocoId, blocoId)))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
 export async function createMacro(data: { blocoId: number; nome: string; descricao?: string; status?: "ativo" | "inativo" }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   const result = await db.insert(competenciasMacros).values(data);
-  return result;
+  const insertId = (result as any).insertId || (result as any)[0]?.insertId;
+  return { id: insertId };
 }
 
 export async function updateMacro(id: number, data: Partial<{ nome: string; descricao: string; status: "ativo" | "inativo" }>) {
@@ -319,12 +337,22 @@ export async function getMicroById(id: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getMicroByNomeAndMacroId(nome: string, macroId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(competenciasMicros)
+    .where(and(eq(competenciasMicros.nome, nome), eq(competenciasMicros.macroId, macroId)))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
 export async function createMicro(data: { macroId: number; nome: string; descricao?: string; status?: "ativo" | "inativo" }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   const result = await db.insert(competenciasMicros).values(data);
-  return result;
+  const insertId = (result as any).insertId || (result as any)[0]?.insertId;
+  return { id: insertId };
 }
 
 export async function updateMicro(id: number, data: Partial<{ nome: string; descricao: string; status: "ativo" | "inativo" }>) {

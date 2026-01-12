@@ -516,6 +516,85 @@ export const appRouter = router({
         await db.deleteMicro(input.id);
         return { success: true };
       }),
+
+    // IMPORTAÇÃO EM MASSA
+    importBulk: adminProcedure
+      .input(z.object({
+        competencias: z.array(z.object({
+          modulo: z.string(),
+          macro: z.string(),
+          micro: z.string(),
+        }))
+      }))
+      .mutation(async ({ input }) => {
+        const { competencias } = input;
+        
+        // Maps para evitar duplicação
+        const blocoMap = new Map<string, number>();
+        const macroMap = new Map<string, number>();
+        
+        let created = { blocos: 0, macros: 0, micros: 0 };
+        let skipped = { blocos: 0, macros: 0, micros: 0 };
+        
+        for (const comp of competencias) {
+          // 1. Criar ou buscar Bloco
+          let blocoId: number;
+          if (blocoMap.has(comp.modulo)) {
+            blocoId = blocoMap.get(comp.modulo)!;
+            skipped.blocos++;
+          } else {
+            // Verificar se já existe no banco
+            const existingBloco = await db.getBlocoByNome(comp.modulo);
+            if (existingBloco) {
+              blocoId = existingBloco.id;
+              blocoMap.set(comp.modulo, blocoId);
+              skipped.blocos++;
+            } else {
+              const newBloco = await db.createBloco({ nome: comp.modulo });
+              blocoId = newBloco.id;
+              blocoMap.set(comp.modulo, blocoId);
+              created.blocos++;
+            }
+          }
+          
+          // 2. Criar ou buscar Macro
+          const macroKey = `${blocoId}-${comp.macro}`;
+          let macroId: number;
+          if (macroMap.has(macroKey)) {
+            macroId = macroMap.get(macroKey)!;
+            skipped.macros++;
+          } else {
+            // Verificar se já existe no banco
+            const existingMacro = await db.getMacroByNomeAndBlocoId(comp.macro, blocoId);
+            if (existingMacro) {
+              macroId = existingMacro.id;
+              macroMap.set(macroKey, macroId);
+              skipped.macros++;
+            } else {
+              const newMacro = await db.createMacro({ blocoId, nome: comp.macro });
+              macroId = newMacro.id;
+              macroMap.set(macroKey, macroId);
+              created.macros++;
+            }
+          }
+          
+          // 3. Criar Micro (sempre criar, mesmo se duplicado)
+          const existingMicro = await db.getMicroByNomeAndMacroId(comp.micro, macroId);
+          if (existingMicro) {
+            skipped.micros++;
+          } else {
+            await db.createMicro({ macroId, nome: comp.micro });
+            created.micros++;
+          }
+        }
+        
+        return { 
+          success: true, 
+          created,
+          skipped,
+          total: competencias.length 
+        };
+      }),
   }),
 
   // ============= GESTÃO DE CICLOS =============
