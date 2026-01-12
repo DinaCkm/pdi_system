@@ -86,7 +86,7 @@ export default function ConfigurarUsuario() {
   // Tela de sucesso
   if (showSuccess) {
     return (
-      <div className="container max-w-2xl py-8">
+      <div key="success-screen" className="container max-w-2xl py-8">
         <Card className="border-green-200 bg-green-50">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center gap-4 text-center">
@@ -108,7 +108,7 @@ export default function ConfigurarUsuario() {
               </Button>
               
               {selectedRole === "lider" && (
-                <Alert className="mt-4">
+                <Alert key="success-lider-alert" className="mt-4">
                   <InfoIcon className="h-4 w-4" />
                   <AlertDescription>
                     <strong>Próximo passo:</strong> Vá em <strong>Departamentos</strong> e defina este usuário como líder do departamento selecionado.
@@ -123,7 +123,7 @@ export default function ConfigurarUsuario() {
   }
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div key="form-screen" className="container max-w-4xl py-8">
       <Button
         variant="ghost"
         onClick={() => navigate("/usuarios")}

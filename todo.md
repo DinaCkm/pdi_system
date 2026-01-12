@@ -521,5 +521,5 @@
 
 ## Bug Crítico - ConfigurarUsuario
 - [x] Corrigir erro NotFoundError ao atribuir departamento ao colaborador
-- [x] Problema de renderização condicional no React (insertBefore)
-- [x] Testar fluxo completo após correção
+- [x] Problema de renderização condicional ao SALVAR (transição formulário -> sucesso)
+- [x] Adicionar keys únicas em todas as telas (form-screen, success-screen)
