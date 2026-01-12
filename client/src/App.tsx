@@ -19,6 +19,7 @@ import MinhasPendencias from "./pages/MinhasPendencias";
 import Relatorios from "./pages/Relatorios";
 import SolicitacoesAjuste from "./pages/SolicitacoesAjuste";
 import SolicitacoesEquipe from "./pages/SolicitacoesEquipe";
+import PDIsEquipe from "./pages/PDIsEquipe";
 
 function Router() {  return (
     <Switch>
@@ -63,6 +64,18 @@ function Router() {  return (
       <Route path={"/pdis"}>
         <DashboardLayout>
           <PDIs />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/meu-pdi"}>
+        <DashboardLayout>
+          <PDIs />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/pdis-equipe"}>
+        <DashboardLayout>
+          <PDIsEquipe />
         </DashboardLayout>
       </Route>
       

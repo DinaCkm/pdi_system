@@ -44,9 +44,10 @@ const getMenuItems = (userRole: string) => {
     );
   } else if (userRole === "lider") {
     items.push(
-      { icon: Bell, label: "Pendências", path: "/pendencias" },
-      { icon: FileText, label: "PDIs da Equipe", path: "/pdis" },
+      { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
+      { icon: Target, label: "PDIs da Equipe", path: "/pdis-equipe" },
       { icon: MessageSquarePlus, label: "Solicitações da Equipe", path: "/solicitacoes-equipe" },
+      { icon: Bell, label: "Pendências", path: "/pendencias" },
     );
   } else {
     items.push(

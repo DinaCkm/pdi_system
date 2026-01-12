@@ -554,3 +554,18 @@
 - [x] Criar procedure teamAdjustmentRequests para líder buscar solicitações pendentes da equipe
 - [ ] Criar interface frontend para líder visualizar solicitações com detalhes
 - [ ] Mostrar: colaborador, ação, justificativa, status, resposta do admin
+
+## BUG - Líder não vê aba "PDIs da Equipe" no menu
+- [ ] Adicionar link "PDIs da Equipe" no menu lateral do DashboardLayout (apenas para líderes)
+- [ ] Criar rota /pdis-equipe no App.tsx
+- [ ] Criar página PDIsEquipe.tsx para visualizar PDIs dos subordinados
+- [ ] Usar procedure teamPDIs já criado no backend
+- [ ] Mostrar: colaborador, ciclo, título, status, ações vinculadas
+
+## BUG RESOLVIDO - Líder agora vê aba "PDIs da Equipe"
+- [x] Adicionar link "PDIs da Equipe" no menu lateral do DashboardLayout (apenas para líderes)
+- [x] Criar rota /pdis-equipe no App.tsx
+- [x] Criar página PDIsEquipe.tsx para visualizar PDIs dos subordinados
+- [x] Usar procedure teamPDIs já criado no backend
+- [x] Mostrar: colaborador, ciclo, título, status, ações vinculadas
+- [x] Adicionar também link "Meu PDI" para líder ver seu próprio PDI
