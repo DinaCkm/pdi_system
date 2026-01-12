@@ -630,3 +630,4 @@
 - [x] Corrigir erro removeChild ao criar Macro/Micro usando window.location.reload()
 - [x] Corrigir erro removeChild ao selecionar Bloco no dropdown
 - [x] Remover funcionalidade de detecção de duplicatas que estava causando erros
+- [x] Corrigir erro removeChild removendo toasts e usando reload imediato
