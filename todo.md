@@ -518,3 +518,8 @@
 - [x] Aplicar overflow-x-auto nas tabelas de Competências
 - [x] Aplicar overflow-x-auto nas tabelas de Ciclos
 - [x] Garantir consistência de layout em todas as páginas
+
+## Bug Crítico - ConfigurarUsuario
+- [x] Corrigir erro NotFoundError ao atribuir departamento ao colaborador
+- [x] Problema de renderização condicional no React (insertBefore)
+- [x] Testar fluxo completo após correção

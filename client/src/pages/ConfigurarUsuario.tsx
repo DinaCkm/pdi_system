@@ -242,7 +242,7 @@ export default function ConfigurarUsuario() {
 
             {/* Seleção de Departamento (condicional) */}
             {(selectedRole === "lider" || selectedRole === "colaborador") && (
-              <div className="space-y-2">
+              <div key="departamento-section" className="space-y-2">
                 <Label htmlFor="departamento">Departamento *</Label>
                 <select
                   id="departamento"
@@ -268,7 +268,7 @@ export default function ConfigurarUsuario() {
 
             {/* Informação sobre líder automático */}
             {selectedRole === "lider" && (
-              <Alert>
+              <Alert key="lider-alert">
                 <InfoIcon className="h-4 w-4" />
                 <AlertDescription>
                   <strong>Importante:</strong> Após salvar, vá em <strong>Departamentos</strong> e defina este usuário como líder do departamento. Todos os colaboradores desse departamento terão este usuário como líder automaticamente.
