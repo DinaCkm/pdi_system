@@ -1,4 +1,5 @@
-import React, { useState, useEffect, startTransition, useMemo } from "react";
+import { useState, useEffect, useMemo, startTransition } from "react";
+import { flushSync } from "react-dom";
 import { useRoute, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -68,10 +69,10 @@ export default function ConfigurarUsuario() {
     }
   }, [user]);
 
-  // Handler para mudança de departamento com startTransition
+  // Handler para mudança de departamento com flushSync para renderização síncrona
   const handleDepartamentoChange = (value: string) => {
     const newDeptId = value ? parseInt(value) : undefined;
-    startTransition(() => {
+    flushSync(() => {
       setSelectedDepartamento(newDeptId);
       // Resetar líder quando departamento mudar para evitar conflito de validação
       if (newDeptId !== selectedDepartamento) {
@@ -288,25 +289,32 @@ export default function ConfigurarUsuario() {
               </div>
             )}
 
-            {/* Seleção de Líder (condicional) */}
-            {(selectedRole === "lider" || selectedRole === "colaborador") && selectedDepartamento && (
-              <div key="lider-section" className="space-y-2">
+            {/* Seleção de Líder (sempre renderizado, desabilitado quando necessário) */}
+            {(selectedRole === "lider" || selectedRole === "colaborador") && (
+              <div className="space-y-2">
                 <Label htmlFor="lider">Líder {selectedRole === "colaborador" ? "*" : "(opcional)"}</Label>
                 <select
                   id="lider"
                   value={selectedLeader || ""}
-                  onChange={(e) => startTransition(() => setSelectedLeader(e.target.value ? parseInt(e.target.value) : undefined))}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  onChange={(e) => setSelectedLeader(e.target.value ? parseInt(e.target.value) : undefined)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   required={selectedRole === "colaborador"}
+                  disabled={!selectedDepartamento || availableLeaders.length === 0}
                 >
-                  <option value="">{availableLeaders.length === 0 ? "Nenhum líder disponível neste departamento" : "Selecione um líder"}</option>
+                  <option value="">
+                    {!selectedDepartamento 
+                      ? "Selecione um departamento primeiro" 
+                      : availableLeaders.length === 0 
+                      ? "Nenhum líder disponível neste departamento" 
+                      : "Selecione um líder"}
+                  </option>
                   {availableLeaders.map((leader) => (
                     <option key={leader.id} value={leader.id}>
                       {leader.name} ({leader.role === "admin" ? "Administrador" : "Líder"})
                     </option>
                   ))}
                 </select>
-                {availableLeaders.length === 0 && (
+                {selectedDepartamento && availableLeaders.length === 0 && (
                   <p className="text-sm text-amber-600">
                     ⚠️ Não há líderes cadastrados neste departamento. Configure um líder primeiro.
                   </p>

@@ -620,3 +620,7 @@
 - [x] Corrigir erro: Types of property leaderId are incompatible (number | null vs number | undefined)
 - [x] Corrigir erro: Property importBulk does not exist em ImportarUsuarios.tsx
 - [x] Testar build de produção sem erros
+
+- [x] Corrigir erro insertBefore ao selecionar líder no dropdown (adicionar key estável)
+
+- [x] Implementar solução definitiva insertBefore: usar flushSync + select sempre renderizado (não condicional)
