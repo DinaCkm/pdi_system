@@ -13,7 +13,7 @@ describe('Bloqueio de Solicitações de Ajuste - Limite de 5', () => {
       email: `colaborador-limite-${Date.now()}@test.com`,
       cpf: `${Math.floor(Math.random() * 100000000000)}`,
       cargo: 'Analista',
-      role: 'colaborador',
+      role: 'user',
     });
     testColaboradorId = colaborador.id;
 
@@ -99,7 +99,7 @@ describe('Função getAdjustmentStats', () => {
       email: `colaborador-stats-${Date.now()}@test.com`,
       cpf: `${Math.floor(Math.random() * 100000000000)}`,
       cargo: 'Analista',
-      role: 'colaborador',
+      role: 'user',
     });
 
     const pdi = await db.createPDI({
@@ -139,7 +139,7 @@ describe('Função getAdjustmentStats', () => {
       email: `colaborador-pending-${Date.now()}@test.com`,
       cpf: `${Math.floor(Math.random() * 100000000000)}`,
       cargo: 'Analista',
-      role: 'colaborador',
+      role: 'user',
     });
 
     const pdi = await db.createPDI({

@@ -52,11 +52,29 @@ export default function ConfigurarUsuario() {
     if (!userId) return;
 
     try {
-      // Apenas salvar o perfil
-      // Departamento e líder serão definidos na página de Departamentos
+      // Validações
+      if ((formData.role === "lider" || formData.role === "user") && !formData.departamentoId) {
+        toast.error(`${formData.role === "lider" ? "Líderes" : "Colaboradores"} devem estar vinculados a um departamento.`);
+        return;
+      }
+
+      // Buscar líder automaticamente do departamento
+      let leaderIdToSet: number | null = null;
+      if (formData.departamentoId) {
+        const dept = departamentos?.find(d => d.id === formData.departamentoId);
+        leaderIdToSet = dept?.leaderId || null;
+        
+        if (!leaderIdToSet && (formData.role === "lider" || formData.role === "user")) {
+          toast.error("O departamento selecionado não possui um líder definido. Configure o líder do departamento primeiro.");
+          return;
+        }
+      }
+
       await updateMutation.mutateAsync({
         id: userId,
         role: formData.role as any,
+        departamentoId: formData.departamentoId,
+        leaderId: leaderIdToSet,
       });
 
       toast.success("Configuração salva com sucesso!");
@@ -125,54 +143,89 @@ export default function ConfigurarUsuario() {
             </div>
 
             {/* Perfil */}
-            <div className="space-y-3">
-              <Label>Perfil *</Label>
-              <div className="space-y-2">
-                {[
-                  { value: "colaborador", label: "Colaborador", desc: "Executam ações e enviam evidências" },
-                  { value: "lider", label: "Líder", desc: "Gerenciam suas equipes e aprovam ações" },
-                  { value: "admin", label: "Administrador", desc: "Têm acesso total ao sistema" },
-                ].map((option) => (
-                  <label
-                    key={option.value}
-                    className={`flex items-start gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                      formData.role === option.value
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="role"
-                      value={option.value}
-                      checked={formData.role === option.value}
-                      onChange={(e) => {
-                        const newRole = e.target.value;
-                        setFormData({
-                          ...formData,
-                          role: newRole,
-                          departamentoId: newRole === "admin" ? null : formData.departamentoId,
-                          leaderId: newRole === "admin" ? null : formData.leaderId,
-                        });
-                      }}
-                      className="mt-1"
-                      required
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium">{option.label}</div>
-                      <div className="text-sm text-muted-foreground">{option.desc}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Informação sobre departamento */}
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-              <p className="text-sm text-blue-900">
-                📌 <strong>Próximo passo:</strong> Após definir o perfil, vá em <strong>Departamentos</strong> para vincular este usuário a um departamento e definir hierarquia.
+            <div className="space-y-2">
+              <Label htmlFor="role">Perfil *</Label>
+              <select
+                id="role"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={formData.role}
+                onChange={(e) => {
+                  const newRole = e.target.value;
+                  setFormData({
+                    ...formData,
+                    role: newRole,
+                    // Resetar departamento e líder se mudar para admin
+                    departamentoId: newRole === "admin" ? null : formData.departamentoId,
+                    leaderId: newRole === "admin" ? null : formData.leaderId,
+                  });
+                }}
+                required
+              >
+                <option value="user">Colaborador</option>
+                <option value="lider">Líder</option>
+                <option value="admin">Administrador</option>
+              </select>
+              <p className="text-sm text-muted-foreground">
+                {formData.role === "admin" && "Administradores têm acesso total ao sistema"}
+                {formData.role === "lider" && "Líderes gerenciam suas equipes e aprovam ações"}
+                {formData.role === "user" && "Colaboradores executam ações e enviam evidências"}
               </p>
             </div>
+
+            {/* Departamento (condicional) */}
+            {(formData.role === "lider" || formData.role === "user") && (
+              <div className="space-y-2">
+                <Label htmlFor="departamento">Departamento *</Label>
+                <select
+                  id="departamento"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={formData.departamentoId?.toString() || ""}
+                  onChange={(e) => {
+                    const newDeptId = e.target.value ? parseInt(e.target.value) : null;
+                    setFormData({
+                      ...formData,
+                      departamentoId: newDeptId,
+                      leaderId: null, // Resetar líder ao mudar departamento
+                    });
+                  }}
+                  required
+                >
+                  <option value="">Selecione um departamento</option>
+                  {departamentos?.filter(d => d.status === "ativo").map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.nome}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-sm text-muted-foreground">
+                  {formData.role === "lider" ? "Líderes" : "Colaboradores"} devem estar vinculados a um departamento
+                </p>
+              </div>
+            )}
+
+            {/* Líder (automático pelo departamento) */}
+            {(formData.role === "lider" || formData.role === "user") && formData.departamentoId && (
+              <div className="space-y-2">
+                <Label>Líder do Departamento</Label>
+                <div className="flex h-10 items-center rounded-md border border-input bg-muted px-3 py-2 text-sm">
+                  {(() => {
+                    const dept = departamentos?.find(d => d.id === formData.departamentoId);
+                    if (!dept?.leaderId) {
+                      return <span className="text-muted-foreground italic">Departamento sem líder definido</span>;
+                    }
+                    const leader = users?.find(u => u.id === dept.leaderId);
+                    return leader ? (
+                      <span>{leader.name} ({leader.role === "admin" ? "Admin" : "Líder"})</span>
+                    ) : (
+                      <span className="text-muted-foreground italic">Líder não encontrado</span>
+                    );
+                  })()}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  🔒 Líder é definido automaticamente pelo departamento
+                </p>
+              </div>
+            )}
 
             {/* Botões */}
             <div className="flex gap-4 pt-4">
