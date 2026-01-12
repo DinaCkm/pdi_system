@@ -627,3 +627,4 @@
 - [ ] Adicionar indicador de carregamento (spinner) no botão Salvar Configuração
 - [x] Implementar importação em massa de competências via CSV (Bloco, Macro, Micro)
 - [x] Implementar solução definitiva com window.location.reload() para erro removeChild
+- [x] Implementar solução correta: remover reset do onSuccess e usar invalidate

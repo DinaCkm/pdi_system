@@ -450,6 +450,7 @@ export const appRouter = router({
         id: z.number(),
         nome: z.string().min(1).optional(),
         descricao: z.string().optional(),
+        blocoId: z.number().optional(),
         status: z.enum(["ativo", "inativo"]).optional(),
       }))
       .mutation(async ({ input }) => {

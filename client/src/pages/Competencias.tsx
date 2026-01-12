@@ -51,49 +51,84 @@ export default function Competencias() {
 
   // Mutations - Blocos
   const createBlocoMutation = trpc.competencias.createBloco.useMutation({
-    onSuccess: () => window.location.reload(),
+    onSuccess: async () => {
+      toast.success("Bloco criado com sucesso!");
+      await utils.competencias.listBlocos.invalidate();
+      setBlocoDialogOpen(false);
+    },
     onError: (error) => toast.error(error.message),
   });
 
   const updateBlocoMutation = trpc.competencias.updateBloco.useMutation({
-    onSuccess: () => window.location.reload(),
+    onSuccess: async () => {
+      toast.success("Bloco atualizado com sucesso!");
+      await utils.competencias.listBlocos.invalidate();
+      setBlocoDialogOpen(false);
+    },
     onError: (error) => toast.error(error.message),
   });
 
   const deleteBlocoMutation = trpc.competencias.deleteBloco.useMutation({
-    onSuccess: () => window.location.reload(),
+    onSuccess: async () => {
+      toast.success("Bloco excluído com sucesso!");
+      await utils.competencias.listBlocos.invalidate();
+      await utils.competencias.listAllMacros.invalidate();
+    },
     onError: (error) => toast.error(error.message),
   });
 
   // Mutations - Macros
   const createMacroMutation = trpc.competencias.createMacro.useMutation({
-    onSuccess: () => window.location.reload(),
+    onSuccess: async () => {
+      toast.success("Macro criada com sucesso!");
+      await utils.competencias.listAllMacros.invalidate();
+      setMacroDialogOpen(false);
+    },
     onError: (error) => toast.error(error.message),
   });
 
   const updateMacroMutation = trpc.competencias.updateMacro.useMutation({
-    onSuccess: () => window.location.reload(),
+    onSuccess: async () => {
+      toast.success("Macro atualizada com sucesso!");
+      await utils.competencias.listAllMacros.invalidate();
+      setMacroDialogOpen(false);
+    },
     onError: (error) => toast.error(error.message),
   });
 
   const deleteMacroMutation = trpc.competencias.deleteMacro.useMutation({
-    onSuccess: () => window.location.reload(),
+    onSuccess: async () => {
+      toast.success("Macro excluída com sucesso!");
+      await utils.competencias.listAllMacros.invalidate();
+      await utils.competencias.listAllMicros.invalidate();
+    },
     onError: (error) => toast.error(error.message),
   });
 
   // Mutations - Micros
   const createMicroMutation = trpc.competencias.createMicro.useMutation({
-    onSuccess: () => window.location.reload(),
+    onSuccess: async () => {
+      toast.success("Micro criada com sucesso!");
+      await utils.competencias.listAllMicros.invalidate();
+      setMicroDialogOpen(false);
+    },
     onError: (error) => toast.error(error.message),
   });
 
   const updateMicroMutation = trpc.competencias.updateMicro.useMutation({
-    onSuccess: () => window.location.reload(),
+    onSuccess: async () => {
+      toast.success("Micro atualizada com sucesso!");
+      await utils.competencias.listAllMicros.invalidate();
+      setMicroDialogOpen(false);
+    },
     onError: (error) => toast.error(error.message),
   });
 
   const deleteMicroMutation = trpc.competencias.deleteMicro.useMutation({
-    onSuccess: () => window.location.reload(),
+    onSuccess: async () => {
+      toast.success("Micro excluída com sucesso!");
+      await utils.competencias.listAllMicros.invalidate();
+    },
     onError: (error) => toast.error(error.message),
   });
 
@@ -140,7 +175,12 @@ export default function Competencias() {
       toast.error("Nome e Bloco são obrigatórios");
       return;
     }
-    updateMacroMutation.mutate({ id: editingMacro.id, nome: macroForm.nome, descricao: macroForm.descricao });
+    updateMacroMutation.mutate({
+      id: editingMacro.id,
+      nome: macroForm.nome,
+      descricao: macroForm.descricao,
+      blocoId: parseInt(macroForm.blocoId),
+    });
   };
 
   const handleEditMacro = (macro: any) => {
