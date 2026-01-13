@@ -163,12 +163,22 @@ CREATE TABLE `pdis` (
 	CONSTRAINT `pdis_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-ALTER TABLE `users` MODIFY COLUMN `name` text NOT NULL;--> statement-breakpoint
-ALTER TABLE `users` MODIFY COLUMN `email` varchar(320) NOT NULL;--> statement-breakpoint
-ALTER TABLE `users` MODIFY COLUMN `role` enum('admin','lider','colaborador') NOT NULL;--> statement-breakpoint
-ALTER TABLE `users` ADD `cpf` varchar(14) NOT NULL;--> statement-breakpoint
-ALTER TABLE `users` ADD `cargo` varchar(255) NOT NULL;--> statement-breakpoint
-ALTER TABLE `users` ADD `leaderId` int;--> statement-breakpoint
-ALTER TABLE `users` ADD `departamentoId` int;--> statement-breakpoint
-ALTER TABLE `users` ADD `status` enum('ativo','inativo') DEFAULT 'ativo' NOT NULL;--> statement-breakpoint
-ALTER TABLE `users` ADD CONSTRAINT `users_cpf_unique` UNIQUE(`cpf`);
+CREATE TABLE `users` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`openId` varchar(64) NOT NULL,
+	`name` text NOT NULL,
+	`email` varchar(320) NOT NULL,
+	`cpf` varchar(14) NOT NULL,
+	`loginMethod` varchar(64),
+	`role` enum('admin','lider','colaborador') NOT NULL,
+	`cargo` varchar(255) NOT NULL,
+	`leaderId` int,
+	`departamentoId` int,
+	`status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	`lastSignedIn` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `users_id` PRIMARY KEY(`id`),
+	CONSTRAINT `users_openId_unique` UNIQUE(`openId`),
+	CONSTRAINT `users_cpf_unique` UNIQUE(`cpf`)
+);

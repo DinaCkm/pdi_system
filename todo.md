@@ -652,4 +652,12 @@
 - [x] Aplicar correções recomendadas (remover reset do onSuccess, usar invalidate, normalizar watch)
 - [x] Adicionar position="popper" nos SelectContent
 - [x] Testar Select de Colaborador (funciona perfeitamente)
-- [ ] Investigar erro 500 no backend que impede Select de Ciclo de carregar dados
+- [x] Investigar erro 500 no backend - tabelas faltantes no banco
+- [x] Criar tabelas pdis, actions e demais relacionadas
+- [x] Testar criação de PDI e Ação - funcionando corretamente
+
+## BUG RESOLVIDO - Erro 500 ao Criar PDI (Tabelas Faltantes)
+- [x] Identificado que tabela pdis não existia no banco publicado
+- [x] Criadas manualmente todas as tabelas faltantes (pdis, actions, acoes_historico, adjustment_requests, adjustment_comments, evidences, evidence_files, evidence_texts)
+- [x] Testado criação de PDI - funcionando corretamente
+- [x] Testado criação de Ação - funcionando corretamente
