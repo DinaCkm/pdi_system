@@ -844,3 +844,4 @@
 ## Problemas Reportados
 - [x] Corrigir erro de login do líder Dina (dina@ckmtalents.net, CPF 000.000.000-99) - estava com CPF formatado no banco, corrigido para formato sem pontos/traços
 - [x] Corrigir erro de removeChild nos filtros da página de Gestão de Ações
+- [x] Corrigir problema de ações não aparecerem na listagem de filtros (ação existe mas não é retornada)

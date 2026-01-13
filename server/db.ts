@@ -721,15 +721,74 @@ export async function getActionsByColaboradorId(colaboradorId: number) {
   
   const pdiIds = colaboradorPDIs.map(p => p.id);
   
-  // Buscar ações desses PDIs
-  const result = await db.select().from(actions)
+  // Buscar ações desses PDIs com dados estruturados
+  const result = await db
+    .select({
+      id: actions.id,
+      pdiId: actions.pdiId,
+      blocoCompetenciaId: actions.blocoId,
+      macroCompetenciaId: actions.macroId,
+      microCompetenciaId: actions.microId,
+      nome: actions.nome,
+      descricao: actions.descricao,
+      prazo: actions.prazo,
+      status: actions.status,
+      createdAt: actions.createdAt,
+      updatedAt: actions.updatedAt,
+      createdBy: actions.createdBy,
+      // PDI
+      pdiTitulo: pdis.titulo,
+      pdiColaboradorId: pdis.colaboradorId,
+      // Colaborador
+      colaboradorNome: users.name,
+      colaboradorLeaderId: users.leaderId,
+      colaboradorDepartamentoId: users.departamentoId,
+      // Competências
+      blocoNome: competenciasBlocos.nome,
+      macroNome: competenciasMacros.nome,
+      microNome: competenciasMicros.nome,
+    })
+    .from(actions)
+    .leftJoin(pdis, eq(actions.pdiId, pdis.id))
+    .leftJoin(users, eq(pdis.colaboradorId, users.id))
+    .leftJoin(competenciasBlocos, eq(actions.blocoId, competenciasBlocos.id))
+    .leftJoin(competenciasMacros, eq(actions.macroId, competenciasMacros.id))
+    .leftJoin(competenciasMicros, eq(actions.microId, competenciasMicros.id))
     .where(sql`${actions.pdiId} IN (${sql.join(pdiIds.map(id => sql`${id}`), sql`, `)})`)
     .orderBy(desc(actions.createdAt));
   
-  // Adicionar contagem de solicitações de ajuste
-  const actionsWithAdjustments = await Promise.all(result.map(async (action) => {
-    const adjustmentCount = await countAdjustmentRequestsByAction(action.id);
-    return { ...action, adjustmentCount };
+  // Reorganizar em objetos aninhados e adicionar contagem de solicitações
+  const actionsWithAdjustments = await Promise.all(result.map(async (row) => {
+    const adjustmentCount = await countAdjustmentRequestsByAction(row.id);
+    
+    return {
+      id: row.id,
+      pdiId: row.pdiId,
+      blocoCompetenciaId: row.blocoCompetenciaId,
+      macroCompetenciaId: row.macroCompetenciaId,
+      microCompetenciaId: row.microCompetenciaId,
+      nome: row.nome,
+      descricao: row.descricao,
+      prazo: row.prazo,
+      status: row.status,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      createdBy: row.createdBy,
+      adjustmentCount,
+      pdi: row.pdiTitulo ? {
+        id: row.pdiId,
+        titulo: row.pdiTitulo,
+        colaboradorId: row.pdiColaboradorId,
+        colaborador: row.colaboradorNome ? {
+          nome: row.colaboradorNome,
+          leaderId: row.colaboradorLeaderId,
+          departamentoId: row.colaboradorDepartamentoId,
+        } : null,
+      } : null,
+      blocoCompetencia: row.blocoNome ? { id: row.blocoCompetenciaId, nome: row.blocoNome } : null,
+      macroCompetencia: row.macroNome ? { id: row.macroCompetenciaId, nome: row.macroNome } : null,
+      microCompetencia: row.microNome ? { id: row.microCompetenciaId, nome: row.microNome } : null,
+    };
   }));
   
   return actionsWithAdjustments;
