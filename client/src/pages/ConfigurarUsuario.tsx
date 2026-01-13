@@ -381,7 +381,7 @@ export default function ConfigurarUsuario() {
                         </option>
                       ))}
                   </select>
-                  <p className="text-xs text-muted-foreground">Após salvar, vá em Departamentos e defina você como líder deste departamento.</p>
+
                 </div>
 
                 <div className="space-y-2">

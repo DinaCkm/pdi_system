@@ -110,13 +110,8 @@ export const appRouter = router({
             });
           }
           
-          // VALIDAÇÃO: Departamento do usuário DEVE ser igual ao departamento do líder
-          if (input.departamentoId && leader.departamentoId && input.departamentoId !== leader.departamentoId) {
-            throw new TRPCError({ 
-              code: 'BAD_REQUEST', 
-              message: 'O usuário deve estar no mesmo departamento do seu líder.' 
-            });
-          }
+          // NOTA: Usuário pode estar em departamento diferente do líder (dualidade de roles)
+          // Validação removida para permitir: Lidera Depto A, Colaborador em Depto B
         }
 
         // Verificar se departamento existe
@@ -209,13 +204,14 @@ export const appRouter = router({
           });
         }
 
-        // VALIDAÇÃO: Departamento do usuário DEVE ser igual ao departamento do líder
+        // NOTA: Usuário pode estar em departamento diferente do líder (dualidade de roles)
+        // Validação removida para permitir: Lidera Depto A, Colaborador em Depto B
         if (finalLeaderId) {
           const leader = await db.getUserById(finalLeaderId);
-          if (leader && finalDepartamentoId && leader.departamentoId && finalDepartamentoId !== leader.departamentoId) {
+          if (!leader) {
             throw new TRPCError({ 
               code: 'BAD_REQUEST', 
-              message: 'O usuário deve estar no mesmo departamento do seu líder.' 
+              message: 'Líder não encontrado.' 
             });
           }
         }
