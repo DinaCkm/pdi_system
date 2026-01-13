@@ -335,7 +335,7 @@ export default function PDIs() {
         open={showCreateDialog}
         onOpenChange={(open) => {
           setShowCreateDialog(open);
-          if (!open) reset(); // reset só ao fechar
+          if (open) reset(); // reset ao abrir para limpar o formulário
         }}
       >
         <DialogContent
