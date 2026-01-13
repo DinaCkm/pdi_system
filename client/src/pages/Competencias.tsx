@@ -84,8 +84,8 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Macro criada com sucesso!");
       await utils.competencias.listAllMacros.invalidate();
-      // Delay para permitir cleanup do Select/Portal antes de fechar Dialog
-      setTimeout(() => setMacroDialogOpen(false), 100);
+      // Delay aumentado para garantir funcionamento em produção (build minificado)
+      setTimeout(() => setMacroDialogOpen(false), 300);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -94,8 +94,8 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Macro atualizada com sucesso!");
       await utils.competencias.listAllMacros.invalidate();
-      // Delay para permitir cleanup do Select/Portal antes de fechar Dialog
-      setTimeout(() => setMacroDialogOpen(false), 100);
+      // Delay aumentado para garantir funcionamento em produção (build minificado)
+      setTimeout(() => setMacroDialogOpen(false), 300);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -114,8 +114,8 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Micro criada com sucesso!");
       await utils.competencias.listAllMicros.invalidate();
-      // Delay para permitir cleanup do Select/Portal antes de fechar Dialog
-      setTimeout(() => setMicroDialogOpen(false), 100);
+      // Delay aumentado para garantir funcionamento em produção (build minificado)
+      setTimeout(() => setMicroDialogOpen(false), 300);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -124,8 +124,8 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Micro atualizada com sucesso!");
       await utils.competencias.listAllMicros.invalidate();
-      // Delay para permitir cleanup do Select/Portal antes de fechar Dialog
-      setTimeout(() => setMicroDialogOpen(false), 100);
+      // Delay aumentado para garantir funcionamento em produção (build minificado)
+      setTimeout(() => setMicroDialogOpen(false), 300);
     },
     onError: (error) => toast.error(error.message),
   });
