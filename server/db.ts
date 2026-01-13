@@ -495,9 +495,37 @@ export async function getPDIById(id: number) {
 export async function getPDIsByColaboradorId(colaboradorId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(pdis)
+  
+  const pdisList = await db.select().from(pdis)
     .where(eq(pdis.colaboradorId, colaboradorId))
     .orderBy(desc(pdis.createdAt));
+  
+  // Para cada PDI, buscar estatísticas de ações
+  const pdisWithStats = await Promise.all(
+    pdisList.map(async (pdi) => {
+      const acoesList = await db.select().from(actions)
+        .where(eq(actions.pdiId, pdi.id));
+      
+      const totalActions = acoesList.length;
+      const completedActions = acoesList.filter(a => a.status === 'concluida').length;
+      const inProgressActions = acoesList.filter(a => a.status === 'em_andamento').length;
+      const pendingActions = acoesList.filter(a => 
+        a.status === 'pendente_aprovacao_lider' || 
+        a.status === 'aprovada_lider'
+      ).length;
+      
+      return {
+        ...pdi,
+        actionCount: totalActions,
+        completedCount: completedActions,
+        inProgressCount: inProgressActions,
+        pendingCount: pendingActions,
+        progressPercentage: totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0
+      };
+    })
+  );
+  
+  return pdisWithStats;
 }
 
 export async function getPDIsByCicloId(cicloId: number) {

@@ -703,3 +703,10 @@
 - [x] Criar template CSV de exemplo para download
 - [x] Adicionar rota no App.tsx
 - [x] Adicionar link no menu de navegação (Admin)
+
+## Melhorias na Página PDIs da Equipe (Líder)
+- [x] Adicionar botão para visualizar ações do PDI diretamente
+- [x] Implementar filtros por colaborador, ciclo e status
+- [x] Implementar busca por título ou nome do colaborador
+- [x] Adicionar indicador de progresso das ações (concluídas vs total)
+- [x] Atualizar backend para retornar estatísticas de progresso dos PDIs
