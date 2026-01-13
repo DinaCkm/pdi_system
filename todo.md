@@ -839,3 +839,7 @@
 - [x] Adicionar nome do colaborador, líder e departamento nos cards de ações
 - [x] Adicionar nome do colaborador, líder e departamento nos cards de PDI
 - [x] Adicionar barra de progresso com % de ações concluídas nos cards de PDI
+
+
+## Problemas Reportados
+- [x] Corrigir erro de login do líder Dina (dina@ckmtalents.net, CPF 000.000.000-99) - estava com CPF formatado no banco, corrigido para formato sem pontos/traços
