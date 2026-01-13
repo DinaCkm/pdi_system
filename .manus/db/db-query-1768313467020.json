@@ -1,0 +1,14 @@
+{
+  "query": "SELECT id, nome FROM departamentos WHERE nome LIKE '%Ckm Talents%' OR nome LIKE '%CKM%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, nome FROM departamentos WHERE nome LIKE '%Ckm Talents%' OR nome LIKE '%CKM%';",
+  "rows": [
+    {
+      "id": "30001",
+      "nome": "Ckm Talents - Administradora/UGP"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnome\n30001\tCkm Talents - Administradora/UGP\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

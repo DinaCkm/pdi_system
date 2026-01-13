@@ -784,3 +784,13 @@
 - [x] NÃO deve abrir modal de criação de ação
 - [x] Aplicar filtro automaticamente quando pdiId vier na URL de ações
 - [x] Testar com usuário colaborador após correção - Aguardando validação do usuário
+
+## Bug: Ações Criadas pelo Admin Não Aparecem na Página Meu PDI do Líder
+- [x] Investigar por que ações criadas pelo Admin para o PDI do Bruno (Líder) não aparecem
+- [x] Identificar causa raiz: Bruno está cadastrado como líder dele mesmo
+- [x] Corrigir cadastro do Bruno para que o líder dele seja Dina Makiyama
+- [x] Corrigir departamento do Bruno para Ckm Talents - Administradora/UGP
+- [x] Testar correção com usuário Bruno - TESTE APROVADO
+- [x] Card de PDI exibe nome do empregado, líder e progresso corretamente
+- [x] Botão Ações redireciona para listagem (sem abrir modal de criação)
+- [ ] Verificar se existem outros usuários com o mesmo problema de hierarquia
