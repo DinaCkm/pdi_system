@@ -173,6 +173,34 @@ export default function PDIs() {
     return actions?.filter(a => a.pdiId === pdiId).length || 0;
   };
 
+  // Obter % de ações concluídas
+  const getProgressPercentage = (pdiId: number) => {
+    const pdiActions = actions?.filter(a => a.pdiId === pdiId) || [];
+    if (pdiActions.length === 0) return 0;
+    const completedActions = pdiActions.filter(a => a.status === "concluida" || a.status === "evidencia_aprovada").length;
+    return Math.round((completedActions / pdiActions.length) * 100);
+  };
+
+  // Obter número de ações concluídas
+  const getCompletedActionsCount = (pdiId: number) => {
+    const pdiActions = actions?.filter(a => a.pdiId === pdiId) || [];
+    return pdiActions.filter(a => a.status === "concluida" || a.status === "evidencia_aprovada").length;
+  };
+
+  // Obter nome do líder do colaborador
+  const getLiderNome = (colaboradorId: number) => {
+    const colaborador = users?.find(u => u.id === colaboradorId);
+    if (!colaborador || !colaborador.leaderId) return "N/A";
+    return users?.find(u => u.id === colaborador.leaderId)?.name || "N/A";
+  };
+
+  // Obter nome do departamento do colaborador
+  const getDepartamentoNome = (colaboradorId: number) => {
+    const colaborador = users?.find(u => u.id === colaboradorId);
+    if (!colaborador || !colaborador.departamentoId) return "N/A";
+    return departamentos?.find(d => d.id === colaborador.departamentoId)?.nome || "N/A";
+  };
+
   // Obter nome do colaborador
   const getColaboradorNome = (id: number) => {
     return users?.find(u => u.id === id)?.name || "Desconhecido";
@@ -346,13 +374,43 @@ export default function PDIs() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
+                  {/* Informações do Líder e Departamento */}
+                  <div className="text-sm border-b pb-2">
+                    <span className="font-semibold text-foreground">Líder:</span>
+                    <p className="text-muted-foreground text-xs">{getLiderNome(pdi.colaboradorId)}</p>
+                  </div>
+                  <div className="text-sm border-b pb-2">
+                    <span className="font-semibold text-foreground">Departamento:</span>
+                    <p className="text-muted-foreground text-xs">{getDepartamentoNome(pdi.colaboradorId)}</p>
+                  </div>
+                  
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Target className="w-4 h-4 mr-2" />
                     {getCicloNome(pdi.cicloId)}
                   </div>
                   <div className="flex items-center text-sm text-muted-foreground">
                     <FileText className="w-4 h-4 mr-2" />
-                    {getAcoesCount(pdi.id)} ações vinculadas
+                    {getCompletedActionsCount(pdi.id)}/{getAcoesCount(pdi.id)} ações concluídas
+                  </div>
+                  
+                  {/* Barra de Progresso */}
+                  {getAcoesCount(pdi.id) > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-semibold text-foreground">Progresso:</span>
+                        <span className="text-orange-600 font-bold">{getProgressPercentage(pdi.id)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-gradient-to-r from-blue-600 to-orange-500 h-2 rounded-full transition-all"
+                          style={{ width: `${getProgressPercentage(pdi.id)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <FileText className="w-4 h-4 mr-2" />
                   </div>
                   {pdi.objetivoGeral && (
                     <p className="text-sm text-muted-foreground line-clamp-2">

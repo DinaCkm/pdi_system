@@ -837,3 +837,5 @@
 
 ## Melhorias na Página de Gestão de Ações
 - [x] Adicionar nome do colaborador, líder e departamento nos cards de ações
+- [x] Adicionar nome do colaborador, líder e departamento nos cards de PDI
+- [x] Adicionar barra de progresso com % de ações concluídas nos cards de PDI
