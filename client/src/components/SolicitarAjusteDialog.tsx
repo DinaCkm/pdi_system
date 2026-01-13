@@ -146,7 +146,7 @@ export function SolicitarAjusteDialog({
     );
   };
 
-  const isBlocked = stats?.motivoBloqueio !== null;
+  const isBlocked = !!stats && stats.motivoBloqueio !== null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -235,7 +235,7 @@ export function SolicitarAjusteDialog({
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={isBlocked || solicitarMutation.isPending}
+            disabled={loadingStats || isBlocked || solicitarMutation.isPending}
           >
             {solicitarMutation.isPending ? "Enviando..." : "Enviar Solicitação"}
           </Button>

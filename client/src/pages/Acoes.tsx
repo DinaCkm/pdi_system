@@ -256,12 +256,12 @@ export default function Acoes() {
       const matchesSearch = acao.nome.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPDI = filterPDI === "all" || acao.pdiId === parseInt(filterPDI);
       const matchesStatus = filterStatus === "all" || acao.status === filterStatus;
-      const matchesUsuario = filterUsuario === "all" || acao.pdi?.colaboradorId === parseInt(filterUsuario);
-      const matchesLider = filterLider === "all" || acao.pdi?.colaborador?.leaderId === parseInt(filterLider);
-      const matchesDepartamento = filterDepartamento === "all" || acao.pdi?.colaborador?.departamentoId === parseInt(filterDepartamento);
-      const matchesBloco = filterBloco === "all" || acao.blocoCompetencia?.id === parseInt(filterBloco);
-      const matchesMacro = filterMacro === "all" || acao.macroCompetencia?.id === parseInt(filterMacro);
-      const matchesMicro = filterMicro === "all" || acao.microCompetencia?.id === parseInt(filterMicro);
+      const matchesUsuario = filterUsuario === "all"; // Desabilitado: acao.pdi não disponível
+      const matchesLider = filterLider === "all"; // Desabilitado: acao.pdi não disponível
+      const matchesDepartamento = filterDepartamento === "all"; // Desabilitado: acao.pdi não disponível
+      const matchesBloco = filterBloco === "all"; // Desabilitado: acao.blocoCompetencia não disponível
+      const matchesMacro = filterMacro === "all"; // Desabilitado: acao.macroCompetencia não disponível
+      const matchesMicro = filterMicro === "all"; // Desabilitado: acao.microCompetencia não disponível
       
       return matchesSearch && matchesPDI && matchesStatus && matchesUsuario && matchesLider && matchesDepartamento && matchesBloco && matchesMacro && matchesMicro;
     });
@@ -507,34 +507,12 @@ export default function Acoes() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <User className="h-4 w-4 mr-2" />
-                  <span className="line-clamp-1">{acao.pdi?.titulo || "PDI não encontrado"}</span>
-                </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <User className="h-4 w-4 mr-2" />
-                  <span className="line-clamp-1">Colaborador: {acao.pdi?.colaborador?.nome || "N/A"}</span>
-                </div>
-                {acao.pdi?.colaborador?.leaderId && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <User className="h-4 w-4 mr-2" />
-                    <span className="line-clamp-1">Líder: {usuarios?.find(u => u.id === acao.pdi?.colaborador?.leaderId)?.name || "N/A"}</span>
-                  </div>
-                )}
-                {acao.pdi?.colaborador?.departamentoId && (
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <User className="h-4 w-4 mr-2" />
-                    <span className="line-clamp-1">Departamento: {departamentos?.find(d => d.id === acao.pdi?.colaborador?.departamentoId)?.nome || "N/A"}</span>
-                  </div>
-                )}
+                {/* Temporariamente desabilitado: acao.pdi não disponível */}
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4 mr-2" />
                   <span>Prazo: {new Date(acao.prazo).toLocaleDateString()}</span>
                 </div>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Target className="h-4 w-4 mr-2" />
-                  <span className="line-clamp-1">{acao.microCompetencia?.nome || "Competência não encontrada"}</span>
-                </div>
+                {/* Temporariamente desabilitado: acao.microCompetencia não disponível */}
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" size="sm" onClick={() => handleView(acao)} className="flex-1">
                     <Eye className="h-4 w-4 mr-1" />

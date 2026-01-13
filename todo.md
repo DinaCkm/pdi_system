@@ -809,3 +809,27 @@
 - [x] Testar com usuário Bruno após correção - TESTE APROVADO
 - [x] Causa raiz: procedure actions.list usava adminProcedure ao invés de protectedProcedure
 - [x] Solução: Alterado para protectedProcedure com filtro baseado em perfil (Admin/Líder/Colaborador)
+
+
+---
+
+## ✅ ETAPA 1: Fluxo de Solicitação de Ajuste de Ações - CONCLUÍDA
+
+**Data de Conclusão:** 13/01/2026
+
+**O que foi implementado:**
+- ✅ Schema do banco de dados atualizado (tabela adjustment_requests com novos campos)
+- ✅ Backend completo (endpoints getAdjustmentStats e solicitarAjuste com validações)
+- ✅ Interface do usuário (botão "Solicitar Ajuste" substituindo "Editar" para Colaborador/Líder)
+- ✅ Modal de solicitação com layout correto (scroll apenas no corpo, footer fixo)
+- ✅ Validações implementadas (ownership, status, limites de 5 solicitações)
+- ✅ Atualização automática de status para "em_discussao"
+- ✅ Notificações para Admin e Líder
+- ✅ Histórico de alterações registrado
+- ✅ Bug do isBlocked corrigido (desabilitava botão prematuramente)
+- ✅ Invalidação de queries no onSuccess
+- ✅ Teste completo aprovado (Colaborador solicita → Solicitação criada → Status muda)
+
+**Próximas Etapas:**
+- ETAPA 2: Admin aprova/recusa/solicita mais informações
+- ETAPA 3: Líder aprova alteração final
