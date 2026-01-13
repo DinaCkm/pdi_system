@@ -119,9 +119,9 @@ export default function SolicitacoesAjuste() {
   return (
     <div className="container py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Solicitações de Ajuste</h1>
+        <h1 className="text-3xl font-bold mb-2">Histórico de Solicitações</h1>
         <p className="text-muted-foreground">
-          Gerencie solicitações de ajuste de ações enviadas pelos colaboradores
+          Visualize todas as solicitações de ajuste de ações (pendentes, aprovadas e reprovadas)
         </p>
       </div>
 

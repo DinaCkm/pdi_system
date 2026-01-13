@@ -111,9 +111,9 @@ export default function MinhasPendencias() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Solicitações de Ajuste</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Solicitações Pendentes</h1>
         <p className="text-muted-foreground">
-          Avalie e aprove/reprove solicitações de ajuste de ações dos colaboradores
+          Avalie e aprove/reprove solicitações de ajuste que aguardam sua decisão
         </p>
       </div>
 

@@ -38,21 +38,21 @@ const getMenuItems = (userRole: string) => {
       { icon: Calendar, label: "Ciclos", path: "/ciclos" },
       { icon: FileText, label: "PDIs", path: "/pdis" },
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
-      { icon: MessageSquarePlus, label: "Solicitações de Ajuste", path: "/solicitacoes-ajuste" },
-      { icon: Bell, label: "Pendências", path: "/pendencias" },
+      { icon: Bell, label: "Solicitações Pendentes", path: "/pendencias" },
+      { icon: MessageSquarePlus, label: "Histórico de Solicitações", path: "/solicitacoes-ajuste" },
       { icon: BarChart, label: "Relatórios", path: "/relatorios" },
     );
   } else if (userRole === "lider") {
     items.push(
       { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
       { icon: Target, label: "PDIs da Equipe", path: "/pdis-equipe" },
-      { icon: MessageSquarePlus, label: "Solicitações da Equipe", path: "/solicitacoes-equipe" },
-      { icon: Bell, label: "Pendências", path: "/pendencias" },
+      { icon: Bell, label: "Solicitações Pendentes", path: "/pendencias" },
+      { icon: MessageSquarePlus, label: "Histórico de Solicitações", path: "/solicitacoes-equipe" },
     );
   } else {
     items.push(
       { icon: FileText, label: "Meu PDI", path: "/pdis" },
-      { icon: Bell, label: "Pendências", path: "/pendencias" },
+      { icon: Bell, label: "Solicitações Pendentes", path: "/pendencias" },
     );
   }
   
