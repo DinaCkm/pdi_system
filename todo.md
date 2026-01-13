@@ -715,3 +715,11 @@
 - [x] Corrigir procedure teamPDIs para incluir dados do colaborador (nome, email)
 - [x] Corrigir procedure teamPDIs para incluir dados do ciclo (nome, datas)
 - [x] Verificar se estatísticas de ações estão sendo calculadas corretamente
+
+## Melhorias na Página Minhas Pendências (Líder)
+- [x] Adicionar resumo das mudanças antes de aprovar solicitação
+- [x] Implementar filtros por colaborador
+- [x] Implementar filtros por data de solicitação
+- [x] Implementar sistema de notificações ao colaborador após aprovação
+- [x] Implementar sistema de notificações ao colaborador após reprovação
+- [x] Atualizar backend para criar notificações automaticamente
