@@ -496,9 +496,34 @@ export async function getPDIsByColaboradorId(colaboradorId: number) {
   const db = await getDb();
   if (!db) return [];
   
-  const pdisList = await db.select().from(pdis)
-    .where(eq(pdis.colaboradorId, colaboradorId))
-    .orderBy(desc(pdis.createdAt));
+  // Buscar PDIs com dados de colaborador e ciclo usando leftJoin
+  const pdisList = await db.select({
+    id: pdis.id,
+    colaboradorId: pdis.colaboradorId,
+    cicloId: pdis.cicloId,
+    titulo: pdis.titulo,
+    objetivoGeral: pdis.objetivoGeral,
+    status: pdis.status,
+    createdAt: pdis.createdAt,
+    updatedAt: pdis.updatedAt,
+    createdBy: pdis.createdBy,
+    colaborador: {
+      id: users.id,
+      name: users.name,
+      email: users.email,
+    },
+    ciclo: {
+      id: ciclos.id,
+      nome: ciclos.nome,
+      dataInicio: ciclos.dataInicio,
+      dataFim: ciclos.dataFim,
+    },
+  })
+  .from(pdis)
+  .leftJoin(users, eq(pdis.colaboradorId, users.id))
+  .leftJoin(ciclos, eq(pdis.cicloId, ciclos.id))
+  .where(eq(pdis.colaboradorId, colaboradorId))
+  .orderBy(desc(pdis.createdAt));
   
   // Para cada PDI, buscar estatísticas de ações
   const pdisWithStats = await Promise.all(

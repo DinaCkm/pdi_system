@@ -710,3 +710,8 @@
 - [x] Implementar busca por título ou nome do colaborador
 - [x] Adicionar indicador de progresso das ações (concluídas vs total)
 - [x] Atualizar backend para retornar estatísticas de progresso dos PDIs
+
+## Bug: Dados Faltantes nos Cards de PDIs da Equipe
+- [x] Corrigir procedure teamPDIs para incluir dados do colaborador (nome, email)
+- [x] Corrigir procedure teamPDIs para incluir dados do ciclo (nome, datas)
+- [x] Verificar se estatísticas de ações estão sendo calculadas corretamente
