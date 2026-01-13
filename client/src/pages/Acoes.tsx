@@ -460,11 +460,18 @@ export default function Acoes() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="pendente_aprovacao_lider">Pendente Aprovação Líder</SelectItem>
+                  <SelectItem value="aprovada_lider">Aprovada Líder</SelectItem>
+                  <SelectItem value="reprovada_lider">Reprovada Líder</SelectItem>
                   <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                  <SelectItem value="concluida">Concluída</SelectItem>
-                  <SelectItem value="cancelada">Cancelada</SelectItem>
                   <SelectItem value="em_discussao">Em Discussão</SelectItem>
+                  <SelectItem value="evidencia_enviada">Evidência Enviada</SelectItem>
+                  <SelectItem value="evidencia_aprovada">Evidência Aprovada</SelectItem>
+                  <SelectItem value="evidencia_reprovada">Evidência Reprovada</SelectItem>
+                  <SelectItem value="correcao_solicitada">Correção Solicitada</SelectItem>
+                  <SelectItem value="concluida">Concluída</SelectItem>
+                  <SelectItem value="vencida">Vencida</SelectItem>
+                  <SelectItem value="cancelada">Cancelada</SelectItem>
                 </SelectContent>
               </Select>
             </div>

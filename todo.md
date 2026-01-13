@@ -677,3 +677,14 @@
 - [x] Testado criação de ação com notificação - FUNCIONANDO PERFEITAMENTE
 - [x] Dialog fecha corretamente após criar ação
 - [x] Notificação é enviada ao líder com referenciaId correto
+
+## Melhoria - Adicionar Todos os Status no Select de Filtro de Ações
+- [x] Adicionar status "Pendente Aprovação Líder" no select
+- [x] Adicionar status "Aprovada Líder" no select
+- [x] Adicionar status "Reprovada Líder" no select
+- [x] Adicionar status "Evidência Enviada" no select
+- [x] Adicionar status "Evidência Aprovada" no select
+- [x] Adicionar status "Evidência Reprovada" no select
+- [x] Adicionar status "Correção Solicitada" no select
+- [x] Adicionar status "Vencida" no select
+- [x] Todos os 12 status adicionados ao select de filtro
