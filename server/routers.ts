@@ -5,6 +5,7 @@ import { TRPCError } from "@trpc/server";
 import * as db from "./db";
 import { invokeLLM } from "./_core/llm";
 import { authRouter } from "./authRouters";
+import { importActionsRouter } from "./importActions";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1552,6 +1553,9 @@ Formato de resposta (JSON):
       return await db.getUnreadNotificationsCount(ctx.user!.id);
     }),
   }),
+
+  // ============= IMPORTAÇÃO DE AÇÕES =============
+  importActions: importActionsRouter,
 });
 
 export type AppRouter = typeof appRouter;

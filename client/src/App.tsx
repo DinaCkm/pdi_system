@@ -22,6 +22,7 @@ import SolicitacoesEquipe from "./pages/SolicitacoesEquipe";
 import PDIsEquipe from "./pages/PDIsEquipe";
 import ImportarUsuarios from "./pages/ImportarUsuarios";
 import ImportarCompetencias from "./pages/ImportarCompetencias";
+import ImportarAcoes from "./pages/ImportarAcoes";
 
 function Router() {  return (
     <Switch>
@@ -96,6 +97,12 @@ function Router() {  return (
       <Route path={"/acoes"}>
         <DashboardLayout>
           <Acoes />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/importar-acoes"}>
+        <DashboardLayout>
+          <ImportarAcoes />
         </DashboardLayout>
       </Route>
       

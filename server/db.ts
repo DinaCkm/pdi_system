@@ -1018,3 +1018,70 @@ export async function syncDepartmentLeader(departamentoId: number, leaderId: num
     .set({ leaderId: leaderId })
     .where(eq(users.departamentoId, departamentoId));
 }
+
+
+// ============= FUNÇÕES AUXILIARES PARA IMPORTAÇÃO DE AÇÕES =============
+
+/**
+ * Busca ciclo por nome
+ */
+export async function getCicloByNome(nome: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(ciclos)
+    .where(eq(ciclos.nome, nome))
+    .limit(1);
+  
+  return result[0] || null;
+}
+
+/**
+ * Busca PDI por colaborador e ciclo
+ */
+export async function getPDIByColaboradorAndCiclo(colaboradorId: number, cicloId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(pdis)
+    .where(and(
+      eq(pdis.colaboradorId, colaboradorId),
+      eq(pdis.cicloId, cicloId)
+    ))
+    .limit(1);
+  
+  return result[0] || null;
+}
+
+/**
+ * Busca microcompetência por nome
+ */
+export async function getMicroByNome(nome: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(competenciasMicros)
+    .where(eq(competenciasMicros.nome, nome))
+    .limit(1);
+  
+  return result[0] || null;
+}
+
+
+
+/**
+ * Busca ação por PDI e nome (para evitar duplicatas)
+ */
+export async function getActionByPDIAndNome(pdiId: number, nome: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(actions)
+    .where(and(
+      eq(actions.pdiId, pdiId),
+      eq(actions.nome, nome)
+    ))
+    .limit(1);
+  
+  return result[0] || null;
+}

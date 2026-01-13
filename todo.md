@@ -689,3 +689,17 @@
 - [x] Adicionar status "Vencida" no select
 - [x] Todos os 12 status adicionados ao select de filtro
 - [x] Criar funcionalidade de criação em lote de PDIs para todos os colaboradores
+
+## Importação em Massa de Ações (NOVA FUNCIONALIDADE)
+- [x] Criar página dedicada /importar-acoes
+- [x] Implementar upload de arquivo CSV/Excel
+- [x] Implementar validação rigorosa de TODAS as linhas antes de salvar
+- [x] Criar procedure tRPC de validação (retorna erros por linha)
+- [x] Criar procedure tRPC de importação em massa (transação atômica)
+- [x] Mostrar preview com status de cada linha (verde/vermelho)
+- [x] Listar erros específicos por colaborador
+- [x] Desabilitar botão "Importar" se alguma linha tiver erro
+- [x] Implementar transação atômica (tudo ou nada)
+- [x] Criar template CSV de exemplo para download
+- [x] Adicionar rota no App.tsx
+- [x] Adicionar link no menu de navegação (Admin)
