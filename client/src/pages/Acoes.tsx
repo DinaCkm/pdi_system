@@ -52,6 +52,7 @@ export default function Acoes() {
   const { data: departamentos } = trpc.departamentos.list.useQuery();
   const { data: blocosCompetencias } = trpc.competencias.listBlocos.useQuery();
   const { data: microsCompetencias } = trpc.competencias.listAllMicrosWithDetails.useQuery();
+  const { data: allMacrosCompetencias } = trpc.competencias.listAllMacros.useQuery();
   
   // Efeito para aplicar filtro de PDI quando vier da URL
   useEffect(() => {
@@ -425,7 +426,7 @@ export default function Acoes() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  {macrosCompetencias?.map((macro) => (
+                  {allMacrosCompetencias?.map((macro) => (
                     <SelectItem key={macro.id} value={macro.id.toString()}>
                       {macro.nome}
                     </SelectItem>
