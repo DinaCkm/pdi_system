@@ -833,3 +833,7 @@
 **Próximas Etapas:**
 - ETAPA 2: Admin aprova/recusa/solicita mais informações
 - ETAPA 3: Líder aprova alteração final
+
+
+## Melhorias na Página de Gestão de Ações
+- [x] Adicionar nome do colaborador, líder e departamento nos cards de ações

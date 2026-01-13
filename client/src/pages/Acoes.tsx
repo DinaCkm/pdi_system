@@ -507,12 +507,37 @@ export default function Acoes() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {/* Temporariamente desabilitado: acao.pdi não disponível */}
+                {/* Informações do Colaborador, Líder e Departamento */}
+                {(() => {
+                  const pdi = pdis?.find((p: any) => p.id === acao.pdiId);
+                  const user = usuarios?.find((u: any) => u.id === pdi?.colaboradorId);
+                  const leader = usuarios?.find((u: any) => u.id === user?.leaderId);
+                  const dept = departamentos?.find((d: any) => d.id === user?.departamentoId);
+                  return (
+                    <>
+                      {pdi && user && (
+                        <>
+                          <div className="text-sm border-b pb-2">
+                            <span className="font-semibold text-foreground">Colaborador:</span>
+                            <p className="text-muted-foreground text-xs">{user.name}</p>
+                          </div>
+                          <div className="text-sm border-b pb-2">
+                            <span className="font-semibold text-foreground">Líder:</span>
+                            <p className="text-muted-foreground text-xs">{leader?.name || "N/A"}</p>
+                          </div>
+                          <div className="text-sm border-b pb-2">
+                            <span className="font-semibold text-foreground">Departamento:</span>
+                            <p className="text-muted-foreground text-xs">{dept?.nome || "N/A"}</p>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4 mr-2" />
                   <span>Prazo: {new Date(acao.prazo).toLocaleDateString()}</span>
                 </div>
-                {/* Temporariamente desabilitado: acao.microCompetencia não disponível */}
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" size="sm" onClick={() => handleView(acao)} className="flex-1">
                     <Eye className="h-4 w-4 mr-1" />
