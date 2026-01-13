@@ -17,6 +17,8 @@ export default function ConfigurarUsuario() {
   const [selectedRole, setSelectedRole] = useState<"colaborador" | "lider" | "admin">("colaborador");
   const [selectedDepartamento, setSelectedDepartamento] = useState<number | undefined>(undefined);
   const [selectedLeader, setSelectedLeader] = useState<number | undefined>(undefined);
+  const [selectedDepartamentoColaborador, setSelectedDepartamentoColaborador] = useState<number | undefined>(undefined);
+  const [selectedLeaderColaborador, setSelectedLeaderColaborador] = useState<number | undefined>(undefined);
 
   const { data: user, isLoading: loadingUser } = trpc.users.getById.useQuery(
     { id: userId! },
@@ -68,6 +70,28 @@ export default function ConfigurarUsuario() {
     }
   }, [user]);
 
+  // Filtrar líderes disponíveis para o departamento de colaborador
+  const availableLeadersColaborador = useMemo(() => {
+    if (!selectedDepartamentoColaborador) return [];
+    
+    const departamento = allDepartamentos.find(d => d.id === selectedDepartamentoColaborador);
+    const leaderIds = new Set<number>();
+    
+    if (departamento?.leaderId && departamento.leaderId !== userId) {
+      leaderIds.add(departamento.leaderId);
+    }
+    
+    allUsers.forEach(u => {
+      if (u.id !== userId && 
+          u.departamentoId === selectedDepartamentoColaborador && 
+          (u.role === "lider" || u.role === "admin")) {
+        leaderIds.add(u.id);
+      }
+    });
+    
+    return allUsers.filter(u => leaderIds.has(u.id));
+  }, [allUsers, allDepartamentos, selectedDepartamentoColaborador, userId]);
+
   // Handler para mudança de departamento
   const handleDepartamentoChange = (value: string) => {
     const newDeptId = value ? parseInt(value) : undefined;
@@ -95,12 +119,28 @@ export default function ConfigurarUsuario() {
       return;
     }
 
+    // Validação: Líder precisa de departamento de colaborador
+    if (selectedRole === "lider" && !selectedDepartamentoColaborador) {
+      toast.error("Líderes devem estar vinculados a um departamento como colaborador.");
+      return;
+    }
+
+    // Validação: Líder precisa de líder no departamento de colaborador
+    if (selectedRole === "lider" && !selectedLeaderColaborador) {
+      toast.error("Líderes devem ter um líder atribuído no departamento de colaborador.");
+      return;
+    }
+
     try {
+      // Para líderes, usar o departamento de colaborador
+      const finalDepartamentoId = selectedRole === "lider" ? selectedDepartamentoColaborador : selectedDepartamento;
+      const finalLeaderId = selectedRole === "lider" ? selectedLeaderColaborador : selectedLeader;
+
       await updateMutation.mutateAsync({
         id: userId,
         role: selectedRole,
-        departamentoId: selectedDepartamento,
-        leaderId: selectedLeader,
+        departamentoId: finalDepartamentoId,
+        leaderId: finalLeaderId,
       });
 
       // Aguardar um momento para React finalizar processamento antes do redirect
@@ -254,72 +294,164 @@ export default function ConfigurarUsuario() {
               </div>
             </div>
 
-            {/* Seleção de Departamento - SEMPRE RENDERIZADO */}
-            <div className="space-y-2" style={{ display: (selectedRole === "lider" || selectedRole === "colaborador") ? 'block' : 'none' }}>
-                <Label htmlFor="departamento">Departamento *</Label>
-                <select
-                  id="departamento"
-                  value={selectedDepartamento || ""}
-                  onChange={(e) => handleDepartamentoChange(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  required
-                >
-                  <option value="">Selecione um departamento</option>
-                  {departamentos
-                    .filter((d) => d.status === "ativo")
-                    .map((dept) => (
-                      <option key={dept.id} value={dept.id}>
-                        {dept.nome}
+            {/* COLABORADOR: Seleção de Departamento e Líder */}
+            {selectedRole === "colaborador" && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="departamento">Departamento *</Label>
+                  <select
+                    id="departamento"
+                    value={selectedDepartamento || ""}
+                    onChange={(e) => handleDepartamentoChange(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    required
+                  >
+                    <option value="">Selecione um departamento</option>
+                    {departamentos
+                      .filter((d) => d.status === "ativo")
+                      .map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.nome}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="lider">Líder *</Label>
+                  <select
+                    id="lider"
+                    value={selectedLeader || ""}
+                    onChange={(e) => setSelectedLeader(e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    required
+                    disabled={!selectedDepartamento || availableLeaders.length === 0}
+                  >
+                    <option value="">
+                      {!selectedDepartamento
+                        ? "Selecione um departamento primeiro" 
+                        : availableLeaders.length === 0 
+                        ? "Nenhum líder disponível neste departamento" 
+                        : "Selecione um líder"}
+                    </option>
+                    {availableLeaders.map((leader) => (
+                      <option key={leader.id} value={leader.id}>
+                        {leader.name} ({leader.role === "admin" ? "Administrador" : "Líder"})
                       </option>
                     ))}
-                </select>
-            </div>
+                  </select>
+                  {selectedDepartamento && availableLeaders.length === 0 && (
+                    <p className="text-sm text-amber-600">
+                      ⚠️ Não há líderes cadastrados neste departamento. Configure um líder primeiro.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
 
-            {/* Seleção de Líder - SEMPRE RENDERIZADO */}
-            <div className="space-y-2" style={{ display: (selectedRole === "lider" || selectedRole === "colaborador") ? 'block' : 'none' }}>
-                <Label htmlFor="lider">Líder {selectedRole === "colaborador" ? "*" : "(opcional)"}</Label>
-                <select
-                  id="lider"
-                  value={selectedLeader || ""}
-                  onChange={(e) => setSelectedLeader(e.target.value ? parseInt(e.target.value) : undefined)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  required={selectedRole === "colaborador"}
-                  disabled={!selectedDepartamento || availableLeaders.length === 0}
-                >
-                  <option value="">
-                    {!selectedDepartamento 
-                      ? "Selecione um departamento primeiro" 
-                      : availableLeaders.length === 0 
-                      ? "Nenhum líder disponível neste departamento" 
-                      : "Selecione um líder"}
-                  </option>
-                  {availableLeaders.map((leader) => (
-                    <option key={leader.id} value={leader.id}>
-                      {leader.name} ({leader.role === "admin" ? "Administrador" : "Líder"})
+            {/* LÍDER: Seleção de Departamentos (Lidera + Colaborador) */}
+            {selectedRole === "lider" && (
+              <>
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm font-medium text-blue-900">ℹ️ Dualidade de Roles</p>
+                  <p className="text-sm text-blue-800 mt-1">
+                    Como Líder, você terá dois papéis:
+                  </p>
+                  <ul className="text-sm text-blue-800 mt-2 ml-4 space-y-1">
+                    <li>✓ <strong>Lidera</strong> um departamento</li>
+                    <li>✓ <strong>É colaborador</strong> em outro departamento</li>
+                  </ul>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="departamento-lidera">Departamento que você LIDERA *</Label>
+                  <select
+                    id="departamento-lidera"
+                    value={selectedDepartamento || ""}
+                    onChange={(e) => handleDepartamentoChange(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    required
+                  >
+                    <option value="">Selecione um departamento</option>
+                    {departamentos
+                      .filter((d) => d.status === "ativo")
+                      .map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.nome}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground">Após salvar, vá em Departamentos e defina você como líder deste departamento.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="departamento-colaborador">Departamento onde você É COLABORADOR *</Label>
+                  <select
+                    id="departamento-colaborador"
+                    value={selectedDepartamentoColaborador || ""}
+                    onChange={(e) => {
+                      const newDeptId = e.target.value ? parseInt(e.target.value) : undefined;
+                      setSelectedDepartamentoColaborador(newDeptId);
+                      
+                      // Preencher líder automaticamente se o departamento tem um líder
+                      if (newDeptId) {
+                        const dept = allDepartamentos.find(d => d.id === newDeptId);
+                        if (dept?.leaderId) {
+                          setSelectedLeaderColaborador(dept.leaderId);
+                        } else {
+                          setSelectedLeaderColaborador(undefined);
+                        }
+                      } else {
+                        setSelectedLeaderColaborador(undefined);
+                      }
+                    }}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    required
+                  >
+                    <option value="">Selecione um departamento</option>
+                    {departamentos
+                      .filter((d) => d.status === "ativo" && d.id !== selectedDepartamento)
+                      .map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.nome}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="lider-colaborador">Seu Líder neste departamento *</Label>
+                  <select
+                    id="lider-colaborador"
+                    value={selectedLeaderColaborador || ""}
+                    onChange={(e) => setSelectedLeaderColaborador(e.target.value ? parseInt(e.target.value) : undefined)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    required
+                    disabled={!selectedDepartamentoColaborador || availableLeadersColaborador.length === 0}
+                  >
+                    <option value="">
+                      {!selectedDepartamentoColaborador
+                        ? "Selecione um departamento primeiro" 
+                        : availableLeadersColaborador.length === 0 
+                        ? "Nenhum líder disponível neste departamento" 
+                        : "Selecione um líder"}
                     </option>
-                  ))}
-                </select>
-                {selectedDepartamento && availableLeaders.length === 0 && (
-                  <p className="text-sm text-amber-600">
-                    ⚠️ Não há líderes cadastrados neste departamento. Configure um líder primeiro.
-                  </p>
-                )}
-                {availableLeaders.length > 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    Selecione o líder direto deste {selectedRole === "colaborador" ? "colaborador" : "líder"}.
-                  </p>
-                )}
-            </div>
+                    {availableLeadersColaborador.map((leader) => (
+                      <option key={leader.id} value={leader.id}>
+                        {leader.name} ({leader.role === "admin" ? "Administrador" : "Líder"})
+                      </option>
+                    ))}
+                  </select>
+                  {selectedDepartamentoColaborador && availableLeadersColaborador.length === 0 && (
+                    <p className="text-sm text-amber-600">
+                      ⚠️ Não há líderes cadastrados neste departamento.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
 
-            {/* Informação sobre líder automático - SEMPRE RENDERIZADO */}
-            <div style={{ display: selectedRole === "lider" ? 'block' : 'none' }}>
-              <Alert>
-                <InfoIcon className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>Importante:</strong> Após salvar, vá em <strong>Departamentos</strong> e defina este usuário como líder do departamento. Todos os colaboradores desse departamento terão este usuário como líder automaticamente.
-                </AlertDescription>
-              </Alert>
-            </div>
+
 
             {/* Botões */}
             <div className="flex gap-3 pt-4">

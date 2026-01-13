@@ -1,0 +1,922 @@
+{
+  "query": "SELECT id, name, email, status FROM users ORDER BY name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, status FROM users ORDER BY name;",
+  "rows": [
+    {
+      "id": "180075",
+      "name": "ADELICE THOMAZ SOARES NOVAK",
+      "email": "adelice@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180068",
+      "name": "ADEMIR WHITMAN GOMES REGO",
+      "email": "ademir@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180050",
+      "name": "ADMARY MONTEIRO BARBOSA",
+      "email": "admary.monteiro@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "30079",
+      "name": "Admin Ckm",
+      "email": "admin@ckmtalents.net",
+      "status": "ativo"
+    },
+    {
+      "id": "180004",
+      "name": "ALDENI BATISTA TORRES",
+      "email": "aldeni.torres@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180080",
+      "name": "ALENCAR HUBNER BORELLI",
+      "email": "alencar.borelli@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180141",
+      "name": "ALEX VERAS DIAS",
+      "email": "alex.dias@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180059",
+      "name": "ALICE SOUSA SANTOS COSTA",
+      "email": "alice.costa@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180146",
+      "name": "ALORRAN DE FREITAS BARBOSA",
+      "email": "alorran.barbosa@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180003",
+      "name": "AMAGGELDO BARBOSA",
+      "email": "amaggeldo@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180109",
+      "name": "AMANDA SOARES SANTOS",
+      "email": "amanda.santos@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180125",
+      "name": "ANA CASSIA DE OLIVEIRA COSTA",
+      "email": "ana.costa@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180024",
+      "name": "ANA ESTELA GOETTEN",
+      "email": "ana.goetten@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180071",
+      "name": "ANA FLAVIA MENDES BORGES",
+      "email": "ana.borges@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180040",
+      "name": "ANA MARIA LEAL CUNHA DE FREITAS",
+      "email": "ana.freitas@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180150",
+      "name": "ANA PAULA ALVES DE LIMA ROCHA",
+      "email": "anapaula.lima@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180085",
+      "name": "ANA PAULA ALVES SANTOS",
+      "email": "paula.alves@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180087",
+      "name": "ANA PAULA CUNHA SOARES",
+      "email": "paula.soares@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180054",
+      "name": "ANDRE SILVA GOMES",
+      "email": "andre.gomes@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180014",
+      "name": "ANDREIA RODRIGUES FACUNDES",
+      "email": "andreia.facundes@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180044",
+      "name": "ANDRESSA IBIAPINA",
+      "email": "andressa.ibiapina@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180104",
+      "name": "ANTEIA DE CASSIA ANDRADE TAVARES",
+      "email": "anteia.tavares@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180036",
+      "name": "ANTONIA GELMA PEREIRA DA SILVA CARVALHO",
+      "email": "antonia.carvalho@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180007",
+      "name": "ANTONIO LOUÇA CURCINO",
+      "email": "antonio.curcino@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180129",
+      "name": "ANTONIO LUIS FERREIRA DOS ANJOS FILHO",
+      "email": "antonio.filho@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180094",
+      "name": "ANTONIO NETO DOS SANTOS",
+      "email": "antonio.santos@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180137",
+      "name": "BARBARA DE MOURA NUNES REZENDE",
+      "email": "barbara.nunes@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180055",
+      "name": "BRUNO DE JESUS RODRIGUES",
+      "email": "bruno.rodrigues@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180095",
+      "name": "BRUNO HENRIQUE VILA VERDE",
+      "email": "bruno.vilaverde@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180010",
+      "name": "BRUNO MARTINS VIEIRA",
+      "email": "bruno.vieira@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180052",
+      "name": "CARLUCIA SARAIVA DE BRITO",
+      "email": "carlucia.brito@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180076",
+      "name": "CELINA SOARES",
+      "email": "celina@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180067",
+      "name": "CESAR AUGUSTO DE SA MOREIRA",
+      "email": "cesar.moreira@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180029",
+      "name": "CLARICE DA ROSA CORREA SOARES",
+      "email": "clarice@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180066",
+      "name": "CLAUDETE PINTO CARMO SOUSA",
+      "email": "claudete.carmo@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180078",
+      "name": "CLAUDIA NARCISO SAKAI",
+      "email": "claudia.sakai@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180058",
+      "name": "CRISTYANE FONSECA CARDOSO",
+      "email": "cristyane.cardoso@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180139",
+      "name": "CYNTHIA NUNES ALVES FRANCA",
+      "email": "cynthia.franca@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180145",
+      "name": "DANIEL CAIO LEMOS PENNO",
+      "email": "daniel.penno@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180090",
+      "name": "DANIEL NUNES DE CARVALHO",
+      "email": "daniel.carvalho@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180046",
+      "name": "DEILANE RODRIGUES VIEIRA",
+      "email": "deilane.vieira@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180105",
+      "name": "DENISE DA SILVA NUNES",
+      "email": "denise.nunes@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "150008",
+      "name": "Dina Makiyama",
+      "email": "dina.makiyama@sebrae.to.gov.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180079",
+      "name": "DIOGO SANTOS BARRETO",
+      "email": "diogo.barreto@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180062",
+      "name": "DJALES DOS SANTOS OLIVEIRA",
+      "email": "djales.santos@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180127",
+      "name": "DORIVAL GONCALVES DE SOUSA JUNIOR",
+      "email": "dorival.junior@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180091",
+      "name": "DURVAL REGO NUNES",
+      "email": "durval.nunes@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180074",
+      "name": "EDGLEI DIAS RODRIGUES",
+      "email": "edglei.rodrigues@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180002",
+      "name": "EDVALDO PEREIRA LIMA JÚNIOR",
+      "email": "edvaldopljr86@gmail.com",
+      "status": "ativo"
+    },
+    {
+      "id": "180124",
+      "name": "ELIENILSON GONCALVES DA CONCEICAO",
+      "email": "elienilson.conceicao@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180028",
+      "name": "ELIGENETH RESPLANDES PIMENTEL GOMES",
+      "email": "eligeneth@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180106",
+      "name": "ELISABETE LACERDA EUSTAQUIO",
+      "email": "elizabete@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180120",
+      "name": "ELISANGELA TAVARES ALVES VARANDA",
+      "email": "elisangela.varanda@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180012",
+      "name": "ELIWANIA DOS SANTOS SILVA",
+      "email": "eliwania.santos@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180118",
+      "name": "ELIZETH CRISTIANE COUTINHO LIMA",
+      "email": "elizeth.coutinho@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180149",
+      "name": "ELLEN CASSIA CARVALHO CUSTODIO",
+      "email": "ellen.custodio@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180081",
+      "name": "EMERSON EDUARDO AIRES NUNES",
+      "email": "emerson.nunes@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180131",
+      "name": "EMERSON MONTENEGRO LIMA",
+      "email": "emerson.lima@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180113",
+      "name": "EUZEBIO OLIVEIRA DE ALMEIDA",
+      "email": "euzebio.almeida@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180051",
+      "name": "FABIANE CAPPELLESSO",
+      "email": "fabiane.cappellesso@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180069",
+      "name": "FABIO HENRIQUE DA CRUZ",
+      "email": "fabio.cruz@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180110",
+      "name": "FABRICIO RODRIGUES DA SILVA LUSTOSA",
+      "email": "fabricio.lustosa@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180060",
+      "name": "FRANCIELLY QUITERIA GUIMARAES ALVES",
+      "email": "francielly.alves@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180077",
+      "name": "FRANCISCO DE ASSIS DIAS RAMOS",
+      "email": "francisco.ramos@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180119",
+      "name": "FRANCISMEIRE FERREIRA LIMA DE MORAIS",
+      "email": "francismeire.morais@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180147",
+      "name": "GABRIEL BORGES ARAUJO",
+      "email": "gabriel.araujo@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180056",
+      "name": "GABRIEL MARTINS LIRA",
+      "email": "gabriel.lira@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180017",
+      "name": "GABRIELA TOMASI",
+      "email": "00792361113@temp.com",
+      "status": "ativo"
+    },
+    {
+      "id": "180126",
+      "name": "GEOVANE ALMEIDA NEPOMUCENO",
+      "email": "falecomgeovane@gmail.com",
+      "status": "ativo"
+    },
+    {
+      "id": "180086",
+      "name": "GETULIO RODRIGUES DE MENDONCA",
+      "email": "getulio.mendonca@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180018",
+      "name": "GILZANE PEREIRA AMARAL",
+      "email": "gilzane.pereira@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180042",
+      "name": "GLAUCIA DE GODOI SOUZA FERREIRA",
+      "email": "glaucia.ferreira@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180092",
+      "name": "HIDE SENNA DE SOUSA SOARES",
+      "email": "hide.senna@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180083",
+      "name": "HIGOR NICHOLLAS DE OLIVEIRA",
+      "email": "higor.oliveira@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180049",
+      "name": "ILMA LOPES DA SILVA",
+      "email": "ilma@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180045",
+      "name": "INGRID PAMELA ALVES AMORIM",
+      "email": "ingrid.amorim@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180041",
+      "name": "ITALLO BRANDAÕ FERREIRA",
+      "email": "itallo.ferreira@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180073",
+      "name": "IZANA DE ASSUNCAO ALVES",
+      "email": "izana.assuncao@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180038",
+      "name": "JACIRLEY PEREIRA DO NASCIMENTO",
+      "email": "jacirley.nascimento@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180011",
+      "name": "JACKELINE DE SOUZA LIMA",
+      "email": "jackeline.lima@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180148",
+      "name": "JADER LINCOLN DO NASCIMENTO",
+      "email": "jader.nascimento@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180026",
+      "name": "JANAINA MIRANDA XAVIER",
+      "email": "janaina.miranda@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180135",
+      "name": "JIRENE PINHEIRO LISBOA E SILVA",
+      "email": "jirene.pinheiro@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180048",
+      "name": "JOAO MARCOS FERREIRA DOS SANTOS",
+      "email": "joao.santos@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180072",
+      "name": "JOSE DANIEL TAVARES RODRIGUES",
+      "email": "jdaniel.tavares@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180107",
+      "name": "JOSE ROBERTO MIOLA",
+      "email": "jose.miola@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180061",
+      "name": "JOSE TAVARES PIRES",
+      "email": "jose.pires@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180116",
+      "name": "JOSEANE RODRIGUES LEITE",
+      "email": "joseane@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180103",
+      "name": "JUAREZ QUIRINO DE OLIVEIRA",
+      "email": "juarez.oliveira@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180021",
+      "name": "JULIANA MASSON PREDIGER",
+      "email": "juliana.prediger@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180115",
+      "name": "KIVIA RAQUEL PEREIRA LEITE",
+      "email": "kivia.leite@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180130",
+      "name": "LAURENICE COELHO MESQUITA CASTILHO",
+      "email": "laurenice.mesquita@gmail.com",
+      "status": "ativo"
+    },
+    {
+      "id": "180133",
+      "name": "LAYALA CARDOSO DA SILVA ISTOFEL",
+      "email": "layala.cardoso@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180019",
+      "name": "LEONARDO CAMPELO LEITE GUEDES",
+      "email": "leonardo.campelo@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180108",
+      "name": "LIVIA PEDREIRA SIMÕES",
+      "email": "livia.simoes@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180102",
+      "name": "LIVIA TENORIO DE SOUZA LEAO",
+      "email": "livia.leao@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180123",
+      "name": "LUANA FERNANDA ROSA MARTINS",
+      "email": "wanessa.martins@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180096",
+      "name": "LUCIANA CARVALHO DE AGUIAR",
+      "email": "luciana@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180140",
+      "name": "LUCIANA SOARES PIRES RETES",
+      "email": "luciana.retes@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180088",
+      "name": "LUDMILA SANTANA BARBOSA",
+      "email": "ludmila.santana@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180039",
+      "name": "MAILENE ALENCAR RODRIGUES TORRES",
+      "email": "mailene.torres@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180142",
+      "name": "MAISA FERNANDES RIBEIRO",
+      "email": "maisa.ribeiro@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180121",
+      "name": "MARCELLE SOARES FELIX",
+      "email": "marcelle.felix@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180005",
+      "name": "MARCUS VINICIUS VIEIRA QUEIROZ",
+      "email": "marcus.queiroz@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180035",
+      "name": "MARIA DIVINA ALVES FEITOSA",
+      "email": "maria.feitosa@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180099",
+      "name": "MICHELE RAQUEL DE MATTOS SILVA",
+      "email": "michele.silva@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180006",
+      "name": "MILLENA PEREIRA LIMA RODRIGUES",
+      "email": "millena.rodrigues@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180097",
+      "name": "MIRELLE SOARES MILHOMENS",
+      "email": "mirellysara@gmail.com",
+      "status": "ativo"
+    },
+    {
+      "id": "180143",
+      "name": "MONIQUE HEVELLYN DE BRITO MENEZES",
+      "email": "monique.menezes@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180032",
+      "name": "MONIQUE SILVA DE ALBUQUERQUE",
+      "email": "monique.albuquerque@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180027",
+      "name": "MYRLLA CATARINE MATOS PARENTE",
+      "email": "myrlla.parente@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180016",
+      "name": "NEMIAS GOMES",
+      "email": "nemias.gomes@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180132",
+      "name": "NORMI MARIA DOS SANTOS",
+      "email": "normi.santos@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180034",
+      "name": "ODILO JUNIOR OLIVEIRA CARVALHO",
+      "email": "odilo.carvalho@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180065",
+      "name": "PATRICIA SOARES FEITOSA",
+      "email": "patricia.feitosa@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180008",
+      "name": "PAULA DOS REIS COELHO ALENCAR SOUSA",
+      "email": "paula.alencar@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180144",
+      "name": "PEDRO EMILIO RODRIGUES ALVES DE ARAUJO",
+      "email": "pedro.araujo@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180013",
+      "name": "PEDRO JUNIOR DA ROCHA SILVA",
+      "email": "pedro.junior@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180053",
+      "name": "RAFAEL CAMELO AYRES",
+      "email": "rafael.ayres@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180043",
+      "name": "RAFAEL COELHO LIMA",
+      "email": "rafael.lima@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180134",
+      "name": "RAQUEL MONTELO MOURA CARVALHO",
+      "email": "raquel.carvalho@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180089",
+      "name": "REGINA QUEIROZ AZEVEDO",
+      "email": "regina.azevedo@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180009",
+      "name": "RENATA MOURA ALVES SIMAS",
+      "email": "renata.alves@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180025",
+      "name": "RENATO ALBUQUERQUE DA CUNHA",
+      "email": "88922880163@temp.com",
+      "status": "ativo"
+    },
+    {
+      "id": "180111",
+      "name": "RENNAN JACINTO DA SILVA MENEZES",
+      "email": "rennan.menezes@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180057",
+      "name": "RODRIGO ALVES DOS SANTOS",
+      "email": "rodrigo.santos@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180022",
+      "name": "ROMISSON MATIAS SANTOS",
+      "email": "romisson.santos@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180084",
+      "name": "SEBASTIAO GERALDO DE OLIVEIRA",
+      "email": "sebastiaogeraldo34@gmail.com",
+      "status": "ativo"
+    },
+    {
+      "id": "180138",
+      "name": "SIRLENE MARTINS DA SILVA",
+      "email": "sirlene.martins@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180101",
+      "name": "SOLIVANIA DANTAS DE ARAUJO PIRETT",
+      "email": "solivania.pirett@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180063",
+      "name": "STEFANE CARDOSO SANTANA",
+      "email": "stefane@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180082",
+      "name": "THAINA SILVA DE ALENCAR",
+      "email": "thaina.alencar@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180112",
+      "name": "THAIS NERES VIEIRA",
+      "email": "thaisvneres@gmail.com",
+      "status": "ativo"
+    },
+    {
+      "id": "180114",
+      "name": "THAMARA RODRIGUES DE FREITAS FACUNDES",
+      "email": "thamara.rodrigues@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180047",
+      "name": "THIAGO DIAS DA SILVA",
+      "email": "thiago.silva@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180064",
+      "name": "THIAGO MILHOMEM SOARES",
+      "email": "thiago.soares@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180128",
+      "name": "TIAGO CARVALHO CAMARGO",
+      "email": "dorival.junior@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "270001",
+      "name": "UsuarioTeste1",
+      "email": "usuarioteste1@empresa.com",
+      "status": "ativo"
+    },
+    {
+      "id": "180023",
+      "name": "VALCI PEREIRA DA SILVA JUNIOR",
+      "email": "valci.junior@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180136",
+      "name": "VANLUCY OLIVEIRA CORREIA",
+      "email": "vanlucy.oliveira@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180015",
+      "name": "VERA LUCIA TEODORO BRAGA",
+      "email": "vera.braga@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180100",
+      "name": "VICTOR OTAVIO ANDRADE DAS NEVES",
+      "email": "victor.neves@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180117",
+      "name": "VIVIAN NASCIMENTO REIS",
+      "email": "vivian.reis@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180030",
+      "name": "VIVIANE FERNANDES DE ALBUQUERQUE TEIXEIRA",
+      "email": "viviane.albuquerque@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180031",
+      "name": "WALBENIA LEMOS DA SILVA TORRES",
+      "email": "walbenia.lemos@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180098",
+      "name": "WANDEMBERG PEREIRA RODRIGUES",
+      "email": "wandemberg.rodrigues@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180020",
+      "name": "WANDERSON DA SILVA PIMENTEL CHAGAS",
+      "email": "wanderson.chagas@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180122",
+      "name": "WANESSA SOBREIRA DOS SANTOS MARTINS",
+      "email": "wanessa.martins@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180037",
+      "name": "WERICA SOUZA SILVA",
+      "email": "werica.silva@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180093",
+      "name": "WESLEY CARDOSO BATISTA",
+      "email": "wesley.cardoso@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180070",
+      "name": "WILLIAM MELO DOS SANTOS",
+      "email": "william.santos@to.sebrae.com.br",
+      "status": "ativo"
+    },
+    {
+      "id": "180033",
+      "name": "WIURY PEREIRA DE AGUIAR",
+      "email": "wiury.aguiar@to.sebrae.com.br",
+      "status": "ativo"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tstatus\n180075\tADELICE THOMAZ SOARES NOVAK\tadelice@to.sebrae.com.br\tativo\n180068\tADEMIR WHITMAN GOMES REGO\tademir@to.sebrae.com.br\tativo\n180050\tADMARY MONTEIRO BARBOSA\tadmary.monteiro@to.sebrae.com.br\tativo\n30079\tAdmin Ckm\tadmin@ckmtalents.net\tativo\n180004\tALDENI BATISTA TORRES\taldeni.torres@to.sebrae.com.br\tativo\n180080\tALENCAR HUBNER BORELLI\talencar.borelli@to.sebrae.com.br\tativo\n180141\tALEX VERAS DIAS\talex.dias@to.sebrae.com.br\tativo\n180059\tALICE SOUSA SANTOS COSTA\talice.costa@to.sebrae.com.br\tativo\n180146\tALORRAN DE FREITAS BARBOSA\talorran.barbosa@to.sebrae.com.br\tativo\n180003\tAMAGGELDO BARBOSA\tamaggeldo@to.sebrae.com.br\tativo\n180109\tAMANDA SOARES SANTOS\tamanda.santos@to.sebrae.com.br\tativo\n180125\tANA CASSIA DE OLIVEIRA COSTA\tana.costa@to.sebrae.com.br\tativo\n180024\tANA ESTELA GOETTEN\tana.goetten@to.sebrae.com.br\tativo\n180071\tANA FLAVIA MENDES BORGES\tana.borges@to.sebrae.com.br\tativo\n180040\tANA MARIA LEAL CUNHA DE FREITAS\tana.freitas@to.sebrae.com.br\tativo\n180150\tANA PAULA ALVES DE LIMA ROCHA\tanapaula.lima@to.sebrae.com.br\tativo\n180085\tANA PAULA ALVES SANTOS\tpaula.alves@to.sebrae.com.br\tativo\n180087\tANA PAULA CUNHA SOARES\tpaula.soares@to.sebrae.com.br\tativo\n180054\tANDRE SILVA GOMES\tandre.gomes@to.sebrae.com.br\tativo\n180014\tANDREIA RODRIGUES FACUNDES\tandreia.facundes@to.sebrae.com.br\tativo\n180044\tANDRESSA IBIAPINA\tandressa.ibiapina@to.sebrae.com.br\tativo\n180104\tANTEIA DE CASSIA ANDRADE TAVARES\tanteia.tavares@to.sebrae.com.br\tativo\n180036\tANTONIA GELMA PEREIRA DA SILVA CARVALHO\tantonia.carvalho@to.sebrae.com.br\tativo\n180007\tANTONIO LOUÇA CURCINO\tantonio.curcino@to.sebrae.com.br\tativo\n180129\tANTONIO LUIS FERREIRA DOS ANJOS FILHO\tantonio.filho@to.sebrae.com.br\tativo\n180094\tANTONIO NETO DOS SANTOS\tantonio.santos@to.sebrae.com.br\tativo\n180137\tBARBARA DE MOURA NUNES REZENDE\tbarbara.nunes@to.sebrae.com.br\tativo\n180055\tBRUNO DE JESUS RODRIGUES\tbruno.rodrigues@to.sebrae.com.br\tativo\n180095\tBRUNO HENRIQUE VILA VERDE\tbruno.vilaverde@to.sebrae.com.br\tativo\n180010\tBRUNO MARTINS VIEIRA\tbruno.vieira@to.sebrae.com.br\tativo\n180052\tCARLUCIA SARAIVA DE BRITO\tcarlucia.brito@to.sebrae.com.br\tativo\n180076\tCELINA SOARES\tcelina@to.sebrae.com.br\tativo\n180067\tCESAR AUGUSTO DE SA MOREIRA\tcesar.moreira@to.sebrae.com.br\tativo\n180029\tCLARICE DA ROSA CORREA SOARES\tclarice@to.sebrae.com.br\tativo\n180066\tCLAUDETE PINTO CARMO SOUSA\tclaudete.carmo@to.sebrae.com.br\tativo\n180078\tCLAUDIA NARCISO SAKAI\tclaudia.sakai@to.sebrae.com.br\tativo\n180058\tCRISTYANE FONSECA CARDOSO\tcristyane.cardoso@to.sebrae.com.br\tativo\n180139\tCYNTHIA NUNES ALVES FRANCA\tcynthia.franca@to.sebrae.com.br\tativo\n180145\tDANIEL CAIO LEMOS PENNO\tdaniel.penno@to.sebrae.com.br\tativo\n180090\tDANIEL NUNES DE CARVALHO\tdaniel.carvalho@to.sebrae.com.br\tativo\n180046\tDEILANE RODRIGUES VIEIRA\tdeilane.vieira@to.sebrae.com.br\tativo\n180105\tDENISE DA SILVA NUNES\tdenise.nunes@to.sebrae.com.br\tativo\n150008\tDina Makiyama\tdina.makiyama@sebrae.to.gov.br\tativo\n180079\tDIOGO SANTOS BARRETO\tdiogo.barreto@to.sebrae.com.br\tativo\n180062\tDJALES DOS SANTOS OLIVEIRA\tdjales.santos@to.sebrae.com.br\tativo\n180127\tDORIVAL GONCALVES DE SOUSA JUNIOR\tdorival.junior@to.sebrae.com.br\tativo\n180091\tDURVAL REGO NUNES\tdurval.nunes@to.sebrae.com.br\tativo\n180074\tEDGLEI DIAS RODRIGUES\tedglei.rodrigues@to.sebrae.com.br\tativo\n180002\tEDVALDO PEREIRA LIMA JÚNIOR\tedvaldopljr86@gmail.com\tativo\n180124\tELIENILSON GONCALVES DA CONCEICAO\telienilson.conceicao@to.sebrae.com.br\tativo\n180028\tELIGENETH RESPLANDES PIMENTEL GOMES\teligeneth@to.sebrae.com.br\tativo\n180106\tELISABETE LACERDA EUSTAQUIO\telizabete@to.sebrae.com.br\tativo\n180120\tELISANGELA TAVARES ALVES VARANDA\telisangela.varanda@to.sebrae.com.br\tativo\n180012\tELIWANIA DOS SANTOS SILVA\teliwania.santos@to.sebrae.com.br\tativo\n180118\tELIZETH CRISTIANE COUTINHO LIMA\telizeth.coutinho@to.sebrae.com.br\tativo\n180149\tELLEN CASSIA CARVALHO CUSTODIO\tellen.custodio@to.sebrae.com.br\tativo\n180081\tEMERSON EDUARDO AIRES NUNES\temerson.nunes@to.sebrae.com.br\tativo\n180131\tEMERSON MONTENEGRO LIMA\temerson.lima@to.sebrae.com.br\tativo\n180113\tEUZEBIO OLIVEIRA DE ALMEIDA\teuzebio.almeida@to.sebrae.com.br\tativo\n180051\tFABIANE CAPPELLESSO\tfabiane.cappellesso@to.sebrae.com.br\tativo\n180069\tFABIO HENRIQUE DA CRUZ\tfabio.cruz@to.sebrae.com.br\tativo\n180110\tFABRICIO RODRIGUES DA SILVA LUSTOSA\tfabricio.lustosa@to.sebrae.com.br\tativo\n180060\tFRANCIELLY QUITERIA GUIMARAES ALVES\tfrancielly.alves@to.sebrae.com.br\tativo\n180077\tFRANCISCO DE ASSIS DIAS RAMOS\tfrancisco.ramos@to.sebrae.com.br\tativo\n180119\tFRANCISMEIRE FERREIRA LIMA DE MORAIS\tfrancismeire.morais@to.sebrae.com.br\tativo\n180147\tGABRIEL BORGES ARAUJO\tgabriel.araujo@to.sebrae.com.br\tativo\n180056\tGABRIEL MARTINS LIRA\tgabriel.lira@to.sebrae.com.br\tativo\n180017\tGABRIELA TOMASI\t00792361113@temp.com\tativo\n180126\tGEOVANE ALMEIDA NEPOMUCENO\tfalecomgeovane@gmail.com\tativo\n180086\tGETULIO RODRIGUES DE MENDONCA\tgetulio.mendonca@to.sebrae.com.br\tativo\n180018\tGILZANE PEREIRA AMARAL\tgilzane.pereira@to.sebrae.com.br\tativo\n180042\tGLAUCIA DE GODOI SOUZA FERREIRA\tglaucia.ferreira@to.sebrae.com.br\tativo\n180092\tHIDE SENNA DE SOUSA SOARES\thide.senna@to.sebrae.com.br\tativo\n180083\tHIGOR NICHOLLAS DE OLIVEIRA\thigor.oliveira@to.sebrae.com.br\tativo\n180049\tILMA LOPES DA SILVA\tilma@to.sebrae.com.br\tativo\n180045\tINGRID PAMELA ALVES AMORIM\tingrid.amorim@to.sebrae.com.br\tativo\n180041\tITALLO BRANDAÕ FERREIRA\titallo.ferreira@to.sebrae.com.br\tativo\n180073\tIZANA DE ASSUNCAO ALVES\tizana.assuncao@to.sebrae.com.br\tativo\n180038\tJACIRLEY PEREIRA DO NASCIMENTO\tjacirley.nascimento@to.sebrae.com.br\tativo\n180011\tJACKELINE DE SOUZA LIMA\tjackeline.lima@to.sebrae.com.br\tativo\n180148\tJADER LINCOLN DO NASCIMENTO\tjader.nascimento@to.sebrae.com.br\tativo\n180026\tJANAINA MIRANDA XAVIER\tjanaina.miranda@to.sebrae.com.br\tativo\n180135\tJIRENE PINHEIRO LISBOA E SILVA\tjirene.pinheiro@to.sebrae.com.br\tativo\n180048\tJOAO MARCOS FERREIRA DOS SANTOS\tjoao.santos@to.sebrae.com.br\tativo\n180072\tJOSE DANIEL TAVARES RODRIGUES\tjdaniel.tavares@to.sebrae.com.br\tativo\n180107\tJOSE ROBERTO MIOLA\tjose.miola@to.sebrae.com.br\tativo\n180061\tJOSE TAVARES PIRES\tjose.pires@to.sebrae.com.br\tativo\n180116\tJOSEANE RODRIGUES LEITE\tjoseane@to.sebrae.com.br\tativo\n180103\tJUAREZ QUIRINO DE OLIVEIRA\tjuarez.oliveira@to.sebrae.com.br\tativo\n180021\tJULIANA MASSON PREDIGER\tjuliana.prediger@to.sebrae.com.br\tativo\n180115\tKIVIA RAQUEL PEREIRA LEITE\tkivia.leite@to.sebrae.com.br\tativo\n180130\tLAURENICE COELHO MESQUITA CASTILHO\tlaurenice.mesquita@gmail.com\tativo\n180133\tLAYALA CARDOSO DA SILVA ISTOFEL\tlayala.cardoso@to.sebrae.com.br\tativo\n180019\tLEONARDO CAMPELO LEITE GUEDES\tleonardo.campelo@to.sebrae.com.br\tativo\n180108\tLIVIA PEDREIRA SIMÕES\tlivia.simoes@to.sebrae.com.br\tativo\n180102\tLIVIA TENORIO DE SOUZA LEAO\tlivia.leao@to.sebrae.com.br\tativo\n180123\tLUANA FERNANDA ROSA MARTINS\twanessa.martins@to.sebrae.com.br\tativo\n180096\tLUCIANA CARVALHO DE AGUIAR\tluciana@to.sebrae.com.br\tativo\n180140\tLUCIANA SOARES PIRES RETES\tluciana.retes@to.sebrae.com.br\tativo\n180088\tLUDMILA SANTANA BARBOSA\tludmila.santana@to.sebrae.com.br\tativo\n180039\tMAILENE ALENCAR RODRIGUES TORRES\tmailene.torres@to.sebrae.com.br\tativo\n180142\tMAISA FERNANDES RIBEIRO\tmaisa.ribeiro@to.sebrae.com.br\tativo\n180121\tMARCELLE SOARES FELIX\tmarcelle.felix@to.sebrae.com.br\tativo\n180005\tMARCUS VINICIUS VIEIRA QUEIROZ\tmarcus.queiroz@to.sebrae.com.br\tativo\n180035\tMARIA DIVINA ALVES FEITOSA\tmaria.feitosa@to.sebrae.com.br\tativo\n180099\tMICHELE RAQUEL DE MATTOS SILVA\tmichele.silva@to.sebrae.com.br\tativo\n180006\tMILLENA PEREIRA LIMA RODRIGUES\tmillena.rodrigues@to.sebrae.com.br\tativo\n180097\tMIRELLE SOARES MILHOMENS\tmirellysara@gmail.com\tativo\n180143\tMONIQUE HEVELLYN DE BRITO MENEZES\tmonique.menezes@to.sebrae.com.br\tativo\n180032\tMONIQUE SILVA DE ALBUQUERQUE\tmonique.albuquerque@to.sebrae.com.br\tativo\n180027\tMYRLLA CATARINE MATOS PARENTE\tmyrlla.parente@to.sebrae.com.br\tativo\n180016\tNEMIAS GOMES\tnemias.gomes@to.sebrae.com.br\tativo\n180132\tNORMI MARIA DOS SANTOS\tnormi.santos@to.sebrae.com.br\tativo\n180034\tODILO JUNIOR OLIVEIRA CARVALHO\todilo.carvalho@to.sebrae.com.br\tativo\n180065\tPATRICIA SOARES FEITOSA\tpatricia.feitosa@to.sebrae.com.br\tativo\n180008\tPAULA DOS REIS COELHO ALENCAR SOUSA\tpaula.alencar@to.sebrae.com.br\tativo\n180144\tPEDRO EMILIO RODRIGUES ALVES DE ARAUJO\tpedro.araujo@to.sebrae.com.br\tativo\n180013\tPEDRO JUNIOR DA ROCHA SILVA\tpedro.junior@to.sebrae.com.br\tativo\n180053\tRAFAEL CAMELO AYRES\trafael.ayres@to.sebrae.com.br\tativo\n180043\tRAFAEL COELHO LIMA\trafael.lima@to.sebrae.com.br\tativo\n180134\tRAQUEL MONTELO MOURA CARVALHO\traquel.carvalho@to.sebrae.com.br\tativo\n180089\tREGINA QUEIROZ AZEVEDO\tregina.azevedo@to.sebrae.com.br\tativo\n180009\tRENATA MOURA ALVES SIMAS\trenata.alves@to.sebrae.com.br\tativo\n180025\tRENATO ALBUQUERQUE DA CUNHA\t88922880163@temp.com\tativo\n180111\tRENNAN JACINTO DA SILVA MENEZES\trennan.menezes@to.sebrae.com.br\tativo\n180057\tRODRIGO ALVES DOS SANTOS\trodrigo.santos@to.sebrae.com.br\tativo\n180022\tROMISSON MATIAS SANTOS\tromisson.santos@to.sebrae.com.br\tativo\n180084\tSEBASTIAO GERALDO DE OLIVEIRA\tsebastiaogeraldo34@gmail.com\tativo\n180138\tSIRLENE MARTINS DA SILVA\tsirlene.martins@to.sebrae.com.br\tativo\n180101\tSOLIVANIA DANTAS DE ARAUJO PIRETT\tsolivania.pirett@to.sebrae.com.br\tativo\n180063\tSTEFANE CARDOSO SANTANA\tstefane@to.sebrae.com.br\tativo\n180082\tTHAINA SILVA DE ALENCAR\tthaina.alencar@to.sebrae.com.br\tativo\n180112\tTHAIS NERES VIEIRA\tthaisvneres@gmail.com\tativo\n180114\tTHAMARA RODRIGUES DE FREITAS FACUNDES\tthamara.rodrigues@to.sebrae.com.br\tativo\n180047\tTHIAGO DIAS DA SILVA\tthiago.silva@to.sebrae.com.br\tativo\n180064\tTHIAGO MILHOMEM SOARES\tthiago.soares@to.sebrae.com.br\tativo\n180128\tTIAGO CARVALHO CAMARGO\tdorival.junior@to.sebrae.com.br\tativo\n270001\tUsuarioTeste1\tusuarioteste1@empresa.com\tativo\n180023\tVALCI PEREIRA DA SILVA JUNIOR\tvalci.junior@to.sebrae.com.br\tativo\n180136\tVANLUCY OLIVEIRA CORREIA\tvanlucy.oliveira@to.sebrae.com.br\tativo\n180015\tVERA LUCIA TEODORO BRAGA\tvera.braga@to.sebrae.com.br\tativo\n180100\tVICTOR OTAVIO ANDRADE DAS NEVES\tvictor.neves@to.sebrae.com.br\tativo\n180117\tVIVIAN NASCIMENTO REIS\tvivian.reis@to.sebrae.com.br\tativo\n180030\tVIVIANE FERNANDES DE ALBUQUERQUE TEIXEIRA\tviviane.albuquerque@to.sebrae.com.br\tativo\n180031\tWALBENIA LEMOS DA SILVA TORRES\twalbenia.lemos@to.sebrae.com.br\tativo\n180098\tWANDEMBERG PEREIRA RODRIGUES\twandemberg.rodrigues@to.sebrae.com.br\tativo\n180020\tWANDERSON DA SILVA PIMENTEL CHAGAS\twanderson.chagas@to.sebrae.com.br\tativo\n180122\tWANESSA SOBREIRA DOS SANTOS MARTINS\twanessa.martins@to.sebrae.com.br\tativo\n180037\tWERICA SOUZA SILVA\twerica.silva@to.sebrae.com.br\tativo\n180093\tWESLEY CARDOSO BATISTA\twesley.cardoso@to.sebrae.com.br\tativo\n180070\tWILLIAM MELO DOS SANTOS\twilliam.santos@to.sebrae.com.br\tativo\n180033\tWIURY PEREIRA DE AGUIAR\twiury.aguiar@to.sebrae.com.br\tativo\n",
+  "stderr": "",
+  "execution_time_ms": 65
+}
