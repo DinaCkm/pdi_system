@@ -692,89 +692,6 @@ export async function getActionById(id: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getActionWithPDIById(id: number) {
-  const db = await getDb();
-  if (!db) return undefined;
-  
-  // Criar alias para a tabela users (colaborador e líder)
-  const colaborador = alias(users, 'colaborador');
-  const lider = alias(users, 'lider');
-  
-  const result = await db
-    .select({
-      // Dados da ação
-      id: actions.id,
-      pdiId: actions.pdiId,
-      blocoId: actions.blocoId,
-      macroId: actions.macroId,
-      microId: actions.microId,
-      nome: actions.nome,
-      descricao: actions.descricao,
-      prazo: actions.prazo,
-      status: actions.status,
-      justificativaReprovacaoLider: actions.justificativaReprovacaoLider,
-      createdAt: actions.createdAt,
-      updatedAt: actions.updatedAt,
-      createdBy: actions.createdBy,
-      // Dados do PDI
-      pdiId_nested: pdis.id,
-      pdiTitulo: pdis.titulo,
-      pdiColaboradorId: pdis.colaboradorId,
-      pdiCicloId: pdis.cicloId,
-      // Dados do colaborador
-      colaboradorId: colaborador.id,
-      colaboradorName: colaborador.name,
-      colaboradorEmail: colaborador.email,
-      colaboradorLeaderId: colaborador.leaderId,
-      // Dados do líder
-      liderId: lider.id,
-      liderName: lider.name,
-      liderEmail: lider.email,
-    })
-    .from(actions)
-    .leftJoin(pdis, eq(actions.pdiId, pdis.id))
-    .leftJoin(colaborador, eq(pdis.colaboradorId, colaborador.id))
-    .leftJoin(lider, eq(colaborador.leaderId, lider.id))
-    .where(eq(actions.id, id))
-    .limit(1);
-  
-  if (result.length === 0) return undefined;
-  
-  const row = result[0];
-  return {
-    id: row.id,
-    pdiId: row.pdiId,
-    blocoId: row.blocoId,
-    macroId: row.macroId,
-    microId: row.microId,
-    nome: row.nome,
-    descricao: row.descricao,
-    prazo: row.prazo,
-    status: row.status,
-    justificativaReprovacaoLider: row.justificativaReprovacaoLider,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-    createdBy: row.createdBy,
-    pdi: row.pdiId_nested ? {
-      id: row.pdiId_nested,
-      titulo: row.pdiTitulo,
-      colaboradorId: row.pdiColaboradorId,
-      cicloId: row.pdiCicloId,
-      colaborador: row.colaboradorId ? {
-        id: row.colaboradorId,
-        name: row.colaboradorName,
-        email: row.colaboradorEmail,
-        leaderId: row.colaboradorLeaderId,
-      } : null,
-      lider: row.liderId ? {
-        id: row.liderId,
-        name: row.liderName,
-        email: row.liderEmail,
-      } : null,
-    } : null,
-  };
-}
-
 export async function getActionsByPDIId(pdiId: number) {
   const db = await getDb();
   if (!db) return [];
@@ -947,9 +864,9 @@ export async function createAdjustmentRequest(data: {
     status: data.status || "pendente"
   });
   
-  // Retornar apenas o ID inserido
+  // Retornar o ID inserido
   const insertId = (result as any)[0]?.insertId || (result as any).insertId;
-  return insertId;
+  return { id: insertId, ...data };
 }
 
 export async function getAdjustmentRequestById(id: number) {
@@ -973,14 +890,10 @@ export async function getPendingAdjustmentRequests() {
 }
 
 export async function updateAdjustmentRequest(id: number, data: Partial<{
-  status: "pendente" | "mais_informacoes" | "aprovada" | "reprovada" | "aguardando_lider";
+  status: "pendente" | "aprovada" | "reprovada";
   justificativaAdmin: string;
-  dadosAntesAjuste: string;
-  dadosAposAjuste: string;
   evaluatedAt: Date;
   evaluatedBy: number;
-  approvedByLeaderAt: Date;
-  approvedByLeaderId: number;
 }>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -1156,55 +1069,6 @@ export async function getPendingAdjustmentRequestsByLeaderId(leaderId: number) {
       eq(adjustmentRequests.status, 'pendente'),
       eq(users.leaderId, leaderId)
     ))
-    .orderBy(desc(adjustmentRequests.createdAt));
-}
-
-export async function getAdjustmentRequestsAwaitingLeader(leaderId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  
-  // Criar alias para a tabela users (colaborador)
-  const colaborador = alias(users, 'colaborador');
-  
-  return await db
-    .select({
-      id: adjustmentRequests.id,
-      actionId: adjustmentRequests.actionId,
-      actionNome: actions.nome,
-      solicitanteId: adjustmentRequests.solicitanteId,
-      solicitanteNome: users.name,
-      tipoSolicitante: adjustmentRequests.tipoSolicitante,
-      justificativa: adjustmentRequests.justificativa,
-      camposAjustar: adjustmentRequests.camposAjustar,
-      dadosAntesAjuste: adjustmentRequests.dadosAntesAjuste,
-      dadosAposAjuste: adjustmentRequests.dadosAposAjuste,
-      justificativaAdmin: adjustmentRequests.justificativaAdmin,
-      status: adjustmentRequests.status,
-      createdAt: adjustmentRequests.createdAt,
-      evaluatedAt: adjustmentRequests.evaluatedAt,
-      colaboradorNome: colaborador.name,
-      colaboradorId: colaborador.id,
-    })
-    .from(adjustmentRequests)
-    .innerJoin(actions, eq(adjustmentRequests.actionId, actions.id))
-    .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(colaborador, eq(pdis.colaboradorId, colaborador.id))
-    .innerJoin(users, eq(adjustmentRequests.solicitanteId, users.id))
-    .where(and(
-      eq(adjustmentRequests.status, 'aguardando_lider'),
-      eq(colaborador.leaderId, leaderId)
-    ))
-    .orderBy(desc(adjustmentRequests.createdAt));
-}
-
-export async function getAdjustmentRequestsByUser(userId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  
-  return await db
-    .select()
-    .from(adjustmentRequests)
-    .where(eq(adjustmentRequests.solicitanteId, userId))
     .orderBy(desc(adjustmentRequests.createdAt));
 }
 
@@ -1481,7 +1345,6 @@ export async function updateEvidenceStatus(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
   
   await db.update(evidences).set(data).where(eq(evidences.id, id));
 }

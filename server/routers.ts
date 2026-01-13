@@ -1142,7 +1142,7 @@ export const appRouter = router({
         }
 
         // 5. Criar solicitação de ajuste
-        const solicitacaoId = await db.createAdjustmentRequest({
+        const solicitacao = await db.createAdjustmentRequest({
           actionId: input.actionId,
           solicitanteId: ctx.user!.id,
           tipoSolicitante: 'colaborador',
@@ -1162,7 +1162,7 @@ export const appRouter = router({
           valorNovo: 'em_discussao',
           motivoAlteracao: `Colaborador solicitou ajuste: ${input.justificativa}`,
           alteradoPor: ctx.user!.id,
-          solicitacaoAjusteId: solicitacaoId,
+          solicitacaoAjusteId: solicitacao.id,
         });
 
         // 8. Notificar Admin
@@ -1186,7 +1186,7 @@ export const appRouter = router({
           });
         }
 
-        return { success: true, solicitacaoId };
+        return { success: true, solicitacaoId: solicitacao.id };
       }),
 
     aprovarAjuste: adminProcedure
@@ -1398,53 +1398,20 @@ export const appRouter = router({
 
     getAdjustmentStats: protectedProcedure
       .input(z.object({ actionId: z.number() }))
-      .query(async ({ ctx, input }) => {
-        // 1. Verificar se a ação existe e pertence ao colaborador
-        const acao = await db.getActionById(input.actionId);
-        if (!acao) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
-        }
-
-        const pdi = await db.getPDIById(acao.pdiId);
-        if (!pdi) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'PDI não encontrado' });
-        }
-
-        if (pdi.colaboradorId !== ctx.user!.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Você não tem permissão para acessar esta ação' });
-        }
-
-        // 2. Verificar status da ação
-        const statusValidos = ['aprovada_lider', 'em_andamento'];
-        const statusPermiteAjuste = statusValidos.includes(acao.status);
-
-        // 3. Contar solicitações
+      .query(async ({ input }) => {
         const total = await db.countAdjustmentRequestsByAction(input.actionId);
         const pendentes = await db.getPendingAdjustmentRequestsByAction(input.actionId);
         
-        // 4. Determinar se pode adicionar e motivo de bloqueio
-        let podeAdicionar = true;
-        let motivoBloqueio: string | null = null;
-
-        if (!statusPermiteAjuste) {
-          podeAdicionar = false;
-          motivoBloqueio = 'status';
-        } else if (pendentes.length > 0) {
-          podeAdicionar = false;
-          motivoBloqueio = 'pending';
-        } else if (total >= 5) {
-          podeAdicionar = false;
-          motivoBloqueio = 'limit';
-        }
-
         return {
           total,
           pendentes: pendentes.length,
           restantes: Math.max(0, 5 - total),
-          podeAdicionar,
-          motivoBloqueio,
-          statusAtual: acao.status,
-          statusPermiteAjuste,
+          podeAdicionar: pendentes.length === 0 && total < 5,
+          motivoBloqueio: pendentes.length > 0 
+            ? 'pending' 
+            : total >= 5 
+            ? 'limit' 
+            : null
         };
       }),
 
@@ -1834,327 +1801,6 @@ Formato de resposta (JSON):
         }
 
         return { success: true };
-      }),
-  }),
-
-  // ============= SOLICITAÇÕES DE AJUSTE =============
-  adjustmentRequests: router({
-    // COLABORADOR: Solicitar ajuste de ação
-    requestAdjustment: protectedProcedure
-      .input(z.object({
-        actionId: z.number(),
-        justificativa: z.string().min(10, "Justificativa deve ter pelo menos 10 caracteres"),
-        camposAjustar: z.object({
-          nome: z.boolean().optional(),
-          descricao: z.boolean().optional(),
-          prazo: z.boolean().optional(),
-          blocoId: z.boolean().optional(),
-          macroId: z.boolean().optional(),
-          microId: z.boolean().optional(),
-        }),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const user = ctx.user!;
-        
-        // 1. Verificar se a ação existe e pertence ao colaborador
-        const action = await db.getActionWithPDIById(input.actionId);
-        if (!action) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
-        }
-        
-        if (action.pdi?.colaboradorId !== user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Você não tem permissão para solicitar ajuste nesta ação' });
-        }
-        
-        // 2. Criar solicitação de ajuste
-        const adjustmentId = await db.createAdjustmentRequest({
-          actionId: input.actionId,
-          solicitanteId: user.id,
-          tipoSolicitante: user.role === 'lider' ? 'lider' : 'colaborador',
-          justificativa: input.justificativa,
-          camposAjustar: JSON.stringify(input.camposAjustar),
-        });
-        
-        // 3. Notificar Admin
-        const admins = await db.getUsersByRole('admin');
-        for (const admin of admins) {
-          await db.createNotification({
-            destinatarioId: admin.id,
-            tipo: 'solicitacao_ajuste',
-            titulo: '✏️ Nova Solicitação de Ajuste',
-            mensagem: `${user.name} solicitou ajuste na ação "${action.nome}".`,
-            referenciaId: adjustmentId,
-          });
-        }
-        
-        return { success: true, adjustmentId };
-      }),
-    
-    // ADMIN: Listar solicitações pendentes
-    listPending: adminProcedure.query(async () => {
-      return await db.getPendingAdjustmentRequests();
-    }),
-    
-    // ADMIN: Aprovar e ajustar a ação
-    approveAndAdjust: adminProcedure
-      .input(z.object({
-        adjustmentId: z.number(),
-        justificativaAdmin: z.string().optional(),
-        novosValores: z.object({
-          nome: z.string().optional(),
-          descricao: z.string().optional(),
-          prazo: z.string().optional(),
-          blocoId: z.number().optional(),
-          macroId: z.number().optional(),
-          microId: z.number().optional(),
-        }),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        // 1. Buscar solicitação
-        const adjustment = await db.getAdjustmentRequestById(input.adjustmentId);
-        if (!adjustment) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
-        }
-        
-        if (adjustment.status !== 'pendente' && adjustment.status !== 'mais_informacoes') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação já foi avaliada' });
-        }
-        
-        // 2. Buscar ação
-        const action = await db.getActionWithPDIById(adjustment.actionId);
-        if (!action) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
-        }
-        
-        // 3. Salvar dados antes do ajuste (auditoria)
-        const dadosAntesAjuste = {
-          nome: action.nome,
-          descricao: action.descricao,
-          prazo: action.prazo,
-          blocoId: action.blocoId,
-          macroId: action.macroId,
-          microId: action.microId,
-        };
-        
-        // 4. Aplicar ajustes na ação
-        const updateData: any = {};
-        if (input.novosValores.nome) updateData.nome = input.novosValores.nome;
-        if (input.novosValores.descricao) updateData.descricao = input.novosValores.descricao;
-        if (input.novosValores.prazo) updateData.prazo = new Date(input.novosValores.prazo);
-        if (input.novosValores.blocoId) updateData.blocoId = input.novosValores.blocoId;
-        if (input.novosValores.macroId) updateData.macroId = input.novosValores.macroId;
-        if (input.novosValores.microId) updateData.microId = input.novosValores.microId;
-        
-        await db.updateAction(action.id, updateData);
-        
-        // 5. Salvar dados após o ajuste (auditoria)
-        const dadosAposAjuste = {
-          nome: input.novosValores.nome || action.nome,
-          descricao: input.novosValores.descricao || action.descricao,
-          prazo: input.novosValores.prazo || action.prazo,
-          blocoId: input.novosValores.blocoId || action.blocoId,
-          macroId: input.novosValores.macroId || action.macroId,
-          microId: input.novosValores.microId || action.microId,
-        };
-        
-        // 6. Atualizar solicitação para "aguardando_lider"
-        await db.updateAdjustmentRequest(input.adjustmentId, {
-          status: 'aguardando_lider',
-          justificativaAdmin: input.justificativaAdmin || 'Ajuste aprovado e aplicado',
-          dadosAntesAjuste: JSON.stringify(dadosAntesAjuste),
-          dadosAposAjuste: JSON.stringify(dadosAposAjuste),
-          evaluatedAt: new Date(),
-          evaluatedBy: ctx.user!.id,
-        });
-        
-        // 7. Notificar Colaborador
-        await db.createNotification({
-          destinatarioId: adjustment.solicitanteId,
-          tipo: 'ajuste_aprovado',
-          titulo: '✅ Ajuste Aprovado',
-          mensagem: `Seu ajuste na ação "${action.nome}" foi aprovado e aplicado. Aguardando aprovação do líder.`,
-          referenciaId: action.id,
-        });
-        
-        // 8. Notificar Líder
-        if (action.pdi?.colaborador?.leaderId) {
-          await db.createNotification({
-            destinatarioId: action.pdi.colaborador.leaderId,
-            tipo: 'ajuste_aguardando_aprovacao',
-            titulo: '✏️ Ação Alterada - Aprovação Necessária',
-            mensagem: `A ação "${action.nome}" do colaborador ${action.pdi.colaborador.name} foi ajustada pelo Admin. Aguardando sua aprovação.`,
-            referenciaId: input.adjustmentId,
-          });
-        }
-        
-        return { success: true };
-      }),
-    
-    // ADMIN: Recusar solicitação
-    rejectAdjustment: adminProcedure
-      .input(z.object({
-        adjustmentId: z.number(),
-        justificativaAdmin: z.string().min(10, "Justificativa deve ter pelo menos 10 caracteres"),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        // 1. Buscar solicitação
-        const adjustment = await db.getAdjustmentRequestById(input.adjustmentId);
-        if (!adjustment) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
-        }
-        
-        if (adjustment.status !== 'pendente' && adjustment.status !== 'mais_informacoes') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação já foi avaliada' });
-        }
-        
-        // 2. Atualizar solicitação para "reprovada"
-        await db.updateAdjustmentRequest(input.adjustmentId, {
-          status: 'reprovada',
-          justificativaAdmin: input.justificativaAdmin,
-          evaluatedAt: new Date(),
-          evaluatedBy: ctx.user!.id,
-        });
-        
-        // 3. Buscar ação para notificação
-        const action = await db.getActionById(adjustment.actionId);
-        
-        // 4. Notificar Colaborador
-        await db.createNotification({
-          destinatarioId: adjustment.solicitanteId,
-          tipo: 'ajuste_reprovado',
-          titulo: '❌ Ajuste Reprovado',
-          mensagem: `Seu ajuste na ação "${action?.nome}" foi reprovado. Motivo: ${input.justificativaAdmin}`,
-          referenciaId: adjustment.actionId,
-        });
-        
-        return { success: true };
-      }),
-    
-    // ADMIN: Solicitar mais informações
-    requestMoreInfo: adminProcedure
-      .input(z.object({
-        adjustmentId: z.number(),
-        justificativaAdmin: z.string().min(10, "Justificativa deve ter pelo menos 10 caracteres"),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        // 1. Buscar solicitação
-        const adjustment = await db.getAdjustmentRequestById(input.adjustmentId);
-        if (!adjustment) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
-        }
-        
-        if (adjustment.status !== 'pendente') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação já foi avaliada' });
-        }
-        
-        // 2. Atualizar solicitação para "mais_informacoes"
-        await db.updateAdjustmentRequest(input.adjustmentId, {
-          status: 'mais_informacoes',
-          justificativaAdmin: input.justificativaAdmin,
-          evaluatedAt: new Date(),
-          evaluatedBy: ctx.user!.id,
-        });
-        
-        // 3. Buscar ação para notificação
-        const action = await db.getActionById(adjustment.actionId);
-        
-        // 4. Notificar Colaborador
-        await db.createNotification({
-          destinatarioId: adjustment.solicitanteId,
-          tipo: 'ajuste_mais_info',
-          titulo: 'ℹ️ Mais Informações Necessárias',
-          mensagem: `O Admin solicitou mais informações sobre seu ajuste na ação "${action?.nome}". Motivo: ${input.justificativaAdmin}`,
-          referenciaId: adjustment.actionId,
-        });
-        
-        return { success: true };
-      }),
-    
-    // LÍDER: Listar ajustes aguardando aprovação do líder
-    listAwaitingLeader: protectedProcedure.query(async ({ ctx }) => {
-      const user = ctx.user!;
-      
-      if (user.role !== 'lider' && user.role !== 'admin') {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas líderes podem acessar esta funcionalidade' });
-      }
-      
-      return await db.getAdjustmentRequestsAwaitingLeader(user.id);
-    }),
-    
-    // LÍDER: Aprovar alteração feita pelo Admin
-    approveAsLeader: protectedProcedure
-      .input(z.object({
-        adjustmentId: z.number(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const user = ctx.user!;
-        
-        if (user.role !== 'lider' && user.role !== 'admin') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas líderes podem aprovar ajustes' });
-        }
-        
-        // 1. Buscar solicitação
-        const adjustment = await db.getAdjustmentRequestById(input.adjustmentId);
-        if (!adjustment) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
-        }
-        
-        if (adjustment.status !== 'aguardando_lider') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação não está aguardando aprovação do líder' });
-        }
-        
-        // 2. Buscar ação
-        const action = await db.getActionWithPDIById(adjustment.actionId);
-        if (!action) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
-        }
-        
-        // 3. Verificar se o líder é o líder do colaborador
-        if (action.pdi?.colaborador?.leaderId !== user.id && user.role !== 'admin') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Você não é o líder deste colaborador' });
-        }
-        
-        // 4. Atualizar solicitação para "aprovada"
-        await db.updateAdjustmentRequest(input.adjustmentId, {
-          status: 'aprovada',
-          approvedByLeaderAt: new Date(),
-          approvedByLeaderId: user.id,
-        });
-        
-        // 5. Notificar Colaborador
-        await db.createNotification({
-          destinatarioId: adjustment.solicitanteId,
-          tipo: 'ajuste_aprovado_lider',
-          titulo: '✅ Ajuste Aprovado pelo Líder',
-          mensagem: `Seu ajuste na ação "${action.nome}" foi aprovado pelo líder.`,
-          referenciaId: action.id,
-        });
-        
-        // 6. Notificar Admin
-        const admins = await db.getUsersByRole('admin');
-        for (const admin of admins) {
-          await db.createNotification({
-            destinatarioId: admin.id,
-            tipo: 'ajuste_aprovado_lider_info',
-            titulo: '✅ Ajuste Aprovado pelo Líder',
-            mensagem: `O líder ${user.name} aprovou o ajuste na ação "${action.nome}" do colaborador ${action.pdi?.colaborador?.name}.`,
-            referenciaId: action.id,
-          });
-        }
-        
-        return { success: true };
-      }),
-    
-    // Listar solicitações do colaborador
-    myRequests: protectedProcedure.query(async ({ ctx }) => {
-      return await db.getAdjustmentRequestsByUser(ctx.user!.id);
-    }),
-    
-    // Buscar solicitação por ID
-    getById: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getAdjustmentRequestById(input.id);
       }),
   }),
 

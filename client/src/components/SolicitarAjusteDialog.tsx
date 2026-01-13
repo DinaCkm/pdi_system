@@ -33,27 +33,20 @@ export function SolicitarAjusteDialog({
   const [novaDescricao, setNovaDescricao] = useState("");
   const [novoPrazo, setNovoPrazo] = useState("");
 
-
-
   // Buscar estatísticas de solicitações
   const { data: stats, isLoading: loadingStats } = trpc.actions.getAdjustmentStats.useQuery(
     { actionId },
     { enabled: open }
   );
 
-  const utils = trpc.useUtils();
-
   const solicitarMutation = trpc.actions.solicitarAjuste.useMutation({
     onSuccess: () => {
       toast.success("Solicitação de ajuste enviada com sucesso!");
+      onOpenChange(false);
       setJustificativa("");
       setNovoNome("");
       setNovaDescricao("");
       setNovoPrazo("");
-      onOpenChange(false);
-      // Invalidar queries para atualizar lista
-      utils.actions.list.invalidate();
-      utils.actions.getAdjustmentStats.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -61,31 +54,29 @@ export function SolicitarAjusteDialog({
   });
 
   const handleSubmit = () => {
-    console.log("=== HANDLE SUBMIT CHAMADO ===", { justificativa, novoNome, novaDescricao, novoPrazo });
-    // Validar justificativa
-    if (!justificativa || justificativa.trim().length < 10) {
-      toast.error("Justificativa precisa ter pelo menos 10 caracteres.");
+    if (!justificativa.trim()) {
+      toast.error("Justificativa é obrigatória");
       return;
     }
 
-    // Montar campos a ajustar (apenas campos preenchidos)
+    if (justificativa.length < 10) {
+      toast.error("Justificativa deve ter pelo menos 10 caracteres");
+      return;
+    }
+
     const camposAjustar: any = {};
-    if (novoNome && novoNome.trim()) camposAjustar.nome = novoNome.trim();
-    if (novaDescricao && novaDescricao.trim()) camposAjustar.descricao = novaDescricao.trim();
+    if (novoNome) camposAjustar.nome = novoNome;
+    if (novaDescricao) camposAjustar.descricao = novaDescricao;
     if (novoPrazo) camposAjustar.prazo = novoPrazo;
 
-
-
     if (Object.keys(camposAjustar).length === 0) {
-      toast.error("Informe pelo menos um campo para ajustar.");
+      toast.error("Informe pelo menos um campo para ajustar");
       return;
     }
-
-
 
     solicitarMutation.mutate({
       actionId,
-      justificativa: justificativa.trim(),
+      justificativa,
       camposAjustar,
     });
   };
@@ -159,19 +150,15 @@ export function SolicitarAjusteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
-        {/* Cabeçalho fixo */}
-        <div className="p-6 pb-0">
-          <DialogHeader>
-            <DialogTitle>Solicitar Ajuste na Ação</DialogTitle>
-            <DialogDescription>
-              Ação: <strong>{actionNome}</strong>
-            </DialogDescription>
-          </DialogHeader>
-        </div>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Solicitar Ajuste na Ação</DialogTitle>
+          <DialogDescription>
+            Ação: <strong>{actionNome}</strong>
+          </DialogDescription>
+        </DialogHeader>
 
-        {/* Corpo rolável */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="space-y-4 py-4">
           {/* Aviso de Limitações */}
           {renderAlert()}
 
@@ -242,20 +229,17 @@ export function SolicitarAjusteDialog({
           </div>
         </div>
 
-        {/* Rodapé fixo */}
-        <div className="border-t bg-background p-6 pt-4">
-          <DialogFooter className="sm:justify-end">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleSubmit} 
-              disabled={isBlocked || solicitarMutation.isPending}
-            >
-              {solicitarMutation.isPending ? "Enviando..." : "Enviar Solicitação"}
-            </Button>
-          </DialogFooter>
-        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isBlocked || solicitarMutation.isPending}
+          >
+            {solicitarMutation.isPending ? "Enviando..." : "Enviar Solicitação"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
