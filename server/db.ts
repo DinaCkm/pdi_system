@@ -1,5 +1,6 @@
 import { eq, and, or, desc, asc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { alias } from "drizzle-orm/mysql-core";
 import { 
   InsertUser, 
   users,
@@ -502,7 +503,10 @@ export async function getPDIsByColaboradorId(colaboradorId: number) {
   const db = await getDb();
   if (!db) return [];
   
-  // Buscar PDIs com dados de colaborador e ciclo usando leftJoin
+  // Buscar PDIs com dados de colaborador, ciclo e líder usando leftJoin
+  // Criar alias para a tabela users para buscar o líder
+  const liderTable = alias(users, 'lider');
+  
   const pdisList = await db.select({
     id: pdis.id,
     colaboradorId: pdis.colaboradorId,
@@ -517,6 +521,7 @@ export async function getPDIsByColaboradorId(colaboradorId: number) {
       id: users.id,
       name: users.name,
       email: users.email,
+      leaderId: users.leaderId,
     },
     ciclo: {
       id: ciclos.id,
@@ -524,9 +529,15 @@ export async function getPDIsByColaboradorId(colaboradorId: number) {
       dataInicio: ciclos.dataInicio,
       dataFim: ciclos.dataFim,
     },
+    lider: {
+      id: liderTable.id,
+      name: liderTable.name,
+      email: liderTable.email,
+    },
   })
   .from(pdis)
   .leftJoin(users, eq(pdis.colaboradorId, users.id))
+  .leftJoin(liderTable, eq(users.leaderId, liderTable.id))
   .leftJoin(ciclos, eq(pdis.cicloId, ciclos.id))
   .where(eq(pdis.colaboradorId, colaboradorId))
   .orderBy(desc(pdis.createdAt));

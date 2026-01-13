@@ -30,7 +30,7 @@ export default function Acoes() {
   const pdiIdFromUrl = urlParams.get('pdiId');
   const acaoIdFromUrl = urlParams.get('acaoId');
   
-  const [showCreateDialog, setShowCreateDialog] = useState(!!pdiIdFromUrl);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -53,15 +53,14 @@ export default function Acoes() {
   const { data: blocosCompetencias } = trpc.competencias.listBlocos.useQuery();
   const { data: microsCompetencias } = trpc.competencias.listAllMicrosWithDetails.useQuery();
   
-  // Efeito para abrir modal de criação com PDI pré-selecionado
+  // Efeito para aplicar filtro de PDI quando vier da URL
   useEffect(() => {
-    if (pdiIdFromUrl && pdis) {
-      setShowCreateDialog(true);
-      setValue('pdiId', parseInt(pdiIdFromUrl));
+    if (pdiIdFromUrl) {
+      setFilterPDI(pdiIdFromUrl);
       // Limpar query param da URL
       window.history.replaceState({}, '', '/acoes');
     }
-  }, [pdiIdFromUrl, pdis]);
+  }, [pdiIdFromUrl]);
   
   // Efeito para abrir modal de visualização de ação específica
   useEffect(() => {

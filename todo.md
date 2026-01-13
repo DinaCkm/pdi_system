@@ -769,3 +769,18 @@
 - [x] Confirmar que Admin ainda tem acesso aos botões - CONFIRMADO
 - [x] Atualizar rota /meu-pdi para usar MeuPDI.tsx ao invés de PDIs.tsx
 - [x] Testar com usuário Líder após correção - Aguardando validação do usuário
+
+## Melhorias no Card de PDI do Colaborador (Página Meu PDI)
+- [x] Adicionar nome do empregado (colaborador) no card
+- [x] Adicionar nome do líder no card
+- [x] Adicionar barra de evolução com progresso percentual
+- [x] Adicionar estatísticas de ações (concluídas, em andamento, pendentes)
+- [x] Adicionar botão "Enviar Evidência" (visível e funcional)
+- [x] Atualizar backend para retornar dados completos do PDI (empregado, líder, progresso)
+
+## ## Bug: Botão "Ações" Abre Formulário de Criação ao Invés de Listar Ações
+- [x] Corrigir redirecionamento do botão "Ações" na página Meu PDI
+- [x] Botão deve redirecionar para listagem de ações do PDI (com filtro por pdiId)
+- [x] NÃO deve abrir modal de criação de ação
+- [x] Aplicar filtro automaticamente quando pdiId vier na URL de ações
+- [x] Testar com usuário colaborador após correção - Aguardando validação do usuário

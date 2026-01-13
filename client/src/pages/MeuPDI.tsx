@@ -3,9 +3,10 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Target, Calendar, CheckCircle2, List } from "lucide-react";
+import { Eye, Target, Calendar, CheckCircle2, List, User, UserCheck, TrendingUp, Upload } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLocation } from "wouter";
+import { Progress } from "@/components/ui/progress";
 
 export default function MeuPDI() {
   const { data: pdis, isLoading } = trpc.pdis.myPDIs.useQuery();
@@ -30,6 +31,11 @@ export default function MeuPDI() {
   };
 
   const handleViewActions = (pdiId: number) => {
+    setLocation(`/acoes?pdiId=${pdiId}`);
+  };
+
+  const handleEnviarEvidencia = (pdiId: number) => {
+    // TODO: Implementar modal de envio de evidências
     setLocation(`/acoes?pdiId=${pdiId}`);
   };
 
@@ -87,6 +93,26 @@ export default function MeuPDI() {
                     </div>
                   )}
 
+                  {/* Nome do Empregado */}
+                  {pdi.colaborador && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        <span className="font-medium">Empregado:</span> {pdi.colaborador.name}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Nome do Líder */}
+                  {pdi.lider && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <UserCheck className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        <span className="font-medium">Líder:</span> {pdi.lider.name}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     {pdi.ciclo ? (
@@ -99,12 +125,21 @@ export default function MeuPDI() {
                     )}
                   </div>
 
-                  {pdi.actionCount !== undefined && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">
-                        {pdi.actionCount} {pdi.actionCount === 1 ? "ação" : "ações"}
-                      </span>
+                  {/* Barra de Progresso */}
+                  {pdi.progressPercentage !== undefined && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-muted-foreground">Progresso:</span>
+                        </div>
+                        <span className="font-bold text-primary">{pdi.progressPercentage}%</span>
+                      </div>
+                      <Progress value={pdi.progressPercentage} className="h-2" />
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{pdi.completedCount || 0} concluídas</span>
+                        <span>{pdi.actionCount || 0} total</span>
+                      </div>
                     </div>
                   )}
 
@@ -128,6 +163,17 @@ export default function MeuPDI() {
                       Ações
                     </Button>
                   </div>
+
+                  {/* Botão Enviar Evidência */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
+                    onClick={() => handleEnviarEvidencia(pdi.id)}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Enviar Evidência
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -138,7 +184,7 @@ export default function MeuPDI() {
       {/* Modal de Visualização */}
       {showViewModal && selectedPDI && (
         <Dialog open={showViewModal} onOpenChange={setShowViewModal}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{selectedPDI.titulo}</DialogTitle>
               <DialogDescription>
@@ -161,6 +207,31 @@ export default function MeuPDI() {
                 </div>
               </div>
 
+              {/* Informações do Empregado e Líder */}
+              <div className="grid grid-cols-2 gap-4">
+                {selectedPDI.colaborador && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Empregado</p>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm">{selectedPDI.colaborador.name}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{selectedPDI.colaborador.email}</p>
+                  </div>
+                )}
+
+                {selectedPDI.lider && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Líder</p>
+                    <div className="flex items-center gap-2">
+                      <UserCheck className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm">{selectedPDI.lider.name}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{selectedPDI.lider.email}</p>
+                  </div>
+                )}
+              </div>
+
               {selectedPDI.ciclo && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Período</p>
@@ -178,12 +249,41 @@ export default function MeuPDI() {
                 </div>
               )}
 
-              {selectedPDI.actionCount !== undefined && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Ações</p>
-                  <p className="text-sm">
-                    {selectedPDI.actionCount} {selectedPDI.actionCount === 1 ? "ação cadastrada" : "ações cadastradas"}
-                  </p>
+              {/* Estatísticas de Progresso */}
+              {selectedPDI.progressPercentage !== undefined && (
+                <div className="space-y-4">
+                  <p className="text-sm font-medium text-muted-foreground">Progresso das Ações</p>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Progresso Geral</span>
+                      <span className="text-sm font-bold text-primary">{selectedPDI.progressPercentage}%</span>
+                    </div>
+                    <Progress value={selectedPDI.progressPercentage} className="h-3" />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <Card className="bg-green-50 border-green-200">
+                      <CardContent className="p-4 text-center">
+                        <p className="text-2xl font-bold text-green-700">{selectedPDI.completedCount || 0}</p>
+                        <p className="text-xs text-green-600">Concluídas</p>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-blue-50 border-blue-200">
+                      <CardContent className="p-4 text-center">
+                        <p className="text-2xl font-bold text-blue-700">{selectedPDI.inProgressCount || 0}</p>
+                        <p className="text-xs text-blue-600">Em Andamento</p>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-orange-50 border-orange-200">
+                      <CardContent className="p-4 text-center">
+                        <p className="text-2xl font-bold text-orange-700">{selectedPDI.pendingCount || 0}</p>
+                        <p className="text-xs text-orange-600">Pendentes</p>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               )}
 
