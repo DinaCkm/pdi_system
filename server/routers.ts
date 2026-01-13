@@ -856,7 +856,7 @@ export const appRouter = router({
           });
         }
         
-        await db.createAction({
+        const actionResult = await db.createAction({
           pdiId: input.pdiId,
           blocoId: input.blocoId,
           macroId: input.macroId,
@@ -875,6 +875,7 @@ export const appRouter = router({
             tipo: "nova_acao",
             titulo: "Nova ação criada",
             mensagem: `Nova ação criada para ${colaborador.name}: ${input.nome}`,
+            referenciaId: actionResult.insertId,
           });
         }
         

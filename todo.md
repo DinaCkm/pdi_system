@@ -661,3 +661,10 @@
 - [x] Criadas manualmente todas as tabelas faltantes (pdis, actions, acoes_historico, adjustment_requests, adjustment_comments, evidences, evidence_files, evidence_texts)
 - [x] Testado criação de PDI - funcionando corretamente
 - [x] Testado criação de Ação - funcionando corretamente
+
+## BUG - Erro ao Criar Notificação Durante Criação de Ação
+- [x] Investigar erro SQL: "insert into notifications ... values (default, ?, ?, ?, ?, default, ...)"
+- [x] Identificar problema com campo referenciaId (tentando inserir 'default' ao invés do ID da ação)
+- [x] Modificar createAction no db.ts para retornar { insertId: number }
+- [x] Corrigir código de criação de notificações em server/routers.ts para passar referenciaId
+- [x] Testar criação de ação com notificação funcionando

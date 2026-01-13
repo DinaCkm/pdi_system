@@ -719,7 +719,9 @@ export async function createAction(data: {
     ...data,
     status: data.status || "pendente_aprovacao_lider"
   });
-  return result;
+  
+  // Retornar o ID da ação criada
+  return { insertId: Number(result[0].insertId) };
 }
 
 export async function updateAction(id: number, data: Partial<{
