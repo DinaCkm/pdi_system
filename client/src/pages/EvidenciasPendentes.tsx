@@ -8,12 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, FileText, Download, CheckCircle, XCircle, Eye, Calendar, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
+type DialogType = 'none' | 'view' | 'aprovar' | 'reprovar';
 
 export default function EvidenciasPendentes() {
-  const [showViewDialog, setShowViewDialog] = useState(false);
-  const [showAprovarDialog, setShowAprovarDialog] = useState(false);
-  const [showReprovarDialog, setShowReprovarDialog] = useState(false);
+  const [activeDialog, setActiveDialog] = useState<DialogType>('none');
   const [selectedEvidence, setSelectedEvidence] = useState<any>(null);
   const [justificativa, setJustificativa] = useState("");
 
@@ -22,8 +21,7 @@ export default function EvidenciasPendentes() {
   const aprovarMutation = trpc.evidences.aprovar.useMutation({
     onSuccess: () => {
       toast.success("Evidência aprovada com sucesso!");
-      setShowAprovarDialog(false);
-      setSelectedEvidence(null);
+      closeAllDialogs();
       refetch();
     },
     onError: (error) => {
@@ -34,15 +32,24 @@ export default function EvidenciasPendentes() {
   const reprovarMutation = trpc.evidences.reprovar.useMutation({
     onSuccess: () => {
       toast.success("Evidência reprovada. O colaborador foi notificado.");
-      setShowReprovarDialog(false);
-      setSelectedEvidence(null);
-      setJustificativa("");
+      closeAllDialogs();
       refetch();
     },
     onError: (error) => {
       toast.error(`Erro ao reprovar evidência: ${error.message}`);
     },
   });
+
+  const closeAllDialogs = () => {
+    setActiveDialog('none');
+    setSelectedEvidence(null);
+    setJustificativa("");
+  };
+
+  const openDialog = (type: DialogType, evidence: any) => {
+    setSelectedEvidence(evidence);
+    setActiveDialog(type);
+  };
 
   const handleAprovar = () => {
     if (!selectedEvidence) return;
@@ -103,7 +110,7 @@ export default function EvidenciasPendentes() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {evidences.map((evidence: any) => (
-            <Card key={evidence.id} className="hover:shadow-lg transition-shadow">
+            <Card key={`evidence-${evidence.id}`} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
@@ -143,10 +150,7 @@ export default function EvidenciasPendentes() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => {
-                        setSelectedEvidence(evidence);
-                        setShowViewDialog(true);
-                      }}
+                      onClick={() => openDialog('view', evidence)}
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       Visualizar
@@ -158,10 +162,7 @@ export default function EvidenciasPendentes() {
                       variant="default"
                       size="sm"
                       className="flex-1 bg-green-600 hover:bg-green-700"
-                      onClick={() => {
-                        setSelectedEvidence(evidence);
-                        setShowAprovarDialog(true);
-                      }}
+                      onClick={() => openDialog('aprovar', evidence)}
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Aprovar
@@ -170,10 +171,7 @@ export default function EvidenciasPendentes() {
                       variant="destructive"
                       size="sm"
                       className="flex-1"
-                      onClick={() => {
-                        setSelectedEvidence(evidence);
-                        setShowReprovarDialog(true);
-                      }}
+                      onClick={() => openDialog('reprovar', evidence)}
                     >
                       <XCircle className="h-4 w-4 mr-2" />
                       Reprovar
@@ -187,16 +185,16 @@ export default function EvidenciasPendentes() {
       )}
 
       {/* Dialog de Visualização */}
-      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Detalhes da Evidência</DialogTitle>
-            <DialogDescription>
-              Ação: <strong>{selectedEvidence?.actionNome}</strong>
-            </DialogDescription>
-          </DialogHeader>
+      {activeDialog === 'view' && selectedEvidence && (
+        <Dialog open={true} onOpenChange={closeAllDialogs}>
+          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Detalhes da Evidência</DialogTitle>
+              <DialogDescription>
+                Ação: <strong>{selectedEvidence.actionNome}</strong>
+              </DialogDescription>
+            </DialogHeader>
 
-          {selectedEvidence && (
             <div className="space-y-6 py-4">
               {/* Informações do Colaborador */}
               <div className="space-y-2">
@@ -220,7 +218,7 @@ export default function EvidenciasPendentes() {
                 <div className="space-y-2">
                   <Label>Descrição da Evidência</Label>
                   {selectedEvidence.texts.map((text: any, index: number) => (
-                    <div key={index} className="p-4 border rounded-lg bg-muted/50">
+                    <div key={`text-${index}`} className="p-4 border rounded-lg bg-muted/50">
                       {text.titulo && (
                         <p className="font-medium mb-2">{text.titulo}</p>
                       )}
@@ -236,7 +234,7 @@ export default function EvidenciasPendentes() {
                   <Label>Arquivos Anexados ({selectedEvidence.files.length})</Label>
                   <div className="space-y-2">
                     {selectedEvidence.files.map((file: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div key={`file-${index}`} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           <div className="flex-1 min-w-0">
@@ -259,123 +257,122 @@ export default function EvidenciasPendentes() {
                 </div>
               )}
             </div>
-          )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowViewDialog(false)}>
-              Fechar
-            </Button>
-            <Button
-              variant="default"
-              className="bg-green-600 hover:bg-green-700"
-              onClick={() => {
-                setShowViewDialog(false);
-                setShowAprovarDialog(true);
-              }}
-            >
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Aprovar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                setShowViewDialog(false);
-                setShowReprovarDialog(true);
-              }}
-            >
-              <XCircle className="h-4 w-4 mr-2" />
-              Reprovar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={closeAllDialogs}>
+                Fechar
+              </Button>
+              <Button
+                variant="default"
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => setActiveDialog('aprovar')}
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Aprovar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => setActiveDialog('reprovar')}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Reprovar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Dialog de Aprovação */}
-      <AlertDialog open={showAprovarDialog} onOpenChange={setShowAprovarDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Aprovar Evidência</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja aprovar esta evidência? O colaborador será notificado e a ação terá seu status atualizado.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={aprovarMutation.isPending}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleAprovar}
-              disabled={aprovarMutation.isPending}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {aprovarMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Aprovando...
-                </>
-              ) : (
-                "Aprovar"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {activeDialog === 'aprovar' && selectedEvidence && (
+        <Dialog open={true} onOpenChange={closeAllDialogs}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Aprovar Evidência</DialogTitle>
+              <DialogDescription>
+                Tem certeza que deseja aprovar esta evidência? O colaborador será notificado e a ação terá seu status atualizado.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={closeAllDialogs}
+                disabled={aprovarMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleAprovar}
+                disabled={aprovarMutation.isPending}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {aprovarMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Aprovando...
+                  </>
+                ) : (
+                  "Aprovar"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Dialog de Reprovação */}
-      <Dialog open={showReprovarDialog} onOpenChange={setShowReprovarDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reprovar Evidência</DialogTitle>
-            <DialogDescription>
-              Informe o motivo da reprovação. O colaborador será notificado.
-            </DialogDescription>
-          </DialogHeader>
+      {activeDialog === 'reprovar' && selectedEvidence && (
+        <Dialog open={true} onOpenChange={closeAllDialogs}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reprovar Evidência</DialogTitle>
+              <DialogDescription>
+                Informe o motivo da reprovação. O colaborador será notificado.
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="justificativa">Justificativa *</Label>
-              <Textarea
-                id="justificativa"
-                placeholder="Explique por que a evidência foi reprovada..."
-                value={justificativa}
-                onChange={(e) => setJustificativa(e.target.value)}
-                rows={6}
-                disabled={reprovarMutation.isPending}
-              />
-              <p className="text-xs text-muted-foreground">
-                Mínimo de 10 caracteres
-              </p>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="justificativa">Justificativa *</Label>
+                <Textarea
+                  id="justificativa"
+                  placeholder="Explique por que a evidência foi reprovada..."
+                  value={justificativa}
+                  onChange={(e) => setJustificativa(e.target.value)}
+                  rows={6}
+                  disabled={reprovarMutation.isPending}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Mínimo de 10 caracteres
+                </p>
+              </div>
             </div>
-          </div>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowReprovarDialog(false);
-                setJustificativa("");
-              }}
-              disabled={reprovarMutation.isPending}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleReprovar}
-              disabled={reprovarMutation.isPending || justificativa.trim().length < 10}
-            >
-              {reprovarMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Reprovando...
-                </>
-              ) : (
-                "Reprovar"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={closeAllDialogs}
+                disabled={reprovarMutation.isPending}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleReprovar}
+                disabled={reprovarMutation.isPending || justificativa.trim().length < 10}
+              >
+                {reprovarMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Reprovando...
+                  </>
+                ) : (
+                  "Reprovar"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

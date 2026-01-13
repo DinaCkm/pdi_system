@@ -751,3 +751,10 @@
 - [ ] Permitir visualizar evidências enviadas pelos subordinados
 - [ ] Acompanhar status das evidências (pendente/aprovada/reprovada)
 - [x] NÃO permitir aprovar/reprovar (apenas Admin pode)
+
+## Bug: Erro de Renderização na Página Evidências Pendentes
+- [x] Corrigir erro "NotFoundError: Falha ao executar 'removeChild' em 'Node'"
+- [x] Verificar estrutura de dialogs e modais
+- [x] Refatorar para usar apenas um dialog ativo por vez
+- [x] Adicionar keys únicas em listas
+- [x] Testar página após correção (requer login como Admin) - TESTE APROVADO
