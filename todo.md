@@ -668,3 +668,12 @@
 - [x] Modificar createAction no db.ts para retornar { insertId: number }
 - [x] Corrigir código de criação de notificações em server/routers.ts para passar referenciaId
 - [x] Testar criação de ação com notificação funcionando
+
+## RESOLUÇÃO COMPLETA - Tabela Notifications Faltante
+- [x] Identificado que tabela notifications não existia no banco publicado
+- [x] Criada tabela notifications com todos os campos (id, destinatarioId, tipo, titulo, mensagem, referenciaId, lida, createdAt, readAt)
+- [x] Corrigido createAction para retornar { insertId: number }
+- [x] Corrigido createCiclo para retornar { id: number }
+- [x] Testado criação de ação com notificação - FUNCIONANDO PERFEITAMENTE
+- [x] Dialog fecha corretamente após criar ação
+- [x] Notificação é enviada ao líder com referenciaId correto

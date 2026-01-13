@@ -389,7 +389,8 @@ export async function createCiclo(data: { nome: string; dataInicio: Date; dataFi
   if (!db) throw new Error("Database not available");
   
   const result = await db.insert(ciclos).values(data);
-  return result;
+  const insertId = (result as any).insertId as number;
+  return { id: insertId };
 }
 
 export async function updateCiclo(id: number, data: Partial<{ nome: string; dataInicio: Date; dataFim: Date; status: "ativo" | "encerrado" }>) {
@@ -721,7 +722,8 @@ export async function createAction(data: {
   });
   
   // Retornar o ID da ação criada
-  return { insertId: Number(result[0].insertId) };
+  const insertId = (result as any).insertId as number;
+  return { insertId };
 }
 
 export async function updateAction(id: number, data: Partial<{
