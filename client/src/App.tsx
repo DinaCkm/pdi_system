@@ -20,6 +20,7 @@ import Relatorios from "./pages/Relatorios";
 import SolicitacoesAjuste from "./pages/SolicitacoesAjuste";
 import SolicitacoesEquipe from "./pages/SolicitacoesEquipe";
 import PDIsEquipe from "./pages/PDIsEquipe";
+import MeuPDI from "./pages/MeuPDI";
 import ImportarUsuarios from "./pages/ImportarUsuarios";
 import ImportarCompetencias from "./pages/ImportarCompetencias";
 import ImportarAcoes from "./pages/ImportarAcoes";
@@ -85,7 +86,7 @@ function Router() {  return (
       
       <Route path={"/meu-pdi"}>
         <DashboardLayout>
-          <PDIs />
+          <MeuPDI />
         </DashboardLayout>
       </Route>
       

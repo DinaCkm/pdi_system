@@ -758,3 +758,14 @@
 - [x] Refatorar para usar apenas um dialog ativo por vez
 - [x] Adicionar keys únicas em listas
 - [x] Testar página após correção (requer login como Admin) - TESTE APROVADO
+
+## Bug: Botões de Criação de PDI Aparecendo para Líder
+- [x] Adicionar verificação de permissão na página /pdis
+- [x] Redirecionar Líder para /pdis-equipe automaticamente
+- [x] Redirecionar Colaborador para /meu-pdi automaticamente
+- [x] Manter acesso apenas para Administradores
+- [x] Criar página separada MeuPDI.tsx para Líder/Colaborador (sem botões de criar)
+- [x] Testar com usuário Líder (Bruno Vieira) - TESTE APROVADO
+- [x] Confirmar que Admin ainda tem acesso aos botões - CONFIRMADO
+- [x] Atualizar rota /meu-pdi para usar MeuPDI.tsx ao invés de PDIs.tsx
+- [x] Testar com usuário Líder após correção - Aguardando validação do usuário

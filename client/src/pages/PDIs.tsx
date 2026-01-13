@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,6 +28,20 @@ type BulkPDIFormData = {
 };
 
 export default function PDIs() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  // Redirecionar se não for Admin
+  useEffect(() => {
+    if (user && user.role !== "admin") {
+      if (user.role === "lider") {
+        setLocation("/pdis-equipe");
+      } else {
+        setLocation("/meu-pdi");
+      }
+    }
+  }, [user, setLocation]);
+  
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showBulkCreateDialog, setShowBulkCreateDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
