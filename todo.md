@@ -646,3 +646,10 @@
 - [ ] Implementar solução mais robusta (possivelmente remover invalidate ou usar flushSync)
 - [ ] Testar em ambiente de desenvolvimento
 - [ ] Validar na versão publicada
+
+## BUG - Select de Ciclo Não Abre no Dialog de Criação de PDI
+- [x] Aplicar correção onCloseAutoFocus no DialogContent de PDIs
+- [x] Aplicar correções recomendadas (remover reset do onSuccess, usar invalidate, normalizar watch)
+- [x] Adicionar position="popper" nos SelectContent
+- [x] Testar Select de Colaborador (funciona perfeitamente)
+- [ ] Investigar erro 500 no backend que impede Select de Ciclo de carregar dados

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,17 +30,18 @@ export default function PDIs() {
   const [filterCiclo, setFilterCiclo] = useState<string>("todos");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
 
-  const { data: pdis, isLoading, refetch } = trpc.pdis.list.useQuery();
+  const utils = trpc.useUtils();
+  const { data: pdis, isLoading } = trpc.pdis.list.useQuery();
   const { data: users } = trpc.users.list.useQuery();
   const { data: ciclos } = trpc.ciclos.list.useQuery();
   const { data: actions } = trpc.actions.list.useQuery();
 
   const createMutation = trpc.pdis.create.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("PDI criado com sucesso!");
+      await utils.pdis.list.invalidate();
       setShowCreateDialog(false);
-      refetch();
-      reset();
+      // reset() movido para onOpenChange
     },
     onError: (error) => {
       toast.error(`Erro ao criar PDI: ${error.message}`);
@@ -47,11 +49,11 @@ export default function PDIs() {
   });
 
   const deleteMutation = trpc.pdis.delete.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("PDI excluído com sucesso!");
+      await utils.pdis.list.invalidate();
       setShowDeleteDialog(false);
       setSelectedPDI(null);
-      refetch();
     },
     onError: (error) => {
       toast.error(`Erro ao excluir PDI: ${error.message}`);
@@ -62,6 +64,10 @@ export default function PDIs() {
 
   const selectedColaboradorId = watch("colaboradorId");
   const selectedCicloId = watch("cicloId");
+
+  // Normalizar para número
+  const colaboradorIdNum = typeof selectedColaboradorId === "number" ? selectedColaboradorId : Number(selectedColaboradorId);
+  const cicloIdNum = typeof selectedCicloId === "number" ? selectedCicloId : Number(selectedCicloId);
 
   const onSubmit = (data: PDIFormData) => {
     createMutation.mutate(data);
@@ -104,7 +110,7 @@ export default function PDIs() {
 
   // Verificar se já existe PDI para o colaborador/ciclo selecionado
   const pdiExistente = pdis?.find(
-    p => p.colaboradorId === selectedColaboradorId && p.cicloId === selectedCicloId
+    p => p.colaboradorId === colaboradorIdNum && p.cicloId === cicloIdNum
   );
 
   // Contar ações por PDI
@@ -284,8 +290,18 @@ export default function PDIs() {
       </div>
 
       {/* Dialog de Criação */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-2xl">
+      <Dialog
+        open={showCreateDialog}
+        onOpenChange={(open) => {
+          setShowCreateDialog(open);
+          if (!open) reset(); // reset só ao fechar
+        }}
+      >
+        <DialogContent
+          className="max-w-2xl"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Criar Novo PDI</DialogTitle>
             <DialogDescription>
@@ -307,7 +323,7 @@ export default function PDIs() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o colaborador" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {colaboradores.map(c => (
                         <SelectItem key={c.id} value={c.id.toString()}>
                           {c.name} ({c.role === "lider" ? "Líder" : "Colaborador"})
@@ -333,7 +349,7 @@ export default function PDIs() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o ciclo" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={4}>
                       {ciclos?.map(c => (
                         <SelectItem key={c.id} value={c.id.toString()}>
                           {c.nome} ({new Date(c.dataInicio).toLocaleDateString()} - {new Date(c.dataFim).toLocaleDateString()})
@@ -386,7 +402,7 @@ export default function PDIs() {
               </Button>
               <Button
                 type="submit"
-                disabled={createMutation.isPending || !!pdiExistente}
+                disabled={createMutation.isPending || (!!pdiExistente && !!colaboradorIdNum && !!cicloIdNum)}
                 className="bg-gradient-to-r from-blue-600 to-orange-500"
               >
                 {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -399,7 +415,11 @@ export default function PDIs() {
 
       {/* Dialog de Visualização */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent
+          className="max-w-3xl"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>{selectedPDI?.titulo}</DialogTitle>
             <DialogDescription>
@@ -498,7 +518,10 @@ export default function PDIs() {
 
       {/* Dialog de Exclusão */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Confirmar Exclusão</DialogTitle>
             <DialogDescription>
