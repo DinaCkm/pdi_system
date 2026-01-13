@@ -1554,6 +1554,239 @@ Formato de resposta (JSON):
     }),
   }),
 
+  // ============= EVIDÊNCIAS =============
+  evidences: router({
+    create: protectedProcedure
+      .input(z.object({
+        actionId: z.number(),
+        files: z.array(z.object({
+          fileName: z.string(),
+          fileType: z.string(),
+          fileSize: z.number(),
+          fileUrl: z.string(),
+          fileKey: z.string(),
+        })).optional(),
+        texts: z.array(z.object({
+          titulo: z.string().optional(),
+          texto: z.string(),
+        })).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // 1. Verificar se a ação existe e pertence ao colaborador
+        const action = await db.getActionById(input.actionId);
+        if (!action) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
+        }
+
+        // 2. Verificar se o PDI pertence ao colaborador
+        const pdi = await db.getPDIById(action.pdiId);
+        if (!pdi || pdi.colaboradorId !== ctx.user!.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Você não tem permissão para adicionar evidências a esta ação' });
+        }
+
+        // 3. Criar evidência
+        const evidenceId = await db.createEvidence({
+          actionId: input.actionId,
+          colaboradorId: ctx.user!.id,
+        });
+
+        // 4. Adicionar arquivos
+        if (input.files && input.files.length > 0) {
+          for (const file of input.files) {
+            await db.addEvidenceFile({
+              evidenceId,
+              ...file,
+            });
+          }
+        }
+
+        // 5. Adicionar textos
+        if (input.texts && input.texts.length > 0) {
+          for (const text of input.texts) {
+            await db.addEvidenceText({
+              evidenceId,
+              ...text,
+            });
+          }
+        }
+
+        // 6. Atualizar status da ação para "evidencia_enviada"
+        await db.updateAction(action.id, { status: 'evidencia_enviada' });
+
+        // 7. Criar histórico
+        await db.createAcaoHistorico({
+          actionId: action.id,
+          campo: 'status',
+          valorAnterior: action.status,
+          valorNovo: 'evidencia_enviada',
+          motivoAlteracao: 'Evidência enviada pelo colaborador',
+          alteradoPor: ctx.user!.id,
+        });
+
+        // 8. Notificar Admin
+        const admins = await db.getUsersByRole('admin');
+        for (const admin of admins) {
+          await db.createNotification({
+            destinatarioId: admin.id,
+            tipo: 'evidencia_enviada',
+            titulo: '📎 Nova Evidência Enviada',
+            mensagem: `${ctx.user!.name} enviou evidência para a ação "${action.nome}".`,
+            referenciaId: action.id,
+          });
+        }
+
+        // 9. Notificar Líder
+        const colaborador = await db.getUserById(ctx.user!.id);
+        if (colaborador && colaborador.leaderId) {
+          await db.createNotification({
+            destinatarioId: colaborador.leaderId,
+            tipo: 'evidencia_enviada_info',
+            titulo: '📎 Evidência Enviada',
+            mensagem: `Seu liderado ${ctx.user!.name} enviou evidência para a ação "${action.nome}".`,
+            referenciaId: action.id,
+          });
+        }
+
+        return { success: true, evidenceId };
+      }),
+
+    listByAction: protectedProcedure
+      .input(z.object({ actionId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getEvidencesByActionId(input.actionId);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getEvidenceById(input.id);
+      }),
+
+    getPending: adminProcedure.query(async () => {
+      return await db.getPendingEvidences();
+    }),
+
+    aprovar: adminProcedure
+      .input(z.object({
+        evidenceId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // 1. Buscar evidência
+        const evidence = await db.getEvidenceById(input.evidenceId);
+        if (!evidence) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Evidência não encontrada' });
+        }
+
+        if (evidence.status !== 'aguardando_avaliacao') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Evidência já foi avaliada' });
+        }
+
+        // 2. Atualizar status da evidência
+        await db.updateEvidenceStatus(input.evidenceId, {
+          status: 'aprovada',
+          evaluatedBy: ctx.user!.id,
+          evaluatedAt: new Date(),
+        });
+
+        // 3. Atualizar status da ação para "evidencia_aprovada"
+        await db.updateAction(evidence.actionId, { status: 'evidencia_aprovada' });
+
+        // 4. Criar histórico
+        await db.createAcaoHistorico({
+          actionId: evidence.actionId,
+          campo: 'status',
+          valorAnterior: 'evidencia_enviada',
+          valorNovo: 'evidencia_aprovada',
+          motivoAlteracao: 'Evidência aprovada pelo Admin',
+          alteradoPor: ctx.user!.id,
+        });
+
+        // 5. Notificar Colaborador
+        await db.createNotification({
+          destinatarioId: evidence.colaboradorId,
+          tipo: 'evidencia_aprovada',
+          titulo: '✅ Evidência Aprovada',
+          mensagem: `Sua evidência para a ação "${evidence.action?.nome}" foi aprovada pelo Admin.`,
+          referenciaId: evidence.actionId,
+        });
+
+        // 6. Notificar Líder
+        const colaborador = await db.getUserById(evidence.colaboradorId);
+        if (colaborador && colaborador.leaderId) {
+          await db.createNotification({
+            destinatarioId: colaborador.leaderId,
+            tipo: 'evidencia_aprovada_info',
+            titulo: '✅ Evidência Aprovada',
+            mensagem: `Evidência do seu liderado ${evidence.colaboradorNome} para a ação "${evidence.action?.nome}" foi aprovada.`,
+            referenciaId: evidence.actionId,
+          });
+        }
+
+        return { success: true };
+      }),
+
+    reprovar: adminProcedure
+      .input(z.object({
+        evidenceId: z.number(),
+        justificativa: z.string().min(10, "Justificativa deve ter pelo menos 10 caracteres"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // 1. Buscar evidência
+        const evidence = await db.getEvidenceById(input.evidenceId);
+        if (!evidence) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Evidência não encontrada' });
+        }
+
+        if (evidence.status !== 'aguardando_avaliacao') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Evidência já foi avaliada' });
+        }
+
+        // 2. Atualizar status da evidência
+        await db.updateEvidenceStatus(input.evidenceId, {
+          status: 'reprovada',
+          justificativaAdmin: input.justificativa,
+          evaluatedBy: ctx.user!.id,
+          evaluatedAt: new Date(),
+        });
+
+        // 3. Atualizar status da ação para "evidencia_reprovada"
+        await db.updateAction(evidence.actionId, { status: 'evidencia_reprovada' });
+
+        // 4. Criar histórico
+        await db.createAcaoHistorico({
+          actionId: evidence.actionId,
+          campo: 'status',
+          valorAnterior: 'evidencia_enviada',
+          valorNovo: 'evidencia_reprovada',
+          motivoAlteracao: `Evidência reprovada pelo Admin. Justificativa: ${input.justificativa}`,
+          alteradoPor: ctx.user!.id,
+        });
+
+        // 5. Notificar Colaborador
+        await db.createNotification({
+          destinatarioId: evidence.colaboradorId,
+          tipo: 'evidencia_reprovada',
+          titulo: '❌ Evidência Reprovada',
+          mensagem: `Sua evidência para a ação "${evidence.action?.nome}" foi reprovada. Justificativa: ${input.justificativa}`,
+          referenciaId: evidence.actionId,
+        });
+
+        // 6. Notificar Líder
+        const colaborador = await db.getUserById(evidence.colaboradorId);
+        if (colaborador && colaborador.leaderId) {
+          await db.createNotification({
+            destinatarioId: colaborador.leaderId,
+            tipo: 'evidencia_reprovada_info',
+            titulo: '❌ Evidência Reprovada',
+            mensagem: `Evidência do seu liderado ${evidence.colaboradorNome} para a ação "${evidence.action?.nome}" foi reprovada.`,
+            referenciaId: evidence.actionId,
+          });
+        }
+
+        return { success: true };
+      }),
+  }),
+
   // ============= IMPORTAÇÃO DE AÇÕES =============
   importActions: importActionsRouter,
 });

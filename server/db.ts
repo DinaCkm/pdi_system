@@ -179,6 +179,12 @@ export async function deleteUser(id: number) {
   await db.delete(users).where(eq(users.id, id));
 }
 
+export async function getUsersByRole(role: "admin" | "lider" | "colaborador") {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(users).where(eq(users.role, role));
+}
+
 export async function getSubordinates(leaderId: number) {
   const db = await getDb();
   if (!db) return [];
@@ -1137,4 +1143,197 @@ export async function getActionByPDIAndNome(pdiId: number, nome: string) {
     .limit(1);
   
   return result[0] || null;
+}
+
+// ============= GESTÃO DE EVIDÊNCIAS =============
+
+export async function createEvidence(data: {
+  actionId: number;
+  colaboradorId: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [evidence] = await db.insert(evidences).values(data).$returningId();
+  return evidence.id;
+}
+
+export async function addEvidenceFile(data: {
+  evidenceId: number;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  fileUrl: string;
+  fileKey: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.insert(evidenceFiles).values(data);
+}
+
+export async function addEvidenceText(data: {
+  evidenceId: number;
+  titulo?: string;
+  texto: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.insert(evidenceTexts).values(data);
+}
+
+export async function getEvidencesByActionId(actionId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const evidencesList = await db
+    .select({
+      id: evidences.id,
+      actionId: evidences.actionId,
+      colaboradorId: evidences.colaboradorId,
+      status: evidences.status,
+      justificativaAdmin: evidences.justificativaAdmin,
+      createdAt: evidences.createdAt,
+      evaluatedAt: evidences.evaluatedAt,
+      evaluatedBy: evidences.evaluatedBy,
+      colaboradorNome: users.name,
+      evaluatorNome: sql<string>`evaluator.name`.as('evaluatorNome'),
+    })
+    .from(evidences)
+    .leftJoin(users, eq(evidences.colaboradorId, users.id))
+    .leftJoin(sql`${users} as evaluator`, sql`${evidences.evaluatedBy} = evaluator.id`)
+    .where(eq(evidences.actionId, actionId))
+    .orderBy(desc(evidences.createdAt));
+  
+  // Para cada evidência, buscar arquivos e textos
+  const evidencesWithDetails = await Promise.all(
+    evidencesList.map(async (evidence) => {
+      const files = await db
+        .select()
+        .from(evidenceFiles)
+        .where(eq(evidenceFiles.evidenceId, evidence.id));
+      
+      const texts = await db
+        .select()
+        .from(evidenceTexts)
+        .where(eq(evidenceTexts.evidenceId, evidence.id));
+      
+      return {
+        ...evidence,
+        files,
+        texts,
+      };
+    })
+  );
+  
+  return evidencesWithDetails;
+}
+
+export async function getEvidenceById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const [evidence] = await db
+    .select({
+      id: evidences.id,
+      actionId: evidences.actionId,
+      colaboradorId: evidences.colaboradorId,
+      status: evidences.status,
+      justificativaAdmin: evidences.justificativaAdmin,
+      createdAt: evidences.createdAt,
+      evaluatedAt: evidences.evaluatedAt,
+      evaluatedBy: evidences.evaluatedBy,
+      colaboradorNome: users.name,
+      colaboradorEmail: users.email,
+    })
+    .from(evidences)
+    .leftJoin(users, eq(evidences.colaboradorId, users.id))
+    .where(eq(evidences.id, id))
+    .limit(1);
+  
+  if (!evidence) return null;
+  
+  // Buscar arquivos e textos
+  const files = await db
+    .select()
+    .from(evidenceFiles)
+    .where(eq(evidenceFiles.evidenceId, evidence.id));
+  
+  const texts = await db
+    .select()
+    .from(evidenceTexts)
+    .where(eq(evidenceTexts.evidenceId, evidence.id));
+  
+  // Buscar informações da ação
+  const action = await getActionById(evidence.actionId);
+  
+  return {
+    ...evidence,
+    files,
+    texts,
+    action,
+  };
+}
+
+export async function getPendingEvidences() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const evidencesList = await db
+    .select({
+      id: evidences.id,
+      actionId: evidences.actionId,
+      colaboradorId: evidences.colaboradorId,
+      status: evidences.status,
+      createdAt: evidences.createdAt,
+      colaboradorNome: users.name,
+      colaboradorEmail: users.email,
+      actionNome: actions.nome,
+      actionDescricao: actions.descricao,
+      pdiId: actions.pdiId,
+    })
+    .from(evidences)
+    .leftJoin(users, eq(evidences.colaboradorId, users.id))
+    .leftJoin(actions, eq(evidences.actionId, actions.id))
+    .where(eq(evidences.status, "aguardando_avaliacao"))
+    .orderBy(desc(evidences.createdAt));
+  
+  // Para cada evidência, buscar arquivos e textos
+  const evidencesWithDetails = await Promise.all(
+    evidencesList.map(async (evidence) => {
+      const files = await db
+        .select()
+        .from(evidenceFiles)
+        .where(eq(evidenceFiles.evidenceId, evidence.id));
+      
+      const texts = await db
+        .select()
+        .from(evidenceTexts)
+        .where(eq(evidenceTexts.evidenceId, evidence.id));
+      
+      return {
+        ...evidence,
+        files,
+        texts,
+      };
+    })
+  );
+  
+  return evidencesWithDetails;
+}
+
+export async function updateEvidenceStatus(
+  id: number,
+  data: {
+    status: "aguardando_avaliacao" | "aprovada" | "reprovada" | "correcao_solicitada";
+    justificativaAdmin?: string;
+    evaluatedBy?: number;
+    evaluatedAt?: Date;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(evidences).set(data).where(eq(evidences.id, id));
 }

@@ -23,6 +23,7 @@ import PDIsEquipe from "./pages/PDIsEquipe";
 import ImportarUsuarios from "./pages/ImportarUsuarios";
 import ImportarCompetencias from "./pages/ImportarCompetencias";
 import ImportarAcoes from "./pages/ImportarAcoes";
+import EvidenciasPendentes from "./pages/EvidenciasPendentes";
 
 function Router() {  return (
     <Switch>
@@ -127,6 +128,12 @@ function Router() {  return (
       <Route path={"/relatorios"}>
         <DashboardLayout>
           <Relatorios />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/evidencias-pendentes"}>
+        <DashboardLayout>
+          <EvidenciasPendentes />
         </DashboardLayout>
       </Route>
       

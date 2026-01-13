@@ -723,3 +723,31 @@
 - [x] Implementar sistema de notificações ao colaborador após aprovação
 - [x] Implementar sistema de notificações ao colaborador após reprovação
 - [x] Atualizar backend para criar notificações automaticamente
+
+## Sistema de Evidências (Colaborador + Líder/Admin)
+
+### Backend
+- [x] Criar procedure para adicionar evidência (texto + arquivos)
+- [x] Criar procedure para listar evidências de uma ação
+- [x] Criar procedure para avaliar evidência (aprovar/reprovar)
+- [ ] Implementar upload de arquivos para S3 (placeholder criado)
+- [x] Criar notificações ao enviar evidência
+- [x] Criar notificações ao avaliar evidência
+
+### Frontend - Colaborador
+- [ ] Adicionar botão "Adicionar Evidência" nas ações do colaborador
+- [x] Criar modal de envio de evidência (upload + texto)
+- [ ] Listar evidências enviadas pelo colaborador
+- [ ] Exibir status da avaliação (pendente/aprovada/reprovada)
+
+### Frontend - Admin (Aprovar/Reprovar)
+- [x] Criar página "Evidências Pendentes" (apenas Admin)
+- [x] Exibir arquivos e textos das evidências
+- [x] Botões aprovar/reprovar com justificativa (apenas Admin)
+- [x] Notificar colaborador após avaliação
+- [x] Adicionar rota e menu no DashboardLayout
+
+### Frontend - Líder (Visualizar)
+- [ ] Permitir visualizar evidências enviadas pelos subordinados
+- [ ] Acompanhar status das evidências (pendente/aprovada/reprovada)
+- [x] NÃO permitir aprovar/reprovar (apenas Admin pode)
