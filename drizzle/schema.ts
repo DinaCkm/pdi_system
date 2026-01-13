@@ -307,12 +307,22 @@ export const adjustmentRequests = mysqlTable("adjustment_requests", {
   solicitanteId: int("solicitanteId").notNull(),
   tipoSolicitante: mysqlEnum("tipoSolicitante", ["colaborador", "lider"]).notNull(),
   justificativa: text("justificativa").notNull(),
-  camposAjustar: text("camposAjustar").notNull(), // JSON string
-  status: mysqlEnum("status", ["pendente", "aprovada", "reprovada"]).default("pendente").notNull(),
-  justificativaAdmin: text("justificativaAdmin"),
+  camposAjustar: text("camposAjustar").notNull(), // JSON string com campos que o colaborador quer ajustar
+  status: mysqlEnum("status", [
+    "pendente",           // Aguardando ação do Admin
+    "mais_informacoes",   // Admin solicitou mais informações ao Colaborador
+    "aprovada",           // Admin aprovou e ajustou a ação
+    "reprovada",          // Admin reprovou a solicitação
+    "aguardando_lider"    // Admin ajustou, aguardando aprovação final do Líder
+  ]).default("pendente").notNull(),
+  justificativaAdmin: text("justificativaAdmin"), // Justificativa do Admin (aprovar/reprovar/solicitar mais info)
+  dadosAntesAjuste: text("dadosAntesAjuste"), // JSON com dados da ação antes do ajuste (auditoria)
+  dadosAposAjuste: text("dadosAposAjuste"), // JSON com dados da ação após o ajuste (auditoria)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  evaluatedAt: timestamp("evaluatedAt"),
-  evaluatedBy: int("evaluatedBy"),
+  evaluatedAt: timestamp("evaluatedAt"), // Data da avaliação do Admin
+  evaluatedBy: int("evaluatedBy"), // ID do Admin que avaliou
+  approvedByLeaderAt: timestamp("approvedByLeaderAt"), // Data da aprovação final do Líder
+  approvedByLeaderId: int("approvedByLeaderId"), // ID do Líder que aprovou
 });
 
 export const adjustmentRequestsRelations = relations(adjustmentRequests, ({ one }) => ({

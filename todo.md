@@ -809,3 +809,54 @@
 - [x] Testar com usuário Bruno após correção - TESTE APROVADO
 - [x] Causa raiz: procedure actions.list usava adminProcedure ao invés de protectedProcedure
 - [x] Solução: Alterado para protectedProcedure com filtro baseado em perfil (Admin/Líder/Colaborador)
+
+## Fluxo de Solicitação de Ajuste de Ações (NOVA FUNCIONALIDADE)
+- [ ] Remover botão "Editar" para Colaborador na página de ações
+- [ ] Adicionar botão "Solicitar Ajuste" para Colaborador
+- [ ] Criar modal de solicitação de ajuste (Colaborador indica o que deseja ajustar)
+- [ ] Implementar backend: procedure para criar solicitação de ajuste
+- [ ] Implementar backend: procedure para Admin aprovar ajuste e efetivar alteração
+- [ ] Implementar backend: procedure para Admin recusar ajuste
+- [ ] Implementar backend: procedure para Admin solicitar mais informações
+- [ ] Após Admin ajustar: alterar status da ação para "Ação Alterada / Aguardando Aprovação do Líder"
+- [ ] Criar página de aprovação de ajustes para Admin
+- [ ] Criar página de acompanhamento de ajustes para Líder (visualização apenas)
+- [ ] Implementar procedure para Líder aprovar alteração feita pelo Admin
+- [ ] Implementar notificações: Colaborador → Admin (nova solicitação)
+- [ ] Implementar notificações: Admin → Colaborador (aprovado/recusado/mais info)
+- [ ] Implementar notificações: Admin → Líder (ação alterada aguardando aprovação)
+- [ ] Implementar notificações: Líder → Colaborador (aprovação final)
+- [ ] Testar fluxo completo: Colaborador solicita → Admin ajusta → Líder aprova
+
+## ETAPA 1: Colaborador Solicita Ajuste (Escopo Congelado - Implementação Incremental)
+- [x] **PRIORIDADE ZERO:** Corrigir erros de compilação TypeScript
+- [ ] Remover botão "Editar" do Colaborador na página Acoes.tsx
+- [ ] Adicionar botão "Solicitar Ajuste" para Colaborador
+- [ ] Criar modal de solicitação de ajuste (justificativa mínima 10 chars + campos opcionais)
+- [ ] Validação: ação pertence ao colaborador via PDI
+- [ ] Validação: status da ação (aprovada_lider ou em_andamento)
+- [ ] Validação: não permitir nova solicitação se houver pendente
+- [ ] Validação: máximo 5 solicitações totais por ação
+- [ ] Endpoint backend: actions.solicitarAjuste funcionando
+- [ ] Mudar status da ação para "em_discussao" após solicitação
+- [ ] Criar registro em adjustment_requests
+- [ ] Criar registro no histórico da ação
+- [ ] Enviar notificação para Admin
+- [ ] Enviar notificação informativa para Líder
+- [ ] Testar fluxo: Colaborador solicita → Solicitação aparece para Admin → Status muda
+
+## ETAPA 2: Admin Aprova/Recusa (FORA DO ESCOPO ATUAL)
+- [ ] Criar página de solicitações pendentes para Admin
+- [ ] Criar interface de aprovação/reprovação para Admin
+- [ ] Implementar opção "Solicitar Mais Informações" para Admin
+- [ ] Após Admin ajustar: mudar status para "aguardando_lider"
+
+## ETAPA 3: Líder Aprova Final (FORA DO ESCOPO ATUAL)
+- [ ] Criar página de acompanhamento para Líder
+- [ ] Implementar aprovação final do Líder
+
+## Bug: Lógica Condicional do Botão Solicitar Ajuste Incorreta
+- [ ] Corrigir lógica: Admin vê "Editar", Líder/Colaborador vê "Solicitar Ajuste"
+- [ ] Verificar ownership da ação para determinar botão correto
+- [ ] Testar com Bruno (Líder+Colaborador) em "Meu PDI"
+- [ ] Adicionar utils.invalidate() no onSuccess da mutation
