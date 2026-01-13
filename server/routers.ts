@@ -850,8 +850,25 @@ export const appRouter = router({
 
   // ============= GESTÃO DE AÇÕES =============
   actions: router({
-    list: adminProcedure.query(async () => {
-      return await db.getAllActions();
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const user = ctx.user!;
+      
+      if (user.role === "admin") {
+        // Admin vê todas as ações
+        return await db.getAllActions();
+      } else if (user.role === "lider") {
+        // Líder vê ações de seus subordinados + suas próprias ações
+        const subordinados = await db.getSubordinates(user.id);
+        const subordinadosIds = subordinados.map(s => s.id);
+        const allActions = await db.getAllActions();
+        return allActions.filter(a => 
+          a.pdi?.colaboradorId === user.id || 
+          subordinadosIds.includes(a.pdi?.colaboradorId || 0)
+        );
+      } else {
+        // Colaborador vê apenas suas próprias ações
+        return await db.getActionsByColaboradorId(user.id);
+      }
     }),
 
     getById: protectedProcedure

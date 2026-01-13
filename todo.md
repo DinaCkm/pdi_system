@@ -794,3 +794,18 @@
 - [x] Card de PDI exibe nome do empregado, líder e progresso corretamente
 - [x] Botão Ações redireciona para listagem (sem abrir modal de criação)
 - [ ] Verificar se existem outros usuários com o mesmo problema de hierarquia
+## Bug: Dina Makiyama Sem Departamento e Líder Cadastrados
+- [x] Verificar cadastro da Dina Makiyama no banco de dados
+- [x] Definir departamento correto para a Dina
+- [x] Atualizar cadastro no banco de dados (departamentoId = 2)
+- [ ] Definir líder correto para a Dina (se aplicável)
+- [ ] Verificar se outros líderes têm o mesmo problema
+
+## Bug: Ações Criadas pelo Admin Não Aparecem na Listagem do Colaborador
+- [x] Investigar por que ações criadas pelo Admin não aparecem para o colaborador
+- [x] Verificar se há filtro que exclui ações não aprovadas pelo líder
+- [x] Corrigir para que TODAS as ações do colaborador apareçam, independente do status
+- [x] Garantir que ações com status "pendente_aprovacao_lider" apareçam com indicação visual clara
+- [x] Testar com usuário Bruno após correção - TESTE APROVADO
+- [x] Causa raiz: procedure actions.list usava adminProcedure ao invés de protectedProcedure
+- [x] Solução: Alterado para protectedProcedure com filtro baseado em perfil (Admin/Líder/Colaborador)
