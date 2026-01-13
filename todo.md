@@ -688,3 +688,4 @@
 - [x] Adicionar status "Correção Solicitada" no select
 - [x] Adicionar status "Vencida" no select
 - [x] Todos os 12 status adicionados ao select de filtro
+- [x] Criar funcionalidade de criação em lote de PDIs para todos os colaboradores

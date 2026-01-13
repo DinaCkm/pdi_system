@@ -20,8 +20,15 @@ type PDIFormData = {
   objetivoGeral?: string;
 };
 
+type BulkPDIFormData = {
+  cicloId: number;
+  titulo: string;
+  objetivoGeral?: string;
+};
+
 export default function PDIs() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showBulkCreateDialog, setShowBulkCreateDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPDI, setSelectedPDI] = useState<any>(null);
@@ -60,7 +67,20 @@ export default function PDIs() {
     },
   });
 
+  const createBulkMutation = (trpc.pdis as any).createBulk.useMutation({
+    onSuccess: async (result: { success: boolean; created: number; skipped: number; total: number }) => {
+      toast.success(`${result.created} PDIs criados com sucesso! (${result.skipped} já existiam)`);
+      await utils.pdis.list.invalidate();
+      setShowBulkCreateDialog(false);
+      resetBulk();
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao criar PDIs em lote: ${error.message}`);
+    },
+  });
+
   const { control, handleSubmit, reset, watch } = useForm<PDIFormData>();
+  const { control: controlBulk, handleSubmit: handleSubmitBulk, reset: resetBulk, watch: watchBulk } = useForm<BulkPDIFormData>();
 
   const selectedColaboradorId = watch("colaboradorId");
   const selectedCicloId = watch("cicloId");
@@ -159,10 +179,16 @@ export default function PDIs() {
             Planos de Desenvolvimento Individual dos colaboradores
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)} className="bg-gradient-to-r from-blue-600 to-orange-500">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo PDI
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowCreateDialog(true)} className="bg-gradient-to-r from-blue-600 to-orange-500">
+            <Plus className="w-4 h-4 mr-2" />
+            Novo PDI
+          </Button>
+          <Button onClick={() => setShowBulkCreateDialog(true)} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
+            <FileText className="w-4 h-4 mr-2" />
+            Criar em Lote
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -513,6 +539,98 @@ export default function PDIs() {
               Fechar
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Criação em Lote */}
+      <Dialog open={showBulkCreateDialog} onOpenChange={(open) => {
+        setShowBulkCreateDialog(open);
+        if (!open) resetBulk();
+      }}>
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Criar PDIs em Lote</DialogTitle>
+            <DialogDescription>
+              Criar PDI para todos os colaboradores ativos em um ciclo específico
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmitBulk((data) => createBulkMutation.mutate(data))} className="space-y-4">
+            <div>
+              <Label>Ciclo *</Label>
+              <Controller
+                name="cicloId"
+                control={controlBulk}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    value={field.value?.toString()}
+                    onValueChange={(value) => field.onChange(Number(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o ciclo" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {ciclos?.map(ciclo => (
+                        <SelectItem key={ciclo.id} value={ciclo.id.toString()}>
+                          {ciclo.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            <div>
+              <Label>Título do PDI *</Label>
+              <Controller
+                name="titulo"
+                control={controlBulk}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Input {...field} placeholder="Ex: PDI- 1º Ciclo 2066 - Foco: Desenvolvimento Técnico e Prático" />
+                )}
+              />
+            </div>
+
+            <div>
+              <Label>Objetivo Geral (Opcional)</Label>
+              <Controller
+                name="objetivoGeral"
+                control={controlBulk}
+                render={({ field }) => (
+                  <Textarea
+                    {...field}
+                    placeholder="Objetivo geral que será aplicado a todos os PDIs..."
+                    rows={4}
+                  />
+                )}
+              />
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+              <p className="text-sm text-blue-800">
+                💡 Serão criados PDIs para todos os colaboradores e líderes ativos que ainda não possuem PDI neste ciclo.
+              </p>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowBulkCreateDialog(false)}>
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={createBulkMutation.isPending}
+                className="bg-gradient-to-r from-blue-600 to-orange-500"
+              >
+                {createBulkMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Criar PDIs em Lote
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

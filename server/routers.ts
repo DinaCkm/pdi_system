@@ -770,6 +770,63 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    createBulk: adminProcedure
+      .input(z.object({
+        cicloId: z.number(),
+        titulo: z.string().min(1, "Título é obrigatório"),
+        objetivoGeral: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Buscar todos os colaboradores ativos (exceto admins)
+        const allUsers = await db.getAllUsers();
+        const colaboradores = allUsers.filter(
+          user => user.status === "ativo" && (user.role === "colaborador" || user.role === "lider")
+        );
+
+        if (colaboradores.length === 0) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Nenhum colaborador ativo encontrado no sistema.',
+          });
+        }
+
+        // Buscar PDIs existentes para este ciclo
+        const existingPDIs = await db.getPDIsByCicloId(input.cicloId);
+        const existingColaboradorIds = new Set(existingPDIs.map(pdi => pdi.colaboradorId));
+
+        // Filtrar colaboradores que ainda não têm PDI neste ciclo
+        const colaboradoresSemPDI = colaboradores.filter(
+          colab => !existingColaboradorIds.has(colab.id)
+        );
+
+        if (colaboradoresSemPDI.length === 0) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Todos os colaboradores já possuem PDI neste ciclo.',
+          });
+        }
+
+        // Criar PDI para cada colaborador
+        let created = 0;
+        for (const colaborador of colaboradoresSemPDI) {
+          await db.createPDI({
+            colaboradorId: colaborador.id,
+            cicloId: input.cicloId,
+            titulo: input.titulo,
+            objetivoGeral: input.objetivoGeral,
+            createdBy: ctx.user!.id,
+          });
+          created++;
+        }
+
+        return { 
+          success: true, 
+          created,
+          skipped: colaboradores.length - created,
+          total: colaboradores.length
+        };
+      }),
+
     update: adminProcedure
       .input(z.object({
         id: z.number(),
