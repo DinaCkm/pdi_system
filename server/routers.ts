@@ -1192,6 +1192,9 @@ export const appRouter = router({
     aprovarAjuste: adminProcedure
       .input(z.object({
         solicitacaoId: z.number(),
+        novoNome: z.string().optional(),
+        novaDescricao: z.string().optional(),
+        novoPrazo: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         // 1. Buscar solicitação
@@ -1212,46 +1215,52 @@ export const appRouter = router({
 
         const camposAjustar = JSON.parse(solicitacao.camposAjustar);
 
-        // 3. Aplicar alterações e registrar histórico
+        // 3. Usar campos editados pelo admin ou os campos propostos
         const updates: any = {};
         
-        if (camposAjustar.nome) {
+        // Nome
+        const novoNome = input.novoNome || camposAjustar.nome;
+        if (novoNome) {
           await db.createAcaoHistorico({
             actionId: acao.id,
             campo: 'nome',
             valorAnterior: acao.nome,
-            valorNovo: camposAjustar.nome,
-            motivoAlteracao: `Ajuste aprovado. Justificativa: ${solicitacao.justificativa}`,
+            valorNovo: novoNome,
+            motivoAlteracao: input.novoNome ? `Ajuste aprovado e editado pelo admin. Justificativa: ${solicitacao.justificativa}` : `Ajuste aprovado. Justificativa: ${solicitacao.justificativa}`,
             alteradoPor: ctx.user!.id,
             solicitacaoAjusteId: solicitacao.id,
           });
-          updates.nome = camposAjustar.nome;
+          updates.nome = novoNome;
         }
 
-        if (camposAjustar.descricao) {
+        // Descrição
+        const novaDescricao = input.novaDescricao || camposAjustar.descricao;
+        if (novaDescricao) {
           await db.createAcaoHistorico({
             actionId: acao.id,
             campo: 'descricao',
             valorAnterior: acao.descricao,
-            valorNovo: camposAjustar.descricao,
-            motivoAlteracao: `Ajuste aprovado. Justificativa: ${solicitacao.justificativa}`,
+            valorNovo: novaDescricao,
+            motivoAlteracao: input.novaDescricao ? `Ajuste aprovado e editado pelo admin. Justificativa: ${solicitacao.justificativa}` : `Ajuste aprovado. Justificativa: ${solicitacao.justificativa}`,
             alteradoPor: ctx.user!.id,
             solicitacaoAjusteId: solicitacao.id,
           });
-          updates.descricao = camposAjustar.descricao;
+          updates.descricao = novaDescricao;
         }
 
-        if (camposAjustar.prazo) {
+        // Prazo
+        const novoPrazo = input.novoPrazo || camposAjustar.prazo;
+        if (novoPrazo) {
           await db.createAcaoHistorico({
             actionId: acao.id,
             campo: 'prazo',
             valorAnterior: acao.prazo.toISOString(),
-            valorNovo: camposAjustar.prazo,
-            motivoAlteracao: `Ajuste aprovado. Justificativa: ${solicitacao.justificativa}`,
+            valorNovo: novoPrazo,
+            motivoAlteracao: input.novoPrazo ? `Ajuste aprovado e editado pelo admin. Justificativa: ${solicitacao.justificativa}` : `Ajuste aprovado. Justificativa: ${solicitacao.justificativa}`,
             alteradoPor: ctx.user!.id,
             solicitacaoAjusteId: solicitacao.id,
           });
-          updates.prazo = new Date(camposAjustar.prazo);
+          updates.prazo = new Date(novoPrazo);
         }
 
         if (camposAjustar.blocoId) {
@@ -1456,7 +1465,11 @@ export const appRouter = router({
         return await db.getCommentsByAdjustmentRequestId(input.adjustmentRequestId);
       }),
 
-    getPendingAdjustmentsWithDetails: adminProcedure.query(async () => {
+    getPendingAdjustmentsWithDetails: protectedProcedure.query(async ({ ctx }) => {
+      // Apenas admins e líderes podem acessar
+      if (ctx.user!.role !== 'admin' && ctx.user!.role !== 'lider') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas administradores e líderes podem acessar solicitações pendentes' });
+      }
       return await db.getPendingAdjustmentRequestsWithDetails();
     }),
 

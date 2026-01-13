@@ -1,0 +1,34 @@
+{
+  "query": "SELECT CONSTRAINT_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME \nFROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE \nWHERE TABLE_NAME = 'user_department_roles';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT CONSTRAINT_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME \nFROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE \nWHERE TABLE_NAME = 'user_department_roles';",
+  "rows": [
+    {
+      "CONSTRAINT_NAME": "PRIMARY",
+      "COLUMN_NAME": "id",
+      "REFERENCED_TABLE_NAME": "NULL",
+      "REFERENCED_COLUMN_NAME": "NULL"
+    },
+    {
+      "CONSTRAINT_NAME": "user_department_roles_userId_fk",
+      "COLUMN_NAME": "userId",
+      "REFERENCED_TABLE_NAME": "users",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "CONSTRAINT_NAME": "user_department_roles_departmentId_fk",
+      "COLUMN_NAME": "departmentId",
+      "REFERENCED_TABLE_NAME": "departamentos",
+      "REFERENCED_COLUMN_NAME": "id"
+    },
+    {
+      "CONSTRAINT_NAME": "user_department_roles_leaderUserId_fk",
+      "COLUMN_NAME": "leaderUserId",
+      "REFERENCED_TABLE_NAME": "users",
+      "REFERENCED_COLUMN_NAME": "id"
+    }
+  ],
+  "messages": [],
+  "stdout": "CONSTRAINT_NAME\tCOLUMN_NAME\tREFERENCED_TABLE_NAME\tREFERENCED_COLUMN_NAME\nPRIMARY\tid\tNULL\tNULL\nuser_department_roles_userId_fk\tuserId\tusers\tid\nuser_department_roles_departmentId_fk\tdepartmentId\tdepartamentos\tid\nuser_department_roles_leaderUserId_fk\tleaderUserId\tusers\tid\n",
+  "stderr": "",
+  "execution_time_ms": 150
+}

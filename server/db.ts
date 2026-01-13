@@ -1022,26 +1022,41 @@ export async function getCommentsByAdjustmentRequestId(adjustmentRequestId: numb
 
 export async function getPendingAdjustmentRequestsWithDetails() {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) {
+    console.log('❌ Erro: Conexão com banco não estabelecida');
+    return [];
+  }
   
-  return await db
-    .select({
-      id: adjustmentRequests.id,
-      actionId: adjustmentRequests.actionId,
-      actionNome: actions.nome,
-      solicitanteId: adjustmentRequests.solicitanteId,
-      solicitanteNome: users.name,
-      tipoSolicitante: adjustmentRequests.tipoSolicitante,
-      justificativa: adjustmentRequests.justificativa,
-      camposAjustar: adjustmentRequests.camposAjustar,
-      status: adjustmentRequests.status,
-      createdAt: adjustmentRequests.createdAt,
-    })
-    .from(adjustmentRequests)
-    .innerJoin(actions, eq(adjustmentRequests.actionId, actions.id))
-    .innerJoin(users, eq(adjustmentRequests.solicitanteId, users.id))
-    .where(eq(adjustmentRequests.status, 'pendente'))
-    .orderBy(desc(adjustmentRequests.createdAt));
+  console.log('🔍 Iniciando busca de solicitações pendentes...');
+  
+  try {
+    const result = await db
+      .select({
+        id: adjustmentRequests.id,
+        actionId: adjustmentRequests.actionId,
+        actionNome: actions.nome,
+        solicitanteId: adjustmentRequests.solicitanteId,
+        solicitanteNome: users.name,
+        tipoSolicitante: adjustmentRequests.tipoSolicitante,
+        justificativa: adjustmentRequests.justificativa,
+        camposAjustar: adjustmentRequests.camposAjustar,
+        status: adjustmentRequests.status,
+        createdAt: adjustmentRequests.createdAt,
+      })
+      .from(adjustmentRequests)
+      .innerJoin(actions, eq(adjustmentRequests.actionId, actions.id))
+      .innerJoin(users, eq(adjustmentRequests.solicitanteId, users.id))
+      .where(eq(adjustmentRequests.status, 'pendente'))
+      .orderBy(desc(adjustmentRequests.createdAt));
+    
+    console.log(`✅ Query executada com sucesso. Total de solicitações: ${result.length}`);
+    console.log('📊 Dados retornados:', JSON.stringify(result, null, 2));
+    
+    return result;
+  } catch (error) {
+    console.error('❌ Erro na query:', error);
+    throw error;
+  }
 }
 
 export async function getPendingAdjustmentRequestsByLeaderId(leaderId: number) {

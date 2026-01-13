@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1768266107543,
-      "tag": "0000_fresh_killer_shrike",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1768315637558,
-      "tag": "0001_cloudy_zeigeist",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1768322304728,
-      "tag": "0002_serious_masque",
+      "when": 1768328199438,
+      "tag": "0000_modern_magik",
       "breakpoints": true
     }
   ]

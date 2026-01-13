@@ -43,6 +43,40 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
+ * USER_DEPARTMENT_ROLES - Vínculo dual de usuário com departamento
+ * Permite que um usuário seja Líder em um departamento e Colaborador em outro
+ */
+export const userDepartmentRoles = mysqlTable("user_department_roles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  departmentId: int("departmentId").notNull(),
+  assignmentType: mysqlEnum("assignmentType", ["LEADER", "MEMBER"]).notNull(),
+  leaderUserId: int("leaderUserId"), // Obrigatório quando assignmentType = MEMBER
+  status: mysqlEnum("status", ["ativo", "inativo"]).default("ativo").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const userDepartmentRolesRelations = relations(userDepartmentRoles, ({ one }) => ({
+  user: one(users, {
+    fields: [userDepartmentRoles.userId],
+    references: [users.id],
+  }),
+  department: one(departamentos, {
+    fields: [userDepartmentRoles.departmentId],
+    references: [departamentos.id],
+  }),
+  leader: one(users, {
+    fields: [userDepartmentRoles.leaderUserId],
+    references: [users.id],
+    relationName: "leader_members",
+  }),
+}));
+
+export type UserDepartmentRole = typeof userDepartmentRoles.$inferSelect;
+export type InsertUserDepartmentRole = typeof userDepartmentRoles.$inferInsert;
+
+/**
  * DEPARTAMENTOS - Organização de usuários
  */
 export const departamentos = mysqlTable("departamentos", {

@@ -1,0 +1,16 @@
+{
+  "query": "SELECT \n  COUNT(*) as total_colaboradores,\n  SUM(CASE WHEN departamentoId IS NOT NULL THEN 1 ELSE 0 END) as com_departamento,\n  SUM(CASE WHEN departamentoId IS NULL THEN 1 ELSE 0 END) as sem_departamento,\n  SUM(CASE WHEN leaderId IS NOT NULL THEN 1 ELSE 0 END) as com_lider\nFROM users\nWHERE role = 'colaborador';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT \n  COUNT(*) as total_colaboradores,\n  SUM(CASE WHEN departamentoId IS NOT NULL THEN 1 ELSE 0 END) as com_departamento,\n  SUM(CASE WHEN departamentoId IS NULL THEN 1 ELSE 0 END) as sem_departamento,\n  SUM(CASE WHEN leaderId IS NOT NULL THEN 1 ELSE 0 END) as com_lider\nFROM users\nWHERE role = 'colaborador';",
+  "rows": [
+    {
+      "total_colaboradores": "137",
+      "com_departamento": "134",
+      "sem_departamento": "3",
+      "com_lider": "122"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_colaboradores\tcom_departamento\tsem_departamento\tcom_lider\n137\t134\t3\t122\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}

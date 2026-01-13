@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -12,10 +13,14 @@ import { toast } from "sonner";
 
 export default function SolicitacoesAjuste() {
   const [selectedSolicitacao, setSelectedSolicitacao] = useState<number | null>(null);
+  const [selectedSolicitacaoData, setSelectedSolicitacaoData] = useState<any>(null);
   const [showAprovarDialog, setShowAprovarDialog] = useState(false);
   const [showReprovarDialog, setShowReprovarDialog] = useState(false);
   const [justificativaReprovacao, setJustificativaReprovacao] = useState("");
   const [comentario, setComentario] = useState("");
+  const [editNome, setEditNome] = useState("");
+  const [editDescricao, setEditDescricao] = useState("");
+  const [editPrazo, setEditPrazo] = useState("");
 
   const { data: solicitacoes, isLoading, refetch } = trpc.actions.getPendingAdjustmentsWithDetails.useQuery();
   const { data: comentarios, refetch: refetchComentarios } = trpc.actions.getComments.useQuery(
@@ -59,8 +64,12 @@ export default function SolicitacoesAjuste() {
     },
   });
 
-  const handleAprovar = (solicitacaoId: number) => {
-    setSelectedSolicitacao(solicitacaoId);
+  const handleAprovar = (solicitacao: any) => {
+    setSelectedSolicitacao(solicitacao.id);
+    setSelectedSolicitacaoData(solicitacao);
+    setEditNome(solicitacao.actionNome || "");
+    setEditDescricao(solicitacao.actionDescricao || "");
+    setEditPrazo(solicitacao.actionPrazo || "");
     setShowAprovarDialog(true);
   };
 
@@ -70,8 +79,18 @@ export default function SolicitacoesAjuste() {
   };
 
   const confirmarAprovacao = () => {
+    if (!editNome.trim() || !editDescricao.trim() || !editPrazo) {
+      toast.error("Todos os campos são obrigatórios");
+      return;
+    }
+
     if (selectedSolicitacao) {
-      aprovarMutation.mutate({ solicitacaoId: selectedSolicitacao });
+      aprovarMutation.mutate({
+        solicitacaoId: selectedSolicitacao,
+        novoNome: editNome,
+        novaDescricao: editDescricao,
+        novoPrazo: editPrazo,
+      } as any);
     }
   };
 
@@ -271,21 +290,70 @@ export default function SolicitacoesAjuste() {
         </div>
       )}
 
-      {/* Dialog de Aprovação */}
+      {/* Dialog de Aprovação com Edição */}
       <Dialog open={showAprovarDialog} onOpenChange={setShowAprovarDialog}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Confirmar Aprovação</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja aprovar esta solicitação de ajuste? Os campos solicitados serão aplicados à ação.
+              Revise as mudanças que serão aplicadas à ação. O colaborador será notificado automaticamente.
             </DialogDescription>
           </DialogHeader>
+          
+          {selectedSolicitacaoData && (
+            <div className="space-y-4 py-4">
+              <div className="bg-blue-50 p-3 rounded-lg">
+                <p className="text-sm font-medium text-blue-900">Informações da Solicitação</p>
+                <p className="text-sm text-blue-800">Solicitante: <span className="font-semibold">{selectedSolicitacaoData.collaboratorName || "Desconhecido"}</span></p>
+                <p className="text-sm text-blue-800">Justificativa: <span className="font-semibold">{selectedSolicitacaoData.justification}</span></p>
+              </div>
+
+              <div className="space-y-3 border-t pt-4">
+                <h4 className="font-semibold text-sm">Campos a Editar</h4>
+                
+                <div>
+                  <Label htmlFor="edit-nome">Nome da Ação *</Label>
+                  <Input
+                    id="edit-nome"
+                    value={editNome}
+                    onChange={(e) => setEditNome(e.target.value)}
+                    placeholder="Nome da ação"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-descricao">Descrição *</Label>
+                  <Textarea
+                    id="edit-descricao"
+                    value={editDescricao}
+                    onChange={(e) => setEditDescricao(e.target.value)}
+                    placeholder="Descrição da ação"
+                    rows={3}
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-prazo">Prazo *</Label>
+                  <Input
+                    id="edit-prazo"
+                    type="date"
+                    value={editPrazo}
+                    onChange={(e) => setEditPrazo(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAprovarDialog(false)}>
               Cancelar
             </Button>
             <Button onClick={confirmarAprovacao} disabled={aprovarMutation.isPending}>
-              {aprovarMutation.isPending ? "Aprovando..." : "Confirmar Aprovação"}
+              {aprovarMutation.isPending ? "Aprovando..." : "Aprovar e Notificar"}
             </Button>
           </DialogFooter>
         </DialogContent>

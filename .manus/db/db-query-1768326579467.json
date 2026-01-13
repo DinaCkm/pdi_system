@@ -1,0 +1,190 @@
+{
+  "query": "SELECT id, name, email, role FROM users ORDER BY role, name LIMIT 30;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, role FROM users ORDER BY role, name LIMIT 30;",
+  "rows": [
+    {
+      "id": "30079",
+      "name": "Admin Ckm",
+      "email": "admin@ckmtalents.net",
+      "role": "admin"
+    },
+    {
+      "id": "180010",
+      "name": "BRUNO MARTINS VIEIRA",
+      "email": "bruno.vieira@to.sebrae.com.br",
+      "role": "admin"
+    },
+    {
+      "id": "180004",
+      "name": "ALDENI BATISTA TORRES",
+      "email": "aldeni.torres@to.sebrae.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "180003",
+      "name": "AMAGGELDO BARBOSA",
+      "email": "amaggeldo@to.sebrae.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "150005",
+      "name": "Andreia Rodrigues Facundes",
+      "email": "andreia.facundes@sebrae.to.gov.br",
+      "role": "lider"
+    },
+    {
+      "id": "180014",
+      "name": "ANDREIA RODRIGUES FACUNDES",
+      "email": "andreia.facundes@to.sebrae.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "180007",
+      "name": "ANTONIO LOUÇA CURCINO",
+      "email": "antonio.curcino@to.sebrae.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "150008",
+      "name": "Dina Makiyama",
+      "email": "dina.makiyama@sebrae.to.gov.br",
+      "role": "lider"
+    },
+    {
+      "id": "180002",
+      "name": "EDVALDO PEREIRA LIMA JÚNIOR",
+      "email": "edvaldopljr86@gmail.com",
+      "role": "lider"
+    },
+    {
+      "id": "180012",
+      "name": "ELIWANIA DOS SANTOS SILVA",
+      "email": "eliwania.santos@to.sebrae.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "180017",
+      "name": "GABRIELA TOMASI",
+      "email": "00792361113@temp.com",
+      "role": "lider"
+    },
+    {
+      "id": "150012",
+      "name": "Gilzane Pereira Amaral",
+      "email": "gilzane.amaral@sebrae.to.gov.br",
+      "role": "lider"
+    },
+    {
+      "id": "180018",
+      "name": "GILZANE PEREIRA AMARAL",
+      "email": "gilzane.pereira@to.sebrae.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "150013",
+      "name": "Jackeline de Souza Lima",
+      "email": "jackeline.lima@sebrae.to.gov.br",
+      "role": "lider"
+    },
+    {
+      "id": "180011",
+      "name": "JACKELINE DE SOUZA LIMA",
+      "email": "jackeline.lima@to.sebrae.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "180001",
+      "name": "Julia Souza Makiyama",
+      "email": "julia@ckmtalents.net",
+      "role": "lider"
+    },
+    {
+      "id": "180019",
+      "name": "LEONARDO CAMPELO LEITE GUEDES",
+      "email": "leonardo.campelo@to.sebrae.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "150014",
+      "name": "Leonardo Campelo Leite Guedes",
+      "email": "leonardo.guedes@sebrae.to.gov.br",
+      "role": "lider"
+    },
+    {
+      "id": "240003",
+      "name": "Líder Test Actions",
+      "email": "leader-actions-1768267791088@test.com",
+      "role": "lider"
+    },
+    {
+      "id": "240001",
+      "name": "Líder Test Actions",
+      "email": "leader-actions-1768267697516@test.com",
+      "role": "lider"
+    },
+    {
+      "id": "180005",
+      "name": "MARCUS VINICIUS VIEIRA QUEIROZ",
+      "email": "marcus.queiroz@to.sebrae.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "150015",
+      "name": "Marcus Vinicius Vieira Queiroz",
+      "email": "marcus.queiroz@sebrae.to.gov.br",
+      "role": "lider"
+    },
+    {
+      "id": "150016",
+      "name": "Millena Pereira Lima Rodrigues",
+      "email": "millena.rodrigues@sebrae.to.gov.br",
+      "role": "lider"
+    },
+    {
+      "id": "180006",
+      "name": "MILLENA PEREIRA LIMA RODRIGUES",
+      "email": "millena.rodrigues@to.sebrae.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "150017",
+      "name": "Nemias Gomes",
+      "email": "nemias.gomes@sebrae.to.gov.br",
+      "role": "lider"
+    },
+    {
+      "id": "180016",
+      "name": "NEMIAS GOMES",
+      "email": "nemias.gomes@to.sebrae.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "150018",
+      "name": "Paula dos Reis Coelho Alencar Sousa",
+      "email": "paula.sousa@sebrae.to.gov.br",
+      "role": "lider"
+    },
+    {
+      "id": "180008",
+      "name": "PAULA DOS REIS COELHO ALENCAR SOUSA",
+      "email": "paula.alencar@to.sebrae.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "180013",
+      "name": "PEDRO JUNIOR DA ROCHA SILVA",
+      "email": "pedro.junior@to.sebrae.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "150019",
+      "name": "Pedro Junior da Rocha Silva",
+      "email": "pedro.silva@sebrae.to.gov.br",
+      "role": "lider"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\n30079\tAdmin Ckm\tadmin@ckmtalents.net\tadmin\n180010\tBRUNO MARTINS VIEIRA\tbruno.vieira@to.sebrae.com.br\tadmin\n180004\tALDENI BATISTA TORRES\taldeni.torres@to.sebrae.com.br\tlider\n180003\tAMAGGELDO BARBOSA\tamaggeldo@to.sebrae.com.br\tlider\n150005\tAndreia Rodrigues Facundes\tandreia.facundes@sebrae.to.gov.br\tlider\n180014\tANDREIA RODRIGUES FACUNDES\tandreia.facundes@to.sebrae.com.br\tlider\n180007\tANTONIO LOUÇA CURCINO\tantonio.curcino@to.sebrae.com.br\tlider\n150008\tDina Makiyama\tdina.makiyama@sebrae.to.gov.br\tlider\n180002\tEDVALDO PEREIRA LIMA JÚNIOR\tedvaldopljr86@gmail.com\tlider\n180012\tELIWANIA DOS SANTOS SILVA\teliwania.santos@to.sebrae.com.br\tlider\n180017\tGABRIELA TOMASI\t00792361113@temp.com\tlider\n150012\tGilzane Pereira Amaral\tgilzane.amaral@sebrae.to.gov.br\tlider\n180018\tGILZANE PEREIRA AMARAL\tgilzane.pereira@to.sebrae.com.br\tlider\n150013\tJackeline de Souza Lima\tjackeline.lima@sebrae.to.gov.br\tlider\n180011\tJACKELINE DE SOUZA LIMA\tjackeline.lima@to.sebrae.com.br\tlider\n180001\tJulia Souza Makiyama\tjulia@ckmtalents.net\tlider\n180019\tLEONARDO CAMPELO LEITE GUEDES\tleonardo.campelo@to.sebrae.com.br\tlider\n150014\tLeonardo Campelo Leite Guedes\tleonardo.guedes@sebrae.to.gov.br\tlider\n240003\tLíder Test Actions\tleader-actions-1768267791088@test.com\tlider\n240001\tLíder Test Actions\tleader-actions-1768267697516@test.com\tlider\n180005\tMARCUS VINICIUS VIEIRA QUEIROZ\tmarcus.queiroz@to.sebrae.com.br\tlider\n150015\tMarcus Vinicius Vieira Queiroz\tmarcus.queiroz@sebrae.to.gov.br\tlider\n150016\tMillena Pereira Lima Rodrigues\tmillena.rodrigues@sebrae.to.gov.br\tlider\n180006\tMILLENA PEREIRA LIMA RODRIGUES\tmillena.rodrigues@to.sebrae.com.br\tlider\n150017\tNemias Gomes\tnemias.gomes@sebrae.to.gov.br\tlider\n180016\tNEMIAS GOMES\tnemias.gomes@to.sebrae.com.br\tlider\n150018\tPaula dos Reis Coelho Alencar Sousa\tpaula.sousa@sebrae.to.gov.br\tlider\n180008\tPAULA DOS REIS COELHO ALENCAR SOUSA\tpaula.alencar@to.sebrae.com.br\tlider\n180013\tPEDRO JUNIOR DA ROCHA SILVA\tpedro.junior@to.sebrae.com.br\tlider\n150019\tPedro Junior da Rocha Silva\tpedro.silva@sebrae.to.gov.br\tlider\n",
+  "stderr": "",
+  "execution_time_ms": 106
+}

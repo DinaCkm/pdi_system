@@ -163,6 +163,18 @@ CREATE TABLE `pdis` (
 	CONSTRAINT `pdis_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
+CREATE TABLE `user_department_roles` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`departmentId` int NOT NULL,
+	`assignmentType` enum('LEADER','MEMBER') NOT NULL,
+	`leaderUserId` int,
+	`status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `user_department_roles_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
 CREATE TABLE `users` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`openId` varchar(64) NOT NULL,
