@@ -51,12 +51,16 @@ export default function PDIs() {
   const [filterColaborador, setFilterColaborador] = useState<string>("todos");
   const [filterCiclo, setFilterCiclo] = useState<string>("todos");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
+  const [filterDepartamento, setFilterDepartamento] = useState<string>("todos");
+  const [filterDataInicio, setFilterDataInicio] = useState<string>("");
+  const [filterDataFim, setFilterDataFim] = useState<string>("");
 
   const utils = trpc.useUtils();
   const { data: pdis, isLoading } = trpc.pdis.list.useQuery();
   const { data: users } = trpc.users.list.useQuery();
   const { data: ciclos } = trpc.ciclos.list.useQuery();
   const { data: actions } = trpc.actions.list.useQuery();
+  const { data: departamentos } = trpc.departamentos.list.useQuery();
 
   const createMutation = trpc.pdis.create.useMutation({
     onSuccess: async () => {
@@ -131,6 +135,7 @@ export default function PDIs() {
   const filteredPDIs = pdis?.filter(pdi => {
     const colaborador = users?.find(u => u.id === pdi.colaboradorId);
     const ciclo = ciclos?.find(c => c.id === pdi.cicloId);
+    const colaboradorDepartamento = colaborador?.departamentoId || 0;
     
     const matchSearch = searchTerm === "" || 
       pdi.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -139,8 +144,23 @@ export default function PDIs() {
     const matchColaborador = filterColaborador === "todos" || pdi.colaboradorId === parseInt(filterColaborador);
     const matchCiclo = filterCiclo === "todos" || pdi.cicloId === parseInt(filterCiclo);
     const matchStatus = filterStatus === "todos" || pdi.status === filterStatus;
+    const matchDepartamento = filterDepartamento === "todos" || colaboradorDepartamento === parseInt(filterDepartamento);
+    
+    let matchPeriodo = true;
+    if (filterDataInicio || filterDataFim) {
+      const pdiData = new Date(pdi.createdAt || ciclo?.dataInicio || 0);
+      if (filterDataInicio) {
+        const dataInicio = new Date(filterDataInicio);
+        matchPeriodo = matchPeriodo && pdiData >= dataInicio;
+      }
+      if (filterDataFim) {
+        const dataFim = new Date(filterDataFim);
+        dataFim.setHours(23, 59, 59, 999);
+        matchPeriodo = matchPeriodo && pdiData <= dataFim;
+      }
+    }
 
-    return matchSearch && matchColaborador && matchCiclo && matchStatus;
+    return matchSearch && matchColaborador && matchCiclo && matchStatus && matchDepartamento && matchPeriodo;
   }) || [];
 
   // Verificar se já existe PDI para o colaborador/ciclo selecionado
@@ -212,7 +232,7 @@ export default function PDIs() {
           <CardTitle className="text-lg">Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             <div>
               <Label>Buscar</Label>
               <Input
@@ -263,6 +283,36 @@ export default function PDIs() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Departamento</Label>
+              <Select value={filterDepartamento} onValueChange={setFilterDepartamento}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {departamentos?.map(d => (
+                    <SelectItem key={d.id} value={d.id.toString()}>{d.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Data Início</Label>
+              <Input
+                type="date"
+                value={filterDataInicio}
+                onChange={(e) => setFilterDataInicio(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Data Fim</Label>
+              <Input
+                type="date"
+                value={filterDataFim}
+                onChange={(e) => setFilterDataFim(e.target.value)}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -274,7 +324,7 @@ export default function PDIs() {
             <CardContent className="flex flex-col items-center justify-center py-12">
               <FileText className="w-16 h-16 text-muted-foreground mb-4" />
               <p className="text-muted-foreground text-center">
-                {searchTerm || filterColaborador !== "todos" || filterCiclo !== "todos" || filterStatus !== "todos"
+                {searchTerm || filterColaborador !== "todos" || filterCiclo !== "todos" || filterStatus !== "todos" || filterDepartamento !== "todos" || filterDataInicio || filterDataFim
                   ? "Nenhum PDI encontrado com os filtros aplicados."
                   : "Nenhum PDI cadastrado ainda. Clique em 'Novo PDI' para criar o primeiro."}
               </p>
