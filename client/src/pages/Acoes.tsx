@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -26,8 +25,6 @@ type AcaoFormData = {
 };
 
 export default function Acoes() {
-  const { user } = useAuth();
-  
   // Ler query params da URL
   const urlParams = new URLSearchParams(window.location.search);
   const pdiIdFromUrl = urlParams.get('pdiId');
@@ -224,10 +221,6 @@ export default function Acoes() {
   };
 
   const handleDelete = (acao: any) => {
-    if (user?.role !== 'admin') {
-      toast.error('Apenas administradores podem excluir ações. Fale com o administrador.');
-      return;
-    }
     setSelectedAcao(acao);
     setShowDeleteDialog(true);
   };

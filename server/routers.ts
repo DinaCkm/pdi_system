@@ -967,15 +967,7 @@ export const appRouter = router({
         microId: z.number().optional(),
         prazo: z.string().optional(),
       }))
-      .mutation(async ({ input, ctx }) => {
-        // Verificar se o usuário é admin
-        if (ctx.user?.role !== 'admin') {
-          throw new TRPCError({ 
-            code: 'FORBIDDEN', 
-            message: "Somente o admin pode editar. Vá até o botão 'Solicitar Ajuste' para solicitar uma alteração." 
-          });
-        }
-        
+      .mutation(async ({ input }) => {
         const { id, prazo, ...rest } = input;
         
         const updateData: any = { ...rest };
@@ -1200,9 +1192,6 @@ export const appRouter = router({
     aprovarAjuste: adminProcedure
       .input(z.object({
         solicitacaoId: z.number(),
-        novoNome: z.string().optional(),
-        novaDescricao: z.string().optional(),
-        novoPrazo: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         // 1. Buscar solicitação
@@ -1226,49 +1215,43 @@ export const appRouter = router({
         // 3. Aplicar alterações e registrar histórico
         const updates: any = {};
         
-        // Nome: usar novoNome do Admin se fornecido, senão usar camposAjustar.nome
-        const nomeParaAplicar = input.novoNome || camposAjustar.nome;
-        if (nomeParaAplicar) {
+        if (camposAjustar.nome) {
           await db.createAcaoHistorico({
             actionId: acao.id,
             campo: 'nome',
             valorAnterior: acao.nome,
-            valorNovo: nomeParaAplicar,
-            motivoAlteracao: `Ajuste aprovado${input.novoNome ? ' com edição do Admin' : ''}. Justificativa: ${solicitacao.justificativa}`,
+            valorNovo: camposAjustar.nome,
+            motivoAlteracao: `Ajuste aprovado. Justificativa: ${solicitacao.justificativa}`,
             alteradoPor: ctx.user!.id,
             solicitacaoAjusteId: solicitacao.id,
           });
-          updates.nome = nomeParaAplicar;
+          updates.nome = camposAjustar.nome;
         }
 
-        // Descrição: usar novaDescricao do Admin se fornecida, senão usar camposAjustar.descricao
-        const descricaoParaAplicar = input.novaDescricao || camposAjustar.descricao;
-        if (descricaoParaAplicar) {
+        if (camposAjustar.descricao) {
           await db.createAcaoHistorico({
             actionId: acao.id,
             campo: 'descricao',
             valorAnterior: acao.descricao,
-            valorNovo: descricaoParaAplicar,
-            motivoAlteracao: `Ajuste aprovado${input.novaDescricao ? ' com edição do Admin' : ''}. Justificativa: ${solicitacao.justificativa}`,
+            valorNovo: camposAjustar.descricao,
+            motivoAlteracao: `Ajuste aprovado. Justificativa: ${solicitacao.justificativa}`,
             alteradoPor: ctx.user!.id,
             solicitacaoAjusteId: solicitacao.id,
           });
-          updates.descricao = descricaoParaAplicar;
+          updates.descricao = camposAjustar.descricao;
         }
 
-        // Prazo: usar novoPrazo do Admin se fornecido, senão usar camposAjustar.prazo
-        const prazoParaAplicar = input.novoPrazo || camposAjustar.prazo;
-        if (prazoParaAplicar) {
+        if (camposAjustar.prazo) {
           await db.createAcaoHistorico({
             actionId: acao.id,
             campo: 'prazo',
             valorAnterior: acao.prazo.toISOString(),
-            valorNovo: prazoParaAplicar,
-            motivoAlteracao: `Ajuste aprovado${input.novoPrazo ? ' com edição do Admin' : ''}. Justificativa: ${solicitacao.justificativa}`,
+            valorNovo: camposAjustar.prazo,
+            motivoAlteracao: `Ajuste aprovado. Justificativa: ${solicitacao.justificativa}`,
             alteradoPor: ctx.user!.id,
             solicitacaoAjusteId: solicitacao.id,
           });
-          updates.prazo = new Date(prazoParaAplicar);
+          updates.prazo = new Date(camposAjustar.prazo);
         }
 
         if (camposAjustar.blocoId) {
@@ -1564,15 +1547,7 @@ Formato de resposta (JSON):
 
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        // Verificar se o usuário é admin
-        if (ctx.user?.role !== 'admin') {
-          throw new TRPCError({ 
-            code: 'FORBIDDEN', 
-            message: 'Apenas administradores podem excluir ações. Fale com o administrador.' 
-          });
-        }
-        
+      .mutation(async ({ input }) => {
         await db.deleteAction(input.id);
         return { success: true };
       }),
