@@ -175,26 +175,36 @@ export default function Departamentos() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Líder</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className="w-[40%]">Nome</TableHead>
+                <TableHead className="w-[35%]">Líder</TableHead>
+                <TableHead className="text-right w-[25%]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center">
+                  <TableCell colSpan={3} className="text-center">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredDepartamentos && filteredDepartamentos.length > 0 ? (
                 filteredDepartamentos.map((dept) => (
                   <TableRow key={dept.id}>
-                    <TableCell className="font-medium">{dept.nome}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {dept.descricao || "-"}
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span>{dept.nome}</span>
+                          <Badge 
+                            variant={dept.status === "ativo" ? "default" : "secondary"}
+                            className="text-xs"
+                          >
+                            {dept.status === "ativo" ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </div>
+                        {dept.descricao && (
+                          <span className="text-sm text-muted-foreground">{dept.descricao}</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {dept.leaderId ? (
@@ -202,11 +212,6 @@ export default function Departamentos() {
                       ) : (
                         <span className="text-muted-foreground italic">Sem líder</span>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={dept.status === "ativo" ? "default" : "secondary"}>
-                        {dept.status === "ativo" ? "Ativo" : "Inativo"}
-                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -242,7 +247,7 @@ export default function Departamentos() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
                     {searchTerm
                       ? "Nenhum departamento encontrado com esse termo de busca"
                       : "Nenhum departamento cadastrado"}
