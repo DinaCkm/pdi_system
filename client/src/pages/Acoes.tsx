@@ -257,12 +257,12 @@ export default function Acoes() {
       const matchesSearch = acao.nome.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPDI = filterPDI === "all" || acao.pdiId === parseInt(filterPDI);
       const matchesStatus = filterStatus === "all" || acao.status === filterStatus;
-      const matchesUsuario = filterUsuario === "all"; // Desabilitado: acao.pdi não disponível
-      const matchesLider = filterLider === "all"; // Desabilitado: acao.pdi não disponível
-      const matchesDepartamento = filterDepartamento === "all"; // Desabilitado: acao.pdi não disponível
-      const matchesBloco = filterBloco === "all"; // Desabilitado: acao.blocoCompetencia não disponível
-      const matchesMacro = filterMacro === "all"; // Desabilitado: acao.macroCompetencia não disponível
-      const matchesMicro = filterMicro === "all"; // Desabilitado: acao.microCompetencia não disponível
+      const matchesUsuario = filterUsuario === "all" || acao.pdi?.colaboradorId === parseInt(filterUsuario);
+      const matchesLider = filterLider === "all" || acao.pdi?.colaborador?.leaderId === parseInt(filterLider);
+      const matchesDepartamento = filterDepartamento === "all" || acao.pdi?.colaborador?.departamentoId === parseInt(filterDepartamento);
+      const matchesBloco = filterBloco === "all" || acao.blocoCompetenciaId === parseInt(filterBloco);
+      const matchesMacro = filterMacro === "all" || acao.macroCompetenciaId === parseInt(filterMacro);
+      const matchesMicro = filterMicro === "all" || acao.microCompetenciaId === parseInt(filterMicro);
       
       return matchesSearch && matchesPDI && matchesStatus && matchesUsuario && matchesLider && matchesDepartamento && matchesBloco && matchesMacro && matchesMicro;
     });
