@@ -967,7 +967,15 @@ export const appRouter = router({
         microId: z.number().optional(),
         prazo: z.string().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // Verificar se o usuário é admin
+        if (ctx.user?.role !== 'admin') {
+          throw new TRPCError({ 
+            code: 'FORBIDDEN', 
+            message: "Somente o admin pode editar. Vá até o botão 'Solicitar Ajuste' para solicitar uma alteração." 
+          });
+        }
+        
         const { id, prazo, ...rest } = input;
         
         const updateData: any = { ...rest };
@@ -1547,7 +1555,15 @@ Formato de resposta (JSON):
 
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // Verificar se o usuário é admin
+        if (ctx.user?.role !== 'admin') {
+          throw new TRPCError({ 
+            code: 'FORBIDDEN', 
+            message: 'Apenas administradores podem excluir ações. Fale com o administrador.' 
+          });
+        }
+        
         await db.deleteAction(input.id);
         return { success: true };
       }),
