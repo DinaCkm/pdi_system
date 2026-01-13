@@ -157,11 +157,21 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
                 )}
               />
             </div>
-            {selectedPDI && selectedPDI.ciclo && (
-              <p className="text-sm text-muted-foreground flex items-center gap-2">
-                <Info className="h-4 w-4" />
-                Ciclo: {selectedPDI.ciclo.nome} ({new Date(selectedPDI.ciclo.dataInicio).toLocaleDateString()} - {new Date(selectedPDI.ciclo.dataFim).toLocaleDateString()})
-              </p>
+            {selectedPDI && (
+              <div className="space-y-2">
+                {selectedPDI.colaborador && (
+                  <p className="text-sm font-medium flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
+                    Colaborador: {selectedPDI.colaborador.nome}
+                  </p>
+                )}
+                {selectedPDI.ciclo && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    Ciclo: {selectedPDI.ciclo.nome} ({new Date(selectedPDI.ciclo.dataInicio).toLocaleDateString()} - {new Date(selectedPDI.ciclo.dataFim).toLocaleDateString()})
+                  </p>
+                )}
+              </div>
             )}
           </div>
 

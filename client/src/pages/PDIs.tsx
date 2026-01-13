@@ -552,16 +552,6 @@ export default function PDIs() {
               <div className="border-t pt-4">
                 <div className="flex items-center justify-between mb-3">
                   <Label className="text-muted-foreground">Ações Vinculadas ({getAcoesCount(selectedPDI.id)})</Label>
-                  <Button 
-                    size="sm" 
-                    onClick={() => {
-                      setShowViewDialog(false);
-                      window.location.href = `/acoes?pdiId=${selectedPDI.id}`;
-                    }}
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Adicionar Ação
-                  </Button>
                 </div>
                 {actions && actions.filter((a: any) => a.pdiId === selectedPDI.id).length > 0 ? (
                   <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -593,7 +583,7 @@ export default function PDIs() {
                   <div className="text-center py-8 text-muted-foreground text-sm">
                     <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
                     <p>Nenhuma ação vinculada ainda.</p>
-                    <p className="text-xs mt-1">Clique em "Adicionar Ação" para criar a primeira.</p>
+                    <p className="text-xs mt-1">Acesse a página de Gestão de Ações para criar ações para este PDI.</p>
                   </div>
                 )}
               </div>
