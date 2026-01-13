@@ -54,8 +54,7 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Bloco criado com sucesso!");
       await utils.competencias.listBlocos.invalidate();
-      // Delay para permitir cleanup do Dialog antes de fechar
-      setTimeout(() => setBlocoDialogOpen(false), 100);
+      setBlocoDialogOpen(false);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -64,8 +63,7 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Bloco atualizado com sucesso!");
       await utils.competencias.listBlocos.invalidate();
-      // Delay para permitir cleanup do Dialog antes de fechar
-      setTimeout(() => setBlocoDialogOpen(false), 100);
+      setBlocoDialogOpen(false);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -75,6 +73,7 @@ export default function Competencias() {
       toast.success("Bloco excluído com sucesso!");
       await utils.competencias.listBlocos.invalidate();
       await utils.competencias.listAllMacros.invalidate();
+      await utils.competencias.listAllMicros.invalidate();
     },
     onError: (error) => toast.error(error.message),
   });
@@ -84,8 +83,7 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Macro criada com sucesso!");
       await utils.competencias.listAllMacros.invalidate();
-      // Delay aumentado para garantir funcionamento em produção (build minificado)
-      setTimeout(() => setMacroDialogOpen(false), 300);
+      setMacroDialogOpen(false);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -94,8 +92,7 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Macro atualizada com sucesso!");
       await utils.competencias.listAllMacros.invalidate();
-      // Delay aumentado para garantir funcionamento em produção (build minificado)
-      setTimeout(() => setMacroDialogOpen(false), 300);
+      setMacroDialogOpen(false);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -114,8 +111,7 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Micro criada com sucesso!");
       await utils.competencias.listAllMicros.invalidate();
-      // Delay aumentado para garantir funcionamento em produção (build minificado)
-      setTimeout(() => setMicroDialogOpen(false), 300);
+      setMicroDialogOpen(false);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -124,8 +120,7 @@ export default function Competencias() {
     onSuccess: async () => {
       toast.success("Micro atualizada com sucesso!");
       await utils.competencias.listAllMicros.invalidate();
-      // Delay aumentado para garantir funcionamento em produção (build minificado)
-      setTimeout(() => setMicroDialogOpen(false), 300);
+      setMicroDialogOpen(false);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -377,7 +372,10 @@ export default function Competencias() {
                           Novo Bloco
                         </Button>
                       </DialogTrigger>
-                      <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+                      <DialogContent
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                        onCloseAutoFocus={(e) => e.preventDefault()}
+                      >
                         <DialogHeader>
                           <DialogTitle>{editingBloco ? "Editar Bloco" : "Novo Bloco"}</DialogTitle>
                           <DialogDescription>
@@ -505,7 +503,10 @@ export default function Competencias() {
                       Nova Macro
                     </Button>
                   </DialogTrigger>
-                  <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+                  <DialogContent
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                    onCloseAutoFocus={(e) => e.preventDefault()}
+                  >
                     <DialogHeader>
                       <DialogTitle>{editingMacro ? "Editar Macro" : "Nova Macro"}</DialogTitle>
                       <DialogDescription>
@@ -663,7 +664,10 @@ export default function Competencias() {
                       Nova Micro
                     </Button>
                   </DialogTrigger>
-                  <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
+                  <DialogContent
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                    onCloseAutoFocus={(e) => e.preventDefault()}
+                  >
                     <DialogHeader>
                       <DialogTitle>{editingMicro ? "Editar Micro" : "Nova Micro"}</DialogTitle>
                       <DialogDescription>
