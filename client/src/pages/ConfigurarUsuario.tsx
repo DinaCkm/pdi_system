@@ -65,10 +65,24 @@ export default function ConfigurarUsuario() {
   useEffect(() => {
     if (user) {
       setSelectedRole(user.role);
-      setSelectedDepartamento(user.departamentoId ?? undefined);
-      setSelectedLeader(user.leaderId ?? undefined);
+      
+      // Para líderes: departamento que lidera vem de user_department_roles com LEADER
+      // departamento de colaborador vem de user.departamentoId
+      if (user.role === "lider") {
+        // Buscar departamento que o líder lidera
+        const leaderDept = allDepartamentos.find(d => {
+          // Verificar se há um registro de LEADER para este usuário neste departamento
+          return d.leaderId === user.id;
+        });
+        setSelectedDepartamento(leaderDept?.id ?? undefined);
+        setSelectedDepartamentoColaborador(user.departamentoId ?? undefined);
+        setSelectedLeaderColaborador(user.leaderId ?? undefined);
+      } else {
+        setSelectedDepartamento(user.departamentoId ?? undefined);
+        setSelectedLeader(user.leaderId ?? undefined);
+      }
     }
-  }, [user]);
+  }, [user, allDepartamentos]);
 
   // Filtrar líderes disponíveis para o departamento de colaborador
   const availableLeadersColaborador = useMemo(() => {
@@ -368,7 +382,10 @@ export default function ConfigurarUsuario() {
                   <select
                     id="departamento-lidera"
                     value={selectedDepartamento || ""}
-                    onChange={(e) => handleDepartamentoChange(e.target.value)}
+                    onChange={(e) => {
+                      const newDeptId = e.target.value ? parseInt(e.target.value) : undefined;
+                      setSelectedDepartamento(newDeptId);
+                    }}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     required
                   >
@@ -381,7 +398,6 @@ export default function ConfigurarUsuario() {
                         </option>
                       ))}
                   </select>
-
                 </div>
 
                 <div className="space-y-2">
@@ -410,7 +426,7 @@ export default function ConfigurarUsuario() {
                   >
                     <option value="">Selecione um departamento</option>
                     {departamentos
-                      .filter((d) => d.status === "ativo" && d.id !== selectedDepartamento)
+                      .filter((d) => d.status === "ativo")
                       .map((dept) => (
                         <option key={dept.id} value={dept.id}>
                           {dept.nome}
