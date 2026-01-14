@@ -1391,8 +1391,14 @@ export const appRouter = router({
       }),
 
     getPendingAdjustments: protectedProcedure.query(async ({ ctx }) => {
-      // Líderes e administradores podem ver as solicitações pendentes
-      return await db.getPendingAdjustmentRequests();
+      // Administrador vê TODAS as solicitações pendentes (para aprovar/reprovar)
+      // Colaborador/Líder vê apenas suas próprias solicitações (histórico)
+      if (ctx.user?.role === 'admin') {
+        return await db.getPendingAdjustmentRequests();
+      } else {
+        // Para colaborador e líder, retornar apenas suas próprias solicitações
+        return await db.getPendingAdjustmentRequestsByUser(ctx.user!.id);
+      }
     }),
 
     getAdjustmentStats: protectedProcedure

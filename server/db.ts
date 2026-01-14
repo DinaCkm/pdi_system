@@ -1135,6 +1135,32 @@ export async function getPendingAdjustmentRequestsWithDetails() {
   }
 }
 
+export async function getPendingAdjustmentRequestsByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select({
+      id: adjustmentRequests.id,
+      actionId: adjustmentRequests.actionId,
+      actionNome: actions.nome,
+      actionDescricao: actions.descricao,
+      actionPrazo: actions.prazo,
+      solicitanteId: adjustmentRequests.solicitanteId,
+      solicitanteName: users.name,
+      tipoSolicitante: adjustmentRequests.tipoSolicitante,
+      justificativa: adjustmentRequests.justificativa,
+      camposAjustar: adjustmentRequests.camposAjustar,
+      status: adjustmentRequests.status,
+      createdAt: adjustmentRequests.createdAt,
+    })
+    .from(adjustmentRequests)
+    .innerJoin(actions, eq(adjustmentRequests.actionId, actions.id))
+    .innerJoin(users, eq(adjustmentRequests.solicitanteId, users.id))
+    .where(eq(adjustmentRequests.solicitanteId, userId))
+    .orderBy(desc(adjustmentRequests.createdAt));
+}
+
 export async function getPendingAdjustmentRequestsByLeaderId(leaderId: number) {
   const db = await getDb();
   if (!db) return [];

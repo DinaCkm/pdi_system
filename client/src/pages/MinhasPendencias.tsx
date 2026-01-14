@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function MinhasPendencias() {
+  const authData = useAuth();
+  const user = authData?.user;
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -23,6 +26,9 @@ export default function MinhasPendencias() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterColaborador, setFilterColaborador] = useState<string>("todos");
   const [filterData, setFilterData] = useState<string>("todos");
+  
+  // Apenas administradores podem aprovar/reprovar
+  const isAdmin = user && 'role' in user && user.role === 'admin';
 
   const { data: solicitacoes, refetch, isLoading } = trpc.actions.getPendingAdjustments.useQuery();
   const { data: historico, isLoading: loadingHistorico } = trpc.actions.getHistorico.useQuery(
@@ -344,23 +350,27 @@ export default function MinhasPendencias() {
                         <FileText className="h-4 w-4 mr-2" />
                         Ver Detalhes
                       </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleApprove(solicitacao)}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Aprovar
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleReject(solicitacao)}
-                      >
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Reprovar
-                      </Button>
+                      {isAdmin && (
+                        <>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleApprove(solicitacao)}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Aprovar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleReject(solicitacao)}
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Reprovar
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>
