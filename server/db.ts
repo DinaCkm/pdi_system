@@ -1097,6 +1097,10 @@ export async function getCommentsByAdjustmentRequestId(adjustmentRequestId: numb
 }
 
 export async function getPendingAdjustmentRequestsWithDetails() {
+  return await getAllAdjustmentRequestsWithDetails();
+}
+
+export async function getAllAdjustmentRequestsWithDetails() {
   const db = await getDb();
   if (!db) {
     console.log('❌ Erro: Conexão com banco não estabelecida');
@@ -1122,7 +1126,6 @@ export async function getPendingAdjustmentRequestsWithDetails() {
       .from(adjustmentRequests)
       .innerJoin(actions, eq(adjustmentRequests.actionId, actions.id))
       .innerJoin(users, eq(adjustmentRequests.solicitanteId, users.id))
-      .where(eq(adjustmentRequests.status, 'pendente'))
       .orderBy(desc(adjustmentRequests.createdAt));
     
     console.log(`✅ Query executada com sucesso. Total de solicitações: ${result.length}`);

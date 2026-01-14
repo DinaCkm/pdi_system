@@ -213,19 +213,21 @@ export default function MinhasPendencias() {
         <p className="text-muted-foreground mb-4">
           Acompanhe todas as suas solicitações de alteração (pendentes, aprovadas ou rejeitadas)
         </p>
-        <div className="bg-red-50 border-4 border-red-500 rounded-lg p-6 mb-4 shadow-lg">
-          <div className="flex items-start gap-4">
-            <AlertTriangle className="h-8 w-8 text-red-600 flex-shrink-0 mt-1 animate-pulse" />
-            <div>
-              <p className="text-lg font-bold text-red-900 mb-2">
-                ⚠️ ATENÇÃO - VALIDE COM SUA LIDERANÇA ANTES DE ENVIAR!
-              </p>
-              <p className="text-red-900 font-semibold">
-                Solicitações de alteração devem ser previamente validadas com seu líder direto. Solicitações não validadas podem ser rejeitadas.
-              </p>
+        {!isAdmin && (
+          <div className="bg-red-50 border-4 border-red-500 rounded-lg p-6 mb-4 shadow-lg">
+            <div className="flex items-start gap-4">
+              <AlertTriangle className="h-8 w-8 text-red-600 flex-shrink-0 mt-1 animate-pulse" />
+              <div>
+                <p className="text-lg font-bold text-red-900 mb-2">
+                  ⚠️ AT ENÇÃO - VALIDE COM SUA LIDERANÇA ANTES DE ENVIAR!
+                </p>
+                <p className="text-red-900 font-semibold">
+                  Solicitações de alteração devem ser previamente validadas com seu líder direto. Solicitações não validadas podem ser rejeitadas.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-sm text-blue-900">

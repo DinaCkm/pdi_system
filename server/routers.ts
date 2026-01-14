@@ -1466,7 +1466,7 @@ export const appRouter = router({
       if (ctx.user!.role !== 'admin' && ctx.user!.role !== 'lider') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas administradores e líderes podem acessar solicitações pendentes' });
       }
-      return await db.getPendingAdjustmentRequestsWithDetails();
+      return await db.getAllAdjustmentRequestsWithDetails();
     }),
 
     getAdjustmentRequestById: protectedProcedure
