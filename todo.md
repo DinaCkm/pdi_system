@@ -899,3 +899,9 @@
 - Implementar visualização de auditoria para colaboradores
 - Adicionar filtros de auditoria por data/campo
 - Gerar relatórios de auditoria
+
+
+## Bug: Campos de Edição Vazios ao Aprovar Solicitação
+- [x] Corrigir campos "Novo Nome", "Nova Descrição", "Novo Prazo" para vir preenchidos com valores originais
+- [x] Admin consegue ler o conteúdo original e fazer ajustes sem digitar tudo novamente
+- [x] Campos devem ser inicializados com valores da ação quando solicitação é selecionada

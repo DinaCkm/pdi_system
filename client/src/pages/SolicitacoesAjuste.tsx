@@ -14,11 +14,11 @@ import { trpc } from "@/lib/trpc";
 
 // Função para formatar data
 function formatarData(data: any): string {
-  if (!data) return "N/A";
+  if (!data) return "";
   if (typeof data === 'string') {
     return data.split('T')[0];
   }
-  return "N/A";
+  return "";
 }
 
 // Função para detectar se houve alteração
@@ -96,11 +96,11 @@ export default function SolicitacoesAjuste() {
     // Armazenar valores originais
     setOriginalNome(solicitacao.actionNome || "");
     setOriginalDescricao(solicitacao.actionDescricao || "");
-    setOriginalPrazo(formatarData(solicitacao.actionPrazo) || "");
+    setOriginalPrazo(formatarData(solicitacao.actionPrazo));
     // Inicializar campos de edição com valores originais
     setEditNome(solicitacao.actionNome || "");
     setEditDescricao(solicitacao.actionDescricao || "");
-    setEditPrazo(formatarData(solicitacao.actionPrazo) || "");
+    setEditPrazo(formatarData(solicitacao.actionPrazo));
     setShowAprovarDialog(true);
   };
 
