@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -210,9 +210,28 @@ export default function MinhasPendencias() {
     <div className="container mx-auto py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">Solicitações</h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground mb-4">
           Acompanhe todas as suas solicitações de alteração (pendentes, aprovadas ou rejeitadas)
         </p>
+        <div className="bg-red-50 border-4 border-red-500 rounded-lg p-6 mb-4 shadow-lg">
+          <div className="flex items-start gap-4">
+            <AlertTriangle className="h-8 w-8 text-red-600 flex-shrink-0 mt-1 animate-pulse" />
+            <div>
+              <p className="text-lg font-bold text-red-900 mb-2">
+                ⚠️ ATENÇÃO - VALIDE COM SUA LIDERANÇA ANTES DE ENVIAR!
+              </p>
+              <p className="text-red-900 font-semibold">
+                Solicitações de alteração devem ser previamente validadas com seu líder direto. Solicitações não validadas podem ser rejeitadas.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-900">
+            <span className="font-semibold">Prazo de Resposta:</span> Solicitações serão respondidas em até 5 dias úteis, exceto se dependerem de reunião com a liderança.
+          </p>
+        </div>
       </div>
 
       {/* Filtros e Busca */}
@@ -327,9 +346,16 @@ export default function MinhasPendencias() {
                         <span className="font-medium">Ação:</span> {solicitacao.actionNome || "Ação desconhecida"}
                       </CardDescription>
                     </div>
-                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                      <Clock className="h-3 w-3 mr-1" />
-                      Pendente
+                    <Badge 
+                      variant="outline" 
+                      className={solicitacao.status === 'pendente' ? "bg-orange-50 text-orange-700 border-orange-200" : solicitacao.status === 'aprovada' ? "bg-green-50 text-green-700 border-green-200" : "bg-red-50 text-red-700 border-red-200"}
+                    >
+                      {solicitacao.status === 'pendente' && <Clock className="h-3 w-3 mr-1" />}
+                      {solicitacao.status === 'aprovada' && <CheckCircle className="h-3 w-3 mr-1" />}
+                      {solicitacao.status === 'reprovada' && <XCircle className="h-3 w-3 mr-1" />}
+                      {solicitacao.status === 'pendente' && 'Pendente'}
+                      {solicitacao.status === 'aprovada' && 'Aprovada'}
+                      {solicitacao.status === 'reprovada' && 'Reprovada'}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -344,12 +370,31 @@ export default function MinhasPendencias() {
                         <p className="text-sm text-muted-foreground mb-1">Data da Solicitação</p>
                         <p className="font-medium">{new Date(solicitacao.createdAt).toLocaleDateString()}</p>
                       </div>
+                      {solicitacao.evaluatedAt && (
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Data da Resposta</p>
+                          <p className="font-medium">{new Date(solicitacao.evaluatedAt).toLocaleDateString()}</p>
+                        </div>
+                      )}
+                      {solicitacao.status !== 'pendente' && (
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Respondido por</p>
+                          <p className="font-medium">{solicitacao.evaluatorName || "Administrador"}</p>
+                        </div>
+                      )}
                     </div>
 
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Justificativa</p>
+                      <p className="text-sm text-muted-foreground mb-1">Justificativa da Solicitação</p>
                       <p className="text-sm bg-muted p-3 rounded-md">{solicitacao.justificativa}</p>
                     </div>
+
+                    {solicitacao.justificativaAdmin && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Justificativa da Resposta</p>
+                        <p className="text-sm bg-muted p-3 rounded-md">{solicitacao.justificativaAdmin}</p>
+                      </div>
+                    )}
 
                     <div>
                       <p className="text-sm text-muted-foreground mb-2">Campos a ajustar</p>
