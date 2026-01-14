@@ -32,13 +32,17 @@ function temAlteracao(original: any, novo: any): boolean {
 export default function SolicitacoesAjuste() {
   const [selectedSolicitacao, setSelectedSolicitacao] = useState<number | null>(null);
   const [selectedSolicitacaoData, setSelectedSolicitacaoData] = useState<any>(null);
-  const [showAprovarDialog, setShowAprovarDialog] = useState(false);
+  const [showAprovarDialogAjuste, setShowAprovarDialogAjuste] = useState(false);
   const [showReprovarDialog, setShowReprovarDialog] = useState(false);
   const [justificativaReprovacao, setJustificativaReprovacao] = useState("");
   const [comentario, setComentario] = useState("");
   const [confirmaAprovacao, setConfirmaAprovacao] = useState(false);
   // Estado para armazenar valores de edição por solicitação
   const [editValues, setEditValues] = useState<Record<number, { nome: string; descricao: string; prazo: string }>>({});
+  // Estado para controlar se as alterações foram salvas
+  const [alteracoesSalvas, setAlteracoesSalvas] = useState(false);
+  // Estado para controlar se está salvando
+  const [estaSalvando, setEstaSalvando] = useState(false);
 
 
   const { data: solicitacoes, isLoading, refetch } = trpc.actions.getPendingAdjustmentsWithDetails.useQuery();
@@ -79,7 +83,7 @@ export default function SolicitacoesAjuste() {
   const aprovarMutation = trpc.actions.aprovarAjuste.useMutation({
     onSuccess: () => {
       toast.success("Solicitação aprovada com sucesso!");
-      setShowAprovarDialog(false);
+      setShowAprovarDialogAjuste(false);
       setSelectedSolicitacao(null);
       setEditValues({});
       refetch();
@@ -126,7 +130,7 @@ export default function SolicitacoesAjuste() {
         prazo: formatarData(solicitacao.actionPrazo)
       }
     }));
-    setShowAprovarDialog(true);
+      setShowAprovarDialogAjuste(true);
   };
 
   const handleReprovar = (solicitacaoId: number) => {
@@ -135,12 +139,22 @@ export default function SolicitacoesAjuste() {
   };
 
   const executarAprovacao = () => {
+    console.log("executarAprovacao chamado");
+    console.log("selectedSolicitacao:", selectedSolicitacao);
+    console.log("editValues:", editValues);
     if (selectedSolicitacao) {
       const currentEditValues = editValues[selectedSolicitacao];
+      console.log("currentEditValues:", currentEditValues);
       if (!currentEditValues) {
         toast.error("Erro ao carregar dados");
         return;
       }
+      console.log("Chamando aprovarMutation com:", {
+        solicitacaoId: selectedSolicitacao,
+        novoNome: currentEditValues.nome,
+        novaDescricao: currentEditValues.descricao,
+        novoPrazo: currentEditValues.prazo,
+      });
       aprovarMutation.mutate({
         solicitacaoId: selectedSolicitacao,
         novoNome: currentEditValues.nome,
@@ -380,8 +394,8 @@ export default function SolicitacoesAjuste() {
       )}
 
       {/* Dialog de Aprovação com Edição */}
-      <Dialog open={showAprovarDialog} onOpenChange={setShowAprovarDialog}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <Dialog open={showAprovarDialogAjuste} onOpenChange={setShowAprovarDialogAjuste}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto max-w-2xl">
           <DialogHeader>
             <DialogTitle>Aprovar e Editar Ação</DialogTitle>
             <DialogDescription>
@@ -401,6 +415,68 @@ export default function SolicitacoesAjuste() {
                     <p className="text-sm font-semibold text-amber-900 mb-1">Justificativa do Colaborador:</p>
                     <p className="text-sm text-amber-800 bg-white p-2 rounded border border-amber-100">{selectedSolicitacaoData.justificativa}</p>
                   </div>
+                </div>
+              </div>
+
+              {/* Campos a Editar */}
+              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                <h4 className="font-semibold mb-3 text-yellow-900">✏️ EDITE OS CAMPOS SOLICITADOS PARA AJUSTE</h4>
+                <div className="space-y-3">
+                  {(() => {
+                    const camposAjustar = JSON.parse(selectedSolicitacaoData?.camposAjustar || '{}');
+                    const currentEditValues = editValues[selectedSolicitacao!] || {
+                      nome: selectedSolicitacaoData?.actionNome || "",
+                      descricao: selectedSolicitacaoData?.actionDescricao || "",
+                      prazo: formatarData(selectedSolicitacaoData?.actionPrazo)
+                    };
+                    return (
+                      <>
+                        {camposAjustar.nome && (
+                          <div>
+                            <p className="text-sm font-medium text-yellow-900 mb-1">Novo Nome:</p>
+                            <Input
+                              value={currentEditValues.nome || ""}
+                              onChange={(e) => setEditValues(prev => ({
+                                ...prev,
+                                [selectedSolicitacao!]: { ...prev[selectedSolicitacao!], nome: e.target.value }
+                              }))}
+                              placeholder="Digite o novo nome"
+                              className="bg-white"
+                            />
+                          </div>
+                        )}
+                        {camposAjustar.descricao && (
+                          <div>
+                            <p className="text-sm font-medium text-yellow-900 mb-1">Nova Descrição:</p>
+                            <Textarea
+                              value={currentEditValues.descricao || ""}
+                              onChange={(e) => setEditValues(prev => ({
+                                ...prev,
+                                [selectedSolicitacao!]: { ...prev[selectedSolicitacao!], descricao: e.target.value }
+                              }))}
+                              placeholder="Digite a nova descrição"
+                              rows={2}
+                              className="bg-white text-xs"
+                            />
+                          </div>
+                        )}
+                        {camposAjustar.prazo && (
+                          <div>
+                            <p className="text-sm font-medium text-yellow-900 mb-1">Novo Prazo:</p>
+                            <Input
+                              type="date"
+                              value={currentEditValues.prazo || ""}
+                              onChange={(e) => setEditValues(prev => ({
+                                ...prev,
+                                [selectedSolicitacao!]: { ...prev[selectedSolicitacao!], prazo: e.target.value }
+                              }))}
+                              className="bg-white"
+                            />
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -488,7 +564,7 @@ export default function SolicitacoesAjuste() {
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAprovarDialog(false)}>
+            <Button variant="outline" onClick={() => setShowAprovarDialogAjuste(false)}>
               Cancelar
             </Button>
             <Button onClick={executarAprovacao} disabled={!confirmaAprovacao || aprovarMutation.isPending} className="bg-green-600 hover:bg-green-700">
