@@ -53,7 +53,8 @@ const getMenuItems = (userRole: string) => {
     );
   } else {
     items.push(
-      { icon: FileText, label: "Meu PDI", path: "/pdis" },
+      { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
+      { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
       { icon: Bell, label: "Solicitações Pendentes", path: "/pendencias" },
     );
   }

@@ -848,3 +848,7 @@
 - [x] Implementar filtros no backend para que funcionem corretamente (filtro por usuário/colaborador não retorna dados)
 - [x] Corrigir erro de login do usuário usuarioteste1@empresa.com com CPF 000.000.000-21 (estava com CPF formatado no banco, corrigido para formato sem pontos/traços)
 - [x] Corrigir todos os CPFs da base de dados removendo formatação (pontos e traços) - problema em lote
+
+## Funcionalidades para Colaborador
+- [x] Adicionar botão para enviar evidências nas ações do colaborador
+- [x] Adicionar botão para solicitar alterações nas ações do colaborador
