@@ -96,14 +96,14 @@ export default function SolicitacoesAjuste() {
   useEffect(() => {
     if (showAprovarDialog && selectedSolicitacao && editValues[selectedSolicitacao]) {
       setIsLoadingComparison2(true);
-      compareQuery.refetch().then(result => {
+      compareQuery.refetch().then((result: any) => {
         if (result.data) {
           setComparison(result.data);
         }
         setIsLoadingComparison2(false);
       });
     }
-  }, [showAprovarDialog, selectedSolicitacao])
+  }, [showAprovarDialog, selectedSolicitacao, editValues])
 
   const aprovarMutation = trpc.actions.aprovarAjuste.useMutation({
     onSuccess: () => {

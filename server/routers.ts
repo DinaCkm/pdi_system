@@ -1626,8 +1626,8 @@ Formato de resposta (JSON):
         const mudancas = [];
 
         // Comparar Nome
-        if (camposAjustar.nome) {
-          const novoNome = input.novoNome || camposAjustar.nome;
+        if (input.novoNome && input.novoNome !== acao.nome) {
+          
           if (novoNome !== acao.nome) {
             mudancas.push({
               campo: 'Nome',
