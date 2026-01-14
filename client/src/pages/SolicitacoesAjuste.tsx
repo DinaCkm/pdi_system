@@ -393,94 +393,13 @@ export default function SolicitacoesAjuste() {
         </div>
       )}
 
-      {/* Dialog de Aprovação com Edição */}
+      {/* Dialog de Aprovação */}
       <Dialog open={showAprovarDialogAjuste} onOpenChange={setShowAprovarDialogAjuste}>
         <DialogContent className="max-h-[85vh] overflow-y-auto max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Aprovar e Editar Ação</DialogTitle>
-            <DialogDescription>
-              Edite TODOS os campos da ação conforme necessário. As alterações serão rastreadas e o colaborador será notificado.
-            </DialogDescription>
-          </DialogHeader>
-          
           {selectedSolicitacaoData && (
             <div className="space-y-4 py-4">
-              {/* Informações da Solicitação */}
-              <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                <p className="text-sm font-bold text-amber-900 mb-3">⚠️ INFORMAÇÕES DA SOLICITAÇÃO</p>
-                <div className="space-y-2">
-                  <p className="text-sm text-amber-800"><strong>Solicitante:</strong> {selectedSolicitacaoData.solicitanteNome}</p>
-                  <p className="text-sm text-amber-800"><strong>Ação:</strong> {selectedSolicitacaoData.actionNome}</p>
-                  <div>
-                    <p className="text-sm font-semibold text-amber-900 mb-1">Justificativa do Colaborador:</p>
-                    <p className="text-sm text-amber-800 bg-white p-2 rounded border border-amber-100">{selectedSolicitacaoData.justificativa}</p>
-                  </div>
-                </div>
-              </div>
 
-              {/* Campos a Editar */}
-              <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                <h4 className="font-semibold mb-3 text-yellow-900">✏️ EDITE OS CAMPOS SOLICITADOS PARA AJUSTE</h4>
-                <div className="space-y-3">
-                  {(() => {
-                    const camposAjustar = JSON.parse(selectedSolicitacaoData?.camposAjustar || '{}');
-                    const currentEditValues = editValues[selectedSolicitacao!] || {
-                      nome: selectedSolicitacaoData?.actionNome || "",
-                      descricao: selectedSolicitacaoData?.actionDescricao || "",
-                      prazo: formatarData(selectedSolicitacaoData?.actionPrazo)
-                    };
-                    return (
-                      <>
-                        {camposAjustar.nome && (
-                          <div>
-                            <p className="text-sm font-medium text-yellow-900 mb-1">Novo Nome:</p>
-                            <Input
-                              value={currentEditValues.nome || ""}
-                              onChange={(e) => setEditValues(prev => ({
-                                ...prev,
-                                [selectedSolicitacao!]: { ...prev[selectedSolicitacao!], nome: e.target.value }
-                              }))}
-                              placeholder="Digite o novo nome"
-                              className="bg-white"
-                            />
-                          </div>
-                        )}
-                        {camposAjustar.descricao && (
-                          <div>
-                            <p className="text-sm font-medium text-yellow-900 mb-1">Nova Descrição:</p>
-                            <Textarea
-                              value={currentEditValues.descricao || ""}
-                              onChange={(e) => setEditValues(prev => ({
-                                ...prev,
-                                [selectedSolicitacao!]: { ...prev[selectedSolicitacao!], descricao: e.target.value }
-                              }))}
-                              placeholder="Digite a nova descrição"
-                              rows={2}
-                              className="bg-white text-xs"
-                            />
-                          </div>
-                        )}
-                        {camposAjustar.prazo && (
-                          <div>
-                            <p className="text-sm font-medium text-yellow-900 mb-1">Novo Prazo:</p>
-                            <Input
-                              type="date"
-                              value={currentEditValues.prazo || ""}
-                              onChange={(e) => setEditValues(prev => ({
-                                ...prev,
-                                [selectedSolicitacao!]: { ...prev[selectedSolicitacao!], prazo: e.target.value }
-                              }))}
-                              className="bg-white"
-                            />
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* Seção de Comparação: Antes vs Depois */}
+              {/* Comparação: Antes vs Depois */}
               <div className="space-y-3 bg-green-50 p-4 rounded-lg border border-green-200">
                 <h4 className="font-semibold text-sm text-green-900">📋 O QUE SERÁ ALTERADO</h4>
                 <p className="text-xs text-green-800">Visualize as mudanças propostas pelo colaborador:</p>
