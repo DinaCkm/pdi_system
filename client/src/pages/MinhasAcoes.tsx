@@ -54,6 +54,11 @@ function AcaoAlteracaoInfo({ actionId }: { actionId: number }) {
           <p className="text-xs text-gray-600">
             Solicitações de alteração: <strong>{alteracaoInfo.solicitacoesAprovadas}/3</strong>
           </p>
+          {alteracaoInfo.solicitacoesAprovadas >= 3 && (
+            <p className="text-xs text-red-600 mt-2">
+              <strong>⚠️ Limite de 3 solicitações atingido!</strong> Não é possível solicitar novas alterações.
+            </p>
+          )}
         </div>
       )}
     </>
@@ -386,6 +391,8 @@ export default function MinhasAcoes() {
                   <Button
                     variant="outline"
                     className="flex-1"
+                    disabled={acao.alteracoesCount >= 3}
+                    title={acao.alteracoesCount >= 3 ? "Limite de 3 solicitações atingido" : ""}
                     onClick={() => {
                       setSelectedAcao(acao);
                       setSelectedFields([]);
