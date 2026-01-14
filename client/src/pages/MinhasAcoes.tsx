@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FileText, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function MinhasAcoes() {
   const { user } = useAuth();
@@ -28,6 +29,7 @@ export default function MinhasAcoes() {
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [descricaoAlteracao, setDescricaoAlteracao] = useState("");
   const [isSubmittingSolicitacao, setIsSubmittingSolicitacao] = useState(false);
+  const [showConfirmacaoLider, setShowConfirmacaoLider] = useState(false);
 
   // Filtros
   const [filterCompetencia, setFilterCompetencia] = useState<string>("todos");
@@ -402,30 +404,8 @@ export default function MinhasAcoes() {
                     alert("Por favor, selecione pelo menos um campo para alterar");
                     return;
                   }
-
-                  setIsSubmittingSolicitacao(true);
-                  const camposAjustar: any = {};
-                  if (selectedFields.includes("nome")) camposAjustar.nome = selectedAcao.nome;
-                  if (selectedFields.includes("descricao"))
-                    camposAjustar.descricao = selectedAcao.descricao;
-                  if (selectedFields.includes("prazo")) camposAjustar.prazo = selectedAcao.prazo.toISOString();
-                  if (selectedFields.includes("competencia")) {
-                    camposAjustar.microId = selectedAcao.microCompetenciaId;
-                  }
-                  if (selectedFields.includes("outro")) {
-                    camposAjustar.outro = "[Alteração solicitada]";
-                  }
-
-                  solicitarAjusteMutation.mutate(
-                    {
-                      actionId: selectedAcao.id,
-                      justificativa: descricaoAlteracao,
-                      camposAjustar,
-                    },
-                    {
-                      onSettled: () => setIsSubmittingSolicitacao(false),
-                    }
-                  );
+                  // Abrir modal de confirmação
+                  setShowConfirmacaoLider(true);
                 }}
                 disabled={isSubmittingSolicitacao}
               >
@@ -435,6 +415,61 @@ export default function MinhasAcoes() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Confirmação - Validação com Líder */}
+      <AlertDialog open={showConfirmacaoLider} onOpenChange={setShowConfirmacaoLider}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-orange-600" />
+              Validação com Liderança
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Antes de enviar sua solicitação de alteração, é importante validar com seu líder direto.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 my-4">
+            <p className="text-sm text-orange-900 font-medium">
+              Você já conversou com seu líder sobre esta alteração?
+            </p>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Não, vou conversar primeiro</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowConfirmacaoLider(false);
+                // Enviar a solicitação
+                setIsSubmittingSolicitacao(true);
+                const camposAjustar: any = {};
+                if (selectedFields.includes("nome")) camposAjustar.nome = selectedAcao.nome;
+                if (selectedFields.includes("descricao"))
+                  camposAjustar.descricao = selectedAcao.descricao;
+                if (selectedFields.includes("prazo")) camposAjustar.prazo = selectedAcao.prazo.toISOString();
+                if (selectedFields.includes("competencia")) {
+                  camposAjustar.microId = selectedAcao.microCompetenciaId;
+                }
+                if (selectedFields.includes("outro")) {
+                  camposAjustar.outro = "[Alteração solicitada]";
+                }
+
+                solicitarAjusteMutation.mutate(
+                  {
+                    actionId: selectedAcao.id,
+                    justificativa: descricaoAlteracao,
+                    camposAjustar,
+                  },
+                  {
+                    onSettled: () => setIsSubmittingSolicitacao(false),
+                  }
+                );
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Sim, já conversei
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
