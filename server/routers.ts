@@ -1517,6 +1517,20 @@ export const appRouter = router({
       return await db.getAllAdjustmentRequestsWithDetails();
     }),
 
+    getPendingAdjustmentsOnly: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user!.role !== 'admin' && ctx.user!.role !== 'lider') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Acesso negado' });
+      }
+      return await db.getPendingAdjustmentRequestsOnly();
+    }),
+
+    getApprovedAndRejectedAdjustments: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user!.role !== 'admin' && ctx.user!.role !== 'lider') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Acesso negado' });
+      }
+      return await db.getApprovedAndRejectedAdjustments();
+    }),
+
     getAdjustmentRequestById: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {

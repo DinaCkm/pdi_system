@@ -1141,6 +1141,80 @@ export async function getAllAdjustmentRequestsWithDetails() {
   }
 }
 
+export async function getPendingAdjustmentRequestsOnly() {
+  const db = await getDb();
+  if (!db) {
+    console.log('❌ Erro: Conexão com banco não estabelecida');
+    return [];
+  }
+  
+  try {
+    const result = await db
+      .select({
+        id: adjustmentRequests.id,
+        actionId: adjustmentRequests.actionId,
+        actionNome: actions.nome,
+        actionDescricao: actions.descricao,
+        actionPrazo: actions.prazo,
+        solicitanteId: adjustmentRequests.solicitanteId,
+        solicitanteNome: users.name,
+        tipoSolicitante: adjustmentRequests.tipoSolicitante,
+        justificativa: adjustmentRequests.justificativa,
+        camposAjustar: adjustmentRequests.camposAjustar,
+        status: adjustmentRequests.status,
+        createdAt: adjustmentRequests.createdAt,
+      })
+      .from(adjustmentRequests)
+      .innerJoin(actions, eq(adjustmentRequests.actionId, actions.id))
+      .innerJoin(users, eq(adjustmentRequests.solicitanteId, users.id))
+      .where(eq(adjustmentRequests.status, 'pendente'))
+      .orderBy(desc(adjustmentRequests.createdAt));
+    
+    return result;
+  } catch (error) {
+    console.error('❌ Erro na query:', error);
+    throw error;
+  }
+}
+
+export async function getApprovedAndRejectedAdjustments() {
+  const db = await getDb();
+  if (!db) {
+    console.log('❌ Erro: Conexão com banco não estabelecida');
+    return [];
+  }
+  
+  try {
+    const result = await db
+      .select({
+        id: adjustmentRequests.id,
+        actionId: adjustmentRequests.actionId,
+        actionNome: actions.nome,
+        actionDescricao: actions.descricao,
+        actionPrazo: actions.prazo,
+        solicitanteId: adjustmentRequests.solicitanteId,
+        solicitanteNome: users.name,
+        tipoSolicitante: adjustmentRequests.tipoSolicitante,
+        justificativa: adjustmentRequests.justificativa,
+        camposAjustar: adjustmentRequests.camposAjustar,
+        status: adjustmentRequests.status,
+        createdAt: adjustmentRequests.createdAt,
+        evaluatedAt: adjustmentRequests.evaluatedAt,
+        evaluatedBy: adjustmentRequests.evaluatedBy,
+      })
+      .from(adjustmentRequests)
+      .innerJoin(actions, eq(adjustmentRequests.actionId, actions.id))
+      .innerJoin(users, eq(adjustmentRequests.solicitanteId, users.id))
+      .where(or(eq(adjustmentRequests.status, 'aprovada'), eq(adjustmentRequests.status, 'reprovada')))
+      .orderBy(desc(adjustmentRequests.createdAt));
+    
+    return result;
+  } catch (error) {
+    console.error('❌ Erro na query:', error);
+    throw error;
+  }
+}
+
 export async function getPendingAdjustmentRequestsByUser(userId: number) {
   const db = await getDb();
   if (!db) return [];

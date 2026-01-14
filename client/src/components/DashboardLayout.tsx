@@ -39,7 +39,7 @@ const getMenuItems = (userRole: string) => {
       { icon: FileText, label: "PDIs", path: "/pdis" },
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
       { icon: Upload, label: "Importar Ações", path: "/importar-acoes" },
-      { icon: Bell, label: "Solicitações de Ajuste", path: "/solicitacoes-ajuste" },
+      { icon: Bell, label: "Solicitações", path: "/solicitacoes" },
       { icon: ClipboardCheck, label: "Evidências Pendentes", path: "/evidencias-pendentes" },
       { icon: MessageSquarePlus, label: "Minhas Pendências", path: "/solicitacoes" },
       { icon: BarChart, label: "Relatórios", path: "/relatorios" },

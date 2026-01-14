@@ -17,7 +17,7 @@ import PDIs from "./pages/PDIs";
 import Acoes from "./pages/Acoes";
 import MinhasPendencias from "./pages/MinhasPendencias";
 import Relatorios from "./pages/Relatorios";
-import SolicitacoesAjuste from "./pages/SolicitacoesAjuste";
+import Solicitacoes from "./pages/Solicitacoes";
 import SolicitacoesEquipe from "./pages/SolicitacoesEquipe";
 import PDIsEquipe from "./pages/PDIsEquipe";
 import MeuPDI from "./pages/MeuPDI";
@@ -109,9 +109,9 @@ function Router() {  return (
         </DashboardLayout>
       </Route>
       
-      <Route path={"/solicitacoes-ajuste"}>
+      <Route path={"/solicitacoes"}>
         <DashboardLayout>
-          <SolicitacoesAjuste />
+          <Solicitacoes />
         </DashboardLayout>
       </Route>
       
