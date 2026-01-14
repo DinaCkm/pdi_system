@@ -39,9 +39,9 @@ const getMenuItems = (userRole: string) => {
       { icon: FileText, label: "PDIs", path: "/pdis" },
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
       { icon: Upload, label: "Importar Ações", path: "/importar-acoes" },
-      { icon: Bell, label: "Solicitações", path: "/solicitacoes" },
+      { icon: Bell, label: "Solicitações de Ajuste", path: "/solicitacoes-ajuste" },
       { icon: ClipboardCheck, label: "Evidências Pendentes", path: "/evidencias-pendentes" },
-      { icon: MessageSquarePlus, label: "Histórico de Solicitações", path: "/solicitacoes-ajuste" },
+      { icon: MessageSquarePlus, label: "Minhas Pendências", path: "/solicitacoes" },
       { icon: BarChart, label: "Relatórios", path: "/relatorios" },
     );
   } else if (userRole === "lider") {

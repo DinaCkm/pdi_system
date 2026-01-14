@@ -114,12 +114,9 @@ export default function SolicitacoesAjuste() {
   });
 
   const handleAprovar = (solicitacao: any) => {
+    console.log("handleAprovar chamado com:", solicitacao);
     setSelectedSolicitacao(solicitacao.id);
     setSelectedSolicitacaoData(solicitacao);
-    // Armazenar valores originais
-    setOriginalNome(solicitacao.actionNome || "");
-    setOriginalDescricao(solicitacao.actionDescricao || "");
-    setOriginalPrazo(formatarData(solicitacao.actionPrazo));
     // Inicializar valores de edição com valores originais
     setEditValues(prev => ({
       ...prev,
@@ -137,14 +134,13 @@ export default function SolicitacoesAjuste() {
     setShowReprovarDialog(true);
   };
 
-  const confirmarAprovacao = () => {
-    const currentEditValues = editValues[selectedSolicitacao!];
-    if (!currentEditValues || !currentEditValues.nome.trim() || !currentEditValues.descricao.trim() || !currentEditValues.prazo) {
-      toast.error("Todos os campos são obrigatórios");
-      return;
-    }
-
+  const executarAprovacao = () => {
     if (selectedSolicitacao) {
+      const currentEditValues = editValues[selectedSolicitacao];
+      if (!currentEditValues) {
+        toast.error("Erro ao carregar dados");
+        return;
+      }
       aprovarMutation.mutate({
         solicitacaoId: selectedSolicitacao,
         novoNome: currentEditValues.nome,
@@ -359,7 +355,7 @@ export default function SolicitacoesAjuste() {
                   {/* Ações */}
                   <div className="flex gap-3 pt-4 border-t">
                     <Button
-                      onClick={() => handleAprovar(solicitacao.id)}
+                      onClick={() => handleAprovar(solicitacao)}
                       className="flex-1"
                       disabled={aprovarMutation.isPending}
                     >
@@ -495,7 +491,7 @@ export default function SolicitacoesAjuste() {
             <Button variant="outline" onClick={() => setShowAprovarDialog(false)}>
               Cancelar
             </Button>
-            <Button onClick={confirmarAprovacao} disabled={!confirmaAprovacao || aprovarMutation.isPending} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={executarAprovacao} disabled={!confirmaAprovacao || aprovarMutation.isPending} className="bg-green-600 hover:bg-green-700">
               {aprovarMutation.isPending ? "Processando..." : "✓ Concordo e Aprovar"}
             </Button>
           </DialogFooter>
