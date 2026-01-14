@@ -859,3 +859,4 @@
 
 ## Problemas em Investigação
 - [x] Solicitações de alteração não aparecem na página de Solicitações Pendentes (botão conectado ao backend, adicionado auto-refetch a cada 5s)
+- [x] Remover botão "Enviar Evidência" da página Meu PDI (evidências são apenas nas ações)

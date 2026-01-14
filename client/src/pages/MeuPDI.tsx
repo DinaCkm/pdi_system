@@ -164,16 +164,7 @@ export default function MeuPDI() {
                     </Button>
                   </div>
 
-                  {/* Botão Enviar Evidência */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
-                    onClick={() => handleEnviarEvidencia(pdi.id)}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Enviar Evidência
-                  </Button>
+
                 </div>
               </CardContent>
             </Card>
