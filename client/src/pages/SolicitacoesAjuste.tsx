@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +7,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle2, XCircle, MessageSquare, Clock, User, FileText } from "lucide-react";
+import { CheckCircle2, XCircle, MessageSquare, Clock, User, FileText, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+
+// Função para formatar data
+function formatarData(data: any): string {
+  if (!data) return "N/A";
+  if (typeof data === 'string') {
+    return data.split('T')[0];
+  }
+  return "N/A";
+}
+
+// Função para detectar se houve alteração
+function temAlteracao(original: any, novo: any): boolean {
+  return original !== novo;
+}
 
 export default function SolicitacoesAjuste() {
   const [selectedSolicitacao, setSelectedSolicitacao] = useState<number | null>(null);
@@ -21,6 +35,9 @@ export default function SolicitacoesAjuste() {
   const [editNome, setEditNome] = useState("");
   const [editDescricao, setEditDescricao] = useState("");
   const [editPrazo, setEditPrazo] = useState("");
+  const [originalNome, setOriginalNome] = useState("");
+  const [originalDescricao, setOriginalDescricao] = useState("");
+  const [originalPrazo, setOriginalPrazo] = useState("");
 
   const { data: solicitacoes, isLoading, refetch } = trpc.actions.getPendingAdjustmentsWithDetails.useQuery();
 
@@ -75,9 +92,14 @@ export default function SolicitacoesAjuste() {
   const handleAprovar = (solicitacao: any) => {
     setSelectedSolicitacao(solicitacao.id);
     setSelectedSolicitacaoData(solicitacao);
+    // Armazenar valores originais
+    setOriginalNome(solicitacao.actionNome || "");
+    setOriginalDescricao(solicitacao.actionDescricao || "");
+    setOriginalPrazo(formatarData(solicitacao.actionPrazo) || "");
+    // Inicializar campos de edição com valores originais
     setEditNome(solicitacao.actionNome || "");
     setEditDescricao(solicitacao.actionDescricao || "");
-    setEditPrazo(solicitacao.actionPrazo || "");
+    setEditPrazo(formatarData(solicitacao.actionPrazo) || "");
     setShowAprovarDialog(true);
   };
 
@@ -320,6 +342,53 @@ export default function SolicitacoesAjuste() {
                 <p className="text-sm text-amber-800"><strong>Solicitante:</strong> {selectedSolicitacaoData.solicitanteNome}</p>
                 <p className="text-sm text-amber-800"><strong>Ação:</strong> {selectedSolicitacaoData.actionNome}</p>
                 <p className="text-sm text-amber-800"><strong>Justificativa:</strong> {selectedSolicitacaoData.justificativa}</p>
+              </div>
+
+              {/* Seção de Comparação de Valores */}
+              <div className="space-y-3 border-t pt-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h4 className="font-semibold text-sm text-blue-900">📋 Comparação de Valores (Original vs Novo)</h4>
+                
+                {/* Comparação Nome */}
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-blue-900">Nome da Ação:</p>
+                  {temAlteracao(originalNome, editNome) ? (
+                    <p className="text-sm text-blue-800">
+                      <span className="line-through">{originalNome}</span>
+                      <ArrowRight className="inline mx-2" size={16} />
+                      <span className="font-semibold">{editNome || "(vazio)"}</span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-blue-800">✓ MANTIDO</p>
+                  )}
+                </div>
+
+                {/* Comparação Descrição */}
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-blue-900">Descrição:</p>
+                  {temAlteracao(originalDescricao, editDescricao) ? (
+                    <p className="text-sm text-blue-800">
+                      <span className="line-through text-xs">{originalDescricao?.substring(0, 50)}...</span>
+                      <ArrowRight className="inline mx-2" size={16} />
+                      <span className="font-semibold text-xs">{editDescricao?.substring(0, 50)}...</span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-blue-800">✓ MANTIDO</p>
+                  )}
+                </div>
+
+                {/* Comparação Prazo */}
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-blue-900">Prazo:</p>
+                  {temAlteracao(originalPrazo, editPrazo) ? (
+                    <p className="text-sm text-blue-800">
+                      <span className="line-through">{originalPrazo}</span>
+                      <ArrowRight className="inline mx-2" size={16} />
+                      <span className="font-semibold">{editPrazo || "(vazio)"}</span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-blue-800">✓ MANTIDO</p>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-3 border-t pt-4">

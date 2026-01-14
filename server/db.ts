@@ -1115,6 +1115,8 @@ export async function getAllAdjustmentRequestsWithDetails() {
         id: adjustmentRequests.id,
         actionId: adjustmentRequests.actionId,
         actionNome: actions.nome,
+        actionDescricao: actions.descricao,
+        actionPrazo: actions.prazo,
         solicitanteId: adjustmentRequests.solicitanteId,
         solicitanteNome: users.name,
         tipoSolicitante: adjustmentRequests.tipoSolicitante,
