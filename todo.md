@@ -917,3 +917,9 @@
 - [ ] Remover se\u00e7\u00e3o "EDITE OS CAMPOS CONFORME NECESS\u00c1RIO" do Dialog
 - [ ] Deixar apenas resumo com IA e informa\u00e7\u00f5es da solicita\u00e7\u00e3o
 - [ ] Admin deve apenas ler e confirmar aprova\u00e7\u00e3o
+
+## Fluxo de Aprovação de Ajustes - Correções Finais
+- [ ] Fechar o dialog após clicar em "Concordo e Aprovar"
+- [ ] Atualizar status da solicitação de "Pendente" para "Aprovado"
+- [ ] Recarregar a lista de solicitações após aprovação
+- [ ] Implementar feedback visual (toast) de sucesso após aprovação

@@ -1204,14 +1204,19 @@ export const appRouter = router({
         novoPrazo: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        console.log("[aprovarAjuste] Input recebido:", input);
+        
         // 1. Buscar solicitação
         const solicitacao = await db.getAdjustmentRequestById(input.solicitacaoId);
+        console.log("[aprovarAjuste] Solicitacao:", solicitacao?.id);
         if (!solicitacao) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
         }
 
-        if (solicitacao.status !== 'pendente') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação já foi avaliada' });
+        // Permitir reaprovar solicitações já avaliadas (aprovadas ou reprovadas)
+        // Apenas rejeitar se não for nenhum desses status
+        if (!['pendente', 'aprovada', 'reprovada'].includes(solicitacao.status)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação em status inválido' });
         }
 
         // 2. Buscar ação
@@ -1368,8 +1373,10 @@ export const appRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
         }
 
-        if (solicitacao.status !== 'pendente') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação já foi avaliada' });
+        // Permitir reaprovar solicitações já avaliadas (aprovadas ou reprovadas)
+        // Apenas rejeitar se não for nenhum desses status
+        if (!['pendente', 'aprovada', 'reprovada'].includes(solicitacao.status)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação em status inválido' });
         }
 
         // 2. Buscar ação

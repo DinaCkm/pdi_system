@@ -82,13 +82,20 @@ export default function SolicitacoesAjuste() {
 
   const aprovarMutation = trpc.actions.aprovarAjuste.useMutation({
     onSuccess: () => {
+      console.log("[aprovarMutation] onSuccess chamado");
       toast.success("Solicitação aprovada com sucesso!");
       setShowAprovarDialogAjuste(false);
       setSelectedSolicitacao(null);
+      setConfirmaAprovacao(false);
       setEditValues({});
-      refetch();
+      // Aguardar 500ms antes de recarregar para garantir que o banco foi atualizado
+      setTimeout(() => {
+        refetch();
+      }, 500);
     },
     onError: (error) => {
+      console.log("[aprovarMutation] onError chamado:", error);
+      console.log("[aprovarMutation] error.message:", error.message);
       toast.error(error.message);
     },
   });
@@ -99,7 +106,10 @@ export default function SolicitacoesAjuste() {
       setShowReprovarDialog(false);
       setSelectedSolicitacao(null);
       setJustificativaReprovacao("");
-      refetch();
+      // Aguardar 500ms antes de recarregar para garantir que o banco foi atualizado
+      setTimeout(() => {
+        refetch();
+      }, 500);
     },
     onError: (error) => {
       toast.error(error.message);
@@ -142,9 +152,12 @@ export default function SolicitacoesAjuste() {
   };
 
   const executarAprovacao = () => {
+    console.log("========== EXECUTAR APROVACAO CHAMADO ==========");
     console.log("executarAprovacao chamado");
     console.log("selectedSolicitacao:", selectedSolicitacao);
     console.log("editValues:", editValues);
+    console.log("selectedSolicitacaoData:", selectedSolicitacaoData);
+    
     if (selectedSolicitacao) {
       const currentEditValues = editValues[selectedSolicitacao];
       console.log("currentEditValues:", currentEditValues);
@@ -152,18 +165,39 @@ export default function SolicitacoesAjuste() {
         toast.error("Erro ao carregar dados");
         return;
       }
-      console.log("Chamando aprovarMutation com:", {
-        solicitacaoId: selectedSolicitacao,
-        novoNome: currentEditValues.nome,
-        novaDescricao: currentEditValues.descricao,
-        novoPrazo: currentEditValues.prazo,
+      
+      // Verificar tipos de dados
+      console.log("Tipos de dados:", {
+        solicitacaoId: typeof selectedSolicitacao,
+        novoNome: typeof currentEditValues.nome,
+        novaDescricao: typeof currentEditValues.descricao,
+        novoPrazo: typeof currentEditValues.prazo,
       });
-      aprovarMutation.mutate({
+      
+      // Verificar se os valores estão vazios
+      console.log("Valores vazios?", {
+        nome: !currentEditValues.nome,
+        descricao: !currentEditValues.descricao,
+        prazo: !currentEditValues.prazo,
+      });
+      
+      const payload = {
         solicitacaoId: selectedSolicitacao,
-        novoNome: currentEditValues.nome,
-        novaDescricao: currentEditValues.descricao,
-        novoPrazo: currentEditValues.prazo,
-      } as any);
+        novoNome: currentEditValues.nome || undefined,
+        novaDescricao: currentEditValues.descricao || undefined,
+        novoPrazo: currentEditValues.prazo || undefined,
+      };
+      
+      console.log("Payload final:", JSON.stringify(payload, null, 2));
+      console.log("Chamando aprovarMutation com:", payload);
+      console.log("[executarAprovacao] Chamando mutate...");
+      
+      try {
+        aprovarMutation.mutate(payload as any);
+        console.log("[executarAprovacao] mutate chamado com sucesso");
+      } catch (err) {
+        console.log("[executarAprovacao] Erro ao chamar mutate:", err);
+      }
     }
   };
 

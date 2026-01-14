@@ -1,0 +1,37 @@
+{
+  "query": "SELECT id, status, actionId, solicitanteId, createdAt, evaluatedAt, evaluatedBy FROM adjustment_requests WHERE id IN (90001, 60001, 60002);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, status, actionId, solicitanteId, createdAt, evaluatedAt, evaluatedBy FROM adjustment_requests WHERE id IN (90001, 60001, 60002);",
+  "rows": [
+    {
+      "id": "90001",
+      "status": "aprovada",
+      "actionId": "90002",
+      "solicitanteId": "300001",
+      "createdAt": "2026-01-14 14:32:01",
+      "evaluatedAt": "2026-01-14 20:45:49",
+      "evaluatedBy": "30079"
+    },
+    {
+      "id": "60001",
+      "status": "aprovada",
+      "actionId": "30001",
+      "solicitanteId": "180010",
+      "createdAt": "2026-01-14 02:23:50",
+      "evaluatedAt": "2026-01-14 02:49:47",
+      "evaluatedBy": "30079"
+    },
+    {
+      "id": "60002",
+      "status": "aprovada",
+      "actionId": "90003",
+      "solicitanteId": "270001",
+      "createdAt": "2026-01-14 02:27:00",
+      "evaluatedAt": "2026-01-14 02:40:17",
+      "evaluatedBy": "30079"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tstatus\tactionId\tsolicitanteId\tcreatedAt\tevaluatedAt\tevaluatedBy\n90001\taprovada\t90002\t300001\t2026-01-14 14:32:01\t2026-01-14 20:45:49\t30079\n60001\taprovada\t30001\t180010\t2026-01-14 02:23:50\t2026-01-14 02:49:47\t30079\n60002\taprovada\t90003\t270001\t2026-01-14 02:27:00\t2026-01-14 02:40:17\t30079\n",
+  "stderr": "",
+  "execution_time_ms": 49
+}
