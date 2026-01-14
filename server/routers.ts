@@ -1626,31 +1626,38 @@ Formato de resposta (JSON):
         const mudancas = [];
 
         // Comparar Nome
-        if (input.novoNome && input.novoNome !== acao.nome) {
-          mudancas.push({
-            campo: 'Nome',
-            original: acao.nome,
-            novo: input.novoNome
-          });
+        if (camposAjustar.nome) {
+          const novoNome = input.novoNome || camposAjustar.nome;
+          if (novoNome !== acao.nome) {
+            mudancas.push({
+              campo: 'Nome',
+              original: acao.nome,
+              novo: novoNome
+            });
+          }
         }
 
         // Comparar Descrição
-        if (input.novaDescricao && input.novaDescricao !== acao.descricao) {
-          mudancas.push({
-            campo: 'Descrição',
-            original: acao.descricao,
-            novo: input.novaDescricao
-          });
+        if (camposAjustar.descricao) {
+          const novaDescricao = input.novaDescricao || camposAjustar.descricao;
+          if (novaDescricao !== acao.descricao) {
+            mudancas.push({
+              campo: 'Descrição',
+              original: acao.descricao,
+              novo: novaDescricao
+            });
+          }
         }
 
         // Comparar Prazo
-        if (input.novoPrazo) {
+        if (camposAjustar.prazo) {
+          const novoPrazo = input.novoPrazo || camposAjustar.prazo;
           const prazoOriginal = acao.prazo instanceof Date ? acao.prazo.toISOString().split('T')[0] : acao.prazo;
-          if (input.novoPrazo !== prazoOriginal) {
+          if (novoPrazo !== prazoOriginal) {
             mudancas.push({
               campo: 'Prazo',
               original: prazoOriginal,
-              novo: input.novoPrazo
+              novo: novoPrazo
             });
           }
         }

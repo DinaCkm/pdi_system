@@ -77,33 +77,16 @@ export default function SolicitacoesAjuste() {
     { enabled: selectedSolicitacao !== null }
   );
 
-  // State para armazenar comparação com IA
-  const [comparison, setComparison] = useState<any>(null);
-  const [isLoadingComparison2, setIsLoadingComparison2] = useState(false);
-
   // Query para comparação com IA
-  const compareQuery = trpc.actions.compareChangesWithAI.useQuery(
-    selectedSolicitacao && editValues[selectedSolicitacao] ? {
+  const { data: comparison, isLoading: isLoadingComparison2 } = trpc.actions.compareChangesWithAI.useQuery(
+    selectedSolicitacao && selectedSolicitacaoData ? {
       solicitacaoId: selectedSolicitacao,
       novoNome: editValues[selectedSolicitacao]?.nome,
       novaDescricao: editValues[selectedSolicitacao]?.descricao,
       novoPrazo: editValues[selectedSolicitacao]?.prazo
     } : undefined,
-    { enabled: false }
-  );
-
-  // useEffect para disparar comparação quando Dialog abre
-  useEffect(() => {
-    if (showAprovarDialog && selectedSolicitacao && editValues[selectedSolicitacao]) {
-      setIsLoadingComparison2(true);
-      compareQuery.refetch().then((result: any) => {
-        if (result.data) {
-          setComparison(result.data);
-        }
-        setIsLoadingComparison2(false);
-      });
-    }
-  }, [showAprovarDialog, selectedSolicitacao, editValues])
+    { enabled: selectedSolicitacao !== null && showAprovarDialog }
+  )
 
   const aprovarMutation = trpc.actions.aprovarAjuste.useMutation({
     onSuccess: () => {
@@ -287,13 +270,53 @@ export default function SolicitacoesAjuste() {
                     </p>
                   </div>
 
-                  {/* Campos a Ajustar - Apenas leitura nos cards */}
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <h4 className="font-semibold mb-3 text-blue-900">📋 CAMPOS SOLICITADOS PARA AJUSTE</h4>
-                    <div className="space-y-2 text-sm">
-                      {camposAjustar.nome && <p className="text-blue-900">• Nome da Ação</p>}
-                      {camposAjustar.descricao && <p className="text-blue-900">• Descrição</p>}
-                      {camposAjustar.prazo && <p className="text-blue-900">• Prazo</p>}
+                  {/* Campos a Ajustar - EDITÁVEIS */}
+                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <h4 className="font-semibold mb-3 text-yellow-900">✏️ EDITE OS CAMPOS SOLICITADOS PARA AJUSTE</h4>
+                    <div className="space-y-3">
+                      {camposAjustar.nome && (
+                        <div>
+                          <p className="text-sm font-medium text-yellow-900 mb-1">Novo Nome:</p>
+                          <Input
+                            value={currentEditValues.nome || ""}
+                            onChange={(e) => setEditValues(prev => ({
+                              ...prev,
+                              [solicitacao.id]: { ...prev[solicitacao.id], nome: e.target.value }
+                            }))}
+                            placeholder="Digite o novo nome"
+                            className="bg-white"
+                          />
+                        </div>
+                      )}
+                      {camposAjustar.descricao && (
+                        <div>
+                          <p className="text-sm font-medium text-yellow-900 mb-1">Nova Descrição:</p>
+                          <Textarea
+                            value={currentEditValues.descricao || ""}
+                            onChange={(e) => setEditValues(prev => ({
+                              ...prev,
+                              [solicitacao.id]: { ...prev[solicitacao.id], descricao: e.target.value }
+                            }))}
+                            placeholder="Digite a nova descrição"
+                            rows={4}
+                            className="bg-white"
+                          />
+                        </div>
+                      )}
+                      {camposAjustar.prazo && (
+                        <div>
+                          <p className="text-sm font-medium text-yellow-900 mb-1">Novo Prazo:</p>
+                          <Input
+                            type="date"
+                            value={currentEditValues.prazo || ""}
+                            onChange={(e) => setEditValues(prev => ({
+                              ...prev,
+                              [solicitacao.id]: { ...prev[solicitacao.id], prazo: e.target.value }
+                            }))}
+                            className="bg-white"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 
