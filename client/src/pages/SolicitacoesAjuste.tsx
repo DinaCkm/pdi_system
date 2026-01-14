@@ -337,16 +337,23 @@ export default function SolicitacoesAjuste() {
           
           {selectedSolicitacaoData && (
             <div className="space-y-4 py-4">
+              {/* Informações da Solicitação */}
               <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                <p className="text-sm font-bold text-amber-900 mb-2">⚠️ INFORMAÇÕES DA SOLICITAÇÃO</p>
-                <p className="text-sm text-amber-800"><strong>Solicitante:</strong> {selectedSolicitacaoData.solicitanteNome}</p>
-                <p className="text-sm text-amber-800"><strong>Ação:</strong> {selectedSolicitacaoData.actionNome}</p>
-                <p className="text-sm text-amber-800"><strong>Justificativa:</strong> {selectedSolicitacaoData.justificativa}</p>
+                <p className="text-sm font-bold text-amber-900 mb-3">⚠️ INFORMAÇÕES DA SOLICITAÇÃO</p>
+                <div className="space-y-2">
+                  <p className="text-sm text-amber-800"><strong>Solicitante:</strong> {selectedSolicitacaoData.solicitanteNome}</p>
+                  <p className="text-sm text-amber-800"><strong>Ação:</strong> {selectedSolicitacaoData.actionNome}</p>
+                  <div>
+                    <p className="text-sm font-semibold text-amber-900 mb-1">Justificativa do Colaborador:</p>
+                    <p className="text-sm text-amber-800 bg-white p-2 rounded border border-amber-100">{selectedSolicitacaoData.justificativa}</p>
+                  </div>
+                </div>
               </div>
 
               {/* Seção de Comparação de Valores */}
-              <div className="space-y-3 border-t pt-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <h4 className="font-semibold text-sm text-blue-900">📋 Comparação de Valores (Original vs Novo)</h4>
+              <div className="space-y-3 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h4 className="font-semibold text-sm text-blue-900">📋 O QUE SERÁ ALTERADO</h4>
+                <p className="text-xs text-blue-800">Visualize as mudanças que serão aplicadas. Você pode editar qualquer campo abaixo.</p>
                 
                 {/* Comparação Nome */}
                 <div className="space-y-1">
@@ -391,41 +398,45 @@ export default function SolicitacoesAjuste() {
                 </div>
               </div>
 
-              <div className="space-y-3 border-t pt-4">
-                <h4 className="font-semibold text-sm">Campos a Editar</h4>
+              {/* Seção de Edição */}
+              <div className="space-y-3 bg-green-50 p-4 rounded-lg border border-green-200">
+                <h4 className="font-semibold text-sm text-green-900">✏️ EDITE OS CAMPOS CONFORME NECESSÁRIO</h4>
+                <p className="text-xs text-green-800">Todos os campos podem ser editados. As alterações serão rastreadas.</p>
                 
-                <div>
-                  <Label htmlFor="edit-nome">Nome da Ação *</Label>
-                  <Input
-                    id="edit-nome"
-                    value={editNome}
-                    onChange={(e) => setEditNome(e.target.value)}
-                    placeholder="Nome da ação"
-                    className="mt-1"
-                  />
-                </div>
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="edit-nome" className="font-semibold">Nome da Ação *</Label>
+                    <Input
+                      id="edit-nome"
+                      value={editNome}
+                      onChange={(e) => setEditNome(e.target.value)}
+                      placeholder="Nome da ação"
+                      className="mt-1"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="edit-descricao">Descrição *</Label>
-                  <Textarea
-                    id="edit-descricao"
-                    value={editDescricao}
-                    onChange={(e) => setEditDescricao(e.target.value)}
-                    placeholder="Descrição da ação"
-                    rows={3}
-                    className="mt-1"
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="edit-descricao" className="font-semibold">Descrição *</Label>
+                    <Textarea
+                      id="edit-descricao"
+                      value={editDescricao}
+                      onChange={(e) => setEditDescricao(e.target.value)}
+                      placeholder="Descrição da ação"
+                      rows={4}
+                      className="mt-1"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="edit-prazo">Prazo *</Label>
-                  <Input
-                    id="edit-prazo"
-                    type="date"
-                    value={editPrazo}
-                    onChange={(e) => setEditPrazo(e.target.value)}
-                    className="mt-1"
-                  />
+                  <div>
+                    <Label htmlFor="edit-prazo" className="font-semibold">Prazo *</Label>
+                    <Input
+                      id="edit-prazo"
+                      type="date"
+                      value={editPrazo}
+                      onChange={(e) => setEditPrazo(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
