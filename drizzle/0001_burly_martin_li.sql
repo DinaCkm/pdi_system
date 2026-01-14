@@ -1,0 +1,1 @@
+ALTER TABLE `adjustment_requests` ADD `alteracoesRealizadas` text;

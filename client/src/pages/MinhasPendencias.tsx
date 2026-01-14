@@ -496,21 +496,18 @@ export default function MinhasPendencias() {
               </div>
 
               {historico && historico.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-4">Histórico de Alterações</h3>
-                  <div className="space-y-2">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h3 className="font-bold text-green-900 mb-4">✓ Histórico de Alterações Aprovadas</h3>
+                  <div className="space-y-3">
                     {historico.map((item: any) => (
-                      <div key={item.id} className="border-l-2 border-muted pl-4 py-2">
-                        <p className="text-sm font-medium">{item.campo}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.valorAnterior} → {item.valorNovo}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {item.motivoAlteracao}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(item.createdAt).toLocaleString()}
-                        </p>
+                      <div key={item.id} className="bg-white border-l-4 border-green-500 pl-4 py-3 rounded">
+                        <p className="text-sm font-bold text-gray-900 capitalize mb-2">{item.campo}</p>
+                        <div className="mt-2 space-y-1">
+                          <p className="text-sm"><span className="font-semibold">Anterior:</span> <span className="line-through text-gray-600">{item.valorAnterior}</span></p>
+                          <p className="text-sm"><span className="font-semibold">Novo:</span> <span className="text-green-700 font-semibold">{item.valorNovo}</span></p>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-2">Motivo: {item.motivoAlteracao}</p>
+                        <p className="text-xs text-gray-500 mt-1">{new Date(item.createdAt).toLocaleString()}</p>
                       </div>
                     ))}
                   </div>

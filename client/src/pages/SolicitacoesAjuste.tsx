@@ -307,18 +307,19 @@ export default function SolicitacoesAjuste() {
       <Dialog open={showAprovarDialog} onOpenChange={setShowAprovarDialog}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Confirmar Aprovação</DialogTitle>
+            <DialogTitle>Aprovar e Editar Ação</DialogTitle>
             <DialogDescription>
-              Revise as mudanças que serão aplicadas à ação. O colaborador será notificado automaticamente.
+              Edite TODOS os campos da ação conforme necessário. As alterações serão rastreadas e o colaborador será notificado.
             </DialogDescription>
           </DialogHeader>
           
           {selectedSolicitacaoData && (
             <div className="space-y-4 py-4">
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm font-medium text-blue-900">Informações da Solicitação</p>
-                <p className="text-sm text-blue-800">Solicitante: <span className="font-semibold">{selectedSolicitacaoData.collaboratorName || "Desconhecido"}</span></p>
-                <p className="text-sm text-blue-800">Justificativa: <span className="font-semibold">{selectedSolicitacaoData.justification}</span></p>
+              <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                <p className="text-sm font-bold text-amber-900 mb-2">⚠️ INFORMAÇÕES DA SOLICITAÇÃO</p>
+                <p className="text-sm text-amber-800"><strong>Solicitante:</strong> {selectedSolicitacaoData.solicitanteNome}</p>
+                <p className="text-sm text-amber-800"><strong>Ação:</strong> {selectedSolicitacaoData.actionNome}</p>
+                <p className="text-sm text-amber-800"><strong>Justificativa:</strong> {selectedSolicitacaoData.justificativa}</p>
               </div>
 
               <div className="space-y-3 border-t pt-4">
@@ -365,8 +366,8 @@ export default function SolicitacoesAjuste() {
             <Button variant="outline" onClick={() => setShowAprovarDialog(false)}>
               Cancelar
             </Button>
-            <Button onClick={confirmarAprovacao} disabled={aprovarMutation.isPending}>
-              {aprovarMutation.isPending ? "Aprovando..." : "Aprovar e Notificar"}
+            <Button onClick={confirmarAprovacao} disabled={aprovarMutation.isPending} className="bg-green-600 hover:bg-green-700">
+              {aprovarMutation.isPending ? "Processando..." : "✓ Concordo e Aprovar"}
             </Button>
           </DialogFooter>
         </DialogContent>
