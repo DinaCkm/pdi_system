@@ -77,16 +77,33 @@ export default function SolicitacoesAjuste() {
     { enabled: selectedSolicitacao !== null }
   );
 
+  // State para armazenar comparação com IA
+  const [comparison, setComparison] = useState<any>(null);
+  const [isLoadingComparison2, setIsLoadingComparison2] = useState(false);
+
   // Query para comparação com IA
-  const { data: comparison, isLoading: isLoadingComparison2 } = trpc.actions.compareChangesWithAI.useQuery(
-    selectedSolicitacao && selectedSolicitacaoData ? {
+  const compareQuery = trpc.actions.compareChangesWithAI.useQuery(
+    selectedSolicitacao && editValues[selectedSolicitacao] ? {
       solicitacaoId: selectedSolicitacao,
       novoNome: editValues[selectedSolicitacao]?.nome,
       novaDescricao: editValues[selectedSolicitacao]?.descricao,
       novoPrazo: editValues[selectedSolicitacao]?.prazo
     } : undefined,
-    { enabled: selectedSolicitacao !== null && showAprovarDialog }
-  )
+    { enabled: false }
+  );
+
+  // useEffect para disparar comparação quando Dialog abre
+  useEffect(() => {
+    if (showAprovarDialog && selectedSolicitacao && editValues[selectedSolicitacao]) {
+      setIsLoadingComparison2(true);
+      compareQuery.refetch().then(result => {
+        if (result.data) {
+          setComparison(result.data);
+        }
+        setIsLoadingComparison2(false);
+      });
+    }
+  }, [showAprovarDialog, selectedSolicitacao])
 
   const aprovarMutation = trpc.actions.aprovarAjuste.useMutation({
     onSuccess: () => {

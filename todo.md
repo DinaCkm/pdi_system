@@ -917,3 +917,10 @@
 - [ ] Remover se\u00e7\u00e3o "EDITE OS CAMPOS CONFORME NECESS\u00c1RIO" do Dialog
 - [ ] Deixar apenas resumo com IA e informa\u00e7\u00f5es da solicita\u00e7\u00e3o
 - [ ] Admin deve apenas ler e confirmar aprova\u00e7\u00e3o
+
+
+## Bug: An\u00e1## Bug: Análise com IA não está comparando valores propostos
+- [x] Corrigir procedure compareChangesWithAI para receber valores propostos da solicitação
+- [x] Comparar valores originais vs valores propostos (não vs valores atuais)
+- [x] Exibir resumo analítico de cada mudança proposta
+- [ ] Testar com solicitações que tênham mudanças\u00e7\u00f5es que t\u00eanham mudan\u00e7as
