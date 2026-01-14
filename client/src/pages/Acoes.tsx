@@ -588,7 +588,7 @@ export default function Acoes() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o PDI" />
                     </SelectTrigger>
-                    <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
+                    <SelectContent>
                       {pdis?.map((pdi) => (
                         <SelectItem key={pdi.id} value={pdi.id.toString()}>
                           {pdi.titulo} - {pdi.colaborador?.nome || "Colaborador desconhecido"}
@@ -626,7 +626,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o bloco" />
                       </SelectTrigger>
-                      <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
+                      <SelectContent>
                         {blocosCompetencias?.map((bloco) => (
                           <SelectItem key={bloco.id} value={bloco.id.toString()}>
                             {bloco.nome}
@@ -656,7 +656,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder={selectedBlocoId ? "Selecione a macrocompetência" : "Selecione um bloco primeiro"} />
                       </SelectTrigger>
-                      <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
+                      <SelectContent>
                         {macroCompetencias?.map((macro) => (
                           <SelectItem key={macro.id} value={macro.id.toString()}>
                             {macro.nome}
@@ -683,7 +683,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder={selectedMacroId ? "Selecione a microcompetência" : "Selecione uma macrocompetência primeiro"} />
                       </SelectTrigger>
-                      <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
+                      <SelectContent>
                         {microCompetencias?.map((micro) => (
                           <SelectItem key={micro.id} value={micro.id.toString()}>
                             {micro.nome}
@@ -815,7 +815,7 @@ export default function Acoes() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o PDI" />
                     </SelectTrigger>
-                    <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
+                    <SelectContent>
                       {pdis?.map((pdi) => (
                         <SelectItem key={pdi.id} value={pdi.id.toString()}>
                           {pdi.titulo} - {pdi.colaborador?.nome || "Colaborador desconhecido"}
@@ -848,7 +848,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o bloco" />
                       </SelectTrigger>
-                      <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
+                      <SelectContent>
                         {blocosCompetencias?.map((bloco) => (
                           <SelectItem key={bloco.id} value={bloco.id.toString()}>
                             {bloco.nome}
@@ -878,7 +878,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder={editSelectedBlocoId ? "Selecione a macrocompetência" : "Selecione um bloco primeiro"} />
                       </SelectTrigger>
-                      <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
+                      <SelectContent>
                         {editMacroCompetencias?.map((macro) => (
                           <SelectItem key={macro.id} value={macro.id.toString()}>
                             {macro.nome}
@@ -905,7 +905,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder={editSelectedMacroId ? "Selecione a microcompetência" : "Selecione uma macrocompetência primeiro"} />
                       </SelectTrigger>
-                      <SelectContent position="popper" className="z-[9999]" sideOffset={5}>
+                      <SelectContent>
                         {editMicroCompetencias?.map((micro) => (
                           <SelectItem key={micro.id} value={micro.id.toString()}>
                             {micro.nome}
