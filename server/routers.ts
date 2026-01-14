@@ -1607,7 +1607,7 @@ Formato de resposta (JSON):
           fileName: z.string(),
           fileType: z.string(),
           fileSize: z.number(),
-          fileUrl: z.string(),
+          fileUrl: z.string(), // base64 data URL
           fileKey: z.string(),
         })).optional(),
         texts: z.array(z.object({
@@ -1617,6 +1617,8 @@ Formato de resposta (JSON):
         satisfactionScore: z.number().min(1).max(5).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // Import storagePut at the top of the file
+        const { storagePut } = await import('server/storage');
         // 1. Verificar se a ação existe e pertence ao colaborador
         const action = await db.getActionById(input.actionId);
         if (!action) {
@@ -1636,13 +1638,33 @@ Formato de resposta (JSON):
           satisfactionScore: input.satisfactionScore,
         });
 
-        // 4. Adicionar arquivos
+        // 4. Adicionar arquivos (fazer upload para S3)
         if (input.files && input.files.length > 0) {
           for (const file of input.files) {
-            await db.addEvidenceFile({
-              evidenceId,
-              ...file,
-            });
+            try {
+              // Fazer upload do arquivo para S3
+              const { url: s3Url } = await storagePut(
+                file.fileKey,
+                file.fileUrl, // base64 string
+                file.fileType
+              );
+              
+              // Armazenar apenas a URL do S3 no banco de dados
+              await db.addEvidenceFile({
+                evidenceId,
+                fileName: file.fileName,
+                fileType: file.fileType,
+                fileSize: file.fileSize,
+                fileUrl: s3Url, // URL do S3, não o base64
+                fileKey: file.fileKey,
+              });
+            } catch (uploadError) {
+              console.error(`Erro ao fazer upload do arquivo ${file.fileName}:`, uploadError);
+              throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: `Erro ao fazer upload do arquivo ${file.fileName}`,
+              });
+            }
           }
         }
 

@@ -185,6 +185,8 @@ export default function MinhasAcoes() {
     setIsSubmittingEvidencia(true);
     try {
       // Processar todos os arquivos
+      // Os arquivos sao convertidos para base64 aqui e enviados ao backend
+      // O backend fara o upload para S3 e armazenara apenas a URL
       const filesData = await Promise.all(
         evidenciaFiles.map(async (file) => {
           return new Promise<any>((resolve) => {
