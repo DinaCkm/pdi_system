@@ -18,6 +18,9 @@ function formatarData(data: any): string {
   if (typeof data === 'string') {
     return data.split('T')[0];
   }
+  if (data instanceof Date) {
+    return data.toISOString().split('T')[0];
+  }
   return "";
 }
 
@@ -48,6 +51,25 @@ export default function SolicitacoesAjuste() {
     }, 5000);
     return () => clearInterval(interval);
   }, [refetch]);
+
+  // Inicializar editValues quando solicitações são carregadas
+  useEffect(() => {
+    if (solicitacoes && solicitacoes.length > 0) {
+      const newEditValues: Record<number, { nome: string; descricao: string; prazo: string }> = {};
+      solicitacoes.forEach(sol => {
+        if (!editValues[sol.id]) {
+          newEditValues[sol.id] = {
+            nome: sol.actionNome || "",
+            descricao: sol.actionDescricao || "",
+            prazo: formatarData(sol.actionPrazo)
+          };
+        }
+      });
+      if (Object.keys(newEditValues).length > 0) {
+        setEditValues(prev => ({ ...prev, ...newEditValues }));
+      }
+    }
+  }, [solicitacoes]);
   const { data: comentarios, refetch: refetchComentarios } = trpc.actions.getComments.useQuery(
     { adjustmentRequestId: selectedSolicitacao! },
     { enabled: selectedSolicitacao !== null }
@@ -196,6 +218,11 @@ export default function SolicitacoesAjuste() {
         <div className="grid gap-6">
           {solicitacoes.map((solicitacao) => {
             const camposAjustar = JSON.parse(solicitacao.camposAjustar);
+            const currentEditValues = editValues[solicitacao.id] || {
+              nome: solicitacao.actionNome || "",
+              descricao: solicitacao.actionDescricao || "",
+              prazo: formatarData(solicitacao.actionPrazo)
+            };
 
             return (
               <Card key={solicitacao.id}>
@@ -238,7 +265,7 @@ export default function SolicitacoesAjuste() {
                         <div>
                           <p className="text-sm font-medium text-yellow-900 mb-1">Novo Nome:</p>
                           <Input
-                            value={editValues[solicitacao.id]?.nome || ""}
+                            value={currentEditValues.nome || ""}
                             onChange={(e) => setEditValues(prev => ({
                               ...prev,
                               [solicitacao.id]: { ...prev[solicitacao.id], nome: e.target.value }
@@ -252,7 +279,7 @@ export default function SolicitacoesAjuste() {
                         <div>
                           <p className="text-sm font-medium text-yellow-900 mb-1">Nova Descrição:</p>
                           <Textarea
-                            value={editValues[solicitacao.id]?.descricao || ""}
+                            value={currentEditValues.descricao || ""}
                             onChange={(e) => setEditValues(prev => ({
                               ...prev,
                               [solicitacao.id]: { ...prev[solicitacao.id], descricao: e.target.value }
@@ -268,7 +295,7 @@ export default function SolicitacoesAjuste() {
                           <p className="text-sm font-medium text-yellow-900 mb-1">Novo Prazo:</p>
                           <Input
                             type="date"
-                            value={editValues[solicitacao.id]?.prazo || ""}
+                            value={currentEditValues.prazo || ""}
                             onChange={(e) => setEditValues(prev => ({
                               ...prev,
                               [solicitacao.id]: { ...prev[solicitacao.id], prazo: e.target.value }
