@@ -1627,37 +1627,30 @@ Formato de resposta (JSON):
 
         // Comparar Nome
         if (input.novoNome && input.novoNome !== acao.nome) {
-          
-          if (novoNome !== acao.nome) {
-            mudancas.push({
-              campo: 'Nome',
-              original: acao.nome,
-              novo: novoNome
-            });
-          }
+          mudancas.push({
+            campo: 'Nome',
+            original: acao.nome,
+            novo: input.novoNome
+          });
         }
 
         // Comparar Descrição
-        if (camposAjustar.descricao) {
-          const novaDescricao = input.novaDescricao || camposAjustar.descricao;
-          if (novaDescricao !== acao.descricao) {
-            mudancas.push({
-              campo: 'Descrição',
-              original: acao.descricao,
-              novo: novaDescricao
-            });
-          }
+        if (input.novaDescricao && input.novaDescricao !== acao.descricao) {
+          mudancas.push({
+            campo: 'Descrição',
+            original: acao.descricao,
+            novo: input.novaDescricao
+          });
         }
 
         // Comparar Prazo
-        if (camposAjustar.prazo) {
-          const novoPrazo = input.novoPrazo || camposAjustar.prazo;
+        if (input.novoPrazo) {
           const prazoOriginal = acao.prazo instanceof Date ? acao.prazo.toISOString().split('T')[0] : acao.prazo;
-          if (novoPrazo !== prazoOriginal) {
+          if (input.novoPrazo !== prazoOriginal) {
             mudancas.push({
               campo: 'Prazo',
               original: prazoOriginal,
-              novo: novoPrazo
+              novo: input.novoPrazo
             });
           }
         }

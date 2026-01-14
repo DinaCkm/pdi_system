@@ -924,3 +924,10 @@
 - [x] Comparar valores originais vs valores propostos (não vs valores atuais)
 - [x] Exibir resumo analítico de cada mudança proposta
 - [ ] Testar com solicitações que tênham mudanças\u00e7\u00f5es que t\u00eanham mudan\u00e7as
+
+
+## Bug: An\u00e1lise com IA n\u00e3o detecta mudan\u00e## Bug: Análise com IA não detecta mudanças significativas
+- [x] Debugar por que query compareChangesWithAI não está sendo disparada
+- [x] Verificar se valores propostos estão sendo enviados corretamente
+- [x] Corrigir lógica de comparação para detectar mudanças
+- [ ] Testar com mudanças significativas (aguardando publicação)
