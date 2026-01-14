@@ -905,3 +905,9 @@
 - [x] Corrigir campos "Novo Nome", "Nova Descrição", "Novo Prazo" para vir preenchidos com valores originais
 - [x] Admin consegue ler o conteúdo original e fazer ajustes sem digitar tudo novamente
 - [x] Campos devem ser inicializados com valores da ação quando solicitação é selecionada
+
+## Feature: Comparação Automática com IA no Dialog de Aprovação
+- [x] Criar procedure tRPC para comparar mudanças com IA
+- [x] Implementar lógica para capturar valores originais
+- [x] Atualizar Dialog de Aprovação para exibir apenas alterações
+- [ ] Testar comparação com diferentes tipos de mudanças

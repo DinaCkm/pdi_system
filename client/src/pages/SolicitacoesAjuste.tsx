@@ -41,6 +41,8 @@ export default function SolicitacoesAjuste() {
   const [originalNome, setOriginalNome] = useState("");
   const [originalDescricao, setOriginalDescricao] = useState("");
   const [originalPrazo, setOriginalPrazo] = useState("");
+  const [comparisonResult, setComparisonResult] = useState<any>(null);
+  const [isLoadingComparison, setIsLoadingComparison] = useState(false);
 
   const { data: solicitacoes, isLoading, refetch } = trpc.actions.getPendingAdjustmentsWithDetails.useQuery();
 
@@ -74,6 +76,17 @@ export default function SolicitacoesAjuste() {
     { adjustmentRequestId: selectedSolicitacao! },
     { enabled: selectedSolicitacao !== null }
   );
+
+  // Query para comparação com IA
+  const { data: comparison, isLoading: isLoadingComparison2 } = trpc.actions.compareChangesWithAI.useQuery(
+    selectedSolicitacao && selectedSolicitacaoData ? {
+      solicitacaoId: selectedSolicitacao,
+      novoNome: editValues[selectedSolicitacao]?.nome,
+      novaDescricao: editValues[selectedSolicitacao]?.descricao,
+      novoPrazo: editValues[selectedSolicitacao]?.prazo
+    } : undefined,
+    { enabled: selectedSolicitacao !== null && showAprovarDialog }
+  )
 
   const aprovarMutation = trpc.actions.aprovarAjuste.useMutation({
     onSuccess: () => {
@@ -407,8 +420,24 @@ export default function SolicitacoesAjuste() {
                 </div>
               </div>
 
-              {/* Seção de Comparação de Valores */}
-              <div className="space-y-3 bg-blue-50 p-4 rounded-lg border border-blue-200">
+              {/* Seção de Resumo com IA */}
+              <div className="space-y-3 bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <h4 className="font-semibold text-sm text-purple-900">🤖 ANÁLISE DE MUDANÇAS COM IA</h4>
+                {isLoadingComparison2 ? (
+                  <p className="text-sm text-purple-800">Analisando mudanças com IA...</p>
+                ) : comparison && comparison.temMudancas ? (
+                  <div className="space-y-2">
+                    <div className="bg-white p-3 rounded border border-purple-200">
+                      <p className="text-sm text-purple-900 whitespace-pre-wrap">{comparison.resumo}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-purple-800">✓ Nenhuma alteração detectada</p>
+                )}
+              </div>
+
+              {/* Seção de Edição - OCULTA */}
+              <div className="space-y-3 bg-blue-50 p-4 rounded-lg border border-blue-200" style={{display: 'none'}}>
                 <h4 className="font-semibold text-sm text-blue-900">📋 O QUE SERÁ ALTERADO</h4>
                 <p className="text-xs text-blue-800">Visualize as mudanças que serão aplicadas. Você pode editar qualquer campo abaixo.</p>
                 

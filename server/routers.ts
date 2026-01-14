@@ -1602,6 +1602,109 @@ Formato de resposta (JSON):
         return { success: true };
       }),
 
+    compareChangesWithAI: protectedProcedure
+      .input(z.object({
+        solicitacaoId: z.number(),
+        novoNome: z.string().optional(),
+        novaDescricao: z.string().optional(),
+        novoPrazo: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        // Buscar solicitação e ação
+        const solicitacao = await db.getAdjustmentRequestById(input.solicitacaoId);
+        if (!solicitacao) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
+        }
+
+        const acao = await db.getActionById(solicitacao.actionId);
+        if (!acao) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
+        }
+
+        // Preparar dados para comparação
+        const camposAjustar = JSON.parse(solicitacao.camposAjustar);
+        const mudancas = [];
+
+        // Comparar Nome
+        if (camposAjustar.nome) {
+          const novoNome = input.novoNome || camposAjustar.nome;
+          if (novoNome !== acao.nome) {
+            mudancas.push({
+              campo: 'Nome',
+              original: acao.nome,
+              novo: novoNome
+            });
+          }
+        }
+
+        // Comparar Descrição
+        if (camposAjustar.descricao) {
+          const novaDescricao = input.novaDescricao || camposAjustar.descricao;
+          if (novaDescricao !== acao.descricao) {
+            mudancas.push({
+              campo: 'Descrição',
+              original: acao.descricao,
+              novo: novaDescricao
+            });
+          }
+        }
+
+        // Comparar Prazo
+        if (camposAjustar.prazo) {
+          const novoPrazo = input.novoPrazo || camposAjustar.prazo;
+          const prazoOriginal = acao.prazo instanceof Date ? acao.prazo.toISOString().split('T')[0] : acao.prazo;
+          if (novoPrazo !== prazoOriginal) {
+            mudancas.push({
+              campo: 'Prazo',
+              original: prazoOriginal,
+              novo: novoPrazo
+            });
+          }
+        }
+
+        // Se não há mudanças, retornar vazio
+        if (mudancas.length === 0) {
+          return {
+            temMudancas: false,
+            mudancas: [],
+            resumo: 'Nenhuma alteração detectada'
+          };
+        }
+
+        // Usar IA para gerar resumo das mudanças
+        const prompt = `Você é um assistente que analisa mudanças em documentos.
+
+Analise as seguintes alterações propostas para uma ação de desenvolvimento profissional:
+
+${mudancas.map(m => `- ${m.campo}:\n  De: "${m.original}"\n  Para: "${m.novo}"`).join('\n\n')}
+
+Gere um resumo conciso e profissional dessas mudanças em português, destacando o impacto de cada alteração. Seja breve e objetivo.`;
+
+        try {
+          const response = await invokeLLM({
+            messages: [
+              { role: 'system', content: 'Você é um assistente de análise de mudanças profissional.' },
+              { role: 'user', content: prompt }
+            ]
+          });
+
+          const resumo = response.choices[0]?.message?.content || 'Resumo não disponível';
+
+          return {
+            temMudancas: true,
+            mudancas,
+            resumo
+          };
+        } catch (error) {
+          console.error('Erro ao gerar resumo com IA:', error);
+          return {
+            temMudancas: true,
+            mudancas,
+            resumo: mudancas.map(m => `${m.campo}: "${m.original}" → "${m.novo}"`).join('\n')
+          };
+        }
+      }),
+
     getAuditLog: protectedProcedure
       .input(z.object({ adjustmentRequestId: z.number() }))
       .query(async ({ input }) => {

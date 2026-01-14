@@ -21,7 +21,7 @@ export default function AuditoriaHistorico({ adjustmentRequestId }: AuditoriaHis
   const { data: auditLogs, isLoading } = trpc.actions.getAuditLog.useQuery(
     { adjustmentRequestId },
     { enabled: adjustmentRequestId > 0 }
-  ) as any;
+  ) as any; // TODO: Remover cast quando getAuditLog for adicionado ao router
 
   if (isLoading) {
     return (
