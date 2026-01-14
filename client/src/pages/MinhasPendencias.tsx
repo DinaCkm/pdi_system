@@ -26,6 +26,7 @@ export default function MinhasPendencias() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterColaborador, setFilterColaborador] = useState<string>("todos");
   const [filterData, setFilterData] = useState<string>("todos");
+  const [filterStatus, setFilterStatus] = useState<string>("todos");
   
   // Apenas administradores podem aprovar/reprovar
   const isAdmin = user && 'role' in user && user.role === 'admin';
@@ -92,6 +93,11 @@ export default function MinhasPendencias() {
         filterColaborador === "todos" || 
         sol.solicitanteId?.toString() === filterColaborador;
       
+      // Filtro de status
+      const matchesStatus = 
+        filterStatus === "todos" || 
+        sol.status === filterStatus;
+      
       // Filtro de data
       let matchesData = true;
       if (filterData !== "todos" && sol.createdAt) {
@@ -112,9 +118,9 @@ export default function MinhasPendencias() {
         }
       }
       
-      return matchesSearch && matchesColaborador && matchesData;
+      return matchesSearch && matchesColaborador && matchesStatus && matchesData;
     });
-  }, [solicitacoes, searchTerm, filterColaborador, filterData]);
+  }, [solicitacoes, searchTerm, filterColaborador, filterStatus, filterData]);
 
   const handleViewDetails = (solicitacao: any) => {
     setSelectedSolicitacao(solicitacao);
@@ -203,9 +209,9 @@ export default function MinhasPendencias() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Solicitações Pendentes</h1>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Solicitações</h1>
         <p className="text-muted-foreground">
-          Avalie e aprove/reprove solicitações de ajuste que aguardam sua decisão
+          Acompanhe todas as suas solicitações de alteração (pendentes, aprovadas ou rejeitadas)
         </p>
       </div>
 
@@ -218,7 +224,7 @@ export default function MinhasPendencias() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Busca */}
             <div>
               <div className="relative">
@@ -245,6 +251,21 @@ export default function MinhasPendencias() {
                       {colab.name}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro por Status */}
+            <div>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Status</SelectItem>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="aprovada">Aprovada</SelectItem>
+                  <SelectItem value="reprovada">Reprovada</SelectItem>
                 </SelectContent>
               </Select>
             </div>

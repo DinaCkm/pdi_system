@@ -121,7 +121,7 @@ function Router() {  return (
         </DashboardLayout>
       </Route>
       
-      <Route path={"/pendencias"}>
+      <Route path={"/solicitacoes"}>
         <DashboardLayout>
           <MinhasPendencias />
         </DashboardLayout>

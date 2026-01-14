@@ -39,7 +39,7 @@ const getMenuItems = (userRole: string) => {
       { icon: FileText, label: "PDIs", path: "/pdis" },
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
       { icon: Upload, label: "Importar Ações", path: "/importar-acoes" },
-      { icon: Bell, label: "Solicitações Pendentes", path: "/pendencias" },
+      { icon: Bell, label: "Solicitações", path: "/solicitacoes" },
       { icon: ClipboardCheck, label: "Evidências Pendentes", path: "/evidencias-pendentes" },
       { icon: MessageSquarePlus, label: "Histórico de Solicitações", path: "/solicitacoes-ajuste" },
       { icon: BarChart, label: "Relatórios", path: "/relatorios" },
@@ -48,14 +48,14 @@ const getMenuItems = (userRole: string) => {
     items.push(
       { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
       { icon: Target, label: "PDIs da Equipe", path: "/pdis-equipe" },
-      { icon: Bell, label: "Solicitações Pendentes", path: "/pendencias" },
+      { icon: Bell, label: "Solicitações", path: "/solicitacoes" },
       { icon: MessageSquarePlus, label: "Histórico de Solicitações", path: "/solicitacoes-equipe" },
     );
   } else {
     items.push(
       { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
       { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
-      { icon: Bell, label: "Solicitações Pendentes", path: "/pendencias" },
+      { icon: Bell, label: "Solicitações", path: "/solicitacoes" },
     );
   }
   
