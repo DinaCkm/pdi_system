@@ -23,6 +23,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 export default function MinhasAcoes() {
   const { user } = useAuth();
+  const trpcUtils = trpc.useUtils(); // Mover hook para o topo
   const [showEvidenciaModal, setShowEvidenciaModal] = useState(false);
   const [showSolicitarAlteracaoModal, setShowSolicitarAlteracaoModal] = useState(false);
   const [selectedAcao, setSelectedAcao] = useState<any>(null);
@@ -67,7 +68,7 @@ export default function MinhasAcoes() {
       setSatisfactionScore(null);
       alert("Evidência enviada com sucesso! O administrador analisará em breve.");
       // Recarregar as ações
-      trpc.useUtils().actions.list.invalidate();
+      trpcUtils.actions.list.invalidate();
     },
     onError: (error) => {
       alert(`Erro ao enviar evidência: ${error.message}`);
