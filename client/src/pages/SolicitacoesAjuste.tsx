@@ -484,56 +484,7 @@ export default function SolicitacoesAjuste() {
                 </div>
               </div>
 
-              {/* Seção de Edição */}
-              <div className="space-y-3 bg-green-50 p-4 rounded-lg border border-green-200">
-                <h4 className="font-semibold text-sm text-green-900">✏️ EDITE OS CAMPOS CONFORME NECESSÁRIO</h4>
-                <p className="text-xs text-green-800">Todos os campos podem ser editados. As alterações serão rastreadas.</p>
-                
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="edit-nome" className="font-semibold">Nome da Ação *</Label>
-                    <Input
-                      id="edit-nome"
-                      value={editValues[selectedSolicitacao!]?.nome || ""}
-                      onChange={(e) => setEditValues(prev => ({
-                        ...prev,
-                        [selectedSolicitacao!]: { ...prev[selectedSolicitacao!], nome: e.target.value }
-                      }))}
-                      placeholder="Nome da ação"
-                      className="mt-1"
-                    />
-                  </div>
 
-                  <div>
-                    <Label htmlFor="edit-descricao" className="font-semibold">Descrição *</Label>
-                    <Textarea
-                      id="edit-descricao"
-                      value={editValues[selectedSolicitacao!]?.descricao || ""}
-                      onChange={(e) => setEditValues(prev => ({
-                        ...prev,
-                        [selectedSolicitacao!]: { ...prev[selectedSolicitacao!], descricao: e.target.value }
-                      }))}
-                      placeholder="Descrição da ação"
-                      rows={4}
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="edit-prazo" className="font-semibold">Prazo *</Label>
-                    <Input
-                      id="edit-prazo"
-                      type="date"
-                      value={editValues[selectedSolicitacao!]?.prazo || ""}
-                      onChange={(e) => setEditValues(prev => ({
-                        ...prev,
-                        [selectedSolicitacao!]: { ...prev[selectedSolicitacao!], prazo: e.target.value }
-                      }))}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
           )}
           

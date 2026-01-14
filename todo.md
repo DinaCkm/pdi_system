@@ -75,10 +75,10 @@
 ## Interface e UX
 - [x] Criar layout principal com navegação
 - [x] Criar páginas de gestão de usuários
-- [ ] Criar páginas de gestão de competências (placeholder)
-- [ ] Criar páginas de gestão de ciclos (placeholder)
-- [ ] Criar páginas de gestão de PDIs
-- [ ] Criar páginas de gestão de ações
+- [x] Criar páginas de gestão de competências (placeholder)
+- [x] Criar páginas de gestão de ciclos (placeholder)
+- [x] Criar páginas de gestão de PDIs
+- [x] Criar páginas de gestão de ações
 - [ ] Criar páginas de evidências
 - [ ] Criar páginas de notificações
 - [ ] Criar páginas de relatórios
@@ -911,3 +911,9 @@
 - [x] Implementar lógica para capturar valores originais
 - [x] Atualizar Dialog de Aprovação para exibir apenas alterações
 - [ ] Testar comparação com diferentes tipos de mudanças
+
+
+## Bug: Dialog de Aprova\u00e7\u00e3o com Campos de Edi\u00e7\u00e3o Desnecess\u00e1rios
+- [ ] Remover se\u00e7\u00e3o "EDITE OS CAMPOS CONFORME NECESS\u00c1RIO" do Dialog
+- [ ] Deixar apenas resumo com IA e informa\u00e7\u00f5es da solicita\u00e7\u00e3o
+- [ ] Admin deve apenas ler e confirmar aprova\u00e7\u00e3o
