@@ -36,13 +36,10 @@ export default function SolicitacoesAjuste() {
   const [showReprovarDialog, setShowReprovarDialog] = useState(false);
   const [justificativaReprovacao, setJustificativaReprovacao] = useState("");
   const [comentario, setComentario] = useState("");
+  const [confirmaAprovacao, setConfirmaAprovacao] = useState(false);
   // Estado para armazenar valores de edição por solicitação
   const [editValues, setEditValues] = useState<Record<number, { nome: string; descricao: string; prazo: string }>>({});
-  const [originalNome, setOriginalNome] = useState("");
-  const [originalDescricao, setOriginalDescricao] = useState("");
-  const [originalPrazo, setOriginalPrazo] = useState("");
-  const [comparisonResult, setComparisonResult] = useState<any>(null);
-  const [isLoadingComparison, setIsLoadingComparison] = useState(false);
+
 
   const { data: solicitacoes, isLoading, refetch } = trpc.actions.getPendingAdjustmentsWithDetails.useQuery();
 
@@ -77,16 +74,7 @@ export default function SolicitacoesAjuste() {
     { enabled: selectedSolicitacao !== null }
   );
 
-  // Query para comparação com IA
-  const { data: comparison, isLoading: isLoadingComparison2 } = trpc.actions.compareChangesWithAI.useQuery(
-    selectedSolicitacao && selectedSolicitacaoData ? {
-      solicitacaoId: selectedSolicitacao,
-      novoNome: editValues[selectedSolicitacao]?.nome,
-      novaDescricao: editValues[selectedSolicitacao]?.descricao,
-      novoPrazo: editValues[selectedSolicitacao]?.prazo
-    } : undefined,
-    { enabled: selectedSolicitacao !== null && showAprovarDialog }
-  )
+
 
   const aprovarMutation = trpc.actions.aprovarAjuste.useMutation({
     onSuccess: () => {
@@ -420,19 +408,60 @@ export default function SolicitacoesAjuste() {
                 </div>
               </div>
 
-              {/* Seção de Resumo com IA */}
-              <div className="space-y-3 bg-purple-50 p-4 rounded-lg border border-purple-200">
-                <h4 className="font-semibold text-sm text-purple-900">🤖 ANÁLISE DE MUDANÇAS COM IA</h4>
-                {isLoadingComparison2 ? (
-                  <p className="text-sm text-purple-800">Analisando mudanças com IA...</p>
-                ) : comparison && comparison.temMudancas ? (
-                  <div className="space-y-2">
-                    <div className="bg-white p-3 rounded border border-purple-200">
-                      <p className="text-sm text-purple-900 whitespace-pre-wrap">{comparison.resumo}</p>
+              {/* Seção de Comparação: Antes vs Depois */}
+              <div className="space-y-3 bg-green-50 p-4 rounded-lg border border-green-200">
+                <h4 className="font-semibold text-sm text-green-900">📋 O QUE SERÁ ALTERADO</h4>
+                <p className="text-xs text-green-800">Visualize as mudanças propostas pelo colaborador:</p>
+                
+                {/* Comparação Nome */}
+                {temAlteracao(selectedSolicitacaoData?.actionNome, editValues[selectedSolicitacao!]?.nome) && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-green-900">Nome da Ação:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-red-100 p-2 rounded border border-red-300">
+                        <p className="text-xs text-red-900 font-semibold">Anterior:</p>
+                        <p className="text-xs text-red-800">{selectedSolicitacaoData?.actionNome}</p>
+                      </div>
+                      <div className="bg-green-100 p-2 rounded border border-green-300">
+                        <p className="text-xs text-green-900 font-semibold">Novo:</p>
+                        <p className="text-xs text-green-800">{editValues[selectedSolicitacao!]?.nome}</p>
+                      </div>
                     </div>
                   </div>
-                ) : (
-                  <p className="text-sm text-purple-800">✓ Nenhuma alteração detectada</p>
+                )}
+                
+                {/* Comparação Descrição */}
+                {temAlteracao(selectedSolicitacaoData?.actionDescricao, editValues[selectedSolicitacao!]?.descricao) && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-green-900">Descrição:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-red-100 p-2 rounded border border-red-300">
+                        <p className="text-xs text-red-900 font-semibold">Anterior:</p>
+                        <p className="text-xs text-red-800 line-clamp-3">{selectedSolicitacaoData?.actionDescricao}</p>
+                      </div>
+                      <div className="bg-green-100 p-2 rounded border border-green-300">
+                        <p className="text-xs text-green-900 font-semibold">Novo:</p>
+                        <p className="text-xs text-green-800 line-clamp-3">{editValues[selectedSolicitacao!]?.descricao}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Comparação Prazo */}
+                {temAlteracao(formatarData(selectedSolicitacaoData?.actionPrazo), editValues[selectedSolicitacao!]?.prazo) && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-green-900">Prazo:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-red-100 p-2 rounded border border-red-300">
+                        <p className="text-xs text-red-900 font-semibold">Anterior:</p>
+                        <p className="text-xs text-red-800">{formatarData(selectedSolicitacaoData?.actionPrazo)}</p>
+                      </div>
+                      <div className="bg-green-100 p-2 rounded border border-green-300">
+                        <p className="text-xs text-green-900 font-semibold">Novo:</p>
+                        <p className="text-xs text-green-800">{editValues[selectedSolicitacao!]?.prazo}</p>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -495,11 +524,24 @@ export default function SolicitacoesAjuste() {
             </div>
           )}
           
+          {/* Checkbox de Confirmação */}
+          <div className="mt-6 pt-4 border-t">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={confirmaAprovacao}
+                onChange={(e) => setConfirmaAprovacao(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300"
+              />
+              <span className="text-sm text-gray-700">✓ Concordo com as mudanças e desejo aprovar</span>
+            </label>
+          </div>
+          
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAprovarDialog(false)}>
               Cancelar
             </Button>
-            <Button onClick={confirmarAprovacao} disabled={aprovarMutation.isPending} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={confirmarAprovacao} disabled={!confirmaAprovacao || aprovarMutation.isPending} className="bg-green-600 hover:bg-green-700">
               {aprovarMutation.isPending ? "Processando..." : "✓ Concordo e Aprovar"}
             </Button>
           </DialogFooter>
