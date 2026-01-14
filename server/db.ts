@@ -1281,6 +1281,7 @@ export async function getActionByPDIAndNome(pdiId: number, nome: string) {
 export async function createEvidence(data: {
   actionId: number;
   colaboradorId: number;
+  satisfactionScore?: number;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

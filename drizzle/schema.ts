@@ -271,6 +271,7 @@ export const evidences = mysqlTable("evidences", {
     "correcao_solicitada"
   ]).default("aguardando_avaliacao").notNull(),
   justificativaAdmin: text("justificativaAdmin"),
+  satisfactionScore: int("satisfactionScore"), // Escala de 1-5 para medir satisfação com a ação
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   evaluatedAt: timestamp("evaluatedAt"),
   evaluatedBy: int("evaluatedBy"),

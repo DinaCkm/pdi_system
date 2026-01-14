@@ -1614,6 +1614,7 @@ Formato de resposta (JSON):
           titulo: z.string().optional(),
           texto: z.string(),
         })).optional(),
+        satisfactionScore: z.number().min(1).max(5).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         // 1. Verificar se a ação existe e pertence ao colaborador
@@ -1632,6 +1633,7 @@ Formato de resposta (JSON):
         const evidenceId = await db.createEvidence({
           actionId: input.actionId,
           colaboradorId: ctx.user!.id,
+          satisfactionScore: input.satisfactionScore,
         });
 
         // 4. Adicionar arquivos

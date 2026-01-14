@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, AlertCircle, CheckCircle, Clock } from "lucide-react";
+import { FileText, AlertCircle, CheckCircle, Clock, X, Star } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function MinhasAcoes() {
@@ -30,8 +30,9 @@ export default function MinhasAcoes() {
   const [descricaoAlteracao, setDescricaoAlteracao] = useState("");
   const [isSubmittingSolicitacao, setIsSubmittingSolicitacao] = useState(false);
   const [showConfirmacaoLider, setShowConfirmacaoLider] = useState(false);
-  const [evidenciaFile, setEvidenciaFile] = useState<File | null>(null);
+  const [evidenciaFiles, setEvidenciaFiles] = useState<File[]>([]);
   const [evidenciaDescricao, setEvidenciaDescricao] = useState("");
+  const [satisfactionScore, setSatisfactionScore] = useState<number | null>(null);
   const [isSubmittingEvidencia, setIsSubmittingEvidencia] = useState(false);
 
   // Filtros
@@ -61,8 +62,9 @@ export default function MinhasAcoes() {
     onSuccess: () => {
       setShowEvidenciaModal(false);
       setSelectedAcao(null);
-      setEvidenciaFile(null);
+      setEvidenciaFiles([]);
       setEvidenciaDescricao("");
+      setSatisfactionScore(null);
       alert("Evidência enviada com sucesso! O administrador analisará em breve.");
       // Recarregar as ações
       trpc.useUtils().actions.list.invalidate();
@@ -149,39 +151,68 @@ export default function MinhasAcoes() {
     ));
   };
 
+  const handleAdicionarArquivo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const novoArquivos = Array.from(files);
+      // Limitar a 3 arquivos no total
+      const arquivosAtualizados = [...evidenciaFiles, ...novoArquivos].slice(0, 3);
+      setEvidenciaFiles(arquivosAtualizados);
+    }
+  };
+
+  const handleRemoverArquivo = (index: number) => {
+    setEvidenciaFiles(evidenciaFiles.filter((_, i) => i !== index));
+  };
+
   const handleEnviarEvidencia = async () => {
-    if (!evidenciaFile) {
-      alert("Por favor, selecione um arquivo");
+    // Validações
+    if (evidenciaFiles.length === 0) {
+      alert("Por favor, selecione pelo menos um arquivo");
+      return;
+    }
+
+    if (!evidenciaDescricao.trim()) {
+      alert("Por favor, descreva sua experiência com a ação");
+      return;
+    }
+
+    if (satisfactionScore === null) {
+      alert("Por favor, indique seu grau de satisfação com a ação");
       return;
     }
 
     setIsSubmittingEvidencia(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const fileContent = e.target?.result as string;
-          
-          // Enviar evidência com o arquivo em base64
-          enviarEvidenciaMutation.mutate({
-            actionId: selectedAcao.id,
-            files: [{
-              fileName: evidenciaFile.name,
-              fileType: evidenciaFile.type,
-              fileSize: evidenciaFile.size,
-              fileUrl: fileContent,
-              fileKey: `evidencias/${selectedAcao.id}-${Date.now()}-${evidenciaFile.name}`,
-            }],
-            texts: evidenciaDescricao ? [{ texto: evidenciaDescricao }] : undefined,
+      // Processar todos os arquivos
+      const filesData = await Promise.all(
+        evidenciaFiles.map(async (file) => {
+          return new Promise<any>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const fileContent = e.target?.result as string;
+              resolve({
+                fileName: file.name,
+                fileType: file.type,
+                fileSize: file.size,
+                fileUrl: fileContent,
+                fileKey: `evidencias/${selectedAcao.id}-${Date.now()}-${file.name}`,
+              });
+            };
+            reader.readAsDataURL(file);
           });
-        } catch (error) {
-          alert(`Erro ao processar arquivo: ${error}`);
-          setIsSubmittingEvidencia(false);
-        }
-      };
-      reader.readAsDataURL(evidenciaFile);
+        })
+      );
+
+      // Enviar evidência com todos os arquivos
+      enviarEvidenciaMutation.mutate({
+        actionId: selectedAcao.id,
+        files: filesData,
+        texts: [{ texto: evidenciaDescricao }],
+        satisfactionScore: satisfactionScore,
+      } as any);
     } catch (error) {
-      alert(`Erro ao ler arquivo: ${error}`);
+      alert(`Erro ao processar arquivos: ${error}`);
       setIsSubmittingEvidencia(false);
     }
   };
@@ -297,6 +328,9 @@ export default function MinhasAcoes() {
                     className="flex-1"
                     onClick={() => {
                       setSelectedAcao(acao);
+                      setEvidenciaFiles([]);
+                      setEvidenciaDescricao("");
+                      setSatisfactionScore(null);
                       setShowEvidenciaModal(true);
                     }}
                   >
@@ -325,15 +359,15 @@ export default function MinhasAcoes() {
 
       {/* Modal Enviar Evidência */}
       <Dialog open={showEvidenciaModal} onOpenChange={setShowEvidenciaModal}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Enviar Evidência</DialogTitle>
             <DialogDescription>
-              Anexe um arquivo como comprovante de conclusão da ação
+              Compartilhe sua experiência e progresso com esta ação
             </DialogDescription>
           </DialogHeader>
           {selectedAcao && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p className="font-medium text-gray-900">{selectedAcao.nome}</p>
                 <p className="text-sm text-gray-600 mt-1">
@@ -341,26 +375,111 @@ export default function MinhasAcoes() {
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Arquivo *</label>
-                <input
-                  type="file"
-                  className="w-full p-3 border border-gray-300 rounded-lg"
-                  onChange={(e) => setEvidenciaFile(e.target.files?.[0] || null)}
-                />
-                {evidenciaFile && (
-                  <p className="text-sm text-gray-600">Arquivo selecionado: {evidenciaFile.name}</p>
+              {/* Arquivos */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Arquivos (máximo 3) *</label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    id="arquivo-input"
+                    onChange={handleAdicionarArquivo}
+                  />
+                  <label htmlFor="arquivo-input" className="cursor-pointer">
+                    <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">
+                      Clique para selecionar arquivos ou arraste-os aqui
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Você pode adicionar até 3 arquivos
+                    </p>
+                  </label>
+                </div>
+
+                {/* Lista de arquivos selecionados */}
+                {evidenciaFiles.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-700">
+                      Arquivos selecionados ({evidenciaFiles.length}/3):
+                    </p>
+                    <div className="space-y-2">
+                      {evidenciaFiles.map((file, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between bg-blue-50 p-3 rounded-lg border border-blue-200"
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <FileText className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                            <span className="text-sm text-gray-700 truncate">{file.name}</span>
+                            <span className="text-xs text-gray-500 flex-shrink-0">
+                              ({(file.size / 1024).toFixed(1)} KB)
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => handleRemoverArquivo(index)}
+                            className="ml-2 text-red-600 hover:text-red-700 flex-shrink-0"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
 
+              {/* Descrição */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Descrição (opcional)</label>
+                <label className="text-sm font-medium">
+                  Conte aqui neste campo como foi a experiência de fazer esta ação e se trouxe algo positivo no seu desenvolvimento *
+                </label>
                 <textarea
-                  className="w-full p-3 border border-gray-300 rounded-lg min-h-24"
-                  placeholder="Descreva brevemente o que foi realizado..."
+                  className="w-full p-3 border border-gray-300 rounded-lg min-h-32 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  placeholder="Descreva sua experiência, aprendizados e impacto no seu desenvolvimento..."
                   value={evidenciaDescricao}
                   onChange={(e) => setEvidenciaDescricao(e.target.value)}
                 />
+                <p className="text-xs text-gray-500">
+                  {evidenciaDescricao.length} caracteres
+                </p>
+              </div>
+
+              {/* Escala de Satisfação */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium">
+                  Qual seu grau de satisfação com esta ação? *
+                </label>
+                <p className="text-xs text-gray-600">
+                  Indique o quanto esta ação contribuiu para seu desenvolvimento
+                </p>
+                <div className="flex gap-2 justify-center">
+                  {[1, 2, 3, 4, 5].map((score) => (
+                    <button
+                      key={score}
+                      onClick={() => setSatisfactionScore(score)}
+                      className={`p-2 rounded-lg transition-all ${
+                        satisfactionScore === score
+                          ? "bg-yellow-400 text-white scale-110"
+                          : "bg-gray-200 text-gray-600 hover:bg-yellow-300"
+                      }`}
+                    >
+                      <Star className="w-6 h-6 fill-current" />
+                    </button>
+                  ))}
+                </div>
+                <div className="text-center">
+                  {satisfactionScore && (
+                    <p className="text-sm font-medium text-gray-700">
+                      Satisfação: {satisfactionScore}/5
+                      {satisfactionScore === 1 && " - Muito insatisfeito"}
+                      {satisfactionScore === 2 && " - Insatisfeito"}
+                      {satisfactionScore === 3 && " - Neutro"}
+                      {satisfactionScore === 4 && " - Satisfeito"}
+                      {satisfactionScore === 5 && " - Muito satisfeito"}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <Button 
@@ -452,7 +571,7 @@ export default function MinhasAcoes() {
                   Descreva as alterações solicitadas *
                 </label>
                 <textarea
-                  className="w-full min-h-24 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full min-h-24 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   placeholder="Explique detalhadamente o que deseja alterar e por quê..."
                   value={descricaoAlteracao}
                   onChange={(e) => setDescricaoAlteracao(e.target.value)}
