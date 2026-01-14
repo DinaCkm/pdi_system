@@ -447,3 +447,30 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+/**
+ * AUDITORIA DE ALTERAÇÕES - Registra todas as mudanças feitas nas solicitações de ajuste
+ */
+export const auditLog = mysqlTable("audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  adjustmentRequestId: int("adjustmentRequestId").notNull(),
+  adminId: int("adminId").notNull(), // Quem fez a alteração
+  campo: varchar("campo", { length: 100 }).notNull(), // Nome do campo alterado (ex: "nome", "descricao", "prazo")
+  valorAnterior: text("valorAnterior"), // Valor antes da alteração
+  valorNovo: text("valorNovo"), // Valor depois da alteração
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const auditLogRelations = relations(auditLog, ({ one }) => ({
+  adjustmentRequest: one(adjustmentRequests, {
+    fields: [auditLog.adjustmentRequestId],
+    references: [adjustmentRequests.id],
+  }),
+  admin: one(users, {
+    fields: [auditLog.adminId],
+    references: [users.id],
+  }),
+}));
+
+export type AuditLog = typeof auditLog.$inferSelect;
+export type InsertAuditLog = typeof auditLog.$inferInsert;

@@ -18,7 +18,8 @@ import {
   adjustmentComments,
   InsertAdjustmentComment,
   notifications,
-  acoesHistorico
+  acoesHistorico,
+  auditLog
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1470,4 +1471,52 @@ export async function updateEvidenceStatus(
   if (!db) throw new Error("Database not available");
   
   await db.update(evidences).set(data).where(eq(evidences.id, id));
+}
+
+
+/**
+ * Registra uma alteração na tabela de auditoria
+ */
+export async function createAuditLog(
+  adjustmentRequestId: number,
+  adminId: number,
+  campo: string,
+  valorAnterior: string | null,
+  valorNovo: string | null
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.insert(auditLog).values({
+    adjustmentRequestId,
+    adminId,
+    campo,
+    valorAnterior,
+    valorNovo,
+  });
+}
+
+/**
+ * Obtém o histórico de auditoria para uma solicitação de ajuste
+ */
+export async function getAuditLogByAdjustmentRequest(adjustmentRequestId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const logs = await db
+    .select({
+      id: auditLog.id,
+      campo: auditLog.campo,
+      valorAnterior: auditLog.valorAnterior,
+      valorNovo: auditLog.valorNovo,
+      adminId: auditLog.adminId,
+      adminName: users.name,
+      createdAt: auditLog.createdAt,
+    })
+    .from(auditLog)
+    .leftJoin(users, eq(auditLog.adminId, users.id))
+    .where(eq(auditLog.adjustmentRequestId, adjustmentRequestId))
+    .orderBy(asc(auditLog.createdAt));
+
+  return logs;
 }

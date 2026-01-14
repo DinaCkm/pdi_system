@@ -1237,6 +1237,14 @@ export const appRouter = router({
             alteradoPor: ctx.user!.id,
             solicitacaoAjusteId: solicitacao.id,
           });
+          // Registrar na auditoria
+          await db.createAuditLog(
+            solicitacao.id,
+            ctx.user!.id,
+            'nome',
+            acao.nome,
+            novoNome
+          );
           updates.nome = novoNome;
         }
 
@@ -1252,6 +1260,14 @@ export const appRouter = router({
             alteradoPor: ctx.user!.id,
             solicitacaoAjusteId: solicitacao.id,
           });
+          // Registrar na auditoria
+          await db.createAuditLog(
+            solicitacao.id,
+            ctx.user!.id,
+            'descricao',
+            acao.descricao,
+            novaDescricao
+          );
           updates.descricao = novaDescricao;
         }
 
@@ -1267,6 +1283,13 @@ export const appRouter = router({
             alteradoPor: ctx.user!.id,
             solicitacaoAjusteId: solicitacao.id,
           });
+          await db.createAuditLog(
+            solicitacao.id,
+            ctx.user!.id,
+            'prazo',
+            acao.prazo.toISOString(),
+            novoPrazo
+          );
           updates.prazo = new Date(novoPrazo);
         }
 
@@ -1578,6 +1601,12 @@ Formato de resposta (JSON):
         await db.deleteAction(input.id);
         return { success: true };
       }),
+
+    getAuditLog: protectedProcedure
+      .input(z.object({ adjustmentRequestId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getAuditLogByAdjustmentRequest(input.adjustmentRequestId);
+      })
   }),
 
   // ============= NOTIFICAÇÕES =============

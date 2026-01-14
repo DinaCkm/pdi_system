@@ -1,4 +1,3 @@
-import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +9,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle2, XCircle, MessageSquare, Clock, User, FileText, ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import AuditoriaHistorico from "@/components/AuditoriaHistorico";
+import { trpc } from "@/lib/trpc";
 
 // Função para formatar data
 function formatarData(data: any): string {
@@ -453,6 +454,13 @@ export default function SolicitacoesAjuste() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+          
+          {/* Histórico de Auditoria */}
+          {selectedSolicitacao && selectedSolicitacao > 0 && (
+            <div className="mt-6 pt-4 border-t">
+              <AuditoriaHistorico adjustmentRequestId={selectedSolicitacao} />
             </div>
           )}
           

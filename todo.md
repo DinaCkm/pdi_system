@@ -860,3 +860,42 @@
 ## Problemas em Investigação
 - [x] Solicitações de alteração não aparecem na página de Solicitações Pendentes (botão conectado ao backend, adicionado auto-refetch a cada 5s)
 - [x] Remover botão "Enviar Evidência" da página Meu PDI (evidências são apenas nas ações)
+
+
+---
+## ✅ ETAPA 2: Sistema de Auditoria Completo - CONCLUÍDA
+**Data de Conclusão:** 14/01/2026
+**O que foi implementado:**
+- ✅ Tabela de auditoria criada no banco de dados (audit_log)
+- ✅ Função createAuditLog para registrar alterações no backend
+- ✅ Função getAuditLogByAdjustmentRequest para recuperar histórico de auditoria
+- ✅ Mutation aprovarAjuste modificada para registrar todas as alterações
+- ✅ Procedure tRPC getAuditLog adicionada ao router de ações
+- ✅ Componente AuditoriaHistorico criado para exibir histórico visual
+- ✅ Integração do componente AuditoriaHistorico no Dialog de aprovação
+- ✅ Testes vitest implementados e todos passando (4/4 testes)
+- ✅ Rastreabilidade completa: quem alterou, quando, qual campo, valor anterior e novo
+
+**Campos Registrados na Auditoria:**
+- Campo alterado (nome, descrição, prazo, etc.)
+- Valor anterior (antes da alteração)
+- Valor novo (depois da alteração)
+- Admin que fez a alteração (com nome)
+- Data e hora da alteração (timestamp)
+
+**Testes Implementados:**
+- ✓ should create an audit log entry
+- ✓ should retrieve audit logs for an adjustment request
+- ✓ should handle multiple field changes in sequence
+- ✓ should preserve null values in audit log
+
+**Interface de Visualização:**
+- Card azul com título "📋 Histórico de Auditoria"
+- Lista de alterações com bordas azuis
+- Para cada alteração: admin, campo, data/hora, valor anterior (vermelho com linha de corte), valor novo (verde)
+- Ícones visuais para melhor legibilidade
+
+**Próximas Etapas:**
+- Implementar visualização de auditoria para colaboradores
+- Adicionar filtros de auditoria por data/campo
+- Gerar relatórios de auditoria
