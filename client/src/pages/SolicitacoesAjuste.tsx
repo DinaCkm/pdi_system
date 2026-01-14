@@ -33,9 +33,8 @@ export default function SolicitacoesAjuste() {
   const [showReprovarDialog, setShowReprovarDialog] = useState(false);
   const [justificativaReprovacao, setJustificativaReprovacao] = useState("");
   const [comentario, setComentario] = useState("");
-  const [editNome, setEditNome] = useState("");
-  const [editDescricao, setEditDescricao] = useState("");
-  const [editPrazo, setEditPrazo] = useState("");
+  // Estado para armazenar valores de edição por solicitação
+  const [editValues, setEditValues] = useState<Record<number, { nome: string; descricao: string; prazo: string }>>({});
   const [originalNome, setOriginalNome] = useState("");
   const [originalDescricao, setOriginalDescricao] = useState("");
   const [originalPrazo, setOriginalPrazo] = useState("");
@@ -59,6 +58,7 @@ export default function SolicitacoesAjuste() {
       toast.success("Solicitação aprovada com sucesso!");
       setShowAprovarDialog(false);
       setSelectedSolicitacao(null);
+      setEditValues({});
       refetch();
     },
     onError: (error) => {
@@ -97,10 +97,15 @@ export default function SolicitacoesAjuste() {
     setOriginalNome(solicitacao.actionNome || "");
     setOriginalDescricao(solicitacao.actionDescricao || "");
     setOriginalPrazo(formatarData(solicitacao.actionPrazo));
-    // Inicializar campos de edição com valores originais
-    setEditNome(solicitacao.actionNome || "");
-    setEditDescricao(solicitacao.actionDescricao || "");
-    setEditPrazo(formatarData(solicitacao.actionPrazo));
+    // Inicializar valores de edição com valores originais
+    setEditValues(prev => ({
+      ...prev,
+      [solicitacao.id]: {
+        nome: solicitacao.actionNome || "",
+        descricao: solicitacao.actionDescricao || "",
+        prazo: formatarData(solicitacao.actionPrazo)
+      }
+    }));
     setShowAprovarDialog(true);
   };
 
@@ -110,7 +115,8 @@ export default function SolicitacoesAjuste() {
   };
 
   const confirmarAprovacao = () => {
-    if (!editNome.trim() || !editDescricao.trim() || !editPrazo) {
+    const currentEditValues = editValues[selectedSolicitacao!];
+    if (!currentEditValues || !currentEditValues.nome.trim() || !currentEditValues.descricao.trim() || !currentEditValues.prazo) {
       toast.error("Todos os campos são obrigatórios");
       return;
     }
@@ -118,9 +124,9 @@ export default function SolicitacoesAjuste() {
     if (selectedSolicitacao) {
       aprovarMutation.mutate({
         solicitacaoId: selectedSolicitacao,
-        novoNome: editNome,
-        novaDescricao: editDescricao,
-        novoPrazo: editPrazo,
+        novoNome: currentEditValues.nome,
+        novaDescricao: currentEditValues.descricao,
+        novoPrazo: currentEditValues.prazo,
       } as any);
     }
   };
@@ -232,8 +238,11 @@ export default function SolicitacoesAjuste() {
                         <div>
                           <p className="text-sm font-medium text-yellow-900 mb-1">Novo Nome:</p>
                           <Input
-                            value={editNome}
-                            onChange={(e) => setEditNome(e.target.value)}
+                            value={editValues[solicitacao.id]?.nome || ""}
+                            onChange={(e) => setEditValues(prev => ({
+                              ...prev,
+                              [solicitacao.id]: { ...prev[solicitacao.id], nome: e.target.value }
+                            }))}
                             placeholder="Digite o novo nome"
                             className="bg-white"
                           />
@@ -243,8 +252,11 @@ export default function SolicitacoesAjuste() {
                         <div>
                           <p className="text-sm font-medium text-yellow-900 mb-1">Nova Descrição:</p>
                           <Textarea
-                            value={editDescricao}
-                            onChange={(e) => setEditDescricao(e.target.value)}
+                            value={editValues[solicitacao.id]?.descricao || ""}
+                            onChange={(e) => setEditValues(prev => ({
+                              ...prev,
+                              [solicitacao.id]: { ...prev[solicitacao.id], descricao: e.target.value }
+                            }))}
                             placeholder="Digite a nova descrição"
                             rows={4}
                             className="bg-white"
@@ -256,8 +268,11 @@ export default function SolicitacoesAjuste() {
                           <p className="text-sm font-medium text-yellow-900 mb-1">Novo Prazo:</p>
                           <Input
                             type="date"
-                            value={editPrazo}
-                            onChange={(e) => setEditPrazo(e.target.value)}
+                            value={editValues[solicitacao.id]?.prazo || ""}
+                            onChange={(e) => setEditValues(prev => ({
+                              ...prev,
+                              [solicitacao.id]: { ...prev[solicitacao.id], prazo: e.target.value }
+                            }))}
                             className="bg-white"
                           />
                         </div>
@@ -373,11 +388,11 @@ export default function SolicitacoesAjuste() {
                 {/* Comparação Nome */}
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-blue-900">Nome da Ação:</p>
-                  {temAlteracao(originalNome, editNome) ? (
+                  {temAlteracao(originalNome, editValues[selectedSolicitacao!]?.nome) ? (
                     <p className="text-sm text-blue-800">
                       <span className="line-through">{originalNome}</span>
                       <ArrowRight className="inline mx-2" size={16} />
-                      <span className="font-semibold">{editNome || "(vazio)"}</span>
+                      <span className="font-semibold">{editValues[selectedSolicitacao!]?.nome || "(vazio)"}</span>
                     </p>
                   ) : (
                     <p className="text-sm text-blue-800">✓ MANTIDO</p>
@@ -387,11 +402,11 @@ export default function SolicitacoesAjuste() {
                 {/* Comparação Descrição */}
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-blue-900">Descrição:</p>
-                  {temAlteracao(originalDescricao, editDescricao) ? (
+                  {temAlteracao(originalDescricao, editValues[selectedSolicitacao!]?.descricao) ? (
                     <p className="text-sm text-blue-800">
                       <span className="line-through text-xs">{originalDescricao?.substring(0, 50)}...</span>
                       <ArrowRight className="inline mx-2" size={16} />
-                      <span className="font-semibold text-xs">{editDescricao?.substring(0, 50)}...</span>
+                      <span className="font-semibold text-xs">{editValues[selectedSolicitacao!]?.descricao?.substring(0, 50)}...</span>
                     </p>
                   ) : (
                     <p className="text-sm text-blue-800">✓ MANTIDO</p>
@@ -401,11 +416,11 @@ export default function SolicitacoesAjuste() {
                 {/* Comparação Prazo */}
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-blue-900">Prazo:</p>
-                  {temAlteracao(originalPrazo, editPrazo) ? (
+                  {temAlteracao(originalPrazo, editValues[selectedSolicitacao!]?.prazo) ? (
                     <p className="text-sm text-blue-800">
                       <span className="line-through">{originalPrazo}</span>
                       <ArrowRight className="inline mx-2" size={16} />
-                      <span className="font-semibold">{editPrazo || "(vazio)"}</span>
+                      <span className="font-semibold">{editValues[selectedSolicitacao!]?.prazo || "(vazio)"}</span>
                     </p>
                   ) : (
                     <p className="text-sm text-blue-800">✓ MANTIDO</p>
@@ -423,8 +438,11 @@ export default function SolicitacoesAjuste() {
                     <Label htmlFor="edit-nome" className="font-semibold">Nome da Ação *</Label>
                     <Input
                       id="edit-nome"
-                      value={editNome}
-                      onChange={(e) => setEditNome(e.target.value)}
+                      value={editValues[selectedSolicitacao!]?.nome || ""}
+                      onChange={(e) => setEditValues(prev => ({
+                        ...prev,
+                        [selectedSolicitacao!]: { ...prev[selectedSolicitacao!], nome: e.target.value }
+                      }))}
                       placeholder="Nome da ação"
                       className="mt-1"
                     />
@@ -434,8 +452,11 @@ export default function SolicitacoesAjuste() {
                     <Label htmlFor="edit-descricao" className="font-semibold">Descrição *</Label>
                     <Textarea
                       id="edit-descricao"
-                      value={editDescricao}
-                      onChange={(e) => setEditDescricao(e.target.value)}
+                      value={editValues[selectedSolicitacao!]?.descricao || ""}
+                      onChange={(e) => setEditValues(prev => ({
+                        ...prev,
+                        [selectedSolicitacao!]: { ...prev[selectedSolicitacao!], descricao: e.target.value }
+                      }))}
                       placeholder="Descrição da ação"
                       rows={4}
                       className="mt-1"
@@ -447,8 +468,11 @@ export default function SolicitacoesAjuste() {
                     <Input
                       id="edit-prazo"
                       type="date"
-                      value={editPrazo}
-                      onChange={(e) => setEditPrazo(e.target.value)}
+                      value={editValues[selectedSolicitacao!]?.prazo || ""}
+                      onChange={(e) => setEditValues(prev => ({
+                        ...prev,
+                        [selectedSolicitacao!]: { ...prev[selectedSolicitacao!], prazo: e.target.value }
+                      }))}
                       className="mt-1"
                     />
                   </div>
