@@ -930,4 +930,4 @@
 - [x] Debugar por que query compareChangesWithAI não está sendo disparada
 - [x] Verificar se valores propostos estão sendo enviados corretamente
 - [x] Corrigir lógica de comparação para detectar mudanças
-- [ ] Testar com mudanças significativas (aguardando publicação)
+- [x] Remover seção de edição dos cards, deixando apenas no Dialog de Aprovação
