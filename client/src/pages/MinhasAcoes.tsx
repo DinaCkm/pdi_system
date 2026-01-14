@@ -30,6 +30,9 @@ export default function MinhasAcoes() {
   const [descricaoAlteracao, setDescricaoAlteracao] = useState("");
   const [isSubmittingSolicitacao, setIsSubmittingSolicitacao] = useState(false);
   const [showConfirmacaoLider, setShowConfirmacaoLider] = useState(false);
+  const [evidenciaFile, setEvidenciaFile] = useState<File | null>(null);
+  const [evidenciaDescricao, setEvidenciaDescricao] = useState("");
+  const [isSubmittingEvidencia, setIsSubmittingEvidencia] = useState(false);
 
   // Filtros
   const [filterCompetencia, setFilterCompetencia] = useState<string>("todos");
@@ -50,6 +53,22 @@ export default function MinhasAcoes() {
     },
     onError: (error) => {
       alert(`Erro ao enviar solicitação: ${error.message}`);
+    },
+  });
+
+  // Mutation para enviar evidência
+  const enviarEvidenciaMutation = trpc.evidences.create.useMutation({
+    onSuccess: () => {
+      setShowEvidenciaModal(false);
+      setSelectedAcao(null);
+      setEvidenciaFile(null);
+      setEvidenciaDescricao("");
+      alert("Evidência enviada com sucesso! O administrador analisará em breve.");
+      // Recarregar as ações
+      trpc.useUtils().actions.list.invalidate();
+    },
+    onError: (error) => {
+      alert(`Erro ao enviar evidência: ${error.message}`);
     },
   });
 
@@ -128,6 +147,43 @@ export default function MinhasAcoes() {
         {idx < descricao.split(". ").length - 1 && "."}
       </div>
     ));
+  };
+
+  const handleEnviarEvidencia = async () => {
+    if (!evidenciaFile) {
+      alert("Por favor, selecione um arquivo");
+      return;
+    }
+
+    setIsSubmittingEvidencia(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const fileContent = e.target?.result as string;
+          
+          // Enviar evidência com o arquivo em base64
+          enviarEvidenciaMutation.mutate({
+            actionId: selectedAcao.id,
+            files: [{
+              fileName: evidenciaFile.name,
+              fileType: evidenciaFile.type,
+              fileSize: evidenciaFile.size,
+              fileUrl: fileContent,
+              fileKey: `evidencias/${selectedAcao.id}-${Date.now()}-${evidenciaFile.name}`,
+            }],
+            texts: evidenciaDescricao ? [{ texto: evidenciaDescricao }] : undefined,
+          });
+        } catch (error) {
+          alert(`Erro ao processar arquivo: ${error}`);
+          setIsSubmittingEvidencia(false);
+        }
+      };
+      reader.readAsDataURL(evidenciaFile);
+    } catch (error) {
+      alert(`Erro ao ler arquivo: ${error}`);
+      setIsSubmittingEvidencia(false);
+    }
   };
 
   if (isLoading) {
@@ -290,7 +346,11 @@ export default function MinhasAcoes() {
                 <input
                   type="file"
                   className="w-full p-3 border border-gray-300 rounded-lg"
+                  onChange={(e) => setEvidenciaFile(e.target.files?.[0] || null)}
                 />
+                {evidenciaFile && (
+                  <p className="text-sm text-gray-600">Arquivo selecionado: {evidenciaFile.name}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -298,11 +358,17 @@ export default function MinhasAcoes() {
                 <textarea
                   className="w-full p-3 border border-gray-300 rounded-lg min-h-24"
                   placeholder="Descreva brevemente o que foi realizado..."
+                  value={evidenciaDescricao}
+                  onChange={(e) => setEvidenciaDescricao(e.target.value)}
                 />
               </div>
 
-              <Button className="w-full bg-gradient-to-r from-blue-600 to-orange-500">
-                Enviar Evidência
+              <Button 
+                className="w-full bg-gradient-to-r from-blue-600 to-orange-500"
+                onClick={handleEnviarEvidencia}
+                disabled={isSubmittingEvidencia}
+              >
+                {isSubmittingEvidencia ? "Enviando..." : "Enviar Evidência"}
               </Button>
             </div>
           )}
