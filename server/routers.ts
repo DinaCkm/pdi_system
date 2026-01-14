@@ -6,6 +6,7 @@ import * as db from "./db";
 import { invokeLLM } from "./_core/llm";
 import { authRouter } from "./authRouters";
 import { importActionsRouter } from "./importActions";
+import { sendEmailSolicitacaoAjuste } from "./_core/email";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1173,6 +1174,23 @@ export const appRouter = router({
             mensagem: `Seu liderado ${ctx.user!.name} solicitou ajuste na ação "${acao.nome}".`,
             referenciaId: input.actionId,
           });
+
+          // 10. Enviar email para o líder
+          const lider = await db.getUserById(colaborador.leaderId);
+          if (lider && lider.email) {
+            const camposAlterar = Object.keys(input.camposAjustar).filter(
+              (key) => input.camposAjustar[key as keyof typeof input.camposAjustar]
+            );
+
+            await sendEmailSolicitacaoAjuste({
+              leaderEmail: lider.email,
+              leaderName: lider.name || 'Líder',
+              colaboradorName: ctx.user!.name || 'Colaborador',
+              acaoNome: acao.nome,
+              justificativa: input.justificativa,
+              camposAlterar,
+            });
+          }
         }
 
         return { success: true, solicitacaoId: solicitacao.id };
