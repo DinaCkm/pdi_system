@@ -121,16 +121,19 @@ export default function SolicitacoesAjuste() {
     console.log("handleAprovar chamado com:", solicitacao);
     setSelectedSolicitacao(solicitacao.id);
     setSelectedSolicitacaoData(solicitacao);
-    // Inicializar valores de edição com valores originais
-    setEditValues(prev => ({
-      ...prev,
-      [solicitacao.id]: {
-        nome: solicitacao.actionNome || "",
-        descricao: solicitacao.actionDescricao || "",
-        prazo: formatarData(solicitacao.actionPrazo)
-      }
-    }));
-      setShowAprovarDialogAjuste(true);
+    // NÃO resetar valores - manter os valores que o usuário já editou
+    // Se ainda não há valores editados, inicializar com valores originais
+    if (!editValues[solicitacao.id]) {
+      setEditValues(prev => ({
+        ...prev,
+        [solicitacao.id]: {
+          nome: solicitacao.actionNome || "",
+          descricao: solicitacao.actionDescricao || "",
+          prazo: formatarData(solicitacao.actionPrazo)
+        }
+      }));
+    }
+    setShowAprovarDialogAjuste(true);
   };
 
   const handleReprovar = (solicitacaoId: number) => {
@@ -402,7 +405,7 @@ export default function SolicitacoesAjuste() {
               {/* Comparação: Antes vs Depois */}
               <div className="space-y-3 bg-green-50 p-4 rounded-lg border border-green-200">
                 <h4 className="font-semibold text-sm text-green-900">📋 O QUE SERÁ ALTERADO</h4>
-                <p className="text-xs text-green-800">Visualize as mudanças propostas pelo colaborador:</p>
+                <p className="text-xs text-green-800">Visualize os ajustes que o administrador fez com base nas solicitações do colaborador:</p>
                 
                 {/* Comparação Nome */}
                 {temAlteracao(selectedSolicitacaoData?.actionNome, editValues[selectedSolicitacao!]?.nome) && (
