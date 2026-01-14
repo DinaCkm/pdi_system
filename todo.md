@@ -852,3 +852,4 @@
 ## Funcionalidades para Colaborador
 - [x] Adicionar botão para enviar evidências nas ações do colaborador
 - [x] Adicionar botão para solicitar alterações nas ações do colaborador
+- [x] Melhorar formulário de solicitar alteração para mostrar campos da ação e permitir seleção de qual campo alterar
