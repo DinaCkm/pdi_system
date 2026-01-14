@@ -223,28 +223,42 @@ export default function SolicitacoesAjuste() {
                     </p>
                   </div>
 
-                  {/* Campos a Ajustar */}
-                  <div>
-                    <h4 className="font-medium mb-2">Campos Solicitados para Ajuste</h4>
-                    <div className="space-y-2">
+                  {/* Campos a Ajustar - EDITÁVEIS */}
+                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <h4 className="font-semibold mb-3 text-yellow-900">✏️ EDITE OS CAMPOS SOLICITADOS PARA AJUSTE</h4>
+                    <div className="space-y-3">
                       {camposAjustar.nome && (
-                        <div className="bg-blue-50 p-3 rounded-md">
-                          <p className="text-sm font-medium text-blue-900">Novo Nome:</p>
-                          <p className="text-sm text-blue-700">{camposAjustar.nome}</p>
+                        <div>
+                          <p className="text-sm font-medium text-yellow-900 mb-1">Novo Nome:</p>
+                          <Input
+                            value={editNome}
+                            onChange={(e) => setEditNome(e.target.value)}
+                            placeholder="Digite o novo nome"
+                            className="bg-white"
+                          />
                         </div>
                       )}
                       {camposAjustar.descricao && (
-                        <div className="bg-blue-50 p-3 rounded-md">
-                          <p className="text-sm font-medium text-blue-900">Nova Descrição:</p>
-                          <p className="text-sm text-blue-700">{camposAjustar.descricao}</p>
+                        <div>
+                          <p className="text-sm font-medium text-yellow-900 mb-1">Nova Descrição:</p>
+                          <Textarea
+                            value={editDescricao}
+                            onChange={(e) => setEditDescricao(e.target.value)}
+                            placeholder="Digite a nova descrição"
+                            rows={4}
+                            className="bg-white"
+                          />
                         </div>
                       )}
                       {camposAjustar.prazo && (
-                        <div className="bg-blue-50 p-3 rounded-md">
-                          <p className="text-sm font-medium text-blue-900">Novo Prazo:</p>
-                          <p className="text-sm text-blue-700">
-                            {new Date(camposAjustar.prazo).toLocaleDateString()}
-                          </p>
+                        <div>
+                          <p className="text-sm font-medium text-yellow-900 mb-1">Novo Prazo:</p>
+                          <Input
+                            type="date"
+                            value={editPrazo}
+                            onChange={(e) => setEditPrazo(e.target.value)}
+                            className="bg-white"
+                          />
                         </div>
                       )}
                     </div>
