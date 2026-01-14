@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,14 @@ export default function SolicitacoesAjuste() {
   const [editPrazo, setEditPrazo] = useState("");
 
   const { data: solicitacoes, isLoading, refetch } = trpc.actions.getPendingAdjustmentsWithDetails.useQuery();
+
+  // Refetch a cada 5 segundos para atualizar a lista
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [refetch]);
   const { data: comentarios, refetch: refetchComentarios } = trpc.actions.getComments.useQuery(
     { adjustmentRequestId: selectedSolicitacao! },
     { enabled: selectedSolicitacao !== null }
@@ -137,11 +145,16 @@ export default function SolicitacoesAjuste() {
 
   return (
     <div className="container py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Histórico de Solicitações</h1>
-        <p className="text-muted-foreground">
-          Visualize todas as solicitações de ajuste de ações (pendentes, aprovadas e reprovadas)
-        </p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Histórico de Solicitações</h1>
+          <p className="text-muted-foreground">
+            Visualize todas as solicitações de ajuste de ações (pendentes, aprovadas e reprovadas)
+          </p>
+        </div>
+        <Button onClick={() => refetch()} variant="outline">
+          🔄 Atualizar
+        </Button>
       </div>
 
       {!solicitacoes || solicitacoes.length === 0 ? (

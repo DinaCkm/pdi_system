@@ -856,3 +856,6 @@
 - [x] Adicionar filtros por data, competência e ciclo na página Minhas Ações
 - [x] Ordenar ações por data de vencimento (mais próximas primeiro)
 - [x] Formatar descrição de ações com quebras de linha onde tem pontos
+
+## Problemas em Investigação
+- [x] Solicitações de alteração não aparecem na página de Solicitações Pendentes (botão conectado ao backend, adicionado auto-refetch a cada 5s)
