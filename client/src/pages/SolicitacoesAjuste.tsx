@@ -465,53 +465,7 @@ export default function SolicitacoesAjuste() {
                 )}
               </div>
 
-              {/* Seção de Edição - OCULTA */}
-              <div className="space-y-3 bg-blue-50 p-4 rounded-lg border border-blue-200" style={{display: 'none'}}>
-                <h4 className="font-semibold text-sm text-blue-900">📋 O QUE SERÁ ALTERADO</h4>
-                <p className="text-xs text-blue-800">Visualize as mudanças que serão aplicadas. Você pode editar qualquer campo abaixo.</p>
-                
-                {/* Comparação Nome */}
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-blue-900">Nome da Ação:</p>
-                  {temAlteracao(originalNome, editValues[selectedSolicitacao!]?.nome) ? (
-                    <p className="text-sm text-blue-800">
-                      <span className="line-through">{originalNome}</span>
-                      <ArrowRight className="inline mx-2" size={16} />
-                      <span className="font-semibold">{editValues[selectedSolicitacao!]?.nome || "(vazio)"}</span>
-                    </p>
-                  ) : (
-                    <p className="text-sm text-blue-800">✓ MANTIDO</p>
-                  )}
-                </div>
 
-                {/* Comparação Descrição */}
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-blue-900">Descrição:</p>
-                  {temAlteracao(originalDescricao, editValues[selectedSolicitacao!]?.descricao) ? (
-                    <p className="text-sm text-blue-800">
-                      <span className="line-through text-xs">{originalDescricao?.substring(0, 50)}...</span>
-                      <ArrowRight className="inline mx-2" size={16} />
-                      <span className="font-semibold text-xs">{editValues[selectedSolicitacao!]?.descricao?.substring(0, 50)}...</span>
-                    </p>
-                  ) : (
-                    <p className="text-sm text-blue-800">✓ MANTIDO</p>
-                  )}
-                </div>
-
-                {/* Comparação Prazo */}
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-blue-900">Prazo:</p>
-                  {temAlteracao(originalPrazo, editValues[selectedSolicitacao!]?.prazo) ? (
-                    <p className="text-sm text-blue-800">
-                      <span className="line-through">{originalPrazo}</span>
-                      <ArrowRight className="inline mx-2" size={16} />
-                      <span className="font-semibold">{editValues[selectedSolicitacao!]?.prazo || "(vazio)"}</span>
-                    </p>
-                  ) : (
-                    <p className="text-sm text-blue-800">✓ MANTIDO</p>
-                  )}
-                </div>
-              </div>
 
 
             </div>
