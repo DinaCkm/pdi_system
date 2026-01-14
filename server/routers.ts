@@ -1110,14 +1110,7 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Você não tem permissão para solicitar ajuste nesta ação' });
         }
 
-        // 2. Verificar se ação está em status válido para solicitação
-        const statusValidos = ['aprovada_lider', 'em_andamento'];
-        if (!statusValidos.includes(acao.status)) {
-          throw new TRPCError({ 
-            code: 'BAD_REQUEST', 
-            message: 'Ação não está em status válido para solicitação de ajuste' 
-          });
-        }
+        // 2. Colaborador pode solicitar ajuste em ações com qualquer status
 
         // 3. VALIDAÇÃO: Verificar se já existe solicitação pendente
         const solicitacoesPendentes = await db.getPendingAdjustmentRequestsByAction(input.actionId);
@@ -1397,7 +1390,8 @@ export const appRouter = router({
         return await db.getAcaoHistorico(input.actionId);
       }),
 
-    getPendingAdjustments: adminProcedure.query(async () => {
+    getPendingAdjustments: protectedProcedure.query(async ({ ctx }) => {
+      // Líderes e administradores podem ver as solicitações pendentes
       return await db.getPendingAdjustmentRequests();
     }),
 

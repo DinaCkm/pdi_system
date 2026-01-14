@@ -405,12 +405,15 @@ export default function MinhasAcoes() {
 
                   setIsSubmittingSolicitacao(true);
                   const camposAjustar: any = {};
-                  if (selectedFields.includes("nome")) camposAjustar.nome = "[Alteração solicitada]";
+                  if (selectedFields.includes("nome")) camposAjustar.nome = selectedAcao.nome;
                   if (selectedFields.includes("descricao"))
-                    camposAjustar.descricao = "[Alteração solicitada]";
-                  if (selectedFields.includes("prazo")) camposAjustar.prazo = "[Alteração solicitada]";
+                    camposAjustar.descricao = selectedAcao.descricao;
+                  if (selectedFields.includes("prazo")) camposAjustar.prazo = selectedAcao.prazo.toISOString();
                   if (selectedFields.includes("competencia")) {
-                    camposAjustar.microId = 0;
+                    camposAjustar.microId = selectedAcao.microCompetenciaId;
+                  }
+                  if (selectedFields.includes("outro")) {
+                    camposAjustar.outro = "[Alteração solicitada]";
                   }
 
                   solicitarAjusteMutation.mutate(
