@@ -55,6 +55,7 @@ const getMenuItems = (userRole: string) => {
     items.push(
       { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
       { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
+      { icon: FileText, label: "Histórico de Alterações", path: "/historico-alteracoes" },
       { icon: Bell, label: "Solicitações", path: "/solicitacoes" },
     );
   }

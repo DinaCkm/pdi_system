@@ -1594,3 +1594,64 @@ export async function getAuditLogByAdjustmentRequest(adjustmentRequestId: number
 
   return logs;
 }
+
+
+/**
+ * Obtém informações sobre alterações de uma ação
+ * Retorna: data da primeira alteração aprovada e número de solicitações
+ */
+export async function getActionAlterationInfo(actionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Buscar todas as solicitações de ajuste aprovadas para esta ação
+  const solicitacoes = await db
+    .select({
+      id: adjustmentRequests.id,
+      status: adjustmentRequests.status,
+      createdAt: adjustmentRequests.createdAt,
+      evaluatedAt: adjustmentRequests.evaluatedAt,
+    })
+    .from(adjustmentRequests)
+    .where(eq(adjustmentRequests.actionId, actionId))
+    .orderBy(asc(adjustmentRequests.createdAt));
+  
+  // Contar solicitações aprovadas
+  const aprovadas = solicitacoes.filter(s => s.status === 'aprovada');
+  
+  // Pegar a data da primeira alteração
+  const primeiraAlteracao = aprovadas.length > 0 ? aprovadas[0].evaluatedAt : null;
+  
+  return {
+    totalSolicitacoes: solicitacoes.length,
+    solicitacoesAprovadas: aprovadas.length,
+    primeiraAlteracaoData: primeiraAlteracao,
+  };
+}
+
+/**
+ * Obtém o histórico de alterações de uma ação
+ */
+export async function getActionAlterationHistory(actionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const historico = await db
+    .select({
+      id: acoesHistorico.id,
+      campo: acoesHistorico.campo,
+      valorAnterior: acoesHistorico.valorAnterior,
+      valorNovo: acoesHistorico.valorNovo,
+      motivoAlteracao: acoesHistorico.motivoAlteracao,
+      alteradoPor: acoesHistorico.alteradoPor,
+      alteradorNome: users.name,
+      solicitacaoAjusteId: acoesHistorico.solicitacaoAjusteId,
+      createdAt: acoesHistorico.createdAt,
+    })
+    .from(acoesHistorico)
+    .leftJoin(users, eq(acoesHistorico.alteradoPor, users.id))
+    .where(eq(acoesHistorico.actionId, actionId))
+    .orderBy(desc(acoesHistorico.createdAt));
+  
+  return historico;
+}

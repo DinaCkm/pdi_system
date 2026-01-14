@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,45 @@ import {
 } from "@/components/ui/select";
 import { FileText, AlertCircle, CheckCircle, Clock, X, Star } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+
+// Componente para exibir informações de alteração
+function AcaoAlteracaoInfo({ actionId }: { actionId: number }) {
+  const [alteracaoInfo, setAlteracaoInfo] = useState<any>(null);
+  // @ts-ignore
+  const { data: info } = trpc.actions.getAlterationInfo.useQuery({ actionId });
+  
+  useEffect(() => {
+    if (info) {
+      setAlteracaoInfo(info);
+    }
+  }, [info]);
+  
+  if (!alteracaoInfo || alteracaoInfo.solicitacoesAprovadas === 0) {
+    return null;
+  }
+  
+  return (
+    <>
+      {/* Aviso de Alteração */}
+      {alteracaoInfo.primeiraAlteracaoData && (
+        <div className="px-6 py-3 bg-blue-50 border-l-4 border-blue-500">
+          <p className="text-sm text-blue-900">
+            <strong>ℹ️ Ação alterada</strong> de acordo com solicitação de {new Date(alteracaoInfo.primeiraAlteracaoData).toLocaleDateString('pt-BR')}
+          </p>
+        </div>
+      )}
+      
+      {/* Contador de Solicitações */}
+      {alteracaoInfo.totalSolicitacoes > 0 && (
+        <div className="px-6 py-2 bg-gray-50 border-t">
+          <p className="text-xs text-gray-600">
+            Solicitações de alteração: <strong>{alteracaoInfo.solicitacoesAprovadas}/3</strong>
+          </p>
+        </div>
+      )}
+    </>
+  );
+}
 
 export default function MinhasAcoes() {
   const { user } = useAuth();
@@ -307,6 +346,10 @@ export default function MinhasAcoes() {
                   </div>
                 </div>
               </CardHeader>
+              
+              {/* Aviso de Alteração */}
+              <AcaoAlteracaoInfo actionId={acao.id} />
+              
               <CardContent className="space-y-4">
                 <div className="text-sm text-gray-700 leading-relaxed">
                   {formatarDescricao(acao.descricao)}

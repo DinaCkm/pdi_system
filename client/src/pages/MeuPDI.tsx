@@ -143,6 +143,17 @@ export default function MeuPDI() {
                     </div>
                   )}
 
+                  {/* Card de Número de Ações */}
+                  {pdi.actionCount !== undefined && (
+                    <div className="bg-gradient-to-r from-blue-50 to-orange-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <List className="h-5 w-5 text-blue-600" />
+                        <span className="text-sm font-medium text-gray-700">Ações</span>
+                      </div>
+                      <span className="text-lg font-bold text-blue-600">{pdi.actionCount}</span>
+                    </div>
+                  )}
+
                   <div className="flex gap-2 pt-2">
                     <Button
                       variant="outline"

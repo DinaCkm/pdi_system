@@ -1468,6 +1468,18 @@ export const appRouter = router({
         };
       }),
 
+    getAlterationInfo: protectedProcedure
+      .input(z.object({ actionId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getActionAlterationInfo(input.actionId);
+      }),
+
+    getAlterationHistory: protectedProcedure
+      .input(z.object({ actionId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getActionAlterationHistory(input.actionId);
+      }),
+
     // ============= COMENTÁRIOS DE SOLICITAÇÕES =============
 
     addComment: protectedProcedure

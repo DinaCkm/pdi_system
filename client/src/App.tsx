@@ -26,6 +26,7 @@ import ImportarCompetencias from "./pages/ImportarCompetencias";
 import ImportarAcoes from "./pages/ImportarAcoes";
 import EvidenciasPendentes from "./pages/EvidenciasPendentes";
 import MinhasAcoes from "./pages/MinhasAcoes";
+import HistoricoAlteracoes from "./pages/HistoricoAlteracoes";
 
 function Router() {  return (
     <Switch>
@@ -142,6 +143,12 @@ function Router() {  return (
       <Route path={"/minhas-acoes"}>
         <DashboardLayout>
           <MinhasAcoes />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/historico-alteracoes"}>
+        <DashboardLayout>
+          <HistoricoAlteracoes />
         </DashboardLayout>
       </Route>
       
