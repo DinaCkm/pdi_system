@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,13 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FileText, AlertCircle, CheckCircle, Clock } from "lucide-react";
 
 export default function MinhasAcoes() {
@@ -20,8 +27,88 @@ export default function MinhasAcoes() {
   const [selectedAcao, setSelectedAcao] = useState<any>(null);
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
 
+  // Filtros
+  const [filterCompetencia, setFilterCompetencia] = useState<string>("todos");
+  const [filterCiclo, setFilterCiclo] = useState<string>("todos");
+  const [filterData, setFilterData] = useState<string>("todos");
+
   // Query para buscar ações do colaborador
   const { data: acoes, isLoading } = trpc.actions.list.useQuery();
+
+  // Extrair competências e ciclos únicos
+  const competenciasUnicas = useMemo(() => {
+    if (!acoes) return [];
+    const set = new Set<string>();
+    acoes.forEach((a: any) => {
+      if (a.microCompetencia?.nome) {
+        set.add(a.microCompetencia.nome);
+      }
+    });
+    return Array.from(set).sort();
+  }, [acoes]);
+
+  const ciclosUnicos = useMemo(() => {
+    if (!acoes) return [];
+    const set = new Set<string>();
+    acoes.forEach((a: any) => {
+      if (a.pdi?.ciclo?.nome) {
+        set.add(a.pdi.ciclo.nome);
+      }
+    });
+    return Array.from(set).sort();
+  }, [acoes]);
+
+  // Filtrar e ordenar ações
+  const acoesFiltradasEOrdenadas = useMemo(() => {
+    if (!acoes) return [];
+
+    let filtered = acoes.filter((a: any) => {
+      // Filtro por competência
+      if (filterCompetencia !== "todos" && a.microCompetencia?.nome !== filterCompetencia) {
+        return false;
+      }
+
+      // Filtro por ciclo
+      if (filterCiclo !== "todos" && a.pdi?.ciclo?.nome !== filterCiclo) {
+        return false;
+      }
+
+      // Filtro por data
+      if (filterData !== "todos") {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        const prazo = new Date(a.prazo);
+        prazo.setHours(0, 0, 0, 0);
+
+        if (filterData === "vencidas") {
+          if (prazo >= hoje) return false;
+        } else if (filterData === "proximas_7_dias") {
+          const em7Dias = new Date(hoje);
+          em7Dias.setDate(em7Dias.getDate() + 7);
+          if (prazo < hoje || prazo > em7Dias) return false;
+        } else if (filterData === "proximas_30_dias") {
+          const em30Dias = new Date(hoje);
+          em30Dias.setDate(em30Dias.getDate() + 30);
+          if (prazo < hoje || prazo > em30Dias) return false;
+        } else if (filterData === "futuras") {
+          const em30Dias = new Date(hoje);
+          em30Dias.setDate(em30Dias.getDate() + 30);
+          if (prazo <= em30Dias) return false;
+        }
+      }
+
+      return true;
+    });
+
+    // Ordenar por data (mais próximas primeiro)
+    filtered.sort((a: any, b: any) => {
+      const dataA = new Date(a.prazo).getTime();
+      const dataB = new Date(b.prazo).getTime();
+      return dataA - dataB;
+    });
+
+    return filtered;
+  }, [acoes, filterCompetencia, filterCiclo, filterData]);
 
   if (!user) {
     return (
@@ -46,6 +133,16 @@ export default function MinhasAcoes() {
     setSelectedFields((prev) =>
       prev.includes(field) ? prev.filter((f) => f !== field) : [...prev, field]
     );
+  };
+
+  const formatarDescricao = (texto: string) => {
+    // Quebrar em linhas onde tem ponto seguido de espaço
+    return texto.split(". ").map((parte, idx) => (
+      <div key={idx}>
+        {parte}
+        {idx < texto.split(". ").length - 1 && "."}
+      </div>
+    ));
   };
 
   const getStatusBadge = (status: string) => {
@@ -84,16 +181,80 @@ export default function MinhasAcoes() {
         </p>
       </div>
 
-      {acoes && acoes.length > 0 ? (
+      {/* Filtros */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Filtro por Data */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Data</label>
+              <Select value={filterData} onValueChange={setFilterData}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas</SelectItem>
+                  <SelectItem value="vencidas">Vencidas</SelectItem>
+                  <SelectItem value="proximas_7_dias">Próximas 7 dias</SelectItem>
+                  <SelectItem value="proximas_30_dias">Próximas 30 dias</SelectItem>
+                  <SelectItem value="futuras">Futuras</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro por Competência */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Competência</label>
+              <Select value={filterCompetencia} onValueChange={setFilterCompetencia}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas</SelectItem>
+                  {competenciasUnicas.map((comp) => (
+                    <SelectItem key={comp} value={comp}>
+                      {comp}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filtro por Ciclo */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Ciclo</label>
+              <Select value={filterCiclo} onValueChange={setFilterCiclo}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {ciclosUnicos.map((ciclo) => (
+                    <SelectItem key={ciclo} value={ciclo}>
+                      {ciclo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Ações */}
+      {acoesFiltradasEOrdenadas && acoesFiltradasEOrdenadas.length > 0 ? (
         <div className="grid gap-4">
-          {acoes.map((acao: any) => (
+          {acoesFiltradasEOrdenadas.map((acao: any) => (
             <Card key={acao.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg">{acao.nome}</CardTitle>
-                    <CardDescription className="mt-1">
-                      {acao.descricao}
+                    <CardDescription className="mt-2">
+                      {acao.descricao && formatarDescricao(acao.descricao)}
                     </CardDescription>
                   </div>
                   {getStatusBadge(acao.status)}
@@ -111,6 +272,12 @@ export default function MinhasAcoes() {
                     <div>
                       <p className="text-muted-foreground">Competência</p>
                       <p className="font-medium">{acao.microCompetencia.nome}</p>
+                    </div>
+                  )}
+                  {acao.pdi?.ciclo && (
+                    <div>
+                      <p className="text-muted-foreground">Ciclo</p>
+                      <p className="font-medium">{acao.pdi.ciclo.nome}</p>
                     </div>
                   )}
                 </div>
@@ -140,7 +307,11 @@ export default function MinhasAcoes() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FileText className="w-12 h-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Nenhuma ação atribuída</p>
+            <p className="text-muted-foreground">
+              {acoes && acoes.length > 0
+                ? "Nenhuma ação encontrada com os filtros selecionados"
+                : "Nenhuma ação atribuída"}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -243,7 +414,7 @@ export default function MinhasAcoes() {
                       Descrição
                     </label>
                     <p className="text-sm text-foreground">
-                      {selectedAcao.descricao}
+                      {formatarDescricao(selectedAcao.descricao)}
                     </p>
                   </div>
                 )}

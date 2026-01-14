@@ -853,3 +853,6 @@
 - [x] Adicionar botão para enviar evidências nas ações do colaborador
 - [x] Adicionar botão para solicitar alterações nas ações do colaborador
 - [x] Melhorar formulário de solicitar alteração para mostrar campos da ação e permitir seleção de qual campo alterar
+- [x] Adicionar filtros por data, competência e ciclo na página Minhas Ações
+- [x] Ordenar ações por data de vencimento (mais próximas primeiro)
+- [x] Formatar descrição de ações com quebras de linha onde tem pontos
