@@ -1198,7 +1198,16 @@ export async function migrateUserDepartmentRoles() {
     }
   }
   
-  return { migratedCount, totalUsers: allUsers.length };
+  console.log(`\n📈 RESULTADO DA MIGRAÇÃO:`);
+  console.log(`   ✅ Migrados: ${migratedCount}`);
+  console.log(`   ⏭️  Pulados: ${allUsers.length - migratedCount}`);
+  console.log(`   📊 Total processado: ${allUsers.length}\n`);
+  
+  return { 
+    migratedCount, 
+    skippedCount: allUsers.length - migratedCount,
+    totalUsers: allUsers.length,
+  };
 }
 
 
