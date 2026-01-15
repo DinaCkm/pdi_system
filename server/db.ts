@@ -1256,12 +1256,25 @@ export async function createAcaoHistorico(data: {
 
 // ============= FUNÇÕES ADICIONAIS PARA EVIDÊNCIAS =============
 
-export async function updateEvidenceStatus(evidenceId: number, status: string) {
+export async function updateEvidenceStatus(
+  evidenceId: number,
+  data: {
+    status: string;
+    justificativaAdmin?: string;
+    evaluatedBy?: number;
+    evaluatedAt?: Date;
+  }
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
   await db.update(evidences)
-    .set({ status: status as any })
+    .set({
+      status: data.status as any,
+      justificativaAdmin: data.justificativaAdmin ?? null,
+      evaluatedBy: data.evaluatedBy ?? null,
+      evaluatedAt: data.evaluatedAt ?? null,
+    })
     .where(eq(evidences.id, evidenceId));
 }
 
