@@ -1293,8 +1293,25 @@ export async function getEvidenceById(evidenceId: number) {
   if (!db) return null;
   
   const result = await db
-    .select()
+    .select({
+      // Evidence fields
+      id: evidences.id,
+      actionId: evidences.actionId,
+      colaboradorId: evidences.colaboradorId,
+      status: evidences.status,
+      justificativaAdmin: evidences.justificativaAdmin,
+      satisfactionScore: evidences.satisfactionScore,
+      createdAt: evidences.createdAt,
+      evaluatedAt: evidences.evaluatedAt,
+      evaluatedBy: evidences.evaluatedBy,
+      // Action fields
+      actionNome: actions.nome,
+      // Colaborador fields
+      colaboradorNome: users.name,
+    })
     .from(evidences)
+    .leftJoin(actions, eq(evidences.actionId, actions.id))
+    .leftJoin(users, eq(evidences.colaboradorId, users.id))
     .where(eq(evidences.id, evidenceId))
     .limit(1);
   
@@ -1512,4 +1529,412 @@ export async function countUsers(): Promise<number> {
     .from(users);
 
   return result[0]?.count ?? 0;
+}
+
+
+export async function getPDIsByCicloId(cicloId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db
+    .select()
+    .from(pdis)
+    .where(eq(pdis.cicloId, cicloId));
+}
+
+// ============================================================================
+// FUNÇÕES FALTANDO - IMPLEMENTADAS PARA CORRIGIR ERROS DE BUILD
+// ============================================================================
+
+export async function getUserByEmailAndCpf(email: string, cpf: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(users)
+    .where(and(eq(users.email, email), eq(users.cpf, cpf)))
+    .limit(1);
+
+  return result[0] || null;
+}
+
+export async function getPDIByColaboradorAndCiclo(colaboradorId: number, cicloId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(pdis)
+    .where(
+      and(
+        eq(pdis.colaboradorId, colaboradorId),
+        eq(pdis.cicloId, cicloId)
+      )
+    )
+    .limit(1);
+
+  return result[0] || null;
+}
+
+export async function getActionByPDIAndNome(pdiId: number, nome: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(actions)
+    .where(
+      and(
+        eq(actions.pdiId, pdiId),
+        eq(actions.nome, nome)
+      )
+    )
+    .limit(1);
+
+  return result[0] || null;
+}
+
+export async function getSubordinates(leaderId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(users)
+    .where(eq(users.leaderId, leaderId))
+    .orderBy(asc(users.name));
+}
+
+export async function getAllMacros() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(competenciasMacros)
+    .orderBy(asc(competenciasMacros.nome));
+}
+
+export async function getUnreadNotificationsCount(userId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const result = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(notifications)
+    .where(
+      and(
+        eq(notifications.destinatarioId, userId),
+        eq(notifications.lido, false)
+      )
+    );
+
+  return result[0]?.count || 0;
+}
+
+export async function getUsersByRole(role: "admin" | "lider" | "colaborador") {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(users)
+    .where(eq(users.role, role))
+    .orderBy(asc(users.name));
+}
+
+export async function getPendingEvidences() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select({
+      id: evidences.id,
+      actionId: evidences.actionId,
+      colaboradorId: evidences.colaboradorId,
+      status: evidences.status,
+      createdAt: evidences.createdAt,
+      actionNome: actions.nome,
+      colaboradorNome: users.name,
+    })
+    .from(evidences)
+    .leftJoin(actions, eq(evidences.actionId, actions.id))
+    .leftJoin(users, eq(evidences.colaboradorId, users.id))
+    .where(eq(evidences.status, 'aguardando_avaliacao'))
+    .orderBy(desc(evidences.createdAt));
+}
+
+export async function getAllMicros() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(competenciasMicros)
+    .orderBy(asc(competenciasMicros.nome));
+}
+
+export async function getAllMicrosWithMacroAndBloco() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select({
+      id: competenciasMicros.id,
+      nome: competenciasMicros.nome,
+      macroId: competenciasMicros.macroId,
+      macroNome: competenciasMacros.nome,
+      blocoId: competenciasBlocos.id,
+      blocoNome: competenciasBlocos.nome,
+    })
+    .from(competenciasMicros)
+    .leftJoin(competenciasMacros, eq(competenciasMicros.macroId, competenciasMacros.id))
+    .leftJoin(competenciasBlocos, eq(competenciasMacros.blocoId, competenciasBlocos.id))
+    .orderBy(asc(competenciasMicros.nome));
+}
+
+export async function getMacroByNomeAndBlocoId(nome: string, blocoId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(competenciasMacros)
+    .where(
+      and(
+        eq(competenciasMacros.nome, nome),
+        eq(competenciasMacros.blocoId, blocoId)
+      )
+    )
+    .limit(1);
+
+  return result[0] || null;
+}
+
+export async function getMicroByNomeAndMacroId(nome: string, macroId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(competenciasMicros)
+    .where(
+      and(
+        eq(competenciasMicros.nome, nome),
+        eq(competenciasMicros.macroId, macroId)
+      )
+    )
+    .limit(1);
+
+  return result[0] || null;
+}
+
+export async function getActionsByColaboradorId(colaboradorId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(actions)
+    .where(eq(actions.colaboradorId, colaboradorId))
+    .orderBy(desc(actions.createdAt));
+}
+
+export async function getPendingActionsForLeader(leaderId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get all subordinates of this leader
+  const subordinates = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.leaderId, leaderId));
+
+  const subordinateIds = subordinates.map(s => s.id);
+
+  if (subordinateIds.length === 0) {
+    return [];
+  }
+
+  return await db
+    .select()
+    .from(actions)
+    .where(
+      and(
+        inArray(actions.colaboradorId, subordinateIds),
+        eq(actions.status, 'pendente')
+      )
+    )
+    .orderBy(desc(actions.createdAt));
+}
+
+export async function createAdjustmentComment(data: {
+  adjustmentRequestId: number;
+  userId: number;
+  comentario: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .insert(adjustmentComments)
+    .values({
+      adjustmentRequestId: data.adjustmentRequestId,
+      userId: data.userId,
+      comentario: data.comentario,
+      createdAt: new Date(),
+    });
+
+  return result[0];
+}
+
+export async function getAcaoHistorico(actionId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select({
+      id: acoesHistorico.id,
+      actionId: acoesHistorico.actionId,
+      campo: acoesHistorico.campo,
+      valorAnterior: acoesHistorico.valorAnterior,
+      valorNovo: acoesHistorico.valorNovo,
+      motivoAlteracao: acoesHistorico.motivoAlteracao,
+      alteradoPor: acoesHistorico.alteradoPor,
+      alteradoPorNome: users.name,
+      createdAt: acoesHistorico.createdAt,
+    })
+    .from(acoesHistorico)
+    .leftJoin(users, eq(acoesHistorico.alteradoPor, users.id))
+    .where(eq(acoesHistorico.actionId, actionId))
+    .orderBy(desc(acoesHistorico.createdAt));
+}
+
+export async function getCommentsByAdjustmentRequestId(adjustmentRequestId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select({
+      id: adjustmentComments.id,
+      adjustmentRequestId: adjustmentComments.adjustmentRequestId,
+      userId: adjustmentComments.userId,
+      userName: users.name,
+      comentario: adjustmentComments.comentario,
+      createdAt: adjustmentComments.createdAt,
+    })
+    .from(adjustmentComments)
+    .leftJoin(users, eq(adjustmentComments.userId, users.id))
+    .where(eq(adjustmentComments.adjustmentRequestId, adjustmentRequestId))
+    .orderBy(asc(adjustmentComments.createdAt));
+}
+
+export async function getAllAdjustmentRequestsWithDetails() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select({
+      id: adjustmentRequests.id,
+      actionId: adjustmentRequests.actionId,
+      colaboradorId: adjustmentRequests.colaboradorId,
+      status: adjustmentRequests.status,
+      justificativaAdmin: adjustmentRequests.justificativaAdmin,
+      createdAt: adjustmentRequests.createdAt,
+      evaluatedAt: adjustmentRequests.evaluatedAt,
+      evaluatedBy: adjustmentRequests.evaluatedBy,
+      actionNome: actions.nome,
+      colaboradorNome: users.name,
+      evaluatedByName: users.name,
+    })
+    .from(adjustmentRequests)
+    .leftJoin(actions, eq(adjustmentRequests.actionId, actions.id))
+    .leftJoin(users, eq(adjustmentRequests.colaboradorId, users.id))
+    .orderBy(desc(adjustmentRequests.createdAt));
+}
+
+export async function getPendingAdjustmentRequestsOnly() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select({
+      id: adjustmentRequests.id,
+      actionId: adjustmentRequests.actionId,
+      colaboradorId: adjustmentRequests.colaboradorId,
+      status: adjustmentRequests.status,
+      createdAt: adjustmentRequests.createdAt,
+      actionNome: actions.nome,
+      colaboradorNome: users.name,
+    })
+    .from(adjustmentRequests)
+    .leftJoin(actions, eq(adjustmentRequests.actionId, actions.id))
+    .leftJoin(users, eq(adjustmentRequests.colaboradorId, users.id))
+    .where(eq(adjustmentRequests.status, 'pendente'))
+    .orderBy(desc(adjustmentRequests.createdAt));
+}
+
+export async function getPendingAdjustmentRequestsByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select({
+      id: adjustmentRequests.id,
+      actionId: adjustmentRequests.actionId,
+      colaboradorId: adjustmentRequests.colaboradorId,
+      status: adjustmentRequests.status,
+      createdAt: adjustmentRequests.createdAt,
+      actionNome: actions.nome,
+      colaboradorNome: users.name,
+    })
+    .from(adjustmentRequests)
+    .leftJoin(actions, eq(adjustmentRequests.actionId, actions.id))
+    .leftJoin(users, eq(adjustmentRequests.colaboradorId, users.id))
+    .where(
+      and(
+        eq(adjustmentRequests.status, 'pendente'),
+        eq(adjustmentRequests.colaboradorId, userId)
+      )
+    )
+    .orderBy(desc(adjustmentRequests.createdAt));
+}
+
+export async function getApprovedAndRejectedAdjustments() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select({
+      id: adjustmentRequests.id,
+      actionId: adjustmentRequests.actionId,
+      colaboradorId: adjustmentRequests.colaboradorId,
+      status: adjustmentRequests.status,
+      createdAt: adjustmentRequests.createdAt,
+      evaluatedAt: adjustmentRequests.evaluatedAt,
+      actionNome: actions.nome,
+      colaboradorNome: users.name,
+    })
+    .from(adjustmentRequests)
+    .leftJoin(actions, eq(adjustmentRequests.actionId, actions.id))
+    .leftJoin(users, eq(adjustmentRequests.colaboradorId, users.id))
+    .where(
+      or(
+        eq(adjustmentRequests.status, 'aprovada'),
+        eq(adjustmentRequests.status, 'reprovada')
+      )
+    )
+    .orderBy(desc(adjustmentRequests.evaluatedAt));
+}
+
+export async function getNotificationsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.destinatarioId, userId))
+    .orderBy(desc(notifications.createdAt));
 }

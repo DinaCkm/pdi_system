@@ -1939,7 +1939,7 @@ Gere um resumo conciso e profissional dessas mudanças em português, destacando
           destinatarioId: evidence.colaboradorId,
           tipo: 'evidencia_aprovada',
           titulo: '✅ Evidência Aprovada',
-          mensagem: `Sua evidência para a ação "${evidence.action?.nome}" foi aprovada pelo Admin.`,
+            mensagem: `Sua evidência para a ação "${evidence.actionNome}" foi aprovada pelo Admin.`,
           referenciaId: evidence.actionId,
         });
 
@@ -1950,7 +1950,7 @@ Gere um resumo conciso e profissional dessas mudanças em português, destacando
             destinatarioId: colaborador.leaderId,
             tipo: 'evidencia_aprovada_info',
             titulo: '✅ Evidência Aprovada',
-            mensagem: `Evidência do seu liderado ${evidence.colaboradorNome} para a ação "${evidence.action?.nome}" foi aprovada.`,
+            mensagem: `Evidência do seu liderado ${evidence.colaboradorNome} para a ação "${evidence.actionNome}" foi aprovada.`,
             referenciaId: evidence.actionId,
           });
         }
@@ -2000,7 +2000,7 @@ Gere um resumo conciso e profissional dessas mudanças em português, destacando
           destinatarioId: evidence.colaboradorId,
           tipo: 'evidencia_reprovada',
           titulo: '❌ Evidência Reprovada',
-          mensagem: `Sua evidência para a ação "${evidence.action?.nome}" foi reprovada. Justificativa: ${input.justificativa}`,
+          mensagem: `Sua evidência para a ação "${evidence.actionNome}" foi reprovada. Justificativa: ${input.justificativa}`,
           referenciaId: evidence.actionId,
         });
 
