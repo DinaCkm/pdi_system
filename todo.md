@@ -955,3 +955,15 @@
   - Causa: Problema de renderização de componentes React
   - Afeta: Novo usuário Simone (simone@empresa.com)
   - Prioridade: CRÍTICA - Bloqueia login do usuário
+
+
+## Problema #7 - Página "Meu PDI" perdeu funcionalidades (NOVO - CRÍTICO)
+- [ ] Problema #7: Página "Meu PDI" não mostra número de ações, barra de evolução, botões de solicitações e evidências
+  - Sintoma: PDI mostra apenas "Sem período definido" e botões "Detalhes" e "Ações"
+  - Funcionalidades perdidas:
+    * Número de ações do PDI
+    * Barra de evolução/progresso
+    * Botão de "Solicitações de Ajuste"
+    * Botão de "Enviar Evidências"
+  - Causa: Efeito colateral de uma das mudanças recentes
+  - Status: EM INVESTIGAÇÃO
