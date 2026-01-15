@@ -588,7 +588,7 @@ export default function Acoes() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o PDI" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent sideOffset={4}>
                       {pdis?.map((pdi) => (
                         <SelectItem key={pdi.id} value={pdi.id.toString()}>
                           {pdi.titulo} - {pdi.colaborador?.nome || "Colaborador desconhecido"}
