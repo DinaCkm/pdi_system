@@ -36,6 +36,13 @@
       "when": 1768413731353,
       "tag": "0004_conscious_changeling",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1768438800000,
+      "tag": "0005_user_department_roles",
+      "breakpoints": true
     }
   ]
 }
