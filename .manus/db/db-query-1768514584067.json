@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, email, cpf, LENGTH(cpf) as cpf_length FROM users WHERE email IN ('simonestetelider@pdi.com', 'usuarioteste4@ckmtalents.net', 'usuarioteste2@ckmtalents.net') ORDER BY email;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, email, cpf, LENGTH(cpf) as cpf_length FROM users WHERE email IN ('simonestetelider@pdi.com', 'usuarioteste4@ckmtalents.net', 'usuarioteste2@ckmtalents.net') ORDER BY email;",
+  "rows": [
+    {
+      "id": "300001",
+      "email": "usuarioteste2@ckmtalents.net",
+      "cpf": "00000000022",
+      "cpf_length": "11"
+    },
+    {
+      "id": "360071",
+      "email": "usuarioteste4@ckmtalents.net",
+      "cpf": "000.000.000-24",
+      "cpf_length": "14"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tcpf\tcpf_length\n300001\tusuarioteste2@ckmtalents.net\t00000000022\t11\n360071\tusuarioteste4@ckmtalents.net\t000.000.000-24\t14\n",
+  "stderr": "",
+  "execution_time_ms": 357
+}

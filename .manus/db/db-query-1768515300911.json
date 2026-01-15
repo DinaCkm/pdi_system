@@ -1,0 +1,15 @@
+{
+  "query": "SELECT a.id, a.pdiId, p.colaboradorId FROM actions a JOIN pdis p ON a.pdiId = p.id WHERE p.colaboradorId = (SELECT id FROM users WHERE email = 'usuarioteste4@ckmtalents.net');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT a.id, a.pdiId, p.colaboradorId FROM actions a JOIN pdis p ON a.pdiId = p.id WHERE p.colaboradorId = (SELECT id FROM users WHERE email = 'usuarioteste4@ckmtalents.net');",
+  "rows": [
+    {
+      "id": "300002",
+      "pdiId": "240001",
+      "colaboradorId": "360071"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpdiId\tcolaboradorId\n300002\t240001\t360071\n",
+  "stderr": "",
+  "execution_time_ms": 369
+}

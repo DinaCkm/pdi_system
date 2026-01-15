@@ -930,3 +930,28 @@
 - [ ] Atualizar status da solicitação de "Pendente" para "Aprovado"
 - [ ] Recarregar a lista de solicitações após aprovação
 - [ ] Implementar feedback visual (toast) de sucesso após aprovação
+
+## Problema #5 - Ações não aparecem para colaborador (NOVO - CRÍTICO)
+- [x] Problema #5A: Falha de login para simone@empresa.com (00000000065) - CORRIGIDO
+  - Causa: CPF estava formatado (000.000.000-65) + usuário estava inativo
+  - Solução: Limpei CPF e ativei o usuário
+  - Status: Login funciona, mas Simone não tem PDI cadastrado (precisa criar PDI para ela)
+  
+- [x] Problema #5B: Falha de login para usuarioteste4@ckmtalents.net (00000000024) - CORRIGIDO
+  - Causa: CPF estava formatado
+  - Solução: Limpei CPF e adicionei validação em users.create e users.update
+  - Status: Login funciona, ações aparecem em "Minhas Ações"
+  
+- [x] Problema #5C: Ações não aparecem em "Minhas Ações" - CORRIGIDO
+  - Causa: getActionsByColaboradorId() buscava apenas 1 PDI (.limit(1))
+  - Solução: Refatorei para buscar TODOS os PDIs do colaborador
+  - Status: Testado com usuarioteste4, ações aparecem corretamente
+
+
+## Problema #6 - Erro React NotFoundError no login (NOVO - CRÍTICO)
+- [ ] Problema #6: Login de simone@empresa.com retorna erro React NotFoundError
+  - Erro: "NotFoundError: Falha ao executar 'removeChild' em 'Node': O nó a ser removido não é filho deste nó"
+  - Sintoma: Erro ao tentar fazer login, página fica com erro JavaScript
+  - Causa: Problema de renderização de componentes React
+  - Afeta: Novo usuário Simone (simone@empresa.com)
+  - Prioridade: CRÍTICA - Bloqueia login do usuário

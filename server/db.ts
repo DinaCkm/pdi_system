@@ -1734,10 +1734,24 @@ export async function getActionsByColaboradorId(colaboradorId: number) {
   const db = await getDb();
   if (!db) return [];
 
+  // Buscar TODOS os PDIs do colaborador
+  const pdiList = await db
+    .select()
+    .from(pdis)
+    .where(eq(pdis.colaboradorId, colaboradorId));
+
+  if (!pdiList || pdiList.length === 0) {
+    return [];
+  }
+
+  // Extrair IDs de todos os PDIs
+  const pdiIds = pdiList.map(p => p.id);
+
+  // Buscar todas as ações de TODOS os PDIs
   return await db
     .select()
     .from(actions)
-    .where(eq(actions.colaboradorId, colaboradorId))
+    .where(inArray(actions.pdiId, pdiIds))
     .orderBy(desc(actions.createdAt));
 }
 

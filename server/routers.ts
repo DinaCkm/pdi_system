@@ -88,8 +88,11 @@ export const appRouter = router({
         departamentoId: z.number().optional(),
       }))
       .mutation(async ({ input }) => {
+        // Limpar CPF removendo formatação (pontos e traços)
+        const cpfLimpo = input.cpf.replace(/[^\d]/g, "");
+        
         // Verificar se CPF já existe
-        const existingUser = await db.getUserByCpf(input.cpf);
+        const existingUser = await db.getUserByCpf(cpfLimpo);
         if (existingUser) {
           throw new TRPCError({ 
             code: 'CONFLICT', 
@@ -127,10 +130,10 @@ export const appRouter = router({
         }
 
         await db.createUser({
-          openId: `local_${input.cpf}`,
+          openId: `local_${cpfLimpo}`,
           name: input.name,
           email: input.email,
-          cpf: input.cpf,
+          cpf: cpfLimpo,
           role: input.role,
           cargo: input.cargo,
           leaderId: input.leaderId,
@@ -155,6 +158,11 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const { id, ...updateData } = input;
+        
+        // Limpar CPF removendo formatação (pontos e traços)
+        if (updateData.cpf) {
+          updateData.cpf = updateData.cpf.replace(/[^\d]/g, "");
+        }
 
         // Buscar usuário atual
         const currentUser = await db.getUserById(id);

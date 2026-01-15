@@ -1,0 +1,40 @@
+{
+  "query": "SELECT DISTINCT u.id, u.email, u.cpf, COUNT(a.id) as total_acoes FROM users u LEFT JOIN pdis p ON u.id = p.colaboradorId LEFT JOIN actions a ON p.id = a.pdiId WHERE a.id IS NOT NULL GROUP BY u.id ORDER BY total_acoes DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT DISTINCT u.id, u.email, u.cpf, COUNT(a.id) as total_acoes FROM users u LEFT JOIN pdis p ON u.id = p.colaboradorId LEFT JOIN actions a ON p.id = a.pdiId WHERE a.id IS NOT NULL GROUP BY u.id ORDER BY total_acoes DESC;",
+  "rows": [
+    {
+      "id": "150008",
+      "email": "relacionamento@ckmtalents.net",
+      "cpf": "93923425804",
+      "total_acoes": "3"
+    },
+    {
+      "id": "510029",
+      "email": "simonetestelider@pdi.com",
+      "cpf": "000.000.000-27",
+      "total_acoes": "2"
+    },
+    {
+      "id": "270001",
+      "email": "usuarioteste1@empresa.com",
+      "cpf": "00000000021",
+      "total_acoes": "2"
+    },
+    {
+      "id": "300001",
+      "email": "usuarioteste2@ckmtalents.net",
+      "cpf": "00000000022",
+      "total_acoes": "2"
+    },
+    {
+      "id": "360071",
+      "email": "usuarioteste4@ckmtalents.net",
+      "cpf": "000.000.000-24",
+      "total_acoes": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tcpf\ttotal_acoes\n150008\trelacionamento@ckmtalents.net\t93923425804\t3\n510029\tsimonetestelider@pdi.com\t000.000.000-27\t2\n270001\tusuarioteste1@empresa.com\t00000000021\t2\n300001\tusuarioteste2@ckmtalents.net\t00000000022\t2\n360071\tusuarioteste4@ckmtalents.net\t000.000.000-24\t1\n",
+  "stderr": "",
+  "execution_time_ms": 356
+}

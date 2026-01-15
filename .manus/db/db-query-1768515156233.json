@@ -1,0 +1,26 @@
+{
+  "query": "SELECT * FROM users WHERE email LIKE '%simone%' OR name LIKE '%simone%' OR name LIKE '%Simone%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT * FROM users WHERE email LIKE '%simone%' OR name LIKE '%simone%' OR name LIKE '%Simone%';",
+  "rows": [
+    {
+      "id": "510029",
+      "openId": "local_000.000.000-27",
+      "name": "Simonetestelider",
+      "email": "simonetestelider@pdi.com",
+      "loginMethod": "NULL",
+      "role": "lider",
+      "createdAt": "2026-01-15 19:47:30",
+      "updatedAt": "2026-01-15 22:10:28",
+      "lastSignedIn": "2026-01-15 19:47:30",
+      "cpf": "00000000027",
+      "cargo": "teste",
+      "leaderId": "510001",
+      "status": "ativo",
+      "departamentoId": "300005"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\tloginMethod\trole\tcreatedAt\tupdatedAt\tlastSignedIn\tcpf\tcargo\tleaderId\tstatus\tdepartamentoId\n510029\tlocal_000.000.000-27\tSimonetestelider\tsimonetestelider@pdi.com\tNULL\tlider\t2026-01-15 19:47:30\t2026-01-15 22:10:28\t2026-01-15 19:47:30\t00000000027\tteste\t510001\tativo\t300005\n",
+  "stderr": "",
+  "execution_time_ms": 362
+}

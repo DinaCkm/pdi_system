@@ -1,0 +1,34 @@
+{
+  "query": "SELECT id, email, cpf, LENGTH(cpf) as cpf_length FROM users WHERE email IN ('simonestetelider@pdi.com', 'usuarioteste4@ckmtalents.net') OR cpf LIKE '%-%' OR cpf LIKE '%.%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, email, cpf, LENGTH(cpf) as cpf_length FROM users WHERE email IN ('simonestetelider@pdi.com', 'usuarioteste4@ckmtalents.net') OR cpf LIKE '%-%' OR cpf LIKE '%.%';",
+  "rows": [
+    {
+      "id": "360071",
+      "email": "usuarioteste4@ckmtalents.net",
+      "cpf": "000.000.000-24",
+      "cpf_length": "14"
+    },
+    {
+      "id": "450040",
+      "email": "jumakiyama@gmail.com",
+      "cpf": "000.000.000-25",
+      "cpf_length": "14"
+    },
+    {
+      "id": "510028",
+      "email": "mariateste1@pdi.com",
+      "cpf": "000.000.000-26",
+      "cpf_length": "14"
+    },
+    {
+      "id": "510029",
+      "email": "simonetestelider@pdi.com",
+      "cpf": "000.000.000-27",
+      "cpf_length": "14"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tcpf\tcpf_length\n360071\tusuarioteste4@ckmtalents.net\t000.000.000-24\t14\n450040\tjumakiyama@gmail.com\t000.000.000-25\t14\n510028\tmariateste1@pdi.com\t000.000.000-26\t14\n510029\tsimonetestelider@pdi.com\t000.000.000-27\t14\n",
+  "stderr": "",
+  "execution_time_ms": 461
+}

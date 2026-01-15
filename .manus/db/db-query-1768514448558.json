@@ -1,0 +1,42 @@
+{
+  "query": "SELECT * FROM users WHERE email IN ('simonestetelider@pdi.com', 'usuarioteste4@ckmtalents.net', 'usuarioteste2@ckmtalents.net');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT * FROM users WHERE email IN ('simonestetelider@pdi.com', 'usuarioteste4@ckmtalents.net', 'usuarioteste2@ckmtalents.net');",
+  "rows": [
+    {
+      "id": "300001",
+      "openId": "local_000.000.000-22",
+      "name": "usuarioteste2",
+      "email": "usuarioteste2@ckmtalents.net",
+      "loginMethod": "NULL",
+      "role": "colaborador",
+      "createdAt": "2026-01-13 21:20:22",
+      "updatedAt": "2026-01-15 21:57:45",
+      "lastSignedIn": "2026-01-15 21:57:46",
+      "cpf": "00000000022",
+      "cargo": "Analista Teste",
+      "leaderId": "300002",
+      "status": "ativo",
+      "departamentoId": "90001"
+    },
+    {
+      "id": "360071",
+      "openId": "local_000.000.000-24",
+      "name": "Usuarioteste4",
+      "email": "usuarioteste4@ckmtalents.net",
+      "loginMethod": "NULL",
+      "role": "colaborador",
+      "createdAt": "2026-01-15 00:04:47",
+      "updatedAt": "2026-01-15 19:45:58",
+      "lastSignedIn": "2026-01-15 00:04:47",
+      "cpf": "000.000.000-24",
+      "cargo": "Analista Teste",
+      "leaderId": "300002",
+      "status": "ativo",
+      "departamentoId": "90001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\tloginMethod\trole\tcreatedAt\tupdatedAt\tlastSignedIn\tcpf\tcargo\tleaderId\tstatus\tdepartamentoId\n300001\tlocal_000.000.000-22\tusuarioteste2\tusuarioteste2@ckmtalents.net\tNULL\tcolaborador\t2026-01-13 21:20:22\t2026-01-15 21:57:45\t2026-01-15 21:57:46\t00000000022\tAnalista Teste\t300002\tativo\t90001\n360071\tlocal_000.000.000-24\tUsuarioteste4\tusuarioteste4@ckmtalents.net\tNULL\tcolaborador\t2026-01-15 00:04:47\t2026-01-15 19:45:58\t2026-01-15 00:04:47\t000.000.000-24\tAnalista Teste\t300002\tativo\t90001\n",
+  "stderr": "",
+  "execution_time_ms": 368
+}
