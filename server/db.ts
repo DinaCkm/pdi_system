@@ -1200,3 +1200,102 @@ export async function migrateUserDepartmentRoles() {
   
   return { migratedCount, totalUsers: allUsers.length };
 }
+
+
+// ============= FUNÇÕES ADICIONAIS PARA NOTIFICAÇÕES =============
+
+export async function createNotification(data: {
+  destinatarioId: number;
+  tipo: string;
+  titulo: string;
+  mensagem: string;
+  referenciaId?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.insert(notifications).values(data);
+}
+
+export async function getNotifications(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.destinatarioId, userId))
+    .orderBy(desc(notifications.createdAt));
+}
+
+export async function markNotificationAsRead(notificationId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(notifications)
+    .set({ lida: true, readAt: new Date() })
+    .where(eq(notifications.id, notificationId));
+}
+
+// ============= FUNÇÕES ADICIONAIS PARA HISTÓRICO =============
+
+export async function createAcaoHistorico(data: {
+  actionId: number;
+  campo: string;
+  valorAnterior?: string;
+  valorNovo?: string;
+  motivoAlteracao?: string;
+  alteradoPor: number;
+  solicitacaoAjusteId?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.insert(acoesHistorico).values(data);
+}
+
+// ============= FUNÇÕES ADICIONAIS PARA EVIDÊNCIAS =============
+
+export async function updateEvidenceStatus(evidenceId: number, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(evidences)
+    .set({ status: status as any })
+    .where(eq(evidences.id, evidenceId));
+}
+
+export async function getEvidenceById(evidenceId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db
+    .select()
+    .from(evidences)
+    .where(eq(evidences.id, evidenceId))
+    .limit(1);
+  
+  return result[0] || null;
+}
+
+export async function getEvidenceFiles(evidenceId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select()
+    .from(evidenceFiles)
+    .where(eq(evidenceFiles.evidenceId, evidenceId))
+    .orderBy(desc(evidenceFiles.createdAt));
+}
+
+export async function getEvidenceTexts(evidenceId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select()
+    .from(evidenceTexts)
+    .where(eq(evidenceTexts.evidenceId, evidenceId))
+    .orderBy(desc(evidenceTexts.createdAt));
+}
