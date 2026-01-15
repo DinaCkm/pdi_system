@@ -7,28 +7,28 @@ describe('Bloqueio de Solicitações de Ajuste - Limite de 5', () => {
 
   beforeAll(async () => {
     // Criar colaborador de teste
-    const colaborador = await db.createUser({
+    testColaboradorId = await db.createUser({
       openId: `openid-limite-${Date.now()}`,
       name: 'Colaborador Teste Limite',
       email: `colaborador-limite-${Date.now()}@test.com`,
       cpf: `${Math.floor(Math.random() * 100000000000)}`,
       cargo: 'Analista',
-      role: 'user',
+      role: 'colaborador',
     });
-    testColaboradorId = colaborador.id;
+    if (!testColaboradorId) throw new Error('Falha ao criar colaborador de teste');
 
     // Criar PDI de teste
-    const pdi = await db.createPDI({
+    const pdiId = await db.createPDI({
       colaboradorId: testColaboradorId,
       cicloId: 1,
       titulo: 'PDI Teste Limite',
-      status: 'ativo',
+      status: 'em_andamento',
       createdBy: 1,
     });
 
     // Criar ação de teste
-    const acao = await db.createAction({
-      pdiId: pdi.id,
+    testActionId = await db.createAction({
+      pdiId: pdiId,
       blocoId: 1,
       macroId: 1,
       microId: 1,
@@ -38,13 +38,12 @@ describe('Bloqueio de Solicitações de Ajuste - Limite de 5', () => {
       createdBy: 1,
       status: 'em_andamento',
     });
-    testActionId = acao.id;
   });
 
   it('deve permitir criar até 5 solicitações', async () => {
     // Criar 5 solicitações
     for (let i = 1; i <= 5; i++) {
-      const solicitacao = await db.createAdjustmentRequest({
+      const solicitacaoId = await db.createAdjustmentRequest({
         actionId: testActionId,
         solicitanteId: testColaboradorId,
         tipoSolicitante: 'colaborador',
@@ -53,8 +52,8 @@ describe('Bloqueio de Solicitações de Ajuste - Limite de 5', () => {
         status: 'aprovada', // Marcar como aprovada para não bloquear por "pendente"
       });
 
-      expect(solicitacao).toBeDefined();
-      expect(solicitacao.id).toBeGreaterThan(0);
+      expect(solicitacaoId).toBeDefined();
+      expect(solicitacaoId).toBeGreaterThan(0);
     }
 
     // Verificar contagem
@@ -93,36 +92,36 @@ describe('Bloqueio de Solicitações de Ajuste - Limite de 5', () => {
 describe('Função getAdjustmentStats', () => {
   it('deve retornar stats corretos para ação sem solicitações', async () => {
     // Criar ação limpa
-    const colaborador = await db.createUser({
+    const colaboradorId = await db.createUser({
       openId: `openid-stats-${Date.now()}`,
       name: 'Colaborador Stats',
       email: `colaborador-stats-${Date.now()}@test.com`,
       cpf: `${Math.floor(Math.random() * 100000000000)}`,
       cargo: 'Analista',
-      role: 'user',
+      role: 'colaborador',
     });
 
-    const pdi = await db.createPDI({
-      colaboradorId: colaborador.id,
+    const pdiId = await db.createPDI({
+      colaboradorId: colaboradorId,
       cicloId: 1,
       titulo: 'PDI Stats',
-      status: 'ativo',
+      status: 'em_andamento',
       createdBy: 1,
     });
 
-    const acao = await db.createAction({
-      pdiId: pdi.id,
+    const acaoId = await db.createAction({
+      pdiId: pdiId,
       blocoId: 1,
       macroId: 1,
       microId: 1,
       nome: 'Ação Stats',
-      descricao: 'Teste stats',
+      descricao: 'Teste de stats',
       prazo: new Date('2026-12-31'),
       createdBy: 1,
       status: 'em_andamento',
     });
 
-    const stats = await db.getAdjustmentStats(acao.id);
+    const stats = await db.getAdjustmentStats(acaoId);
 
     expect(stats.total).toBe(0);
     expect(stats.pendentes).toBe(0);
@@ -133,25 +132,25 @@ describe('Função getAdjustmentStats', () => {
 
   it('deve retornar motivoBloqueio="pending" quando há solicitação pendente', async () => {
     // Criar ação e solicitação pendente
-    const colaborador = await db.createUser({
+    const colaboradorId = await db.createUser({
       openId: `openid-pending-${Date.now()}`,
       name: 'Colaborador Pending',
       email: `colaborador-pending-${Date.now()}@test.com`,
       cpf: `${Math.floor(Math.random() * 100000000000)}`,
       cargo: 'Analista',
-      role: 'user',
+      role: 'colaborador',
     });
 
-    const pdi = await db.createPDI({
-      colaboradorId: colaborador.id,
+    const pdiId = await db.createPDI({
+      colaboradorId: colaboradorId,
       cicloId: 1,
       titulo: 'PDI Pending',
-      status: 'ativo',
+      status: 'em_andamento',
       createdBy: 1,
     });
 
-    const acao = await db.createAction({
-      pdiId: pdi.id,
+    const acaoId = await db.createAction({
+      pdiId: pdiId,
       blocoId: 1,
       macroId: 1,
       microId: 1,
@@ -163,15 +162,15 @@ describe('Função getAdjustmentStats', () => {
     });
 
     await db.createAdjustmentRequest({
-      actionId: acao.id,
-      solicitanteId: colaborador.id,
+      actionId: acaoId,
+      solicitanteId: colaboradorId,
       tipoSolicitante: 'colaborador',
       justificativa: 'Solicitação pendente',
       camposAjustar: JSON.stringify({ nome: 'Novo nome' }),
       status: 'pendente',
     });
 
-    const stats = await db.getAdjustmentStats(acao.id);
+    const stats = await db.getAdjustmentStats(acaoId);
 
     expect(stats.total).toBe(1);
     expect(stats.pendentes).toBe(1);

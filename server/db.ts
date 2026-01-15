@@ -471,6 +471,7 @@ export async function createPDI(data: {
   cicloId: number;
   titulo: string;
   objetivoGeral?: string;
+  status?: string;
   createdBy: number;
 }) {
   const db = await getDb();
@@ -1410,4 +1411,105 @@ export async function getActionAlterationHistory(actionId: number) {
     .leftJoin(users, eq(acoesHistorico.alteradoPor, users.id))
     .where(eq(acoesHistorico.actionId, actionId))
     .orderBy(desc(acoesHistorico.createdAt));
+}
+
+
+// ============= FUNÇÕES DE AUDITORIA =============
+
+export async function createAuditLog(
+  adjustmentRequestId: number,
+  adminId: number,
+  campo: string,
+  valorAnterior: string | null,
+  valorNovo: string | null
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [result] = await db
+    .insert(auditLog)
+    .values({
+      adjustmentRequestId,
+      adminId,
+      campo,
+      valorAnterior,
+      valorNovo,
+    })
+    .$returningId();
+  
+  return result.id;
+}
+
+export async function getAuditLogByAdjustmentRequest(adjustmentRequestId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const logs = await db
+    .select({
+      id: auditLog.id,
+      adjustmentRequestId: auditLog.adjustmentRequestId,
+      adminId: auditLog.adminId,
+      adminName: users.name,
+      campo: auditLog.campo,
+      valorAnterior: auditLog.valorAnterior,
+      valorNovo: auditLog.valorNovo,
+      createdAt: auditLog.createdAt,
+    })
+    .from(auditLog)
+    .leftJoin(users, eq(auditLog.adminId, users.id))
+    .where(eq(auditLog.adjustmentRequestId, adjustmentRequestId))
+    .orderBy(asc(auditLog.createdAt));
+  
+  return logs;
+}
+
+
+export async function getAdjustmentStats(actionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const total = await countAdjustmentRequestsByAction(actionId);
+  const pendentes = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(adjustmentRequests)
+    .where(
+      and(
+        eq(adjustmentRequests.actionId, actionId),
+        eq(adjustmentRequests.status, "pendente")
+      )
+    );
+
+  const restantes = Math.max(0, 5 - total);
+  const temPendente = (pendentes[0]?.count ?? 0) > 0;
+  const podeAdicionar = total < 5 && !temPendente;
+  
+  let motivoBloqueio: string | null = null;
+  if (total >= 5) {
+    motivoBloqueio = "limit";
+  } else if (temPendente) {
+    motivoBloqueio = "pending";
+  }
+
+  return {
+    total,
+    pendentes: pendentes[0]?.count ?? 0,
+    restantes,
+    podeAdicionar,
+    motivoBloqueio,
+  };
+}
+
+// ============================================
+// USER FUNCTIONS
+// ============================================
+
+export async function countUsers(): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(users);
+
+  return result[0]?.count ?? 0;
 }
