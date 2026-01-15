@@ -78,7 +78,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
 
   // Filtrar PDIs e Micros com busca
   const filteredPdis = pdis?.filter((pdi) =>
-    `${pdi.titulo} ${pdi.colaborador?.nome || ""}`.toLowerCase().includes(pdiSearchTerm.toLowerCase())
+    `${pdi.titulo} ${pdi.colaboradorNome || ""}`.toLowerCase().includes(pdiSearchTerm.toLowerCase())
   );
 
   const filteredMicros = micros?.filter((micro) =>
@@ -150,7 +150,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
                     <option value="0">Selecione o PDI</option>
                     {filteredPdis?.map((pdi) => (
                       <option key={pdi.id} value={pdi.id}>
-                        {pdi.titulo} - {pdi.colaborador?.nome || "Colaborador desconhecido"}
+                        {pdi.titulo} - {pdi.colaboradorNome || "Colaborador desconhecido"}
                       </option>
                     ))}
                   </select>

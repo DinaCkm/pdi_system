@@ -66,6 +66,7 @@ export default function PDIs() {
     onSuccess: async () => {
       toast.success("PDI criado com sucesso!");
       await utils.pdis.list.invalidate();
+      await utils.pdis.list.refetch();
       setShowCreateDialog(false);
       // reset() movido para onOpenChange
     },
@@ -78,6 +79,7 @@ export default function PDIs() {
     onSuccess: async () => {
       toast.success("PDI excluído com sucesso!");
       await utils.pdis.list.invalidate();
+      await utils.pdis.list.refetch();
       setShowDeleteDialog(false);
       setSelectedPDI(null);
     },
