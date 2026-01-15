@@ -857,52 +857,24 @@ export const appRouter = router({
   actions: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       const user = ctx.user!;
-      let actions: any[] = [];
       
       if (user.role === "admin") {
-        actions = await db.getAllActions();
+        // Admin vê todas as ações
+        return await db.getAllActions();
       } else if (user.role === "lider") {
+        // Líder vê ações de seus subordinados + suas próprias ações
         const subordinados = await db.getSubordinates(user.id);
         const subordinadosIds = subordinados.map(s => s.id);
         const allActions = await db.getAllActions();
-        actions = allActions.filter(a => 
+        return allActions.filter(a => 
           a.pdi?.colaboradorId === user.id || 
           subordinadosIds.includes(a.pdi?.colaboradorId || 0)
         );
       } else {
-        actions = await db.getActionsByColaboradorId(user.id);
+        // Colaborador vê apenas suas próprias ações
+        return await db.getActionsByColaboradorId(user.id);
       }
-
-      // Enriquecer acoes com dados completos do PDI e colaborador
-      return await Promise.all(
-        actions.map(async (action) => {
-          if (action.pdiId && !action.pdi) {
-            const pdi = await db.getPDIById(action.pdiId);
-            if (pdi) {
-              const colaborador = await db.getUserById(pdi.colaboradorId);
-              return {
-                ...action,
-                pdi: {
-                  ...pdi,
-                  colaborador: colaborador || null,
-                },
-              };
-            }
-          } else if (action.pdi && action.pdi.colaboradorId && !action.pdi.colaborador) {
-            const colaborador = await db.getUserById(action.pdi.colaboradorId);
-            return {
-              ...action,
-              pdi: {
-                ...action.pdi,
-                colaborador: colaborador || null,
-              },
-            };
-          }
-          return action;
-        })
-      );
     }),
-
 
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))

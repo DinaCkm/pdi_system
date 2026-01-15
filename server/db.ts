@@ -459,47 +459,11 @@ export async function getPDIsByColaboradorId(colaboradorId: number) {
   const db = await getDb();
   if (!db) return [];
 
-  const pdiList = await db
+  return await db
     .select()
     .from(pdis)
     .where(eq(pdis.colaboradorId, colaboradorId))
     .orderBy(desc(pdis.createdAt));
-
-  // Calcular progresso e contar acoes para cada PDI
-  const pdiWithProgress = await Promise.all(
-    pdiList.map(async (pdi) => {
-      // Contar total de acoes
-      const actionCountResult = await db
-        .select({ count: sql`COUNT(*)`.mapWith(Number) })
-        .from(actions)
-        .where(eq(actions.pdiId, pdi.id));
-      const actionCount = actionCountResult[0]?.count || 0;
-
-      // Contar acoes concluidas
-      const completedCountResult = await db
-        .select({ count: sql`COUNT(*)`.mapWith(Number) })
-        .from(actions)
-        .where(
-          and(
-            eq(actions.pdiId, pdi.id),
-            eq(actions.status, "aprovada")
-          )
-        );
-      const completedCount = completedCountResult[0]?.count || 0;
-
-      // Calcular percentual
-      const progressPercentage = actionCount === 0 ? 0 : Math.round((completedCount / actionCount) * 100);
-
-      return {
-        ...pdi,
-        actionCount,
-        completedCount,
-        progressPercentage,
-      };
-    })
-  );
-
-  return pdiWithProgress;
 }
 
 export async function createPDI(data: {
