@@ -523,7 +523,7 @@ export default function Competencias() {
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um bloco" />
                           </SelectTrigger>
-                          <SelectContent position="popper" sideOffset={4}>
+                          <SelectContent sideOffset={4}>
                             {blocos?.map((bloco) => (
                               <SelectItem key={bloco.id} value={bloco.id.toString()}>
                                 {bloco.nome}
@@ -684,7 +684,7 @@ export default function Competencias() {
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione uma macro" />
                           </SelectTrigger>
-                          <SelectContent position="popper" sideOffset={4}>
+                          <SelectContent sideOffset={4}>
                             {macros?.map((macro) => (
                               <SelectItem key={macro.id} value={macro.id.toString()}>
                                 {macro.nome} ({getBlocoNome(macro.blocoId)})

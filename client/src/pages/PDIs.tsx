@@ -472,7 +472,7 @@ export default function PDIs() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o colaborador" />
                     </SelectTrigger>
-                    <SelectContent position="popper" sideOffset={4}>
+                    <SelectContent sideOffset={4}>
                       {colaboradores.map(c => (
                         <SelectItem key={c.id} value={c.id.toString()}>
                           {c.name} ({c.role === "lider" ? "Líder" : "Colaborador"})
@@ -498,7 +498,7 @@ export default function PDIs() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o ciclo" />
                     </SelectTrigger>
-                    <SelectContent position="popper" sideOffset={4}>
+                    <SelectContent sideOffset={4}>
                       {ciclos?.map(c => (
                         <SelectItem key={c.id} value={c.id.toString()}>
                           {c.nome} ({new Date(c.dataInicio).toLocaleDateString()} - {new Date(c.dataFim).toLocaleDateString()})
@@ -685,7 +685,7 @@ export default function PDIs() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o ciclo" />
                     </SelectTrigger>
-                    <SelectContent position="popper">
+                    <SelectContent sideOffset={4}>
                       {ciclos?.map(ciclo => (
                         <SelectItem key={ciclo.id} value={ciclo.id.toString()}>
                           {ciclo.nome}
