@@ -1312,3 +1312,93 @@ export async function getEvidenceTexts(evidenceId: number) {
     .where(eq(evidenceTexts.evidenceId, evidenceId))
     .orderBy(desc(evidenceTexts.createdAt));
 }
+
+
+// ============= FUNÇÕES DE ESTATÍSTICAS DE AJUSTES =============
+
+export async function countAdjustmentRequestsByAction(actionId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const result = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(adjustmentRequests)
+    .where(eq(adjustmentRequests.actionId, actionId));
+  
+  return result[0]?.count || 0;
+}
+
+export async function getPendingAdjustmentRequestsByAction(actionId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select({
+      id: adjustmentRequests.id,
+      actionId: adjustmentRequests.actionId,
+      solicitanteId: adjustmentRequests.solicitanteId,
+      tipoSolicitante: adjustmentRequests.tipoSolicitante,
+      justificativa: adjustmentRequests.justificativa,
+      camposAjustar: adjustmentRequests.camposAjustar,
+      status: adjustmentRequests.status,
+      createdAt: adjustmentRequests.createdAt,
+    })
+    .from(adjustmentRequests)
+    .where(and(
+      eq(adjustmentRequests.actionId, actionId),
+      eq(adjustmentRequests.status, 'pendente')
+    ))
+    .orderBy(desc(adjustmentRequests.createdAt));
+}
+
+// ============= FUNÇÕES DE INFORMAÇÕES DE ALTERAÇÃO =============
+
+export async function getActionAlterationInfo(actionId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  // Buscar informações sobre alterações solicitadas
+  const alteracoes = await db
+    .select({
+      id: adjustmentRequests.id,
+      status: adjustmentRequests.status,
+      justificativa: adjustmentRequests.justificativa,
+      camposAjustar: adjustmentRequests.camposAjustar,
+      createdAt: adjustmentRequests.createdAt,
+      solicitanteNome: users.name,
+    })
+    .from(adjustmentRequests)
+    .leftJoin(users, eq(adjustmentRequests.solicitanteId, users.id))
+    .where(eq(adjustmentRequests.actionId, actionId))
+    .orderBy(desc(adjustmentRequests.createdAt));
+  
+  return {
+    total: alteracoes.length,
+    pendentes: alteracoes.filter(a => a.status === 'pendente').length,
+    aprovadas: alteracoes.filter(a => a.status === 'aprovada').length,
+    reprovadas: alteracoes.filter(a => a.status === 'reprovada').length,
+    alteracoes: alteracoes,
+  };
+}
+
+export async function getActionAlterationHistory(actionId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select({
+      id: acoesHistorico.id,
+      campo: acoesHistorico.campo,
+      valorAnterior: acoesHistorico.valorAnterior,
+      valorNovo: acoesHistorico.valorNovo,
+      motivoAlteracao: acoesHistorico.motivoAlteracao,
+      alteradoPor: acoesHistorico.alteradoPor,
+      alteradorNome: users.name,
+      solicitacaoAjusteId: acoesHistorico.solicitacaoAjusteId,
+      createdAt: acoesHistorico.createdAt,
+    })
+    .from(acoesHistorico)
+    .leftJoin(users, eq(acoesHistorico.alteradoPor, users.id))
+    .where(eq(acoesHistorico.actionId, actionId))
+    .orderBy(desc(acoesHistorico.createdAt));
+}
