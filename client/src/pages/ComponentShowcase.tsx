@@ -425,7 +425,7 @@ export default function ComponentsShowcase() {
                     <SelectTrigger>
                       <SelectValue placeholder="Select a fruit" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent sideOffset={4}>
                       <SelectItem value="apple">Apple</SelectItem>
                       <SelectItem value="banana">Banana</SelectItem>
                       <SelectItem value="orange">Orange</SelectItem>
@@ -629,7 +629,7 @@ export default function ComponentsShowcase() {
                         <SelectTrigger id="month">
                           <SelectValue placeholder="MM" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent sideOffset={4}>
                           {Array.from({ length: 12 }, (_, i) => i + 1).map(
                             month => (
                               <SelectItem
@@ -654,7 +654,7 @@ export default function ComponentsShowcase() {
                         <SelectTrigger id="year">
                           <SelectValue placeholder="YYYY" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent sideOffset={4}>
                           {Array.from(
                             { length: 10 },
                             (_, i) => new Date().getFullYear() - 5 + i

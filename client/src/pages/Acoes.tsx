@@ -358,7 +358,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="all">Todos</SelectItem>
                   {usuarios?.map((user) => (
                     <SelectItem key={user.id} value={user.id.toString()}>
@@ -374,7 +374,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="all">Todos</SelectItem>
                   {usuarios?.filter(u => u.role === 'lider' || u.role === 'admin').map((lider) => (
                     <SelectItem key={lider.id} value={lider.id.toString()}>
@@ -392,7 +392,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="all">Todos</SelectItem>
                   {departamentos?.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id.toString()}>
@@ -408,7 +408,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="all">Todos</SelectItem>
                   {blocosCompetencias?.map((bloco) => (
                     <SelectItem key={bloco.id} value={bloco.id.toString()}>
@@ -424,7 +424,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="all">Todos</SelectItem>
                   {allMacrosCompetencias?.map((macro) => (
                     <SelectItem key={macro.id} value={macro.id.toString()}>
@@ -442,7 +442,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="all">Todos</SelectItem>
                   {microsCompetencias?.map((micro) => (
                     <SelectItem key={micro.id} value={micro.id.toString()}>
@@ -458,7 +458,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="pendente_aprovacao_lider">Pendente Aprovação Líder</SelectItem>
                   <SelectItem value="aprovada_lider">Aprovada Líder</SelectItem>
@@ -626,7 +626,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o bloco" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent sideOffset={4}>
                         {blocosCompetencias?.map((bloco) => (
                           <SelectItem key={bloco.id} value={bloco.id.toString()}>
                             {bloco.nome}
@@ -656,7 +656,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder={selectedBlocoId ? "Selecione a macrocompetência" : "Selecione um bloco primeiro"} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent sideOffset={4}>
                         {macroCompetencias?.map((macro) => (
                           <SelectItem key={macro.id} value={macro.id.toString()}>
                             {macro.nome}
@@ -683,7 +683,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder={selectedMacroId ? "Selecione a microcompetência" : "Selecione uma macrocompetência primeiro"} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent sideOffset={4}>
                         {microCompetencias?.map((micro) => (
                           <SelectItem key={micro.id} value={micro.id.toString()}>
                             {micro.nome}

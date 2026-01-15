@@ -275,7 +275,7 @@ export default function PDIs() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="todos">Todos</SelectItem>
                   {colaboradores.map(c => (
                     <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
@@ -289,7 +289,7 @@ export default function PDIs() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="todos">Todos</SelectItem>
                   {ciclos?.map(c => (
                     <SelectItem key={c.id} value={c.id.toString()}>{c.nome}</SelectItem>
@@ -303,7 +303,7 @@ export default function PDIs() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="todos">Todos</SelectItem>
                   <SelectItem value="em_andamento">Em Andamento</SelectItem>
                   <SelectItem value="concluido">Concluído</SelectItem>
@@ -317,7 +317,7 @@ export default function PDIs() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="todos">Todos</SelectItem>
                   {departamentos?.map(d => (
                     <SelectItem key={d.id} value={d.id.toString()}>{d.nome}</SelectItem>

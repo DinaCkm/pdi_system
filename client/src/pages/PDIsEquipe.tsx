@@ -135,7 +135,7 @@ export default function PDIsEquipe() {
                 <SelectTrigger>
                   <SelectValue placeholder="Colaborador" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="todos">Todos Colaboradores</SelectItem>
                   {colaboradores.map((colab: any) => (
                     <SelectItem key={colab.id} value={colab.id.toString()}>
@@ -152,7 +152,7 @@ export default function PDIsEquipe() {
                 <SelectTrigger>
                   <SelectValue placeholder="Ciclo" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="todos">Todos Ciclos</SelectItem>
                   {ciclos?.map((ciclo: any) => (
                     <SelectItem key={ciclo.id} value={ciclo.id.toString()}>
@@ -169,7 +169,7 @@ export default function PDIsEquipe() {
                 <SelectTrigger>
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent sideOffset={4}>
                   <SelectItem value="todos">Todos Status</SelectItem>
                   <SelectItem value="em_andamento">Em Andamento</SelectItem>
                   <SelectItem value="concluido">Concluído</SelectItem>

@@ -92,7 +92,7 @@ export default function HistoricoAlteracoes() {
             <SelectTrigger>
               <SelectValue placeholder="Escolha uma ação para visualizar o histórico" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent sideOffset={4}>
               {acoes?.map((acao: any) => (
                 <SelectItem key={acao.id} value={String(acao.id)}>
                   {acao.nome}
