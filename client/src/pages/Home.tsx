@@ -34,7 +34,7 @@ export default function Home() {
       if (user.role === "admin") {
         setLocation("/usuarios");
       } else if (user.role === "lider") {
-        setLocation("/pendencias");
+        setLocation("/minhas-pendencias");
       } else {
         setLocation("/pdis");
       }

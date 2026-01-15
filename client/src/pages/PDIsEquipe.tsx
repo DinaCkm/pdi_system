@@ -47,8 +47,8 @@ export default function PDIsEquipe() {
     if (!pdis) return [];
     const uniqueColaboradores = new Map();
     pdis.forEach((pdi: any) => {
-      if (pdi.colaborador) {
-        uniqueColaboradores.set(pdi.colaborador.id, pdi.colaborador);
+      if (pdi.colaboradorId && pdi.colaboradorNome) {
+        uniqueColaboradores.set(pdi.colaboradorId, { id: pdi.colaboradorId, name: pdi.colaboradorNome });
       }
     });
     return Array.from(uniqueColaboradores.values());
@@ -63,7 +63,7 @@ export default function PDIsEquipe() {
       const matchesSearch = 
         searchTerm === "" ||
         pdi.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pdi.colaborador?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+        pdi.colaboradorNome?.toLowerCase().includes(searchTerm.toLowerCase());
       
       // Filtro de ciclo
       const matchesCiclo = 
@@ -217,7 +217,7 @@ export default function PDIsEquipe() {
                 <div className="flex items-center gap-2 text-sm">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium">Colaborador:</span>
-                  <span className="text-muted-foreground">{pdi.colaborador?.name || "-"}</span>
+                  <span className="text-muted-foreground">{pdi.colaboradorNome || "-"}</span>
                 </div>
 
                 {/* Ciclo */}

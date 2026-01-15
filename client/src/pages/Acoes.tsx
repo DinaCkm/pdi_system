@@ -591,7 +591,7 @@ export default function Acoes() {
                     <SelectContent sideOffset={4}>
                       {pdis?.map((pdi) => (
                         <SelectItem key={pdi.id} value={pdi.id.toString()}>
-                          {pdi.titulo} - {pdi.colaborador?.nome || "Colaborador desconhecido"}
+                          {pdi.titulo} - {pdi.colaboradorNome || "Colaborador desconhecido"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -818,7 +818,7 @@ export default function Acoes() {
                     <SelectContent sideOffset={4}>
                       {pdis?.map((pdi) => (
                         <SelectItem key={pdi.id} value={pdi.id.toString()}>
-                          {pdi.titulo} - {pdi.colaborador?.nome || "Colaborador desconhecido"}
+                          {pdi.titulo} - {pdi.colaboradorNome || "Colaborador desconhecido"}
                         </SelectItem>
                       ))}
                     </SelectContent>

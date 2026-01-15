@@ -21,7 +21,7 @@ export default function HistoricoSolicitacoes() {
   const [selectedSolicitacao, setSelectedSolicitacao] = useState<number | null>(null);
   const [statusFiltro, setStatusFiltro] = useState<'todas' | 'pendentes' | 'aprovadas' | 'reprovadas'>('todas');
 
-  const { data: solicitacoes, isLoading, refetch } = trpc.actions.getPendingAdjustmentsWithDetails.useQuery();
+  const { data: solicitacoes, isLoading, error, refetch } = trpc.actions.getPendingAdjustmentsWithDetails.useQuery();
   
   // Filtrar solicitações por status
   const solicitacoesFiltradas = solicitacoes?.filter((sol: any) => {
@@ -46,6 +46,18 @@ export default function HistoricoSolicitacoes() {
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Carregando histórico...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container py-8">
+        <Alert variant="destructive">
+          <AlertDescription>
+            Erro ao carregar solicitações: {error.message}. Verifique se você tem permissão para acessar esta página (requer perfil Admin ou Líder).
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }

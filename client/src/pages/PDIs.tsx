@@ -92,6 +92,7 @@ export default function PDIs() {
     onSuccess: async (result: { success: boolean; created: number; skipped: number; total: number }) => {
       toast.success(`${result.created} PDIs criados com sucesso! (${result.skipped} já existiam)`);
       await utils.pdis.list.invalidate();
+      await utils.pdis.list.refetch();
       setShowBulkCreateDialog(false);
       resetBulk();
     },

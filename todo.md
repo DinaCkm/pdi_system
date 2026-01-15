@@ -156,8 +156,8 @@
 - [x] Problema #1: Exclusão de PDI não atualiza tela automaticamente - CORRIGIDO (adicionado refetch() após invalidate)
 - [x] Problema #2: Busca de PDI não encontra recém-criados - CORRIGIDO (adicionado refetch() após criar PDI)
 - [x] Problema #2b: Nome do colaborador não mostra - CORRIGIDO (mudado pdi.colaborador?.nome para pdi.colaboradorNome)
-- [ ] Problema #3: Aba "Solicitações" está em branco/inoperante - EM INVESTIGAÇÃO (query requer admin/líder)
-- [ ] Problema #4: Login de Líder com CPF retorna erro 404
+- [x] Problema #3: Aba "Solicitações" está em branco/inoperante - CORRIGIDO (adicionado tratamento de erro para usuários sem permissão)
+- [x] Problema #4: Login de Líder com CPF retorna erro 404 - CORRIGIDO (mudada rota de /pendencias para /minhas-pendencias)
 
 ## Bugs e Funcionalidades Faltantes Reportadas
 - [x] Garantir que botões de EDITAR e EXCLUIR usuário estão VISÍVEIS na tabela

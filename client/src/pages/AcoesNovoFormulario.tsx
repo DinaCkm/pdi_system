@@ -39,7 +39,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
   const [microSearchTerm, setMicroSearchTerm] = useState("");
 
   // Queries
-  const { data: pdis } = trpc.pdis.list.useQuery();
+  const { data: pdis } = trpc.pdis.list.useQuery(undefined, { staleTime: 0 });
   const { data: micros } = trpc.competencias.listAllMicrosWithDetails.useQuery();
   const utils = trpc.useUtils();
 

@@ -94,11 +94,11 @@ export default function MeuPDI() {
                   )}
 
                   {/* Nome do Empregado */}
-                  {pdi.colaborador && (
+                  {pdi.colaboradorNome && (
                     <div className="flex items-center gap-2 text-sm">
                       <User className="h-4 w-4 text-muted-foreground" />
                       <span className="text-muted-foreground">
-                        <span className="font-medium">Empregado:</span> {pdi.colaborador.name}
+                        <span className="font-medium">Empregado:</span> {pdi.colaboradorNome}
                       </span>
                     </div>
                   )}
