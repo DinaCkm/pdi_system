@@ -122,7 +122,7 @@ function Router() {  return (
         </DashboardLayout>
       </Route>
       
-      <Route path={"/solicitacoes"}>
+      <Route path={"/minhas-pendencias"}>
         <DashboardLayout>
           <MinhasPendencias />
         </DashboardLayout>
@@ -152,7 +152,6 @@ function Router() {  return (
         </DashboardLayout>
       </Route>
       
-      <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );

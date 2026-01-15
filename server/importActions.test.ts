@@ -44,14 +44,24 @@ describe("Importação de Ações - Validação", () => {
     const micro = micros.find(m => m.status === "ativo");
     if (!micro) throw new Error("Nenhuma micro ativa encontrada");
 
-    // Calcular prazo válido dentro do ciclo
-    const prazoDate = new Date(ciclo.dataInicio);
+    // Buscar um PDI existente para usar nos testes
+    const allPdis = await db.getAllPDIs();
+    const pdi = allPdis[0];
+    if (!pdi) throw new Error("Nenhum PDI encontrado no banco para usar nos testes");
+    
+    // Usar colaborador e ciclo do PDI existente
+    const pdiColaborador = await db.getUserById(pdi.colaboradorId);
+    const pdiCiclo = await db.getCicloById(pdi.cicloId);
+    if (!pdiColaborador || !pdiCiclo) throw new Error("Dados do PDI incompletos");
+
+    // Calcular prazo valido dentro do ciclo do PDI
+    const prazoDate = new Date(pdiCiclo.dataInicio);
     prazoDate.setDate(prazoDate.getDate() + 30);
     const prazoFormatado = `${String(prazoDate.getDate()).padStart(2, '0')}/${String(prazoDate.getMonth() + 1).padStart(2, '0')}/${prazoDate.getFullYear()}`;
 
     testData = {
-      colaboradorCpf: colaboradores[0].cpf,
-      cicloNome: ciclo.nome,
+      colaboradorCpf: pdiColaborador.cpf,
+      cicloNome: pdiCiclo.nome,
       microNome: micro.nome,
       prazoValido: prazoFormatado,
     };
