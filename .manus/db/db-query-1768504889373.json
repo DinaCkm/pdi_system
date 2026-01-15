@@ -1,0 +1,150 @@
+{
+  "query": "SELECT id, name, email, cpf, role FROM users LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, cpf, role FROM users LIMIT 20;",
+  "rows": [
+    {
+      "id": "150008",
+      "name": "Sebrae TO - Administrador",
+      "email": "relacionamento@ckmtalents.net",
+      "cpf": "93923425804",
+      "role": "lider"
+    },
+    {
+      "id": "180002",
+      "name": "EDVALDO PEREIRA LIMA JÚNIOR",
+      "email": "edvaldopljr86@gmail.com",
+      "cpf": "01547689102",
+      "role": "lider"
+    },
+    {
+      "id": "180003",
+      "name": "AMAGGELDO BARBOSA",
+      "email": "amaggeldo@to.sebrae.com.br",
+      "cpf": "76727025134",
+      "role": "lider"
+    },
+    {
+      "id": "180004",
+      "name": "ALDENI BATISTA TORRES",
+      "email": "aldeni.torres@to.sebrae.com.br",
+      "cpf": "00658585142",
+      "role": "lider"
+    },
+    {
+      "id": "180005",
+      "name": "MARCUS VINICIUS VIEIRA QUEIROZ",
+      "email": "marcus.queiroz@to.sebrae.com.br",
+      "cpf": "01479169170",
+      "role": "lider"
+    },
+    {
+      "id": "180006",
+      "name": "MILLENA PEREIRA LIMA RODRIGUES",
+      "email": "millena.rodrigues@to.sebrae.com.br",
+      "cpf": "84781971172",
+      "role": "lider"
+    },
+    {
+      "id": "180007",
+      "name": "ANTONIO LOUÇA CURCINO",
+      "email": "antonio.curcino@to.sebrae.com.br",
+      "cpf": "97641227104",
+      "role": "lider"
+    },
+    {
+      "id": "180008",
+      "name": "PAULA DOS REIS COELHO ALENCAR SOUSA",
+      "email": "paula.alencar@to.sebrae.com.br",
+      "cpf": "02242849166",
+      "role": "lider"
+    },
+    {
+      "id": "180009",
+      "name": "RENATA MOURA ALVES SIMAS",
+      "email": "renata.alves@to.sebrae.com.br",
+      "cpf": "01056384123",
+      "role": "lider"
+    },
+    {
+      "id": "180010",
+      "name": "BRUNO MARTINS VIEIRA",
+      "email": "bruno.vieira@to.sebrae.com.br",
+      "cpf": "06668878610",
+      "role": "lider"
+    },
+    {
+      "id": "180011",
+      "name": "JACKELINE DE SOUZA LIMA",
+      "email": "jackeline.lima@to.sebrae.com.br",
+      "cpf": "02224365144",
+      "role": "lider"
+    },
+    {
+      "id": "180012",
+      "name": "ELIWANIA DOS SANTOS SILVA",
+      "email": "eliwania.santos@to.sebrae.com.br",
+      "cpf": "01206149361",
+      "role": "lider"
+    },
+    {
+      "id": "180013",
+      "name": "PEDRO JUNIOR DA ROCHA SILVA",
+      "email": "pedro.junior@to.sebrae.com.br",
+      "cpf": "00706433181",
+      "role": "lider"
+    },
+    {
+      "id": "180014",
+      "name": "ANDREIA RODRIGUES FACUNDES",
+      "email": "andreia.facundes@to.sebrae.com.br",
+      "cpf": "90944267149",
+      "role": "lider"
+    },
+    {
+      "id": "180015",
+      "name": "VERA LUCIA TEODORO BRAGA",
+      "email": "vera.braga@to.sebrae.com.br",
+      "cpf": "48483389134",
+      "role": "lider"
+    },
+    {
+      "id": "180016",
+      "name": "NEMIAS GOMES",
+      "email": "nemias.gomes@to.sebrae.com.br",
+      "cpf": "38906210159",
+      "role": "lider"
+    },
+    {
+      "id": "180017",
+      "name": "GABRIELA TOMASI",
+      "email": "00792361113@temp.com",
+      "cpf": "00792361113",
+      "role": "lider"
+    },
+    {
+      "id": "180018",
+      "name": "GILZANE PEREIRA AMARAL",
+      "email": "gilzane.pereira@to.sebrae.com.br",
+      "cpf": "81183500106",
+      "role": "lider"
+    },
+    {
+      "id": "180019",
+      "name": "LEONARDO CAMPELO LEITE GUEDES",
+      "email": "leonardo.campelo@to.sebrae.com.br",
+      "cpf": "88020673253",
+      "role": "lider"
+    },
+    {
+      "id": "180020",
+      "name": "WANDERSON DA SILVA PIMENTEL CHAGAS",
+      "email": "wanderson.chagas@to.sebrae.com.br",
+      "cpf": "03804969178",
+      "role": "colaborador"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tcpf\trole\n150008\tSebrae TO - Administrador\trelacionamento@ckmtalents.net\t93923425804\tlider\n180002\tEDVALDO PEREIRA LIMA JÚNIOR\tedvaldopljr86@gmail.com\t01547689102\tlider\n180003\tAMAGGELDO BARBOSA\tamaggeldo@to.sebrae.com.br\t76727025134\tlider\n180004\tALDENI BATISTA TORRES\taldeni.torres@to.sebrae.com.br\t00658585142\tlider\n180005\tMARCUS VINICIUS VIEIRA QUEIROZ\tmarcus.queiroz@to.sebrae.com.br\t01479169170\tlider\n180006\tMILLENA PEREIRA LIMA RODRIGUES\tmillena.rodrigues@to.sebrae.com.br\t84781971172\tlider\n180007\tANTONIO LOUÇA CURCINO\tantonio.curcino@to.sebrae.com.br\t97641227104\tlider\n180008\tPAULA DOS REIS COELHO ALENCAR SOUSA\tpaula.alencar@to.sebrae.com.br\t02242849166\tlider\n180009\tRENATA MOURA ALVES SIMAS\trenata.alves@to.sebrae.com.br\t01056384123\tlider\n180010\tBRUNO MARTINS VIEIRA\tbruno.vieira@to.sebrae.com.br\t06668878610\tlider\n180011\tJACKELINE DE SOUZA LIMA\tjackeline.lima@to.sebrae.com.br\t02224365144\tlider\n180012\tELIWANIA DOS SANTOS SILVA\teliwania.santos@to.sebrae.com.br\t01206149361\tlider\n180013\tPEDRO JUNIOR DA ROCHA SILVA\tpedro.junior@to.sebrae.com.br\t00706433181\tlider\n180014\tANDREIA RODRIGUES FACUNDES\tandreia.facundes@to.sebrae.com.br\t90944267149\tlider\n180015\tVERA LUCIA TEODORO BRAGA\tvera.braga@to.sebrae.com.br\t48483389134\tlider\n180016\tNEMIAS GOMES\tnemias.gomes@to.sebrae.com.br\t38906210159\tlider\n180017\tGABRIELA TOMASI\t00792361113@temp.com\t00792361113\tlider\n180018\tGILZANE PEREIRA AMARAL\tgilzane.pereira@to.sebrae.com.br\t81183500106\tlider\n180019\tLEONARDO CAMPELO LEITE GUEDES\tleonardo.campelo@to.sebrae.com.br\t88020673253\tlider\n180020\tWANDERSON DA SILVA PIMENTEL CHAGAS\twanderson.chagas@to.sebrae.com.br\t03804969178\tcolaborador\n",
+  "stderr": "",
+  "execution_time_ms": 417
+}
