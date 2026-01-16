@@ -88,17 +88,16 @@ export const appRouter = router({
         const cpfLimpoInput = input.cpf.replace(/\D/g, "");
         
         // Busca insensível a caracteres especiais - compara ambos limpos
-        const usersList = await db.select().from(users).execute();
-        const userExistente = usersList.find(u => u.cpf.replace(/\D/g, "") === cpfLimpoInput);
+        const usersList = await db.getAllUsers();
+        const userExistente = usersList.find(u => u.cpf?.replace(/\D/g, "") === cpfLimpoInput);
         return userExistente || null;
       }),
-
     buscarPorEmail: publicProcedure
       .input(z.object({ email: z.string().email() }))
       .query(async ({ input }) => {
         const emailLimpo = input.email.toLowerCase().trim();
-        const usersList = await db.select().from(users).execute();
-        const userExistente = usersList.find(u => u.email.toLowerCase().trim() === emailLimpo);
+        const usersList = await db.getAllUsers();
+        const userExistente = usersList.find(u => u.email?.toLowerCase().trim() === emailLimpo);
         return userExistente || null;
       }),
 

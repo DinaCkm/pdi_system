@@ -28,9 +28,9 @@ export default function Competencias() {
   // Queries e Segurança
   const { data: user } = trpc.auth.me.useQuery();
   const isAdmin = user?.role === "admin";
-  const { data: blocos } = trpc.competencias.listarBlocos.useQuery();
-  const { data: macros } = trpc.competencias.listarMacros.useQuery();
-  const { data: micros } = trpc.competencias.listarMicros.useQuery();
+  const { data: blocos } = trpc.competencias.listBlocos.useQuery();
+  const { data: macros } = trpc.competencias.listMacros.useQuery();
+  const { data: micros } = trpc.competencias.listMicros.useQuery();
 
   // Função de Limpeza de Form
   const resetForms = () => {

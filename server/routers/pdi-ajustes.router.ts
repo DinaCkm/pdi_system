@@ -5,25 +5,27 @@ import { adjustmentRequests, actions, pdis, users, departamentos, ciclos } from 
 import { TRPCError } from "@trpc/server";
 
 /**
- * REGRA CRÍTICA #10: Fluxo de Solicitação de Ajuste (REFINADO)
+ * REGRA CRÍTICA #10 REFINADA: Fluxo de Solicitação de Ajuste com Precedência do Líder
  * 
- * CENÁRIO 1: Ação AINDA NÃO validada pelo Líder (status: pendente_aprovacao_lider)
- * - Colaborador pode solicitar alterações
- * - Admin faz alterações DIRETO (sem validação do Líder)
- * - Colaborador pode solicitar quantas vezes quiser
- * - Líder não precisa confirmar (ação ainda não foi aprovada)
+ * FASE 1: PROPOSTA (pendente_aprovacao_lider)
+ * - Dina é autoridade principal
+ * - Colaborador solicita ajustes (limite 5)
+ * - Dina pode editar DIRETO
+ * - Status: pendente_admin
  * 
- * CENÁRIO 2: Ação JÁ validada pelo Líder (status: aprovada_lider)
- * - Colaborador solicita alteração
- * - Líder DEVE confirmar concordância
- * - Admin só faz alteração após Líder confirmar SIM
- * - Sequência obrigatória: Colaborador → Líder → Admin
+ * FASE 2: COMPROMISSO (aprovada_lider+)
+ * - Líder é "dono" da prioridade
+ * - Colaborador solicita ajuste
+ * - BLOQUEIO: Botão de editar desabilitado para Dina
+ * - Status: aguardando_autorizacao_lider_para_ajuste
+ * - LIBERAÇÃO: Após Líder "De Acordo" → lider_de_acordo
+ * - CONCLUSÃO: Dina edita (botão habilitado)
  */
 
 export const pdiAjustesRouter = router({
   /**
-   * Solicitar alteração de ação (COLABORADOR)
-   * Funciona em ambos os cenários (antes e depois da validação do Líder)
+   * Solicitar alteração de ação (COLABORADOR ou LÍDER)
+   * Detecta fase da ação e define status inicial apropriado
    */
   solicitarAlteracao: protectedProcedure
     .input(
@@ -55,31 +57,90 @@ export const pdiAjustesRouter = router({
         });
       }
 
-      // Validar que colaborador é o dono da ação
+      // Validar que usuário é dono ou líder da ação
       const pdi = await db
         .select()
         .from(pdis)
         .where(eq(pdis.id, acao[0].pdiId))
         .limit(1);
 
-      if (!pdi.length || pdi[0].colaboradorId !== user.id) {
+      if (!pdi.length) {
         throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Apenas o colaborador dono da ação pode solicitar alteração",
+          code: "NOT_FOUND",
+          message: "PDI não encontrado",
         });
       }
 
-      // Determinar status inicial da solicitação baseado no status da ação
-      let statusInicial: "pendente_admin" | "pendente_confirmacao_lider";
+      // Validar permissão: Colaborador (dono) ou Líder (seu líder)
+      if (user.role === "colaborador") {
+        if (pdi[0].colaboradorId !== user.id) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Apenas o colaborador dono da ação pode solicitar alteração",
+          });
+        }
+      } else if (user.role === "lider") {
+        // Líder pode solicitar para si mesmo ou para subordinados
+        const colaborador = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, pdi[0].colaboradorId))
+          .limit(1);
+
+        if (!colaborador.length) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Colaborador não encontrado",
+          });
+        }
+
+        // Verificar se é seu próprio PDI ou de subordinado
+        if (
+          pdi[0].colaboradorId !== user.id &&
+          colaborador[0].leaderId !== user.id
+        ) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Você não tem permissão para solicitar alteração nesta ação",
+          });
+        }
+      } else if (user.role !== "admin") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Apenas colaboradores, líderes e admins podem solicitar alterações",
+        });
+      }
+
+      // Validar limite de 5 solicitações
+      const totalSolicitacoes = await db
+        .select()
+        .from(adjustmentRequests)
+        .where(eq(adjustmentRequests.actionId, input.acaoId))
+        .where(eq(adjustmentRequests.solicitanteId, user.id));
+
+      if (totalSolicitacoes.length >= 5) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Limite de 5 solicitações de ajuste atingido para esta ação",
+        });
+      }
+
+      // ARQUITETURA DE PRECEDÊNCIA DO LÍDER
+      // Determinar status inicial baseado na fase da ação
+      let statusInicial: "pendente_admin" | "aguardando_autorizacao_lider_para_ajuste";
 
       if (acao[0].status === "pendente_aprovacao_lider") {
-        // CENÁRIO 1: Ação ainda não foi validada pelo Líder
-        // Admin pode fazer alteração DIRETO
+        // FASE 1: PROPOSTA - Dina é autoridade principal
         statusInicial = "pendente_admin";
-      } else if (acao[0].status === "aprovada_lider") {
-        // CENÁRIO 2: Ação já foi validada pelo Líder
-        // Líder precisa confirmar a alteração
-        statusInicial = "pendente_confirmacao_lider";
+      } else if (
+        acao[0].status === "aprovada_lider" ||
+        acao[0].status === "em_andamento" ||
+        acao[0].status === "evidencia_enviada" ||
+        acao[0].status === "concluida"
+      ) {
+        // FASE 2: COMPROMISSO - Líder é "dono"
+        // Requer autorização do Líder antes de Dina editar
+        statusInicial = "aguardando_autorizacao_lider_para_ajuste";
       } else {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -99,7 +160,7 @@ export const pdiAjustesRouter = router({
       const mensagem =
         statusInicial === "pendente_admin"
           ? "Solicitação enviada para o administrador (ação ainda não foi validada pelo líder)"
-          : "Solicitação enviada para confirmação do líder";
+          : "Solicitação enviada. Aguardando autorização do seu líder para o RH proceder com a alteração";
 
       return {
         id: result.insertId,
@@ -110,15 +171,16 @@ export const pdiAjustesRouter = router({
     }),
 
   /**
-   * Confirmar alteração (LÍDER)
-   * Apenas para CENÁRIO 2: Ação já validada pelo Líder
+   * Autorizar alteração (LÍDER)
+   * Apenas para FASE 2: Ação já validada pelo Líder
+   * Libera o botão de edição para Admin
    */
-  confirmarAlteracao: protectedProcedure
+  autorizarAlteracao: protectedProcedure
     .input(
       z.object({
         solicitacaoId: z.number(),
-        confirmacao: z.boolean(),
-        justificativa: z.string().optional(),
+        autoriza: z.boolean(),
+        feedback_lider: z.string().min(5),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -128,7 +190,7 @@ export const pdiAjustesRouter = router({
       if (user.role !== "lider" && user.role !== "admin") {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Apenas líderes podem confirmar alterações",
+          message: "Apenas líderes podem autorizar alterações",
         });
       }
 
@@ -146,11 +208,13 @@ export const pdiAjustesRouter = router({
         });
       }
 
-      // Validar que solicitação está aguardando confirmação do líder
-      if (solicitacao[0].status !== "pendente_confirmacao_lider") {
+      // Validar que solicitação está aguardando autorização do líder
+      if (
+        solicitacao[0].status !== "aguardando_autorizacao_lider_para_ajuste"
+      ) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Solicitação não está aguardando confirmação do líder",
+          message: "Solicitação não está aguardando autorização do líder",
         });
       }
 
@@ -202,14 +266,14 @@ export const pdiAjustesRouter = router({
         });
       }
 
-      // Atualizar solicitação com confirmação do líder
-      const novoStatus = input.confirmacao ? "pendente_admin" : "rejeitada";
+      // Atualizar solicitação com autorização do líder
+      const novoStatus = input.autoriza ? "lider_de_acordo" : "rejeitada";
       await db
         .update(adjustmentRequests)
         .set({
-          liderConfirmacao: input.confirmacao,
+          liderConfirmacao: input.autoriza,
           liderConfirmadoPor: user.id,
-          liderJustificativa: input.justificativa || null,
+          feedback_lider: input.feedback_lider,
           liderConfirmadoAt: new Date(),
           status: novoStatus,
         })
@@ -218,18 +282,16 @@ export const pdiAjustesRouter = router({
       return {
         id: input.solicitacaoId,
         status: novoStatus,
-        confirmacao: input.confirmacao,
-        mensagem: input.confirmacao
-          ? "Confirmação enviada para o administrador"
+        autoriza: input.autoriza,
+        mensagem: input.autoriza
+          ? "Alteração autorizada. Enviada para o administrador"
           : "Solicitação rejeitada",
       };
     }),
 
   /**
    * Aprovar e fazer alteração (ADMIN)
-   * Funciona em ambos os cenários:
-   * - CENÁRIO 1: Admin faz alteração DIRETO (sem validação do Líder)
-   * - CENÁRIO 2: Admin faz alteração após Líder confirmar SIM
+   * ARQUITETURA DE PRECEDÊNCIA: Valida se Líder já aprovou a ação
    */
   aprovarAlteracao: adminProcedure
     .input(
@@ -260,51 +322,52 @@ export const pdiAjustesRouter = router({
       }
 
       // Validar que solicitação está aguardando aprovação do admin
-      if (solicitacao[0].status !== "pendente_admin") {
+      if (solicitacao[0].status !== "pendente_admin" && solicitacao[0].status !== "lider_de_acordo") {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Solicitação não está aguardando aprovação do admin",
         });
       }
 
-      // REGRA CRÍTICA #10 REFINADA:
-      // Se a solicitação veio de "pendente_confirmacao_lider", validar que Líder confirmou SIM
-      if (
-        solicitacao[0].liderConfirmacao === false ||
-        (solicitacao[0].liderConfirmacao === null &&
-          solicitacao[0].liderConfirmadoPor !== null)
-      ) {
+      // TRAVA DE PRECEDÊNCIA DO LÍDER
+      // Se a solicitação estava em "aguardando_autorizacao_lider_para_ajuste"
+      // ela DEVE estar em "lider_de_acordo" para Admin poder editar
+      const acao = await db
+        .select()
+        .from(actions)
+        .where(eq(actions.id, solicitacao[0].actionId))
+        .limit(1);
+
+      if (!acao.length) {
         throw new TRPCError({
-          code: "FORBIDDEN",
-          message:
-            "Líder não confirmou concordância com a alteração. Admin não pode proceder.",
+          code: "NOT_FOUND",
+          message: "Ação não encontrada",
         });
+      }
+
+      // Se ação foi aprovada pelo líder anteriormente
+      if (acao[0].status !== "pendente_aprovacao_lider") {
+        // Requer que solicitação esteja com lider_de_acordo
+        if (solicitacao[0].status !== "lider_de_acordo") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "Ação bloqueada: Este ajuste requer autorização prévia do Líder, pois a ação já havia sido validada por ele",
+          });
+        }
       }
 
       // Se aprovada, fazer o ajuste na ação
       if (input.aprovada) {
-        const acao = await db
+        const pdi = await db
           .select()
-          .from(actions)
-          .where(eq(actions.id, solicitacao[0].actionId))
+          .from(pdis)
+          .where(eq(pdis.id, acao[0].pdiId))
           .limit(1);
 
-        if (!acao.length) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Ação não encontrada",
-          });
-        }
-
-        // Validar que novo prazo está dentro do ciclo (Regra #9)
-        if (input.novoPrazo) {
-          const pdi = await db
-            .select()
-            .from(pdis)
-            .where(eq(pdis.id, acao[0].pdiId))
-            .limit(1);
-
-          if (pdi.length) {
+        if (pdi.length) {
+          // Validar que novo prazo está dentro do ciclo (Regra #9)
+          if (input.novoPrazo) {
             const ciclo = await db
               .select()
               .from(ciclos)
@@ -367,8 +430,9 @@ export const pdiAjustesRouter = router({
       z.object({
         status: z
           .enum([
-            "pendente_confirmacao_lider",
             "pendente_admin",
+            "aguardando_autorizacao_lider_para_ajuste",
+            "lider_de_acordo",
             "aprovada",
             "rejeitada",
           ])
@@ -392,9 +456,9 @@ export const pdiAjustesRouter = router({
       }
 
       if (user.role === "lider") {
-        // Líder vê apenas solicitações que aguardam sua confirmação
+        // Líder vê apenas solicitações que aguardam sua autorização
         return await query.where(
-          eq(adjustmentRequests.status, "pendente_confirmacao_lider")
+          eq(adjustmentRequests.status, "aguardando_autorizacao_lider_para_ajuste")
         );
       }
 
