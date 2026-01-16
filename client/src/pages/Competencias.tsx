@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -353,12 +353,12 @@ export default function Competencias() {
           </p>
         </div>
 
-        {/* Abas Customizadas (sem Radix UI) */}
+        {/* Abas Customizadas (buttons nativos com console.log para debug) */}
         <div className="space-y-4">
           <div className="flex gap-2 border-b border-gray-200">
             <button
               onClick={() => {
-                console.log('[DEBUG] Aba alterada para: blocos');
+                console.log('[DEBUG] Mudando para Blocos');
                 setActiveTab("blocos");
               }}
               className={`px-4 py-2 font-medium transition-colors ${
@@ -371,7 +371,7 @@ export default function Competencias() {
             </button>
             <button
               onClick={() => {
-                console.log('[DEBUG] Aba alterada para: macros');
+                console.log('[DEBUG] Mudando para Macros');
                 setActiveTab("macros");
               }}
               className={`px-4 py-2 font-medium transition-colors ${
@@ -384,7 +384,7 @@ export default function Competencias() {
             </button>
             <button
               onClick={() => {
-                console.log('[DEBUG] Aba alterada para: micros');
+                console.log('[DEBUG] Mudando para Micros');
                 setActiveTab("micros");
               }}
               className={`px-4 py-2 font-medium transition-colors ${
@@ -753,8 +753,8 @@ export default function Competencias() {
           <div>
             <Label htmlFor="macro-bloco">Bloco *</Label>
             <Select
-              value={macroForm.blocoId || "UNDEFINED"}
-              onValueChange={(value) => setMacroForm({ ...macroForm, blocoId: value === "UNDEFINED" ? "" : value })}
+              value={macroForm.blocoId || undefined}
+              onValueChange={(value) => setMacroForm({ ...macroForm, blocoId: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um bloco" />
@@ -807,8 +807,8 @@ export default function Competencias() {
           <div>
             <Label htmlFor="micro-macro">Macro *</Label>
             <Select
-              value={microForm.macroId || "UNDEFINED"}
-              onValueChange={(value) => setMicroForm({ ...microForm, macroId: value === "UNDEFINED" ? "" : value })}
+              value={microForm.macroId || undefined}
+              onValueChange={(value) => setMicroForm({ ...microForm, macroId: value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma macro" />
