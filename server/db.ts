@@ -108,6 +108,7 @@ export async function createUser(data: {
   leaderId?: number;
   departamentoId?: number;
   openId?: string;
+  status?: "ativo" | "inativo";
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -504,6 +505,7 @@ export async function getAllActions() {
   const db = await getDb();
   if (!db) return [];
 
+  const pdiAlias = alias(pdis, 'pdi');
   return await db
     .select({
       id: actions.id,
@@ -512,8 +514,10 @@ export async function getAllActions() {
       descricao: actions.descricao,
       status: actions.status,
       createdAt: actions.createdAt,
+      pdiColaboradorId: pdiAlias.colaboradorId,
     })
     .from(actions)
+    .leftJoin(pdiAlias, eq(actions.pdiId, pdiAlias.id))
     .orderBy(desc(actions.createdAt));
 }
 

@@ -680,7 +680,6 @@ export const appRouter = router({
           nome: input.nome,
           dataInicio,
           dataFim,
-          createdBy: ctx.user!.id,
         });
 
         return { success: true };
@@ -891,8 +890,8 @@ export const appRouter = router({
         const subordinadosIds = subordinados.map(s => s.id);
         const allActions = await db.getAllActions();
         return allActions.filter(a => 
-          a.pdi?.colaboradorId === user.id || 
-          subordinadosIds.includes(a.pdi?.colaboradorId || 0)
+          a.pdiColaboradorId === user.id || 
+          subordinadosIds.includes(a.pdiColaboradorId || 0)
         );
       } else {
         // Colaborador vê apenas suas próprias ações
@@ -953,10 +952,12 @@ export const appRouter = router({
         }
         
         // Validar se prazo está dentro do ciclo
-        if (prazoDate < ciclo.dataInicio || prazoDate > ciclo.dataFim) {
+        const cicloDataInicio = new Date(ciclo.dataInicio);
+        const cicloDataFim = new Date(ciclo.dataFim);
+        if (prazoDate < cicloDataInicio || prazoDate > cicloDataFim) {
           throw new TRPCError({ 
             code: 'BAD_REQUEST', 
-            message: `Prazo deve estar entre ${ciclo.dataInicio.toLocaleDateString()} e ${ciclo.dataFim.toLocaleDateString()}` 
+            message: `Prazo deve estar entre ${cicloDataInicio.toLocaleDateString()} e ${cicloDataFim.toLocaleDateString()}` 
           });
         }
         
@@ -968,7 +969,6 @@ export const appRouter = router({
           nome: input.nome,
           descricao: input.descricao,
           prazo: prazoDate,
-          createdBy: ctx.user!.id,
         });
         
         // Notificar líder
