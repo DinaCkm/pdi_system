@@ -175,7 +175,13 @@ export async function createDepartamento(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(departamentos).values(data).execute();
+  // Forçar status ativo se não fornecido
+  const normalizedData = {
+    ...data,
+    status: "ativo",
+  };
+
+  const result = await db.insert(departamentos).values(normalizedData).execute();
   return result[0]?.insertId || 0;
 }
 
@@ -240,7 +246,14 @@ export async function createCiclo(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(ciclos).values(data).execute();
+  // Normalizar datas para formato MySQL
+  const normalizedData = {
+    ...data,
+    dataInicio: data.dataInicio instanceof Date ? data.dataInicio.toISOString().slice(0, 19).replace('T', ' ') : data.dataInicio,
+    dataFim: data.dataFim instanceof Date ? data.dataFim.toISOString().slice(0, 19).replace('T', ' ') : data.dataFim,
+  };
+
+  const result = await db.insert(ciclos).values(normalizedData as any).execute();
   return result[0]?.insertId || 0;
 }
 
@@ -560,13 +573,12 @@ export async function createAction(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Converter Date para formato MySQL YYYY-MM-DD HH:mm:ss
-  const normalizedData = {
-    ...data,
-    prazo: data.prazo ? new Date(data.prazo).toISOString().slice(0, 19).replace('T', ' ') : undefined,
-  };
+  // Normalização de Timestamp para MySQL (YYYY-MM-DD HH:mm:ss)
+  if (data.prazo instanceof Date) {
+    data.prazo = data.prazo.toISOString().slice(0, 19).replace('T', ' ') as any;
+  }
 
-  const result = await db.insert(actions).values(normalizedData as any).execute();
+  const result = await db.insert(actions).values(data).execute();
   return result[0]?.insertId || 0;
 }
 
