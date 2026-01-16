@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, varchar, text, timestamp, mysqlEnum, index, foreignKey } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, varchar, text, timestamp, mysqlEnum, index, foreignKey, bigint } from "drizzle-orm/mysql-core"
 import { sql } from "drizzle-orm"
 
 export const acoesHistorico = mysqlTable("acoes_historico", {
@@ -118,7 +118,7 @@ export const evidenceFiles = mysqlTable("evidence_files", {
 	evidenceId: int().notNull(),
 	fileName: varchar({ length: 255 }).notNull(),
 	fileType: varchar({ length: 100 }).notNull(),
-	fileSize: bigint({ mode: "number" }).notNull(),
+	fileSize: bigint("fileSize", { mode: "number" }).notNull(),
 	fileUrl: text().notNull(),
 	fileKey: text().notNull(),
 	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
