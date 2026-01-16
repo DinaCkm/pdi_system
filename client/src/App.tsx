@@ -171,7 +171,7 @@ function App() {
     ensurePointerEvents();
 
     // Executar periodicamente para garantir que nenhum outro código bloqueie
-    const interval = setInterval(ensurePointerEvents, 1000);
+    const interval = setInterval(ensurePointerEvents, 1500);
 
     return () => clearInterval(interval);
   }, []);
