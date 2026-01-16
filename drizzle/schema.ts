@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, bigint } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean, bigint, unique } from "drizzle-orm/mysql-core";
 import { relations } from "drizzle-orm";
 
 /**
@@ -9,12 +9,12 @@ export const users = mysqlTable("users", {
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name").notNull(),
   email: varchar("email", { length: 320 }).notNull(),
-  cpf: varchar("cpf", { length: 14 }).notNull().unique(), // CPF único
+  cpf: varchar("cpf", { length: 14 }).notNull().unique(),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["admin", "lider", "colaborador"]).notNull(),
   cargo: varchar("cargo", { length: 255 }).notNull(),
-  leaderId: int("leaderId"), // ID do líder (para colaboradores e líderes)
-  departamentoId: int("departamentoId"), // ID do departamento
+  leaderId: int("leaderId"),
+  departamentoId: int("departamentoId"),
   status: mysqlEnum("status", ["ativo", "inativo"]).default("ativo").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -44,14 +44,13 @@ export type InsertUser = typeof users.$inferInsert;
 
 /**
  * USER_DEPARTMENT_ROLES - Vínculo dual de usuário com departamento
- * Permite que um usuário seja Líder em um departamento e Colaborador em outro
  */
 export const userDepartmentRoles = mysqlTable("user_department_roles", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   departmentId: int("departmentId").notNull(),
   assignmentType: mysqlEnum("assignmentType", ["LEADER", "MEMBER"]).notNull(),
-  leaderUserId: int("leaderUserId"), // Obrigatório quando assignmentType = MEMBER
+  leaderUserId: int("leaderUserId"),
   status: mysqlEnum("status", ["ativo", "inativo"]).default("ativo").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -83,7 +82,7 @@ export const departamentos = mysqlTable("departamentos", {
   id: int("id").autoincrement().primaryKey(),
   nome: varchar("nome", { length: 255 }).notNull().unique(),
   descricao: text("descricao"),
-  leaderId: int("leaderId"), // Líder do departamento (Admin ou Líder)
+  leaderId: int("leaderId"),
   status: mysqlEnum("status", ["ativo", "inativo"]).default("ativo").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -171,18 +170,32 @@ export const ciclosRelations = relations(ciclos, ({ one, many }) => ({
 
 /**
  * PDI - Plano de Desenvolvimento Individual
+ * REGRA CRÍTICA #7: Apenas ADMINISTRADOR pode criar PDI
+ * REGRA CRÍTICA #8: PDI é único por ciclo
  */
-export const pdis = mysqlTable("pdis", {
-  id: int("id").autoincrement().primaryKey(),
-  colaboradorId: int("colaboradorId").notNull(),
-  cicloId: int("cicloId").notNull(),
-  titulo: varchar("titulo", { length: 255 }).notNull(),
-  objetivoGeral: text("objetivoGeral"),
-  status: mysqlEnum("status", ["em_andamento", "concluido", "cancelado"]).default("em_andamento").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy").notNull(),
-});
+export const pdis = mysqlTable(
+  "pdis",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    colaboradorId: int("colaboradorId").notNull(),
+    cicloId: int("cicloId").notNull(),
+    titulo: varchar("titulo", { length: 255 }).notNull(),
+    objetivoGeral: text("objetivoGeral"),
+    status: mysqlEnum("status", [
+      "rascunho",
+      "aguardando_aprovacao",
+      "ativo",
+      "concluido",
+      "cancelado"
+    ]).default("rascunho").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    createdBy: int("createdBy").notNull(),
+  },
+  (table) => ({
+    uniquePdiPerCiclo: unique().on(table.colaboradorId, table.cicloId),
+  })
+);
 
 export const pdisRelations = relations(pdis, ({ one, many }) => ({
   colaborador: one(users, {
@@ -202,6 +215,7 @@ export const pdisRelations = relations(pdis, ({ one, many }) => ({
 
 /**
  * AÇÕES - 11 status possíveis
+ * REGRA CRÍTICA #9: Ações devem estar sempre dentro do ciclo de duração do PDI
  */
 export const actions = mysqlTable("actions", {
   id: int("id").autoincrement().primaryKey(),
@@ -271,7 +285,7 @@ export const evidences = mysqlTable("evidences", {
     "correcao_solicitada"
   ]).default("aguardando_avaliacao").notNull(),
   justificativaAdmin: text("justificativaAdmin"),
-  satisfactionScore: int("satisfactionScore"), // Escala de 1-5 para medir satisfação com a ação
+  satisfactionScore: int("satisfactionScore"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   evaluatedAt: timestamp("evaluatedAt"),
   evaluatedBy: int("evaluatedBy"),
@@ -300,12 +314,11 @@ export const evidencesRelations = relations(evidences, ({ one, many }) => ({
 export const evidenceFiles = mysqlTable("evidence_files", {
   id: int("id").autoincrement().primaryKey(),
   evidenceId: int("evidenceId").notNull(),
-  fileName: varchar("fileName", { length: 255 }).notNull(),
-  fileType: varchar("fileType", { length: 100 }).notNull(),
-  fileSize: bigint("fileSize", { mode: "number" }).notNull(),
   fileUrl: text("fileUrl").notNull(),
-  fileKey: text("fileKey").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  fileSize: bigint("fileSize", { mode: "number" }),
+  mimeType: varchar("mimeType", { length: 100 }),
+  uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
 });
 
 export const evidenceFilesRelations = relations(evidenceFiles, ({ one }) => ({
@@ -316,12 +329,11 @@ export const evidenceFilesRelations = relations(evidenceFiles, ({ one }) => ({
 }));
 
 /**
- * TEXTOS DESCRITIVOS DE EVIDÊNCIA
+ * TEXTOS DE EVIDÊNCIA
  */
 export const evidenceTexts = mysqlTable("evidence_texts", {
   id: int("id").autoincrement().primaryKey(),
   evidenceId: int("evidenceId").notNull(),
-  titulo: varchar("titulo", { length: 255 }),
   texto: text("texto").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
@@ -334,20 +346,41 @@ export const evidenceTextsRelations = relations(evidenceTexts, ({ one }) => ({
 }));
 
 /**
- * SOLICITAÇÕES DE AJUSTE
+ * SOLICITAÇÕES DE AJUSTE - Fluxo de alteração de ações
+ * REGRA CRÍTICA #10: Colaborador solicita → Líder confirma → Admin aprova e edita
+ * 
+ * Permissões:
+ * - Colaborador: Pode SOLICITAR ajuste
+ * - Líder: Pode CONFIRMAR concordância com a solicitação
+ * - Admin: APENAS Admin pode APROVAR e FAZER O AJUSTE na ação
  */
 export const adjustmentRequests = mysqlTable("adjustment_requests", {
   id: int("id").autoincrement().primaryKey(),
   actionId: int("actionId").notNull(),
   solicitanteId: int("solicitanteId").notNull(),
-  tipoSolicitante: mysqlEnum("tipoSolicitante", ["colaborador", "lider"]).notNull(),
-  justificativa: text("justificativa").notNull(),
-  camposAjustar: text("camposAjustar").notNull(), // JSON string
-  status: mysqlEnum("status", ["pendente", "aprovada", "reprovada"]).default("pendente").notNull(),
-  justificativaAdmin: text("justificativaAdmin"),
+  tipoSolicitacao: mysqlEnum("tipoSolicitacao", [
+    "alteracao_descricao",
+    "alteracao_prazo",
+    "alteracao_competencia",
+    "cancelamento"
+  ]).notNull(),
+  descricaoSolicitacao: text("descricaoSolicitacao").notNull(),
+  // REGRA CRÍTICA #10: Confirmação do Líder
+  liderConfirmacao: boolean("liderConfirmacao"),
+  liderConfirmadoPor: int("liderConfirmadoPor"),
+  liderJustificativa: text("liderJustificativa"),
+  liderConfirmadoAt: timestamp("liderConfirmadoAt"),
+  // Resposta e Edição do Admin (APENAS Admin edita)
+  status: mysqlEnum("status", [
+    "pendente_confirmacao_lider",
+    "pendente_admin",
+    "aprovada",
+    "rejeitada"
+  ]).default("pendente_confirmacao_lider").notNull(),
+  respondidoPor: int("respondidoPor"),
+  justificativaResposta: text("justificativaResposta"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  evaluatedAt: timestamp("evaluatedAt"),
-  evaluatedBy: int("evaluatedBy"),
+  respondidoAt: timestamp("respondidoAt"),
 });
 
 export const adjustmentRequestsRelations = relations(adjustmentRequests, ({ one }) => ({
@@ -359,118 +392,49 @@ export const adjustmentRequestsRelations = relations(adjustmentRequests, ({ one 
     fields: [adjustmentRequests.solicitanteId],
     references: [users.id],
   }),
-  evaluator: one(users, {
-    fields: [adjustmentRequests.evaluatedBy],
+  liderConfirmador: one(users, {
+    fields: [adjustmentRequests.liderConfirmadoPor],
+    references: [users.id],
+  }),
+  respondedor: one(users, {
+    fields: [adjustmentRequests.respondidoPor],
     references: [users.id],
   }),
 }));
 
 /**
- * HISTÓRICO DE ALTERAÇÕES DE AÇÕES
- */
-export const acoesHistorico = mysqlTable("acoes_historico", {
-  id: int("id").autoincrement().primaryKey(),
-  actionId: int("actionId").notNull(),
-  campo: varchar("campo", { length: 50 }).notNull(), // nome, descricao, prazo, status, etc.
-  valorAnterior: text("valorAnterior"),
-  valorNovo: text("valorNovo"),
-  motivoAlteracao: text("motivoAlteracao"),
-  alteradoPor: int("alteradoPor").notNull(), // Admin que fez a alteração
-  solicitacaoAjusteId: int("solicitacaoAjusteId"), // Se foi por solicitação
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
-
-export const acoesHistoricoRelations = relations(acoesHistorico, ({ one }) => ({
-  action: one(actions, {
-    fields: [acoesHistorico.actionId],
-    references: [actions.id],
-  }),
-  alterador: one(users, {
-    fields: [acoesHistorico.alteradoPor],
-    references: [users.id],
-  }),
-  solicitacaoAjuste: one(adjustmentRequests, {
-    fields: [acoesHistorico.solicitacaoAjusteId],
-    references: [adjustmentRequests.id],
-  }),
-}));
-
-export type AcaoHistorico = typeof acoesHistorico.$inferSelect;
-export type InsertAcaoHistorico = typeof acoesHistorico.$inferInsert;
-
-/**
- * COMENTÁRIOS DE SOLICITAÇÕES DE AJUSTE
- */
-export const adjustmentComments = mysqlTable("adjustment_comments", {
-  id: int("id").autoincrement().primaryKey(),
-  adjustmentRequestId: int("adjustmentRequestId").notNull(),
-  autorId: int("autorId").notNull(),
-  comentario: text("comentario").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
-
-export const adjustmentCommentsRelations = relations(adjustmentComments, ({ one }) => ({
-  adjustmentRequest: one(adjustmentRequests, {
-    fields: [adjustmentComments.adjustmentRequestId],
-    references: [adjustmentRequests.id],
-  }),
-  autor: one(users, {
-    fields: [adjustmentComments.autorId],
-    references: [users.id],
-  }),
-}));
-
-export type AdjustmentComment = typeof adjustmentComments.$inferSelect;
-export type InsertAdjustmentComment = typeof adjustmentComments.$inferInsert;
-
-/**
- * NOTIFICAÇÕES
+ * NOTIFICAÇÕES - Sistema de notificações
  */
 export const notifications = mysqlTable("notifications", {
   id: int("id").autoincrement().primaryKey(),
-  destinatarioId: int("destinatarioId").notNull(),
-  tipo: varchar("tipo", { length: 100 }).notNull(),
+  usuarioId: int("usuarioId").notNull(),
   titulo: varchar("titulo", { length: 255 }).notNull(),
-  mensagem: text("mensagem").notNull(),
-  referenciaId: int("referenciaId"), // ID da ação/PDI relacionado
-  lida: boolean("lida").default(false).notNull(),
+  descricao: text("descricao"),
+  tipo: mysqlEnum("tipo", [
+    "pdi_criado",
+    "pdi_aprovado",
+    "pdi_rejeitado",
+    "acao_aguardando_aprovacao",
+    "acao_aprovada",
+    "acao_reprovada",
+    "evidencia_enviada",
+    "evidencia_aprovada",
+    "evidencia_reprovada",
+    "ajuste_solicitado",
+    "ajuste_confirmacao_lider",
+    "ajuste_aprovado",
+    "ajuste_rejeitado"
+  ]).notNull(),
+  lido: boolean("lido").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  readAt: timestamp("readAt"),
 });
 
 export const notificationsRelations = relations(notifications, ({ one }) => ({
-  destinatario: one(users, {
-    fields: [notifications.destinatarioId],
+  usuario: one(users, {
+    fields: [notifications.usuarioId],
     references: [users.id],
   }),
 }));
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
-
-/**
- * AUDITORIA DE ALTERAÇÕES - Registra todas as mudanças feitas nas solicitações de ajuste
- */
-export const auditLog = mysqlTable("audit_log", {
-  id: int("id").autoincrement().primaryKey(),
-  adjustmentRequestId: int("adjustmentRequestId").notNull(),
-  adminId: int("adminId").notNull(), // Quem fez a alteração
-  campo: varchar("campo", { length: 100 }).notNull(), // Nome do campo alterado (ex: "nome", "descricao", "prazo")
-  valorAnterior: text("valorAnterior"), // Valor antes da alteração
-  valorNovo: text("valorNovo"), // Valor depois da alteração
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
-
-export const auditLogRelations = relations(auditLog, ({ one }) => ({
-  adjustmentRequest: one(adjustmentRequests, {
-    fields: [auditLog.adjustmentRequestId],
-    references: [adjustmentRequests.id],
-  }),
-  admin: one(users, {
-    fields: [auditLog.adminId],
-    references: [users.id],
-  }),
-}));
-
-export type AuditLog = typeof auditLog.$inferSelect;
-export type InsertAuditLog = typeof auditLog.$inferInsert;

@@ -7,10 +7,14 @@ import { invokeLLM } from "./_core/llm";
 import { authRouter } from "./authRouters";
 import { importActionsRouter } from "./importActions";
 import { sendEmailSolicitacaoAjuste } from "./_core/email";
+import { pdiRouter } from "./routers/pdi.router";
+import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 
 export const appRouter = router({
   system: systemRouter,
   auth: authRouter,
+  pdi: pdiRouter,
+  pdiAjustes: pdiAjustesRouter,
 
   // ============= GESTÃO DE DEPARTAMENTOS =============
   departamentos: router({

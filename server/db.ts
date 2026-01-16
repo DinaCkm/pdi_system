@@ -15,11 +15,7 @@ import {
   evidenceFiles,
   evidenceTexts,
   adjustmentRequests,
-  adjustmentComments,
-  InsertAdjustmentComment,
   notifications,
-  acoesHistorico,
-  auditLog,
   userDepartmentRoles
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
