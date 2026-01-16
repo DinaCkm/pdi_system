@@ -1071,7 +1071,6 @@ export const appRouter = router({
         
         await db.updateAction(input.id, { 
           status: "reprovada_lider",
-          justificativaReprovacaoLider: input.justificativa,
         });
         
         // Notificar admin

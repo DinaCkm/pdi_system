@@ -113,8 +113,8 @@ export async function createUser(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [user] = await db.insert(users).values(data).$returningId();
-  return user.id;
+  const result = await db.insert(users).values(data).execute();
+  return result[0]?.insertId || 0;
 }
 
 export async function updateUser(
@@ -173,8 +173,8 @@ export async function createDepartamento(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [dept] = await db.insert(departamentos).values(data).$returningId();
-  return dept.id;
+  const result = await db.insert(departamentos).values(data).execute();
+  return result[0]?.insertId || 0;
 }
 
 export async function updateDepartamento(
@@ -238,8 +238,8 @@ export async function createCiclo(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [ciclo] = await db.insert(ciclos).values(data).$returningId();
-  return ciclo.id;
+  const result = await db.insert(ciclos).values(data).execute();
+  return result[0]?.insertId || 0;
 }
 
 export async function updateCiclo(
@@ -291,8 +291,8 @@ export async function createBloco(data: { nome: string; descricao?: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [bloco] = await db.insert(competenciasBlocos).values(data).$returningId();
-  return bloco.id;
+  const result = await db.insert(competenciasBlocos).values(data).execute();
+  return result[0]?.insertId || 0;
 }
 
 export async function updateBloco(id: number, data: Partial<{ nome: string; descricao: string }>) {
@@ -337,8 +337,8 @@ export async function createMacro(data: { blocoId: number; nome: string; descric
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [macro] = await db.insert(competenciasMacros).values(data).$returningId();
-  return macro.id;
+  const result = await db.insert(competenciasMacros).values(data).execute();
+  return result[0]?.insertId || 0;
 }
 
 export async function updateMacro(
@@ -386,8 +386,8 @@ export async function createMicro(data: { macroId: number; nome: string; descric
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [micro] = await db.insert(competenciasMicros).values(data).$returningId();
-  return micro.id;
+  const result = await db.insert(competenciasMicros).values(data).execute();
+  return result[0]?.insertId || 0;
 }
 
 export async function updateMicro(
@@ -474,8 +474,8 @@ export async function createPDI(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [pdi] = await db.insert(pdis).values(data).$returningId();
-  return pdi.id;
+  const result = await db.insert(pdis).values(data).execute();
+  return result[0]?.insertId || 0;
 }
 
 export async function updatePDI(
@@ -558,8 +558,8 @@ export async function createAction(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [action] = await db.insert(actions).values(data).$returningId();
-  return action.id;
+  const result = await db.insert(actions).values(data).execute();
+  return result[0]?.insertId || 0;
 }
 
 export async function updateAction(
@@ -622,8 +622,8 @@ export async function createAdjustmentRequest(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [request] = await db.insert(adjustmentRequests).values(data).$returningId();
-  return request.id;
+  const result = await db.insert(adjustmentRequests).values(data).execute();
+  return result[0]?.insertId || 0;
 }
 
 export async function updateAdjustmentRequest(
@@ -829,8 +829,8 @@ export async function createEvidence(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [evidence] = await db.insert(evidences).values(data).$returningId();
-  return evidence.id;
+  const result = await db.insert(evidences).values(data).execute();
+  return result[0]?.insertId || 0;
 }
 
 export async function addEvidenceFile(data: {
