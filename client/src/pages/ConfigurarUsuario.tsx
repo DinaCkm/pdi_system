@@ -36,6 +36,7 @@ export default function ConfigurarUsuario() {
   const updateMutation = trpc.users.update.useMutation();
 
   // Filtrar líderes disponíveis do departamento selecionado
+  // COM FILTRO DE AUTOATRIBUIÇÃO (Impede que o usuário seja seu próprio líder)
   const availableLeaders = useMemo(() => {
     if (!selectedDepartamento) return [];
     
@@ -58,7 +59,8 @@ export default function ConfigurarUsuario() {
     });
     
     // Retornar lista de usuários que são líderes
-    return allUsers.filter(u => leaderIds.has(u.id));
+    // FILTRO DE AUTOATRIBUIÇÃO: Garante que u.id !== userId
+    return allUsers.filter(u => u.id !== userId && leaderIds.has(u.id));
   }, [allUsers, allDepartamentos, selectedDepartamento, userId]);
 
   // Carregar dados atuais do usuário
@@ -85,6 +87,7 @@ export default function ConfigurarUsuario() {
   }, [user, allDepartamentos]);
 
   // Filtrar líderes disponíveis para o departamento de colaborador
+  // COM FILTRO DE AUTOATRIBUIÇÃO (Impede que o usuário seja seu próprio líder)
   const availableLeadersColaborador = useMemo(() => {
     if (!selectedDepartamentoColaborador) return [];
     
@@ -103,7 +106,8 @@ export default function ConfigurarUsuario() {
       }
     });
     
-    return allUsers.filter(u => leaderIds.has(u.id));
+    // FILTRO DE AUTOATRIBUIÇÃO: Garante que u.id !== userId
+    return allUsers.filter(u => u.id !== userId && leaderIds.has(u.id));
   }, [allUsers, allDepartamentos, selectedDepartamentoColaborador, userId]);
 
   // Handler para mudança de departamento
@@ -116,10 +120,38 @@ export default function ConfigurarUsuario() {
     }
   };
 
+  // VALIDAÇÃO: Detecta conflito de departamentos (Regra de Ouro)
+  const temConflitoDepartamento = 
+    selectedRole === "lider" && 
+    selectedDepartamento === selectedDepartamentoColaborador;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!userId) return;
+
+    // TRAVA 1: Conflito de Departamento (Regra de Ouro)
+    if (selectedRole === "lider" && selectedDepartamento === selectedDepartamentoColaborador) {
+      toast.error("Conflito detectado", {
+        description: "Um Líder não pode ser membro do mesmo departamento que ele lidera. Selecione departamentos distintos."
+      });
+      return;
+    }
+
+    // TRAVA 2: Usuário Órfão (sem líder)
+    if ((selectedRole === "colaborador" || selectedRole === "lider") && !selectedLeader && selectedRole === "colaborador") {
+      toast.error("Dados incompletos", {
+        description: "Todo perfil operacional (Colaborador/Líder) precisa de um Líder Direto atribuído."
+      });
+      return;
+    }
+
+    if (selectedRole === "lider" && !selectedLeaderColaborador) {
+      toast.error("Dados incompletos", {
+        description: "Líderes devem ter um Líder Direto atribuído no departamento de colaborador."
+      });
+      return;
+    }
 
     // Validação: Líder e Colaborador precisam de departamento
     if ((selectedRole === "lider" || selectedRole === "colaborador") && !selectedDepartamento) {
@@ -363,11 +395,21 @@ export default function ConfigurarUsuario() {
               </>
             )}
 
+            {/* ALERTA: Conflito de Departamentos (Regra de Ouro) */}
+            {temConflitoDepartamento && (
+              <Alert className="border-red-200 bg-red-50">
+                <InfoIcon className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-700">
+                  <strong>Erro de Regra:</strong> Um Líder não pode ser membro do mesmo departamento que ele lidera. Por favor, selecione departamentos distintos.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* LÍDER: Seleção de Departamentos (Lidera + Colaborador) */}
             {selectedRole === "lider" && (
               <>
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm font-medium text-blue-900">ℹ️ Dualidade de Roles</p>
+                  <p className="text-sm font-medium text-blue-900">i️ Dualidade de Roles</p>
                   <p className="text-sm text-blue-800 mt-1">
                     Como Líder, você terá dois papéis:
                   </p>
@@ -481,7 +523,7 @@ export default function ConfigurarUsuario() {
               </Button>
               <Button
                 type="submit"
-                disabled={updateMutation.isPending}
+                disabled={updateMutation.isPending || temConflitoDepartamento}
                 className="flex-1 bg-gradient-to-r from-blue-600 via-purple-600 to-orange-500 hover:opacity-90"
               >
                 {updateMutation.isPending ? (

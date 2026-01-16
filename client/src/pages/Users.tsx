@@ -2,7 +2,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ModalCustomizado } from "@/components/ModalCustomizado";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -281,139 +281,138 @@ export default function Users() {
         </CardContent>
       </Card>
 
-      {/* Modal de Criação Simplificado */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Criar Novo Usuário</DialogTitle>
-            <DialogDescription>
-              Preencha os dados básicos. Configure perfil e hierarquia depois.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleCreate}>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="create-name">Nome Completo *</Label>
-                <Input
-                  id="create-name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="create-email">E-mail *</Label>
-                <Input
-                  id="create-email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="create-cpf">CPF *</Label>
-                <Input
-                  id="create-cpf"
-                  value={formData.cpf}
-                  onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
-                  placeholder="000.000.000-00"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="create-cargo">Cargo *</Label>
-                <Input
-                  id="create-cargo"
-                  value={formData.cargo}
-                  onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
-                  required
-                />
-              </div>
+      {/* Modal de Criação com ModalCustomizado */}
+      <ModalCustomizado
+        isOpen={isCreateOpen}
+        onClose={() => {
+          setIsCreateOpen(false);
+          setFormData({ name: "", email: "", cpf: "", cargo: "" });
+        }}
+        title="Criar Novo Usuário"
+        description="Preencha os dados básicos. Configure perfil e hierarquia depois."
+      >
+        <form onSubmit={handleCreate}>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="create-name">Nome Completo *</Label>
+              <Input
+                id="create-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
             </div>
 
-            <DialogFooter className="mt-6">
-              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending}>
-                {createMutation.isPending ? "Criando..." : "Criar Usuário"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de Edição de Usuário */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Dados do Usuário</DialogTitle>
-            <DialogDescription>
-              Atualize os dados básicos do usuário (nome, email, CPF, cargo).
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleUpdate}>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Nome Completo *</Label>
-                <Input
-                  id="edit-name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-email">E-mail *</Label>
-                <Input
-                  id="edit-email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-cpf">CPF *</Label>
-                <Input
-                  id="edit-cpf"
-                  value={formData.cpf}
-                  onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
-                  placeholder="000.000.000-00"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-cargo">Cargo *</Label>
-                <Input
-                  id="edit-cargo"
-                  value={formData.cargo}
-                  onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-email">E-mail *</Label>
+              <Input
+                id="create-email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
             </div>
 
-            <DialogFooter className="mt-6">
-              <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+            <div className="space-y-2">
+              <Label htmlFor="create-cpf">CPF *</Label>
+              <Input
+                id="create-cpf"
+                value={formData.cpf}
+                onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
+                placeholder="000.000.000-00"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="create-cargo">Cargo *</Label>
+              <Input
+                id="create-cargo"
+                value={formData.cargo}
+                onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 mt-6 justify-end">
+            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={createMutation.isPending}>
+              {createMutation.isPending ? "Criando..." : "Criar Usuário"}
+            </Button>
+          </div>
+        </form>
+      </ModalCustomizado>
+
+      {/* Modal de Edição com ModalCustomizado */}
+      <ModalCustomizado
+        isOpen={isEditOpen}
+        onClose={() => {
+          setIsEditOpen(false);
+          setEditingUser(null);
+          setFormData({ name: "", email: "", cpf: "", cargo: "" });
+        }}
+        title="Editar Dados do Usuário"
+        description="Atualize os dados básicos do usuário (nome, email, CPF, cargo)."
+      >
+        <form onSubmit={handleUpdate}>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Nome Completo *</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">E-mail *</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-cpf">CPF *</Label>
+              <Input
+                id="edit-cpf"
+                value={formData.cpf}
+                onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
+                placeholder="000.000.000-00"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-cargo">Cargo *</Label>
+              <Input
+                id="edit-cargo"
+                value={formData.cargo}
+                onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 mt-6 justify-end">
+            <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </div>
+        </form>
+      </ModalCustomizado>
 
       {/* Modal de Confirmação de Exclusão */}
       <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ open })}>

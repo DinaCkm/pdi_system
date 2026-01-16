@@ -267,4 +267,45 @@ const [isCreateOpen, setIsCreateOpen] = useState(false);
 
 ---
 
+---
+
+## 🔐 Regras de Ouro - Hierarquia e Departamentos
+
+### **1. Atribuição de Líder para Líder**
+- ✅ Um Líder pode ter outro Líder como superior
+- ❌ Um usuário NÃO pode ser seu próprio Líder (auto-atribuição bloqueada)
+- ✅ Hierarquia clara: Líder → Líder → Colaborador
+
+### **2. Departamento vs Perfil**
+- ✅ **Um Líder NÃO pode ser membro do mesmo departamento que lidera**
+- ✅ Um Líder tem 2 departamentos: um onde lidera, outro onde é colaborador
+- ✅ Colaborador: pode estar em qualquer departamento
+- ✅ Administrador: sem departamento (ou departamento especial)
+
+### **3. Duplicidade de CPF**
+- ❌ Não permitir cadastro de CPFs duplicados
+- ✅ Mostrar mensagem: "Este CPF já está cadastrado"
+- ✅ Em uploads em massa: marcar linha como erro
+
+### **4. Higienização de Dados**
+- ✅ Resolver usuários órfãos (sem departamento/sem líder)
+- ✅ Resolver líderes conflitados (não podem liderar seu próprio departamento)
+- ✅ Garantir que Líder ≠ seu próprio Colaborador
+- ✅ Todo usuário com papel operacional precisa ter vínculos claros
+
+### **5. Fluxo de Cadastro de Usuário**
+
+**Fase 1 (Cadastro Inicial):**
+- Nome, Email, CPF, Cargo
+- Perfil padrão: "Colaborador"
+- Sem departamento
+
+**Fase 2 (Configuração Posterior):**
+- Atribuir Perfil (Colaborador, Líder, Administrador)
+- Atribuir Departamento
+- Atribuir Líder (se Colaborador ou Líder)
+- **Aplicar Regras de Ouro aqui!**
+
+---
+
 **Análise Concluída:** ✅ Todos os problemas investigados. Nenhum bloqueio de eventos encontrado no sistema.
