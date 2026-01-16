@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface ModalNovoUsuarioProps {
   isOpen: boolean;
@@ -42,6 +43,15 @@ export function ModalNovoUsuario({
   });
   const modalRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+
+  // Query para validar CPF duplicado (apenas quando CPF tem 11 dígitos)
+  const cpfLimpo = formData.cpf.replace(/\D/g, "");
+  const { data: cpfExistente, isLoading: validandoCpf } = trpc.users.buscarPorCpf.useQuery(
+    { cpf: cpfLimpo },
+    { enabled: cpfLimpo.length === 11 }
+  );
+
+  const cpfDuplicado = !!cpfExistente;
 
   // Gerenciar scroll do body
   useEffect(() => {
@@ -247,9 +257,19 @@ export function ModalNovoUsuario({
                 value={formData.cpf}
                 onChange={(e) => handleInputChange("cpf", e.target.value)}
                 placeholder="000.000.000-00"
-                disabled={isLoading}
+                disabled={isLoading || validandoCpf}
                 className="w-full"
               />
+              {cpfDuplicado && (
+                <p className="text-xs text-red-500 mt-1 font-medium animate-pulse">
+                  Este CPF ja esta cadastrado no sistema.
+                </p>
+              )}
+              {validandoCpf && cpfLimpo.length === 11 && (
+                <p className="text-xs text-blue-500 mt-1 font-medium">
+                  Validando CPF...
+                </p>
+              )}
             </div>
 
             {/* Cargo */}
@@ -283,14 +303,21 @@ export function ModalNovoUsuario({
             <Button
               type="submit"
               onClick={handleSubmit}
-              disabled={isLoading}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-orange-600 hover:from-blue-700 hover:to-orange-700 text-white"
+              disabled={isLoading || validandoCpf || cpfDuplicado}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-orange-600 hover:from-blue-700 hover:to-orange-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Criando...
                 </>
+              ) : validandoCpf ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Validando CPF...
+                </>
+              ) : cpfDuplicado ? (
+                "CPF Duplicado"
               ) : (
                 "Criar Usuário"
               )}

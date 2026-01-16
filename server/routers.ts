@@ -77,6 +77,17 @@ export const appRouter = router({
         return await db.getUserById(input.id);
       }),
 
+    buscarPorCpf: publicProcedure
+      .input(z.object({ cpf: z.string() }))
+      .query(async ({ input }) => {
+        // Limpar CPF removendo formatação (pontos, traços, espaços)
+        const cpfLimpo = input.cpf.replace(/[^\d]/g, "");
+        
+        // Retornar usuário se encontrado, null caso contrário
+        const user = await db.getUserByCpf(cpfLimpo);
+        return user || null;
+      }),
+
     create: adminProcedure
       .input(z.object({
         name: z.string().min(1, "Nome é obrigatório"),

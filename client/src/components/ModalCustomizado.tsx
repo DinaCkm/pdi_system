@@ -30,6 +30,7 @@ export const ModalCustomizado: React.FC<ModalProps> = ({ isOpen, onClose, title,
       <div 
         className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
+        style={{ pointerEvents: 'auto' }}
       >
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-xl font-bold text-gray-900">{title}</h2>

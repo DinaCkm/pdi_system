@@ -1,0 +1,40 @@
+{
+  "query": "SELECT id, name, email, cpf FROM users LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, cpf FROM users LIMIT 5;",
+  "rows": [
+    {
+      "id": "150008",
+      "name": "Sebrae TO - Administrador",
+      "email": "relacionamento@ckmtalents.net",
+      "cpf": "93923425804"
+    },
+    {
+      "id": "180002",
+      "name": "EDVALDO PEREIRA LIMA JÚNIOR",
+      "email": "edvaldopljr86@gmail.com",
+      "cpf": "01547689102"
+    },
+    {
+      "id": "180003",
+      "name": "AMAGGELDO BARBOSA",
+      "email": "amaggeldo@to.sebrae.com.br",
+      "cpf": "76727025134"
+    },
+    {
+      "id": "180004",
+      "name": "ALDENI BATISTA TORRES",
+      "email": "aldeni.torres@to.sebrae.com.br",
+      "cpf": "00658585142"
+    },
+    {
+      "id": "180005",
+      "name": "MARCUS VINICIUS VIEIRA QUEIROZ",
+      "email": "marcus.queiroz@to.sebrae.com.br",
+      "cpf": "01479169170"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tcpf\n150008\tSebrae TO - Administrador\trelacionamento@ckmtalents.net\t93923425804\n180002\tEDVALDO PEREIRA LIMA JÚNIOR\tedvaldopljr86@gmail.com\t01547689102\n180003\tAMAGGELDO BARBOSA\tamaggeldo@to.sebrae.com.br\t76727025134\n180004\tALDENI BATISTA TORRES\taldeni.torres@to.sebrae.com.br\t00658585142\n180005\tMARCUS VINICIUS VIEIRA QUEIROZ\tmarcus.queiroz@to.sebrae.com.br\t01479169170\n",
+  "stderr": "",
+  "execution_time_ms": 368
+}
