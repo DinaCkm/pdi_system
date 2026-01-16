@@ -138,6 +138,16 @@ export default function ConfigurarUsuario() {
     selectedRole === "lider" && 
     selectedDepartamento === selectedDepartamentoColaborador;
 
+  // REGRAS 5 E 6: Validação de Obrigatoriedade de Vínculos
+  const perfilOperacional = selectedRole === "colaborador" || selectedRole === "lider";
+  
+  const faltaDepartamento = selectedRole === "colaborador" && !selectedDepartamento;
+  const faltaDepartamentoColaborador = selectedRole === "lider" && !selectedDepartamentoColaborador;
+  const faltaLider = (selectedRole === "colaborador" && !selectedLeader) || (selectedRole === "lider" && !selectedLeaderColaborador);
+  
+  const camposIncompletos = faltaDepartamento || faltaDepartamentoColaborador || faltaLider;
+  const botaoDesabilitado = updateMutation.isPending || temConflitoDepartamento || camposIncompletos;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -145,48 +155,41 @@ export default function ConfigurarUsuario() {
 
     // TRAVA 1: Conflito de Departamento (Regra de Ouro)
     if (selectedRole === "lider" && selectedDepartamento === selectedDepartamentoColaborador) {
-      toast.error("Conflito detectado", {
+      toast.error("⚠️ Conflito Detectado", {
         description: "Um Líder não pode ser membro do mesmo departamento que ele lidera. Selecione departamentos distintos."
       });
       return;
     }
 
-    // TRAVA 2: Usuário Órfão (sem líder)
-    if ((selectedRole === "colaborador" || selectedRole === "lider") && !selectedLeader && selectedRole === "colaborador") {
-      toast.error("Dados incompletos", {
-        description: "Todo perfil operacional (Colaborador/Líder) precisa de um Líder Direto atribuído."
+    // REGRA 5: Departamento Obrigatório para Colaborador
+    if (selectedRole === "colaborador" && !selectedDepartamento) {
+      toast.error("📍 Departamento Obrigatório", {
+        description: "Colaboradores devem estar vinculados a um departamento para que possam ter um PDI e serem avaliados."
       });
       return;
     }
 
-    if (selectedRole === "lider" && !selectedLeaderColaborador) {
-      toast.error("Dados incompletos", {
-        description: "Líderes devem ter um Líder Direto atribuído no departamento de colaborador."
-      });
-      return;
-    }
-
-    // Validação: Líder e Colaborador precisam de departamento
-    if ((selectedRole === "lider" || selectedRole === "colaborador") && !selectedDepartamento) {
-      toast.error("Líderes e Colaboradores devem estar vinculados a um departamento.");
-      return;
-    }
-
-    // Validação: Colaborador precisa de líder
-    if (selectedRole === "colaborador" && !selectedLeader) {
-      toast.error("Colaboradores devem ter um líder atribuído.");
-      return;
-    }
-
-    // Validação: Líder precisa de departamento de colaborador
+    // REGRA 5: Departamento Obrigatório para Líder (como colaborador)
     if (selectedRole === "lider" && !selectedDepartamentoColaborador) {
-      toast.error("Líderes devem estar vinculados a um departamento como colaborador.");
+      toast.error("📍 Departamento de Colaborador Obrigatório", {
+        description: "Líderes devem estar vinculados a um departamento como colaborador para que possam ter seu próprio PDI e serem avaliados por um gestor superior."
+      });
       return;
     }
 
-    // Validação: Líder precisa de líder no departamento de colaborador
+    // REGRA 6: Líder Obrigatório para Colaborador
+    if (selectedRole === "colaborador" && !selectedLeader) {
+      toast.error("👤 Líder Obrigatório", {
+        description: "Colaboradores devem ter um líder direto atribuído para que possam ser orientados e avaliados."
+      });
+      return;
+    }
+
+    // REGRA 6: Líder Obrigatório para Líder (no departamento de colaborador)
     if (selectedRole === "lider" && !selectedLeaderColaborador) {
-      toast.error("Líderes devem ter um líder atribuído no departamento de colaborador.");
+      toast.error("👤 Líder Superior Obrigatório", {
+        description: "Líderes devem ter um líder superior atribuído no departamento de colaborador para que possam ter seu próprio PDI."
+      });
       return;
     }
 
@@ -195,11 +198,15 @@ export default function ConfigurarUsuario() {
       const finalDepartamentoId = selectedRole === "lider" ? selectedDepartamentoColaborador : selectedDepartamento;
       const finalLeaderId = selectedRole === "lider" ? selectedLeaderColaborador : selectedLeader;
 
+      // Para admins, limpar vínculos antigos
+      const departamentoParaSalvar = selectedRole === "admin" ? null : finalDepartamentoId;
+      const liderParaSalvar = selectedRole === "admin" ? null : finalLeaderId;
+
       await updateMutation.mutateAsync({
         id: userId,
         role: selectedRole,
-        departamentoId: finalDepartamentoId,
-        leaderId: finalLeaderId,
+        departamentoId: departamentoParaSalvar,
+        leaderId: liderParaSalvar,
       });
 
       // Aguardar um momento para React finalizar processamento antes do redirect
@@ -536,7 +543,7 @@ export default function ConfigurarUsuario() {
               </Button>
               <Button
                 type="submit"
-                disabled={updateMutation.isPending || temConflitoDepartamento}
+                disabled={botaoDesabilitado}
                 className="flex-1 bg-gradient-to-r from-blue-600 via-purple-600 to-orange-500 hover:opacity-90"
               >
                 {updateMutation.isPending ? (
