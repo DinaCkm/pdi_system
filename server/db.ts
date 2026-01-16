@@ -16,7 +16,9 @@ import {
   evidenceTexts,
   adjustmentRequests,
   notifications,
-  userDepartmentRoles
+  userDepartmentRoles,
+  auditLog,
+  acaoHistorico
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1443,7 +1445,7 @@ export async function createAuditLog(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const [result] = await db
+  const result = await db
     .insert(auditLog)
     .values({
       adjustmentRequestId,
@@ -1452,9 +1454,9 @@ export async function createAuditLog(
       valorAnterior,
       valorNovo,
     })
-    .$returningId();
+    .execute();
   
-  return result.id;
+  return result[0]?.insertId || 0;
 }
 
 export async function getAuditLogByAdjustmentRequest(adjustmentRequestId: number) {

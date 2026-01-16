@@ -23,7 +23,6 @@ export const actions = mysqlTable("actions", {
 	descricao: text().notNull(),
 	prazo: timestamp({ mode: 'string' }).notNull(),
 	status: mysqlEnum(['pendente_aprovacao_lider','aprovada_lider','reprovada_lider','em_andamento','em_discussao','evidencia_enviada','evidencia_aprovada','evidencia_reprovada','correcao_solicitada','concluida','vencida','cancelada']).default('pendente_aprovacao_lider').notNull(),
-	justificativaReprovacaoLider: text(),
 	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	createdBy: int().notNull(),
