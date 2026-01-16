@@ -89,6 +89,15 @@ export const appRouter = router({
         return userExistente || null;
       }),
 
+    buscarPorEmail: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .query(async ({ input }) => {
+        const emailLimpo = input.email.toLowerCase().trim();
+        const usersList = await db.select().from(users).execute();
+        const userExistente = usersList.find(u => u.email.toLowerCase().trim() === emailLimpo);
+        return userExistente || null;
+      }),
+
     create: adminProcedure
       .input(z.object({
         name: z.string().min(1, "Nome é obrigatório"),
@@ -142,10 +151,10 @@ export const appRouter = router({
         }
 
         await db.createUser({
-          openId: `local_${cpfLimpo}`,
+          openId: `local_${cpfParaSalvar}`,
           name: input.name,
           email: input.email,
-          cpf: cpfLimpo,
+          cpf: cpfParaSalvar,
           role: input.role,
           cargo: input.cargo,
           leaderId: input.leaderId,

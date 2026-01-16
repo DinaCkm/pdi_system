@@ -53,6 +53,16 @@ export function ModalNovoUsuario({
 
   const cpfDuplicado = !!cpfExistente;
 
+  // Query para validar Email duplicado (apenas quando email tem formato válido)
+  const emailLimpo = formData.email.toLowerCase().trim();
+  const emailValido = emailLimpo.includes("@") && emailLimpo.includes(".");
+  const { data: emailExistente, isLoading: validandoEmail } = trpc.users.buscarPorEmail.useQuery(
+    { email: emailLimpo },
+    { enabled: emailValido }
+  );
+
+  const emailDuplicado = !!emailExistente;
+
   // Gerenciar scroll do body
   useEffect(() => {
     if (isOpen) {
@@ -241,9 +251,19 @@ export function ModalNovoUsuario({
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 placeholder="Ex: joao@empresa.com"
-                disabled={isLoading}
+                disabled={isLoading || validandoEmail}
                 className="w-full"
               />
+              {emailDuplicado && (
+                <p className="text-xs text-red-500 mt-1 font-medium animate-pulse">
+                  Este email ja esta cadastrado no sistema.
+                </p>
+              )}
+              {validandoEmail && emailValido && (
+                <p className="text-xs text-blue-500 mt-1 font-medium">
+                  Validando email...
+                </p>
+              )}
             </div>
 
             {/* CPF */}
@@ -303,7 +323,7 @@ export function ModalNovoUsuario({
             <Button
               type="submit"
               onClick={handleSubmit}
-              disabled={isLoading || validandoCpf || cpfDuplicado}
+              disabled={isLoading || validandoCpf || cpfDuplicado || validandoEmail || emailDuplicado}
               className="flex-1 bg-gradient-to-r from-blue-600 to-orange-600 hover:from-blue-700 hover:to-orange-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
@@ -316,10 +336,17 @@ export function ModalNovoUsuario({
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Validando CPF...
                 </>
+              ) : validandoEmail ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Validando Email...
+                </>
               ) : cpfDuplicado ? (
                 "CPF Duplicado"
+              ) : emailDuplicado ? (
+                "Email Duplicado"
               ) : (
-                "Criar Usuário"
+                "Criar Usuario"
               )}
             </Button>
           </div>

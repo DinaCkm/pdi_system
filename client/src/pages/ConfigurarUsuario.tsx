@@ -86,6 +86,19 @@ export default function ConfigurarUsuario() {
     }
   }, [user, allDepartamentos]);
 
+  // Limpeza de estado quando selectedRole muda (Regra de Ouro)
+  useEffect(() => {
+    // Se mudar de Líder para Colaborador, resetar campos de dualidade
+    if (selectedRole === "colaborador") {
+      setSelectedDepartamentoColaborador(undefined);
+      setSelectedLeaderColaborador(undefined);
+    }
+    // Se mudar para Líder, resetar campo simples de líder
+    if (selectedRole === "lider") {
+      setSelectedLeader(undefined);
+    }
+  }, [selectedRole]);
+
   // Filtrar líderes disponíveis para o departamento de colaborador
   // COM FILTRO DE AUTOATRIBUIÇÃO (Impede que o usuário seja seu próprio líder)
   const availableLeadersColaborador = useMemo(() => {
