@@ -560,7 +560,13 @@ export async function createAction(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(actions).values(data).execute();
+  // Converter Date para formato MySQL YYYY-MM-DD HH:mm:ss
+  const normalizedData = {
+    ...data,
+    prazo: data.prazo ? new Date(data.prazo).toISOString().slice(0, 19).replace('T', ' ') : undefined,
+  };
+
+  const result = await db.insert(actions).values(normalizedData as any).execute();
   return result[0]?.insertId || 0;
 }
 
@@ -1226,7 +1232,8 @@ export async function createNotification(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.insert(notifications).values(data);
+  const result = await db.insert(notifications).values(data).execute();
+  return result[0]?.insertId || 0;
 }
 
 export async function getNotifications(userId: number) {
@@ -1263,7 +1270,8 @@ export async function createAcaoHistorico(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.insert(acoesHistorico).values(data);
+  const result = await db.insert(acoesHistorico).values(data).execute();
+  return result[0]?.insertId || 0;
 }
 
 // ============= FUNÇÕES ADICIONAIS PARA EVIDÊNCIAS =============
@@ -1797,12 +1805,13 @@ export async function createAdjustmentComment(data: {
     .insert(adjustmentComments)
     .values({
       adjustmentRequestId: data.adjustmentRequestId,
-      userId: data.userId,
+      autorId: data.userId,
       comentario: data.comentario,
       createdAt: new Date(),
-    });
+    })
+    .execute();
 
-  return result[0];
+  return result[0]?.insertId || 0;
 }
 
 export async function getAcaoHistorico(actionId: number) {

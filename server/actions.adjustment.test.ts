@@ -16,7 +16,7 @@ describe("Sistema de Solicitação de Ajuste de Ações", () => {
 
   beforeAll(async () => {
     // Criar departamento
-    await db.createDepartamento({ nome: "TI - Testes Ajuste", descricao: "Departamento para testes" });
+    const deptId = await db.createDepartamento({ nome: "TI - Testes Ajuste", descricao: "Departamento para testes", status: "ativo" });
     const departamentos = await db.getAllDepartamentos();
     departamento = departamentos.find(d => d.nome === "TI - Testes Ajuste");
 
