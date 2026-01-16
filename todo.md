@@ -1023,3 +1023,24 @@
 - [x] Criar página "Auditoria" no menu lateral
 - [x] Integração com Regra #10 (solicitacaoAjusteId no histórico)
 - [x] Validar build e entregar para testes com Dina
+
+
+## Fase 6: Notificações com Badges para Líderes e Admin
+
+- [ ] Criar procedures tRPC para contar PDIs pendentes de aprovação (Líder)
+- [ ] Criar procedures tRPC para contar ações com evidência pendente (Admin)
+- [ ] Implementar componente Badge com contador piscante
+- [ ] Adicionar notificações visuais no DashboardLayout
+- [ ] Integrar badges em menu lateral (PDIs Pendentes, Ações Pendentes)
+- [ ] Validar build e entregar
+
+
+## Fase 6: Notificações com Badges para Líderes e Admin (CONCLUÍDA)
+
+- [x] Criar procedures tRPC para contar pendências (PDIs, ações, ajustes)
+- [x] Implementar componentes de Badge com contadores
+- [x] Adicionar notificações visuais piscantes (animate-pulse)
+- [x] Integrar badges no DashboardLayout
+- [x] Validar build e entregar
+
+**Resumo:** Implementadas procedures em notifications.ts para contar PDIs aguardando aprovação (Líder), ações com evidência pendente (Admin) e solicitações de ajuste pendentes (Admin). Criado componente PendencyBadge com animação piscante. Integrado no DashboardLayout com badges dinâmicos que atualizam a cada 30 segundos. Build passou com sucesso (158.3kb).

@@ -9,12 +9,14 @@ import { importActionsRouter } from "./importActions";
 import { sendEmailSolicitacaoAjuste } from "./_core/email";
 import { pdiRouter } from "./routers/pdi.router";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
+import { notificationsRouter } from "./routers/notifications";
 
 export const appRouter = router({
   system: systemRouter,
   auth: authRouter,
   pdi: pdiRouter,
   pdiAjustes: pdiAjustesRouter,
+  notifications: notificationsRouter,
 
   // ============= GESTÃO DE DEPARTAMENTOS =============
   departamentos: router({
@@ -1776,25 +1778,7 @@ Gere um resumo conciso e profissional dessas mudanças em português, destacando
       })
   }),
 
-  // ============= NOTIFICAÇÕES =============
-  notifications: router({
-    list: protectedProcedure.query(async ({ ctx }) => {
-      return await db.getNotificationsByUserId(ctx.user!.id);
-    }),
-
-    markAsRead: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.markNotificationAsRead(input.id);
-        return { success: true };
-      }),
-
-    unreadCount: protectedProcedure.query(async ({ ctx }) => {
-      return await db.getUnreadNotificationsCount(ctx.user!.id);
-    }),
-  }),
-
-  // ============= EVIDÊNCIAS =============
+  // ============= EVIDÊNcias =============
   evidences: router({
     create: protectedProcedure
       .input(z.object({
