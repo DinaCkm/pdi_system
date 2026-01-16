@@ -15,10 +15,11 @@ import {
   evidenceFiles,
   evidenceTexts,
   adjustmentRequests,
+  adjustmentComments,
   notifications,
   userDepartmentRoles,
   auditLog,
-  acaoHistorico
+  acoesHistorico
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -603,18 +604,20 @@ export async function createAction(data: {
   blocoId?: number;
   macroId?: number;
   microId?: number;
-  prazo?: Date;
+  prazo?: string | Date;
   status?: string;
+  createdBy: number;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   // Normalização de Timestamp para MySQL (YYYY-MM-DD HH:mm:ss)
-  if (data.prazo instanceof Date) {
-    data.prazo = data.prazo.toISOString().slice(0, 19).replace('T', ' ') as any;
-  }
+  const normalizedData = {
+    ...data,
+    prazo: data.prazo instanceof Date ? data.prazo.toISOString().slice(0, 19).replace('T', ' ') : data.prazo,
+  };
 
-  const result = await db.insert(actions).values(data).execute();
+  const result = await db.insert(actions).values(normalizedData as any).execute();
   return result[0]?.insertId || 0;
 }
 
@@ -626,14 +629,19 @@ export async function updateAction(
     blocoId: number;
     macroId: number;
     microId: number;
-    prazo: Date;
+    prazo: string | Date;
     status: string;
   }>
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.update(actions).set(data).where(eq(actions.id, id));
+  const normalizedData = {
+    ...data,
+    prazo: data.prazo instanceof Date ? data.prazo.toISOString().slice(0, 19).replace('T', ' ') : data.prazo,
+  };
+
+  await db.update(actions).set(normalizedData as any).where(eq(actions.id, id));
 }
 
 export async function deleteAction(id: number) {
@@ -671,7 +679,7 @@ export async function getAdjustmentRequestById(id: number) {
 export async function createAdjustmentRequest(data: {
   actionId: number;
   solicitanteId: number;
-  tipoSolicitante: string;
+  tipoSolicitante: 'colaborador' | 'lider';
   justificativa: string;
   camposAjustar: string;
 }) {
