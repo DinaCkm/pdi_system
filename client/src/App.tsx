@@ -1,5 +1,5 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -28,7 +28,8 @@ import EvidenciasPendentes from "./pages/EvidenciasPendentes";
 import MinhasAcoes from "./pages/MinhasAcoes";
 import HistoricoAlteracoes from "./pages/HistoricoAlteracoes";
 
-function Router() {  return (
+function Router() {
+  return (
     <Switch>
       <Route path={"/setup"} component={Setup} />
       <Route path={"/login"} component={Login} />
@@ -158,13 +159,28 @@ function Router() {  return (
 }
 
 function App() {
+  // Garantir que pointer-events está sempre em 'auto' ao carregar páginas
+  useEffect(() => {
+    const ensurePointerEvents = () => {
+      if (document.body.style.pointerEvents !== "auto") {
+        document.body.style.pointerEvents = "auto";
+      }
+    };
+
+    // Executar na montagem
+    ensurePointerEvents();
+
+    // Executar periodicamente para garantir que nenhum outro código bloqueie
+    const interval = setInterval(ensurePointerEvents, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <Toaster />
+        <Router />
       </ThemeProvider>
     </ErrorBoundary>
   );

@@ -5,15 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
+import { ModalCustomizado } from "@/components/ModalCustomizado";
 
 export default function Competencias() {
   const utils = trpc.useUtils();
+  
+  // Estado de aba ativa (customizado, sem Radix)
+  const [activeTab, setActiveTab] = useState<"blocos" | "macros" | "micros">("blocos");
   
   // Estados para diálogos
   const [blocoDialogOpen, setBlocoDialogOpen] = useState(false);
@@ -55,6 +57,8 @@ export default function Competencias() {
       toast.success("Bloco criado com sucesso!");
       await utils.competencias.listBlocos.invalidate();
       setBlocoDialogOpen(false);
+      setBlocoForm({ nome: "", descricao: "" });
+      setEditingBloco(null);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -64,6 +68,8 @@ export default function Competencias() {
       toast.success("Bloco atualizado com sucesso!");
       await utils.competencias.listBlocos.invalidate();
       setBlocoDialogOpen(false);
+      setBlocoForm({ nome: "", descricao: "" });
+      setEditingBloco(null);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -84,6 +90,8 @@ export default function Competencias() {
       toast.success("Macro criada com sucesso!");
       await utils.competencias.listAllMacros.invalidate();
       setMacroDialogOpen(false);
+      setMacroForm({ nome: "", descricao: "", blocoId: "" });
+      setEditingMacro(null);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -93,6 +101,8 @@ export default function Competencias() {
       toast.success("Macro atualizada com sucesso!");
       await utils.competencias.listAllMacros.invalidate();
       setMacroDialogOpen(false);
+      setMacroForm({ nome: "", descricao: "", blocoId: "" });
+      setEditingMacro(null);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -112,6 +122,8 @@ export default function Competencias() {
       toast.success("Micro criada com sucesso!");
       await utils.competencias.listAllMicros.invalidate();
       setMicroDialogOpen(false);
+      setMicroForm({ nome: "", descricao: "", macroId: "" });
+      setEditingMicro(null);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -121,6 +133,8 @@ export default function Competencias() {
       toast.success("Micro atualizada com sucesso!");
       await utils.competencias.listAllMicros.invalidate();
       setMicroDialogOpen(false);
+      setMicroForm({ nome: "", descricao: "", macroId: "" });
+      setEditingMicro(null);
     },
     onError: (error) => toast.error(error.message),
   });
@@ -134,7 +148,8 @@ export default function Competencias() {
   });
 
   // Handlers - Blocos
-  const handleCreateBloco = () => {
+  const handleCreateBloco = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!blocoForm.nome.trim()) {
       toast.error("Nome é obrigatório");
       return;
@@ -142,7 +157,8 @@ export default function Competencias() {
     createBlocoMutation.mutate(blocoForm);
   };
 
-  const handleUpdateBloco = () => {
+  const handleUpdateBloco = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!blocoForm.nome.trim()) {
       toast.error("Nome é obrigatório");
       return;
@@ -163,7 +179,8 @@ export default function Competencias() {
   };
 
   // Handlers - Macros
-  const handleCreateMacro = () => {
+  const handleCreateMacro = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!macroForm.nome.trim() || !macroForm.blocoId) {
       toast.error("Nome e Bloco são obrigatórios");
       return;
@@ -171,7 +188,8 @@ export default function Competencias() {
     createMacroMutation.mutate({ ...macroForm, blocoId: parseInt(macroForm.blocoId) });
   };
 
-  const handleUpdateMacro = () => {
+  const handleUpdateMacro = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!macroForm.nome.trim() || !macroForm.blocoId) {
       toast.error("Nome e Bloco são obrigatórios");
       return;
@@ -197,7 +215,8 @@ export default function Competencias() {
   };
 
   // Handlers - Micros
-  const handleCreateMicro = () => {
+  const handleCreateMicro = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!microForm.nome.trim() || !microForm.macroId) {
       toast.error("Nome e Macro são obrigatórios");
       return;
@@ -205,7 +224,8 @@ export default function Competencias() {
     createMicroMutation.mutate({ ...microForm, macroId: parseInt(microForm.macroId) });
   };
 
-  const handleUpdateMicro = () => {
+  const handleUpdateMicro = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!microForm.nome.trim() || !microForm.macroId) {
       toast.error("Nome e Macro são obrigatórios");
       return;
@@ -242,7 +262,6 @@ export default function Competencias() {
   // Funções de ordenação
   const handleSort = (field: string, currentField: string | null, currentDirection: SortDirection, setField: (f: string | null) => void, setDirection: (d: SortDirection) => void) => {
     if (currentField === field) {
-      // Ciclo: asc -> desc -> null
       if (currentDirection === 'asc') {
         setDirection('desc');
       } else if (currentDirection === 'desc') {
@@ -270,16 +289,14 @@ export default function Competencias() {
         bValue = b[sortField];
       }
 
-      // Tratar valores nulos/undefined
       if (aValue === null || aValue === undefined) aValue = '';
       if (bValue === null || bValue === undefined) bValue = '';
 
-      // Comparação
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        const comparison = aValue.toLowerCase().localeCompare(bValue.toLowerCase());
-        return sortDirection === 'asc' ? comparison : -comparison;
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
       }
-      
+
       if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
@@ -336,15 +353,52 @@ export default function Competencias() {
           </p>
         </div>
 
-        <Tabs defaultValue="blocos" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="blocos">Blocos</TabsTrigger>
-            <TabsTrigger value="macros">Macros</TabsTrigger>
-            <TabsTrigger value="micros">Micros</TabsTrigger>
-          </TabsList>
+        {/* Abas Customizadas (sem Radix UI) */}
+        <div className="space-y-4">
+          <div className="flex gap-2 border-b border-gray-200">
+            <button
+              onClick={() => {
+                console.log('[DEBUG] Aba alterada para: blocos');
+                setActiveTab("blocos");
+              }}
+              className={`px-4 py-2 font-medium transition-colors ${
+                activeTab === "blocos"
+                  ? "border-b-2 border-blue-600 text-blue-600"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Blocos
+            </button>
+            <button
+              onClick={() => {
+                console.log('[DEBUG] Aba alterada para: macros');
+                setActiveTab("macros");
+              }}
+              className={`px-4 py-2 font-medium transition-colors ${
+                activeTab === "macros"
+                  ? "border-b-2 border-blue-600 text-blue-600"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Macros
+            </button>
+            <button
+              onClick={() => {
+                console.log('[DEBUG] Aba alterada para: micros');
+                setActiveTab("micros");
+              }}
+              className={`px-4 py-2 font-medium transition-colors ${
+                activeTab === "micros"
+                  ? "border-b-2 border-blue-600 text-blue-600"
+                  : "text-gray-600 hover:text-gray-900"
+              }`}
+            >
+              Micros
+            </button>
+          </div>
 
           {/* TAB BLOCOS */}
-          <TabsContent value="blocos" className="space-y-4">
+          {activeTab === "blocos" && (
             <Card>
               <CardHeader>
                 <div className="flex flex-row items-center justify-between mb-4">
@@ -359,68 +413,22 @@ export default function Competencias() {
                       onChange={(e) => setSearchBloco(e.target.value)}
                       className="w-64"
                     />
-                    <Dialog open={blocoDialogOpen} onOpenChange={(open) => {
-                      setBlocoDialogOpen(open);
-                      if (!open) {
+                    <Button 
+                      onClick={() => {
                         setEditingBloco(null);
                         setBlocoForm({ nome: "", descricao: "" });
-                      }
-                    }}>
-                      <DialogTrigger asChild>
-                        <Button className="bg-gradient-to-r from-blue-600 to-orange-600">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Novo Bloco
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent
-                        onOpenAutoFocus={(e) => e.preventDefault()}
-                        onCloseAutoFocus={(e) => e.preventDefault()}
-                      >
-                        <DialogHeader>
-                          <DialogTitle>{editingBloco ? "Editar Bloco" : "Novo Bloco"}</DialogTitle>
-                          <DialogDescription>
-                            {editingBloco ? "Atualize as informações do bloco" : "Crie um novo bloco de competências"}
-
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="bloco-nome">Nome *</Label>
-                        <Input
-                          id="bloco-nome"
-                          value={blocoForm.nome}
-                          onChange={(e) => setBlocoForm({ ...blocoForm, nome: e.target.value })}
-                          placeholder="Ex: Competências Técnicas"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="bloco-descricao">Descrição</Label>
-                        <Input
-                          id="bloco-descricao"
-                          value={blocoForm.descricao}
-                          onChange={(e) => setBlocoForm({ ...blocoForm, descricao: e.target.value })}
-                          placeholder="Descrição opcional"
-                        />
-                      </div>
-                      <Button
-                        onClick={editingBloco ? handleUpdateBloco : handleCreateBloco}
-                        className="w-full bg-gradient-to-r from-blue-600 to-orange-600"
-                        disabled={createBlocoMutation.isPending || updateBlocoMutation.isPending}
-                      >
-                        {(createBlocoMutation.isPending || updateBlocoMutation.isPending) ? (
-                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</>
-                        ) : (
-                          editingBloco ? "Atualizar" : "Criar"
-                        )}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                        setBlocoDialogOpen(true);
+                      }}
+                      className="bg-gradient-to-r from-blue-600 to-orange-600"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Novo Bloco
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="overflow-x-auto">
-                {loadingMicros ? (
+              <CardContent>
+                {loadingBlocos ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                   </div>
@@ -480,100 +488,39 @@ export default function Competencias() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
           {/* TAB MACROS */}
-          <TabsContent value="macros" className="space-y-4">
+          {activeTab === "macros" && (
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Competências Macro</CardTitle>
-                  <CardDescription>Nível intermediário - vinculadas a blocos</CardDescription>
-                </div>
-                <Dialog open={macroDialogOpen} onOpenChange={(open) => {
-                  setMacroDialogOpen(open);
-                  if (!open) {
-                    setEditingMacro(null);
-                    setMacroForm({ nome: "", descricao: "", blocoId: "" });
-                  }
-                }}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-gradient-to-r from-blue-600 to-orange-600">
+              <CardHeader>
+                <div className="flex flex-row items-center justify-between mb-4">
+                  <div>
+                    <CardTitle>Competências Macro</CardTitle>
+                    <CardDescription>Nível intermediário - vinculadas a blocos ({filteredMacros.length} {searchMacro && 'filtrados'})</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Buscar macros..."
+                      value={searchMacro}
+                      onChange={(e) => setSearchMacro(e.target.value)}
+                      className="w-64"
+                    />
+                    <Button 
+                      onClick={() => {
+                        setEditingMacro(null);
+                        setMacroForm({ nome: "", descricao: "", blocoId: "" });
+                        setMacroDialogOpen(true);
+                      }}
+                      className="bg-gradient-to-r from-blue-600 to-orange-600"
+                    >
                       <Plus className="w-4 h-4 mr-2" />
                       Nova Macro
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent
-                    onOpenAutoFocus={(e) => e.preventDefault()}
-                    onCloseAutoFocus={(e) => e.preventDefault()}
-                  >
-                    <DialogHeader>
-                      <DialogTitle>{editingMacro ? "Editar Macro" : "Nova Macro"}</DialogTitle>
-                      <DialogDescription>
-                        {editingMacro ? "Atualize as informações da macro" : "Crie uma nova macro de competências"}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="macro-bloco">Bloco *</Label>
-                        <Select
-                          value={macroForm.blocoId}
-                          onValueChange={(value) => setMacroForm({ ...macroForm, blocoId: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um bloco" />
-                          </SelectTrigger>
-                          <SelectContent sideOffset={4}>
-                            {blocos?.map((bloco) => (
-                              <SelectItem key={bloco.id} value={bloco.id.toString()}>
-                                {bloco.nome}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="macro-nome">Nome *</Label>
-                        <Input
-                          id="macro-nome"
-                          value={macroForm.nome}
-                          onChange={(e) => setMacroForm({ ...macroForm, nome: e.target.value })}
-                          placeholder="Ex: Programação"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="macro-descricao">Descrição</Label>
-                        <Input
-                          id="macro-descricao"
-                          value={macroForm.descricao}
-                          onChange={(e) => setMacroForm({ ...macroForm, descricao: e.target.value })}
-                          placeholder="Descrição opcional"
-                        />
-                      </div>
-                      <Button
-                        onClick={editingMacro ? handleUpdateMacro : handleCreateMacro}
-                        className="w-full bg-gradient-to-r from-blue-600 to-orange-600"
-                        disabled={createMacroMutation.isPending || updateMacroMutation.isPending}
-                      >
-                        {(createMacroMutation.isPending || updateMacroMutation.isPending) ? (
-                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</>
-                        ) : (
-                          editingMacro ? "Atualizar" : "Criar"
-                        )}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="mb-4">
-                  <Input
-                    placeholder="Buscar por nome ou descrição..."
-                    value={searchMacro}
-                    onChange={(e) => setSearchMacro(e.target.value)}
-                    className="max-w-sm"
-                  />
-                </div>
                 {loadingMacros ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -641,100 +588,39 @@ export default function Competencias() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          )}
 
           {/* TAB MICROS */}
-          <TabsContent value="micros" className="space-y-4">
+          {activeTab === "micros" && (
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>Competências Micro</CardTitle>
-                  <CardDescription>Nível mais específico - vinculadas a macros</CardDescription>
-                </div>
-                <Dialog open={microDialogOpen} onOpenChange={(open) => {
-                  setMicroDialogOpen(open);
-                  if (!open) {
-                    setEditingMicro(null);
-                    setMicroForm({ nome: "", descricao: "", macroId: "" });
-                  }
-                }}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-gradient-to-r from-blue-600 to-orange-600">
+              <CardHeader>
+                <div className="flex flex-row items-center justify-between mb-4">
+                  <div>
+                    <CardTitle>Competências Micro</CardTitle>
+                    <CardDescription>Nível mais específico - vinculadas a macros ({filteredMicros.length} {searchMicro && 'filtrados'})</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Buscar micros..."
+                      value={searchMicro}
+                      onChange={(e) => setSearchMicro(e.target.value)}
+                      className="w-64"
+                    />
+                    <Button 
+                      onClick={() => {
+                        setEditingMicro(null);
+                        setMicroForm({ nome: "", descricao: "", macroId: "" });
+                        setMicroDialogOpen(true);
+                      }}
+                      className="bg-gradient-to-r from-blue-600 to-orange-600"
+                    >
                       <Plus className="w-4 h-4 mr-2" />
                       Nova Micro
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent
-                    onOpenAutoFocus={(e) => e.preventDefault()}
-                    onCloseAutoFocus={(e) => e.preventDefault()}
-                  >
-                    <DialogHeader>
-                      <DialogTitle>{editingMicro ? "Editar Micro" : "Nova Micro"}</DialogTitle>
-                      <DialogDescription>
-                        {editingMicro ? "Atualize as informações da micro" : "Crie uma nova micro de competências"}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="micro-macro">Macro *</Label>
-                        <Select
-                          value={microForm.macroId}
-                          onValueChange={(value) => setMicroForm({ ...microForm, macroId: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma macro" />
-                          </SelectTrigger>
-                          <SelectContent sideOffset={4}>
-                            {macros?.map((macro) => (
-                              <SelectItem key={macro.id} value={macro.id.toString()}>
-                                {macro.nome} ({getBlocoNome(macro.blocoId)})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="micro-nome">Nome *</Label>
-                        <Input
-                          id="micro-nome"
-                          value={microForm.nome}
-                          onChange={(e) => setMicroForm({ ...microForm, nome: e.target.value })}
-                          placeholder="Ex: JavaScript ES6+"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="micro-descricao">Descrição</Label>
-                        <Input
-                          id="micro-descricao"
-                          value={microForm.descricao}
-                          onChange={(e) => setMicroForm({ ...microForm, descricao: e.target.value })}
-                          placeholder="Descrição opcional"
-                        />
-                      </div>
-                      <Button
-                        onClick={editingMicro ? handleUpdateMicro : handleCreateMicro}
-                        className="w-full bg-gradient-to-r from-blue-600 to-orange-600"
-                        disabled={createMicroMutation.isPending || updateMicroMutation.isPending}
-                      >
-                        {(createMicroMutation.isPending || updateMicroMutation.isPending) ? (
-                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Salvando...</>
-                        ) : (
-                          editingMicro ? "Atualizar" : "Criar"
-                        )}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="mb-4">
-                  <Input
-                    placeholder="Buscar por nome ou descrição..."
-                    value={searchMicro}
-                    onChange={(e) => setSearchMicro(e.target.value)}
-                    className="max-w-sm"
-                  />
-                </div>
                 {loadingMicros ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -775,7 +661,7 @@ export default function Competencias() {
                         filteredMicros.map((micro) => (
                           <TableRow key={micro.id}>
                             <TableCell className="font-medium text-blue-600">{getBlocoNomeFromMacro(micro.macroId)}</TableCell>
-                            <TableCell className="font-medium text-orange-600">{getMacroNome(micro.macroId)}</TableCell>
+                            <TableCell className="font-medium text-purple-600">{getMacroNome(micro.macroId)}</TableCell>
                             <TableCell className="font-medium">{micro.nome}</TableCell>
                             <TableCell>{micro.descricao || "-"}</TableCell>
                             <TableCell className="text-right space-x-2">
@@ -809,9 +695,153 @@ export default function Competencias() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </div>
+
+      {/* Modal Bloco */}
+      <ModalCustomizado
+        isOpen={blocoDialogOpen}
+        onClose={() => {
+          setBlocoDialogOpen(false);
+          setEditingBloco(null);
+          setBlocoForm({ nome: "", descricao: "" });
+        }}
+        title={editingBloco ? "Editar Bloco" : "Novo Bloco"}
+        description={editingBloco ? "Atualize as informações do bloco" : "Crie um novo bloco de competências"}
+        onSubmit={editingBloco ? handleUpdateBloco : handleCreateBloco}
+        submitButtonText={editingBloco ? "Atualizar" : "Criar"}
+        isLoading={createBlocoMutation.isPending || updateBlocoMutation.isPending}
+      >
+        <form className="space-y-4">
+          <div>
+            <Label htmlFor="bloco-nome">Nome *</Label>
+            <Input
+              id="bloco-nome"
+              value={blocoForm.nome}
+              onChange={(e) => setBlocoForm({ ...blocoForm, nome: e.target.value })}
+              placeholder="Ex: Competências Técnicas"
+            />
+          </div>
+          <div>
+            <Label htmlFor="bloco-descricao">Descrição</Label>
+            <Input
+              id="bloco-descricao"
+              value={blocoForm.descricao}
+              onChange={(e) => setBlocoForm({ ...blocoForm, descricao: e.target.value })}
+              placeholder="Descrição opcional"
+            />
+          </div>
+        </form>
+      </ModalCustomizado>
+
+      {/* Modal Macro */}
+      <ModalCustomizado
+        isOpen={macroDialogOpen}
+        onClose={() => {
+          setMacroDialogOpen(false);
+          setEditingMacro(null);
+          setMacroForm({ nome: "", descricao: "", blocoId: "" });
+        }}
+        title={editingMacro ? "Editar Macro" : "Nova Macro"}
+        description={editingMacro ? "Atualize as informações da macro" : "Crie uma nova macro de competências"}
+        onSubmit={editingMacro ? handleUpdateMacro : handleCreateMacro}
+        submitButtonText={editingMacro ? "Atualizar" : "Criar"}
+        isLoading={createMacroMutation.isPending || updateMacroMutation.isPending}
+      >
+        <form className="space-y-4">
+          <div>
+            <Label htmlFor="macro-bloco">Bloco *</Label>
+            <Select
+              value={macroForm.blocoId || "UNDEFINED"}
+              onValueChange={(value) => setMacroForm({ ...macroForm, blocoId: value === "UNDEFINED" ? "" : value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um bloco" />
+              </SelectTrigger>
+              <SelectContent sideOffset={4}>
+                {blocos?.map((bloco) => (
+                  <SelectItem key={bloco.id} value={bloco.id.toString()}>
+                    {bloco.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="macro-nome">Nome *</Label>
+            <Input
+              id="macro-nome"
+              value={macroForm.nome}
+              onChange={(e) => setMacroForm({ ...macroForm, nome: e.target.value })}
+              placeholder="Ex: Programação"
+            />
+          </div>
+          <div>
+            <Label htmlFor="macro-descricao">Descrição</Label>
+            <Input
+              id="macro-descricao"
+              value={macroForm.descricao}
+              onChange={(e) => setMacroForm({ ...macroForm, descricao: e.target.value })}
+              placeholder="Descrição opcional"
+            />
+          </div>
+        </form>
+      </ModalCustomizado>
+
+      {/* Modal Micro */}
+      <ModalCustomizado
+        isOpen={microDialogOpen}
+        onClose={() => {
+          setMicroDialogOpen(false);
+          setEditingMicro(null);
+          setMicroForm({ nome: "", descricao: "", macroId: "" });
+        }}
+        title={editingMicro ? "Editar Micro" : "Nova Micro"}
+        description={editingMicro ? "Atualize as informações da micro" : "Crie uma nova micro de competências"}
+        onSubmit={editingMicro ? handleUpdateMicro : handleCreateMicro}
+        submitButtonText={editingMicro ? "Atualizar" : "Criar"}
+        isLoading={createMicroMutation.isPending || updateMicroMutation.isPending}
+      >
+        <form className="space-y-4">
+          <div>
+            <Label htmlFor="micro-macro">Macro *</Label>
+            <Select
+              value={microForm.macroId || "UNDEFINED"}
+              onValueChange={(value) => setMicroForm({ ...microForm, macroId: value === "UNDEFINED" ? "" : value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma macro" />
+              </SelectTrigger>
+              <SelectContent sideOffset={4}>
+                {macros?.map((macro) => (
+                  <SelectItem key={macro.id} value={macro.id.toString()}>
+                    {macro.nome} ({getBlocoNome(macro.blocoId)})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="micro-nome">Nome *</Label>
+            <Input
+              id="micro-nome"
+              value={microForm.nome}
+              onChange={(e) => setMicroForm({ ...microForm, nome: e.target.value })}
+              placeholder="Ex: JavaScript ES6+"
+            />
+          </div>
+          <div>
+            <Label htmlFor="micro-descricao">Descrição</Label>
+            <Input
+              id="micro-descricao"
+              value={microForm.descricao}
+              onChange={(e) => setMicroForm({ ...microForm, descricao: e.target.value })}
+              placeholder="Descrição opcional"
+            />
+          </div>
+        </form>
+      </ModalCustomizado>
     </DashboardLayout>
   );
 }
