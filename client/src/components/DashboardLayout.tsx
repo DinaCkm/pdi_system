@@ -155,6 +155,12 @@ function DashboardLayoutContent({
     { refetchInterval: 30000 } // Atualizar a cada 30 segundos
   );
 
+  // Carregar contadores nao lidos por role
+  const { data: unreadCounts } = trpc.notifications.getUnreadCounts.useQuery(
+    undefined,
+    { refetchInterval: 30000 } // Atualizar a cada 30 segundos
+  );
+
   useEffect(() => {
     if (isCollapsed) {
       setIsResizing(false);
@@ -223,12 +229,16 @@ function DashboardLayoutContent({
               {menuItems.map((item: any) => {
                 const isActive = location === item.path;
                 let badgeCount = 0;
-                if (item.path === "/solicitacoes" && user?.role === "lider") {
-                  badgeCount = pendenciesSummary?.pdisAwaitingApproval || 0;
-                } else if (item.path === "/solicitacoes" && user?.role === "admin") {
-                  badgeCount = (pendenciesSummary?.actionsWithPendingEvidence || 0) + (pendenciesSummary?.pendingAdjustmentRequests || 0);
+                
+                // Usar getUnreadCounts para badges específicos por role
+                if (item.path === "/solicitacoes" && user?.role === "admin") {
+                  badgeCount = unreadCounts?.evidenciasPendentes || 0;
+                } else if (item.path === "/solicitacoes" && user?.role === "lider") {
+                  badgeCount = unreadCounts?.ajustesPendentes || 0;
+                } else if (item.path === "/solicitacoes" && user?.role === "colaborador") {
+                  badgeCount = unreadCounts?.mensagensNaoLidas || 0;
                 } else if (item.path === "/evidencias-pendentes" && user?.role === "admin") {
-                  badgeCount = pendenciesSummary?.actionsWithPendingEvidence || 0;
+                  badgeCount = unreadCounts?.evidenciasPendentes || 0;
                 }
                 return (
                   <SidebarMenuItem key={item.path}>

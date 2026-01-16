@@ -181,4 +181,86 @@ export const notificationsRouter = router({
         return summary;
       }
     }),
+
+  /**
+   * Obter contadores de itens não lidos/pendentes específicos por role
+   * Usado para exibir badges no menu lateral
+   * 
+   * Admin (Dina): Evidências com status 'evidencia_enviada'
+   * Líder: Ajustes com status 'aguardando_autorizacao_lider_para_ajuste'
+   * Colaborador: Mensagens não lidas em notifications
+   */
+  getUnreadCounts: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const { user } = ctx;
+
+      const counts = {
+        evidenciasPendentes: 0,
+        ajustesPendentes: 0,
+        mensagensNaoLidas: 0,
+        total: 0,
+      };
+
+      try {
+        // Admin: Contar evidências com status 'evidencia_enviada'
+        if (user.role === "admin") {
+          const evidenciasResult = await db
+            .select({ count: db.fn.count() })
+            .from(actions)
+            .where(eq(actions.status, "evidencia_enviada"));
+
+          counts.evidenciasPendentes = evidenciasResult[0]?.count || 0;
+        }
+
+        // Líder: Contar ajustes com status 'aguardando_autorizacao_lider_para_ajuste'
+        if (user.role === "lider") {
+          const ajustesResult = await db
+            .select({ count: db.fn.count() })
+            .from(adjustmentRequests)
+            .where(
+              and(
+                eq(adjustmentRequests.status, "aguardando_autorizacao_lider_para_ajuste"),
+                eq(adjustmentRequests.solicitanteLiderId, user.id)
+              )
+            );
+
+          counts.ajustesPendentes = ajustesResult[0]?.count || 0;
+        }
+
+        // Colaborador: Contar mensagens não lidas
+        if (user.role === "colaborador") {
+          // Importar tabela notifications se existir
+          try {
+            const notificationsTable = require("../../drizzle/schema").notifications;
+            const notificationsResult = await db
+              .select({ count: db.fn.count() })
+              .from(notificationsTable)
+              .where(
+                and(
+                  eq(notificationsTable.userId, user.id),
+                  eq(notificationsTable.isRead, false)
+                )
+              );
+
+            counts.mensagensNaoLidas = notificationsResult[0]?.count || 0;
+          } catch (e) {
+            // Tabela notifications pode não existir, ignorar erro
+            counts.mensagensNaoLidas = 0;
+          }
+        }
+
+        counts.total = 
+          counts.evidenciasPendentes + 
+          counts.ajustesPendentes + 
+          counts.mensagensNaoLidas;
+
+        return counts;
+      } catch (error) {
+        console.error("Erro ao obter contadores não lidos:", error);
+        return counts;
+      }
+    }),
 });

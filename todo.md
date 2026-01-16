@@ -1044,3 +1044,15 @@
 - [x] Validar build e entregar
 
 **Resumo:** Implementadas procedures em notifications.ts para contar PDIs aguardando aprovação (Líder), ações com evidência pendente (Admin) e solicitações de ajuste pendentes (Admin). Criado componente PendencyBadge com animação piscante. Integrado no DashboardLayout com badges dinâmicos que atualizam a cada 30 segundos. Build passou com sucesso (158.3kb).
+
+
+## Fase 7: Badges Inteligentes por Role (CONCLUÍDA)
+
+- [x] Criar procedure getUnreadCounts com lógica diferenciada por role
+- [x] Admin: Contar evidências com status 'evidencia_enviada'
+- [x] Líder: Contar ajustes com status 'aguardando_autorizacao_lider_para_ajuste'
+- [x] Colaborador: Contar mensagens não lidas
+- [x] Integrar badges no DashboardLayout com visibilidade condicional
+- [x] Validar build e entregar
+
+**Resumo:** Implementada procedure `getUnreadCounts` em notifications.ts com lógica diferenciada por role. Admin (Dina) vê badge de evidências pendentes, Líder vê badge de ajustes pendentes, Colaborador vê badge de mensagens não lidas. Badges invisíveis quando contador = 0, vermelhos vibrantes com animate-pulse quando > 0. Build passou com sucesso (162.7kb).
