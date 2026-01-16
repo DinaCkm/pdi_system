@@ -1012,3 +1012,14 @@
 2. Validação do fluxo de aprovação de ações
 3. Testes de segurança (travas visuais)
 4. Refinamento de UX baseado em feedback
+
+
+## Fase 5: Página de Histórico de Mudanças para Dina
+
+- [x] Verificar procedure getHistoryByActionId em db.ts (já existe)
+- [x] Criar componente AcoesHistorico.tsx com tabela de histórico
+- [x] Adicionar botão "Ver Histórico" em cada linha de Acoes.tsx
+- [x] Implementar Modal de Histórico com denormalização completa
+- [x] Criar página "Auditoria" no menu lateral
+- [x] Integração com Regra #10 (solicitacaoAjusteId no histórico)
+- [x] Validar build e entregar para testes com Dina

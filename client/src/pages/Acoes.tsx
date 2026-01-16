@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Plus, Eye, Edit, Trash2, Target, Calendar, User, Lock } from "lucide-react";
+import { Loader2, Plus, Eye, Edit, Trash2, Target, Calendar, User, Lock, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Controller, useForm } from "react-hook-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { NovoFormularioAcao } from "./AcoesNovoFormulario";
+import { AcoesHistorico } from "@/components/AcoesHistorico";
 
 type AcaoFormData = {
   pdiId: number;
@@ -34,6 +35,7 @@ export default function Acoes() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showHistoricoDialog, setShowHistoricoDialog] = useState(false);
   const [selectedAcao, setSelectedAcao] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPDI, setFilterPDI] = useState<string>("all");
@@ -543,6 +545,9 @@ export default function Acoes() {
                     <Eye className="h-4 w-4 mr-1" />
                     Visualizar
                   </Button>
+                  <Button variant="outline" size="sm" onClick={() => { setSelectedAcao(acao); setShowHistoricoDialog(true); }} title="Ver histórico de mudanças">
+                    <Clock className="h-4 w-4" />
+                  </Button>
                   {acao.status === 'aguardando_autorizacao_lider_para_ajuste' ? (
                     <Button 
                       variant="outline" 
@@ -1042,6 +1047,26 @@ export default function Acoes() {
               <Edit className="h-4 w-4 mr-2" />
               Editar
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Histórico */}
+      <Dialog open={showHistoricoDialog} onOpenChange={setShowHistoricoDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Histórico de Mudanças</DialogTitle>
+            <DialogDescription>
+              Todas as alterações realizadas nesta ação
+            </DialogDescription>
+          </DialogHeader>
+          {selectedAcao && (
+            <div className="py-4">
+              <AcoesHistorico actionId={selectedAcao.id} actionName={selectedAcao.nome} />
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowHistoricoDialog(false)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

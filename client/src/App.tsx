@@ -27,6 +27,7 @@ import ImportarAcoes from "./pages/ImportarAcoes";
 import EvidenciasPendentes from "./pages/EvidenciasPendentes";
 import MinhasAcoes from "./pages/MinhasAcoes";
 import HistoricoAlteracoes from "./pages/HistoricoAlteracoes";
+import Auditoria from "./pages/Auditoria";
 
 function Router() {
   return (
@@ -150,6 +151,12 @@ function Router() {
       <Route path={"/historico-alteracoes"}>
         <DashboardLayout>
           <HistoricoAlteracoes />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/auditoria"}>
+        <DashboardLayout>
+          <Auditoria />
         </DashboardLayout>
       </Route>
       
