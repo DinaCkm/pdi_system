@@ -81,11 +81,12 @@ export const appRouter = router({
       .input(z.object({ cpf: z.string() }))
       .query(async ({ input }) => {
         // Limpar CPF removendo formatação (pontos, traços, espaços)
-        const cpfLimpo = input.cpf.replace(/[^\d]/g, "");
+        const cpfLimpoInput = input.cpf.replace(/\D/g, "");
         
-        // Retornar usuário se encontrado, null caso contrário
-        const user = await db.getUserByCpf(cpfLimpo);
-        return user || null;
+        // Busca insensível a caracteres especiais - compara ambos limpos
+        const usersList = await db.select().from(users).execute();
+        const userExistente = usersList.find(u => u.cpf.replace(/\D/g, "") === cpfLimpoInput);
+        return userExistente || null;
       }),
 
     create: adminProcedure
@@ -100,10 +101,10 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         // Limpar CPF removendo formatação (pontos e traços)
-        const cpfLimpo = input.cpf.replace(/[^\d]/g, "");
+        const cpfParaSalvar = input.cpf.replace(/\D/g, ""); // Normalizar antes de salvar
         
         // Verificar se CPF já existe
-        const existingUser = await db.getUserByCpf(cpfLimpo);
+        const existingUser = await db.getUserByCpf(cpfParaSalvar);
         if (existingUser) {
           throw new TRPCError({ 
             code: 'CONFLICT', 
