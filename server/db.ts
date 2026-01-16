@@ -2019,3 +2019,81 @@ export async function getNotificationsByUserId(userId: number) {
     .where(eq(notifications.destinatarioId, userId))
     .orderBy(desc(notifications.createdAt));
 }
+
+
+// ============= HELPER FUNCTIONS FOR PDI ROUTER =============
+
+/**
+ * Aprovar ação (muda status para "aprovada_lider")
+ */
+export async function approveAction(actionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(actions)
+    .set({ status: "aprovada_lider", updatedAt: new Date() })
+    .where(eq(actions.id, actionId));
+
+  return { id: actionId, status: "aprovada_lider" };
+}
+
+/**
+ * Rejeitar ação (muda status para "reprovada_lider")
+ */
+export async function rejectAction(actionId: number, motivo: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(actions)
+    .set({ status: "reprovada_lider", updatedAt: new Date() })
+    .where(eq(actions.id, actionId));
+
+  return { id: actionId, status: "reprovada_lider" };
+}
+
+/**
+ * Obter ação com dados do PDI e colaborador
+ */
+export async function getActionWithDetails(actionId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select({
+      id: actions.id,
+      pdiId: actions.pdiId,
+      nome: actions.nome,
+      status: actions.status,
+      colaboradorId: pdis.colaboradorId,
+      colaboradorNome: users.name,
+      leaderId: users.leaderId,
+    })
+    .from(actions)
+    .leftJoin(pdis, eq(actions.pdiId, pdis.id))
+    .leftJoin(users, eq(pdis.colaboradorId, users.id))
+    .where(eq(actions.id, actionId))
+    .limit(1);
+
+  return result[0] || null;
+}
+
+/**
+ * Verificar se usuário é líder do colaborador
+ */
+export async function isUserLeaderOfColaborador(userId: number, colaboradorId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  const result = await db
+    .select()
+    .from(users)
+    .where(and(
+      eq(users.id, colaboradorId),
+      eq(users.leaderId, userId)
+    ))
+    .limit(1);
+
+  return result.length > 0;
+}
