@@ -34,6 +34,7 @@ const getMenuItems = (userRole: string) => {
   
   if (userRole === "admin") {
     items.push(
+      { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
       { icon: Users, label: "Usuários", path: "/usuarios" },
       { icon: Building2, label: "Departamentos", path: "/departamentos" },
       { icon: Target, label: "Competências", path: "/competencias" },

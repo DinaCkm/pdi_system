@@ -1056,3 +1056,45 @@
 - [x] Validar build e entregar
 
 **Resumo:** Implementada procedure `getUnreadCounts` em notifications.ts com lógica diferenciada por role. Admin (Dina) vê badge de evidências pendentes, Líder vê badge de ajustes pendentes, Colaborador vê badge de mensagens não lidas. Badges invisíveis quando contador = 0, vermelhos vibrantes com animate-pulse quando > 0. Build passou com sucesso (162.7kb).
+
+
+## Fase 8: Dashboard Estratégico Final (EM PROGRESSO)
+
+- [ ] Criar procedure dashboard.getStats com 4 blocos de informação
+  - [ ] Bloco A: KPIs Gerais (total colaboradores, total líderes, taxa engajamento)
+  - [ ] Bloco B: Funil de Execução (% ações por status)
+  - [ ] Bloco C: Top 5 Departamentos (ranking por taxa conclusão)
+  - [ ] Bloco D: Top 10 Colaboradores (ranking por ações concluídas)
+- [ ] Implementar lógica de filtro mestre e hierarquia de acesso
+  - [ ] Admin: Vê tudo, pode filtrar por departamento
+  - [ ] Líder: Vê apenas sua equipe, compara com Top 5 global
+  - [ ] Colaborador: Vê seu progresso individual + Top 10 global
+- [ ] Criar componentes de visualização
+  - [ ] Gráfico de Rosca para Funil de Execução
+  - [ ] Gráfico de Barras Horizontais para Top 5 Departamentos
+  - [ ] Tabela de Medalhas para Top 10 Colaboradores
+- [ ] Integrar Dashboard na interface com filtros dinâmicos
+- [ ] Implementar exportação de relatório CSV
+- [ ] Validar segurança (sem acesso cruzado) e build final
+
+
+## Fase 8: Dashboard Estratégico Final (CONCLUÍDA)
+
+- [x] Criar procedure dashboard.getStats com 4 blocos de informação
+  - [x] Bloco A: KPIs Gerais (total colaboradores, total líderes, taxa engajamento)
+  - [x] Bloco B: Funil de Execução (% ações por status)
+  - [x] Bloco C: Top 5 Departamentos (ranking por taxa conclusão)
+  - [x] Bloco D: Top 10 Colaboradores (ranking por ações concluídas)
+- [x] Implementar lógica de filtro mestre e hierarquia de acesso
+  - [x] Admin: Vê tudo, pode filtrar por departamento
+  - [x] Líder: Vê apenas sua equipe, compara com Top 5 global
+  - [x] Colaborador: Vê seu progresso individual + Top 10 global
+- [x] Criar componentes de visualização
+  - [x] Gráfico de Rosca para Funil de Execução
+  - [x] Gráfico de Barras Horizontais para Top 5 Departamentos
+  - [x] Tabela de Medalhas para Top 10 Colaboradores
+- [x] Integrar Dashboard na interface com filtros dinâmicos
+- [x] Implementar exportação de relatório CSV
+- [x] Validar segurança e build final
+
+**Resumo:** Implementada procedure `dashboard.getStats` em server/routers/dashboard.ts com 4 blocos de informação e hierarquia de acesso. Criados componentes DashboardStats.tsx e página Dashboard.tsx com gráficos (Recharts), filtros dinâmicos e exportação CSV. Integrado ao menu lateral do DashboardLayout. Build passou com sucesso (169.6kb).

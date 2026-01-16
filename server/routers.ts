@@ -10,6 +10,7 @@ import { sendEmailSolicitacaoAjuste } from "./_core/email";
 import { pdiRouter } from "./routers/pdi.router";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { notificationsRouter } from "./routers/notifications";
+import { dashboardRouter } from "./routers/dashboard";
 
 export const appRouter = router({
   system: systemRouter,
@@ -17,6 +18,7 @@ export const appRouter = router({
   pdi: pdiRouter,
   pdiAjustes: pdiAjustesRouter,
   notifications: notificationsRouter,
+  dashboard: dashboardRouter,
 
   // ============= GESTÃO DE DEPARTAMENTOS =============
   departamentos: router({

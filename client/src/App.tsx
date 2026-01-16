@@ -28,13 +28,21 @@ import EvidenciasPendentes from "./pages/EvidenciasPendentes";
 import MinhasAcoes from "./pages/MinhasAcoes";
 import HistoricoAlteracoes from "./pages/HistoricoAlteracoes";
 import Auditoria from "./pages/Auditoria";
+import { Dashboard } from "./pages/Dashboard";
 
 function Router() {
   return (
     <Switch>
       <Route path={"/setup"} component={Setup} />
       <Route path={"/login"} component={Login} />
-      <Route path={"/"} component={Home} />
+      <Route path={"/?"} component={Home} />
+      
+      <Route path={"/dashboard"}>
+        <DashboardLayout>
+          <Dashboard />
+        </DashboardLayout>
+      </Route>
+      
       <Route path={"/404"} component={NotFound} />
       
       {/* Rotas protegidas com DashboardLayout */}
