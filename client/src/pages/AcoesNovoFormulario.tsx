@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { trpc } from "@/lib/trpc";
+import { formatDateForMySQL, formatDateBR, isDateWithinRange } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -91,6 +92,12 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
       toast.error("Microcompetência não encontrada");
       return;
     }
+
+    const pdiSelected = pdis?.find((p) => p.id === data.pdiId);
+    if (pdiSelected && !isDateWithinRange(data.prazo, pdiSelected.dataInicio || '', pdiSelected.dataFim || '')) {
+      toast.error(`Prazo deve estar entre ${formatDateBR(pdiSelected.dataInicio)} e ${formatDateBR(pdiSelected.dataFim)}`);
+      return;
+    }
     
     createMutation.mutate({
       pdiId: data.pdiId,
@@ -99,7 +106,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
       microId: micro.id,
       nome: data.nome,
       descricao: data.descricao,
-      prazo: data.prazo,
+      prazo: formatDateForMySQL(data.prazo),
     });
   };
 
@@ -159,16 +166,16 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
             </div>
             {selectedPDI && (
               <div className="space-y-2">
-                {selectedPDI.colaborador && (
+                {selectedPDI.colaboradorNome && (
                   <p className="text-sm font-medium flex items-center gap-2">
                     <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
-                    Colaborador: {selectedPDI.colaborador.nome}
+                    Colaborador: {selectedPDI.colaboradorNome}
                   </p>
                 )}
-                {selectedPDI.ciclo && (
+                {selectedPDI.cicloNome && (
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Info className="h-4 w-4" />
-                    Ciclo: {selectedPDI.ciclo.nome} ({new Date(selectedPDI.ciclo.dataInicio).toLocaleDateString()} - {new Date(selectedPDI.ciclo.dataFim).toLocaleDateString()})
+                    Ciclo: {selectedPDI.cicloNome} ({formatDateBR(selectedPDI.dataInicio)} - {formatDateBR(selectedPDI.dataFim)})
                   </p>
                 )}
               </div>
@@ -287,16 +294,23 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
               name="prazo"
               control={control}
               rules={{ required: true }}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  type="date"
-                />
-              )}
+              render={({ field }) => {
+                const minDate = selectedPDI?.dataInicio ? new Date(selectedPDI.dataInicio).toISOString().split('T')[0] : '';
+                const maxDate = selectedPDI?.dataFim ? new Date(selectedPDI.dataFim).toISOString().split('T')[0] : '';
+                
+                return (
+                  <Input
+                    {...field}
+                    type="date"
+                    min={minDate}
+                    max={maxDate}
+                  />
+                );
+              }}
             />
-            {selectedPDI && selectedPDI.ciclo && (
+            {selectedPDI && selectedPDI.cicloNome && (
               <p className="text-sm text-muted-foreground">
-                O prazo deve estar entre {new Date(selectedPDI.ciclo.dataInicio).toLocaleDateString()} e {new Date(selectedPDI.ciclo.dataFim).toLocaleDateString()}
+                O prazo deve estar entre {formatDateBR(selectedPDI.dataInicio)} e {formatDateBR(selectedPDI.dataFim)}
               </p>
             )}
           </div>

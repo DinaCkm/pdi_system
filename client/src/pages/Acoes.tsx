@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Plus, Eye, Edit, Trash2, Target, Calendar, User } from "lucide-react";
+import { Loader2, Plus, Eye, Edit, Trash2, Target, Calendar, User, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Controller, useForm } from "react-hook-form";
@@ -543,9 +543,21 @@ export default function Acoes() {
                     <Eye className="h-4 w-4 mr-1" />
                     Visualizar
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleEdit(acao)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  {acao.status === 'aguardando_autorizacao_lider_para_ajuste' ? (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      disabled 
+                      title="Edição bloqueada: Aguardando 'De Acordo' do Líder"
+                      className="cursor-not-allowed opacity-50"
+                    >
+                      <Lock className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(acao)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" onClick={() => handleDelete(acao)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>

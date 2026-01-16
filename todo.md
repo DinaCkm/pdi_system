@@ -967,3 +967,14 @@
 - [ ] Revisar relacionamentos em schema (ciclo, colaborador, pdi)
 - [ ] Implementar testes vitest para procedures
 - [ ] Validar integridade de dados após sincronização
+
+
+## Fase 4: Refatoração de Frontend (Eliminação de 159 Erros TypeScript)
+
+- [x] Refatorar procedures para retornar propriedades denormalizadas (colaboradorNome, cicloNome, dataInicio, dataFim)
+- [x] Criar utilitário date-utils.ts com função formatDateForMySQL()
+- [x] Corrigir AcoesNovoFormulario.tsx (linhas 162-172) para usar propriedades denormalizadas
+- [x] Corrigir Acoes.tsx para eliminar acessos a .ciclo, .colaborador, .adjustmentCount
+- [x] Implementar trava visual da Regra #10 (cadeado 🔒 quando status = aguardando_autorizacao_lider_para_ajuste)
+- [x] Validar build sem erros TypeScript
+- [x] Criar checkpoint final da Fase 4

@@ -453,7 +453,11 @@ export async function getPDIById(id: number) {
     .select({
       id: pdis.id,
       colaboradorId: pdis.colaboradorId,
+      colaboradorNome: users.name,
       cicloId: pdis.cicloId,
+      cicloNome: ciclos.nome,
+      dataInicio: ciclos.dataInicio,
+      dataFim: ciclos.dataFim,
       titulo: pdis.titulo,
       objetivoGeral: pdis.objetivoGeral,
       status: pdis.status,
@@ -461,6 +465,8 @@ export async function getPDIById(id: number) {
       updatedAt: pdis.updatedAt,
     })
     .from(pdis)
+    .leftJoin(users, eq(pdis.colaboradorId, users.id))
+    .leftJoin(ciclos, eq(pdis.cicloId, ciclos.id))
     .where(eq(pdis.id, id))
     .limit(1);
 
@@ -521,6 +527,9 @@ export async function getAllActions() {
   if (!db) return [];
 
   const pdiAlias = alias(pdis, 'pdi');
+  const userAlias = alias(users, 'user');
+  const cicloAlias = alias(ciclos, 'ciclo');
+  
   return await db
     .select({
       id: actions.id,
@@ -528,11 +537,18 @@ export async function getAllActions() {
       nome: actions.nome,
       descricao: actions.descricao,
       status: actions.status,
+      prazo: actions.prazo,
       createdAt: actions.createdAt,
       pdiColaboradorId: pdiAlias.colaboradorId,
+      colaboradorNome: userAlias.name,
+      cicloNome: cicloAlias.nome,
+      cicloDataInicio: cicloAlias.dataInicio,
+      cicloDataFim: cicloAlias.dataFim,
     })
     .from(actions)
     .leftJoin(pdiAlias, eq(actions.pdiId, pdiAlias.id))
+    .leftJoin(userAlias, eq(pdiAlias.colaboradorId, userAlias.id))
+    .leftJoin(cicloAlias, eq(pdiAlias.cicloId, cicloAlias.id))
     .orderBy(desc(actions.createdAt));
 }
 
@@ -540,9 +556,29 @@ export async function getActionById(id: number) {
   const db = await getDb();
   if (!db) return null;
 
+  const pdiAlias = alias(pdis, 'pdi');
+  const userAlias = alias(users, 'user');
+  const cicloAlias = alias(ciclos, 'ciclo');
+
   const result = await db
-    .select()
+    .select({
+      id: actions.id,
+      pdiId: actions.pdiId,
+      nome: actions.nome,
+      descricao: actions.descricao,
+      status: actions.status,
+      prazo: actions.prazo,
+      createdAt: actions.createdAt,
+      updatedAt: actions.updatedAt,
+      colaboradorNome: userAlias.name,
+      cicloNome: cicloAlias.nome,
+      cicloDataInicio: cicloAlias.dataInicio,
+      cicloDataFim: cicloAlias.dataFim,
+    })
     .from(actions)
+    .leftJoin(pdiAlias, eq(actions.pdiId, pdiAlias.id))
+    .leftJoin(userAlias, eq(pdiAlias.colaboradorId, userAlias.id))
+    .leftJoin(cicloAlias, eq(pdiAlias.cicloId, cicloAlias.id))
     .where(eq(actions.id, id))
     .limit(1);
 
