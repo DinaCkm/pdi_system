@@ -92,9 +92,13 @@ export const authRouter = router({
     .mutation(async ({ input, ctx }) => {
       // Remover formatação do CPF (pontos e traços)
       const cpfLimpo = input.cpf.replace(/[^\d]/g, "");
+      
+      // DEBUG: Log de tentativa de login
+      console.log("[LOGIN DEBUG] Email:", input.email, "| CPF Original:", input.cpf, "| CPF Limpo:", cpfLimpo);
 
       // Autenticar usuário
       const user = await authenticateUser(input.email, cpfLimpo);
+      console.log("[LOGIN DEBUG] Resultado da autenticação:", user ? "Usuário encontrado" : "Usuário não encontrado");
 
       if (!user) {
         throw new TRPCError({

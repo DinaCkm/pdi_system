@@ -136,6 +136,13 @@
 - [ ] Confirmar que /setup fica bloqueado após primeiro admin
 - [ ] Testar fluxo completo: setup → login → dashboard
 
+## Correção de Menu Duplicado (CONCLUÍDO)
+- [x] Remover duplicação de /solicitacoes no menu Admin
+- [x] Remover duplicação de /solicitacoes-equipe no menu Líder
+- [x] Verificar dados do usuário Admin (Dina) no banco
+- [x] Confirmar que Admin tem role='admin', departamentoId=NULL, leaderId=NULL
+- [x] Build passou com sucesso (170.1kb, 3267 módulos)
+
 ## Próximas Implementações (Ordem da Arquitetura)
 - [ ] Criar página de gestão de Departamentos (CRUD completo)
 - [ ] Atualizar página de usuários para incluir seleção de departamento

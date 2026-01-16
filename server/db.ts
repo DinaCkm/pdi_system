@@ -1616,12 +1616,15 @@ export async function getUserByEmailAndCpf(email: string, cpf: string) {
   const db = await getDb();
   if (!db) return null;
 
+  console.log("[DB DEBUG] Buscando usuário - Email:", email, "| CPF:", cpf, "| CPF Length:", cpf.length);
+  
   const result = await db
     .select()
     .from(users)
     .where(and(eq(users.email, email), eq(users.cpf, cpf)))
     .limit(1);
 
+  console.log("[DB DEBUG] Resultado da busca:", result.length > 0 ? "Encontrado" : "Não encontrado");
   return result[0] || null;
 }
 

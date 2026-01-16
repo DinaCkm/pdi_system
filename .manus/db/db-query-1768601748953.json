@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, email, cpf, name, role FROM users WHERE role = 'admin' LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, email, cpf, name, role FROM users WHERE role = 'admin' LIMIT 5;",
+  "rows": [
+    {
+      "id": "360001",
+      "email": "admin.pdi1768410953084@test.com",
+      "cpf": "11110953084",
+      "name": "Admin Teste PDI",
+      "role": "admin"
+    },
+    {
+      "id": "360011",
+      "email": "admin.pdi1768411124395@test.com",
+      "cpf": "11111124395",
+      "name": "Admin Teste PDI",
+      "role": "admin"
+    },
+    {
+      "id": "360021",
+      "email": "admin.pdi1768411133605@test.com",
+      "cpf": "11111133605",
+      "name": "Admin Teste PDI",
+      "role": "admin"
+    },
+    {
+      "id": "360031",
+      "email": "admin.pdi1768414127213@test.com",
+      "cpf": "11114127213",
+      "name": "Admin Teste PDI",
+      "role": "admin"
+    },
+    {
+      "id": "360041",
+      "email": "admin.pdi1768414134892@test.com",
+      "cpf": "11114134892",
+      "name": "Admin Teste PDI",
+      "role": "admin"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tcpf\tname\trole\n360001\tadmin.pdi1768410953084@test.com\t11110953084\tAdmin Teste PDI\tadmin\n360011\tadmin.pdi1768411124395@test.com\t11111124395\tAdmin Teste PDI\tadmin\n360021\tadmin.pdi1768411133605@test.com\t11111133605\tAdmin Teste PDI\tadmin\n360031\tadmin.pdi1768414127213@test.com\t11114127213\tAdmin Teste PDI\tadmin\n360041\tadmin.pdi1768414134892@test.com\t11114134892\tAdmin Teste PDI\tadmin\n",
+  "stderr": "",
+  "execution_time_ms": 109
+}

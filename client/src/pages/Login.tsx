@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 export default function Login() {
+  const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
@@ -17,8 +19,8 @@ export default function Login() {
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => {
       toast.success("Login realizado com sucesso!");
-      // Recarregar a página para atualizar o contexto de autenticação
-      window.location.href = "/";
+      // Redirecionar para home sem recarregar a página
+      setLocation("/");
     },
     onError: (error) => {
       toast.error(error.message || "Erro ao fazer login");
