@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "ff71688f-ef1f-47bb-9cc6-12872f6418a0",
-  "prevId": "dd9db22d-40a7-4175-8b30-d3cbf26cde7d",
+  "id": "2e1f8066-08a1-45d5-9617-314226b0bc0a",
+  "prevId": "d83d279a-5e8c-4ace-a7b2-f71f74a883bf",
   "tables": {
     "acoes_historico": {
       "name": "acoes_historico",
@@ -69,19 +69,12 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "acoes_historico_id": {
-          "name": "acoes_historico_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -165,7 +158,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         },
         "updatedAt": {
           "name": "updatedAt",
@@ -186,14 +179,7 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "actions_id": {
-          "name": "actions_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -234,19 +220,12 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "adjustment_comments_id": {
-          "name": "adjustment_comments_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -297,7 +276,7 @@
         },
         "status": {
           "name": "status",
-          "type": "enum('pendente','aprovada','reprovada')",
+          "type": "enum('pendente','mais_informacoes','aprovada','reprovada','aguardando_lider')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -316,7 +295,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         },
         "evaluatedAt": {
           "name": "evaluatedAt",
@@ -331,18 +310,99 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "dadosAntesAjuste": {
+          "name": "dadosAntesAjuste",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dadosAposAjuste": {
+          "name": "dadosAposAjuste",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "approvedByLeaderAt": {
+          "name": "approvedByLeaderAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "approvedByLeaderId": {
+          "name": "approvedByLeaderId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "adjustment_requests_id": {
-          "name": "adjustment_requests_id",
-          "columns": [
-            "id"
-          ]
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "audit_log": {
+      "name": "audit_log",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "adjustmentRequestId": {
+          "name": "adjustmentRequestId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "adminId": {
+          "name": "adminId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campo": {
+          "name": "campo",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "valorAnterior": {
+          "name": "valorAnterior",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "valorNovo": {
+          "name": "valorNovo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'CURRENT_TIMESTAMP'"
         }
       },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -391,7 +451,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         },
         "createdBy": {
           "name": "createdBy",
@@ -403,14 +463,7 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "ciclos_id": {
-          "name": "ciclos_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -442,7 +495,7 @@
           "name": "status",
           "type": "enum('ativo','inativo')",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false,
           "default": "'ativo'"
         },
@@ -450,29 +503,15 @@
           "name": "createdAt",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "competencias_blocos_id": {
-          "name": "competencias_blocos_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {
-        "competencias_blocos_nome_unique": {
-          "name": "competencias_blocos_nome_unique",
-          "columns": [
-            "nome"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "checkConstraint": {}
     },
     "competencias_macros": {
@@ -510,7 +549,7 @@
           "name": "status",
           "type": "enum('ativo','inativo')",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false,
           "default": "'ativo'"
         },
@@ -518,21 +557,14 @@
           "name": "createdAt",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "competencias_macros_id": {
-          "name": "competencias_macros_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -571,7 +603,7 @@
           "name": "status",
           "type": "enum('ativo','inativo')",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false,
           "default": "'ativo'"
         },
@@ -579,21 +611,14 @@
           "name": "createdAt",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "competencias_micros_id": {
-          "name": "competencias_micros_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -642,27 +667,21 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "departamentos_id": {
-          "name": "departamentos_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {
-        "departamentos_nome_unique": {
-          "name": "departamentos_nome_unique",
+      "indexes": {
+        "nome": {
+          "name": "nome",
           "columns": [
             "nome"
-          ]
+          ],
+          "isUnique": false
         }
       },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "checkConstraint": {}
     },
     "evidence_files": {
@@ -723,19 +742,12 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "evidence_files_id": {
-          "name": "evidence_files_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -776,19 +788,12 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "evidence_texts_id": {
-          "name": "evidence_texts_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -837,7 +842,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         },
         "evaluatedAt": {
           "name": "evaluatedAt",
@@ -852,18 +857,18 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "satisfactionScore": {
+          "name": "satisfactionScore",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "evidences_id": {
-          "name": "evidences_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -926,7 +931,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         },
         "readAt": {
           "name": "readAt",
@@ -938,14 +943,7 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "notifications_id": {
-          "name": "notifications_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -1001,7 +999,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         },
         "updatedAt": {
           "name": "updatedAt",
@@ -1022,14 +1020,7 @@
       },
       "indexes": {},
       "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "pdis_id": {
-          "name": "pdis_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -1085,7 +1076,7 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(now())"
+          "default": "'CURRENT_TIMESTAMP'"
         },
         "updatedAt": {
           "name": "updatedAt",
@@ -1097,16 +1088,87 @@
           "default": "(now())"
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "user_department_roles_id": {
-          "name": "user_department_roles_id",
+      "indexes": {
+        "uq_user_dept_type": {
+          "name": "uq_user_dept_type",
           "columns": [
-            "id"
-          ]
+            "userId",
+            "departmentId",
+            "assignmentType"
+          ],
+          "isUnique": false
+        },
+        "user_department_roles_userId_idx": {
+          "name": "user_department_roles_userId_idx",
+          "columns": [
+            "userId"
+          ],
+          "isUnique": false
+        },
+        "user_department_roles_departmentId_idx": {
+          "name": "user_department_roles_departmentId_idx",
+          "columns": [
+            "departmentId"
+          ],
+          "isUnique": false
+        },
+        "user_department_roles_leaderUserId_idx": {
+          "name": "user_department_roles_leaderUserId_idx",
+          "columns": [
+            "leaderUserId"
+          ],
+          "isUnique": false
+        },
+        "user_department_roles_assignmentType_idx": {
+          "name": "user_department_roles_assignmentType_idx",
+          "columns": [
+            "assignmentType"
+          ],
+          "isUnique": false
         }
       },
+      "foreignKeys": {
+        "user_department_roles_userId_users_id_fk": {
+          "name": "user_department_roles_userId_users_id_fk",
+          "tableFrom": "user_department_roles",
+          "tableTo": "users",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_department_roles_departmentId_departamentos_id_fk": {
+          "name": "user_department_roles_departmentId_departamentos_id_fk",
+          "tableFrom": "user_department_roles",
+          "tableTo": "departamentos",
+          "columnsFrom": [
+            "departmentId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_department_roles_leaderUserId_users_id_fk": {
+          "name": "user_department_roles_leaderUserId_users_id_fk",
+          "tableFrom": "user_department_roles",
+          "tableTo": "users",
+          "columnsFrom": [
+            "leaderUserId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -1131,21 +1193,14 @@
           "name": "name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "email": {
           "name": "email",
           "type": "varchar(320)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "cpf": {
-          "name": "cpf",
-          "type": "varchar(14)",
-          "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "loginMethod": {
@@ -1158,6 +1213,38 @@
         "role": {
           "name": "role",
           "type": "enum('admin','lider','colaborador')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'CURRENT_TIMESTAMP'"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
+        },
+        "lastSignedIn": {
+          "name": "lastSignedIn",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'CURRENT_TIMESTAMP'"
+        },
+        "cpf": {
+          "name": "cpf",
+          "type": "varchar(14)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -1176,13 +1263,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "departamentoId": {
-          "name": "departamentoId",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "status": {
           "name": "status",
           "type": "enum('ativo','inativo')",
@@ -1191,56 +1271,26 @@
           "autoincrement": false,
           "default": "'ativo'"
         },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp",
+        "departamentoId": {
+          "name": "departamentoId",
+          "type": "int",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
-        },
-        "lastSignedIn": {
-          "name": "lastSignedIn",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
+          "notNull": false,
+          "autoincrement": false
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "users_id": {
-          "name": "users_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {
+      "indexes": {
         "users_openId_unique": {
           "name": "users_openId_unique",
           "columns": [
             "openId"
-          ]
-        },
-        "users_cpf_unique": {
-          "name": "users_cpf_unique",
-          "columns": [
-            "cpf"
-          ]
+          ],
+          "isUnique": false
         }
       },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "checkConstraint": {}
     }
   },

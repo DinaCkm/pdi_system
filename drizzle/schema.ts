@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, varchar, text, timestamp, mysqlEnum, index, foreignKey, bigint, tinyint } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, varchar, text, timestamp, mysqlEnum, index, foreignKey, bigint, boolean } from "drizzle-orm/mysql-core"
 import { sql } from "drizzle-orm"
 
 export const acoesHistorico = mysqlTable("acoes_historico", {
@@ -151,7 +151,7 @@ export const notifications = mysqlTable("notifications", {
 	titulo: varchar({ length: 255 }).notNull(),
 	mensagem: text().notNull(),
 	referenciaId: int(),
-	lida: tinyint().default(0).notNull(),
+	lida: boolean("lida").default(false).notNull(),
 	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 	readAt: timestamp({ mode: 'string' }),
 });
