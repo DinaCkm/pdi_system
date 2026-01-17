@@ -33,18 +33,28 @@ export function DataTablePDIs() {
   const { data: departamentos = [] } = trpc.departamentos.list.useQuery();
 
   // Buscar PDIs com filtros
-  const { data: pdis = [], isLoading, refetch } = trpc.pdi.getPDIsComProgresso.useQuery({
-    departamentoId: departamentoFilter ? parseInt(departamentoFilter) : undefined,
-    colaboradorNome: pessoaFilter || undefined,
-    progressoMin: realizacaoFilter === "0" ? 0 : realizacaoFilter === "1-50" ? 1 : realizacaoFilter === "51-99" ? 51 : realizacaoFilter === "100" ? 100 : undefined,
-    progressoMax: realizacaoFilter === "0" ? 0 : realizacaoFilter === "1-50" ? 50 : realizacaoFilter === "51-99" ? 99 : realizacaoFilter === "100" ? 100 : undefined,
+  const { data: pdisList = [], isLoading, refetch } = trpc.pdis.list.useQuery();
+  
+  // Filtrar PDIs localmente
+  const pdis = pdisList.filter((pdi) => {
+    // Filtro por departamento
+    if (departamentoFilter && pdi.departamentoId !== parseInt(departamentoFilter)) {
+      return false;
+    }
+    // Filtro por pessoa
+    if (pessoaFilter && !pdi.colaboradorNome?.toLowerCase().includes(pessoaFilter.toLowerCase())) {
+      return false;
+    }
+    return true;
   });
 
   // Mutation para deletar PDI
-  const deletePDIMutation = trpc.pdi.deletarPDI.useMutation({
+  const utils = trpc.useUtils();
+
+  const deletePDIMutation = trpc.pdis.delete.useMutation({
     onSuccess: () => {
       toast.success("PDI deletado com sucesso!");
-      refetch();
+      utils.pdis.list.invalidate();
       setPdiToDelete(null);
     },
     onError: (error) => {
@@ -136,7 +146,7 @@ export function DataTablePDIs() {
       </div>
 
       {/* Tabela */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border rounded-lg overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50">

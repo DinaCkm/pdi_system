@@ -91,6 +91,7 @@ function SelectContentNoPortal({
   children,
   position = "popper",
   align = "center",
+  sideOffset = 4,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
   return (
@@ -104,6 +105,7 @@ function SelectContentNoPortal({
       )}
       position={position}
       align={align}
+      sideOffset={sideOffset}
       onCloseAutoFocus={(e) => e.preventDefault()}
       onPointerDownOutside={(e) => e.preventDefault()}
       {...props}
