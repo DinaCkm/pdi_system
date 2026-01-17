@@ -1334,3 +1334,19 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Corrigir modal de Micro
 - [x] Realizar limpeza geral de todos os modais
 - [x] Testar todos os modais - VALIDADO COM SUCESSO
+
+
+## Dropdown Menu para Criar Competências (EMERGÊNCIA - NOVA FUNCIONALIDADE)
+- [ ] Transformar botão "Novo Bloco" em Dropdown Menu
+- [ ] Adicionar opções: Nova Macro, Nova Micro
+- [ ] Criar formulário de Nova Macro com seleção de Bloco pai
+- [ ] Criar formulário de Nova Micro com seleção de Macro pai
+- [ ] Integrar modais na página de Competências
+- [ ] Testar fluxo completo: Bloco → Macro → Micro
+
+
+## Dropdown Menu para Criar Bloco, Macro e Micro (CONCLUÍDO)
+- [x] Transformar botão "Novo Bloco" em Dropdown Menu
+- [x] Criar modal de Nova Macro com seleção de Bloco pai
+- [x] Criar modal de Nova Micro com seleção de Macro pai
+- [x] Testar fluxo completo: Bloco → Macro → Micro
