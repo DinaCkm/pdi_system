@@ -2280,3 +2280,80 @@ export async function getTop3CompetenciasComGaps() {
     return [];
   }
 }
+
+
+// ============= PDI COM PROGRESSO (DATATABLE) =============
+/**
+ * Busca PDIs com cálculo de progresso e dados relacionados
+ * Retorna: { pdiId, colaboradorNome, departamentoNome, liderNome, cicloNome, status, totalAcoes, acoesConcluidasTotal, progresso }
+ */
+export async function getPDIsComProgresso(filters?: {
+  departamentoId?: number;
+  colaboradorNome?: string;
+  progressoMin?: number;
+  progressoMax?: number;
+}) {
+  try {
+    const db = await getDb();
+    if (!db) {
+      console.warn("[Database] Cannot fetch PDIs: database not available");
+      return [];
+    }
+
+    // Alias para joins múltiplos de users
+    const colaboradorAlias = alias(users, "colaborador");
+    const liderAlias = alias(users, "lider");
+
+    let query = db
+      .select({
+        pdiId: pdis.id,
+        colaboradorNome: colaboradorAlias.nome,
+        departamentoNome: departamentos.nome,
+        liderNome: liderAlias.nome,
+        cicloNome: ciclos.nome,
+        status: pdis.status,
+        totalAcoes: sql<number>`COUNT(DISTINCT ${actions.id})`,
+        acoesConcluidasTotal: sql<number>`COUNT(DISTINCT CASE WHEN ${actions.status} = 'concluido' THEN ${actions.id} END)`,
+        progresso: sql<number>`ROUND(COUNT(DISTINCT CASE WHEN ${actions.status} = 'concluido' THEN ${actions.id} END) * 100.0 / NULLIF(COUNT(DISTINCT ${actions.id}), 0), 1)`,
+      })
+      .from(pdis)
+      .leftJoin(colaboradorAlias, eq(pdis.colaboradorId, colaboradorAlias.id))
+      .leftJoin(departamentos, eq(colaboradorAlias.departamentoId, departamentos.id))
+      .leftJoin(liderAlias, eq(colaboradorAlias.leaderId, liderAlias.id))
+      .leftJoin(ciclos, eq(pdis.cicloId, ciclos.id))
+      .leftJoin(actions, eq(pdis.id, actions.pdiId))
+      .groupBy(pdis.id, colaboradorAlias.id, departamentos.id, liderAlias.id, ciclos.id);
+
+    // Aplicar filtros
+    const conditions = [];
+    
+    if (filters?.departamentoId) {
+      conditions.push(eq(departamentos.id, filters.departamentoId));
+    }
+    
+    if (filters?.colaboradorNome) {
+      conditions.push(sql`${colaboradorAlias.nome} LIKE ${`%${filters.colaboradorNome}%`}`);
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const result = await query;
+
+    // Filtrar por progresso no JavaScript (após cálculo)
+    if (filters?.progressoMin !== undefined || filters?.progressoMax !== undefined) {
+      return result.filter((item: any) => {
+        const progresso = item.progresso || 0;
+        const minOk = filters.progressoMin === undefined || progresso >= filters.progressoMin;
+        const maxOk = filters.progressoMax === undefined || progresso <= filters.progressoMax;
+        return minOk && maxOk;
+      });
+    }
+
+    return result || [];
+  } catch (error: any) {
+    console.error("Erro ao buscar PDIs com progresso:", error);
+    return [];
+  }
+}

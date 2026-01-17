@@ -3,6 +3,7 @@ import { z } from "zod";
 import { eq, and, or } from "drizzle-orm";
 import { pdis, actions, users, departamentos, ciclos, evidences, adjustmentRequests } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
+import * as db from "../db";
 
 /**
  * PDI Router - Plano de Desenvolvimento Individual
@@ -584,6 +585,17 @@ export const pdiRouter = router({
         acaoId: input.acaoId,
         status: "pendente",
       };
+    }),
+
+  getPDIsComProgresso: protectedProcedure
+    .input(z.object({
+      departamentoId: z.number().optional(),
+      colaboradorNome: z.string().optional(),
+      progressoMin: z.number().optional(),
+      progressoMax: z.number().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      return await db.getPDIsComProgresso(input);
     }),
 });
 

@@ -1226,3 +1226,25 @@
 - [x] Dados globais (sem filtro de departamento)
 - [x] Percentual com 1 casa decimal (ex: 42.5%)
 - [x] Widget testado e validado no Dashboard
+
+
+## Reestruturacao da Pagina de PDI - DataTable de Alta Performance (NOVA)
+- [ ] Criar procedure tRPC para buscar PDIs com calculo de progresso
+- [ ] Implementar componente DataTable com 8 colunas (Colaborador, Departamento, Lider, Ciclo, Status, Progresso, Acoes)
+- [ ] Implementar filtros combinados (Departamento, Pessoa, Realizacao)
+- [ ] Integrar widget Direcionamento Estrategico no topo
+- [ ] Testar fluxo completo com dados reais
+- [ ] Validar que filtros funcionam em conjunto
+- [ ] Validar que barra de progresso exibe percentual correto
+
+
+## CONCLUSÃO - Reestruturação da Página de PDI (CONCLUÍDO)
+- [x] Criar tabela consolidada (Colaborador | Departamento | Líder | Ciclo | Status | Progresso | Ações)
+- [x] Implementar filtros combinados (Departamento, Pessoa, Realização)
+- [x] Implementar cálculo de progresso (ações concluídas / total * 100)
+- [x] Implementar barra de progresso visual
+- [x] Integrar widget Direcionamento Estratégico no topo
+- [x] Testar fluxo completo
+- [x] Criar procedure tRPC getPDIsComProgresso
+- [x] Criar componente DataTablePDIs
+- [x] Reescrever página PDIs.tsx com novo layout
