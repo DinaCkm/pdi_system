@@ -1285,3 +1285,12 @@
 - [ ] Integrar createAcaoHistorico com motivo automático "Edição direta realizada pelo Administrador"
 - [ ] Adicionar seção "Histórico da Ação" no modal (ordem decrescente)
 - [ ] Testar fluxo completo de edição e auditoria
+
+
+## Importação de Ações em Lote (NOVA FUNCIONALIDADE)
+- [x] Implementar procedure tRPC `actions.importarEmLote` no backend
+- [x] Criar componente `ImportarAcoes.tsx` com upload de arquivo
+- [x] Implementar parser CSV e validação de dados
+- [x] Criar modal de preview antes de importar
+- [x] Integrar componente na página de Ações
+- [x] Testes E2E do fluxo completo

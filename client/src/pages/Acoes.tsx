@@ -14,6 +14,7 @@ import { Controller, useForm } from "react-hook-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { NovoFormularioAcao } from "./AcoesNovoFormulario";
 import { AcoesHistorico } from "@/components/AcoesHistorico";
+import { ImportarAcoes } from "@/components/ImportarAcoes";
 
 type AcaoFormData = {
   pdiId: number;
@@ -332,10 +333,13 @@ export default function Acoes() {
             Ações de desenvolvimento vinculadas aos PDIs
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nova Ação
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Ação
+          </Button>
+          <ImportarAcoes />
+        </div>
       </div>
 
       {/* Filtros */}

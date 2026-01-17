@@ -1968,7 +1968,147 @@ Gere um resumo conciso e profissional dessas mudanças em português, destacando
       .input(z.object({ adjustmentRequestId: z.number() }))
       .query(async ({ input }) => {
         return await db.getAuditLogByAdjustmentRequest(input.adjustmentRequestId);
-      })
+      }),
+
+    // ============= IMPORTAÇÃO EM LOTE =============
+    importarEmLote: adminProcedure
+      .input(z.object({
+        acoes: z.array(z.object({
+          pdiId: z.number(),
+          blocoId: z.number(),
+          macroId: z.number(),
+          microId: z.number(),
+          nome: z.string().min(1, "Nome é obrigatório"),
+          descricao: z.string().min(1, "Descrição é obrigatória"),
+          prazo: z.string(),
+        })),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const erros: Array<{ linha: number; erro: string }> = [];
+        const acoesImportadas: number[] = [];
+
+        for (let i = 0; i < input.acoes.length; i++) {
+          const acao = input.acoes[i];
+          const linhaNumero = i + 2; // +2 porque começa em linha 2 (header em 1)
+
+          try {
+            // Validar PDI
+            const pdi = await db.getPDIById(acao.pdiId);
+            if (!pdi) {
+              erros.push({ linha: linhaNumero, erro: `PDI ID ${acao.pdiId} não encontrado` });
+              continue;
+            }
+
+            // Validar Bloco
+            const bloco = await db.getBlocoById(acao.blocoId);
+            if (!bloco) {
+              erros.push({ linha: linhaNumero, erro: `Bloco ID ${acao.blocoId} não encontrado` });
+              continue;
+            }
+            if (bloco.status === 'inativo') {
+              erros.push({ linha: linhaNumero, erro: `Bloco "${bloco.nome}" está inativo` });
+              continue;
+            }
+
+            // Validar Macro
+            const macro = await db.getMacroById(acao.macroId);
+            if (!macro) {
+              erros.push({ linha: linhaNumero, erro: `Macro ID ${acao.macroId} não encontrado` });
+              continue;
+            }
+            if (macro.status === 'inativo') {
+              erros.push({ linha: linhaNumero, erro: `Macro "${macro.nome}" está inativa` });
+              continue;
+            }
+            if (macro.blocoId !== acao.blocoId) {
+              erros.push({ linha: linhaNumero, erro: `Macro não pertence ao Bloco selecionado` });
+              continue;
+            }
+
+            // Validar Micro
+            const micro = await db.getMicroById(acao.microId);
+            if (!micro) {
+              erros.push({ linha: linhaNumero, erro: `Micro ID ${acao.microId} não encontrado` });
+              continue;
+            }
+            if (micro.status === 'inativo') {
+              erros.push({ linha: linhaNumero, erro: `Micro "${micro.nome}" está inativa` });
+              continue;
+            }
+            if (micro.macroId !== acao.macroId) {
+              erros.push({ linha: linhaNumero, erro: `Micro não pertence à Macro selecionada` });
+              continue;
+            }
+
+            // Validar Prazo
+            const prazoDate = new Date(acao.prazo);
+            if (isNaN(prazoDate.getTime())) {
+              erros.push({ linha: linhaNumero, erro: `Prazo inválido: "${acao.prazo}"` });
+              continue;
+            }
+
+            // Validar se prazo está dentro do ciclo
+            const ciclo = await db.getCicloById(pdi.cicloId);
+            if (!ciclo) {
+              erros.push({ linha: linhaNumero, erro: `Ciclo não encontrado para o PDI` });
+              continue;
+            }
+
+            const cicloDataInicio = new Date(ciclo.dataInicio);
+            const cicloDataFim = new Date(ciclo.dataFim);
+            if (prazoDate < cicloDataInicio || prazoDate > cicloDataFim) {
+              erros.push({ 
+                linha: linhaNumero, 
+                erro: `Prazo deve estar entre ${cicloDataInicio.toLocaleDateString('pt-BR')} e ${cicloDataFim.toLocaleDateString('pt-BR')}` 
+              });
+              continue;
+            }
+
+            // Criar ação
+            const actionResult = await db.createAction({
+              pdiId: acao.pdiId,
+              blocoId: acao.blocoId,
+              macroId: acao.macroId,
+              microId: acao.microId,
+              nome: acao.nome,
+              descricao: acao.descricao,
+              prazo: prazoDate,
+              status: 'pendente_aprovacao_lider',
+              createdBy: ctx.user!.id,
+            });
+
+            if (!actionResult) {
+              erros.push({ linha: linhaNumero, erro: `Erro ao criar ação no banco de dados` });
+              continue;
+            }
+
+            // Registrar em histórico como importação em lote
+            await db.createAcaoHistorico({
+              actionId: actionResult,
+              campo: 'criacao',
+              valorAnterior: '',
+              valorNovo: 'Ação criada via importação em lote',
+              motivoAlteracao: 'Importação em lote de ações',
+              alteradoPor: ctx.user!.id,
+            });
+
+            acoesImportadas.push(actionResult);
+          } catch (error: any) {
+            erros.push({ 
+              linha: linhaNumero, 
+              erro: error?.message || 'Erro desconhecido ao processar linha' 
+            });
+          }
+        }
+
+        return {
+          sucesso: acoesImportadas.length > 0,
+          acoesImportadas: acoesImportadas.length,
+          totalLinhas: input.acoes.length,
+          erros,
+          temErros: erros.length > 0,
+        };
+      }),
   }),
 
   // ============= EVIDÊNcias =============
