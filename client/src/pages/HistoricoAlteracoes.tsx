@@ -10,6 +10,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectContentNoPortal,
 } from "@/components/ui/select";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
