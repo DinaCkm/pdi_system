@@ -19,7 +19,7 @@ interface AcoesHistoricoProps {
 }
 
 export function AcoesHistorico({ actionId, actionName }: AcoesHistoricoProps) {
-  const { data: historico, isLoading, isError } = trpc.pdi.getActionHistory.useQuery({
+  const { data: historico, isLoading, isError } = trpc.actions.getHistorico.useQuery({
     actionId,
   });
 

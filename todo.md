@@ -1246,12 +1246,13 @@
 - [x] Adicionar secao "Historico de Mudancas" no modal
 - [x] Testar fluxo completo
 
-**Observacao Importante:** Componente AcoesHistorico exibe erro "Erro ao carregar historico de mudancas". Necessario verificar se:
-1. Funcao getAcaoHistorico esta retornando dados corretamente
-2. Tabela acoesHistorico tem dados para exibir
-3. Componente AcoesHistorico esta tratando erros adequadamente
+**Correção Aplicada:** Componente AcoesHistorico estava chamando `trpc.pdi.getActionHistory` mas a procedure correta é `trpc.actions.getHistorico`. Após correção, histórico carrega perfeitamente com tabela mostrando:
+- Data/Hora da mudança
+- Campo alterado
+- Valor anterior e novo
+- Total de mudanças registradas
 
-**Proxima Acao:** Debugar componente AcoesHistorico e validar se dados estao sendo salvos em acoesHistorico quando Admin edita acoes.
+**Status:** ✅ FUNCIONANDO PERFEITAMENTE
 
 ## CONCLUSÃO - Reestruturação da Página de PDI (CONCLUÍDO)
 - [x] Criar tabela consolidada (Colaborador | Departamento | Líder | Ciclo | Status | Progresso | Ações)
