@@ -1143,3 +1143,12 @@
 - [x] Validar segurança e build final
 
 **Resumo:** Implementada procedure `dashboard.getStats` em server/routers/dashboard.ts com 4 blocos de informação e hierarquia de acesso. Criados componentes DashboardStats.tsx e página Dashboard.tsx com gráficos (Recharts), filtros dinâmicos e exportação CSV. Integrado ao menu lateral do DashboardLayout. Build passou com sucesso (169.6kb).
+
+
+## Importação em Massa de Competências (CONCLUÍDO)
+- [x] Criar componente de upload de arquivo (Excel/CSV)
+- [x] Implementar parser para ler Excel/CSV
+- [x] Criar procedure tRPC para importar em lote
+- [x] Validar dados antes de importar
+- [x] Integrar componente na página de Competências
+- [x] Servidor rodando com importação em lote

@@ -552,7 +552,71 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // IMPORTAÇÃO EM MASSA
+    // IMPORTAÇÃO EM MASSA (NOVO - COM NOMES CORRETOS)
+    importarEmLote: adminProcedure
+      .input(z.object({
+        competencias: z.array(z.object({
+          blocoNome: z.string().min(1),
+          blocoDescricao: z.string().optional(),
+          macroNome: z.string().min(1),
+          macroDescricao: z.string().optional(),
+          microNome: z.string().min(1),
+          microDescricao: z.string().optional(),
+        }))
+      }))
+      .mutation(async ({ input }) => {
+        const { competencias } = input;
+        const erros: { linha: number; erro: string }[] = [];
+        let sucesso = 0;
+        const blocoMap = new Map<string, number>();
+        const macroMap = new Map<string, number>();
+        
+        for (let idx = 0; idx < competencias.length; idx++) {
+          const comp = competencias[idx];
+          const linha = idx + 2;
+          try {
+            let blocoId: number;
+            if (blocoMap.has(comp.blocoNome)) {
+              blocoId = blocoMap.get(comp.blocoNome)!;
+            } else {
+              const existingBloco = await db.getBlocoByNome(comp.blocoNome);
+              if (existingBloco) {
+                blocoId = existingBloco.id;
+              } else {
+                const newBloco = await db.createBloco({ nome: comp.blocoNome, descricao: comp.blocoDescricao });
+                blocoId = newBloco.id;
+              }
+              blocoMap.set(comp.blocoNome, blocoId);
+            }
+            
+            const macroKey = `${blocoId}-${comp.macroNome}`;
+            let macroId: number;
+            if (macroMap.has(macroKey)) {
+              macroId = macroMap.get(macroKey)!;
+            } else {
+              const existingMacro = await db.getMacroByNomeAndBlocoId(comp.macroNome, blocoId);
+              if (existingMacro) {
+                macroId = existingMacro.id;
+              } else {
+                const newMacro = await db.createMacro({ blocoId, nome: comp.macroNome, descricao: comp.macroDescricao });
+                macroId = newMacro.id;
+              }
+              macroMap.set(macroKey, macroId);
+            }
+            
+            const existingMicro = await db.getMicroByNomeAndMacroId(comp.microNome, macroId);
+            if (!existingMicro) {
+              await db.createMicro({ macroId, nome: comp.microNome, descricao: comp.microDescricao });
+            }
+            sucesso++;
+          } catch (erro: any) {
+            erros.push({ linha, erro: erro.message || "Erro desconhecido" });
+          }
+        }
+        return { sucesso, erros };
+      }),
+
+    // IMPORTAÇÃO EM MASSA (ANTIGO)
     importBulk: adminProcedure
       .input(z.object({
         competencias: z.array(z.object({

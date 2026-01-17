@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Plus, Edit2, Trash2, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { ModalCustomizado } from "@/components/ModalCustomizado";
+import { ImportarCompetencias } from "@/components/ImportarCompetencias";
 
 export default function Competencias() {
   const utils = trpc.useUtils();
@@ -197,6 +198,9 @@ export default function Competencias() {
           </div>
         )}
       </div>
+
+      {/* Componente de Importação */}
+      {isAdmin && <ImportarCompetencias />}
 
       {/* Filtro de Busca e Status */}
       <div className="space-y-4">
