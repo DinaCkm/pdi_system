@@ -19,6 +19,8 @@ export default function Users() {
   const [currentPage, setCurrentPage] = useState(1);
   const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; userId?: number }>({ open: false });
   const [editingUser, setEditingUser] = useState<number | null>(null);
+  const [filterDepartamento, setFilterDepartamento] = useState<number | undefined>(undefined);
+  const [filterStatus, setFilterStatus] = useState<"" | "ativo" | "inativo">("");
   const ITEMS_PER_PAGE = 10;
   const [, navigate] = useLocation();
 
@@ -134,11 +136,21 @@ export default function Users() {
 
   // Filtrar e paginar
   const filteredUsers = users?.filter(
-    (user) =>
-      user.status === "ativo" &&
-      (user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+    (user) => {
+      const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesDepartamento = !filterDepartamento || user.departamentoId === filterDepartamento;
+      const matchesStatus = !filterStatus || user.status === filterStatus;
+      return matchesSearch && matchesDepartamento && matchesStatus;
+    }
   ) || [];
+
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setFilterDepartamento(undefined);
+    setFilterStatus("");
+    setCurrentPage(1);
+  };
 
   const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
   const paginatedUsers = filteredUsers.slice(
@@ -164,23 +176,55 @@ export default function Users() {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Buscar por nome ou e-mail..."
-                value={searchTerm}
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Buscar por nome ou e-mail..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="pl-10"
+                />
+              </div>
+              <select
+                value={filterDepartamento || ""}
                 onChange={(e) => {
-                  setSearchTerm(e.target.value);
+                  setFilterDepartamento(e.target.value ? Number(e.target.value) : undefined);
                   setCurrentPage(1);
                 }}
-                className="pl-10"
-              />
+                className="px-3 py-2 border border-input rounded-md bg-background text-sm"
+              >
+                <option value="">Todos os Departamentos</option>
+                {departamentos?.map((dept) => (
+                  <option key={dept.id} value={dept.id}>
+                    {dept.nome}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={filterStatus}
+                onChange={(e) => {
+                  setFilterStatus(e.target.value as "" | "ativo" | "inativo");
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 border border-input rounded-md bg-background text-sm"
+              >
+                <option value="">Todos os Status</option>
+                <option value="ativo">Ativo</option>
+                <option value="inativo">Inativo</option>
+              </select>
+              <Button onClick={handleResetFilters} variant="outline" className="whitespace-nowrap">
+                Limpar Filtros
+              </Button>
+              <Button onClick={() => setIsCreateOpen(true)} className="bg-gradient-to-r from-blue-600 to-orange-500 whitespace-nowrap">
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Usuário
+              </Button>
             </div>
-            <Button onClick={() => setIsCreateOpen(true)} className="bg-gradient-to-r from-blue-600 to-orange-500">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Usuário
-            </Button>
           </div>
 
           <div className="rounded-md border">
@@ -189,7 +233,8 @@ export default function Users() {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Departamento</TableHead>
+                  <TableHead>Depto. Pertence</TableHead>
+                  <TableHead>Depto. Lidera</TableHead>
                   <TableHead>Perfil</TableHead>
                   <TableHead>Líder</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -198,12 +243,16 @@ export default function Users() {
               <TableBody>
                 {paginatedUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">
                       Nenhum usuário encontrado
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedUsers.map((user) => (
+                  paginatedUsers.map((user) => {
+                    // Buscar departamento que o usuário lidera (se for líder)
+                    const departamentoLiderado = departamentos?.find(d => d.leaderId === user.id);
+                    
+                    return (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
@@ -211,6 +260,15 @@ export default function Users() {
                         <span className="max-w-[200px] truncate block" title={getDepartamentoNome(user.departamentoId)}>
                           {getDepartamentoNome(user.departamentoId)}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        {user.role === "lider" && departamentoLiderado ? (
+                          <span className="font-semibold text-blue-600 flex items-center gap-1">
+                            👑 {departamentoLiderado.nome}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell>{getRoleBadge(user.role)}</TableCell>
                       <TableCell>
@@ -247,7 +305,8 @@ export default function Users() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                  );
+                  })
                 )}
               </TableBody>
             </Table>

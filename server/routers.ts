@@ -421,7 +421,7 @@ export const appRouter = router({
         return await db.getBlocoById(input.id);
       }),
 
-    createBloco: adminProcedure
+    criarBloco: adminProcedure
       .input(z.object({
         nome: z.string().min(1, "Nome é obrigatório"),
         descricao: z.string().optional(),
@@ -431,7 +431,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    updateBloco: adminProcedure
+    atualizarBloco: adminProcedure
       .input(z.object({
         id: z.number(),
         nome: z.string().min(1).optional(),
@@ -444,7 +444,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    deleteBloco: adminProcedure
+    deletarBloco: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deleteBloco(input.id);
@@ -468,7 +468,7 @@ export const appRouter = router({
         return await db.getMacroById(input.id);
       }),
 
-    createMacro: adminProcedure
+    criarMacro: adminProcedure
       .input(z.object({
         blocoId: z.number(),
         nome: z.string().min(1, "Nome é obrigatório"),
@@ -479,7 +479,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    updateMacro: adminProcedure
+    atualizarMacro: adminProcedure
       .input(z.object({
         id: z.number(),
         nome: z.string().min(1).optional(),
@@ -493,7 +493,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    deleteMacro: adminProcedure
+    deletarMacro: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deleteMacro(input.id);
@@ -521,7 +521,7 @@ export const appRouter = router({
         return await db.getMicroById(input.id);
       }),
 
-    createMicro: adminProcedure
+    criarMicro: adminProcedure
       .input(z.object({
         macroId: z.number(),
         nome: z.string().min(1, "Nome é obrigatório"),
@@ -532,7 +532,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    updateMicro: adminProcedure
+    atualizarMicro: adminProcedure
       .input(z.object({
         id: z.number(),
         nome: z.string().min(1).optional(),
@@ -545,7 +545,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    deleteMicro: adminProcedure
+    deletarMicro: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deleteMicro(input.id);

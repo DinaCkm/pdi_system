@@ -1,35 +1,46 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Target, Boxes, Loader2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { ModalCustomizado } from "@/components/ModalCustomizado";
 
 export default function Competencias() {
-
   const utils = trpc.useUtils();
-  const [activeTab, setActiveTab] = useState("macros");
-
+  
   // Estados dos Formulários
   const [nome, setNome] = useState("");
   const [descricao, setDescricao] = useState("");
   const [blocoId, setBlocoId] = useState<string>("");
   const [macroId, setMacroId] = useState<string>("");
-
+  const [searchTerm, setSearchTerm] = useState("");
+  
   // Estados dos Modais
   const [showNovoBloco, setShowNovoBloco] = useState(false);
   const [showNovaMacro, setShowNovaMacro] = useState(false);
   const [showNovaMicro, setShowNovaMicro] = useState(false);
+  
+  // Estados de Expansão (Accordion)
+  const [expandedBlocos, setExpandedBlocos] = useState<Set<number>>(new Set());
+  const [expandedMacros, setExpandedMacros] = useState<Set<number>>(new Set());
+  
+  // Estados de Confirmação de Exclusão
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    type: "bloco" | "macro" | "micro";
+    id: number;
+    nome: string;
+  } | null>(null);
 
   // Queries e Segurança
   const { data: user } = trpc.auth.me.useQuery();
   const isAdmin = user?.role === "admin";
   const { data: blocos } = trpc.competencias.listBlocos.useQuery();
-  const { data: macros } = trpc.competencias.listMacros.useQuery();
+  const { data: macros } = trpc.competencias.listAllMacros.useQuery();
   const { data: micros } = trpc.competencias.listMicros.useQuery();
 
   // Função de Limpeza de Form
@@ -40,7 +51,7 @@ export default function Competencias() {
     setMacroId("");
   };
 
-  // Mutações (Fluxo de Estabilidade)
+  // Mutações
   const mutationOptions = (msg: string, closeFn: () => void) => ({
     onSuccess: () => {
       toast.success(msg);
@@ -54,11 +65,106 @@ export default function Competencias() {
   const criarBloco = trpc.competencias.criarBloco.useMutation(mutationOptions("Bloco criado.", () => setShowNovoBloco(false)));
   const criarMacro = trpc.competencias.criarMacro.useMutation(mutationOptions("Macrocompetência criada.", () => setShowNovaMacro(false)));
   const criarMicro = trpc.competencias.criarMicro.useMutation(mutationOptions("Microcompetência criada.", () => setShowNovaMicro(false)));
+  
+  const deletarBloco = trpc.competencias.deletarBloco.useMutation({
+    onSuccess: () => {
+      toast.success("Bloco marcado como inativo.");
+      setDeleteConfirm(null);
+      utils.competencias.invalidate();
+    },
+    onError: (e: any) => toast.error(e.message)
+  });
+  
+  const deletarMacro = trpc.competencias.deletarMacro.useMutation({
+    onSuccess: () => {
+      toast.success("Macrocompetência marcada como inativa.");
+      setDeleteConfirm(null);
+      utils.competencias.invalidate();
+    },
+    onError: (e: any) => toast.error(e.message)
+  });
+  
+  const deletarMicro = trpc.competencias.deletarMicro.useMutation({
+    onSuccess: () => {
+      toast.success("Microcompetência marcada como inativa.");
+      setDeleteConfirm(null);
+      utils.competencias.invalidate();
+    },
+    onError: (e: any) => toast.error(e.message)
+  });
+
+  // Filtrar competências por termo de busca
+  const filteredBlocos = blocos?.filter(b => 
+    b.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    b.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
+  const filteredMacros = (blocoId: number) => 
+    macros?.filter(m => 
+      m.blocoId === blocoId &&
+      (m.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       m.descricao?.toLowerCase().includes(searchTerm.toLowerCase()))
+    ) || [];
+
+  const filteredMicros = (macroId: number) =>
+    micros?.filter(mi =>
+      mi.macroId === macroId &&
+      (mi.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       mi.descricao?.toLowerCase().includes(searchTerm.toLowerCase()))
+    ) || [];
+
+  const toggleBlocoExpanded = (blocoId: number) => {
+    const newSet = new Set(expandedBlocos);
+    if (newSet.has(blocoId)) {
+      newSet.delete(blocoId);
+    } else {
+      newSet.add(blocoId);
+    }
+    setExpandedBlocos(newSet);
+  };
+
+  const toggleMacroExpanded = (macroId: number) => {
+    const newSet = new Set(expandedMacros);
+    if (newSet.has(macroId)) {
+      newSet.delete(macroId);
+    } else {
+      newSet.add(macroId);
+    }
+    setExpandedMacros(newSet);
+  };
+
+  const handleDeleteClick = (type: "bloco" | "macro" | "micro", id: number, nome: string) => {
+    setDeleteConfirm({ type, id, nome });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteConfirm) return;
+
+    if (deleteConfirm.type === "bloco") {
+      deletarBloco.mutate({ id: deleteConfirm.id });
+    } else if (deleteConfirm.type === "macro") {
+      deletarMacro.mutate({ id: deleteConfirm.id });
+    } else if (deleteConfirm.type === "micro") {
+      deletarMicro.mutate({ id: deleteConfirm.id });
+    }
+  };
+
+  const getDeleteMessage = () => {
+    if (!deleteConfirm) return "";
+    
+    if (deleteConfirm.type === "bloco") {
+      return `ATENÇÃO: Este bloco possui Macros e Micros vinculadas. Ao confirmar, TODA a árvore será marcada como inativa. Esta ação é irreversível. Confirma?`;
+    } else if (deleteConfirm.type === "macro") {
+      return `ATENÇÃO: Todas as Microcompetências desta Macro serão marcadas como inativas. PDIs ativos que utilizam esta competência manterão o registro histórico, mas a competência sairá da matriz. Confirma?`;
+    } else {
+      return `Tem certeza que deseja marcar esta Microcompetência como inativa? PDIs que a utilizam manterão o registro histórico.`;
+    }
+  };
 
   return (
-    <div className="container mx-auto py-8 px-4 min-h-screen">
+    <div className="w-full min-h-full space-y-6 p-4 md:p-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Matriz de Competências</h1>
           <p className="text-gray-500">Defina os critérios de avaliação de talentos.</p>
@@ -73,52 +179,142 @@ export default function Competencias() {
         )}
       </div>
 
-      {/* Abas Nativa (Garante que o clique funcione 100%) */}
-      <div className="flex gap-4 border-b mb-8">
-        <button 
-          onClick={() => {
-            console.log('[DEBUG] Mudando para Macrocompetências');
-            setActiveTab("macros");
-          }}
-          className={`pb-3 px-6 text-sm font-semibold transition-all ${activeTab === "macros" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
-        >
-          Macrocompetências
-        </button>
-        <button 
-          onClick={() => {
-            console.log('[DEBUG] Mudando para Microcompetências');
-            setActiveTab("micros");
-          }}
-          className={`pb-3 px-6 text-sm font-semibold transition-all ${activeTab === "micros" ? "border-b-2 border-blue-600 text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
-        >
-          Microcompetências
-        </button>
+      {/* Filtro de Busca */}
+      <div className="relative">
+        <Input
+          placeholder="Buscar por termo em Blocos, Macros ou Micros..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-4"
+        />
       </div>
 
-      {/* Grid de Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {activeTab === "macros" ? (
-          macros?.map((m) => (
-            <Card key={m.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2 text-blue-700"><Target className="w-5 h-5" /> {m.nome}</CardTitle>
-              </CardHeader>
-              <CardContent><p className="text-sm text-gray-600 leading-relaxed">{m.descricao || "Sem descrição disponível."}</p></CardContent>
-            </Card>
-          ))
-        ) : (
-          micros?.map((mi) => (
-            <Card key={mi.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2 text-emerald-700"><Boxes className="w-5 h-5" /> {mi.nome}</CardTitle>
-              </CardHeader>
-              <CardContent><p className="text-sm text-gray-600 leading-relaxed">{mi.descricao || "Sem descrição disponível."}</p></CardContent>
-            </Card>
-          ))
-        )}
+      {/* Listagem Hierárquica (Accordion) */}
+      <div className="space-y-3">
+        {filteredBlocos.map((bloco) => {
+          const macrosDoBloco = filteredMacros(bloco.id);
+          const isExpanded = expandedBlocos.has(bloco.id);
+          
+          return (
+            <div key={bloco.id} className="border rounded-lg overflow-hidden bg-white">
+              {/* Bloco Header */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <button
+                    onClick={() => toggleBlocoExpanded(bloco.id)}
+                    className="flex-shrink-0 p-1 hover:bg-gray-200 rounded"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="w-5 h-5 text-gray-600" />
+                    ) : (
+                      <ChevronRight className="w-5 h-5 text-gray-600" />
+                    )}
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 truncate">📦 {bloco.nome}</h3>
+                    {bloco.descricao && (
+                      <p className="text-sm text-gray-600 truncate">{bloco.descricao}</p>
+                    )}
+                  </div>
+                </div>
+                
+                {isAdmin && (
+                  <div className="flex gap-2 flex-shrink-0 ml-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDeleteClick("bloco", bloco.id, bloco.nome)}
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Macros (Expandível) */}
+              {isExpanded && macrosDoBloco.length > 0 && (
+                <div className="bg-white border-t">
+                  {macrosDoBloco.map((macro) => {
+                    const microsDaMacro = filteredMicros(macro.id);
+                    const isMacroExpanded = expandedMacros.has(macro.id);
+                    
+                    return (
+                      <div key={macro.id} className="border-b last:border-b-0">
+                        {/* Macro Header */}
+                        <div className="flex items-center justify-between p-4 pl-12 bg-gray-50 hover:bg-gray-100 transition-colors">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <button
+                              onClick={() => toggleMacroExpanded(macro.id)}
+                              className="flex-shrink-0 p-1 hover:bg-gray-200 rounded"
+                            >
+                              {isMacroExpanded ? (
+                                <ChevronDown className="w-5 h-5 text-blue-600" />
+                              ) : (
+                                <ChevronRight className="w-5 h-5 text-blue-600" />
+                              )}
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-gray-800 truncate">📂 {macro.nome}</h4>
+                              {macro.descricao && (
+                                <p className="text-sm text-gray-600 truncate">{macro.descricao}</p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {isAdmin && (
+                            <div className="flex gap-2 flex-shrink-0 ml-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDeleteClick("macro", macro.id, macro.nome)}
+                                className="text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Micros (Expandível) */}
+                        {isMacroExpanded && microsDaMacro.length > 0 && (
+                          <div className="bg-white">
+                            {microsDaMacro.map((micro) => (
+                              <div key={micro.id} className="flex items-center justify-between p-4 pl-20 border-b last:border-b-0 hover:bg-blue-50 transition-colors">
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="font-medium text-gray-700 truncate">📄 {micro.nome}</h5>
+                                  {micro.descricao && (
+                                    <p className="text-sm text-gray-600 truncate">{micro.descricao}</p>
+                                  )}
+                                </div>
+                                
+                                {isAdmin && (
+                                  <div className="flex gap-2 flex-shrink-0 ml-2">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleDeleteClick("micro", micro.id, micro.nome)}
+                                      className="text-red-600 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* MODAIS CUSTOMIZADOS (Implementação de Segurança) */}
+      {/* MODAIS */}
       
       {/* Modal Bloco */}
       <ModalCustomizado isOpen={showNovoBloco} onClose={() => setShowNovoBloco(false)} title="Novo Bloco de Competências">
@@ -188,6 +384,31 @@ export default function Competencias() {
           </Button>
         </div>
       </ModalCustomizado>
+
+      {/* AlertDialog de Confirmação de Exclusão */}
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              {getDeleteMessage()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-4">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={deletarBloco.isPending || deletarMacro.isPending || deletarMicro.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deletarBloco.isPending || deletarMacro.isPending || deletarMicro.isPending ? (
+                <Loader2 className="animate-spin mr-2 h-4 w-4" />
+              ) : null}
+              Confirmar Exclusão
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

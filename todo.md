@@ -160,6 +160,21 @@
 - [ ] TESTE 3: Verificar se Departamento foi atualizado com o Líder automaticamente
 - [ ] TESTE 4: Verificar se coluna "Líder" mostra o nome correto na tabela de Departamentos
 
+## Reestruturação da Matriz de Competências (CONCLUÍDO)
+- [x] Implementar AlertDialog com mensagens de confirmação para deletar
+- [x] Criar listagem hierárquica com Accordion (Blocos → Macros → Micros)
+- [x] Adicionar filtro de busca por termo em todas as esferas
+- [x] Adicionar ações de deletar (Lixeira) em cada nível
+- [x] Implementar soft delete (marcar como inativo em vez de apagar)
+- [x] Adicionar filtros de status em todas as queries
+- [x] Renomear procedures para português (criarBloco, criarMacro, criarMicro, etc)
+- [x] Servidor rodando com todas as mudanças
+- [ ] TESTE: Criar Bloco, Macro e Micro
+- [ ] TESTE: Deletar Micro com confirmação
+- [ ] TESTE: Deletar Macro e verificar cascata
+- [ ] TESTE: Deletar Bloco e verificar cascata completa
+- [ ] TESTE: Verificar que competências inativas não aparecem nas listas
+
 ## Próximas Implementações (Ordem da Arquitetura)
 - [ ] Criar página de gestão de Departamentos (CRUD completo)
 - [ ] Atualizar página de usuários para incluir seleção de departamento

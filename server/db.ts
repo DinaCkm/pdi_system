@@ -287,7 +287,7 @@ export async function getAllBlocos() {
   const db = await getDb();
   if (!db) return [];
 
-  return await db.select().from(competenciasBlocos).orderBy(competenciasBlocos.nome);
+  return await db.select().from(competenciasBlocos).where(eq(competenciasBlocos.status, 'ativo')).orderBy(competenciasBlocos.nome);
 }
 
 export async function getBlocoById(id: number) {
@@ -322,7 +322,18 @@ export async function deleteBloco(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(competenciasBlocos).where(eq(competenciasBlocos.id, id));
+  // Soft delete: marcar como inativo em vez de apagar
+  await db.update(competenciasBlocos).set({ status: 'inativo' }).where(eq(competenciasBlocos.id, id));
+  
+  // Também marcar todas as macros e micros como inativas
+  const macros = await db.select().from(competenciasMacros).where(eq(competenciasMacros.blocoId, id));
+  for (const macro of macros) {
+    await db.update(competenciasMacros).set({ status: 'inativo' }).where(eq(competenciasMacros.id, macro.id));
+    const micros = await db.select().from(competenciasMicros).where(eq(competenciasMicros.macroId, macro.id));
+    for (const micro of micros) {
+      await db.update(competenciasMicros).set({ status: 'inativo' }).where(eq(competenciasMicros.id, micro.id));
+    }
+  }
 }
 
 export async function getMacrosByBlocoId(blocoId: number) {
@@ -332,7 +343,7 @@ export async function getMacrosByBlocoId(blocoId: number) {
   return await db
     .select()
     .from(competenciasMacros)
-    .where(eq(competenciasMacros.blocoId, blocoId))
+    .where(and(eq(competenciasMacros.blocoId, blocoId), eq(competenciasMacros.status, 'ativo')))
     .orderBy(competenciasMacros.nome);
 }
 
@@ -371,7 +382,14 @@ export async function deleteMacro(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(competenciasMacros).where(eq(competenciasMacros.id, id));
+  // Soft delete: marcar como inativo em vez de apagar
+  await db.update(competenciasMacros).set({ status: 'inativo' }).where(eq(competenciasMacros.id, id));
+  
+  // Também marcar todas as micros como inativas
+  const micros = await db.select().from(competenciasMicros).where(eq(competenciasMicros.macroId, id));
+  for (const micro of micros) {
+    await db.update(competenciasMicros).set({ status: 'inativo' }).where(eq(competenciasMicros.id, micro.id));
+  }
 }
 
 export async function getMicrosByMacroId(macroId: number) {
@@ -381,7 +399,7 @@ export async function getMicrosByMacroId(macroId: number) {
   return await db
     .select()
     .from(competenciasMicros)
-    .where(eq(competenciasMicros.macroId, macroId))
+    .where(and(eq(competenciasMicros.macroId, macroId), eq(competenciasMicros.status, 'ativo')))
     .orderBy(competenciasMicros.nome);
 }
 
@@ -420,7 +438,8 @@ export async function deleteMicro(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(competenciasMicros).where(eq(competenciasMicros.id, id));
+  // Soft delete: marcar como inativo em vez de apagar
+  await db.update(competenciasMicros).set({ status: 'inativo' }).where(eq(competenciasMicros.id, id));
 }
 
 // ============= GESTÃO DE PDIs =============
