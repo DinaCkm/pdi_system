@@ -147,7 +147,7 @@ export default function Ciclos() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="flex-1 w-full min-w-0 space-y-6 p-2 md:p-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">

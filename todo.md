@@ -1248,3 +1248,14 @@
 - [x] Criar procedure tRPC getPDIsComProgresso
 - [x] Criar componente DataTablePDIs
 - [x] Reescrever página PDIs.tsx com novo layout
+
+
+## CONCLUSÃO - Correção de Layout PDI e Ciclo (CONCLUÍDO)
+- [x] Aplicar mesmo padrão de layout da página de Departamentos em PDIs.tsx
+- [x] Aplicar mesmo padrão de layout da página de Departamentos em Ciclos.tsx
+- [x] Remover margens e estilos decorativos do SidebarInset
+- [x] Adicionar min-w-0 para flexibilidade
+- [x] Estruturar conteúdo com flex-1 w-full min-w-0 space-y-6 p-2 md:p-6
+- [x] Testar página de PDI - layout ocupando tela inteira
+- [x] Testar página de Ciclo - layout ocupando tela inteira
+- [x] Validar responsividade (padding p-2 md:p-6)
