@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { DashboardStats } from "@/components/DashboardStats";
+import { DirecionamentoEstrategico } from "@/components/DirecionamentoEstrategico";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -162,7 +163,13 @@ export function Dashboard() {
           </Card>
         </div>
       ) : stats ? (
-        <DashboardStats stats={stats} />
+        <>
+          {/* Widget Exclusivo de Admin: Direcionamento Estratégico */}
+          <DirecionamentoEstrategico />
+          
+          {/* Estatísticas Gerais do Dashboard */}
+          <DashboardStats stats={stats} />
+        </>
       ) : null}
     </div>
   );

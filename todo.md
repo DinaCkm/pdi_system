@@ -1204,3 +1204,25 @@
 - [x] Validar que status muda de Ativo para Inativo e vice-versa
 - [ ] Testar: Ativar Macro com validacao de Bloco
 - [ ] Testar: Ativar Bloco com validacao de Macros
+
+
+## Widget Direcionamento Estratégico (NOVA FUNCIONALIDADE - ADMIN ONLY)
+- [ ] Criar procedure tRPC para buscar Top 3 competências com gaps (ignorando filtros de departamento)
+- [ ] Implementar componente DirecionamentoEstrategico com ícone Farol/Bússola
+- [ ] Adicionar condicional role === 'admin' para exibição do widget
+- [ ] Aplicar cores sóbrias (azuis/esmeralda) ao widget
+- [ ] Adicionar legenda explicativa sobre dados estratégicos
+- [ ] Integrar widget no Dashboard com restrição de acesso
+- [ ] Testar: Admin vê o widget
+- [ ] Testar: Líder NÃO vê o widget
+- [ ] Testar: Colaborador NÃO vê o widget
+- [ ] Validar que dados são globais (ignoram filtros de departamento)
+
+
+## CONCLUSÃO - Widget Direcionamento Estratégico (FINALIZADO)
+- [x] Query com percentual global implementada
+- [x] Componente exibe Top 3 Macros com percentual
+- [x] Restrição de admin funcionando
+- [x] Dados globais (sem filtro de departamento)
+- [x] Percentual com 1 casa decimal (ex: 42.5%)
+- [x] Widget testado e validado no Dashboard

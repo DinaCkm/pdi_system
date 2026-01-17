@@ -659,6 +659,11 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // DIRECIONAMENTO ESTRATÉGICO - TOP 3 COMPETÊNCIAS COM GAPS (ADMIN ONLY)
+    getTop3CompetenciasComGaps: adminProcedure.query(async () => {
+      return await db.getTop3CompetenciasComGaps();
+    }),
+
     // IMPORTAÇÃO EM MASSA (NOVO - COM NOMES CORRETOS)
     importarEmLote: adminProcedure
       .input(z.object({

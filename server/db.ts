@@ -2239,3 +2239,44 @@ export async function countActiveMacrosByBlocoId(blocoId: number): Promise<numbe
 
   return result[0]?.count || 0;
 }
+
+
+// ============= DIRECIONAMENTO ESTRATÉGICO (ADMIN ONLY) =============
+/**
+ * Busca o Top 3 de Macrocompetências com maior volume de ações
+ * Calcula percentual em relação ao total global de ações
+ * Ignora filtros de departamento - retorna dados globais
+ * Retorna: { macroNome, totalAcoes, percentual }
+ */
+export async function getTop3CompetenciasComGaps() {
+  try {
+    const db = await getDb();
+    if (!db) {
+      console.warn("[Database] Cannot fetch Top 3 competencias: database not available");
+      return [];
+    }
+
+    // Contar ações agrupadas por Macro com percentual
+    const result = await db
+      .select({
+        macroNome: competenciasMacros.nome,
+        totalAcoes: sql<number>`COUNT(${actions.id})`,
+        percentual: sql<number>`ROUND((COUNT(${actions.id}) * 100.0 / (SELECT COUNT(*) FROM ${actions})), 1)`,
+      })
+      .from(competenciasMacros)
+      .leftJoin(actions, eq(actions.macroId, competenciasMacros.id))
+      .where(eq(competenciasMacros.status, "ativo"))
+      .groupBy(competenciasMacros.id, competenciasMacros.nome)
+      .having(sql`COUNT(${actions.id}) > 0`)
+      .orderBy(
+        desc(sql<number>`COUNT(${actions.id})`),
+        desc(sql<number>`ROUND((COUNT(${actions.id}) * 100.0 / (SELECT COUNT(*) FROM ${actions})), 1)`)
+      )
+      .limit(3);
+
+    return result || [];
+  } catch (error: any) {
+    console.error("Erro ao buscar Top 3 competências com gaps:", error);
+    return [];
+  }
+}
