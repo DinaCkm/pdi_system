@@ -98,6 +98,7 @@ export function MatrizCompetenciasConsolidada() {
       toast.success('Micro-competência inativada');
       setShowConfirmDialog(false);
       setSelectedMicro(null);
+      utils.competencias.getMicrosWithFilters.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -109,6 +110,7 @@ export function MatrizCompetenciasConsolidada() {
       toast.success('Micro-competencia atualizada');
       setShowEditDialog(false);
       setEditingMicro(null);
+      utils.competencias.getMicrosWithFilters.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -120,6 +122,7 @@ export function MatrizCompetenciasConsolidada() {
       toast.success('Micro-competencia ativada');
       setShowActivateDialog(false);
       setSelectedMicro(null);
+      utils.competencias.getMicrosWithFilters.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -222,11 +225,11 @@ export function MatrizCompetenciasConsolidada() {
 
         <div>
           <label className="text-sm font-medium">Filtrar por Status</label>
-          <Select value={filters.status} onValueChange={(v) => handleFilterChange('status', v)}>
+          <Select key={`status-filter-${filters.status}`} value={filters.status} onValueChange={(v) => handleFilterChange('status', v)}>
             <SelectTrigger>
               <SelectValue placeholder="Todos" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
               <SelectItem value="ativo">Ativas</SelectItem>
               <SelectItem value="inativo">Inativas</SelectItem>
             </SelectContent>

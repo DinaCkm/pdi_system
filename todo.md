@@ -1294,3 +1294,23 @@
 - [x] Criar modal de preview antes de importar
 - [x] Integrar componente na página de Ações
 - [x] Testes E2E do fluxo completo
+
+
+## Correções de Bugs Críticos - Filtro de Status e Atualização de Tabela (CONCLUÍDO)
+- [x] Corrigir erro removeChild no Select de Status da página de Competências
+  - [x] Adicionar key única e estável no Select
+  - [x] Adicionar onCloseAutoFocus={(e) => e.preventDefault()} no SelectContent
+  - [x] Adicionar position="popper" para renderização estável
+  - [x] Testar: Select abre sem erros de renderização
+- [x] Corrigir bug de atualização de tabela após inativar competência
+  - [x] Adicionar invalidação de cache tRPC na mutação inativarMicroMutation
+  - [x] Adicionar invalidação de cache tRPC na mutação ativarMicroMutation
+  - [x] Adicionar invalidação de cache tRPC na mutação editarMicroMutation
+  - [x] Testar: Competência desaparece da tabela após inativação
+  - [x] Testar: Tabela atualiza automaticamente sem recarregar página
+
+**Resumo:** Corrigidos dois bugs críticos na página de Competências:
+1. Erro "removeChild" ao interagir com Select de Status - resolvido com key estável, onCloseAutoFocus e position="popper"
+2. Tabela não atualizava após inativar competência - resolvido adicionando `utils.competencias.getMicrosWithFilters.invalidate()` nas mutações
+
+Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionando perfeitamente.
