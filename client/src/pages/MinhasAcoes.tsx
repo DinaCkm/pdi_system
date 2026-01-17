@@ -287,7 +287,7 @@ export default function MinhasAcoes() {
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent sideOffset={4}>
+              <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                 <SelectItem value="todos">Todas</SelectItem>
                 <SelectItem value="vencidas">Vencidas</SelectItem>
                 <SelectItem value="proximas7">Próximas 7 dias</SelectItem>
@@ -303,7 +303,7 @@ export default function MinhasAcoes() {
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent sideOffset={4}>
+              <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                 <SelectItem value="todos">Todas</SelectItem>
                 {competenciasUnicas.map((comp) => (
                   <SelectItem key={comp} value={comp}>
@@ -320,7 +320,7 @@ export default function MinhasAcoes() {
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent sideOffset={4}>
+              <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                 <SelectItem value="todos">Todos</SelectItem>
                 {ciclosUnicos.map((ciclo) => (
                   <SelectItem key={ciclo} value={ciclo}>

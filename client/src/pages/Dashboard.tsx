@@ -116,7 +116,7 @@ export function Dashboard() {
               <SelectTrigger className="w-full md:w-64">
                 <SelectValue placeholder="Selecione um departamento" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                 <SelectItem value="todos">Todos os Departamentos</SelectItem>
                 {Array.isArray(departamentos) && departamentos.length > 0 ? (
                   departamentos.map((dept) => (

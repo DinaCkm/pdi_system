@@ -251,7 +251,7 @@ export default function MinhasPendencias() {
                 <SelectTrigger>
                   <SelectValue placeholder="Colaborador" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4}>
+                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="todos">Todos Colaboradores</SelectItem>
                   {colaboradores.map((colab: any) => (
                     <SelectItem key={colab.id} value={colab.id.toString()}>
@@ -268,7 +268,7 @@ export default function MinhasPendencias() {
                 <SelectTrigger>
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4}>
+                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="todos">Todos os Status</SelectItem>
                   <SelectItem value="pendente">Pendente</SelectItem>
                   <SelectItem value="aprovada">Aprovada</SelectItem>
@@ -283,7 +283,7 @@ export default function MinhasPendencias() {
                 <SelectTrigger>
                   <SelectValue placeholder="Período" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4}>
+                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="todos">Todas as Datas</SelectItem>
                   <SelectItem value="hoje">Hoje</SelectItem>
                   <SelectItem value="semana">Última Semana</SelectItem>

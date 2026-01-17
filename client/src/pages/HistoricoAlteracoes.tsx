@@ -92,7 +92,7 @@ export default function HistoricoAlteracoes() {
             <SelectTrigger>
               <SelectValue placeholder="Escolha uma ação para visualizar o histórico" />
             </SelectTrigger>
-            <SelectContent sideOffset={4}>
+            <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
               {acoes?.map((acao: any) => (
                 <SelectItem key={acao.id} value={String(acao.id)}>
                   {acao.nome}
