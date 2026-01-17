@@ -1143,12 +1143,20 @@ export const appRouter = router({
         }
         
         // Validar se prazo está dentro do ciclo
-        const cicloDataInicio = new Date(ciclo.dataInicio);
-        const cicloDataFim = new Date(ciclo.dataFim);
+        const cicloDataInicio = ciclo.dataInicio ? new Date(ciclo.dataInicio) : null;
+        const cicloDataFim = ciclo.dataFim ? new Date(ciclo.dataFim) : null;
+        
+        if (!cicloDataInicio || !cicloDataFim) {
+          throw new TRPCError({ 
+            code: 'BAD_REQUEST', 
+            message: 'Ciclo não possui datas definidas. Contate o administrador.' 
+          });
+        }
+        
         if (prazoDate < cicloDataInicio || prazoDate > cicloDataFim) {
           throw new TRPCError({ 
             code: 'BAD_REQUEST', 
-            message: `Prazo deve estar entre ${cicloDataInicio.toLocaleDateString()} e ${cicloDataFim.toLocaleDateString()}` 
+            message: `Prazo deve estar entre ${cicloDataInicio.toLocaleDateString('pt-BR')} e ${cicloDataFim.toLocaleDateString('pt-BR')}` 
           });
         }
         
@@ -2065,8 +2073,17 @@ Gere um resumo conciso e profissional dessas mudanças em português, destacando
               continue;
             }
 
-            const cicloDataInicio = new Date(ciclo.dataInicio);
-            const cicloDataFim = new Date(ciclo.dataFim);
+            const cicloDataInicio = ciclo.dataInicio ? new Date(ciclo.dataInicio) : null;
+            const cicloDataFim = ciclo.dataFim ? new Date(ciclo.dataFim) : null;
+            
+            if (!cicloDataInicio || !cicloDataFim) {
+              erros.push({ 
+                linha: linhaNumero, 
+                erro: `Ciclo não possui datas definidas` 
+              });
+              continue;
+            }
+            
             if (prazoDate < cicloDataInicio || prazoDate > cicloDataFim) {
               erros.push({ 
                 linha: linhaNumero, 
