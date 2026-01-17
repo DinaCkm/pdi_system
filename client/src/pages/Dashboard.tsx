@@ -116,12 +116,21 @@ export function Dashboard() {
                 <SelectValue placeholder="Selecione um departamento" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os Departamentos</SelectItem>
-                {departamentos.map((dept) => (
-                  <SelectItem key={dept.id} value={dept.id.toString()}>
-                    {dept.nome}
+                <SelectItem value="todos">Todos os Departamentos</SelectItem>
+                {Array.isArray(departamentos) && departamentos.length > 0 ? (
+                  departamentos.map((dept) => (
+                    // Proteção total: só renderiza se ID e Nome forem válidos
+                    (dept && dept.id && dept.nome && dept.id.toString().trim() !== "") ? (
+                      <SelectItem key={dept.id} value={dept.id.toString()}>
+                        {dept.nome}
+                      </SelectItem>
+                    ) : null
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>
+                    Nenhum departamento cadastrado
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </CardContent>

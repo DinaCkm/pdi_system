@@ -1,0 +1,64 @@
+{
+  "query": "SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SHOW TABLES;",
+  "rows": [
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "__drizzle_migrations"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "acoes_historico"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "actions"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "adjustment_comments"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "adjustment_requests"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "audit_log"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "ciclos"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "competencias_blocos"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "competencias_macros"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "competencias_micros"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "departamentos"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "evidence_files"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "evidence_texts"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "evidences"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "notifications"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "pdis"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "user_department_roles"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT": "users"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_Uksxtg83ZJDkZPJL3fCmwT\n__drizzle_migrations\nacoes_historico\nactions\nadjustment_comments\nadjustment_requests\naudit_log\nciclos\ncompetencias_blocos\ncompetencias_macros\ncompetencias_micros\ndepartamentos\nevidence_files\nevidence_texts\nevidences\nnotifications\npdis\nuser_department_roles\nusers\n",
+  "stderr": "",
+  "execution_time_ms": 51
+}

@@ -151,18 +151,22 @@ export const dashboardRouter = router({
         }
 
         // ============= BLOCO B: FUNIL DE EXECUÇÃO =============
-        const statusCounts = await db
+        let statusCountsQuery = db
           .select({
             status: actions.status,
             count: count(),
           })
           .from(actions)
-          .where(
-            departamentoFilter
-              ? eq(actions.departamentoId, departamentoFilter)
-              : undefined
-          )
-          .groupBy(actions.status);
+          .leftJoin(pdis, eq(actions.pdiId, pdis.id))
+          .leftJoin(users, eq(pdis.colaboradorId, users.id));
+
+        if (departamentoFilter) {
+          statusCountsQuery = statusCountsQuery.where(
+            eq(users.departamentoId, departamentoFilter)
+          );
+        }
+
+        const statusCounts = await statusCountsQuery.groupBy(actions.status);
 
         const totalAcoes = statusCounts.reduce((sum, item) => sum + item.count, 0);
 
@@ -200,9 +204,11 @@ export const dashboardRouter = router({
               acoesTotal: count(),
             })
             .from(departamentos)
-            .leftJoin(actions, eq(actions.departamentoId, departamentos.id))
+            .leftJoin(users, eq(users.departamentoId, departamentos.id))
+            .leftJoin(pdis, eq(pdis.colaboradorId, users.id))
+            .leftJoin(actions, eq(actions.pdiId, pdis.id))
             .groupBy(departamentos.id, departamentos.nome)
-            .orderBy(desc(sql`acoesConcluidas / NULLIF(COUNT(*), 0)`))
+            .orderBy(desc(sql`COUNT(CASE WHEN ${actions.status} = 'concluida' THEN 1 END)`))
             .limit(5);
 
           stats.blocoC.top5Departamentos = departamentosStats
@@ -231,7 +237,8 @@ export const dashboardRouter = router({
             ),
           })
           .from(users)
-          .leftJoin(actions, eq(actions.colaboradorId, users.id))
+          .leftJoin(pdis, eq(pdis.colaboradorId, users.id))
+          .leftJoin(actions, eq(actions.pdiId, pdis.id))
           .where(
             departamentoFilter
               ? and(

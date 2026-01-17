@@ -145,7 +145,7 @@ export default function Departamentos() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="flex-1 w-full min-w-0 space-y-6 p-2 md:p-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Departamentos</h1>
@@ -171,13 +171,13 @@ export default function Departamentos() {
           </div>
         </div>
 
-        <div className="rounded-md border overflow-x-auto">
-          <Table>
+        <div className="rounded-md border overflow-x-auto w-full min-w-full bg-card">
+          <Table className="w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[40%]">Nome</TableHead>
-                <TableHead className="w-[35%]">Líder</TableHead>
-                <TableHead className="text-right w-[25%]">Ações</TableHead>
+                <TableHead>Nome</TableHead>
+                <TableHead>Líder</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -319,7 +319,7 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="flex-1 p-6 max-w-full overflow-x-hidden">{children}</main>
+        <main className="flex-1 max-w-full overflow-x-hidden">{children}</main>
       </SidebarInset>
     </>
   );

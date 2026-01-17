@@ -143,6 +143,14 @@
 - [x] Confirmar que Admin tem role='admin', departamentoId=NULL, leaderId=NULL
 - [x] Build passou com sucesso (170.1kb, 3267 módulos)
 
+## Correção de Layout de Departamentos (CONCLUÍDO)
+- [x] Remover margens complexas do SidebarInset (m-2, ml-2, rounded-xl, shadow-sm)
+- [x] Adicionar min-w-0 ao SidebarInset para flexibilidade
+- [x] Ajustar primeira div de Departamentos: flex-1 w-full min-w-0 space-y-6 p-2 md:p-6
+- [x] Adicionar min-w-full a div da tabela para ocupar espaço total
+- [x] Verificar DashboardLayout - sem centralização indevida
+- [x] Layout de Departamentos em tela cheia - TESTADO E FUNCIONANDO
+
 ## Próximas Implementações (Ordem da Arquitetura)
 - [ ] Criar página de gestão de Departamentos (CRUD completo)
 - [ ] Atualizar página de usuários para incluir seleção de departamento
