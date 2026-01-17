@@ -497,9 +497,21 @@ export default function Acoes() {
           {filteredAcoes.map((acao) => (
             <Card key={acao.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg">{acao.nome}</CardTitle>
-                  <div className="flex flex-col gap-1 items-end">
+                {/* Hierarquia: Empregado em destaque */}
+                {(() => {
+                  const pdi = pdis?.find((p: any) => p.id === acao.pdiId);
+                  const user = usuarios?.find((u: any) => u.id === pdi?.colaboradorId);
+                  return (
+                    <div className="mb-3">
+                      <p className="text-sm font-bold text-foreground">{user?.name || "Colaborador"}</p>
+                    </div>
+                  );
+                })()}
+                {/* Título da Ação */}
+                <CardTitle className="text-lg mb-2">{acao.nome}</CardTitle>
+                {/* Status e Ajustes */}
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex flex-col gap-1">
                     {getStatusBadge(acao.status)}
                     {getAdjustmentBadge(acao.adjustmentCount || 0)}
                   </div>
@@ -509,7 +521,7 @@ export default function Acoes() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {/* Informações do Colaborador, Líder e Departamento */}
+                {/* Informações do Líder, Departamento, Prazo */}
                 {(() => {
                   const pdi = pdis?.find((p: any) => p.id === acao.pdiId);
                   const user = usuarios?.find((u: any) => u.id === pdi?.colaboradorId);
@@ -519,10 +531,6 @@ export default function Acoes() {
                     <>
                       {pdi && user && (
                         <>
-                          <div className="text-sm border-b pb-2">
-                            <span className="font-semibold text-foreground">Colaborador:</span>
-                            <p className="text-muted-foreground text-xs">{user.name}</p>
-                          </div>
                           <div className="text-sm border-b pb-2">
                             <span className="font-semibold text-foreground">Líder:</span>
                             <p className="text-muted-foreground text-xs">{leader?.name || "N/A"}</p>
@@ -992,15 +1000,15 @@ export default function Acoes() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Visualização */}
+      {/* Dialog de Visualizacao */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>{selectedAcao?.nome}</DialogTitle>
-            <DialogDescription>Detalhes da Ação de Desenvolvimento</DialogDescription>
+            <DialogDescription>Detalhes da Acao de Desenvolvimento</DialogDescription>
           </DialogHeader>
           {selectedAcao && (
-            <div className="space-y-4 overflow-y-auto pr-2">
+            <div className="space-y-4 overflow-y-auto pr-2 flex-1">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">PDI</Label>
@@ -1034,6 +1042,14 @@ export default function Acoes() {
                 <div>
                   <Label className="text-muted-foreground">Criado em</Label>
                   <p className="text-sm">{new Date(selectedAcao.createdAt).toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Secao de Historico */}
+              <div className="border-t pt-4">
+                <Label className="text-muted-foreground font-semibold">Historico de Mudancas</Label>
+                <div className="mt-2">
+                  <AcoesHistorico actionId={selectedAcao.id} actionName={selectedAcao.nome} />
                 </div>
               </div>
             </div>

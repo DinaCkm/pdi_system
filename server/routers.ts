@@ -1176,12 +1176,27 @@ export const appRouter = router({
         microId: z.number().optional(),
         prazo: z.string().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const { id, prazo, ...rest } = input;
         
         const updateData: any = { ...rest };
         if (prazo) {
           updateData.prazo = new Date(prazo);
+        }
+        
+        // Registrar mudancas no historico
+        for (const [campo, novoValor] of Object.entries(updateData)) {
+          const valorAnterior = (action as any)[campo];
+          if (valorAnterior !== novoValor) {
+            await db.createAcaoHistorico({
+              acaoId: id,
+              usuarioId: ctx.user!.id,
+              campo: campo,
+              valorAnterior: String(valorAnterior || ''),
+              valorNovo: String(novoValor || ''),
+              motivo: 'Edicao direta realizada pelo Administrador',
+            });
+          }
         }
         
         await db.updateAction(id, updateData);

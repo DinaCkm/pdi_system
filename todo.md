@@ -1238,6 +1238,21 @@
 - [ ] Validar que barra de progresso exibe percentual correto
 
 
+## Reestruturacao da Pagina de Acoes (CONCLUIDO - COM OBSERVACAO)
+- [x] Reestruturar cards com hierarquia (Empregado em destaque)
+- [x] Implementar modal com scroll vertical (max-h-[80vh] overflow-y-auto)
+- [x] Adicionar botao Editar sempre visivel para Admin
+- [x] Integrar registro automatico em acoesHistorico
+- [x] Adicionar secao "Historico de Mudancas" no modal
+- [x] Testar fluxo completo
+
+**Observacao Importante:** Componente AcoesHistorico exibe erro "Erro ao carregar historico de mudancas". Necessario verificar se:
+1. Funcao getAcaoHistorico esta retornando dados corretamente
+2. Tabela acoesHistorico tem dados para exibir
+3. Componente AcoesHistorico esta tratando erros adequadamente
+
+**Proxima Acao:** Debugar componente AcoesHistorico e validar se dados estao sendo salvos em acoesHistorico quando Admin edita acoes.
+
 ## CONCLUSÃO - Reestruturação da Página de PDI (CONCLUÍDO)
 - [x] Criar tabela consolidada (Colaborador | Departamento | Líder | Ciclo | Status | Progresso | Ações)
 - [x] Implementar filtros combinados (Departamento, Pessoa, Realização)
@@ -1259,3 +1274,13 @@
 - [x] Testar página de PDI - layout ocupando tela inteira
 - [x] Testar página de Ciclo - layout ocupando tela inteira
 - [x] Validar responsividade (padding p-2 md:p-6)
+
+
+## Reestruturacao da Pagina de Acoes (NOVA FUNCIONALIDADE)
+- [ ] Reestruturar cards: Empregado (negrito) → Ação → Líder/Depto/Prazo/Status
+- [ ] Implementar modal com overflow-y-auto para scroll vertical
+- [ ] Adicionar botão Editar sempre visível para Admin no modal
+- [ ] Criar procedure tRPC para editar ação com registro automático em acoesHistorico
+- [ ] Integrar createAcaoHistorico com motivo automático "Edição direta realizada pelo Administrador"
+- [ ] Adicionar seção "Histórico da Ação" no modal (ordem decrescente)
+- [ ] Testar fluxo completo de edição e auditoria
