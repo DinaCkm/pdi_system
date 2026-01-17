@@ -1,35 +1,27 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { data: setupData, isLoading: setupLoading } = trpc.system.checkSetup.useQuery();
 
   useEffect(() => {
-    // 1. Aguarda as checagens de segurança terminarem
-    if (authLoading || setupLoading) return;
+    // 1. Aguarda autenticação
+    if (authLoading) return;
 
-    // 2. Se não há banco configurado, vai para Setup
-    if (setupData?.needsSetup) {
-      setLocation("/setup");
-      return;
-    }
-
-    // 3. Se NÃO está logado, manda para o Login
+    // 2. Se NÃO está logado, manda para o Login
     if (!isAuthenticated) {
       setLocation("/login");
       return;
     }
 
-    // 4. Se ESTÁ logado, manda para o Dashboard (Onde o erro está ocorrendo)
+    // 3. Se ESTÁ logado, manda para o Dashboard
     if (isAuthenticated && user) {
       setLocation("/dashboard");
     }
-  }, [isAuthenticated, user, authLoading, setupLoading, setupData, setLocation]);
+  }, [isAuthenticated, user, authLoading, setLocation]);
 
   // Tela de transição (Dina verá isso por apenas 1 segundo agora)
   return (

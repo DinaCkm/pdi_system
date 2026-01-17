@@ -32,7 +32,7 @@ export const pdiRouter = router({
       status: z.enum(["rascunho", "aguardando_aprovacao", "ativo", "concluido", "cancelado"]).optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const { user } = ctx;
 
       if (!user.role || !["admin", "lider", "colaborador"].includes(user.role)) {
         throw new TRPCError({
@@ -96,7 +96,7 @@ export const pdiRouter = router({
   obterPdi: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const { user } = ctx;
 
       const pdi = await db
         .select()
@@ -134,7 +134,7 @@ export const pdiRouter = router({
       objetivoGeral: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const { user } = ctx;
 
       // Validar que colaborador existe
       const colaborador = await db
@@ -212,7 +212,7 @@ export const pdiRouter = router({
   listarAcoes: protectedProcedure
     .input(z.object({ pdiId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const { user } = ctx;
 
       // Validar acesso ao PDI
       const pdi = await db
@@ -257,7 +257,7 @@ export const pdiRouter = router({
       prazo: z.date(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const { user } = ctx;
 
       // Validar que PDI existe
       const pdi = await db
@@ -334,7 +334,7 @@ export const pdiRouter = router({
       acaoId: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const { user } = ctx;
 
       // Validar que usuário é Líder
       if (user.role !== "lider" && user.role !== "admin") {
@@ -425,7 +425,7 @@ export const pdiRouter = router({
       })).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const { user } = ctx;
 
       // Validar que ação existe
       const acao = await db
@@ -493,7 +493,7 @@ export const pdiRouter = router({
       justificativa: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const { user } = ctx;
 
       // Validar que evidência existe
       const evidencia = await db
@@ -555,7 +555,7 @@ export const pdiRouter = router({
       descricaoSolicitacao: z.string().min(10),
     }))
     .mutation(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const { user } = ctx;
 
       // Validar que ação existe
       const acao = await db
