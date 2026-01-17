@@ -148,6 +148,23 @@ function DashboardLayoutContent({
   const menuItems = getMenuItems(user?.role || "colaborador");
   const activeMenuItem = menuItems.find((item: any) => item.path === location);
   const isMobile = useIsMobile();
+
+  // Cleanup de Portals ao mudar de página
+  useEffect(() => {
+    return () => {
+      // Fechar todos os Portals do Radix quando sair da página
+      const portals = document.querySelectorAll('[data-radix-portal]');
+      portals.forEach(portal => {
+        try {
+          if (portal.parentNode) {
+            portal.parentNode.removeChild(portal);
+          }
+        } catch (e) {
+          // Ignorar erros de remoção
+        }
+      });
+    };
+  }, [location]);
   
   // Carregar contagem de pendências
   const { data: pendenciesSummary } = trpc.notifications.getPendenciesSummary.useQuery(

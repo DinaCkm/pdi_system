@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { DashboardStats } from "@/components/DashboardStats";
 import { DirecionamentoEstrategico } from "@/components/DirecionamentoEstrategico";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectContentNoPortal } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -116,7 +116,7 @@ export function Dashboard() {
               <SelectTrigger className="w-full md:w-64">
                 <SelectValue placeholder="Selecione um departamento" />
               </SelectTrigger>
-              <SelectContent position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+              <SelectContentNoPortal position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                 <SelectItem value="todos">Todos os Departamentos</SelectItem>
                 {Array.isArray(departamentos) && departamentos.length > 0 ? (
                   departamentos.map((dept) => (
@@ -130,9 +130,10 @@ export function Dashboard() {
                 ) : (
                   <SelectItem value="none" disabled>
                     Nenhum departamento cadastrado
-                  </SelectItem>
-                )}
-              </SelectContent>
+                   </SelectItem>
+                )
+              }
+              </SelectContentNoPortal>
             </Select>
           </CardContent>
         </Card>

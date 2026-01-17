@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectContentNoPortal } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function MinhasPendencias() {
@@ -251,14 +251,14 @@ export default function MinhasPendencias() {
                 <SelectTrigger>
                   <SelectValue placeholder="Colaborador" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="todos">Todos Colaboradores</SelectItem>
                   {colaboradores.map((colab: any) => (
                     <SelectItem key={colab.id} value={colab.id.toString()}>
                       {colab.name}
                     </SelectItem>
                   ))}
-                </SelectContent>
+                </SelectContentNoPortal>
               </Select>
             </div>
 
@@ -268,12 +268,12 @@ export default function MinhasPendencias() {
                 <SelectTrigger>
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="todos">Todos os Status</SelectItem>
                   <SelectItem value="pendente">Pendente</SelectItem>
                   <SelectItem value="aprovada">Aprovada</SelectItem>
                   <SelectItem value="reprovada">Reprovada</SelectItem>
-                </SelectContent>
+                </SelectContentNoPortal>
               </Select>
             </div>
 
@@ -283,12 +283,12 @@ export default function MinhasPendencias() {
                 <SelectTrigger>
                   <SelectValue placeholder="Período" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="todos">Todas as Datas</SelectItem>
                   <SelectItem value="hoje">Hoje</SelectItem>
                   <SelectItem value="semana">Última Semana</SelectItem>
                   <SelectItem value="mes">Último Mês</SelectItem>
-                </SelectContent>
+                </SelectContentNoPortal>
               </Select>
             </div>
           </div>

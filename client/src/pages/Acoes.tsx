@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Plus, Eye, Edit, Trash2, Target, Calendar, User, Lock, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectContentNoPortal } from "@/components/ui/select";
 import { Controller, useForm } from "react-hook-form";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { NovoFormularioAcao } from "./AcoesNovoFormulario";
@@ -57,6 +57,26 @@ export default function Acoes() {
   const { data: microsCompetencias } = trpc.competencias.listAllMicrosWithDetails.useQuery();
   const { data: allMacrosCompetencias } = trpc.competencias.listAllMacros.useQuery();
   
+  // Cleanup de Portals ao desmontar o componente
+  useEffect(() => {
+    return () => {
+      // Fechar todos os diálogos ao sair da página
+      setShowCreateDialog(false);
+      setShowEditDialog(false);
+      setShowViewDialog(false);
+      setShowDeleteDialog(false);
+      setShowHistoricoDialog(false);
+      
+      // Remover qualquer Portal restante do DOM
+      const portals = document.querySelectorAll('[data-radix-portal]');
+      portals.forEach(portal => {
+        if (portal.parentNode) {
+          portal.parentNode.removeChild(portal);
+        }
+      });
+    };
+  }, []);
+
   // Efeito para aplicar filtro de PDI quando vier da URL
   useEffect(() => {
     if (pdiIdFromUrl) {
@@ -363,14 +383,14 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   {usuarios?.map((user) => (
                     <SelectItem key={user.id} value={user.id.toString()}>
                       {user.name}
                     </SelectItem>
                   ))}
-                </SelectContent>
+                </SelectContentNoPortal>
               </Select>
             </div>
             <div>
@@ -379,14 +399,14 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   {usuarios?.filter(u => u.role === 'lider' || u.role === 'admin').map((lider) => (
                     <SelectItem key={lider.id} value={lider.id.toString()}>
                       {lider.name}
                     </SelectItem>
                   ))}
-                </SelectContent>
+                </SelectContentNoPortal>
               </Select>
             </div>
           </div>
@@ -397,14 +417,14 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   {departamentos?.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id.toString()}>
                       {dept.nome}
                     </SelectItem>
                   ))}
-                </SelectContent>
+                </SelectContentNoPortal>
               </Select>
             </div>
             <div>
@@ -413,14 +433,14 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   {blocosCompetencias?.map((bloco) => (
                     <SelectItem key={bloco.id} value={bloco.id.toString()}>
                       {bloco.nome}
                     </SelectItem>
                   ))}
-                </SelectContent>
+                </SelectContentNoPortal>
               </Select>
             </div>
             <div>
@@ -429,14 +449,14 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   {allMacrosCompetencias?.map((macro) => (
                     <SelectItem key={macro.id} value={macro.id.toString()}>
                       {macro.nome}
                     </SelectItem>
                   ))}
-                </SelectContent>
+                </SelectContentNoPortal>
               </Select>
             </div>
           </div>
@@ -447,14 +467,14 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   {microsCompetencias?.map((micro) => (
                     <SelectItem key={micro.id} value={micro.id.toString()}>
                       {micro.nome}
                     </SelectItem>
                   ))}
-                </SelectContent>
+                </SelectContentNoPortal>
               </Select>
             </div>
             <div>
@@ -463,7 +483,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="pendente_aprovacao_lider">Pendente Aprovação Líder</SelectItem>
                   <SelectItem value="aprovada_lider">Aprovada Líder</SelectItem>
@@ -477,7 +497,7 @@ export default function Acoes() {
                   <SelectItem value="concluida">Concluída</SelectItem>
                   <SelectItem value="vencida">Vencida</SelectItem>
                   <SelectItem value="cancelada">Cancelada</SelectItem>
-                </SelectContent>
+                </SelectContentNoPortal>
               </Select>
             </div>
           </div>
@@ -618,13 +638,13 @@ export default function Acoes() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o PDI" />
                     </SelectTrigger>
-                    <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                    <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                       {pdis?.map((pdi) => (
                         <SelectItem key={pdi.id} value={pdi.id.toString()}>
                           {pdi.titulo} - {pdi.colaboradorNome || "Colaborador desconhecido"}
                         </SelectItem>
                       ))}
-                    </SelectContent>
+                    </SelectContentNoPortal>
                   </Select>
                 )}
               />
@@ -651,13 +671,13 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o bloco" />
                       </SelectTrigger>
-                      <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                      <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                         {blocosCompetencias?.map((bloco) => (
                           <SelectItem key={bloco.id} value={bloco.id.toString()}>
                             {bloco.nome}
                           </SelectItem>
                         ))}
-                      </SelectContent>
+                      </SelectContentNoPortal>
                     </Select>
                   )}
                 />
@@ -681,13 +701,13 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder={editSelectedBlocoId ? "Selecione a macrocompetência" : "Selecione um bloco primeiro"} />
                       </SelectTrigger>
-                      <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                      <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                         {editMacroCompetencias?.map((macro) => (
                           <SelectItem key={macro.id} value={macro.id.toString()}>
                             {macro.nome}
                           </SelectItem>
                         ))}
-                      </SelectContent>
+                      </SelectContentNoPortal>
                     </Select>
                   )}
                 />
@@ -708,13 +728,13 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder={editSelectedMacroId ? "Selecione a microcompetência" : "Selecione uma macrocompetência primeiro"} />
                       </SelectTrigger>
-                      <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                      <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                         {editMicroCompetencias?.map((micro) => (
                           <SelectItem key={micro.id} value={micro.id.toString()}>
                             {micro.nome}
                           </SelectItem>
                         ))}
-                      </SelectContent>
+                      </SelectContentNoPortal>
                     </Select>
                   )}
                 />

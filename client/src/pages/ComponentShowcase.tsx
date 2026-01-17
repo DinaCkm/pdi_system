@@ -425,11 +425,11 @@ export default function ComponentsShowcase() {
                     <SelectTrigger>
                       <SelectValue placeholder="Select a fruit" />
                     </SelectTrigger>
-                    <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                    <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                       <SelectItem value="apple">Apple</SelectItem>
                       <SelectItem value="banana">Banana</SelectItem>
                       <SelectItem value="orange">Orange</SelectItem>
-                    </SelectContent>
+                    </SelectContentNoPortal>
                   </Select>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -629,7 +629,7 @@ export default function ComponentsShowcase() {
                         <SelectTrigger id="month">
                           <SelectValue placeholder="MM" />
                         </SelectTrigger>
-                        <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                        <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                           {Array.from({ length: 12 }, (_, i) => i + 1).map(
                             month => (
                               <SelectItem
@@ -640,7 +640,7 @@ export default function ComponentsShowcase() {
                               </SelectItem>
                             )
                           )}
-                        </SelectContent>
+                        </SelectContentNoPortal>
                       </Select>
                     </div>
                     <div className="space-y-2">
@@ -654,7 +654,7 @@ export default function ComponentsShowcase() {
                         <SelectTrigger id="year">
                           <SelectValue placeholder="YYYY" />
                         </SelectTrigger>
-                        <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                        <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                           {Array.from(
                             { length: 10 },
                             (_, i) => new Date().getFullYear() - 5 + i
@@ -663,7 +663,7 @@ export default function ComponentsShowcase() {
                               {year}
                             </SelectItem>
                           ))}
-                        </SelectContent>
+                        </SelectContentNoPortal>
                       </Select>
                     </div>
                   </div>

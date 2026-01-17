@@ -287,13 +287,13 @@ export default function MinhasAcoes() {
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+              <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                 <SelectItem value="todos">Todas</SelectItem>
                 <SelectItem value="vencidas">Vencidas</SelectItem>
                 <SelectItem value="proximas7">Próximas 7 dias</SelectItem>
                 <SelectItem value="proximas30">Próximas 30 dias</SelectItem>
                 <SelectItem value="futuras">Futuras</SelectItem>
-              </SelectContent>
+              </SelectContentNoPortal>
             </Select>
           </div>
 
@@ -303,14 +303,14 @@ export default function MinhasAcoes() {
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+              <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                 <SelectItem value="todos">Todas</SelectItem>
                 {competenciasUnicas.map((comp) => (
                   <SelectItem key={comp} value={comp}>
                     {comp}
                   </SelectItem>
                 ))}
-              </SelectContent>
+              </SelectContentNoPortal>
             </Select>
           </div>
 
@@ -320,14 +320,14 @@ export default function MinhasAcoes() {
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+              <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                 <SelectItem value="todos">Todos</SelectItem>
                 {ciclosUnicos.map((ciclo) => (
                   <SelectItem key={ciclo} value={ciclo}>
                     {ciclo}
                   </SelectItem>
                 ))}
-              </SelectContent>
+              </SelectContentNoPortal>
             </Select>
           </div>
         </CardContent>

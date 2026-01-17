@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectContentNoPortal } from "@/components/ui/select";
 import { Eye, Target, User, Calendar, CheckCircle2, Search, Filter, List, TrendingUp } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -135,14 +135,14 @@ export default function PDIsEquipe() {
                 <SelectTrigger>
                   <SelectValue placeholder="Colaborador" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="todos">Todos Colaboradores</SelectItem>
                   {colaboradores.map((colab: any) => (
                     <SelectItem key={colab.id} value={colab.id.toString()}>
                       {colab.name}
                     </SelectItem>
                   ))}
-                </SelectContent>
+                </SelectContentNoPortal>
               </Select>
             </div>
 
@@ -152,14 +152,14 @@ export default function PDIsEquipe() {
                 <SelectTrigger>
                   <SelectValue placeholder="Ciclo" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="todos">Todos Ciclos</SelectItem>
                   {ciclos?.map((ciclo: any) => (
                     <SelectItem key={ciclo.id} value={ciclo.id.toString()}>
                       {ciclo.nome}
                     </SelectItem>
                   ))}
-                </SelectContent>
+                </SelectContentNoPortal>
               </Select>
             </div>
 
@@ -169,12 +169,12 @@ export default function PDIsEquipe() {
                 <SelectTrigger>
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="todos">Todos Status</SelectItem>
                   <SelectItem value="em_andamento">Em Andamento</SelectItem>
                   <SelectItem value="concluido">Concluído</SelectItem>
                   <SelectItem value="cancelado">Cancelado</SelectItem>
-                </SelectContent>
+                </SelectContentNoPortal>
               </Select>
             </div>
           </div>
