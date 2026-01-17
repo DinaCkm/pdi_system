@@ -1,0 +1,8 @@
+{
+  "query": "\n-- 1. Listar TODOS os Blocos com contagem de Ações vinculadas\nSELECT \n  b.id,\n  b.nome as bloco_nome,\n  b.status,\n  COUNT(DISTINCT a.id) as total_acoes\nFROM blocos b\nLEFT JOIN macros m ON b.id = m.blocoId\nLEFT JOIN micros mi ON m.id = mi.macroId\nLEFT JOIN actions a ON mi.id = a.microId\nGROUP BY b.id, b.nome, b.status\nORDER BY total_acoes DESC, b.nome;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute \n-- 1. Listar TODOS os Blocos com contagem de Ações vinculadas\nSELECT \n  b.id,\n  b.nome as bloco_nome,\n  b.status,\n  COUNT(DISTINCT a.id) as total_acoes\nFROM blocos b\nLEFT JOIN macros m ON b.id = m.blocoId\nLEFT JOIN micros mi ON m.id = mi.macroId\nLEFT JOIN actions a ON mi.id = a.microId\nGROUP BY b.id, b.nome, b.status\nORDER BY total_acoes DESC, b.nome;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 3: Table 'uksxtg83zjdkzpjl3fcmwt.blocos' doesn't exist"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "query": "\nSELECT DISTINCT\n  b.id as bloco_id,\n  b.nome as bloco_nome,\n  m.id as macro_id,\n  m.nome as macro_nome,\n  mi.id as micro_id,\n  mi.nome as micro_nome,\n  COUNT(DISTINCT a.id) as total_acoes\nFROM blocos b\nLEFT JOIN macros m ON b.id = m.blocoId\nLEFT JOIN micros mi ON m.id = mi.macroId\nLEFT JOIN actions a ON mi.id = a.microId\nWHERE a.id IS NOT NULL\nGROUP BY b.id, b.nome, m.id, m.nome, mi.id, mi.nome\nORDER BY b.nome, m.nome, mi.nome;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute \nSELECT DISTINCT\n  b.id as bloco_id,\n  b.nome as bloco_nome,\n  m.id as macro_id,\n  m.nome as macro_nome,\n  mi.id as micro_id,\n  mi.nome as micro_nome,\n  COUNT(DISTINCT a.id) as total_acoes\nFROM blocos b\nLEFT JOIN macros m ON b.id = m.blocoId\nLEFT JOIN micros mi ON m.id = mi.macroId\nLEFT JOIN actions a ON mi.id = a.microId\nWHERE a.id IS NOT NULL\nGROUP BY b.id, b.nome, m.id, m.nome, mi.id, mi.nome\nORDER BY b.nome, m.nome, mi.nome;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 62
+}

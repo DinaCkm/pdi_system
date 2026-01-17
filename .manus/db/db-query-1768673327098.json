@@ -1,0 +1,22 @@
+{
+  "query": "\nSELECT 'competencias_blocos' as tabela, COUNT(*) as total FROM competencias_blocos\nUNION ALL\nSELECT 'competencias_macros', COUNT(*) FROM competencias_macros\nUNION ALL\nSELECT 'competencias_micros', COUNT(*) FROM competencias_micros;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute \nSELECT 'competencias_blocos' as tabela, COUNT(*) as total FROM competencias_blocos\nUNION ALL\nSELECT 'competencias_macros', COUNT(*) FROM competencias_macros\nUNION ALL\nSELECT 'competencias_micros', COUNT(*) FROM competencias_micros;\n",
+  "rows": [
+    {
+      "tabela": "competencias_micros",
+      "total": "0"
+    },
+    {
+      "tabela": "competencias_macros",
+      "total": "0"
+    },
+    {
+      "tabela": "competencias_blocos",
+      "total": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "tabela\ttotal\ncompetencias_micros\t0\ncompetencias_macros\t0\ncompetencias_blocos\t0\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}
