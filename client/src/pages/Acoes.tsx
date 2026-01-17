@@ -363,7 +363,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4}>
+                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   {usuarios?.map((user) => (
                     <SelectItem key={user.id} value={user.id.toString()}>
@@ -379,7 +379,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4}>
+                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   {usuarios?.filter(u => u.role === 'lider' || u.role === 'admin').map((lider) => (
                     <SelectItem key={lider.id} value={lider.id.toString()}>
@@ -397,7 +397,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4}>
+                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   {departamentos?.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id.toString()}>
@@ -413,7 +413,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4}>
+                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   {blocosCompetencias?.map((bloco) => (
                     <SelectItem key={bloco.id} value={bloco.id.toString()}>
@@ -429,7 +429,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4}>
+                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   {allMacrosCompetencias?.map((macro) => (
                     <SelectItem key={macro.id} value={macro.id.toString()}>
@@ -447,7 +447,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4}>
+                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   {microsCompetencias?.map((micro) => (
                     <SelectItem key={micro.id} value={micro.id.toString()}>
@@ -463,7 +463,7 @@ export default function Acoes() {
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
-                <SelectContent sideOffset={4}>
+                <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="pendente_aprovacao_lider">Pendente Aprovação Líder</SelectItem>
                   <SelectItem value="aprovada_lider">Aprovada Líder</SelectItem>
@@ -594,7 +594,7 @@ export default function Acoes() {
 
       {/* Dialog de Criação ANTIGO - REMOVER */}
       <Dialog open={false} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Criar Nova Ação</DialogTitle>
             <DialogDescription>
@@ -616,7 +616,7 @@ export default function Acoes() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o PDI" />
                     </SelectTrigger>
-                    <SelectContent sideOffset={4}>
+                    <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                       {pdis?.map((pdi) => (
                         <SelectItem key={pdi.id} value={pdi.id.toString()}>
                           {pdi.titulo} - {pdi.colaboradorNome || "Colaborador desconhecido"}
@@ -654,7 +654,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o bloco" />
                       </SelectTrigger>
-                      <SelectContent sideOffset={4}>
+                      <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                         {blocosCompetencias?.map((bloco) => (
                           <SelectItem key={bloco.id} value={bloco.id.toString()}>
                             {bloco.nome}
@@ -684,7 +684,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder={selectedBlocoId ? "Selecione a macrocompetência" : "Selecione um bloco primeiro"} />
                       </SelectTrigger>
-                      <SelectContent sideOffset={4}>
+                      <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                         {macroCompetencias?.map((macro) => (
                           <SelectItem key={macro.id} value={macro.id.toString()}>
                             {macro.nome}
@@ -711,7 +711,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder={selectedMacroId ? "Selecione a microcompetência" : "Selecione uma macrocompetência primeiro"} />
                       </SelectTrigger>
-                      <SelectContent sideOffset={4}>
+                      <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                         {microCompetencias?.map((micro) => (
                           <SelectItem key={micro.id} value={micro.id.toString()}>
                             {micro.nome}
@@ -821,7 +821,7 @@ export default function Acoes() {
 
       {/* Dialog de Edição */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Editar Ação</DialogTitle>
             <DialogDescription>
@@ -843,7 +843,7 @@ export default function Acoes() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o PDI" />
                     </SelectTrigger>
-                    <SelectContent sideOffset={4}>
+                    <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                       {pdis?.map((pdi) => (
                         <SelectItem key={pdi.id} value={pdi.id.toString()}>
                           {pdi.titulo} - {pdi.colaboradorNome || "Colaborador desconhecido"}
@@ -876,7 +876,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o bloco" />
                       </SelectTrigger>
-                      <SelectContent sideOffset={4}>
+                      <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                         {blocosCompetencias?.map((bloco) => (
                           <SelectItem key={bloco.id} value={bloco.id.toString()}>
                             {bloco.nome}
@@ -906,7 +906,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder={editSelectedBlocoId ? "Selecione a macrocompetência" : "Selecione um bloco primeiro"} />
                       </SelectTrigger>
-                      <SelectContent sideOffset={4}>
+                      <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                         {editMacroCompetencias?.map((macro) => (
                           <SelectItem key={macro.id} value={macro.id.toString()}>
                             {macro.nome}
@@ -933,7 +933,7 @@ export default function Acoes() {
                       <SelectTrigger>
                         <SelectValue placeholder={editSelectedMacroId ? "Selecione a microcompetência" : "Selecione uma macrocompetência primeiro"} />
                       </SelectTrigger>
-                      <SelectContent sideOffset={4}>
+                      <SelectContent sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
                         {editMicroCompetencias?.map((micro) => (
                           <SelectItem key={micro.id} value={micro.id.toString()}>
                             {micro.nome}
@@ -1006,7 +1006,7 @@ export default function Acoes() {
 
       {/* Dialog de Visualizacao */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{selectedAcao?.nome}</DialogTitle>
             <DialogDescription>Detalhes da Acao de Desenvolvimento</DialogDescription>
@@ -1073,7 +1073,7 @@ export default function Acoes() {
 
       {/* Dialog de Histórico */}
       <Dialog open={showHistoricoDialog} onOpenChange={setShowHistoricoDialog}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Histórico de Mudanças</DialogTitle>
             <DialogDescription>
