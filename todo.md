@@ -151,6 +151,15 @@
 - [x] Verificar DashboardLayout - sem centralização indevida
 - [x] Layout de Departamentos em tela cheia - TESTADO E FUNCIONANDO
 
+## Resolução de Dependência Circular Departamento-Líder (EM TESTES)
+- [x] Tornar leaderId opcional no schema (já estava)
+- [x] Formulário de Departamentos com Líder opcional (já estava)
+- [x] Adicionar lógica para atualizar Departamento quando Usuário é promovido a Líder
+- [ ] TESTE 1: Criar Departamento vazio (sem Líder)
+- [ ] TESTE 2: Criar Usuário e promover a Líder
+- [ ] TESTE 3: Verificar se Departamento foi atualizado com o Líder automaticamente
+- [ ] TESTE 4: Verificar se coluna "Líder" mostra o nome correto na tabela de Departamentos
+
 ## Próximas Implementações (Ordem da Arquitetura)
 - [ ] Criar página de gestão de Departamentos (CRUD completo)
 - [ ] Atualizar página de usuários para incluir seleção de departamento

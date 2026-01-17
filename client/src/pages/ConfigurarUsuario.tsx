@@ -34,6 +34,7 @@ export default function ConfigurarUsuario() {
   const { data: allDepartamentos = [] } = trpc.departamentos.list.useQuery();
   
   const updateMutation = trpc.users.update.useMutation();
+  const updateDepartamentoMutation = trpc.departamentos.update.useMutation();
 
   // Filtrar líderes disponíveis do departamento selecionado
   // COM FILTRO DE AUTOATRIBUIÇÃO (Impede que o usuário seja seu próprio líder)
@@ -201,6 +202,20 @@ export default function ConfigurarUsuario() {
       // Para admins, limpar vínculos antigos
       const departamentoParaSalvar = selectedRole === "admin" ? null : finalDepartamentoId;
       const liderParaSalvar = selectedRole === "admin" ? null : finalLeaderId;
+
+      // Se o usuário está sendo promovido a Líder, atualizar o departamento para vinculá-lo
+      if (selectedRole === "lider" && selectedDepartamento) {
+        try {
+          // Atualizar o departamento para vincular este usuário como líder
+          await updateDepartamentoMutation.mutateAsync({
+            id: selectedDepartamento,
+            leaderId: userId,
+          });
+        } catch (deptError) {
+          console.warn("Aviso: Não foi possível atualizar o departamento automaticamente", deptError);
+          // Continuar mesmo se falhar, pois o usuário foi promovido com sucesso
+        }
+      }
 
       await updateMutation.mutateAsync({
         id: userId,
