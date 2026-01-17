@@ -515,6 +515,19 @@ export const appRouter = router({
       return await db.getAllMicrosWithMacroAndBloco();
     }),
 
+    getMicrosWithFilters: protectedProcedure
+      .input(z.object({
+        blocoId: z.number().optional(),
+        blocoNome: z.string().optional(),
+        macroId: z.number().optional(),
+        macroNome: z.string().optional(),
+        microNome: z.string().optional(),
+        status: z.enum(['ativo', 'inativo']).optional(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getMicrosWithFilters(input);
+      }),
+
     getMicroById: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
@@ -549,6 +562,63 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deleteMicro(input.id);
+        return { success: true };
+      }),
+
+    inativarMicro: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.updateMicro(input.id, { status: 'inativo' });
+        return { success: true };
+      }),
+
+    editarMicro: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        nome: z.string().min(1),
+        descricao: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, nome, descricao } = input;
+        await db.updateMicro(id, { nome, descricao });
+        return { success: true };
+      }),
+
+    inativarMacroComCascata: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteMacro(input.id);
+        return { success: true };
+      }),
+
+    editarMacro: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        nome: z.string().min(1),
+        descricao: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, nome, descricao } = input;
+        await db.updateMacro(id, { nome, descricao });
+        return { success: true };
+      }),
+
+    inativarBlocoComCascata: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteBloco(input.id);
+        return { success: true };
+      }),
+
+    editarBloco: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        nome: z.string().min(1),
+        descricao: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, nome, descricao } = input;
+        await db.updateBloco(id, { nome, descricao });
         return { success: true };
       }),
 

@@ -1804,7 +1804,8 @@ export async function getAllMicrosWithMacroAndBloco() {
   return await db
     .select({
       id: competenciasMicros.id,
-      nome: competenciasMicros.nome,
+      microNome: competenciasMicros.nome,
+      microStatus: competenciasMicros.status,
       macroId: competenciasMicros.macroId,
       macroNome: competenciasMacros.nome,
       blocoId: competenciasBlocos.id,
@@ -1813,7 +1814,7 @@ export async function getAllMicrosWithMacroAndBloco() {
     .from(competenciasMicros)
     .leftJoin(competenciasMacros, eq(competenciasMicros.macroId, competenciasMacros.id))
     .leftJoin(competenciasBlocos, eq(competenciasMacros.blocoId, competenciasBlocos.id))
-    .orderBy(asc(competenciasMicros.nome));
+    .orderBy(asc(competenciasBlocos.nome), asc(competenciasMacros.nome), asc(competenciasMicros.nome));
 }
 
 export async function getMacroByNomeAndBlocoId(nome: string, blocoId: number) {
@@ -2153,3 +2154,56 @@ export async function isUserLeaderOfColaborador(userId: number, colaboradorId: n
 
   return result.length > 0;
 }
+
+
+export async function getMicrosWithFilters(filters: {
+  blocoId?: number;
+  blocoNome?: string;
+  macroId?: number;
+  macroNome?: string;
+  microNome?: string;
+  status?: 'ativo' | 'inativo';
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions: any[] = [];
+
+  if (filters.blocoId) {
+    conditions.push(eq(competenciasBlocos.id, filters.blocoId));
+  }
+  if (filters.blocoNome) {
+    conditions.push(like(competenciasBlocos.nome, `%${filters.blocoNome}%`));
+  }
+  if (filters.macroId) {
+    conditions.push(eq(competenciasMacros.id, filters.macroId));
+  }
+  if (filters.macroNome) {
+    conditions.push(like(competenciasMacros.nome, `%${filters.macroNome}%`));
+  }
+  if (filters.microNome) {
+    conditions.push(like(competenciasMicros.nome, `%${filters.microNome}%`));
+  }
+  if (filters.status) {
+    conditions.push(eq(competenciasMicros.status, filters.status));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+  return await db
+    .select({
+      id: competenciasMicros.id,
+      microNome: competenciasMicros.nome,
+      microStatus: competenciasMicros.status,
+      macroId: competenciasMicros.macroId,
+      macroNome: competenciasMacros.nome,
+      blocoId: competenciasBlocos.id,
+      blocoNome: competenciasBlocos.nome,
+    })
+    .from(competenciasMicros)
+    .leftJoin(competenciasMacros, eq(competenciasMicros.macroId, competenciasMacros.id))
+    .leftJoin(competenciasBlocos, eq(competenciasMacros.blocoId, competenciasBlocos.id))
+    .where(whereClause)
+    .orderBy(asc(competenciasBlocos.nome), asc(competenciasMacros.nome), asc(competenciasMicros.nome));
+}
+

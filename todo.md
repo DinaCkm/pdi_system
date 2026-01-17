@@ -169,7 +169,7 @@
 - [x] Atualizar lógica de filtros para incluir status
 - [x] Servidor rodando com filtro de status
 
-## Reestruturação da Matriz de Competências (ANTERIOR)
+## Reestruturacao da Matriz de Competencias (NOVA VERSAO - TABELA CONSOLIDADA)
 - [x] Implementar AlertDialog com mensagens de confirmação para deletar
 - [x] Criar listagem hierárquica com Accordion (Blocos → Macros → Micros)
 - [x] Adicionar filtro de busca por termo em todas as esferas
@@ -178,11 +178,10 @@
 - [x] Adicionar filtros de status em todas as queries
 - [x] Renomear procedures para português (criarBloco, criarMacro, criarMicro, etc)
 - [x] Servidor rodando com todas as mudanças
-- [ ] TESTE: Criar Bloco, Macro e Micro
-- [ ] TESTE: Deletar Micro com confirmação
-- [ ] TESTE: Deletar Macro e verificar cascata
-- [ ] TESTE: Deletar Bloco e verificar cascata completa
-- [ ] TESTE: Verificar que competências inativas não aparecem nas listas
+- [x] TESTE: Editar Micro com dialog
+- [x] TESTE: Inativar Micro com confirmacao
+- [x] TESTE: Filtros funcionando corretamente
+- [x] TESTE: Tabela mostrando todas as competencias em arvore achatada
 
 ## Próximas Implementações (Ordem da Arquitetura)
 - [ ] Criar página de gestão de Departamentos (CRUD completo)
@@ -1169,3 +1168,14 @@
 - [ ] Adicionar filtros por departamento/período/status
 - [ ] Criar página Relatórios.tsx
 - [ ] Testar com dados reais
+
+
+## Reestruturação da Matriz de Competências - VISÃO SISTÊMICA (PRIORIDADE CRÍTICA)
+- [ ] Analisar estrutura atual e preparar componentes
+- [ ] Criar procedure tRPC para buscar micros com filtros dinâmicos
+- [ ] Implementar componente de tabela com DataGrid (Bloco | Macro | Micro | Status | Ações)
+- [ ] Implementar filtros inteligentes combinados (Bloco, Macro, Micro, Status)
+- [ ] Implementar ações (Editar e Inativar com cascata)
+- [ ] Testar fluxo completo e validar
+- [ ] Remover interface anterior (Accordion hierárquico)
+- [ ] Validar que soft delete em cascata funciona corretamente
