@@ -1314,3 +1314,23 @@
 2. Tabela não atualizava após inativar competência - resolvido adicionando `utils.competencias.getMicrosWithFilters.invalidate()` nas mutações
 
 Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionando perfeitamente.
+
+
+## Correção de Modais Faltando Botões de Ação (NOVA SOLICITAÇÃO - CRÍTICA)
+- [ ] Corrigir modal de criação de Bloco (faltam botões Cancelar/Salvar)
+- [ ] Corrigir modal de criação de Macro (faltam botões Cancelar/Salvar)
+- [ ] Corrigir modal de criação de Micro (faltam botões Cancelar/Salvar)
+- [ ] Adicionar DialogFooter com botões em todos os modais
+- [ ] Adicionar feedback de carregamento (isLoading) nos botões
+- [ ] Ajustar altura do modal (max-h-[90vh] overflow-y-auto)
+- [ ] Realizar limpeza geral de TODOS os modais do sistema
+- [ ] Testar todos os modais e validar funcionamento
+
+
+## Correção de Modais Faltando Botões de Ação (CONCLUÍDO)
+- [x] Refatorar ModalCustomizado para incluir footer com botões
+- [x] Corrigir modal de Bloco
+- [x] Corrigir modal de Macro
+- [x] Corrigir modal de Micro
+- [x] Realizar limpeza geral de todos os modais
+- [x] Testar todos os modais - VALIDADO COM SUCESSO
