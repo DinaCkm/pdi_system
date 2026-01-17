@@ -307,8 +307,18 @@ export async function createBloco(data: { nome: string; descricao?: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(competenciasBlocos).values(data).execute();
-  return result[0]?.insertId || 0;
+  if (!data.nome) throw new Error("nome é obrigatório");
+
+  const result = await db.insert(competenciasBlocos).values({
+    nome: data.nome,
+    descricao: data.descricao || null,
+    status: 'ativo',
+  }).execute();
+  
+  const insertId = result[0]?.insertId;
+  if (!insertId) throw new Error("Falha ao inserir bloco competência");
+  
+  return { id: insertId };
 }
 
 export async function updateBloco(id: number, data: Partial<{ nome: string; descricao: string }>) {
@@ -364,8 +374,20 @@ export async function createMacro(data: { blocoId: number; nome: string; descric
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(competenciasMacros).values(data).execute();
-  return result[0]?.insertId || 0;
+  if (!data.blocoId) throw new Error("blocoId é obrigatório");
+  if (!data.nome) throw new Error("nome é obrigatório");
+
+  const result = await db.insert(competenciasMacros).values({
+    blocoId: data.blocoId,
+    nome: data.nome,
+    descricao: data.descricao || null,
+    status: 'ativo',
+  }).execute();
+  
+  const insertId = result[0]?.insertId;
+  if (!insertId) throw new Error("Falha ao inserir macro competência");
+  
+  return { id: insertId };
 }
 
 export async function updateMacro(
@@ -420,8 +442,20 @@ export async function createMicro(data: { macroId: number; nome: string; descric
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(competenciasMicros).values(data).execute();
-  return result[0]?.insertId || 0;
+  if (!data.macroId) throw new Error("macroId é obrigatório");
+  if (!data.nome) throw new Error("nome é obrigatório");
+
+  const result = await db.insert(competenciasMicros).values({
+    macroId: data.macroId,
+    nome: data.nome,
+    descricao: data.descricao || null,
+    status: 'ativo',
+  }).execute();
+  
+  const insertId = result[0]?.insertId;
+  if (!insertId) throw new Error("Falha ao inserir micro competência");
+  
+  return { id: insertId };
 }
 
 export async function updateMicro(

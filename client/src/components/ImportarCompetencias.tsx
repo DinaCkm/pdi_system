@@ -29,13 +29,22 @@ export function ImportarCompetencias() {
   const [showPreview, setShowPreview] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [resultado, setResultado] = useState<ResultadoImportacao | null>(null);
+  const [errosValidacao, setErrosValidacao] = useState<{ linha: number; erro: string }[]>([]);
+  const [showErroDialog, setShowErroDialog] = useState(false);
 
   const importarMutation = trpc.competencias.importarEmLote.useMutation({
     onSuccess: (result) => {
       setResultado(result);
       setArquivo(null);
       setDados([]);
-      toast.success(`Importação concluída: ${result.sucesso} competências criadas`);
+      
+      // Se houver erros, mostrar AlertDialog de erros
+      if (result.erros.length > 0) {
+        // Não mostrar toast, apenas o AlertDialog
+      } else {
+        // Se foi 100% sucesso, mostrar toast
+        toast.success(`Importação concluída com sucesso: ${result.sucesso} competências criadas`);
+      }
     },
     onError: (e: any) => {
       toast.error(`Erro na importação: ${e.message}`);
@@ -49,29 +58,27 @@ export function ImportarCompetencias() {
     // Validar extensão
     const extensao = file.name.split(".").pop()?.toLowerCase();
     if (!["xlsx", "xls", "csv"].includes(extensao || "")) {
-      toast.error("Arquivo deve ser Excel (.xlsx, .xls) ou CSV (.csv)");
+      toast.error("Apenas arquivos Excel (.xlsx, .xls) ou CSV são permitidos");
       return;
     }
 
     setArquivo(file);
-    lerArquivo(file);
-  };
 
-  const lerArquivo = (file: File) => {
+    // Ler arquivo
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = (event) => {
       try {
-        const conteudo = e.target?.result;
         let dados: CompetenciaImportacao[] = [];
+        const arrayBuffer = event.target?.result as ArrayBuffer;
 
-        if (file.name.endsWith(".csv")) {
-          // Ler CSV
-          const texto = conteudo as string;
-          const linhas = texto.split("\n").filter((l) => l.trim());
-          const cabecalho = linhas[0].split(",").map((h) => h.trim().toLowerCase());
+        if (extensao === "csv") {
+          // Processar CSV
+          const text = new TextDecoder().decode(arrayBuffer);
+          const linhas = text.trim().split("\n");
+          const cabecalho = linhas[0].split(",").map(h => h.trim().toLowerCase());
 
-          dados = linhas.slice(1).map((linha) => {
-            const valores = linha.split(",").map((v) => v.trim());
+          dados = linhas.slice(1).map((linha: string) => {
+            const valores = linha.split(",").map(v => v.trim());
             return {
               blocoNome: valores[cabecalho.indexOf("bloconome")] || "",
               blocoDescricao: valores[cabecalho.indexOf("blocodescricao")] || "",
@@ -82,31 +89,23 @@ export function ImportarCompetencias() {
             };
           });
         } else {
-          // Ler Excel
-          const workbook = XLSX.read(conteudo, { type: "array" });
+          // Processar Excel
+          const workbook = XLSX.read(arrayBuffer, { type: "array" });
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-            header: 1,
-            defval: "",
-          }) as any[];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[];
 
-          if (jsonData.length < 2) {
-            toast.error("Arquivo vazio ou sem dados");
-            return;
+          if (jsonData.length > 0) {
+            const cabecalho = (jsonData[0] as string[]).map(h => h.toLowerCase());
+
+            dados = jsonData.slice(1).map((linha: any[]) => ({
+              blocoNome: linha[cabecalho.indexOf("bloconome")] || "",
+              blocoDescricao: linha[cabecalho.indexOf("blocodescricao")] || "",
+              macroNome: linha[cabecalho.indexOf("macronome")] || "",
+              macroDescricao: linha[cabecalho.indexOf("macrodescricao")] || "",
+              microNome: linha[cabecalho.indexOf("micronome")] || "",
+              microDescricao: linha[cabecalho.indexOf("microdescricao")] || "",
+            }));
           }
-
-          const cabecalho = (jsonData[0] as string[]).map((h) =>
-            h.toLowerCase().replace(/\s+/g, "")
-          );
-
-          dados = jsonData.slice(1).map((linha: any[]) => ({
-            blocoNome: linha[cabecalho.indexOf("bloconome")] || "",
-            blocoDescricao: linha[cabecalho.indexOf("blocodescricao")] || "",
-            macroNome: linha[cabecalho.indexOf("macronome")] || "",
-            macroDescricao: linha[cabecalho.indexOf("macrodescricao")] || "",
-            microNome: linha[cabecalho.indexOf("micronome")] || "",
-            microDescricao: linha[cabecalho.indexOf("microdescricao")] || "",
-          }));
         }
 
         // Validar dados
@@ -118,7 +117,8 @@ export function ImportarCompetencias() {
         });
 
         if (erros.length > 0) {
-          toast.error(`${erros.length} erro(s) encontrado(s)`);
+          setErrosValidacao(erros);
+          setShowErroDialog(true);
           setDados([]);
           return;
         }
@@ -142,171 +142,188 @@ export function ImportarCompetencias() {
     setShowConfirm(false);
   };
 
-  return (
-    <div className="space-y-4">
-      {/* Card de Upload */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5" />
-            Importar Competências em Lote
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Selecione arquivo Excel ou CSV</Label>
-            <Input
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={handleFileChange}
-              className="cursor-pointer"
-            />
-            <p className="text-sm text-gray-600">
-              Formato esperado: BlocoNome, BlocoDescricao, MacroNome, MacroDescricao, MicroNome, MicroDescricao
-            </p>
-          </div>
+  // Mostrar AlertDialog se houver erros na importação
+  const mostrarErrosImportacao = resultado && resultado.erros.length > 0;
 
-          {dados.length > 0 && (
+  return (
+    <>
+      {/* AlertDialog para Erros de Validação */}
+      <AlertDialog open={showErroDialog} onOpenChange={setShowErroDialog}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+              ❌ UPLOAD NÃO REALIZADO
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-red-700 font-semibold">
+              {errosValidacao.length} erro(s) encontrado(s) no arquivo
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 bg-red-50 p-4 rounded-lg max-h-64 overflow-y-auto">
+            {errosValidacao.map((e, idx) => (
+              <div key={idx} className="text-sm text-red-800 border-l-2 border-red-400 pl-3">
+                <strong>Linha {e.linha}:</strong> {e.erro}
+              </div>
+            ))}
+          </div>
+          <AlertDialogAction className="bg-red-600 hover:bg-red-700">
+            Voltar
+          </AlertDialogAction>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* AlertDialog para Erros de Importação */}
+      <AlertDialog open={mostrarErrosImportacao} onOpenChange={() => setResultado(null)}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600 flex items-center gap-2">
+              ⚠️ IMPORTAÇÃO NÃO REALIZADA - {resultado?.erros.length} ERRO(S)
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-red-700 font-semibold">
+              {resultado?.sucesso} competência(s) foram criadas, mas {resultado?.erros.length} linha(s) falharam. A importação não foi concluída com sucesso.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 bg-red-50 p-4 rounded-lg max-h-64 overflow-y-auto">
+            {resultado?.erros.map((e, idx) => (
+              <div key={idx} className="text-sm text-red-800 border-l-2 border-red-400 pl-3">
+                <strong>Linha {e.linha}:</strong> {e.erro}
+              </div>
+            ))}
+          </div>
+          <AlertDialogAction className="bg-red-600 hover:bg-red-700">
+            Fechar
+          </AlertDialogAction>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <div className="space-y-4">
+        {/* Card de Upload */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5" />
+              Importar Competências em Lote
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <div className="bg-blue-50 p-3 rounded-lg flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Label>Selecione arquivo Excel ou CSV</Label>
+              <Input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleFileChange}
+                className="cursor-pointer"
+              />
+              <p className="text-sm text-gray-600">
+                Formato esperado: BlocoNome, BlocoDescricao, MacroNome, MacroDescricao, MicroNome, MicroDescricao
+              </p>
+            </div>
+
+            {dados.length > 0 && (
+              <div className="space-y-2">
+                <div className="bg-blue-50 p-3 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-blue-900">
+                      {dados.length} competência(s) pronta(s) para importar
+                    </p>
+                    <p className="text-sm text-blue-700">
+                      Clique em "Visualizar" para revisar os dados antes de importar
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button onClick={() => setShowPreview(true)} variant="outline">
+                    Visualizar
+                  </Button>
+                  <Button
+                    onClick={() => setShowConfirm(true)}
+                    className="bg-green-600 hover:bg-green-700"
+                    disabled={importarMutation.isPending}
+                  >
+                    {importarMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Importando...
+                      </>
+                    ) : (
+                      "Importar Agora"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {resultado && resultado.erros.length === 0 && resultado.sucesso > 0 && (
+              <div className="bg-green-50 p-3 rounded-lg flex items-start gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-blue-900">
-                    {dados.length} competência(s) pronta(s) para importar
+                  <p className="font-medium text-green-900">
+                    Importação realizada com sucesso!
                   </p>
-                  <p className="text-sm text-blue-700">
-                    Clique em "Visualizar" para revisar os dados antes de importar
+                  <p className="text-sm text-green-700">
+                    {resultado.sucesso} competência(s) foram criadas
                   </p>
                 </div>
               </div>
-
-              <div className="flex gap-2">
-                <Button onClick={() => setShowPreview(true)} variant="outline">
-                  Visualizar
-                </Button>
-                <Button
-                  onClick={() => setShowConfirm(true)}
-                  className="bg-green-600 hover:bg-green-700"
-                  disabled={importarMutation.isPending}
-                >
-                  {importarMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Importando...
-                    </>
-                  ) : (
-                    "Importar Agora"
-                  )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Card de Resultado */}
-      {resultado && (
-        <Card className="border-green-200 bg-green-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-green-900">
-              <CheckCircle2 className="w-5 h-5" />
-              Importação Concluída
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <p className="text-green-800">
-              ✓ {resultado.sucesso} competência(s) importada(s) com sucesso
-            </p>
-            {resultado.erros.length > 0 && (
-              <div className="bg-red-50 p-3 rounded-lg">
-                <p className="font-medium text-red-900 mb-2">
-                  ✗ {resultado.erros.length} erro(s):
-                </p>
-                <ul className="text-sm text-red-800 space-y-1">
-                  {resultado.erros.slice(0, 5).map((e, idx) => (
-                    <li key={idx}>
-                      Linha {e.linha}: {e.erro}
-                    </li>
-                  ))}
-                  {resultado.erros.length > 5 && (
-                    <li>... e mais {resultado.erros.length - 5} erro(s)</li>
-                  )}
-                </ul>
-              </div>
             )}
-            <Button
-              onClick={() => setResultado(null)}
-              variant="outline"
-              className="w-full"
-            >
-              Fechar
-            </Button>
           </CardContent>
         </Card>
-      )}
 
-      {/* Dialog de Visualização */}
-      <AlertDialog open={showPreview} onOpenChange={setShowPreview}>
-        <AlertDialogContent className="max-w-2xl max-h-96 overflow-auto">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Visualizar Dados</AlertDialogTitle>
-            <AlertDialogDescription>
-              Revise os dados antes de importar. Mostrando até 10 itens.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border p-2 text-left">Bloco</th>
-                  <th className="border p-2 text-left">Macro</th>
-                  <th className="border p-2 text-left">Micro</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dados.slice(0, 10).map((d, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50">
-                    <td className="border p-2 text-xs">{d.blocoNome}</td>
-                    <td className="border p-2 text-xs">{d.macroNome}</td>
-                    <td className="border p-2 text-xs">{d.microNome}</td>
+        {/* Preview Modal */}
+        <AlertDialog open={showPreview} onOpenChange={setShowPreview}>
+          <AlertDialogContent className="max-w-4xl max-h-96 overflow-y-auto">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Preview dos Dados</AlertDialogTitle>
+              <AlertDialogDescription>
+                Revise os dados antes de importar
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Bloco</th>
+                    <th className="text-left p-2">Macro</th>
+                    <th className="text-left p-2">Micro</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {dados.map((d, idx) => (
+                    <tr key={idx} className="border-b">
+                      <td className="p-2">{d.blocoNome}</td>
+                      <td className="p-2">{d.macroNome}</td>
+                      <td className="p-2">{d.microNome}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+          </AlertDialogContent>
+        </AlertDialog>
 
-          {dados.length > 10 && (
-            <p className="text-sm text-gray-600">
-              ... e mais {dados.length - 10} item(ns)
-            </p>
-          )}
-
-          <AlertDialogCancel>Fechar</AlertDialogCancel>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Dialog de Confirmação */}
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Importação</AlertDialogTitle>
-            <AlertDialogDescription>
-              Você está prestes a importar {dados.length} competência(s). Esta ação não pode ser desfeita.
-              Deseja continuar?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-2">
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleImportar}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Importar
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        {/* Confirmação de Importação */}
+        <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Importação</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja importar {dados.length} competência(s)? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex gap-2">
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleImportar}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Importar
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </>
   );
 }

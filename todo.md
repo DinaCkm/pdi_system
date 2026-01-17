@@ -84,6 +84,9 @@
 - [ ] Criar páginas de relatórios
 
 ## Testes
+- [x] Criar testes unitários para criação de competências (Bloco, Macro, Micro)
+- [x] Validar validações de campos obrigatórios
+- [x] Validar hierarquia completa de competências
 - [ ] Criar testes unitários para fluxo de aprovação
 - [ ] Criar testes unitários para validações de negócio
 - [ ] Criar testes unitários para permissões por perfil
@@ -104,16 +107,16 @@
 - [ ] Atualizar relatórios para incluir filtro por departamento
 
 ## Importação em Massa (NOVA FUNCIONALIDADE)
-- [ ] Criar página de importação em massa
-- [ ] Implementar upload de arquivo Excel/CSV
-- [ ] Criar parser para planilhas de usuários
-- [ ] Criar parser para planilhas de departamentos
-- [ ] Criar parser para planilhas de competências (Bloco/Macro/Micro)
-- [ ] Criar parser para planilhas de ações de PDI
-- [ ] Implementar validação de dados antes da importação
-- [ ] Implementar preview dos dados a serem importados
-- [ ] Criar templates de planilha para download
-- [ ] Implementar feedback de sucesso/erro após importação
+- [x] Criar página de importação em massa
+- [x] Implementar upload de arquivo Excel/CSV
+- [x] Criar parser para planilhas de usuários
+- [x] Criar parser para planilhas de departamentos
+- [x] Criar parser para planilhas de competências (Bloco/Macro/Micro)
+- [x] Criar parser para planilhas de ações de PDI
+- [x] Implementar validação de dados antes da importação
+- [x] Implementar preview dos dados a serem importados
+- [x] Criar templates de planilha para download
+- [x] Implementar feedback de sucesso/erro após importação (AlertDialog explícito com lista de erros)
 
 ## Setup Inicial (NOVA FUNCIONALIDADE)
 - [x] Criar página /setup para cadastro do primeiro admin
@@ -209,6 +212,12 @@
 - [x] Adicionar funcionalidade de INATIVAR/ATIVAR usuário (status ativo/inativo)
 - [x] Adicionar coluna de STATUS na tabela de usuários
 - [x] Adicionar botão toggle para ativar/inativar usuário
+- [x] Corrigir função createMicro para retornar { id } corretamente
+- [x] Corrigir função createMacro para retornar { id } corretamente
+- [x] Corrigir função createBloco para retornar { id } corretamente
+- [x] Criar AlertDialog explícito para erros de validação (❌ UPLOAD NÃO REALIZADO)
+- [x] Criar AlertDialog explícito para erros de importação (⚠️ IMPORTAÇÃO NÃO REALIZADA)
+- [x] Criar testes vitest para validar funções de criação de competências (12 testes passando)
 
 ## Melhorias Solicitadas - Página de Usuários
 - [x] Implementar paginação na lista de usuários (10 itens por página)
