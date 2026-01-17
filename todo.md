@@ -1152,3 +1152,11 @@
 - [x] Validar dados antes de importar
 - [x] Integrar componente na página de Competências
 - [x] Servidor rodando com importação em lote
+
+
+## Painel de Relatórios (EM PROGRESSO)
+- [ ] Criar procedures tRPC para dados de relatórios
+- [ ] Criar componente de gráficos e tabelas
+- [ ] Adicionar filtros por departamento/período/status
+- [ ] Criar página Relatórios.tsx
+- [ ] Testar com dados reais
