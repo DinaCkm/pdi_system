@@ -8,14 +8,7 @@ import { ImportarCompetencias } from "@/components/ImportarCompetencias";
 import { MatrizCompetenciasConsolidada } from "@/components/MatrizCompetenciasConsolidada";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-    Select,
-    SelectContent,
-    SelectContentNoPortal,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-  } from "@/components/ui/select";
+// Removido: Select, SelectContent, SelectContentNoPortal, SelectItem, SelectTrigger, SelectValue
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -39,9 +32,11 @@ export default function Competencias() {
   const [nomeMacro, setNomeMacro] = useState("");
   const [descricaoMacro, setDescricaoMacro] = useState("");
   const [blocoSelecionadoMacro, setBlocoSelecionadoMacro] = useState<number | undefined>();
+  const [blocoBuscaMacro, setBlockoBuscaMacro] = useState("");
   const [nomeMicro, setNomeMicro] = useState("");
   const [descricaoMicro, setDescricaoMicro] = useState("");
   const [macroSelecionadaMicro, setMacroSelecionadaMicro] = useState<number | undefined>();
+  const [macroBuscaMicro, setMacroBuscaMicro] = useState("");
 
   // Estados dos Modais
   const [showNovoBloco, setShowNovoBloco] = useState(false);
@@ -227,23 +222,22 @@ export default function Competencias() {
         <div className="space-y-4">
           <div>
             <Label htmlFor="bloco-macro">Bloco *</Label>
-            <Select 
-              value={blocoSelecionadoMacro?.toString()} 
-              onValueChange={(value) => setBlocoSelecionadoMacro(parseInt(value))}
-            >
-              <SelectTrigger id="bloco-macro">
-                <SelectValue placeholder="Selecione um bloco" />
-              </SelectTrigger>
-              <SelectContentNoPortal 
-                position="popper"
-              >
-                {blocos?.map((bloco) => (
-                  <SelectItem key={bloco.id} value={bloco.id.toString()}>
-                    {bloco.nome}
-                  </SelectItem>
-                ))}
-              </SelectContentNoPortal>
-            </Select>
+            <Input
+              id="bloco-macro"
+              list="blocos-list"
+              placeholder="Buscar bloco..."
+              value={blocoBuscaMacro}
+              onChange={(e) => {
+                setBlockoBuscaMacro(e.target.value);
+                const bloco = blocos?.find(b => b.nome === e.target.value);
+                if (bloco) setBlocoSelecionadoMacro(bloco.id);
+              }}
+            />
+            <datalist id="blocos-list">
+              {blocos?.map((bloco) => (
+                <option key={bloco.id} value={bloco.nome} />
+              ))}
+            </datalist>
           </div>
           <div>
             <Label htmlFor="nome-macro">Nome da Macro *</Label>
@@ -279,23 +273,22 @@ export default function Competencias() {
         <div className="space-y-4">
           <div>
             <Label htmlFor="macro-micro">Macro *</Label>
-            <Select 
-              value={macroSelecionadaMicro?.toString()} 
-              onValueChange={(value) => setMacroSelecionadaMicro(parseInt(value))}
-            >
-              <SelectTrigger id="macro-micro">
-                <SelectValue placeholder="Selecione uma macro" />
-              </SelectTrigger>
-              <SelectContentNoPortal 
-                position="popper"
-              >
-                {macros?.map((macro) => (
-                  <SelectItem key={macro.id} value={macro.id.toString()}>
-                    {macro.nome}
-                  </SelectItem>
-                ))}
-              </SelectContentNoPortal>
-            </Select>
+            <Input
+              id="macro-micro"
+              list="macros-list"
+              placeholder="Buscar macro..."
+              value={macroBuscaMicro}
+              onChange={(e) => {
+                setMacroBuscaMicro(e.target.value);
+                const macro = macros?.find(m => m.nome === e.target.value);
+                if (macro) setMacroSelecionadaMicro(macro.id);
+              }}
+            />
+            <datalist id="macros-list">
+              {macros?.map((macro) => (
+                <option key={macro.id} value={macro.nome} />
+              ))}
+            </datalist>
           </div>
           <div>
             <Label htmlFor="nome-micro">Nome da Micro *</Label>

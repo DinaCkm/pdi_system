@@ -3,7 +3,8 @@ import { useLocation } from "wouter";
 import { Eye, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SelectContentNoPortal } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -107,13 +108,13 @@ export function DataTablePDIs() {
             <SelectTrigger>
               <SelectValue placeholder="Selecione um departamento" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContentNoPortal>
               {departamentos.map((dept: any) => (
                 <SelectItem key={dept.id} value={dept.id.toString()}>
                   {dept.nome}
                 </SelectItem>
               ))}
-            </SelectContent>
+            </SelectContentNoPortal>
           </Select>
         </div>
 
@@ -134,19 +135,19 @@ export function DataTablePDIs() {
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContentNoPortal>
               <SelectItem value="todos">Todos</SelectItem>
               <SelectItem value="0">0% (Não Iniciados)</SelectItem>
               <SelectItem value="1-50">1% a 50% (Em Início)</SelectItem>
               <SelectItem value="51-99">51% a 99% (Fase Final)</SelectItem>
               <SelectItem value="100">100% (Concluídos)</SelectItem>
-            </SelectContent>
+            </SelectContentNoPortal>
           </Select>
         </div>
       </div>
 
       {/* Tabela */}
-      <div className="border rounded-lg overflow-x-auto">
+      <div className="border rounded-lg overflow-y-auto max-h-[400px]">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50">

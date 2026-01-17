@@ -204,7 +204,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
                     <option value="0">Selecione a microcompetência</option>
                     {filteredMicros?.map((micro) => (
                       <option key={micro.id} value={micro.id}>
-                        {micro.nome} ({micro.macroNome} &gt; {micro.blocoNome})
+                        {micro.microNome} ({micro.blocoNome} &gt; {micro.macroNome})
                       </option>
                     ))}
                   </select>
@@ -221,7 +221,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
                   <strong>Macro:</strong> {selectedMicro.macroNome}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  <strong>Micro:</strong> {selectedMicro.nome}
+                  <strong>Micro:</strong> {selectedMicro.microNome}
                 </p>
               </div>
             )}

@@ -128,7 +128,7 @@ export default function PDIs() {
 
   return (
     <DashboardLayout>
-      <div className="flex-1 w-full min-w-0 space-y-6 p-2 md:p-4 overflow-x-auto">
+      <div className="flex-1 w-full min-w-0 space-y-6 p-2 md:p-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
