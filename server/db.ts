@@ -1,4 +1,4 @@
-import { eq, and, or, desc, asc, sql, inArray, ne, isNotNull } from "drizzle-orm";
+import { eq, and, or, desc, asc, sql, inArray, ne, isNotNull, like } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { alias } from "drizzle-orm/mysql-core";
 import { 
@@ -2356,4 +2356,140 @@ export async function getPDIsComProgresso(filters?: {
     console.error("Erro ao buscar PDIs com progresso:", error);
     return [];
   }
+}
+
+
+/**
+ * Retorna a hierarquia completa de competências:
+ * - Blocos (com ou sem Macro)
+ * - Macros (com ou sem Micro)
+ * - Micros (com Bloco + Macro + Micro)
+ * 
+ * Estrutura:
+ * [
+ *   { blocoId, blocoNome, macroId, macroNome, microId, microNome, status },
+ *   { blocoId, blocoNome, macroId: null, macroNome: null, microId: null, microNome: null, status },
+ * ]
+ */
+export async function getCompetenciasHierarchy(filters?: {
+  blocoNome?: string;
+  macroNome?: string;
+  microNome?: string;
+  status?: 'ativo' | 'inativo';
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Passo 1: Obter todos os Blocos
+  const blocos = await db
+    .select()
+    .from(competenciasBlocos)
+    .where(
+      filters?.status
+        ? eq(competenciasBlocos.status, filters.status)
+        : undefined
+    );
+
+  // Passo 2: Para cada Bloco, obter Macros
+  const result: any[] = [];
+
+  for (const bloco of blocos) {
+    const macros = await db
+      .select()
+      .from(competenciasMacros)
+      .where(
+        and(
+          eq(competenciasMacros.blocoId, bloco.id),
+          filters?.status
+            ? eq(competenciasMacros.status, filters.status)
+            : undefined
+        )
+      );
+
+    // Se não há Macros, adicionar o Bloco sozinho
+    if (macros.length === 0) {
+      result.push({
+        blocoId: bloco.id,
+        blocoNome: bloco.nome,
+        blocoStatus: bloco.status,
+        macroId: null,
+        macroNome: null,
+        macroStatus: null,
+        microId: null,
+        microNome: null,
+        microStatus: null,
+      });
+    } else {
+      // Passo 3: Para cada Macro, obter Micros
+      for (const macro of macros) {
+        const micros = await db
+          .select()
+          .from(competenciasMicros)
+          .where(
+            and(
+              eq(competenciasMicros.macroId, macro.id),
+              filters?.status
+                ? eq(competenciasMicros.status, filters.status)
+                : undefined
+            )
+          );
+
+        // Se não há Micros, adicionar Bloco + Macro
+        if (micros.length === 0) {
+          result.push({
+            blocoId: bloco.id,
+            blocoNome: bloco.nome,
+            blocoStatus: bloco.status,
+            macroId: macro.id,
+            macroNome: macro.nome,
+            macroStatus: macro.status,
+            microId: null,
+            microNome: null,
+            microStatus: null,
+          });
+        } else {
+          // Adicionar Bloco + Macro + Micro
+          for (const micro of micros) {
+            result.push({
+              blocoId: bloco.id,
+              blocoNome: bloco.nome,
+              blocoStatus: bloco.status,
+              macroId: macro.id,
+              macroNome: macro.nome,
+              macroStatus: macro.status,
+              microId: micro.id,
+              microNome: micro.nome,
+              microStatus: micro.status,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Aplicar filtros de nome se fornecidos
+  let filtered = result;
+  
+  if (filters?.blocoNome) {
+    const blocoFilter = filters.blocoNome.toLowerCase();
+    filtered = filtered.filter((r) =>
+      r.blocoNome.toLowerCase().includes(blocoFilter)
+    );
+  }
+
+  if (filters?.macroNome) {
+    const macroFilter = filters.macroNome.toLowerCase();
+    filtered = filtered.filter(
+      (r) => r.macroNome && r.macroNome.toLowerCase().includes(macroFilter)
+    );
+  }
+
+  if (filters?.microNome) {
+    const microFilter = filters.microNome.toLowerCase();
+    filtered = filtered.filter(
+      (r) => r.microNome && r.microNome.toLowerCase().includes(microFilter)
+    );
+  }
+
+  return filtered;
 }

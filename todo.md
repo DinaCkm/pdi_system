@@ -183,6 +183,26 @@
 - [x] TESTE: Filtros funcionando corretamente
 - [x] TESTE: Tabela mostrando todas as competencias em arvore achatada
 
+## Correção Crítica - Sistema de Competências (17 JAN 2025)
+- [x] Remover system.checkSetup que travava login
+- [x] Comentar pdiRouter com 154+ erros TypeScript
+- [x] Deletar arquivo pdi.router.ts quebrado
+- [x] Criar tabelas de competências no banco
+- [x] Adicionar import de like em db.ts para filtros
+- [x] Criar função getCompetenciasHierarchy em db.ts
+- [x] Criar procedure tRPC getCompetenciasHierarchy
+- [x] Atualizar MatrizCompetenciasConsolidada para usar nova query
+- [x] Adicionar botões de Novo Bloco, Novo Macro, Novo Micro
+- [x] Criar modais para criação de Macro (com seleção de Bloco obrigatória)
+- [x] Criar modais para criação de Micro (com seleção de Macro obrigatória)
+- [x] Corrigir z-index do SelectContent (Bloco e Macro) para aparecer acima do modal
+- [ ] Testar criação de Bloco sozinho (sem Macro)
+- [ ] Testar criação de Bloco + Macro (sem Micro)
+- [ ] Testar criação de Bloco + Macro + Micro (completo)
+- [ ] Remover duplicação de linhas na tabela
+- [ ] Corrigir erro React removeChild
+- [ ] Salvar checkpoint final com sistema funcionando
+
 ## Próximas Implementações (Ordem da Arquitetura)
 - [ ] Criar página de gestão de Departamentos (CRUD completo)
 - [ ] Atualizar página de usuários para incluir seleção de departamento

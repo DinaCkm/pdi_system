@@ -1,0 +1,70 @@
+{
+  "query": "SELECT id, nome, descricao, status FROM competencias_blocos LIMIT 10",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, nome, descricao, status FROM competencias_blocos LIMIT 10",
+  "rows": [
+    {
+      "id": "480068",
+      "nome": "Liderança",
+      "descricao": "Competências de liderança",
+      "status": "ativo"
+    },
+    {
+      "id": "480069",
+      "nome": "Comunicação",
+      "descricao": "Competências de comunicação",
+      "status": "ativo"
+    },
+    {
+      "id": "480070",
+      "nome": "Gestão",
+      "descricao": "Competências de gestão",
+      "status": "ativo"
+    },
+    {
+      "id": "480071",
+      "nome": "Técnico",
+      "descricao": "Competências técnicas",
+      "status": "ativo"
+    },
+    {
+      "id": "480072",
+      "nome": "Liderança",
+      "descricao": "Competências de liderança",
+      "status": "ativo"
+    },
+    {
+      "id": "480073",
+      "nome": "Comunicação",
+      "descricao": "Competências de comunicação",
+      "status": "ativo"
+    },
+    {
+      "id": "480074",
+      "nome": "Liderança",
+      "descricao": "Competências de liderança",
+      "status": "ativo"
+    },
+    {
+      "id": "480075",
+      "nome": "Liderança",
+      "descricao": "Competências de liderança",
+      "status": "ativo"
+    },
+    {
+      "id": "480076",
+      "nome": "Comunicação",
+      "descricao": "Competências de comunicação",
+      "status": "ativo"
+    },
+    {
+      "id": "480077",
+      "nome": "Gestão",
+      "descricao": "Competências de gestão",
+      "status": "ativo"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnome\tdescricao\tstatus\n480068\tLiderança\tCompetências de liderança\tativo\n480069\tComunicação\tCompetências de comunicação\tativo\n480070\tGestão\tCompetências de gestão\tativo\n480071\tTécnico\tCompetências técnicas\tativo\n480072\tLiderança\tCompetências de liderança\tativo\n480073\tComunicação\tCompetências de comunicação\tativo\n480074\tLiderança\tCompetências de liderança\tativo\n480075\tLiderança\tCompetências de liderança\tativo\n480076\tComunicação\tCompetências de comunicação\tativo\n480077\tGestão\tCompetências de gestão\tativo\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

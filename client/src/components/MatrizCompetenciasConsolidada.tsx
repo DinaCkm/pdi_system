@@ -36,6 +36,18 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
+interface CompetenciaHierarquia {
+  blocoId: number;
+  blocoNome: string;
+  blocoStatus: string;
+  macroId: number | null;
+  macroNome: string | null;
+  macroStatus: string | null;
+  microId: number | null;
+  microNome: string | null;
+  microStatus: string | null;
+}
+
 interface MicroCompetencia {
   id: number;
   microNome: string;
@@ -47,6 +59,7 @@ interface MicroCompetencia {
 }
 
 export function MatrizCompetenciasConsolidada() {
+  const utils = trpc.useUtils();
   const [filters, setFilters] = useState({
     blocoNome: '',
     macroNome: '',
@@ -60,37 +73,44 @@ export function MatrizCompetenciasConsolidada() {
   const [showActivateDialog, setShowActivateDialog] = useState(false);
   const [editForm, setEditForm] = useState({ nome: '', descricao: '' });
 
-  // Queries
-  const { data: micros = [] } = trpc.competencias.getMicrosWithFilters.useQuery({
+  // Query da hierarquia completa
+  const { data: hierarquia = [] } = trpc.competencias.getCompetenciasHierarchy.useQuery({
     blocoNome: filters.blocoNome || undefined,
     macroNome: filters.macroNome || undefined,
     microNome: filters.microNome || undefined,
     status: (filters.status as 'ativo' | 'inativo') || undefined,
   });
 
-  const { data: blocos = [] } = trpc.competencias.listBlocos.useQuery();
-  const { data: macros = [] } = trpc.competencias.listAllMacros.useQuery();
-
-  // Contar dependências ativas
-  const activeMicrosByMacro = useMemo(() => {
-    const counts: Record<number, number> = {};
-    micros.forEach((micro) => {
-      if (micro.microStatus === 'ativo') {
-        counts[micro.macroId] = (counts[micro.macroId] || 0) + 1;
+  // Extrair blocos únicos
+  const blocos = useMemo(() => {
+    const uniqueBlocos = new Map();
+    hierarquia.forEach((item) => {
+      if (item.blocoId && !uniqueBlocos.has(item.blocoId)) {
+        uniqueBlocos.set(item.blocoId, {
+          id: item.blocoId,
+          nome: item.blocoNome,
+          status: item.blocoStatus,
+        });
       }
     });
-    return counts;
-  }, [micros]);
+    return Array.from(uniqueBlocos.values());
+  }, [hierarquia]);
 
-  const activeMacrosByBloco = useMemo(() => {
-    const counts: Record<number, number> = {};
-    macros.forEach((macro) => {
-      if (macro.status === 'ativo') {
-        counts[macro.blocoId] = (counts[macro.blocoId] || 0) + 1;
+  // Extrair macros únicas
+  const macros = useMemo(() => {
+    const uniqueMacros = new Map();
+    hierarquia.forEach((item) => {
+      if (item.macroId && !uniqueMacros.has(item.macroId)) {
+        uniqueMacros.set(item.macroId, {
+          id: item.macroId,
+          nome: item.macroNome,
+          status: item.macroStatus,
+          blocoId: item.blocoId,
+        });
       }
     });
-    return counts;
-  }, [macros]);
+    return Array.from(uniqueMacros.values());
+  }, [hierarquia]);
 
   // Mutations
   const inativarMicroMutation = trpc.competencias.inativarMicro.useMutation({
@@ -98,7 +118,7 @@ export function MatrizCompetenciasConsolidada() {
       toast.success('Micro-competência inativada');
       setShowConfirmDialog(false);
       setSelectedMicro(null);
-      utils.competencias.getMicrosWithFilters.invalidate();
+      utils.competencias.getCompetenciasHierarchy.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -110,7 +130,7 @@ export function MatrizCompetenciasConsolidada() {
       toast.success('Micro-competencia atualizada');
       setShowEditDialog(false);
       setEditingMicro(null);
-      utils.competencias.getMicrosWithFilters.invalidate();
+      utils.competencias.getCompetenciasHierarchy.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -122,7 +142,7 @@ export function MatrizCompetenciasConsolidada() {
       toast.success('Micro-competencia ativada');
       setShowActivateDialog(false);
       setSelectedMicro(null);
-      utils.competencias.getMicrosWithFilters.invalidate();
+      utils.competencias.getCompetenciasHierarchy.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -171,7 +191,7 @@ export function MatrizCompetenciasConsolidada() {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
     if (status === 'ativo') {
       return <Badge className="bg-green-100 text-green-800">✅ Ativo</Badge>;
     }
@@ -206,7 +226,7 @@ export function MatrizCompetenciasConsolidada() {
             </SelectTrigger>
             <SelectContent>
               {macros.map((macro) => (
-                <SelectItem key={macro.id} value={macro.nome}>
+                <SelectItem key={macro.id} value={macro.nome || ''}>
                   {macro.nome}
                 </SelectItem>
               ))}
@@ -250,67 +270,112 @@ export function MatrizCompetenciasConsolidada() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {micros.length === 0 ? (
+            {hierarquia.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                   Nenhuma competência encontrada
                 </TableCell>
               </TableRow>
             ) : (
-              micros.map((micro) => (
-                <TableRow key={micro.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">{micro.blocoNome}</TableCell>
-                  <TableCell>{micro.macroNome}</TableCell>
-                  <TableCell>{micro.microNome}</TableCell>
-                  <TableCell>{getStatusBadge(micro.microStatus)}</TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEditar(micro)}
-                      className="inline-flex items-center gap-1"
-                    >
-                      <Pencil className="w-4 h-4" />
-                      Editar
-                    </Button>
-                    {micro.microStatus === 'ativo' ? (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleInativar(micro)}
-                              className="inline-flex items-center gap-1 text-orange-600 hover:text-orange-700"
-                            >
-                              <Power className="w-4 h-4" />
-                              Inativar
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Inativar esta Microcompetência</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+              hierarquia.map((item, index) => (
+                <TableRow key={`${item.blocoId}-${item.macroId}-${item.microId}-${index}`} className="hover:bg-gray-50">
+                  <TableCell className="font-medium">{item.blocoNome}</TableCell>
+                  <TableCell>{item.macroNome || '-'}</TableCell>
+                  <TableCell>{item.microNome || '-'}</TableCell>
+                  <TableCell>
+                    {item.microStatus ? (
+                      getStatusBadge(item.microStatus)
+                    ) : item.macroStatus ? (
+                      getStatusBadge(item.macroStatus)
                     ) : (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleAtivar(micro)}
-                              className="inline-flex items-center gap-1 text-green-600 hover:text-green-700"
-                            >
-                              <Power className="w-4 h-4" />
-                              Ativar
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Ativar esta Microcompetência</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      getStatusBadge(item.blocoStatus)
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right space-x-2">
+                    {item.microId && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const micro: MicroCompetencia = {
+                              id: item.microId!,
+                              microNome: item.microNome!,
+                              microStatus: item.microStatus!,
+                              macroId: item.macroId!,
+                              macroNome: item.macroNome!,
+                              blocoId: item.blocoId,
+                              blocoNome: item.blocoNome,
+                            };
+                            handleEditar(micro);
+                          }}
+                          className="inline-flex items-center gap-1"
+                        >
+                          <Pencil className="w-4 h-4" />
+                          Editar
+                        </Button>
+                        {item.microStatus === 'ativo' ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const micro: MicroCompetencia = {
+                                      id: item.microId!,
+                                      microNome: item.microNome!,
+                                      microStatus: item.microStatus!,
+                                      macroId: item.macroId!,
+                                      macroNome: item.macroNome!,
+                                      blocoId: item.blocoId,
+                                      blocoNome: item.blocoNome,
+                                    };
+                                    handleInativar(micro);
+                                  }}
+                                  className="inline-flex items-center gap-1 text-orange-600 hover:text-orange-700"
+                                >
+                                  <Power className="w-4 h-4" />
+                                  Inativar
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Inativar esta Microcompetência</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const micro: MicroCompetencia = {
+                                      id: item.microId!,
+                                      microNome: item.microNome!,
+                                      microStatus: item.microStatus!,
+                                      macroId: item.macroId!,
+                                      macroNome: item.macroNome!,
+                                      blocoId: item.blocoId,
+                                      blocoNome: item.blocoNome,
+                                    };
+                                    handleAtivar(micro);
+                                  }}
+                                  className="inline-flex items-center gap-1 text-green-600 hover:text-green-700"
+                                >
+                                  <Power className="w-4 h-4" />
+                                  Ativar
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Ativar esta Microcompetência</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </>
                     )}
                   </TableCell>
                 </TableRow>
@@ -320,55 +385,45 @@ export function MatrizCompetenciasConsolidada() {
         </Table>
       </div>
 
-      {/* Dialog de Confirmação - Inativar */}
+      {/* Dialogs */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>⚠️ Inativar Micro-Competência</AlertDialogTitle>
+            <AlertDialogTitle>Inativar Microcompetência</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja inativar <strong>{selectedMicro?.microNome}</strong>?
-              <br />
-              Esta ação não pode ser desfeita.
+              Tem certeza que deseja inativar "{selectedMicro?.microNome}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="flex gap-4">
+          <div className="flex gap-3 justify-end">
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmInativar}
-              className="bg-orange-600 hover:bg-orange-700"
-            >
+            <AlertDialogAction onClick={handleConfirmInativar} className="bg-orange-600 hover:bg-orange-700">
               Inativar
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog de Confirmacao - Ativar */}
       <AlertDialog open={showActivateDialog} onOpenChange={setShowActivateDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Ativar Micro-Competencia</AlertDialogTitle>
+            <AlertDialogTitle>Ativar Microcompetência</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja ativar <strong>{selectedMicro?.microNome}</strong>?
+              Tem certeza que deseja ativar "{selectedMicro?.microNome}"?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="flex gap-4">
+          <div className="flex gap-3 justify-end">
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmAtivar}
-              className="bg-green-600 hover:bg-green-700"
-            >
+            <AlertDialogAction onClick={handleConfirmAtivar} className="bg-green-600 hover:bg-green-700">
               Ativar
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog de Edicao */}
       <AlertDialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>✏️ Editar Micro-Competência</AlertDialogTitle>
+            <AlertDialogTitle>Editar Microcompetência</AlertDialogTitle>
           </AlertDialogHeader>
           <div className="space-y-4">
             <div>
@@ -376,24 +431,21 @@ export function MatrizCompetenciasConsolidada() {
               <Input
                 value={editForm.nome}
                 onChange={(e) => setEditForm({ ...editForm, nome: e.target.value })}
-                placeholder="Digite o novo nome"
+                placeholder="Nome da microcompetência"
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Descrição (opcional)</label>
+              <label className="text-sm font-medium">Descrição</label>
               <Input
                 value={editForm.descricao}
                 onChange={(e) => setEditForm({ ...editForm, descricao: e.target.value })}
-                placeholder="Digite a descrição"
+                placeholder="Descrição (opcional)"
               />
             </div>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3 justify-end">
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmEditar}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
+            <AlertDialogAction onClick={handleConfirmEditar} className="bg-blue-600 hover:bg-blue-700">
               Salvar
             </AlertDialogAction>
           </div>

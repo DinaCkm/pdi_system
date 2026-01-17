@@ -515,6 +515,17 @@ export const appRouter = router({
       return await db.getAllMicrosWithMacroAndBloco();
     }),
 
+    getCompetenciasHierarchy: protectedProcedure
+      .input(z.object({
+        blocoNome: z.string().optional(),
+        macroNome: z.string().optional(),
+        microNome: z.string().optional(),
+        status: z.enum(['ativo', 'inativo']).optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return await db.getCompetenciasHierarchy(input);
+      }),
+
     getMicrosWithFilters: protectedProcedure
       .input(z.object({
         blocoId: z.number().optional(),
