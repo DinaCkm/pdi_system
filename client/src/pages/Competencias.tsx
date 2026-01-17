@@ -29,6 +29,9 @@ export default function Competencias() {
   const [expandedBlocos, setExpandedBlocos] = useState<Set<number>>(new Set());
   const [expandedMacros, setExpandedMacros] = useState<Set<number>>(new Set());
   
+  // Filtro de Status
+  const [filterStatus, setFilterStatus] = useState<'ativas' | 'inativas' | 'todas'>('ativas');
+  
   // Estados de Confirmação de Exclusão
   const [deleteConfirm, setDeleteConfirm] = useState<{
     type: "bloco" | "macro" | "micro";
@@ -93,25 +96,41 @@ export default function Competencias() {
     onError: (e: any) => toast.error(e.message)
   });
 
-  // Filtrar competências por termo de busca
-  const filteredBlocos = blocos?.filter(b => 
-    b.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  // Filtrar competências por termo de busca E status
+  const filteredBlocos = blocos?.filter(b => {
+    const matchesSearch = b.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.descricao?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (filterStatus === 'ativas') return matchesSearch && b.status === 'ativo';
+    if (filterStatus === 'inativas') return matchesSearch && b.status === 'inativo';
+    return matchesSearch; // 'todas'
+  }) || [];
 
-  const filteredMacros = (blocoId: number) => 
-    macros?.filter(m => 
-      m.blocoId === blocoId &&
-      (m.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       m.descricao?.toLowerCase().includes(searchTerm.toLowerCase()))
-    ) || [];
+  const filteredMacros = (blocoId: number) =>
+    macros?.filter(m => {
+      const matchesSearch = m.blocoId === parseInt(blocoId) &&
+        (m.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.descricao?.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      if (filterStatus === 'ativas') return matchesSearch && m.status === 'ativo';
+      if (filterStatus === 'inativas') return matchesSearch && m.status === 'inativo';
+      return matchesSearch; // 'todas'
+    }) || [];
 
   const filteredMicros = (macroId: number) =>
-    micros?.filter(mi =>
-      mi.macroId === macroId &&
-      (mi.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       mi.descricao?.toLowerCase().includes(searchTerm.toLowerCase()))
-    ) || [];
+    micros?.filter(m => {
+      const matchesSearch = m.macroId === parseInt(macroId) &&
+        (m.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.descricao?.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      if (filterStatus === 'ativas') return matchesSearch && m.status === 'ativo';
+      if (filterStatus === 'inativas') return matchesSearch && m.status === 'inativo';
+      return matchesSearch; // 'todas'
+    }) || [];
+
+  // Contar competências ativas e inativas
+  const contarAtivas = (items: any[]) => items?.filter(i => i.status === 'ativo').length || 0;
+  const contarInativas = (items: any[]) => items?.filter(i => i.status === 'inativo').length || 0;
 
   const toggleBlocoExpanded = (blocoId: number) => {
     const newSet = new Set(expandedBlocos);
@@ -179,19 +198,50 @@ export default function Competencias() {
         )}
       </div>
 
-      {/* Filtro de Busca */}
-      <div className="relative">
-        <Input
-          placeholder="Buscar por termo em Blocos, Macros ou Micros..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-4"
-        />
+      {/* Filtro de Busca e Status */}
+      <div className="space-y-4">
+        <div className="relative">
+          <Input
+            placeholder="Buscar por termo em Blocos, Macros ou Micros..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-4"
+          />
+        </div>
+        
+        {/* Botões de Filtro de Status */}
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant={filterStatus === 'ativas' ? 'default' : 'outline'}
+            onClick={() => setFilterStatus('ativas')}
+            className={filterStatus === 'ativas' ? 'bg-green-600 hover:bg-green-700' : ''}
+          >
+            ✓ Ativas ({contarAtivas(blocos || [])})
+          </Button>
+          <Button
+            variant={filterStatus === 'inativas' ? 'default' : 'outline'}
+            onClick={() => setFilterStatus('inativas')}
+            className={filterStatus === 'inativas' ? 'bg-red-600 hover:bg-red-700' : ''}
+          >
+            ✗ Inativas ({contarInativas(blocos || [])})
+          </Button>
+          <Button
+            variant={filterStatus === 'todas' ? 'default' : 'outline'}
+            onClick={() => setFilterStatus('todas')}
+          >
+            Todas ({(blocos || []).length})
+          </Button>
+        </div>
       </div>
 
       {/* Listagem Hierárquica (Accordion) */}
       <div className="space-y-3">
-        {filteredBlocos.map((bloco) => {
+        {filteredBlocos.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            <p>Nenhuma competência encontrada com os filtros selecionados.</p>
+          </div>
+        )}
+        {filteredBlocos.length > 0 && filteredBlocos.map((bloco) => {
           const macrosDoBloco = filteredMacros(bloco.id);
           const isExpanded = expandedBlocos.has(bloco.id);
           

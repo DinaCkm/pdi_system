@@ -161,6 +161,12 @@
 - [ ] TESTE 4: Verificar se coluna "Líder" mostra o nome correto na tabela de Departamentos
 
 ## Reestruturação da Matriz de Competências (CONCLUÍDO)
+- [x] Adicionar filtro de status (Ativas/Inativas/Todas) na página de Competências
+- [x] Criar botões com contadores de competências
+- [x] Atualizar lógica de filtros para incluir status
+- [x] Servidor rodando com filtro de status
+
+## Reestruturação da Matriz de Competências (ANTERIOR)
 - [x] Implementar AlertDialog com mensagens de confirmação para deletar
 - [x] Criar listagem hierárquica com Accordion (Blocos → Macros → Micros)
 - [x] Adicionar filtro de busca por termo em todas as esferas
