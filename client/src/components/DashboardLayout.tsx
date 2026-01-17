@@ -44,6 +44,7 @@ const getMenuItems = (userRole: string) => {
       { icon: Upload, label: "Importar Ações", path: "/importar-acoes" },
       { icon: Bell, label: "Solicitações", path: "/solicitacoes" },
       { icon: ClipboardCheck, label: "Evidências Pendentes", path: "/evidencias-pendentes" },
+      { icon: FileText, label: "Histórico de Alterações", path: "/historico-alteracoes" },
       { icon: BarChart, label: "Relatórios", path: "/relatorios" },
     );
   } else if (userRole === "lider") {
