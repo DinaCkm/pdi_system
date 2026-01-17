@@ -2207,3 +2207,35 @@ export async function getMicrosWithFilters(filters: {
     .orderBy(asc(competenciasBlocos.nome), asc(competenciasMacros.nome), asc(competenciasMicros.nome));
 }
 
+
+// ============================================
+// VALIDAÇÃO DE DEPENDÊNCIA ATIVA
+// ============================================
+
+/**
+ * Conta quantas Microcompetências ativas estão vinculadas a uma Macro
+ * @param macroId ID da Macro
+ * @returns Número de Micros ativas
+ */
+export async function countActiveMicrosByMacroId(macroId: number): Promise<number> {
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(competenciasMicros)
+    .where(and(eq(competenciasMicros.macroId, macroId), eq(competenciasMicros.status, 'ativo')));
+
+  return result[0]?.count || 0;
+}
+
+/**
+ * Conta quantas Macrocompetências ativas estão vinculadas a um Bloco
+ * @param blocoId ID do Bloco
+ * @returns Número de Macros ativas
+ */
+export async function countActiveMacrosByBlocoId(blocoId: number): Promise<number> {
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(competenciasMacros)
+    .where(and(eq(competenciasMacros.blocoId, blocoId), eq(competenciasMacros.status, 'ativo')));
+
+  return result[0]?.count || 0;
+}

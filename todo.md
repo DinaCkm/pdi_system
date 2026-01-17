@@ -1179,3 +1179,15 @@
 - [ ] Testar fluxo completo e validar
 - [ ] Remover interface anterior (Accordion hierárquico)
 - [ ] Validar que soft delete em cascata funciona corretamente
+
+
+## Validacao de Dependencia Ativa (CONCLUIDO)
+- [x] Criar funcao countActiveMicrosByMacroId() no backend
+- [x] Criar funcao countActiveMacrosByBlocoId() no backend
+- [x] Adicionar validacao na procedure inativarMacro (verificar micros ativas)
+- [x] Adicionar validacao na procedure inativarBloco (verificar macros ativas)
+- [x] Adicionar tooltip explicativo nos botoes Inativar
+- [x] Implementar cálculo de dependências ativas (useMemo) no frontend
+- [x] Testar: Dialog de confirmacao para inativar Micro
+- [x] Testar: Filtros funcionando corretamente
+- [x] Testar: Tabela consolidada exibindo dados corretos

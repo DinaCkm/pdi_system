@@ -587,6 +587,14 @@ export const appRouter = router({
     inativarMacroComCascata: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
+        // Validar se há Micros ativas vinculadas
+        const activeMicrosCount = await db.countActiveMicrosByMacroId(input.id);
+        if (activeMicrosCount > 0) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: `Não é possível inativar esta Macro. Você deve inativar todas as ${activeMicrosCount} Microcompetência(s) vinculada(s) a ela primeiro.`
+          });
+        }
         await db.deleteMacro(input.id);
         return { success: true };
       }),
@@ -606,6 +614,14 @@ export const appRouter = router({
     inativarBlocoComCascata: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
+        // Validar se há Macros ativas vinculadas
+        const activeMacrosCount = await db.countActiveMacrosByBlocoId(input.id);
+        if (activeMacrosCount > 0) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: `Não é possível inativar este Bloco. Você deve inativar todas as ${activeMacrosCount} Macrocompetência(s) vinculada(s) a ele primeiro.`
+          });
+        }
         await db.deleteBloco(input.id);
         return { success: true };
       }),

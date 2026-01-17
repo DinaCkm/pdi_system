@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
 import {
   Table,
@@ -29,6 +29,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Pencil, Power } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface MicroCompetencia {
   id: number;
@@ -63,6 +69,27 @@ export function MatrizCompetenciasConsolidada() {
 
   const { data: blocos = [] } = trpc.competencias.listBlocos.useQuery();
   const { data: macros = [] } = trpc.competencias.listAllMacros.useQuery();
+
+  // Contar dependências ativas
+  const activeMicrosByMacro = useMemo(() => {
+    const counts: Record<number, number> = {};
+    micros.forEach((micro) => {
+      if (micro.microStatus === 'ativo') {
+        counts[micro.macroId] = (counts[micro.macroId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [micros]);
+
+  const activeMacrosByBloco = useMemo(() => {
+    const counts: Record<number, number> = {};
+    macros.forEach((macro) => {
+      if (macro.status === 'ativo') {
+        counts[macro.blocoId] = (counts[macro.blocoId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [macros]);
 
   // Mutations
   const inativarMicroMutation = trpc.competencias.inativarMicro.useMutation({
@@ -220,15 +247,24 @@ export function MatrizCompetenciasConsolidada() {
                       <Pencil className="w-4 h-4" />
                       Editar
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleInativar(micro)}
-                      className="inline-flex items-center gap-1 text-orange-600 hover:text-orange-700"
-                    >
-                      <Power className="w-4 h-4" />
-                      Inativar
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleInativar(micro)}
+                            className="inline-flex items-center gap-1 text-orange-600 hover:text-orange-700"
+                          >
+                            <Power className="w-4 h-4" />
+                            Inativar
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Inativar esta Microcompetência</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </TableCell>
                 </TableRow>
               ))
