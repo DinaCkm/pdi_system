@@ -1350,3 +1350,12 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Criar modal de Nova Macro com seleção de Bloco pai
 - [x] Criar modal de Nova Micro com seleção de Macro pai
 - [x] Testar fluxo completo: Bloco → Macro → Micro
+
+
+## Auditoria e Teste de Fluxo Bloco → Macro → Micro (CRÍTICO - BLINDAGEM)
+- [ ] Auditoria: Verificar 3 botões ou 1 Dropdown no código Competencias.tsx
+- [ ] Auditoria: Garantir Bloco, Macro e Micro usam ModalCustomizado corrigido
+- [ ] Teste 1: Criar Bloco teste e gerar relatório separado
+- [ ] Teste 2: Criar Macro vinculada ao Bloco e gerar relatório separado
+- [ ] Teste 3: Criar Micro vinculada à Macro e gerar relatório separado
+- [ ] Entregar 3 relatórios separados com evidências pessoais

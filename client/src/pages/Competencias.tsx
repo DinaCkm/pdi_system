@@ -23,8 +23,8 @@ export default function Competencias() {
   const isAdmin = user?.role === "admin";
 
   // Dados
-  const { data: blocos } = trpc.competencias.getAllBlocos.useQuery();
-  const { data: macros } = trpc.competencias.getAllMacros.useQuery();
+  const { data: blocos } = trpc.competencias.listBlocos.useQuery();
+  const { data: macros } = trpc.competencias.listAllMacros.useQuery();
 
   // Estados dos Formulários
   const [nomeBloco, setNomeBloco] = useState("");
