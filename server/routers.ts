@@ -638,6 +638,27 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    ativarMicro: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.updateMicro(input.id, { status: 'ativo' });
+        return { success: true };
+      }),
+
+    ativarMacro: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.updateMacro(input.id, { status: 'ativo' });
+        return { success: true };
+      }),
+
+    ativarBloco: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.updateBloco(input.id, { status: 'ativo' });
+        return { success: true };
+      }),
+
     // IMPORTAÇÃO EM MASSA (NOVO - COM NOMES CORRETOS)
     importarEmLote: adminProcedure
       .input(z.object({

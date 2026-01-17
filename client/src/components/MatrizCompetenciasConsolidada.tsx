@@ -57,6 +57,7 @@ export function MatrizCompetenciasConsolidada() {
   const [editingMicro, setEditingMicro] = useState<MicroCompetencia | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showActivateDialog, setShowActivateDialog] = useState(false);
   const [editForm, setEditForm] = useState({ nome: '', descricao: '' });
 
   // Queries
@@ -105,9 +106,20 @@ export function MatrizCompetenciasConsolidada() {
 
   const editarMicroMutation = trpc.competencias.editarMicro.useMutation({
     onSuccess: () => {
-      toast.success('Micro-competência atualizada');
+      toast.success('Micro-competencia atualizada');
       setShowEditDialog(false);
       setEditingMicro(null);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const ativarMicroMutation = trpc.competencias.ativarMicro.useMutation({
+    onSuccess: () => {
+      toast.success('Micro-competencia ativada');
+      setShowActivateDialog(false);
+      setSelectedMicro(null);
     },
     onError: (error) => {
       toast.error(error.message);
@@ -122,6 +134,17 @@ export function MatrizCompetenciasConsolidada() {
   const handleConfirmInativar = () => {
     if (selectedMicro) {
       inativarMicroMutation.mutate({ id: selectedMicro.id });
+    }
+  };
+
+  const handleAtivar = (micro: MicroCompetencia) => {
+    setSelectedMicro(micro);
+    setShowActivateDialog(true);
+  };
+
+  const handleConfirmAtivar = () => {
+    if (selectedMicro) {
+      ativarMicroMutation.mutate({ id: selectedMicro.id });
     }
   };
 
@@ -247,24 +270,45 @@ export function MatrizCompetenciasConsolidada() {
                       <Pencil className="w-4 h-4" />
                       Editar
                     </Button>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleInativar(micro)}
-                            className="inline-flex items-center gap-1 text-orange-600 hover:text-orange-700"
-                          >
-                            <Power className="w-4 h-4" />
-                            Inativar
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Inativar esta Microcompetência</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    {micro.microStatus === 'ativo' ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleInativar(micro)}
+                              className="inline-flex items-center gap-1 text-orange-600 hover:text-orange-700"
+                            >
+                              <Power className="w-4 h-4" />
+                              Inativar
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Inativar esta Microcompetência</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAtivar(micro)}
+                              className="inline-flex items-center gap-1 text-green-600 hover:text-green-700"
+                            >
+                              <Power className="w-4 h-4" />
+                              Ativar
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Ativar esta Microcompetência</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -296,7 +340,28 @@ export function MatrizCompetenciasConsolidada() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog de Edição */}
+      {/* Dialog de Confirmacao - Ativar */}
+      <AlertDialog open={showActivateDialog} onOpenChange={setShowActivateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ativar Micro-Competencia</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja ativar <strong>{selectedMicro?.microNome}</strong>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-4">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmAtivar}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Ativar
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog de Edicao */}
       <AlertDialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -1191,3 +1191,16 @@
 - [x] Testar: Dialog de confirmacao para inativar Micro
 - [x] Testar: Filtros funcionando corretamente
 - [x] Testar: Tabela consolidada exibindo dados corretos
+
+
+## Ativacao de Competencias (CONCLUIDO)
+- [x] Criar procedure ativarMicro no backend
+- [x] Criar procedure ativarMacro no backend
+- [x] Criar procedure ativarBloco no backend
+- [x] Adicionar botão Ativar no componente MatrizCompetenciasConsolidada
+- [x] Implementar dialog de confirmação para ativar (verde)
+- [x] Testar fluxo completo de ativação (inativar → reativar)
+- [x] Validar que botão muda de Inativar para Ativar corretamente
+- [x] Validar que status muda de Ativo para Inativo e vice-versa
+- [ ] Testar: Ativar Macro com validacao de Bloco
+- [ ] Testar: Ativar Bloco com validacao de Macros
