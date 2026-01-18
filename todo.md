@@ -1406,3 +1406,23 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Criar relatório técnico para especialista
 - [x] Criar documento detalhado dos 5 testes
 - [x] Salvar checkpoint com solução implementada
+
+
+## Correção de Validação de Prazo em Ações (17 JAN 2026)
+- [ ] Consertar mensagem de erro no backend (routers) - variáveis de data não formatadas
+- [ ] Verificar datas do ciclo no banco de dados
+- [ ] Remover código duplicado em Acoes.tsx (setIsGeneratingAI(false) solto)
+- [ ] Testar fluxo completo de criação de ação com prazo válido
+- [ ] Publicar checkpoint final
+
+
+## Refatoração e Estabilização Final (17 JAN 2026)
+- [x] Transformar lista de PDI em busca com scroll (max-h-[150px], overflow-y-auto)
+- [x] Adicionar campo de busca para filtro em tempo real de PDIs
+- [x] Transformar lista de Microcompetência em busca com scroll
+- [x] Adicionar campo de busca para filtro em tempo real de Microcompetências
+- [x] Corrigir erro de prazo - atualizar datas do ciclo no banco
+- [x] Remover setIsGeneratingAI(false) duplicado de Acoes.tsx
+- [x] Adicionar mensagens de erro em vermelho para campos obrigatórios
+- [ ] Teste final de criação de ação com prazo válido
+- [ ] Publicar checkpoint final

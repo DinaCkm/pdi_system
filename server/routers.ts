@@ -1146,9 +1146,11 @@ export const appRouter = router({
         const cicloDataInicio = new Date(ciclo.dataInicio);
         const cicloDataFim = new Date(ciclo.dataFim);
         if (prazoDate < cicloDataInicio || prazoDate > cicloDataFim) {
+          const dataInicioFormatada = cicloDataInicio.toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+          const dataFimFormatada = cicloDataFim.toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' });
           throw new TRPCError({ 
             code: 'BAD_REQUEST', 
-            message: `Prazo deve estar entre ${cicloDataInicio.toLocaleDateString()} e ${cicloDataFim.toLocaleDateString()}` 
+            message: `Prazo deve estar entre ${dataInicioFormatada} e ${dataFimFormatada}` 
           });
         }
         
