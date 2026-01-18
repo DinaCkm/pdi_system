@@ -147,7 +147,7 @@ export function AcoesNova() {
                   <option value="">Selecione um PDI</option>
                   {pdis?.map((pdi: any) => (
                     <option key={pdi.id} value={pdi.id}>
-                      {pdi.nome}
+                      {pdi.titulo}
                     </option>
                   ))}
                 </select>
