@@ -64,8 +64,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
     onSuccess: () => {
       toast.success("Ação criada com sucesso!");
       utils.actions.list.invalidate();
-      reset();
-      setTimeout(() => onOpenChange(false), 200);
+      setTimeout(() => onOpenChange(false), 500);
     },
     onError: (error) => {
       const errorMsg = error.message || "Erro ao criar ação";
