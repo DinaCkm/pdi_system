@@ -115,7 +115,10 @@ export default function Acoes() {
   const createMutation = trpc.actions.create.useMutation({
     onSuccess: () => {
       toast.success("Ação criada com sucesso!");
-      setShowCreateDialog(false);
+      // Aguardar 200ms para React processar a mudança de dados antes de destruir o modal
+      setTimeout(() => {
+        setShowCreateDialog(false);
+      }, 200);
       refetch();
       reset();
     },
@@ -127,8 +130,11 @@ export default function Acoes() {
   const updateMutation = trpc.actions.update.useMutation({
     onSuccess: () => {
       toast.success("Ação atualizada com sucesso!");
-      setShowEditDialog(false);
-      setSelectedAcao(null);
+      // Aguardar 200ms para React processar a mudança de dados antes de destruir o modal
+      setTimeout(() => {
+        setShowEditDialog(false);
+        setSelectedAcao(null);
+      }, 200);
       refetch();
     },
     onError: (error) => {

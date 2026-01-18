@@ -80,10 +80,28 @@ export default function DashboardLayout({
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
   const { loading, user } = useAuth();
+  const [location] = useLocation();
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
+
+  // Cleanup de Portals órfãos ao desmontar ou navegar
+  useEffect(() => {
+    return () => {
+      // Remover qualquer Portal órfão que possa ter ficado no DOM
+      const portals = document.querySelectorAll('[data-radix-portal]');
+      portals.forEach(portal => {
+        if (portal.parentNode && portal.parentNode.childNodes.length > 0) {
+          try {
+            portal.parentNode.removeChild(portal);
+          } catch (e) {
+            // Ignorar erros de remoção
+          }
+        }
+      });
+    };
+  }, [location]);
 
   if (loading) {
     return <DashboardLayoutSkeleton />
