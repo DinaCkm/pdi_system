@@ -489,6 +489,8 @@ export async function getAllPDIs() {
       colaboradorNome: users.name,
       cicloId: pdis.cicloId,
       cicloNome: ciclos.nome,
+      dataInicio: ciclos.dataInicio,
+      dataFim: ciclos.dataFim,
       titulo: pdis.titulo,
       status: pdis.status,
       createdAt: pdis.createdAt,

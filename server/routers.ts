@@ -1117,7 +1117,7 @@ export const appRouter = router({
       }
     }),
 
-    create: adminProcedure
+    create: protectedProcedure
       .input(z.object({
         pdiId: z.number(),
         blocoId: z.number(),
@@ -1162,6 +1162,7 @@ export const appRouter = router({
           nome: input.nome,
           descricao: input.descricao,
           prazo: prazoDate,
+          createdBy: ctx.user!.id,
         });
         
         // Notificar líder

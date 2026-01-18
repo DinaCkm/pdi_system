@@ -1,0 +1,19 @@
+{
+  "query": "SELECT c.id, c.nome, c.dataInicio, c.dataFim FROM ciclos c WHERE c.id = 1; SELECT p.id, p.titulo, p.cicloId, c.dataInicio, c.dataFim FROM pdis p LEFT JOIN ciclos c ON p.cicloId = c.id WHERE p.id = 510001;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT c.id, c.nome, c.dataInicio, c.dataFim FROM ciclos c WHERE c.id = 1; SELECT p.id, p.titulo, p.cicloId, c.dataInicio, c.dataFim FROM pdis p LEFT JOIN ciclos c ON p.cicloId = c.id WHERE p.id = 510001;",
+  "rows": [
+    {
+      "id": "1",
+      "nome": "1º CICLO DE 2026",
+      "dataInicio": "2026-01-01 00:00:00",
+      "dataFim": "2026-12-31 00:00:00"
+    }
+  ],
+  "messages": [
+    "id\ttitulo\tcicloId\tdataInicio\tdataFim",
+    "510001\tDesenvolvimento 2026\t1\t2026-01-01 00:00:00\t2026-12-31 00:00:00"
+  ],
+  "stdout": "id\tnome\tdataInicio\tdataFim\n1\t1º CICLO DE 2026\t2026-01-01 00:00:00\t2026-12-31 00:00:00\nid\ttitulo\tcicloId\tdataInicio\tdataFim\n510001\tDesenvolvimento 2026\t1\t2026-01-01 00:00:00\t2026-12-31 00:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 78
+}

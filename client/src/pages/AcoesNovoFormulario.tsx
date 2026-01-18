@@ -8,8 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Loader2, Info } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Loader2, Info, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+import { format, parse } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface NovoFormularioProps {
   open: boolean;
@@ -26,7 +30,8 @@ interface FormData {
 }
 
 export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormularioProps) {
-  const { control, handleSubmit, watch, setValue, reset } = useForm<FormData>({
+  const { control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<FormData>({
+    mode: 'onBlur',
     defaultValues: {
       pdiId: pdiIdProp || 0,
       microCompetenciaId: 0,
@@ -39,6 +44,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [pdiSearchTerm, setPdiSearchTerm] = useState("");
   const [microSearchTerm, setMicroSearchTerm] = useState("");
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   // Queries
   const { data: pdis } = trpc.pdis.list.useQuery(undefined, { staleTime: 0 });
@@ -74,6 +80,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
   // Valores selecionados
   const selectedPdiId = watch("pdiId");
   const selectedMicroId = watch("microCompetenciaId");
+  const selectedPrazo = watch("prazo");
 
   const selectedPDI = pdis?.find((p) => p.id === selectedPdiId);
   const selectedMicro = micros?.find((m) => m.id === selectedMicroId);
@@ -122,6 +129,41 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
         macroId: micro.macroId,
         microId: micro.id,
       });
+    }
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      const isoDate = date.toISOString().split('T')[0];
+      setValue("prazo", isoDate);
+      setDatePickerOpen(false);
+    }
+  };
+
+  const getPrazoDate = () => {
+    if (!selectedPrazo) return undefined;
+    try {
+      return parse(selectedPrazo, 'yyyy-MM-dd', new Date());
+    } catch {
+      return undefined;
+    }
+  };
+
+  const getMinDate = () => {
+    if (!selectedPDI?.dataInicio) return undefined;
+    try {
+      return parse(selectedPDI.dataInicio, 'yyyy-MM-dd', new Date());
+    } catch {
+      return undefined;
+    }
+  };
+
+  const getMaxDate = () => {
+    if (!selectedPDI?.dataFim) return undefined;
+    try {
+      return parse(selectedPDI.dataFim, 'yyyy-MM-dd', new Date());
+    } catch {
+      return undefined;
     }
   };
 
@@ -284,26 +326,41 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
             />
           </div>
 
-          {/* Prazo */}
+          {/* Prazo com Date Picker */}
           <div className="space-y-2">
             <Label htmlFor="prazo">Prazo *</Label>
             <Controller
               name="prazo"
               control={control}
               rules={{ required: true }}
-              render={({ field }) => {
-                const minDate = selectedPDI?.dataInicio ? new Date(selectedPDI.dataInicio).toISOString().split('T')[0] : '';
-                const maxDate = selectedPDI?.dataFim ? new Date(selectedPDI.dataFim).toISOString().split('T')[0] : '';
-                
-                return (
-                  <Input
-                    {...field}
-                    type="date"
-                    min={minDate}
-                    max={maxDate}
-                  />
-                );
-              }}
+              render={({ field }) => (
+                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedPrazo ? format(getPrazoDate()!, 'dd/MM/yyyy', { locale: ptBR }) : 'Selecione uma data'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={getPrazoDate()}
+                      onSelect={handleDateSelect}
+                      disabled={(date) => {
+                        const minDate = getMinDate();
+                        const maxDate = getMaxDate();
+                        if (minDate && date < minDate) return true;
+                        if (maxDate && date > maxDate) return true;
+                        return false;
+                      }}
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
             />
             {selectedPDI && selectedPDI.cicloNome && (
               <p className="text-sm text-muted-foreground">
