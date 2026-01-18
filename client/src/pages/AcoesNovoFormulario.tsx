@@ -174,7 +174,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Nova Ação</DialogTitle>
           <DialogDescription>Crie uma nova ação para o PDI</DialogDescription>
@@ -253,7 +253,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione um ciclo" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent position="popper">
                     {ciclos2026?.map((ciclo) => (
                       <SelectItem key={ciclo.id} value={ciclo.id.toString()}>
                         {ciclo.nome}
@@ -309,7 +309,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
                       }
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={5}>
                     <Calendar
                       mode="single"
                       selected={getPrazoDate()}
