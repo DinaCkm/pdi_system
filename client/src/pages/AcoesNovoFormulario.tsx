@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 import { Calendar } from "@/components/ui/calendar";
 import { Loader2, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -52,7 +52,6 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
 
   const [pdiSearchTerm, setPdiSearchTerm] = useState("");
   const [microSearchTerm, setMicroSearchTerm] = useState("");
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   // Queries
   const { data: pdis } = trpc.pdis.list.useQuery(undefined, { staleTime: 0 });
@@ -288,7 +287,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
             />
           </div>
 
-          {/* Prazo com Date Picker */}
+          {/* Prazo com Calendar Inline */}
           <div className="space-y-2">
             <Label htmlFor="prazo">Prazo *</Label>
             <Controller
@@ -296,28 +295,20 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
               control={control}
               rules={{ required: true }}
               render={({ field }) => (
-                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedPrazo 
-                        ? format(getPrazoDate()!, 'dd/MM/yyyy', { locale: ptBR })
-                        : 'Selecione uma data'
-                      }
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start" side="bottom" sideOffset={5}>
-                    <Calendar
-                      mode="single"
-                      selected={getPrazoDate()}
-                      onSelect={handleDateSelect}
-                      locale={ptBR}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <div className="border rounded-md p-3 bg-background">
+                  <Calendar
+                    mode="single"
+                    selected={getPrazoDate()}
+                    onSelect={handleDateSelect}
+                    locale={ptBR}
+                    className="w-full"
+                  />
+                  {selectedPrazo && (
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      Data selecionada: {format(getPrazoDate()!, 'dd/MM/yyyy', { locale: ptBR })}
+                    </div>
+                  )}
+                </div>
               )}
             />
           </div>
