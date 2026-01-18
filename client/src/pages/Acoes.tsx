@@ -644,7 +644,7 @@ export default function Acoes() {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o PDI" />
                     </SelectTrigger>
-                    <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                    <SelectContentNoPortal sideOffset={4} onCloseAutoFocus={(e) => e.preventDefault()}>
                       {pdis?.map((pdi) => (
                         <SelectItem key={pdi.id} value={pdi.id.toString()}>
                           {pdi.titulo} - {pdi.colaboradorNome || "Colaborador desconhecido"}
@@ -673,11 +673,12 @@ export default function Acoes() {
                         setEditValue("macroCompetenciaId", 0);
                         setEditValue("microCompetenciaId", 0);
                       }}
+                      modal={false}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o bloco" />
                       </SelectTrigger>
-                      <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                      <SelectContentNoPortal sideOffset={4} onCloseAutoFocus={(e) => e.preventDefault()}>
                         {blocosCompetencias?.map((bloco) => (
                           <SelectItem key={bloco.id} value={bloco.id.toString()}>
                             {bloco.nome}
@@ -703,11 +704,12 @@ export default function Acoes() {
                         setEditValue("microCompetenciaId", 0);
                       }}
                     disabled={!editSelectedBlocoId}
+                      modal={false}
                   >
                       <SelectTrigger>
                         <SelectValue placeholder={editSelectedBlocoId ? "Selecione a macrocompetência" : "Selecione um bloco primeiro"} />
                       </SelectTrigger>
-                      <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                      <SelectContentNoPortal sideOffset={4} onCloseAutoFocus={(e) => e.preventDefault()}>
                         {editMacroCompetencias?.map((macro) => (
                           <SelectItem key={macro.id} value={macro.id.toString()}>
                             {macro.nome}
@@ -730,11 +732,12 @@ export default function Acoes() {
                       value={field.value?.toString()}
                       onValueChange={(value) => field.onChange(parseInt(value))}
                     disabled={!editSelectedMacroId}
+                      modal={false}
                   >
                       <SelectTrigger>
                         <SelectValue placeholder={editSelectedMacroId ? "Selecione a microcompetência" : "Selecione uma macrocompetência primeiro"} />
                       </SelectTrigger>
-                      <SelectContentNoPortal sideOffset={4} position="popper" onCloseAutoFocus={(e) => e.preventDefault()}>
+                      <SelectContentNoPortal sideOffset={4} onCloseAutoFocus={(e) => e.preventDefault()}>
                         {editMicroCompetencias?.map((micro) => (
                           <SelectItem key={micro.id} value={micro.id.toString()}>
                             {micro.nome}
