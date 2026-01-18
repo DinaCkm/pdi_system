@@ -277,6 +277,21 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
                 <input
                   type="date"
                   {...field}
+                  onChange={(e) => {
+                    field.onChange(e);
+                    // Sincronização automática de ciclo baseada na data
+                    if (e.target.value && ciclos2026) {
+                      const selectedDate = new Date(e.target.value);
+                      const ciclo = ciclos2026.find(c => {
+                        const inicio = new Date(c.dataInicio);
+                        const fim = new Date(c.dataFim);
+                        return selectedDate >= inicio && selectedDate <= fim;
+                      });
+                      if (ciclo) {
+                        setValue("cicloId", ciclo.id);
+                      }
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
                 />
               )}
