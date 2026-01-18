@@ -51,7 +51,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
       toast.success("Ação criada com sucesso!");
       utils.actions.list.invalidate();
       reset();
-      onOpenChange(false);
+      setTimeout(() => onOpenChange(false), 200);
     },
     onError: (error) => {
       toast.error(error.message || "Erro ao criar ação");
@@ -136,7 +136,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Select de PDI com busca */}
+          {/* Select de PDI com busca e scroll */}
           <div className="space-y-2">
             <Label htmlFor="pdiId">PDI *</Label>
             <div className="space-y-2">
@@ -150,14 +150,16 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <RadioGroup onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                    {filteredPdis?.map((pdi) => (
-                      <div key={pdi.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={pdi.id.toString()} id={`pdi-${pdi.id}`} />
-                        <Label htmlFor={`pdi-${pdi.id}`}>{pdi.titulo} - {pdi.colaboradorNome || "Colaborador desconhecido"}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
+                  <div className="max-h-[200px] overflow-y-auto border border-input rounded-md p-3 bg-muted/30">
+                    <RadioGroup onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                      {filteredPdis?.map((pdi) => (
+                        <div key={pdi.id} className="flex items-center space-x-2 mb-2">
+                          <RadioGroupItem value={pdi.id.toString()} id={`pdi-${pdi.id}`} />
+                          <Label htmlFor={`pdi-${pdi.id}`} className="cursor-pointer">{pdi.titulo} - {pdi.colaboradorNome || "Colaborador desconhecido"}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
                 )}
               />
             </div>
@@ -179,7 +181,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
             )}
           </div>
 
-          {/* Select de Microcompetência com busca */}
+          {/* Select de Microcompetência com busca e scroll */}
           <div className="space-y-2">
             <Label htmlFor="microCompetenciaId">Microcompetência *</Label>
             <div className="space-y-2">
@@ -193,14 +195,16 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <RadioGroup onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                    {filteredMicros?.map((micro) => (
-                      <div key={micro.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={micro.id.toString()} id={`micro-${micro.id}`} />
-                        <Label htmlFor={`micro-${micro.id}`}>{micro.microNome} ({micro.blocoNome} &gt; {micro.macroNome})</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
+                  <div className="max-h-[200px] overflow-y-auto border border-input rounded-md p-3 bg-muted/30">
+                    <RadioGroup onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                      {filteredMicros?.map((micro) => (
+                        <div key={micro.id} className="flex items-center space-x-2 mb-2">
+                          <RadioGroupItem value={micro.id.toString()} id={`micro-${micro.id}`} />
+                          <Label htmlFor={`micro-${micro.id}`} className="cursor-pointer">{micro.microNome} ({micro.blocoNome} &gt; {micro.macroNome})</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
                 )}
               />
             </div>
