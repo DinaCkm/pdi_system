@@ -10,8 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
 import { Calendar } from "@/components/ui/calendar";
 import { Loader2, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -221,7 +219,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
             />
           </div>
 
-          {/* Ciclo Selection */}
+          {/* Ciclo Selection - RadioGroup sem Portal */}
           <div className="space-y-2">
             <Label htmlFor="ciclo">Ciclo *</Label>
             <Controller
@@ -229,18 +227,18 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
               control={control}
               rules={{ required: true }}
               render={({ field }) => (
-                <Select value={field.value?.toString()} onValueChange={(val) => field.onChange(parseInt(val))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um ciclo" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
+                <div className="max-h-[200px] overflow-y-auto border rounded-md p-2">
+                  <RadioGroup value={field.value?.toString()} onValueChange={(val) => field.onChange(parseInt(val))}>
                     {ciclos2026?.map((ciclo) => (
-                      <SelectItem key={ciclo.id} value={ciclo.id.toString()}>
-                        {ciclo.nome}
-                      </SelectItem>
+                      <div key={ciclo.id} className="flex items-center space-x-2 py-2">
+                        <RadioGroupItem value={ciclo.id.toString()} id={`ciclo-${ciclo.id}`} />
+                        <Label htmlFor={`ciclo-${ciclo.id}`} className="cursor-pointer flex-1">
+                          {ciclo.nome}
+                        </Label>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </RadioGroup>
+                </div>
               )}
             />
           </div>
