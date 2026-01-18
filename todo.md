@@ -313,9 +313,9 @@
 - [x] Adicionar link "Departamentos" no menu lateral do DashboardLayout
 - [x] Adicionar ícone Building2 para Departamentos
 - [x] Posicionado entre Usuários e Competências
-
-## Bug Crítico - Erro ao Selecionar Departamento
-- [x] Investigar erro "Failed to execute 'removeChild' on 'Node'" ao selecionar departamento
+## Bugs Críticos - Erro ao Selecionar Departamento
+- [ ] NotFoundError no DOM ao abrir página de ações - Erro de Portal órfão no Select/Modal
+- [ ] Implementar solução radical de prevenção de Portals nos Selects dentro de modais- [x] Investigar erro "Failed to execute 'removeChild' on 'Node'" ao selecionar departamento
 - [x] Adicionar value prop no Select de Departamento (formulário de criação)
 - [x] Adicionar value prop no Select de Líder (formulário de criação)
 - [x] Adicionar watches para selectedDepartamentoId e selectedLeaderId
