@@ -1426,3 +1426,47 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar mensagens de erro em vermelho para campos obrigatórios
 - [ ] Teste final de criação de ação com prazo válido
 - [ ] Publicar checkpoint final
+
+
+## NOVA PRIORIDADE 1: Sistema de Ciclos Robusto (Automação de Vinculação de Ações)
+- [ ] **Fase 1 - Validação Rígida na Página de Ciclos**
+  - [ ] Adicionar date picker ao formulário de criação de ciclos
+  - [ ] Validar que `dataInicio` é obrigatório
+  - [ ] Validar que `dataFim` é obrigatório
+  - [ ] Validar que `dataFim` > `dataInicio`
+  - [ ] Mostrar mensagens de erro claras em português
+  - [ ] Testar validação no formulário
+
+- [ ] **Fase 2 - Eliminar Buracos Temporais e Validar Continuidade**
+  - [ ] Criar função de validação de continuidade de ciclos
+  - [ ] Verificar se há sobreposição entre ciclos
+  - [ ] Verificar se há gaps (lacunas) entre ciclos
+  - [ ] Adicionar validação ao salvar ciclo
+  - [ ] Testar com ciclos de exemplo
+
+- [ ] **Fase 3 - Preencher Ciclos de 2026 e 2027 Corretamente**
+  - [ ] Verificar ciclos existentes de 2026
+  - [ ] Corrigir datas dos ciclos de 2026
+  - [ ] Adicionar ciclos de 2027 se necessário
+  - [ ] Garantir continuidade temporal completa
+  - [ ] Validar no banco de dados
+
+- [ ] **Fase 4 - Implementar Busca Automática de Ciclo por Data**
+  - [ ] Criar função `findCycleByDate(date)` no backend
+  - [ ] Implementar query SQL para buscar ciclo por data
+  - [ ] Adicionar testes unitários
+  - [ ] Validar que retorna ciclo correto
+
+- [ ] **Fase 5 - Atualizar Formulário de Ações para Usar Ciclo Automático**
+  - [ ] Modificar formulário de ações para remover seleção manual de ciclo
+  - [ ] Ao selecionar data, buscar ciclo automaticamente
+  - [ ] Exibir ciclo encontrado para confirmação
+  - [ ] Mostrar erro se nenhum ciclo cobrir a data
+  - [ ] Testar com várias datas
+
+- [ ] **Fase 6 - Testar Sistema Completo e Entregar**
+  - [ ] Teste end-to-end: criar ação com data → ciclo automático
+  - [ ] Teste com datas em diferentes ciclos
+  - [ ] Teste com data fora de qualquer ciclo (deve dar erro)
+  - [ ] Validar que ações são salvas corretamente
+  - [ ] Criar checkpoint final

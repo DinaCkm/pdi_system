@@ -1,0 +1,18 @@
+{
+  "query": "SELECT p.id, p.titulo, p.cicloId, c.nome, c.dataInicio, c.dataFim FROM pdis p LEFT JOIN ciclos c ON p.cicloId = c.id WHERE p.id = 510001;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT p.id, p.titulo, p.cicloId, c.nome, c.dataInicio, c.dataFim FROM pdis p LEFT JOIN ciclos c ON p.cicloId = c.id WHERE p.id = 510001;",
+  "rows": [
+    {
+      "id": "510001",
+      "titulo": "Desenvolvimento 2026",
+      "cicloId": "1",
+      "nome": "NULL",
+      "dataInicio": "NULL",
+      "dataFim": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitulo\tcicloId\tnome\tdataInicio\tdataFim\n510001\tDesenvolvimento 2026\t1\tNULL\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

@@ -38,7 +38,7 @@ const getMenuItems = (userRole: string) => {
       { icon: Users, label: "Usuários", path: "/usuarios" },
       { icon: Building2, label: "Departamentos", path: "/departamentos" },
       { icon: Target, label: "Competências", path: "/competencias" },
-      { icon: Calendar, label: "Ciclos", path: "/ciclos" },
+      // Ciclos removido - gerenciado automaticamente pelo sistema
       { icon: FileText, label: "PDIs", path: "/pdis" },
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
       { icon: Upload, label: "Importar Ações", path: "/importar-acoes" },

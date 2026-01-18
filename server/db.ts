@@ -1,4 +1,4 @@
-import { eq, and, or, desc, asc, sql, inArray, ne, isNotNull, like } from "drizzle-orm";
+import { eq, and, or, desc, asc, sql, inArray, ne, isNotNull, like, lte, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { alias } from "drizzle-orm/mysql-core";
 import { 
@@ -2494,4 +2494,39 @@ export async function getCompetenciasHierarchy(filters?: {
   }
 
   return filtered;
+}
+
+
+/**
+ * Encontra o ciclo que contém uma data específica
+ * @param date Data em formato YYYY-MM-DD ou Date object
+ * @returns Ciclo encontrado ou null se nenhum ciclo contiver a data
+ */
+export async function findCycloBiDate(date: string | Date) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  // Converter para string no formato YYYY-MM-DD se for Date
+  let dateStr: string;
+  if (date instanceof Date) {
+    dateStr = date.toISOString().split('T')[0];
+  } else {
+    dateStr = date;
+  }
+
+  // Buscar ciclo que contém a data usando DATE() para comparar apenas a data
+  const result = await db
+    .select()
+    .from(ciclos)
+    .where(
+      and(
+        lte(sql`DATE(${ciclos.dataInicio})`, dateStr),
+        gte(sql`DATE(${ciclos.dataFim})`, dateStr)
+      )
+    )
+    .limit(1);
+
+  return result.length > 0 ? result[0] : null;
 }

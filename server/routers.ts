@@ -916,6 +916,12 @@ export const appRouter = router({
         await db.deleteCiclo(input.id);
         return { success: true };
       }),
+
+    findByDate: protectedProcedure
+      .input(z.object({ date: z.string() }))
+      .query(async ({ input }) => {
+        return await db.findCycloBiDate(input.date);
+      }),
   }),
 
   // ============= GESTÃO DE PDIs =============

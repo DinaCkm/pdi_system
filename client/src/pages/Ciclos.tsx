@@ -102,9 +102,68 @@ export default function Ciclos() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validação de campos obrigatórios
     if (!form.nome || !form.dataInicio || !form.dataFim) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
+    }
+
+    // Validação de datas
+    const dataInicio = new Date(form.dataInicio);
+    const dataFim = new Date(form.dataFim);
+
+    if (dataFim <= dataInicio) {
+      toast.error("Data de fim deve ser posterior à data de início");
+      return;
+    }
+
+    // Validação de continuidade de ciclos (apenas para novos ciclos)
+    if (!editingCiclo && ciclos) {
+      // Verifica sobreposição
+      const hasOverlap = ciclos.some(ciclo => {
+        const cicloFim = new Date(ciclo.dataFim);
+        const cicloInicio = new Date(ciclo.dataInicio);
+        
+        if ((dataInicio >= cicloInicio && dataInicio <= cicloFim) ||
+            (dataFim >= cicloInicio && dataFim <= cicloFim) ||
+            (dataInicio <= cicloInicio && dataFim >= cicloFim)) {
+          return true;
+        }
+        return false;
+      });
+
+      if (hasOverlap) {
+        toast.error("Este ciclo se sobrepõe com outro ciclo existente");
+        return;
+      }
+
+      // Verifica gaps (lacunas) entre ciclos
+      const sortedCiclos = [...ciclos].sort((a, b) => 
+        new Date(a.dataFim).getTime() - new Date(b.dataFim).getTime()
+      );
+
+      for (let i = 0; i < sortedCiclos.length - 1; i++) {
+        const currentFim = new Date(sortedCiclos[i].dataFim);
+        const nextInicio = new Date(sortedCiclos[i + 1].dataInicio);
+        
+        // Zera as horas para comparar apenas as datas
+        currentFim.setHours(0, 0, 0, 0);
+        nextInicio.setHours(0, 0, 0, 0);
+        
+        const diffTime = nextInicio.getTime() - currentFim.getTime();
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+        
+        // Se a diferença for maior que 1 dia, há um gap
+        if (diffDays > 1) {
+          const gapStart = new Date(currentFim);
+          gapStart.setDate(gapStart.getDate() + 1);
+          const gapEnd = new Date(nextInicio);
+          gapEnd.setDate(gapEnd.getDate() - 1);
+          
+          toast.error(`Há uma lacuna entre ${gapStart.toLocaleDateString('pt-BR')} e ${gapEnd.toLocaleDateString('pt-BR')}`);
+          return;
+        }
+      }
     }
 
     if (editingCiclo) {
@@ -193,7 +252,9 @@ export default function Ciclos() {
                     value={form.dataInicio}
                     onChange={(e) => setForm({ ...form, dataInicio: e.target.value })}
                     required
+                    className="border-blue-200 focus:border-blue-500"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">Selecione a data de início do ciclo</p>
                 </div>
                 <div>
                   <Label htmlFor="dataFim">Data de Fim *</Label>
@@ -203,7 +264,10 @@ export default function Ciclos() {
                     value={form.dataFim}
                     onChange={(e) => setForm({ ...form, dataFim: e.target.value })}
                     required
+                    className="border-blue-200 focus:border-blue-500"
+                    min={form.dataInicio}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">Deve ser posterior à data de início</p>
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button

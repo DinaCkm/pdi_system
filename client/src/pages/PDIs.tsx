@@ -129,6 +129,20 @@ export default function PDIs() {
   return (
     <DashboardLayout>
       <div className="flex-1 w-full min-w-0 space-y-6 p-2 md:p-4">
+        {/* Informação de Ciclo Ativo */}
+        {ciclos.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm font-semibold text-blue-900">
+              Ciclo Atual: <span className="font-bold">{ciclos[0]?.nome}</span>
+              {ciclos[0]?.dataInicio && ciclos[0]?.dataFim && (
+                <span className="text-blue-700 ml-2">
+                  ({new Date(ciclos[0].dataInicio).toLocaleDateString('pt-BR')} - {new Date(ciclos[0].dataFim).toLocaleDateString('pt-BR')})
+                </span>
+              )}
+            </p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

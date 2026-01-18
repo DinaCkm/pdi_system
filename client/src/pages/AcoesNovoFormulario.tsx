@@ -1,16 +1,19 @@
+'use client';
+
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { trpc } from "@/lib/trpc";
-import { formatDateForMySQL, formatDateBR, isDateWithinRange } from "@/lib/date-utils";
+import { formatDateForMySQL } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Loader2, Info, CalendarIcon } from "lucide-react";
+import { Loader2, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -23,7 +26,10 @@ interface NovoFormularioProps {
 
 interface FormData {
   pdiId: number;
+  cicloId: number;
   microCompetenciaId: number;
+  blocoId: number;
+  macroId: number;
   nome: string;
   descricao: string;
   prazo: string;
@@ -31,17 +37,19 @@ interface FormData {
 
 export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormularioProps) {
   const { control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<FormData>({
-    mode: 'onBlur',
+    mode: 'onChange',
     defaultValues: {
       pdiId: pdiIdProp || 0,
+      cicloId: 0,
       microCompetenciaId: 0,
+      blocoId: 0,
+      macroId: 0,
       nome: "",
       descricao: "",
       prazo: "",
     },
   });
 
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [pdiSearchTerm, setPdiSearchTerm] = useState("");
   const [microSearchTerm, setMicroSearchTerm] = useState("");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
@@ -49,6 +57,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
   // Queries
   const { data: pdis } = trpc.pdis.list.useQuery(undefined, { staleTime: 0 });
   const { data: micros } = trpc.competencias.listAllMicrosWithDetails.useQuery();
+  const { data: ciclos } = trpc.ciclos.list.useQuery();
   const utils = trpc.useUtils();
 
   // Mutations
@@ -60,20 +69,9 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
       setTimeout(() => onOpenChange(false), 200);
     },
     onError: (error) => {
-      toast.error(error.message || "Erro ao criar ação");
-    },
-  });
-
-  const suggestWithAIMutation = trpc.actions.suggestWithAI.useMutation({
-    onSuccess: (data) => {
-      setValue("nome", data.nome);
-      setValue("descricao", data.descricao);
-      setIsGeneratingAI(false);
-      toast.success("Sugestão gerada com sucesso!");
-    },
-    onError: (error) => {
-      setIsGeneratingAI(false);
-      toast.error(error.message || "Erro ao gerar sugestão");
+      const errorMsg = error.message || "Erro ao criar ação";
+      console.error("[CREATE ACTION ERROR]", errorMsg, error);
+      toast.error(errorMsg);
     },
   });
 
@@ -81,6 +79,10 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
   const selectedPdiId = watch("pdiId");
   const selectedMicroId = watch("microCompetenciaId");
   const selectedPrazo = watch("prazo");
+  const selectedCicloId = watch("cicloId");
+  const selectedBlocoId = watch("blocoId");
+  const selectedMacroId = watch("macroId");
+  const selectedNome = watch("nome");
 
   const selectedPDI = pdis?.find((p) => p.id === selectedPdiId);
   const selectedMicro = micros?.find((m) => m.id === selectedMicroId);
@@ -91,55 +93,13 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
   );
 
   const filteredMicros = micros?.filter((micro) =>
-    `${micro.nome} ${micro.macroNome} ${micro.blocoNome}`.toLowerCase().includes(microSearchTerm.toLowerCase())
+    `${micro.microNome} ${micro.macroNome} ${micro.blocoNome}`.toLowerCase().includes(microSearchTerm.toLowerCase())
   );
 
-  const onSubmit = (data: FormData) => {
-    const micro = micros?.find((m) => m.id === data.microCompetenciaId);
-    if (!micro) {
-      toast.error("Microcompetência não encontrada");
-      return;
-    }
+  // Filtrar ciclos para 2026
+  const ciclos2026 = ciclos?.filter(c => c.nome.includes("2026")) || [];
 
-    const pdiSelected = pdis?.find((p) => p.id === data.pdiId);
-    if (pdiSelected && !isDateWithinRange(data.prazo, pdiSelected.dataInicio || '', pdiSelected.dataFim || '')) {
-      toast.error(`Prazo deve estar entre ${formatDateBR(pdiSelected.dataInicio)} e ${formatDateBR(pdiSelected.dataFim)}`);
-      return;
-    }
-    
-    createMutation.mutate({
-      pdiId: data.pdiId,
-      blocoId: micro.blocoId,
-      macroId: micro.macroId,
-      microId: micro.id,
-      nome: data.nome,
-      descricao: data.descricao,
-      prazo: formatDateForMySQL(data.prazo),
-    });
-  };
-
-  const handleSuggestWithAI = () => {
-    const microId = watch("microCompetenciaId");
-    const micro = micros?.find((m) => m.id === microId);
-    
-    if (micro) {
-      setIsGeneratingAI(true);
-      suggestWithAIMutation.mutate({
-        blocoId: micro.blocoId,
-        macroId: micro.macroId,
-        microId: micro.id,
-      });
-    }
-  };
-
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      const isoDate = date.toISOString().split('T')[0];
-      setValue("prazo", isoDate);
-      setDatePickerOpen(false);
-    }
-  };
-
+  // Função para converter data para objeto Date
   const getPrazoDate = () => {
     if (!selectedPrazo) return undefined;
     try {
@@ -149,180 +109,182 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
     }
   };
 
-  const getMinDate = () => {
-    if (!selectedPDI?.dataInicio) return undefined;
-    try {
-      return parse(selectedPDI.dataInicio, 'yyyy-MM-dd', new Date());
-    } catch {
-      return undefined;
+  // Função para selecionar data no calendário
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    const isoDate = date.toISOString().split('T')[0];
+    setValue("prazo", isoDate);
+    setDatePickerOpen(false);
+  };
+
+  // Função para selecionar microcompetência
+  const handleMicroSelect = (microId: number) => {
+    const micro = micros?.find(m => m.id === microId);
+    if (micro) {
+      setValue("microCompetenciaId", microId);
+      setValue("blocoId", micro.blocoId);
+      setValue("macroId", micro.macroId);
     }
   };
 
-  const getMaxDate = () => {
-    if (!selectedPDI?.dataFim) return undefined;
-    try {
-      return parse(selectedPDI.dataFim, 'yyyy-MM-dd', new Date());
-    } catch {
-      return undefined;
+  const onSubmit = (data: FormData) => {
+    if (!data.pdiId) {
+      toast.error("Selecione um PDI");
+      return;
     }
+
+    if (!data.microCompetenciaId) {
+      toast.error("Selecione uma microcompetência");
+      return;
+    }
+
+    if (!data.cicloId) {
+      toast.error("Selecione um ciclo");
+      return;
+    }
+
+    if (!data.nome || data.nome.trim() === "") {
+      toast.error("Digite o nome da ação");
+      return;
+    }
+
+    if (!data.prazo) {
+      toast.error("Selecione uma data");
+      return;
+    }
+
+    if (!data.blocoId || !data.macroId) {
+      toast.error("Dados de competência incompletos");
+      return;
+    }
+
+    const prazoFormatted = formatDateForMySQL(data.prazo);
+
+    createMutation.mutate({
+      pdiId: data.pdiId,
+      cicloId: data.cicloId,
+      microCompetenciaId: data.microCompetenciaId,
+      blocoId: data.blocoId,
+      macroId: data.macroId,
+      nome: data.nome,
+      descricao: data.descricao,
+      prazo: prazoFormatted,
+    });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Criar Nova Ação</DialogTitle>
-          <DialogDescription>
-            Crie uma ação de desenvolvimento vinculada a um PDI com uma microcompetência específica.
-          </DialogDescription>
+          <DialogTitle>Nova Ação</DialogTitle>
+          <DialogDescription>Crie uma nova ação para o PDI</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* Select de PDI com busca e scroll */}
+          {/* PDI Selection */}
           <div className="space-y-2">
-            <Label htmlFor="pdiId">PDI *</Label>
-            <div className="space-y-2">
-              <Input
-                placeholder="Buscar PDI..."
-                value={pdiSearchTerm}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPdiSearchTerm(e.target.value)}
-              />
-              <Controller
-                name="pdiId"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <div className="max-h-[200px] overflow-y-auto border border-input rounded-md p-3 bg-muted/30">
-                    <RadioGroup onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                      {filteredPdis?.map((pdi) => (
-                        <div key={pdi.id} className="flex items-center space-x-2 mb-2">
-                          <RadioGroupItem value={pdi.id.toString()} id={`pdi-${pdi.id}`} />
-                          <Label htmlFor={`pdi-${pdi.id}`} className="cursor-pointer">{pdi.titulo} - {pdi.colaboradorNome || "Colaborador desconhecido"}</Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                )}
-              />
-            </div>
-            {selectedPDI && (
-              <div className="space-y-2">
-                {selectedPDI.colaboradorNome && (
-                  <p className="text-sm font-medium flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
-                    Colaborador: {selectedPDI.colaboradorNome}
-                  </p>
-                )}
-                {selectedPDI.cicloNome && (
-                  <p className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Info className="h-4 w-4" />
-                    Ciclo: {selectedPDI.cicloNome} ({formatDateBR(selectedPDI.dataInicio)} - {formatDateBR(selectedPDI.dataFim)})
-                  </p>
-                )}
-              </div>
-            )}
+            <Label htmlFor="pdi">PDI *</Label>
+            <Input
+              placeholder="Buscar por nome do PDI ou colaborador..."
+              value={pdiSearchTerm}
+              onChange={(e) => setPdiSearchTerm(e.target.value)}
+              className="mb-2"
+            />
+            <Controller
+              name="pdiId"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <div className="max-h-[200px] overflow-y-auto border rounded-md p-2">
+                  <RadioGroup value={field.value?.toString()} onValueChange={(val) => field.onChange(parseInt(val))}>
+                    {filteredPdis?.map((pdi) => (
+                      <div key={pdi.id} className="flex items-center space-x-2 py-2">
+                        <RadioGroupItem value={pdi.id.toString()} id={`pdi-${pdi.id}`} />
+                        <Label htmlFor={`pdi-${pdi.id}`} className="cursor-pointer flex-1">
+                          {pdi.titulo} - {pdi.colaboradorNome}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              )}
+            />
           </div>
 
-          {/* Select de Microcompetência com busca e scroll */}
+          {/* Microcompetência Selection */}
           <div className="space-y-2">
-            <Label htmlFor="microCompetenciaId">Microcompetência *</Label>
-            <div className="space-y-2">
-              <Input
-                placeholder="Buscar microcompetência..."
-                value={microSearchTerm}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMicroSearchTerm(e.target.value)}
-              />
-              <Controller
-                name="microCompetenciaId"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <div className="max-h-[200px] overflow-y-auto border border-input rounded-md p-3 bg-muted/30">
-                    <RadioGroup onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
-                      {filteredMicros?.map((micro) => (
-                        <div key={micro.id} className="flex items-center space-x-2 mb-2">
-                          <RadioGroupItem value={micro.id.toString()} id={`micro-${micro.id}`} />
-                          <Label htmlFor={`micro-${micro.id}`} className="cursor-pointer">{micro.microNome} ({micro.blocoNome} &gt; {micro.macroNome})</Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                )}
-              />
-            </div>
-            {selectedMicro && (
-              <div className="p-3 bg-muted rounded-md space-y-1">
-                <p className="text-sm font-medium">Competência selecionada:</p>
-                <p className="text-sm text-muted-foreground">
-                  <strong>Bloco:</strong> {selectedMicro.blocoNome}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  <strong>Macro:</strong> {selectedMicro.macroNome}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  <strong>Micro:</strong> {selectedMicro.microNome}
-                </p>
-              </div>
-            )}
+            <Label htmlFor="micro">Microcompetência *</Label>
+            <Input
+              placeholder="Buscar por nome, macro ou bloco..."
+              value={microSearchTerm}
+              onChange={(e) => setMicroSearchTerm(e.target.value)}
+              className="mb-2"
+            />
+            <Controller
+              name="microCompetenciaId"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <div className="max-h-[200px] overflow-y-auto border rounded-md p-2">
+                  <RadioGroup value={field.value?.toString()} onValueChange={(val) => handleMicroSelect(parseInt(val))}>
+                    {filteredMicros?.map((micro) => (
+                      <div key={micro.id} className="flex items-center space-x-2 py-2">
+                        <RadioGroupItem value={micro.id.toString()} id={`micro-${micro.id}`} />
+                        <Label htmlFor={`micro-${micro.id}`} className="cursor-pointer flex-1 text-sm">
+                          {micro.microNome} ({micro.macroNome} - {micro.blocoNome})
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              )}
+            />
           </div>
 
-          {/* Botão de Sugestão com IA */}
-          {selectedMicroId && selectedMicroId > 0 && (
-            <div className="border-t pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleSuggestWithAI}
-                disabled={isGeneratingAI}
-              >
-                {isGeneratingAI ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Gerando sugestão...
-                  </>
-                ) : (
-                  <>
-                    ✨ Sugerir Nome e Ação com IA
-                  </>
-                )}
-              </Button>
-              <p className="text-sm text-muted-foreground mt-2 text-center">
-                A IA vai gerar sugestões de nome e ação baseadas na microcompetência selecionada
-              </p>
-            </div>
-          )}
+          {/* Ciclo Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="ciclo">Ciclo *</Label>
+            <Controller
+              name="cicloId"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select value={field.value?.toString()} onValueChange={(val) => field.onChange(parseInt(val))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um ciclo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ciclos2026?.map((ciclo) => (
+                      <SelectItem key={ciclo.id} value={ciclo.id.toString()}>
+                        {ciclo.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
 
-          {/* Nome da Ação */}
+          {/* Nome */}
           <div className="space-y-2">
             <Label htmlFor="nome">Nome da Ação *</Label>
             <Controller
               name="nome"
               control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  placeholder="Ex: Participar de curso de liderança"
-                />
-              )}
+              rules={{ required: "Nome é obrigatório" }}
+              render={({ field }) => <Input {...field} placeholder="Digite o nome da ação" />
+              }
             />
+            {errors.nome && <p className="text-red-500 text-sm">{errors.nome.message}</p>}
           </div>
 
-          {/* Ação a ser realizada */}
+          {/* Descrição */}
           <div className="space-y-2">
-            <Label htmlFor="descricao">Ação a ser realizada *</Label>
+            <Label htmlFor="descricao">Descrição</Label>
             <Controller
               name="descricao"
               control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <Textarea
-                  {...field}
-                  placeholder="Descreva a ação que será realizada..."
-                  rows={4}
-                />
-              )}
+              render={({ field }) => <Textarea {...field} placeholder="Digite a descrição da ação" rows={3} />}
             />
           </div>
 
@@ -341,7 +303,10 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
                       className="w-full justify-start text-left font-normal"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {selectedPrazo ? format(getPrazoDate()!, 'dd/MM/yyyy', { locale: ptBR }) : 'Selecione uma data'}
+                      {selectedPrazo 
+                        ? format(getPrazoDate()!, 'dd/MM/yyyy', { locale: ptBR })
+                        : 'Selecione uma data'
+                      }
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -349,47 +314,28 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
                       mode="single"
                       selected={getPrazoDate()}
                       onSelect={handleDateSelect}
-                      disabled={(date) => {
-                        const minDate = getMinDate();
-                        const maxDate = getMaxDate();
-                        if (minDate && date < minDate) return true;
-                        if (maxDate && date > maxDate) return true;
-                        return false;
-                      }}
                       locale={ptBR}
                     />
                   </PopoverContent>
                 </Popover>
               )}
             />
-            {selectedPDI && selectedPDI.cicloNome && (
-              <p className="text-sm text-muted-foreground">
-                O prazo deve estar entre {formatDateBR(selectedPDI.dataInicio)} e {formatDateBR(selectedPDI.dataFim)}
-              </p>
-            )}
           </div>
 
+          {/* blocoId e macroId são controlados automaticamente via handleMicroSelect */}
+
           {/* Botões */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                reset();
-                onOpenChange(false);
-              }}
-            >
+          <div className="flex gap-2 justify-end pt-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Criando...
-                </>
-              ) : (
-                "Criar Ação"
-              )}
+            <Button 
+              type="submit" 
+              disabled={!selectedPdiId || !selectedMicroId || !selectedCicloId || !selectedNome || !selectedPrazo || createMutation.isPending}
+              className="gap-2"
+            >
+              {createMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+              Criar Ação
             </Button>
           </div>
         </form>

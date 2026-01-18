@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO users (name, email, cpf, role, loginMethod, status, openId, createdAt, updatedAt) VALUES ('Admin Teste', 'admin.teste@empresa.com', '11111111111', 'admin', 'custom', 'ativo', 'admin-teste-001', NOW(), NOW())",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute INSERT INTO users (name, email, cpf, role, loginMethod, status, openId, createdAt, updatedAt) VALUES ('Admin Teste', 'admin.teste@empresa.com', '11111111111', 'admin', 'custom', 'ativo', 'admin-teste-001', NOW(), NOW())",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1364 (HY000) at line 1: Field 'cargo' doesn't have a default value"
+  ]
+}
