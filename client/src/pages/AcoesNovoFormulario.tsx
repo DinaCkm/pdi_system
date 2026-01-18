@@ -141,7 +141,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
     createMutation.mutate({
       pdiId: data.pdiId,
       cicloId: data.cicloId,
-      microCompetenciaId: data.microCompetenciaId,
+      microId: data.microCompetenciaId,
       blocoId: data.blocoId,
       macroId: data.macroId,
       nome: data.nome,
