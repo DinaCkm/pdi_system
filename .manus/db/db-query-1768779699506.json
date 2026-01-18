@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, nome FROM ciclos LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, nome FROM ciclos LIMIT 5;",
+  "rows": [
+    {
+      "id": "390004",
+      "nome": "1º Semestre 2026"
+    },
+    {
+      "id": "390005",
+      "nome": "2º Semestre 2026"
+    },
+    {
+      "id": "390006",
+      "nome": "1º Semestre 2027"
+    },
+    {
+      "id": "390007",
+      "nome": "2º Semestre 2027"
+    },
+    {
+      "id": "390008",
+      "nome": "1º Semestre 2028"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnome\n390004\t1º Semestre 2026\n390005\t2º Semestre 2026\n390006\t1º Semestre 2027\n390007\t2º Semestre 2027\n390008\t1º Semestre 2028\n",
+  "stderr": "",
+  "execution_time_ms": 67
+}
