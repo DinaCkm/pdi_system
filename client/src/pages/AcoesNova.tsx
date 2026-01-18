@@ -1,12 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -56,11 +54,6 @@ export function AcoesNova() {
     },
   });
 
-  const selectedPdiId = watch("pdiId");
-  const selectedMicroId = watch("microCompetenciaId");
-  const selectedCicloId = watch("cicloId");
-  const selectedPrazo = watch("prazo");
-
   const handleMicroSelect = (microId: string) => {
     const id = parseInt(microId);
     const micro = micros?.find((m: any) => m.id === id);
@@ -68,6 +61,23 @@ export function AcoesNova() {
       setValue("microCompetenciaId", id as any);
       setValue("blocoId", micro.blocoId as any);
       setValue("macroId", micro.macroId as any);
+    }
+  };
+
+  const handleDateChange = (dateStr: string) => {
+    setValue("prazo", dateStr as any);
+    
+    // Sincronização automática de ciclo baseada na data
+    if (dateStr && ciclos2026) {
+      const date = new Date(dateStr);
+      const ciclo = ciclos2026.find((c: any) => {
+        const inicio = new Date(c.dataInicio);
+        const fim = new Date(c.dataFim);
+        return date >= inicio && date <= fim;
+      });
+      if (ciclo) {
+        setValue("cicloId", ciclo.id as any);
+      }
     }
   };
 
@@ -108,6 +118,8 @@ export function AcoesNova() {
     });
   };
 
+  const selectedPrazo = watch("prazo");
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-2xl mx-auto">
@@ -117,73 +129,85 @@ export function AcoesNova() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-card p-6 rounded-lg border">
-          {/* PDI */}
-          <div className="space-y-3">
-            <Label>PDI *</Label>
-            <div className="max-h-[200px] overflow-y-auto border rounded-md p-2 space-y-2">
-              <Controller
-                name="pdiId"
-                control={control}
-                render={({ field }) => (
-                  <RadioGroup value={field.value?.toString()} onValueChange={(val) => field.onChange(parseInt(val))}>
-                    {pdis?.map((pdi: any) => (
-                      <div key={pdi.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={pdi.id.toString()} id={`pdi-${pdi.id}`} />
-                        <Label htmlFor={`pdi-${pdi.id}`} className="cursor-pointer font-normal">
-                          {pdi.nome}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                )}
-              />
-            </div>
+          {/* PDI - Select Nativo */}
+          <div className="space-y-2">
+            <Label htmlFor="pdiId">PDI *</Label>
+            <Controller
+              name="pdiId"
+              control={control}
+              rules={{ required: "PDI é obrigatório" }}
+              render={({ field }) => (
+                <select
+                  {...field}
+                  id="pdiId"
+                  value={field.value || ""}
+                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                >
+                  <option value="">Selecione um PDI</option>
+                  {pdis?.map((pdi: any) => (
+                    <option key={pdi.id} value={pdi.id}>
+                      {pdi.nome}
+                    </option>
+                  ))}
+                </select>
+              )}
+            />
+            {errors.pdiId && <p className="text-sm text-destructive">{errors.pdiId.message}</p>}
           </div>
 
-          {/* Microcompetência */}
-          <div className="space-y-3">
-            <Label>Microcompetência *</Label>
-            <div className="max-h-[200px] overflow-y-auto border rounded-md p-2 space-y-2">
-              <Controller
-                name="microCompetenciaId"
-                control={control}
-                render={({ field }) => (
-                  <RadioGroup value={field.value?.toString()} onValueChange={(val) => handleMicroSelect(val)}>
-                    {micros?.map((micro: any) => (
-                      <div key={micro.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={micro.id.toString()} id={`micro-${micro.id}`} />
-                        <Label htmlFor={`micro-${micro.id}`} className="cursor-pointer font-normal">
-                          {micro.microNome} ({micro.macroNome} - {micro.blocoNome})
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                )}
-              />
-            </div>
+          {/* Microcompetência - Select Nativo */}
+          <div className="space-y-2">
+            <Label htmlFor="microCompetenciaId">Microcompetência *</Label>
+            <Controller
+              name="microCompetenciaId"
+              control={control}
+              rules={{ required: "Microcompetência é obrigatória" }}
+              render={({ field }) => (
+                <select
+                  {...field}
+                  id="microCompetenciaId"
+                  value={field.value || ""}
+                  onChange={(e) => handleMicroSelect(e.target.value)}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                >
+                  <option value="">Selecione uma microcompetência</option>
+                  {micros?.map((micro: any) => (
+                    <option key={micro.id} value={micro.id}>
+                      {micro.microNome} ({micro.macroNome} - {micro.blocoNome})
+                    </option>
+                  ))}
+                </select>
+              )}
+            />
+            {errors.microCompetenciaId && <p className="text-sm text-destructive">{errors.microCompetenciaId.message}</p>}
           </div>
 
-          {/* Ciclo */}
-          <div className="space-y-3">
-            <Label>Ciclo *</Label>
-            <div className="max-h-[200px] overflow-y-auto border rounded-md p-2 space-y-2">
-              <Controller
-                name="cicloId"
-                control={control}
-                render={({ field }) => (
-                  <RadioGroup value={field.value?.toString()} onValueChange={(val) => field.onChange(parseInt(val))}>
-                    {ciclos2026?.map((ciclo: any) => (
-                      <div key={ciclo.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={ciclo.id.toString()} id={`ciclo-${ciclo.id}`} />
-                        <Label htmlFor={`ciclo-${ciclo.id}`} className="cursor-pointer font-normal">
-                          {ciclo.nome}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                )}
-              />
-            </div>
+          {/* Ciclo - Select Nativo */}
+          <div className="space-y-2">
+            <Label htmlFor="cicloId">Ciclo *</Label>
+            <Controller
+              name="cicloId"
+              control={control}
+              rules={{ required: "Ciclo é obrigatório" }}
+              render={({ field }) => (
+                <select
+                  {...field}
+                  id="cicloId"
+                  value={field.value || ""}
+                  onChange={(e) => field.onChange(parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                >
+                  <option value="">Selecione um ciclo</option>
+                  {ciclos2026?.map((ciclo: any) => (
+                    <option key={ciclo.id} value={ciclo.id}>
+                      {ciclo.nome}
+                    </option>
+                  ))}
+                </select>
+              )}
+            />
+            {errors.cicloId && <p className="text-sm text-destructive">{errors.cicloId.message}</p>}
           </div>
 
           {/* Nome */}
@@ -194,7 +218,7 @@ export function AcoesNova() {
               control={control}
               rules={{ required: "Nome é obrigatório" }}
               render={({ field }) => (
-                <Input {...field} placeholder="Digite o nome da ação" />
+                <Input {...field} id="nome" placeholder="Digite o nome da ação" />
               )}
             />
             {errors.nome && <p className="text-sm text-destructive">{errors.nome.message}</p>}
@@ -208,48 +232,31 @@ export function AcoesNova() {
               control={control}
               rules={{ required: "Descrição é obrigatória" }}
               render={({ field }) => (
-                <Textarea {...field} placeholder="Digite a descrição da ação" rows={3} />
+                <Textarea {...field} id="descricao" placeholder="Digite a descrição da ação" rows={3} />
               )}
             />
             {errors.descricao && <p className="text-sm text-destructive">{errors.descricao.message}</p>}
           </div>
 
-          {/* Prazo com Calendar Inline */}
-          <div className="space-y-3">
-            <Label>Prazo *</Label>
+          {/* Prazo - Input Date Nativo */}
+          <div className="space-y-2">
+            <Label htmlFor="prazo">Prazo *</Label>
             <Controller
               name="prazo"
               control={control}
               rules={{ required: "Data é obrigatória" }}
               render={({ field }) => (
-                <div className="border rounded-md p-3 bg-background">
-                  <Calendar
-                    mode="single"
-                    selected={field.value ? new Date(field.value) : undefined}
-                    onSelect={(date) => {
-                      if (date) {
-                        const dateStr = format(date, 'yyyy-MM-dd');
-                        field.onChange(dateStr);
-                        
-                        // Sincronização automática de ciclo baseada na data
-                        if (ciclos2026) {
-                          const ciclo = ciclos2026.find((c: any) => {
-                            const inicio = new Date(c.dataInicio);
-                            const fim = new Date(c.dataFim);
-                            return date >= inicio && date <= fim;
-                          });
-                          if (ciclo) {
-                            setValue("cicloId", ciclo.id);
-                          }
-                        }
-                      }
-                    }}
-                    locale={ptBR}
-                    className="w-full"
+                <div>
+                  <input
+                    {...field}
+                    id="prazo"
+                    type="date"
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
                   />
-                  {field.value && (
+                  {selectedPrazo && (
                     <div className="mt-2 text-sm text-muted-foreground">
-                      Data selecionada: {format(new Date(field.value), 'dd/MM/yyyy', { locale: ptBR })}
+                      Data selecionada: {format(new Date(selectedPrazo), 'dd/MM/yyyy', { locale: ptBR })}
                     </div>
                   )}
                 </div>
