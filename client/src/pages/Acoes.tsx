@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, Plus, Eye, Edit, Trash2, Target, Calendar, User, Lock, Clock } from "lucide-react";
+import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectContentNoPortal } from "@/components/ui/select";
 import { Controller, useForm } from "react-hook-form";
@@ -27,6 +28,7 @@ type AcaoFormData = {
 };
 
 export default function Acoes() {
+  const [, navigate] = useLocation();
   // Ler query params da URL
   const urlParams = new URLSearchParams(window.location.search);
   const pdiIdFromUrl = urlParams.get('pdiId');
@@ -360,7 +362,7 @@ export default function Acoes() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setShowCreateDialog(true)}>
+          <Button onClick={() => navigate("/acoes/nova", { replace: false })}>
             <Plus className="h-4 w-4 mr-2" />
             Nova Ação
           </Button>

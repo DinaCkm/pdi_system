@@ -29,6 +29,7 @@ import MinhasAcoes from "./pages/MinhasAcoes";
 import HistoricoAlteracoes from "./pages/HistoricoAlteracoes";
 import Auditoria from "./pages/Auditoria";
 import { Dashboard } from "./pages/Dashboard";
+import { AcoesNova } from "./pages/AcoesNova";
 
 function Router() {
   return (
@@ -111,6 +112,12 @@ function Router() {
       <Route path={"/acoes"}>
         <DashboardLayout>
           <Acoes />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/acoes/nova"}>
+        <DashboardLayout>
+          <AcoesNova />
         </DashboardLayout>
       </Route>
       
