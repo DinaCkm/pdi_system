@@ -266,34 +266,45 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
             />
           </div>
 
-          {/* Prazo com Input Date */}
+          {/* Prazo com Calendar Inline */}
           <div className="space-y-2">
-            <Label htmlFor="prazo">Prazo *</Label>
+            <Label>Prazo *</Label>
             <Controller
               name="prazo"
               control={control}
               rules={{ required: true }}
               render={({ field }) => (
-                <input
-                  type="date"
-                  {...field}
-                  onChange={(e) => {
-                    field.onChange(e);
-                    // Sincronização automática de ciclo baseada na data
-                    if (e.target.value && ciclos2026) {
-                      const selectedDate = new Date(e.target.value);
-                      const ciclo = ciclos2026.find(c => {
-                        const inicio = new Date(c.dataInicio);
-                        const fim = new Date(c.dataFim);
-                        return selectedDate >= inicio && selectedDate <= fim;
-                      });
-                      if (ciclo) {
-                        setValue("cicloId", ciclo.id);
+                <div className="border rounded-md p-3 bg-background">
+                  <Calendar
+                    mode="single"
+                    selected={field.value ? new Date(field.value) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        const dateStr = format(date, 'yyyy-MM-dd');
+                        field.onChange(dateStr);
+                        
+                        // Sincronização automática de ciclo baseada na data
+                        if (ciclos2026) {
+                          const ciclo = ciclos2026.find(c => {
+                            const inicio = new Date(c.dataInicio);
+                            const fim = new Date(c.dataFim);
+                            return date >= inicio && date <= fim;
+                          });
+                          if (ciclo) {
+                            setValue("cicloId", ciclo.id);
+                          }
+                        }
                       }
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                />
+                    }}
+                    locale={ptBR}
+                    className="w-full"
+                  />
+                  {field.value && (
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      Data selecionada: {format(new Date(field.value), 'dd/MM/yyyy', { locale: ptBR })}
+                    </div>
+                  )}
+                </div>
               )}
             />
           </div>
