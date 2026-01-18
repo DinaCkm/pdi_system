@@ -112,7 +112,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
   // Função para selecionar data no calendário
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
-    const isoDate = date.toISOString().split('T')[0];
+    const isoDate = format(date, 'yyyy-MM-dd');
     setValue("prazo", isoDate);
     setDatePickerOpen(false);
   };
