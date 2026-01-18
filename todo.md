@@ -1354,3 +1354,55 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Corrigir modal de Micro
 - [x] Realizar limpeza geral de todos os modais
 - [x] Testar todos os modais - VALIDADO COM SUCESSO
+
+
+## Plano de Estabilização Final (17 JAN 2025)
+
+### Fase 1: Substituição Radical por RadioGroup
+- [ ] Remover todos os Selects de PDI em AcoesNovoFormulario.tsx
+- [ ] Remover todos os Selects de Competências (Bloco, Macro, Micro) em AcoesNovoFormulario.tsx
+- [ ] Remover todos os Selects de PDI em Acoes.tsx
+- [ ] Remover todos os Selects de Competências em Acoes.tsx
+- [ ] Adicionar RadioGroup para PDI em AcoesNovoFormulario.tsx
+- [ ] Adicionar RadioGroup para Competências em AcoesNovoFormulario.tsx
+- [ ] Adicionar RadioGroup para PDI em Acoes.tsx
+- [ ] Adicionar RadioGroup para Competências em Acoes.tsx
+
+### Fase 2: Limpeza Cirúrgica do Código
+- [ ] Localizar setIsGeneratingAI(false) duplicado em Acoes.tsx
+- [ ] Remover comando solto fora de funções
+- [ ] Verificar sintaxe do arquivo
+
+### Fase 3: Sincronização de Dados com Mensagens de Erro
+- [ ] Adicionar Controller para cada RadioGroup
+- [ ] Adicionar field.onChange(value) correto
+- [ ] Adicionar mensagens de erro visíveis em vermelho
+- [ ] Testar sincronização com react-hook-form
+
+### Fase 4: Script de Cleanup Global no DashboardLayout
+- [ ] Adicionar useEffect para remover portals ao mudar de página
+- [ ] Adicionar document.querySelectorAll('.radix-portal').forEach(el => el.remove())
+
+### Fase 5: Teste Completo e Publicação
+- [ ] Testar fluxo de criação de ação
+- [ ] Testar seleção de PDI
+- [ ] Testar seleção de competências
+- [ ] Testar mensagens de erro
+- [ ] Publicar novo checkpoint
+
+
+## Resolução de removeChild em AcoesNovoFormulario.tsx (17 JAN 2026)
+- [x] Identificar causa raiz: <select> HTML nativo não sincroniza com react-hook-form
+- [x] Implementar solução radical: Substituir Select por RadioGroup
+- [x] Adicionar import de RadioGroup e RadioGroupItem
+- [x] Substituir Select de PDI por RadioGroup (linhas 148-162)
+- [x] Substituir Select de Microcompetência por RadioGroup (linhas 191-205)
+- [x] Adicionar trava de undefined: field.value?.toString()
+- [x] Testar Abertura do Modal - PASSOU
+- [x] Testar Seleção de PDI - PASSOU
+- [x] Testar Seleção de Microcompetência - PASSOU
+- [x] Testar Preenchimento de Campos - PASSOU
+- [x] Testar Sincronização com react-hook-form - PASSOU
+- [x] Criar relatório técnico para especialista
+- [x] Criar documento detalhado dos 5 testes
+- [x] Salvar checkpoint com solução implementada

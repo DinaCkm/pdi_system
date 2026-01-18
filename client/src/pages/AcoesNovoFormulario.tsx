@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2, Info } from "lucide-react";
 import { toast } from "sonner";
 
@@ -149,18 +150,14 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <select
-                    {...field}
-                    className="w-full p-2 border rounded-md"
-                    onChange={(e) => field.onChange(parseInt(e.target.value))}
-                  >
-                    <option value="0">Selecione o PDI</option>
+                  <RadioGroup onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                     {filteredPdis?.map((pdi) => (
-                      <option key={pdi.id} value={pdi.id}>
-                        {pdi.titulo} - {pdi.colaboradorNome || "Colaborador desconhecido"}
-                      </option>
+                      <div key={pdi.id} className="flex items-center space-x-2">
+                        <RadioGroupItem value={pdi.id.toString()} id={`pdi-${pdi.id}`} />
+                        <Label htmlFor={`pdi-${pdi.id}`}>{pdi.titulo} - {pdi.colaboradorNome || "Colaborador desconhecido"}</Label>
+                      </div>
                     ))}
-                  </select>
+                  </RadioGroup>
                 )}
               />
             </div>
@@ -196,18 +193,14 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <select
-                    {...field}
-                    className="w-full p-2 border rounded-md"
-                    onChange={(e) => field.onChange(parseInt(e.target.value))}
-                  >
-                    <option value="0">Selecione a microcompetência</option>
+                  <RadioGroup onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                     {filteredMicros?.map((micro) => (
-                      <option key={micro.id} value={micro.id}>
-                        {micro.microNome} ({micro.blocoNome} &gt; {micro.macroNome})
-                      </option>
+                      <div key={micro.id} className="flex items-center space-x-2">
+                        <RadioGroupItem value={micro.id.toString()} id={`micro-${micro.id}`} />
+                        <Label htmlFor={`micro-${micro.id}`}>{micro.microNome} ({micro.blocoNome} &gt; {micro.macroNome})</Label>
+                      </div>
                     ))}
-                  </select>
+                  </RadioGroup>
                 )}
               />
             </div>
