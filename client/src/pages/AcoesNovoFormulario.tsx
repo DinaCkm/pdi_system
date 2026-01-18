@@ -97,24 +97,6 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
   // Filtrar ciclos para 2026
   const ciclos2026 = ciclos?.filter(c => c.nome.includes("2026")) || [];
 
-  // Função para converter data para objeto Date
-  const getPrazoDate = () => {
-    if (!selectedPrazo) return undefined;
-    try {
-      return parse(selectedPrazo, 'yyyy-MM-dd', new Date());
-    } catch {
-      return undefined;
-    }
-  };
-
-  // Função para selecionar data no calendário
-  const handleDateSelect = (date: Date | undefined) => {
-    if (!date) return;
-    const isoDate = format(date, 'yyyy-MM-dd');
-    setValue("prazo", isoDate);
-    setDatePickerOpen(false);
-  };
-
   // Função para selecionar microcompetência
   const handleMicroSelect = (microId: number) => {
     const micro = micros?.find(m => m.id === microId);
@@ -286,7 +268,7 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
             />
           </div>
 
-          {/* Prazo com Calendar Inline */}
+          {/* Prazo com Input Date */}
           <div className="space-y-2">
             <Label htmlFor="prazo">Prazo *</Label>
             <Controller
@@ -294,20 +276,11 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
               control={control}
               rules={{ required: true }}
               render={({ field }) => (
-                <div className="border rounded-md p-3 bg-background">
-                  <Calendar
-                    mode="single"
-                    selected={getPrazoDate()}
-                    onSelect={handleDateSelect}
-                    locale={ptBR}
-                    className="w-full"
-                  />
-                  {selectedPrazo && (
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      Data selecionada: {format(getPrazoDate()!, 'dd/MM/yyyy', { locale: ptBR })}
-                    </div>
-                  )}
-                </div>
+                <input
+                  type="date"
+                  {...field}
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                />
               )}
             />
           </div>
