@@ -1,124 +1,97 @@
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { trpc } from "@/lib/trpc";
-
-interface FormData {
-  pdiId: number;
-  cicloId: number;
-  microCompetenciaId: number;
-  blocoId: number;
-  macroId: number;
-  nome: string;
-  descricao: string;
-  prazo: string;
-}
 
 export function AcoesNova() {
   const [, navigate] = useLocation();
-  const { control, watch, setValue, handleSubmit, formState: { errors } } = useForm<FormData>({
-    defaultValues: {
-      pdiId: 0,
-      cicloId: 0,
-      microCompetenciaId: 0,
-      blocoId: 0,
-      macroId: 0,
-      nome: "",
-      descricao: "",
-      prazo: "",
-    },
+  const [formData, setFormData] = useState({
+    pdiId: "",
+    microCompetenciaId: "",
+    nome: "",
+    descricao: "",
+    prazo: "",
   });
 
-  const utils = trpc.useUtils();
   const { data: pdis } = trpc.pdis.list.useQuery();
   const { data: micros } = trpc.competencias.listAllMicrosWithDetails.useQuery();
-  const { data: ciclos2026 } = trpc.ciclos.list.useQuery();
 
   const createMutation = trpc.actions.create.useMutation({
     onSuccess: () => {
       toast.success("Ação criada com sucesso!");
-      utils.actions.list.invalidate();
       navigate("/acoes");
     },
     onError: (error) => {
-      const errorMsg = error.message || "Erro ao criar ação";
-      console.error("[CREATE ACTION ERROR]", errorMsg, error);
-      toast.error(errorMsg);
+      toast.error(error.message || "Erro ao criar ação");
     },
   });
 
-  const handleMicroSelect = (microId: string) => {
-    const id = parseInt(microId);
-    const micro = micros?.find((m: any) => m.id === id);
-    if (micro) {
-      setValue("microCompetenciaId", id as any);
-      setValue("blocoId", micro.blocoId as any);
-      setValue("macroId", micro.macroId as any);
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleDateChange = (dateStr: string) => {
-    setValue("prazo", dateStr as any);
-    
-    // Sincronização automática de ciclo baseada na data
-    if (dateStr && ciclos2026) {
-      const date = new Date(dateStr);
-      const ciclo = ciclos2026.find((c: any) => {
-        const inicio = new Date(c.dataInicio);
-        const fim = new Date(c.dataFim);
-        return date >= inicio && date <= fim;
-      });
-      if (ciclo) {
-        setValue("cicloId", ciclo.id as any);
-      }
-    }
+  const handleMicroChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const microId = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      microCompetenciaId: microId
+    }));
   };
 
-  const onSubmit = (data: FormData) => {
-    if (!data.pdiId) {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Form submitted:", formData);
+
+    // Validações
+    if (!formData.pdiId) {
       toast.error("Selecione um PDI");
+      console.log("PDI vazio");
       return;
     }
-    if (!data.microCompetenciaId) {
+    if (!formData.microCompetenciaId) {
       toast.error("Selecione uma microcompetência");
       return;
     }
-    if (!data.cicloId) {
-      toast.error("Selecione um ciclo");
-      return;
-    }
-    if (!data.nome || data.nome.trim() === "") {
+    if (!formData.nome.trim()) {
       toast.error("Nome é obrigatório");
       return;
     }
-    if (!data.descricao || data.descricao.trim() === "") {
+    if (!formData.descricao.trim()) {
       toast.error("Descrição é obrigatória");
       return;
     }
-    if (!data.prazo) {
+    if (!formData.prazo) {
       toast.error("Selecione uma data");
       return;
     }
 
+    // Encontrar micro para pegar blocoId e macroId
+    const micro = micros?.find((m: any) => m.id === parseInt(formData.microCompetenciaId));
+    if (!micro) {
+      toast.error("Microcompetência inválida");
+      return;
+    }
+
     createMutation.mutate({
-      pdiId: data.pdiId,
-      microId: data.microCompetenciaId,
-      blocoId: data.blocoId,
-      macroId: data.macroId,
-      nome: data.nome,
-      descricao: data.descricao,
-      prazo: data.prazo,
+      pdiId: parseInt(formData.pdiId),
+      microId: parseInt(formData.microCompetenciaId),
+      blocoId: micro.blocoId,
+      macroId: micro.macroId,
+      nome: formData.nome,
+      descricao: formData.descricao,
+      prazo: formData.prazo,
     });
   };
 
-  const selectedPrazo = watch("prazo");
+  const selectedPdi = pdis?.find((p: any) => p.id === parseInt(formData.pdiId));
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -128,160 +101,107 @@ export function AcoesNova() {
           <p className="text-muted-foreground">Crie uma nova ação para o PDI</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 bg-card p-6 rounded-lg border">
-          {/* PDI - Select Nativo */}
+        <form onSubmit={handleSubmit} className="bg-card border border-border rounded-lg p-6 space-y-6">
+          {/* PDI */}
           <div className="space-y-2">
             <Label htmlFor="pdiId">PDI *</Label>
-            <Controller
+            <select
+              id="pdiId"
               name="pdiId"
-              control={control}
-              rules={{ required: "PDI é obrigatório" }}
-              render={({ field }) => (
-                <select
-                  {...field}
-                  id="pdiId"
-                  value={field.value || ""}
-                  onChange={(e) => field.onChange(parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                >
-                  <option value="">Selecione um PDI</option>
-                  {pdis?.map((pdi: any) => (
-                    <option key={pdi.id} value={pdi.id}>
-                      {pdi.titulo}
-                    </option>
-                  ))}
-                </select>
-              )}
-            />
-            {errors.pdiId && <p className="text-sm text-destructive">{errors.pdiId.message}</p>}
+              value={formData.pdiId}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+            >
+              <option value="">Selecione um PDI</option>
+              {pdis?.map((pdi: any) => (
+                <option key={pdi.id} value={pdi.id}>
+                  {pdi.titulo} ({pdi.colaboradorNome})
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Microcompetência - Select Nativo */}
+          {/* Microcompetência */}
           <div className="space-y-2">
             <Label htmlFor="microCompetenciaId">Microcompetência *</Label>
-            <Controller
+            <select
+              id="microCompetenciaId"
               name="microCompetenciaId"
-              control={control}
-              rules={{ required: "Microcompetência é obrigatória" }}
-              render={({ field }) => (
-                <select
-                  {...field}
-                  id="microCompetenciaId"
-                  value={field.value || ""}
-                  onChange={(e) => handleMicroSelect(e.target.value)}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                >
-                  <option value="">Selecione uma microcompetência</option>
-                  {micros?.map((micro: any) => (
-                    <option key={micro.id} value={micro.id}>
-                      {micro.microNome} ({micro.macroNome} - {micro.blocoNome})
-                    </option>
-                  ))}
-                </select>
-              )}
-            />
-            {errors.microCompetenciaId && <p className="text-sm text-destructive">{errors.microCompetenciaId.message}</p>}
-          </div>
-
-          {/* Ciclo - Select Nativo */}
-          <div className="space-y-2">
-            <Label htmlFor="cicloId">Ciclo *</Label>
-            <Controller
-              name="cicloId"
-              control={control}
-              rules={{ required: "Ciclo é obrigatório" }}
-              render={({ field }) => (
-                <select
-                  {...field}
-                  id="cicloId"
-                  value={field.value || ""}
-                  onChange={(e) => field.onChange(parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                >
-                  <option value="">Selecione um ciclo</option>
-                  {ciclos2026?.map((ciclo: any) => (
-                    <option key={ciclo.id} value={ciclo.id}>
-                      {ciclo.nome}
-                    </option>
-                  ))}
-                </select>
-              )}
-            />
-            {errors.cicloId && <p className="text-sm text-destructive">{errors.cicloId.message}</p>}
+              value={formData.microCompetenciaId}
+              onChange={handleMicroChange}
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+            >
+              <option value="">Selecione uma microcompetência</option>
+              {micros?.map((micro: any) => (
+                <option key={micro.id} value={micro.id}>
+                  {micro.nome} ({micro.macroNome})
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Nome */}
           <div className="space-y-2">
             <Label htmlFor="nome">Nome da Ação *</Label>
-            <Controller
+            <Input
+              id="nome"
               name="nome"
-              control={control}
-              rules={{ required: "Nome é obrigatório" }}
-              render={({ field }) => (
-                <Input {...field} id="nome" placeholder="Digite o nome da ação" />
-              )}
+              placeholder="Digite o nome da ação"
+              value={formData.nome}
+              onChange={handleInputChange}
             />
-            {errors.nome && <p className="text-sm text-destructive">{errors.nome.message}</p>}
           </div>
 
           {/* Descrição */}
           <div className="space-y-2">
             <Label htmlFor="descricao">Descrição *</Label>
-            <Controller
+            <Textarea
+              id="descricao"
               name="descricao"
-              control={control}
-              rules={{ required: "Descrição é obrigatória" }}
-              render={({ field }) => (
-                <Textarea {...field} id="descricao" placeholder="Digite a descrição da ação" rows={3} />
-              )}
+              placeholder="Digite a descrição da ação"
+              value={formData.descricao}
+              onChange={handleInputChange}
+              rows={3}
             />
-            {errors.descricao && <p className="text-sm text-destructive">{errors.descricao.message}</p>}
           </div>
 
-          {/* Prazo - Input Date Nativo */}
+          {/* Ciclo Info */}
+          {selectedPdi && (
+            <div className="space-y-2 p-3 bg-muted rounded-md">
+              <p className="text-sm font-medium">Ciclo (vinculado ao PDI):</p>
+              <p className="text-sm text-muted-foreground">{selectedPdi.cicloNome}</p>
+            </div>
+          )}
+
+          {/* Prazo */}
           <div className="space-y-2">
             <Label htmlFor="prazo">Prazo *</Label>
-            <Controller
+            <input
+              id="prazo"
               name="prazo"
-              control={control}
-              rules={{ required: "Data é obrigatória" }}
-              render={({ field }) => (
-                <div>
-                  <input
-                    {...field}
-                    id="prazo"
-                    type="date"
-                    onChange={(e) => handleDateChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
-                  />
-                  {selectedPrazo && (
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      Data selecionada: {format(new Date(selectedPrazo), 'dd/MM/yyyy', { locale: ptBR })}
-                    </div>
-                  )}
-                </div>
-              )}
+              type="date"
+              value={formData.prazo}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
             />
-            {errors.prazo && <p className="text-sm text-destructive">{errors.prazo.message}</p>}
           </div>
 
           {/* Botões */}
-          <div className="flex gap-3 pt-4">
-            <Button
+          <div className="flex gap-4 pt-4">
+            <button
               type="submit"
               disabled={createMutation.isPending}
-              className="flex-1"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
             >
               {createMutation.isPending ? "Criando..." : "Criar Ação"}
-            </Button>
-            <Button
+            </button>
+            <button
               type="button"
-              variant="outline"
               onClick={() => navigate("/acoes")}
-              className="flex-1"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
             >
               Cancelar
-            </Button>
+            </button>
           </div>
         </form>
       </div>
