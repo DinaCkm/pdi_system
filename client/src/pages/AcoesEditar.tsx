@@ -15,7 +15,7 @@ export default function AcoesEditar() {
 
   const [formData, setFormData] = useState({
     pdiId: 0,
-    microcompetenciaId: 0,
+    microCompetenciaId: 0,
     nome: "",
     descricao: "",
     prazo: "",
@@ -27,7 +27,7 @@ export default function AcoesEditar() {
     if (action) {
       setFormData({
         pdiId: action.pdiId,
-        microcompetenciaId: action.microcompetenciaId,
+        microCompetenciaId: action.microCompetenciaId,
         nome: action.nome,
         descricao: action.descricao,
         prazo: action.prazo ? new Date(action.prazo).toISOString().split("T")[0] : "",
@@ -61,7 +61,7 @@ export default function AcoesEditar() {
   };
 
   const handleMicroChange = (microId: number) => {
-    setFormData((prev) => ({ ...prev, microcompetenciaId: microId }));
+    setFormData((prev) => ({ ...prev, microCompetenciaId: microId }));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -77,7 +77,7 @@ export default function AcoesEditar() {
       toast.error("PDI é obrigatório");
       return;
     }
-    if (!formData.microcompetenciaId) {
+    if (!formData.microCompetenciaId) {
       toast.error("Microcompetência é obrigatória");
       return;
     }
@@ -100,8 +100,12 @@ export default function AcoesEditar() {
 
     updateMutation.mutate({
       id: actionId,
-      ...formData,
-      prazo: new Date(formData.prazo).getTime(),
+      pdiId: action.pdiId, // Manter PDI original, não permitir mudança
+      microCompetenciaId: formData.microCompetenciaId,
+      nome: formData.nome,
+      descricao: formData.descricao,
+      prazo: formData.prazo, // Enviar como string (YYYY-MM-DD)
+      cicloId: formData.cicloId,
     });
   };
 
@@ -130,25 +134,15 @@ export default function AcoesEditar() {
       <p style={{ color: "#666", marginBottom: "20px" }}>Edite os detalhes da ação</p>
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-        {/* PDI - RadioGroup */}
+        {/* PDI - Apenas Informativo (Não pode ser alterado) */}
         <div>
           <label style={{ display: "block", marginBottom: "10px", fontWeight: "bold" }}>
-            PDI *
+            PDI (Não pode ser alterado)
           </label>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {pdis?.map((pdi) => (
-              <label key={pdi.id} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                <input
-                  type="radio"
-                  name="pdiId"
-                  value={pdi.id}
-                  checked={formData.pdiId === pdi.id}
-                  onChange={() => handlePdiChange(pdi.id)}
-                  style={{ cursor: "pointer" }}
-                />
-                <span>{pdi.titulo} ({pdi.colaboradorNome})</span>
-              </label>
-            ))}
+          <div style={{ padding: "10px", backgroundColor: "#f5f5f5", borderRadius: "4px", border: "1px solid #ddd" }}>
+            <p style={{ margin: "0" }}>
+              {pdis?.find((p) => p.id === formData.pdiId)?.titulo} ({pdis?.find((p) => p.id === formData.pdiId)?.colaboradorNome})
+            </p>
           </div>
         </div>
 
@@ -162,9 +156,9 @@ export default function AcoesEditar() {
               <label key={micro.id} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                 <input
                   type="radio"
-                  name="microcompetenciaId"
+                  name="microCompetenciaId"
                   value={micro.id}
-                  checked={formData.microcompetenciaId === micro.id}
+                  checked={formData.microCompetenciaId === micro.id}
                   onChange={() => handleMicroChange(micro.id)}
                   style={{ cursor: "pointer" }}
                 />
