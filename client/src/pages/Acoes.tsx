@@ -599,7 +599,7 @@ export default function Acoes() {
                       <Lock className="h-4 w-4" />
                     </Button>
                   ) : (
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(acao)}>
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/acoes/editar/${acao.id}`)}>
                       <Edit className="h-4 w-4" />
                     </Button>
                   )}
