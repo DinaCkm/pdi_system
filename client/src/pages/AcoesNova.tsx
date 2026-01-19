@@ -20,10 +20,11 @@ export function AcoesNova() {
 
   const createMutation = trpc.actions.create.useMutation({
     onSuccess: () => {
-      toast.success("Ação criada com sucesso!");
-      navigate("/acoes");
+      // Redirecionar sem toast para evitar erro de Portal
+      setTimeout(() => navigate("/acoes"), 500);
     },
     onError: (error) => {
+      console.error("Erro ao criar ação:", error);
       toast.error(error.message || "Erro ao criar ação");
     },
   });
