@@ -56,12 +56,17 @@ export default function AcoesEditar() {
     },
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handlePdiChange = (pdiId: number) => {
+    setFormData((prev) => ({ ...prev, pdiId }));
+  };
+
+  const handleMicroChange = (microId: number) => {
+    setFormData((prev) => ({ ...prev, microcompetenciaId: microId }));
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "pdiId" || name === "microcompetenciaId" || name === "cicloId" ? parseInt(value) : value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -125,58 +130,48 @@ export default function AcoesEditar() {
       <p style={{ color: "#666", marginBottom: "20px" }}>Edite os detalhes da ação</p>
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-        {/* PDI */}
+        {/* PDI - RadioGroup */}
         <div>
-          <label htmlFor="pdiId" style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
+          <label style={{ display: "block", marginBottom: "10px", fontWeight: "bold" }}>
             PDI *
           </label>
-          <select
-            id="pdiId"
-            name="pdiId"
-            value={formData.pdiId}
-            onChange={handleInputChange}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              fontSize: "14px",
-            }}
-          >
-            <option value="">Selecione um PDI</option>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {pdis?.map((pdi) => (
-              <option key={pdi.id} value={pdi.id}>
-                {pdi.titulo} ({pdi.colaboradorNome})
-              </option>
+              <label key={pdi.id} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                <input
+                  type="radio"
+                  name="pdiId"
+                  value={pdi.id}
+                  checked={formData.pdiId === pdi.id}
+                  onChange={() => handlePdiChange(pdi.id)}
+                  style={{ cursor: "pointer" }}
+                />
+                <span>{pdi.titulo} ({pdi.colaboradorNome})</span>
+              </label>
             ))}
-          </select>
+          </div>
         </div>
 
-        {/* Microcompetência */}
+        {/* Microcompetência - RadioGroup */}
         <div>
-          <label htmlFor="microcompetenciaId" style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
+          <label style={{ display: "block", marginBottom: "10px", fontWeight: "bold" }}>
             Microcompetência *
           </label>
-          <select
-            id="microcompetenciaId"
-            name="microcompetenciaId"
-            value={formData.microcompetenciaId}
-            onChange={handleInputChange}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              fontSize: "14px",
-            }}
-          >
-            <option value="">Selecione uma microcompetência</option>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {micros?.map((micro) => (
-              <option key={micro.id} value={micro.id}>
-                ({micro.nome})
-              </option>
+              <label key={micro.id} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                <input
+                  type="radio"
+                  name="microcompetenciaId"
+                  value={micro.id}
+                  checked={formData.microcompetenciaId === micro.id}
+                  onChange={() => handleMicroChange(micro.id)}
+                  style={{ cursor: "pointer" }}
+                />
+                <span>({micro.nome})</span>
+              </label>
             ))}
-          </select>
+          </div>
         </div>
 
         {/* Nome da Ação */}
