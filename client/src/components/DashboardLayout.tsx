@@ -86,22 +86,7 @@ export default function DashboardLayout({
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
-  // Cleanup de Portals órfãos ao desmontar ou navegar
-  useEffect(() => {
-    return () => {
-      // Remover qualquer Portal órfão que possa ter ficado no DOM
-      const portals = document.querySelectorAll('[data-radix-portal]');
-      portals.forEach(portal => {
-        if (portal.parentNode && portal.parentNode.childNodes.length > 0) {
-          try {
-            portal.parentNode.removeChild(portal);
-          } catch (e) {
-            // Ignorar erros de remoção
-          }
-        }
-      });
-    };
-  }, [location]);
+  // Cleanup de Portals removido - causava erro de removeChild
 
   if (loading) {
     return <DashboardLayoutSkeleton />
@@ -167,22 +152,7 @@ function DashboardLayoutContent({
   const activeMenuItem = menuItems.find((item: any) => item.path === location);
   const isMobile = useIsMobile();
 
-  // Cleanup de Portals ao mudar de página
-  useEffect(() => {
-    return () => {
-      // Fechar todos os Portals do Radix quando sair da página
-      const portals = document.querySelectorAll('[data-radix-portal]');
-      portals.forEach(portal => {
-        try {
-          if (portal.parentNode) {
-            portal.parentNode.removeChild(portal);
-          }
-        } catch (e) {
-          // Ignorar erros de remoção
-        }
-      });
-    };
-  }, [location]);
+  // Cleanup de Portals removido - causava erro de removeChild
   
   // Carregar contagem de pendências
   const { data: pendenciesSummary } = trpc.notifications.getPendenciesSummary.useQuery(
