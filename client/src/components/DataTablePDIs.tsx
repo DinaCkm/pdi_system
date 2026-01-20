@@ -1,13 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Eye, Edit2, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SelectContentNoPortal } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 
@@ -72,6 +66,8 @@ export function DataTablePDIs() {
         return "bg-yellow-100 text-yellow-800";
       case "ativo":
         return "bg-blue-100 text-blue-800";
+      case "em_andamento":
+        return "bg-blue-100 text-blue-800";
       case "concluido":
         return "bg-green-100 text-green-800";
       case "cancelado":
@@ -87,6 +83,7 @@ export function DataTablePDIs() {
       rascunho: "Rascunho",
       aguardando_aprovacao: "Aguardando Aprovação",
       ativo: "Em Andamento",
+      em_andamento: "Em Andamento",
       concluido: "Concluído",
       cancelado: "Cancelado",
     };
@@ -99,23 +96,23 @@ export function DataTablePDIs() {
 
   return (
     <div className="space-y-6">
-      {/* Filtros */}
+      {/* Filtros - HTML PURO */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Filtro por Departamento */}
         <div>
           <label className="text-sm font-medium mb-2 block">Filtrar por Departamento</label>
-          <Select value={departamentoFilter} onValueChange={setDepartamentoFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione um departamento" />
-            </SelectTrigger>
-            <SelectContentNoPortal>
-              {departamentos.map((dept: any) => (
-                <SelectItem key={dept.id} value={dept.id.toString()}>
-                  {dept.nome}
-                </SelectItem>
-              ))}
-            </SelectContentNoPortal>
-          </Select>
+          <select
+            value={departamentoFilter}
+            onChange={(e) => setDepartamentoFilter(e.target.value)}
+            className="w-full p-2 border rounded bg-white text-black"
+          >
+            <option value="">Todos os departamentos</option>
+            {departamentos.map((dept: any) => (
+              <option key={dept.id} value={dept.id.toString()}>
+                {dept.nome}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Filtro por Pessoa */}
@@ -131,55 +128,54 @@ export function DataTablePDIs() {
         {/* Filtro por Realização */}
         <div>
           <label className="text-sm font-medium mb-2 block">Filtrar por Realização</label>
-          <Select value={realizacaoFilter} onValueChange={setRealizacaoFilter}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContentNoPortal>
-              <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="0">0% (Não Iniciados)</SelectItem>
-              <SelectItem value="1-50">1% a 50% (Em Início)</SelectItem>
-              <SelectItem value="51-99">51% a 99% (Fase Final)</SelectItem>
-              <SelectItem value="100">100% (Concluídos)</SelectItem>
-            </SelectContentNoPortal>
-          </Select>
+          <select
+            value={realizacaoFilter}
+            onChange={(e) => setRealizacaoFilter(e.target.value)}
+            className="w-full p-2 border rounded bg-white text-black"
+          >
+            <option value="todos">Todos</option>
+            <option value="0">0% (Não Iniciados)</option>
+            <option value="1-50">1% a 50% (Em Início)</option>
+            <option value="51-99">51% a 99% (Fase Final)</option>
+            <option value="100">100% (Concluídos)</option>
+          </select>
         </div>
       </div>
 
-      {/* Tabela */}
+      {/* Tabela - HTML PURO */}
       <div className="border rounded-lg overflow-y-auto max-h-[400px]">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-gray-50">
-              <TableHead>Colaborador</TableHead>
-              <TableHead>Departamento</TableHead>
-              <TableHead>Líder</TableHead>
-              <TableHead>Ciclo</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Progresso</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-50 border-b">
+              <th className="p-3 text-left font-semibold">Colaborador</th>
+              <th className="p-3 text-left font-semibold">Departamento</th>
+              <th className="p-3 text-left font-semibold">Líder</th>
+              <th className="p-3 text-left font-semibold">Ciclo</th>
+              <th className="p-3 text-left font-semibold">Status</th>
+              <th className="p-3 text-left font-semibold">Progresso</th>
+              <th className="p-3 text-right font-semibold">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
             {pdis.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+              <tr>
+                <td colSpan={7} className="text-center text-gray-500 py-8 border-b">
                   Nenhum PDI encontrado com os filtros selecionados
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             ) : (
               pdis.map((pdi: PDI) => (
-                <TableRow key={pdi.pdiId} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">{pdi.colaboradorNome || "—"}</TableCell>
-                  <TableCell>{pdi.departamentoNome || "—"}</TableCell>
-                  <TableCell>{pdi.liderNome || "—"}</TableCell>
-                  <TableCell>{pdi.cicloNome || "—"}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(pdi.status)}>
+                <tr key={`pdi-${pdi.pdiId}`} className="hover:bg-gray-50 border-b">
+                  <td className="p-3 font-medium">{pdi.colaboradorNome || "—"}</td>
+                  <td className="p-3">{pdi.departamentoNome || "—"}</td>
+                  <td className="p-3">{pdi.liderNome || "—"}</td>
+                  <td className="p-3">{pdi.cicloNome || "—"}</td>
+                  <td className="p-3">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(pdi.status)}`}>
                       {getStatusLabel(pdi.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
+                    </span>
+                  </td>
+                  <td className="p-3">
                     <div className="flex items-center gap-2">
                       <div className="w-24 bg-gray-200 rounded-full h-2">
                         <div
@@ -189,63 +185,68 @@ export function DataTablePDIs() {
                       </div>
                       <span className="text-sm font-medium">{pdi.progresso || 0}%</span>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-right">
+                  </td>
+                  <td className="p-3 text-right">
                     <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <button
                         onClick={() => navigate(`/pdis/${pdi.pdiId}`)}
+                        className="p-2 hover:bg-gray-200 rounded"
+                        title="Visualizar"
                       >
                         <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      </button>
+                      <button
                         onClick={() => navigate(`/pdis/${pdi.pdiId}/editar`)}
+                        className="p-2 hover:bg-gray-200 rounded"
+                        title="Editar"
                       >
                         <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      </button>
+                      <button
                         onClick={() => setPdiToDelete(pdi.pdiId)}
+                        className="p-2 hover:bg-gray-200 rounded"
+                        title="Deletar"
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                      </button>
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ))
             )}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
 
-      {/* Dialog de Confirmação de Exclusão */}
-      <AlertDialog open={pdiToDelete !== null} onOpenChange={(open) => !open && setPdiToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>⚠️ Deletar PDI</AlertDialogTitle>
-            <AlertDialogDescription>
+      {/* Dialog de Confirmação de Exclusão - HTML PURO */}
+      {pdiToDelete !== null && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <h2 className="text-xl font-bold mb-2">⚠️ Deletar PDI</h2>
+            <p className="text-gray-600 mb-6">
               Tem certeza que deseja deletar este PDI? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex justify-end gap-4">
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (pdiToDelete) {
-                  deletePDIMutation.mutate({ id: pdiToDelete });
-                }
-              }}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Deletar
-            </AlertDialogAction>
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setPdiToDelete(null)}
+                className="px-4 py-2 border border-gray-300 rounded text-gray-800 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (pdiToDelete) {
+                    deletePDIMutation.mutate({ id: pdiToDelete });
+                  }
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Deletar
+              </button>
+            </div>
           </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        </div>
+      )}
     </div>
   );
 }
