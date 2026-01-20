@@ -76,7 +76,7 @@ export const competenciasMacros = mysqlTable("competencias_macros", {
 	id: int().autoincrement().notNull(),
 	nome: varchar({ length: 255 }).notNull().unique(),
 	descricao: text().notNull(),
-	ativo: boolean().notNull().default(true),
+	ativo: boolean().notNull(),
 	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP'),
 });
 

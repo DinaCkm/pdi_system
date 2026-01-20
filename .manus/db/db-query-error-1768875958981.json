@@ -1,0 +1,8 @@
+{
+  "query": "DESCRIBE competencias_macros",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute DESCRIBE competencias_macros",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 1: Table 'uksxtg83zjdkzpjl3fcmwt.competencias_macros' doesn't exist"
+  ]
+}
