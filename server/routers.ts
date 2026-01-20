@@ -3,8 +3,10 @@ import { router, protectedProcedure, adminProcedure } from "./_core/trpc";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
 import { actionsRouter } from "./modules/actionsRouter";
+import { authRouter } from "./authRouters";
 
 export const appRouter = router({
+  auth: authRouter,
   // ============= USUÁRIOS =============
   users: router({
     me: protectedProcedure.query(async ({ ctx }) => {
