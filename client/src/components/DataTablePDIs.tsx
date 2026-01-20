@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Eye, Edit2, Trash2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+// Input removido - usando input HTML puro
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 
@@ -132,10 +132,12 @@ export function DataTablePDIs() {
         {/* Filtro por Pessoa */}
         <div>
           <label className="text-sm font-medium mb-2 block">Filtrar por Pessoa</label>
-          <Input
+          <input
+            type="text"
             placeholder="Digite o nome do colaborador"
             value={pessoaFilter}
             onChange={(e) => setPessoaFilter(e.target.value)}
+            className="w-full p-2 border rounded bg-white text-black"
           />
         </div>
 
