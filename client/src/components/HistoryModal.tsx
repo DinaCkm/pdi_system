@@ -1,172 +1,80 @@
-import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 
 interface HistoryModalProps {
-  isOpen: boolean;
-  actionId: number;
+  actionId: number | null;
   onClose: () => void;
 }
 
-export function HistoryModal({ isOpen, actionId, onClose }: HistoryModalProps) {
-  const { data: historico = [] } = trpc.actions.getHistory.useQuery(
-    { actionId },
-    { enabled: isOpen && !!actionId }
-  );
+export function HistoryModal({ actionId, onClose }: HistoryModalProps) {
+  // Se não tiver ID, nem renderiza
+  if (!actionId) return null;
 
-  // Função para formatar valores do histórico
-  const formatarValor = (valor: string | null | undefined, campo?: string) => {
-    if (!valor) return '-';
+  const { data: historico, isLoading } = trpc.actions.getHistory.useQuery({ actionId });
+
+  // FUNÇÃO QUE CONSERTA O "DATA INVÁLIDA"
+  const formatarValor = (campo: string, valor: string | null) => {
+    if (!valor) return <em>(vazio)</em>;
     
-    // Se for um campo de data (prazo), tenta formatar como data
-    if (campo === 'prazo' || campo === 'Prazo') {
+    // Só formata como data SE o campo for Prazo
+    if (campo === 'Prazo') {
       try {
-        const date = new Date(valor);
-        if (!isNaN(date.getTime())) {
-          return date.toLocaleDateString('pt-BR');
-        }
-      } catch {}
+        // Tenta formatar ISO ou YYYY-MM-DD
+        return new Date(valor).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+      } catch {
+        return valor; // Se falhar, mostra o texto original
+      }
     }
-    
-    // Para outros campos, retorna o valor como esta
+    // Para Título, Descrição, Status: retorna o texto normal
     return valor;
   };
 
-  if (!isOpen) return null;
-
   return (
-    <>
-      {/* Overlay */}
-      <div
-        onClick={onClose}
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 999,
-        }}
-      />
-
-      {/* Modal */}
-      <div
-        style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-          maxWidth: '600px',
-          width: '90%',
-          maxHeight: '80vh',
-          overflow: 'auto',
-          zIndex: 1000,
-          padding: '24px',
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '16px',
-            borderBottom: '1px solid #e0e0e0',
-            paddingBottom: '16px',
-          }}
-        >
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>
-            Histórico de Alterações
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '24px',
-              cursor: 'pointer',
-              color: '#999',
-            }}
-          >
-            ×
-          </button>
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999
+    }}>
+      <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', width: '600px', maxHeight: '80vh', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold' }}>Histórico de Alterações</h2>
+          <button onClick={onClose} style={{ fontWeight: 'bold', cursor: 'pointer', background: 'none', border: 'none' }}>X</button>
         </div>
 
-        {/* Content */}
-        {historico && historico.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {historico.map((item: any, index: number) => (
-              <div
-                key={index}
-                style={{
-                  paddingBottom: '16px',
-                  borderBottom:
-                    index < historico.length - 1 ? '1px solid #e0e0e0' : 'none',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    marginBottom: '8px',
-                  }}
-                >
-                  <span style={{ fontWeight: '600', color: '#333' }}>
-                    {item.campo}
+        {isLoading ? (
+          <p>Carregando...</p>
+        ) : historico?.length === 0 ? (
+          <p style={{ color: '#666' }}>Nenhuma alteração registrada.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {historico?.map((item: any) => (
+              <div key={item.id} style={{ borderBottom: '1px solid #eee', paddingBottom: '8px', fontSize: '14px' }}>
+                <p>
+                  <strong>{item.autorNome || 'Usuário'}</strong> alterou 
+                  <span style={{ color: '#2563eb', fontWeight: 'bold' }}> {item.campo} </span>
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', marginTop: '4px' }}>
+                  <span style={{ textDecoration: 'line-through', color: '#ef4444' }}>
+                    {formatarValor(item.campo, item.valorAnterior)}
                   </span>
-                  <span style={{ fontSize: '12px', color: '#999' }}>
-                    {item.createdAt
-                      ? new Date(item.createdAt).toLocaleString('pt-BR')
-                      : '-'}
+                  <span>→</span>
+                  <span style={{ color: '#22c55e', fontWeight: 'bold' }}>
+                    {formatarValor(item.campo, item.valorNovo)}
                   </span>
                 </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    fontSize: '14px',
-                  }}
-                >
-                  <span
-                    style={{
-                      color: '#d32f2f',
-                      backgroundColor: '#ffebee',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                    }}
-                  >
-                    {formatarValor(item.valorAnterior, item.campo)}
-                  </span>
-                  <span style={{ color: '#666' }}>→</span>
-                  <span
-                    style={{
-                      color: '#388e3c',
-                      backgroundColor: '#e8f5e9',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                    }}
-                  >
-                    {formatarValor(item.valorNovo, item.campo)}
-                  </span>
-                </div>
-                {item.alteradoPor && (
-                  <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>
-                    Alterado por: {item.alteradoPor}
-                  </div>
-                )}
+                <p style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
+                  {new Date(item.data).toLocaleString('pt-BR')}
+                </p>
               </div>
             ))}
           </div>
-        ) : (
-          <div style={{ color: '#999', textAlign: 'center', padding: '32px 0' }}>
-            Nenhuma alteração registrada
-          </div>
         )}
+        
+        <button 
+          onClick={onClose}
+          style={{ marginTop: '20px', width: '100%', padding: '10px', backgroundColor: '#f3f4f6', borderRadius: '4px', cursor: 'pointer', border: 'none' }}
+        >
+          Fechar
+        </button>
       </div>
-    </>
+    </div>
   );
 }
