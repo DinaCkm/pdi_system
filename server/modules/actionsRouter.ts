@@ -81,6 +81,7 @@ export const actionsRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const { id, ...updateData } = input;
+      const userId = ctx.user?.id || 1;
 
       // Validar que a ação existe
       const action = await db.getActionById(id);
@@ -88,8 +89,8 @@ export const actionsRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
       }
 
-      // Atualizar ação
-      await db.updateAction(id, updateData);
+      // Atualizar ação (com histórico gravado automaticamente em db.ts)
+      await db.updateAction(id, updateData, userId);
       return { success: true };
     }),
 

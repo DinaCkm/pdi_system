@@ -20,6 +20,7 @@ export default function AcoesEditar() {
   // Queries
   const { data: acao } = trpc.actions.getById.useQuery({ id: acaoId }, { enabled: !!acaoId });
   const { data: macros = [] } = trpc.competencias.listAllMacros.useQuery();
+  const { data: historico = [] } = trpc.actions.getHistory.useQuery({ actionId: acaoId }, { enabled: !!acaoId });
 
   // Mutations
   const updateMutation = trpc.actions.update.useMutation({
@@ -74,6 +75,19 @@ export default function AcoesEditar() {
       status: formData.status,
       macroId: formData.macroId ? parseInt(formData.macroId) : undefined,
     });
+  };
+
+  // Função para formatar datas
+  const formatarData = (valor: string | null | undefined) => {
+    if (!valor) return '-';
+    // Se já vier formatado (DD/MM/AAAA), retorna direto
+    if (valor.includes('/')) return valor;
+    // Se vier feio (2026-02-06T00...), formata
+    try {
+      return new Date(valor).toLocaleDateString('pt-BR');
+    } catch {
+      return valor;
+    }
   };
 
   if (!acao) {
@@ -250,6 +264,39 @@ export default function AcoesEditar() {
             </button>
           </div>
         </form>
+
+        {/* SEÇÃO DE HISTÓRICO */}
+        {historico && historico.length > 0 && (
+          <div style={{ marginTop: '32px', backgroundColor: 'white', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '24px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>Histórico de Alterações</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {historico.map((item: any, index: number) => (
+                <div key={index} style={{ paddingBottom: '16px', borderBottom: index < historico.length - 1 ? '1px solid #e0e0e0' : 'none' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: '600', color: '#333' }}>{item.campo}</span>
+                    <span style={{ fontSize: '12px', color: '#999' }}>
+                      {item.createdAt ? new Date(item.createdAt).toLocaleString('pt-BR') : '-'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
+                    <span style={{ color: '#d32f2f', backgroundColor: '#ffebee', padding: '4px 8px', borderRadius: '4px' }}>
+                      {formatarData(item.valorAnterior)}
+                    </span>
+                    <span style={{ color: '#666' }}>→</span>
+                    <span style={{ color: '#388e3c', backgroundColor: '#e8f5e9', padding: '4px 8px', borderRadius: '4px' }}>
+                      {formatarData(item.valorNovo)}
+                    </span>
+                  </div>
+                  {item.alteradoPor && (
+                    <div style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>
+                      Alterado por: {item.alteradoPor}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

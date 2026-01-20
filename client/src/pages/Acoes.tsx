@@ -7,14 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Plus, Edit, Trash2, Eye, History } from "lucide-react";
 import { useLocation } from "wouter";
-import { HistoricoAcao } from "@/components/HistoricoAcao";
+
 
 export default function Acoes() {
   const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAcaoId, setSelectedAcaoId] = useState<number | null>(null);
-  const [historicoOpen, setHistoricoOpen] = useState(false);
-  const [historicoActionId, setHistoricoActionId] = useState<number | null>(null);
 
   const { data: acoes, isLoading, refetch } = trpc.actions.list.useQuery();
   const deleteMutation = trpc.actions.delete.useMutation({
@@ -180,10 +178,7 @@ export default function Acoes() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setHistoricoActionId(acao.id);
-                      setHistoricoOpen(true);
-                    }}
+                    onClick={() => navigate(`/acoes/editar/${acao.id}`)}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -218,14 +213,7 @@ export default function Acoes() {
           ))}
         </div>
       )}
-      
-      {historicoActionId && (
-        <HistoricoAcao
-          actionId={historicoActionId}
-          open={historicoOpen}
-          onOpenChange={setHistoricoOpen}
-        />
-      )}
+
     </div>
   );
 }
