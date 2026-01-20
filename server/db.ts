@@ -346,7 +346,6 @@ export async function createPDI(data: {
   cicloId: number;
   titulo: string;
   objetivoGeral?: string;
-  descricao?: string;
   createdBy: number;
 }) {
   const db = await getDb();
@@ -357,8 +356,7 @@ export async function createPDI(data: {
     cicloId: data.cicloId,
     titulo: data.titulo,
     objetivoGeral: data.objetivoGeral || "",
-    descricao: data.descricao || "",
-    status: "rascunho",
+    status: "em_andamento",
     createdBy: data.createdBy,
     createdAt: new Date(),
     updatedAt: new Date(),
