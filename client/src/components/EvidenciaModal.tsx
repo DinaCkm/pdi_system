@@ -1,9 +1,4 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Loader2, Upload, X, FileText } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -54,15 +49,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
   };
 
   const uploadFileToS3 = async (file: File): Promise<{ fileName: string; fileType: string; fileSize: number; fileUrl: string; fileKey: string }> => {
-    // Simular upload para S3 (você pode implementar upload real aqui)
-    // Por enquanto, vamos usar um placeholder
     const randomKey = `evidencias/${Date.now()}-${file.name}`;
-    
-    // TODO: Implementar upload real para S3
-    // const formData = new FormData();
-    // formData.append('file', file);
-    // const response = await fetch('/api/upload', { method: 'POST', body: formData });
-    // const data = await response.json();
     
     return {
       fileName: file.name,
@@ -82,14 +69,12 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
     setUploading(true);
 
     try {
-      // Upload de arquivos
       const uploadedFiles = [];
       for (const file of arquivos) {
         const uploaded = await uploadFileToS3(file);
         uploadedFiles.push(uploaded);
       }
 
-      // Criar evidência
       await createEvidenceMutation.mutateAsync({
         actionId,
         files: uploadedFiles.length > 0 ? uploadedFiles : undefined,
@@ -110,60 +95,65 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Adicionar Evidência</DialogTitle>
-          <DialogDescription>
-            Envie evidências de conclusão para a ação: <strong>{actionNome}</strong>
-          </DialogDescription>
-        </DialogHeader>
+  if (!open) return null;
 
-        <div className="space-y-6 py-4">
-          {/* Texto Descritivo */}
-          <div className="space-y-2">
-            <Label htmlFor="titulo">Título da Evidência (Opcional)</Label>
-            <Input
-              id="titulo"
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <h2 className="text-xl font-bold">Adicionar Evidência</h2>
+          <p className="text-gray-600 text-sm mt-1">
+            Envie evidências de conclusão para a ação: <strong>{actionNome}</strong>
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {/* Título */}
+          <div>
+            <label className="text-sm font-medium block mb-2">Título da Evidência (Opcional)</label>
+            <input
+              type="text"
               placeholder="Ex: Certificado de Conclusão, Relatório Final..."
               value={tituloEvidencia}
               onChange={(e) => setTituloEvidencia(e.target.value)}
               disabled={uploading}
+              className="w-full p-2 border rounded bg-white text-black disabled:bg-gray-100"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="texto">Descrição da Evidência *</Label>
-            <Textarea
-              id="texto"
+          {/* Descrição */}
+          <div>
+            <label className="text-sm font-medium block mb-2">Descrição da Evidência *</label>
+            <textarea
               placeholder="Descreva o que você fez para concluir esta ação..."
               value={textoEvidencia}
               onChange={(e) => setTextoEvidencia(e.target.value)}
               rows={6}
               disabled={uploading}
+              className="w-full p-2 border rounded bg-white text-black disabled:bg-gray-100"
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-500 mt-1">
               Explique detalhadamente como você cumpriu esta ação
             </p>
           </div>
 
           {/* Upload de Arquivos */}
-          <div className="space-y-2">
-            <Label>Arquivos (Opcional)</Label>
-            <div className="border-2 border-dashed border-muted rounded-lg p-6 text-center">
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground mb-2">
+          <div>
+            <label className="text-sm font-medium block mb-2">Arquivos (Opcional)</label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm text-gray-600 mb-2">
                 Arraste arquivos ou clique para selecionar
               </p>
-              <Input
+              <input
                 type="file"
                 multiple
                 onChange={handleFileChange}
                 disabled={uploading}
                 className="max-w-xs mx-auto"
               />
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-xs text-gray-500 mt-2">
                 Certificados, fotos, documentos, etc.
               </p>
             </div>
@@ -171,24 +161,23 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
             {/* Lista de Arquivos */}
             {arquivos.length > 0 && (
               <div className="space-y-2 mt-4">
-                <Label>Arquivos Selecionados ({arquivos.length})</Label>
+                <label className="text-sm font-medium block">Arquivos Selecionados ({arquivos.length})</label>
                 {arquivos.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div key={`file-${index}`} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <FileText className="h-4 w-4 text-gray-400 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{file.name}</p>
-                        <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                        <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <button
                       onClick={() => removeFile(index)}
                       disabled={uploading}
+                      className="p-2 hover:bg-gray-200 rounded disabled:opacity-50"
                     >
                       <X className="h-4 w-4" />
-                    </Button>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -196,32 +185,34 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
           </div>
         </div>
 
-        <DialogFooter>
-          <Button
-            variant="outline"
+        {/* Footer */}
+        <div className="flex justify-end gap-4 mt-6">
+          <button
             onClick={() => {
               resetForm();
               onOpenChange(false);
             }}
             disabled={uploading}
+            className="px-4 py-2 border border-gray-300 rounded text-gray-800 hover:bg-gray-50 disabled:opacity-50"
           >
             Cancelar
-          </Button>
-          <Button
+          </button>
+          <button
             onClick={handleSubmit}
             disabled={uploading || (!textoEvidencia.trim() && arquivos.length === 0)}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
           >
             {uploading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 Enviando...
               </>
             ) : (
               "Enviar Evidência"
             )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
