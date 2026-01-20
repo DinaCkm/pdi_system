@@ -61,7 +61,14 @@ export function HistoryModal({ actionId, onClose }: HistoryModalProps) {
                   </span>
                 </div>
                 <p style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
-                  {new Date(item.data).toLocaleString('pt-BR')}
+                  {item.data ? (() => {
+                    try {
+                      const date = new Date(item.data);
+                      return isNaN(date.getTime()) ? item.data : date.toLocaleString('pt-BR');
+                    } catch {
+                      return item.data;
+                    }
+                  })() : '-'}
                 </p>
               </div>
             ))}
