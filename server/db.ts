@@ -5,9 +5,7 @@ import {
   InsertUser, 
   users,
   departamentos,
-  competenciasBlocos,
   competenciasMacros,
-  competenciasMicros,
   ciclos,
   pdis,
   actions,
@@ -281,80 +279,13 @@ export async function deleteCiclo(id: number) {
   await db.delete(ciclos).where(eq(ciclos.id, id));
 }
 
-// ============= GESTÃO DE COMPETÊNCIAS =============
+// ============= GESTÃO DE COMPETÊNCIAS MACROS =============
 
-export async function getAllBlocos() {
+export async function getAllMacros() {
   const db = await getDb();
   if (!db) return [];
 
-  return await db.select().from(competenciasBlocos).where(eq(competenciasBlocos.status, 'ativo')).orderBy(competenciasBlocos.nome);
-}
-
-export async function getBlocoById(id: number) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const result = await db
-    .select()
-    .from(competenciasBlocos)
-    .where(eq(competenciasBlocos.id, id))
-    .limit(1);
-
-  return result[0] || null;
-}
-
-export async function createBloco(data: { nome: string; descricao?: string }) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  if (!data.nome) throw new Error("nome é obrigatório");
-
-  const result = await db.insert(competenciasBlocos).values({
-    nome: data.nome,
-    descricao: data.descricao || null,
-    status: 'ativo',
-  }).execute();
-  
-  const insertId = result[0]?.insertId;
-  if (!insertId) throw new Error("Falha ao inserir bloco competência");
-  
-  return { id: insertId };
-}
-
-export async function updateBloco(id: number, data: Partial<{ nome: string; descricao: string }>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  await db.update(competenciasBlocos).set(data).where(eq(competenciasBlocos.id, id));
-}
-
-export async function deleteBloco(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  // Soft delete: marcar como inativo em vez de apagar
-  await db.update(competenciasBlocos).set({ status: 'inativo' }).where(eq(competenciasBlocos.id, id));
-  
-  // Também marcar todas as macros e micros como inativas
-  const macros = await db.select().from(competenciasMacros).where(eq(competenciasMacros.blocoId, id));
-  for (const macro of macros) {
-    await db.update(competenciasMacros).set({ status: 'inativo' }).where(eq(competenciasMacros.id, macro.id));
-    const micros = await db.select().from(competenciasMicros).where(eq(competenciasMicros.macroId, macro.id));
-    for (const micro of micros) {
-      await db.update(competenciasMicros).set({ status: 'inativo' }).where(eq(competenciasMicros.id, micro.id));
-    }
-  }
-}
-
-export async function getMacrosByBlocoId(blocoId: number) {
-  const db = await getDb();
-  if (!db) return [];
-
-  return await db
-    .select()
-    .from(competenciasMacros)
-    .where(and(eq(competenciasMacros.blocoId, blocoId), eq(competenciasMacros.status, 'ativo')))
-    .orderBy(competenciasMacros.nome);
+  return await db.select().from(competenciasMacros).orderBy(competenciasMacros.nome);
 }
 
 export async function getMacroById(id: number) {
@@ -370,18 +301,17 @@ export async function getMacroById(id: number) {
   return result[0] || null;
 }
 
-export async function createMacro(data: { blocoId: number; nome: string; descricao?: string }) {
+export async function createMacro(data: { nome: string; descricao: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  if (!data.blocoId) throw new Error("blocoId é obrigatório");
   if (!data.nome) throw new Error("nome é obrigatório");
+  if (!data.descricao) throw new Error("descrição é obrigatória");
 
   const result = await db.insert(competenciasMacros).values({
-    blocoId: data.blocoId,
     nome: data.nome,
-    descricao: data.descricao || null,
-    status: 'ativo',
+    descricao: data.descricao,
+    ativo: true,
   }).execute();
   
   const insertId = result[0]?.insertId;
@@ -392,7 +322,7 @@ export async function createMacro(data: { blocoId: number; nome: string; descric
 
 export async function updateMacro(
   id: number,
-  data: Partial<{ nome: string; descricao: string }>
+  data: Partial<{ nome: string; descricao: string; ativo: boolean }>
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -404,76 +334,7 @@ export async function deleteMacro(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Soft delete: marcar como inativo em vez de apagar
-  await db.update(competenciasMacros).set({ status: 'inativo' }).where(eq(competenciasMacros.id, id));
-  
-  // Também marcar todas as micros como inativas
-  const micros = await db.select().from(competenciasMicros).where(eq(competenciasMicros.macroId, id));
-  for (const micro of micros) {
-    await db.update(competenciasMicros).set({ status: 'inativo' }).where(eq(competenciasMicros.id, micro.id));
-  }
-}
-
-export async function getMicrosByMacroId(macroId: number) {
-  const db = await getDb();
-  if (!db) return [];
-
-  return await db
-    .select()
-    .from(competenciasMicros)
-    .where(and(eq(competenciasMicros.macroId, macroId), eq(competenciasMicros.status, 'ativo')))
-    .orderBy(competenciasMicros.nome);
-}
-
-export async function getMicroById(id: number) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const result = await db
-    .select()
-    .from(competenciasMicros)
-    .where(eq(competenciasMicros.id, id))
-    .limit(1);
-
-  return result[0] || null;
-}
-
-export async function createMicro(data: { macroId: number; nome: string; descricao?: string }) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  if (!data.macroId) throw new Error("macroId é obrigatório");
-  if (!data.nome) throw new Error("nome é obrigatório");
-
-  const result = await db.insert(competenciasMicros).values({
-    macroId: data.macroId,
-    nome: data.nome,
-    descricao: data.descricao || null,
-    status: 'ativo',
-  }).execute();
-  
-  const insertId = result[0]?.insertId;
-  if (!insertId) throw new Error("Falha ao inserir micro competência");
-  
-  return { id: insertId };
-}
-
-export async function updateMicro(
-  id: number,
-  data: Partial<{ nome: string; descricao: string }>
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  await db.update(competenciasMicros).set(data).where(eq(competenciasMicros.id, id));
-}
-
-export async function deleteMicro(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  // Soft delete: marcar como inativo em vez de apagar
-  await db.update(competenciasMicros).set({ status: 'inativo' }).where(eq(competenciasMicros.id, id));
+  await db.delete(competenciasMacros).where(eq(competenciasMacros.id, id));
 }
 
 // ============= GESTÃO DE PDIs =============
@@ -891,48 +752,14 @@ export async function getCicloByNome(nome: string) {
 }
 
 /**
- * Busca bloco por nome
+ * Busca macro por nome
  */
-export async function getBlocoByNome(nome: string) {
-  const db = await getDb();
-  if (!db) return null;
-  
-  const result = await db.select().from(competenciasBlocos)
-    .where(eq(competenciasBlocos.nome, nome))
-    .limit(1);
-  
-  return result[0] || null;
-}
-
-/**
- * Busca macro por nome e blocoId
- */
-export async function getMacroByNome(nome: string, blocoId: number) {
+export async function getMacroByNome(nome: string) {
   const db = await getDb();
   if (!db) return null;
   
   const result = await db.select().from(competenciasMacros)
-    .where(and(
-      eq(competenciasMacros.nome, nome),
-      eq(competenciasMacros.blocoId, blocoId)
-    ))
-    .limit(1);
-  
-  return result[0] || null;
-}
-
-/**
- * Busca micro por nome e macroId
- */
-export async function getMicroByNome(nome: string, macroId: number) {
-  const db = await getDb();
-  if (!db) return null;
-  
-  const result = await db.select().from(competenciasMicros)
-    .where(and(
-      eq(competenciasMicros.nome, nome),
-      eq(competenciasMicros.macroId, macroId)
-    ))
+    .where(eq(competenciasMacros.nome, nome))
     .limit(1);
   
   return result[0] || null;
@@ -1730,16 +1557,6 @@ export async function getSubordinates(leaderId: number) {
     .orderBy(asc(users.name));
 }
 
-export async function getAllMacros() {
-  const db = await getDb();
-  if (!db) return [];
-
-  return await db
-    .select()
-    .from(competenciasMacros)
-    .orderBy(asc(competenciasMacros.nome));
-}
-
 export async function getUnreadNotificationsCount(userId: number) {
   const db = await getDb();
   if (!db) return 0;
@@ -1789,71 +1606,7 @@ export async function getPendingEvidences() {
     .orderBy(desc(evidences.createdAt));
 }
 
-export async function getAllMicros() {
-  const db = await getDb();
-  if (!db) return [];
 
-  return await db
-    .select()
-    .from(competenciasMicros)
-    .orderBy(asc(competenciasMicros.nome));
-}
-
-export async function getAllMicrosWithMacroAndBloco() {
-  const db = await getDb();
-  if (!db) return [];
-
-  return await db
-    .select({
-      id: competenciasMicros.id,
-      microNome: competenciasMicros.nome,
-      microStatus: competenciasMicros.status,
-      macroId: competenciasMicros.macroId,
-      macroNome: competenciasMacros.nome,
-      blocoId: competenciasBlocos.id,
-      blocoNome: competenciasBlocos.nome,
-    })
-    .from(competenciasMicros)
-    .leftJoin(competenciasMacros, eq(competenciasMicros.macroId, competenciasMacros.id))
-    .leftJoin(competenciasBlocos, eq(competenciasMacros.blocoId, competenciasBlocos.id))
-    .orderBy(asc(competenciasBlocos.nome), asc(competenciasMacros.nome), asc(competenciasMicros.nome));
-}
-
-export async function getMacroByNomeAndBlocoId(nome: string, blocoId: number) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const result = await db
-    .select()
-    .from(competenciasMacros)
-    .where(
-      and(
-        eq(competenciasMacros.nome, nome),
-        eq(competenciasMacros.blocoId, blocoId)
-      )
-    )
-    .limit(1);
-
-  return result[0] || null;
-}
-
-export async function getMicroByNomeAndMacroId(nome: string, macroId: number) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const result = await db
-    .select()
-    .from(competenciasMicros)
-    .where(
-      and(
-        eq(competenciasMicros.nome, nome),
-        eq(competenciasMicros.macroId, macroId)
-      )
-    )
-    .limit(1);
-
-  return result[0] || null;
-}
 
 export async function getActionsByColaboradorId(colaboradorId: number) {
   const db = await getDb();
@@ -2158,90 +1911,12 @@ export async function isUserLeaderOfColaborador(userId: number, colaboradorId: n
 }
 
 
-export async function getMicrosWithFilters(filters: {
-  blocoId?: number;
-  blocoNome?: string;
-  macroId?: number;
-  macroNome?: string;
-  microNome?: string;
-  status?: 'ativo' | 'inativo';
-}) {
-  const db = await getDb();
-  if (!db) return [];
 
-  const conditions: any[] = [];
-
-  if (filters.blocoId) {
-    conditions.push(eq(competenciasBlocos.id, filters.blocoId));
-  }
-  if (filters.blocoNome) {
-    conditions.push(like(competenciasBlocos.nome, `%${filters.blocoNome}%`));
-  }
-  if (filters.macroId) {
-    conditions.push(eq(competenciasMacros.id, filters.macroId));
-  }
-  if (filters.macroNome) {
-    conditions.push(like(competenciasMacros.nome, `%${filters.macroNome}%`));
-  }
-  if (filters.microNome) {
-    conditions.push(like(competenciasMicros.nome, `%${filters.microNome}%`));
-  }
-  if (filters.status) {
-    conditions.push(eq(competenciasMicros.status, filters.status));
-  }
-
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-  return await db
-    .select({
-      id: competenciasMicros.id,
-      microNome: competenciasMicros.nome,
-      microStatus: competenciasMicros.status,
-      macroId: competenciasMicros.macroId,
-      macroNome: competenciasMacros.nome,
-      blocoId: competenciasBlocos.id,
-      blocoNome: competenciasBlocos.nome,
-    })
-    .from(competenciasMicros)
-    .leftJoin(competenciasMacros, eq(competenciasMicros.macroId, competenciasMacros.id))
-    .leftJoin(competenciasBlocos, eq(competenciasMacros.blocoId, competenciasBlocos.id))
-    .where(whereClause)
-    .orderBy(asc(competenciasBlocos.nome), asc(competenciasMacros.nome), asc(competenciasMicros.nome));
-}
 
 
 // ============================================
 // VALIDAÇÃO DE DEPENDÊNCIA ATIVA
 // ============================================
-
-/**
- * Conta quantas Microcompetências ativas estão vinculadas a uma Macro
- * @param macroId ID da Macro
- * @returns Número de Micros ativas
- */
-export async function countActiveMicrosByMacroId(macroId: number): Promise<number> {
-  const result = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(competenciasMicros)
-    .where(and(eq(competenciasMicros.macroId, macroId), eq(competenciasMicros.status, 'ativo')));
-
-  return result[0]?.count || 0;
-}
-
-/**
- * Conta quantas Macrocompetências ativas estão vinculadas a um Bloco
- * @param blocoId ID do Bloco
- * @returns Número de Macros ativas
- */
-export async function countActiveMacrosByBlocoId(blocoId: number): Promise<number> {
-  const result = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(competenciasMacros)
-    .where(and(eq(competenciasMacros.blocoId, blocoId), eq(competenciasMacros.status, 'ativo')));
-
-  return result[0]?.count || 0;
-}
-
 
 // ============= DIRECIONAMENTO ESTRATÉGICO (ADMIN ONLY) =============
 /**
@@ -2373,129 +2048,6 @@ export async function getPDIsComProgresso(filters?: {
  *   { blocoId, blocoNome, macroId: null, macroNome: null, microId: null, microNome: null, status },
  * ]
  */
-export async function getCompetenciasHierarchy(filters?: {
-  blocoNome?: string;
-  macroNome?: string;
-  microNome?: string;
-  status?: 'ativo' | 'inativo';
-}) {
-  const db = await getDb();
-  if (!db) return [];
-
-  // Passo 1: Obter todos os Blocos
-  const blocos = await db
-    .select()
-    .from(competenciasBlocos)
-    .where(
-      filters?.status
-        ? eq(competenciasBlocos.status, filters.status)
-        : undefined
-    );
-
-  // Passo 2: Para cada Bloco, obter Macros
-  const result: any[] = [];
-
-  for (const bloco of blocos) {
-    const macros = await db
-      .select()
-      .from(competenciasMacros)
-      .where(
-        and(
-          eq(competenciasMacros.blocoId, bloco.id),
-          filters?.status
-            ? eq(competenciasMacros.status, filters.status)
-            : undefined
-        )
-      );
-
-    // Se não há Macros, adicionar o Bloco sozinho
-    if (macros.length === 0) {
-      result.push({
-        blocoId: bloco.id,
-        blocoNome: bloco.nome,
-        blocoStatus: bloco.status,
-        macroId: null,
-        macroNome: null,
-        macroStatus: null,
-        microId: null,
-        microNome: null,
-        microStatus: null,
-      });
-    } else {
-      // Passo 3: Para cada Macro, obter Micros
-      for (const macro of macros) {
-        const micros = await db
-          .select()
-          .from(competenciasMicros)
-          .where(
-            and(
-              eq(competenciasMicros.macroId, macro.id),
-              filters?.status
-                ? eq(competenciasMicros.status, filters.status)
-                : undefined
-            )
-          );
-
-        // Se não há Micros, adicionar Bloco + Macro
-        if (micros.length === 0) {
-          result.push({
-            blocoId: bloco.id,
-            blocoNome: bloco.nome,
-            blocoStatus: bloco.status,
-            macroId: macro.id,
-            macroNome: macro.nome,
-            macroStatus: macro.status,
-            microId: null,
-            microNome: null,
-            microStatus: null,
-          });
-        } else {
-          // Adicionar Bloco + Macro + Micro
-          for (const micro of micros) {
-            result.push({
-              blocoId: bloco.id,
-              blocoNome: bloco.nome,
-              blocoStatus: bloco.status,
-              macroId: macro.id,
-              macroNome: macro.nome,
-              macroStatus: macro.status,
-              microId: micro.id,
-              microNome: micro.nome,
-              microStatus: micro.status,
-            });
-          }
-        }
-      }
-    }
-  }
-
-  // Aplicar filtros de nome se fornecidos
-  let filtered = result;
-  
-  if (filters?.blocoNome) {
-    const blocoFilter = filters.blocoNome.toLowerCase();
-    filtered = filtered.filter((r) =>
-      r.blocoNome.toLowerCase().includes(blocoFilter)
-    );
-  }
-
-  if (filters?.macroNome) {
-    const macroFilter = filters.macroNome.toLowerCase();
-    filtered = filtered.filter(
-      (r) => r.macroNome && r.macroNome.toLowerCase().includes(macroFilter)
-    );
-  }
-
-  if (filters?.microNome) {
-    const microFilter = filters.microNome.toLowerCase();
-    filtered = filtered.filter(
-      (r) => r.microNome && r.microNome.toLowerCase().includes(microFilter)
-    );
-  }
-
-  return filtered;
-}
-
 
 /**
  * Encontra o ciclo que contém uma data específica

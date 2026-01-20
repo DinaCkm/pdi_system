@@ -3,6 +3,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, adminOrLeaderProcedure, router } from "./_core/customTrpc";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
+import { getAllMacros, createMacro, updateMacro, deleteMacro } from "./db";
 import { invokeLLM } from "./_core/llm";
 import { authRouter } from "./authRouters";
 import { importActionsRouter } from "./importActions";
@@ -411,416 +412,44 @@ export const appRouter = router({
 
   // ============= GESTÃO DE COMPETÊNCIAS =============
   competencias: router({
-    // BLOCOS
-    listBlocos: protectedProcedure.query(async () => {
-      return await db.getAllBlocos();
+    // LISTAR TODAS AS MACROS
+    listAllMacros: publicProcedure.query(async () => {
+      return await getAllMacros();
     }),
 
-    getBlocoById: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getBlocoById(input.id);
-      }),
-
-    criarBloco: adminProcedure
+    // CRIAR MACRO
+    create: publicProcedure
       .input(z.object({
-        nome: z.string().min(1, "Nome é obrigatório"),
-        descricao: z.string().optional(),
+        nome: z.string().min(1, "Nome obrigatorio"),
+        descricao: z.string().min(1, "Descricao obrigatoria"),
       }))
       .mutation(async ({ input }) => {
-        await db.createBloco(input);
-        return { success: true };
+        return await createMacro(input);
       }),
 
-    atualizarBloco: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        nome: z.string().min(1).optional(),
-        descricao: z.string().optional(),
-        status: z.enum(["ativo", "inativo"]).optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const { id, ...updateData } = input;
-        await db.updateBloco(id, updateData);
-        return { success: true };
-      }),
-
-    deletarBloco: adminProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.deleteBloco(input.id);
-        return { success: true };
-      }),
-
-    // MACROS
-    listMacros: protectedProcedure
-      .input(z.object({ blocoId: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getMacrosByBlocoId(input.blocoId);
-      }),
-
-    listAllMacros: protectedProcedure.query(async () => {
-      return await db.getAllMacros();
-    }),
-
-    getMacroById: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getMacroById(input.id);
-      }),
-
-    criarMacro: adminProcedure
-      .input(z.object({
-        blocoId: z.number(),
-        nome: z.string().min(1, "Nome é obrigatório"),
-        descricao: z.string().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        await db.createMacro(input);
-        return { success: true };
-      }),
-
-    atualizarMacro: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        nome: z.string().min(1).optional(),
-        descricao: z.string().optional(),
-        blocoId: z.number().optional(),
-        status: z.enum(["ativo", "inativo"]).optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const { id, ...updateData } = input;
-        await db.updateMacro(id, updateData);
-        return { success: true };
-      }),
-
-    deletarMacro: adminProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.deleteMacro(input.id);
-        return { success: true };
-      }),
-
-    // MICROS
-    listMicros: protectedProcedure
-      .input(z.object({ macroId: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getMicrosByMacroId(input.macroId);
-      }),
-
-    listAllMicros: protectedProcedure.query(async () => {
-      return await db.getAllMicros();
-    }),
-
-    listAllMicrosWithDetails: protectedProcedure.query(async () => {
-      return await db.getAllMicrosWithMacroAndBloco();
-    }),
-
-    getCompetenciasHierarchy: protectedProcedure
-      .input(z.object({
-        blocoNome: z.string().optional(),
-        macroNome: z.string().optional(),
-        microNome: z.string().optional(),
-        status: z.enum(['ativo', 'inativo']).optional(),
-      }).optional())
-      .query(async ({ input }) => {
-        return await db.getCompetenciasHierarchy(input);
-      }),
-
-    getMicrosWithFilters: protectedProcedure
-      .input(z.object({
-        blocoId: z.number().optional(),
-        blocoNome: z.string().optional(),
-        macroId: z.number().optional(),
-        macroNome: z.string().optional(),
-        microNome: z.string().optional(),
-        status: z.enum(['ativo', 'inativo']).optional(),
-      }))
-      .query(async ({ input }) => {
-        return await db.getMicrosWithFilters(input);
-      }),
-
-    getMicroById: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getMicroById(input.id);
-      }),
-
-    criarMicro: adminProcedure
-      .input(z.object({
-        macroId: z.number(),
-        nome: z.string().min(1, "Nome é obrigatório"),
-        descricao: z.string().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        await db.createMicro(input);
-        return { success: true };
-      }),
-
-    atualizarMicro: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        nome: z.string().min(1).optional(),
-        descricao: z.string().optional(),
-        status: z.enum(["ativo", "inativo"]).optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const { id, ...updateData } = input;
-        await db.updateMicro(id, updateData);
-        return { success: true };
-      }),
-
-    deletarMicro: adminProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.deleteMicro(input.id);
-        return { success: true };
-      }),
-
-    inativarMicro: adminProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.updateMicro(input.id, { status: 'inativo' });
-        return { success: true };
-      }),
-
-    editarMicro: adminProcedure
+    // EDITAR MACRO
+    update: publicProcedure
       .input(z.object({
         id: z.number(),
         nome: z.string().min(1),
         descricao: z.string().optional(),
+        ativo: z.boolean().optional()
       }))
       .mutation(async ({ input }) => {
-        const { id, nome, descricao } = input;
-        await db.updateMicro(id, { nome, descricao });
+        const { id, ...data } = input;
+        await updateMacro(id, data);
         return { success: true };
       }),
 
-    inativarMacroComCascata: adminProcedure
+    // DELETAR MACRO
+    delete: publicProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
-        // Validar se há Micros ativas vinculadas
-        const activeMicrosCount = await db.countActiveMicrosByMacroId(input.id);
-        if (activeMicrosCount > 0) {
-          throw new TRPCError({
-            code: 'CONFLICT',
-            message: `Não é possível inativar esta Macro. Você deve inativar todas as ${activeMicrosCount} Microcompetência(s) vinculada(s) a ela primeiro.`
-          });
-        }
-        await db.deleteMacro(input.id);
+        await deleteMacro(input.id);
         return { success: true };
-      }),
-
-    editarMacro: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        nome: z.string().min(1),
-        descricao: z.string().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const { id, nome, descricao } = input;
-        await db.updateMacro(id, { nome, descricao });
-        return { success: true };
-      }),
-
-    inativarBlocoComCascata: adminProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        // Validar se há Macros ativas vinculadas
-        const activeMacrosCount = await db.countActiveMacrosByBlocoId(input.id);
-        if (activeMacrosCount > 0) {
-          throw new TRPCError({
-            code: 'CONFLICT',
-            message: `Não é possível inativar este Bloco. Você deve inativar todas as ${activeMacrosCount} Macrocompetência(s) vinculada(s) a ele primeiro.`
-          });
-        }
-        await db.deleteBloco(input.id);
-        return { success: true };
-      }),
-
-    editarBloco: adminProcedure
-      .input(z.object({
-        id: z.number(),
-        nome: z.string().min(1),
-        descricao: z.string().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const { id, nome, descricao } = input;
-        await db.updateBloco(id, { nome, descricao });
-        return { success: true };
-      }),
-
-    ativarMicro: adminProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.updateMicro(input.id, { status: 'ativo' });
-        return { success: true };
-      }),
-
-    ativarMacro: adminProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.updateMacro(input.id, { status: 'ativo' });
-        return { success: true };
-      }),
-
-    ativarBloco: adminProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
-        await db.updateBloco(input.id, { status: 'ativo' });
-        return { success: true };
-      }),
-
-    // DIRECIONAMENTO ESTRATÉGICO - TOP 3 COMPETÊNCIAS COM GAPS (ADMIN ONLY)
-    getTop3CompetenciasComGaps: adminProcedure.query(async () => {
-      return await db.getTop3CompetenciasComGaps();
-    }),
-
-    // IMPORTAÇÃO EM MASSA (NOVO - COM NOMES CORRETOS)
-    importarEmLote: adminProcedure
-      .input(z.object({
-        competencias: z.array(z.object({
-          blocoNome: z.string().min(1),
-          blocoDescricao: z.string().optional(),
-          macroNome: z.string().min(1),
-          macroDescricao: z.string().optional(),
-          microNome: z.string().min(1),
-          microDescricao: z.string().optional(),
-        }))
-      }))
-      .mutation(async ({ input }) => {
-        const { competencias } = input;
-        const erros: { linha: number; erro: string }[] = [];
-        let sucesso = 0;
-        const blocoMap = new Map<string, number>();
-        const macroMap = new Map<string, number>();
-        
-        for (let idx = 0; idx < competencias.length; idx++) {
-          const comp = competencias[idx];
-          const linha = idx + 2;
-          try {
-            let blocoId: number;
-            if (blocoMap.has(comp.blocoNome)) {
-              blocoId = blocoMap.get(comp.blocoNome)!;
-            } else {
-              const existingBloco = await db.getBlocoByNome(comp.blocoNome);
-              if (existingBloco) {
-                blocoId = existingBloco.id;
-              } else {
-                const newBloco = await db.createBloco({ nome: comp.blocoNome, descricao: comp.blocoDescricao });
-                blocoId = newBloco.id;
-              }
-              blocoMap.set(comp.blocoNome, blocoId);
-            }
-            
-            const macroKey = `${blocoId}-${comp.macroNome}`;
-            let macroId: number;
-            if (macroMap.has(macroKey)) {
-              macroId = macroMap.get(macroKey)!;
-            } else {
-              const existingMacro = await db.getMacroByNomeAndBlocoId(comp.macroNome, blocoId);
-              if (existingMacro) {
-                macroId = existingMacro.id;
-              } else {
-                const newMacro = await db.createMacro({ blocoId, nome: comp.macroNome, descricao: comp.macroDescricao });
-                macroId = newMacro.id;
-              }
-              macroMap.set(macroKey, macroId);
-            }
-            
-            const existingMicro = await db.getMicroByNomeAndMacroId(comp.microNome, macroId);
-            if (!existingMicro) {
-              await db.createMicro({ macroId, nome: comp.microNome, descricao: comp.microDescricao });
-            }
-            sucesso++;
-          } catch (erro: any) {
-            erros.push({ linha, erro: erro.message || "Erro desconhecido" });
-          }
-        }
-        return { sucesso, erros };
-      }),
-
-    // IMPORTAÇÃO EM MASSA (ANTIGO)
-    importBulk: adminProcedure
-      .input(z.object({
-        competencias: z.array(z.object({
-          modulo: z.string(),
-          macro: z.string(),
-          micro: z.string(),
-        }))
-      }))
-      .mutation(async ({ input }) => {
-        const { competencias } = input;
-        
-        // Maps para evitar duplicação
-        const blocoMap = new Map<string, number>();
-        const macroMap = new Map<string, number>();
-        
-        let created = { blocos: 0, macros: 0, micros: 0 };
-        let skipped = { blocos: 0, macros: 0, micros: 0 };
-        
-        for (const comp of competencias) {
-          // 1. Criar ou buscar Bloco
-          let blocoId: number;
-          if (blocoMap.has(comp.modulo)) {
-            blocoId = blocoMap.get(comp.modulo)!;
-            skipped.blocos++;
-          } else {
-            // Verificar se já existe no banco
-            const existingBloco = await db.getBlocoByNome(comp.modulo);
-            if (existingBloco) {
-              blocoId = existingBloco.id;
-              blocoMap.set(comp.modulo, blocoId);
-              skipped.blocos++;
-            } else {
-              const newBloco = await db.createBloco({ nome: comp.modulo });
-              blocoId = newBloco.id;
-              blocoMap.set(comp.modulo, blocoId);
-              created.blocos++;
-            }
-          }
-          
-          // 2. Criar ou buscar Macro
-          const macroKey = `${blocoId}-${comp.macro}`;
-          let macroId: number;
-          if (macroMap.has(macroKey)) {
-            macroId = macroMap.get(macroKey)!;
-            skipped.macros++;
-          } else {
-            // Verificar se já existe no banco
-            const existingMacro = await db.getMacroByNomeAndBlocoId(comp.macro, blocoId);
-            if (existingMacro) {
-              macroId = existingMacro.id;
-              macroMap.set(macroKey, macroId);
-              skipped.macros++;
-            } else {
-              const newMacro = await db.createMacro({ blocoId, nome: comp.macro });
-              macroId = newMacro.id;
-              macroMap.set(macroKey, macroId);
-              created.macros++;
-            }
-          }
-          
-          // 3. Criar Micro (sempre criar, mesmo se duplicado)
-          const existingMicro = await db.getMicroByNomeAndMacroId(comp.micro, macroId);
-          if (existingMicro) {
-            skipped.micros++;
-          } else {
-            await db.createMicro({ macroId, nome: comp.micro });
-            created.micros++;
-          }
-        }
-        
-        return { 
-          success: true, 
-          created,
-          skipped,
-          total: competencias.length 
-        };
       }),
   }),
 
-  // ============= GESTÃO DE CICLOS =============
   ciclos: router({
     list: protectedProcedure.query(async () => {
       return await db.getAllCiclos();

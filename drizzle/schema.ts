@@ -72,29 +72,11 @@ export const ciclos = mysqlTable("ciclos", {
 	createdBy: int().notNull(),
 });
 
-export const competenciasBlocos = mysqlTable("competencias_blocos", {
-	id: int().autoincrement().notNull(),
-	nome: varchar({ length: 255 }).notNull(),
-	descricao: text(),
-	status: mysqlEnum(['ativo','inativo']).default('ativo'),
-	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP'),
-});
-
 export const competenciasMacros = mysqlTable("competencias_macros", {
 	id: int().autoincrement().notNull(),
-	blocoId: int().notNull(),
-	nome: varchar({ length: 255 }).notNull(),
-	descricao: text(),
-	status: mysqlEnum(['ativo','inativo']).default('ativo'),
-	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP'),
-});
-
-export const competenciasMicros = mysqlTable("competencias_micros", {
-	id: int().autoincrement().notNull(),
-	macroId: int().notNull(),
-	nome: varchar({ length: 255 }).notNull(),
-	descricao: text(),
-	status: mysqlEnum(['ativo','inativo']).default('ativo'),
+	nome: varchar({ length: 255 }).notNull().unique(),
+	descricao: text().notNull(),
+	ativo: boolean().notNull().default(true),
 	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP'),
 });
 
