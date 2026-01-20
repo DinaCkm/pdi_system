@@ -334,26 +334,33 @@ export async function getAllPDIs() {
   if (!db) throw new Error("Database not available");
 
   const result = await db
-    .select({
-      pdiId: pdis.id,
-      titulo: pdis.titulo,
-      status: pdis.status,
-      progresso: pdis.progresso,
-      colaboradorNome: users.name,
-      departamentoNome: departamentos.nome,
-      cicloNome: ciclos.nome,
-      liderNome: users.name,
-      departamentoId: users.departamentoId,
-      totalAcoes: pdis.totalAcoes,
-      acoesConcluidasTotal: pdis.acoesConcluidasTotal,
-    })
+    .select()
     .from(pdis)
-    .leftJoin(users, eq(pdis.colaboradorId, users.id))
-    .leftJoin(ciclos, eq(pdis.cicloId, ciclos.id))
-    .leftJoin(departamentos, eq(users.departamentoId, departamentos.id))
     .orderBy(desc(pdis.createdAt));
 
-  return result;
+  const enriched = await Promise.all(
+    result.map(async (pdi) => {
+      const [user] = await db.select().from(users).where(eq(users.id, pdi.colaboradorId));
+      const [ciclo] = await db.select().from(ciclos).where(eq(ciclos.id, pdi.cicloId));
+      const [dept] = user ? await db.select().from(departamentos).where(eq(departamentos.id, user.departamentoId)) : [null];
+      
+      return {
+        pdiId: pdi.id,
+        titulo: pdi.titulo,
+        status: pdi.status,
+        progresso: pdi.progresso || 0,
+        colaboradorNome: user?.name || "—",
+        departamentoNome: dept?.nome || "—",
+        cicloNome: ciclo?.nome || "—",
+        liderNome: user?.name || "—",
+        departamentoId: user?.departamentoId || 0,
+        totalAcoes: pdi.totalAcoes || 0,
+        acoesConcluidasTotal: pdi.acoesConcluidasTotal || 0,
+      };
+    })
+  );
+
+  return enriched;
 }
 
 export async function createPDI(data: {
