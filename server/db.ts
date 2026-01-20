@@ -399,6 +399,24 @@ export async function getUserByCpf(cpf: string) {
   return result;
 }
 
+export async function getUserByEmailAndCpf(email: string, cpf: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [result] = await db.select().from(users).where(
+    and(eq(users.email, email), eq(users.cpf, cpf))
+  );
+  return result;
+}
+
+export async function countUsers() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [result] = await db.select({ count: sql`COUNT(*)` }).from(users);
+  return result?.count || 0;
+}
+
 export async function createUser(data: {
   openId: string;
   name: string;
