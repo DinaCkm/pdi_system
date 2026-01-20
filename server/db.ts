@@ -125,16 +125,10 @@ export async function getAllActions() {
       pdiTitulo: pdis.titulo,
       macroNome: competenciasMacros.nome,
       microcompetenciaNome: competenciasMacros.nome,
-      colaboradorNome: users.name,
-      liderNome: users.name,
-      departamentoNome: departamentos.nome,
-      cicloNome: ciclos.nome,
     })
     .from(actions)
     .leftJoin(pdis, eq(actions.pdiId, pdis.id))
     .leftJoin(competenciasMacros, eq(actions.macroId, competenciasMacros.id))
-    .leftJoin(users, eq(pdis.colaboradorId, users.id))
-    .leftJoin(ciclos, eq(pdis.cicloId, ciclos.id))
     .orderBy(desc(actions.createdAt));
 
   return result;
@@ -171,16 +165,10 @@ export async function getActionsByColaboradorId(colaboradorId: number) {
       pdiTitulo: pdis.titulo,
       macroNome: competenciasMacros.nome,
       microcompetenciaNome: competenciasMacros.nome,
-      colaboradorNome: users.name,
-      liderNome: users.name,
-      departamentoNome: departamentos.nome,
-      cicloNome: ciclos.nome,
     })
     .from(actions)
     .leftJoin(pdis, eq(actions.pdiId, pdis.id))
     .leftJoin(competenciasMacros, eq(actions.macroId, competenciasMacros.id))
-    .leftJoin(users, eq(pdis.colaboradorId, users.id))
-    .leftJoin(ciclos, eq(pdis.cicloId, ciclos.id))
     .where(eq(pdis.colaboradorId, colaboradorId))
     .orderBy(desc(actions.createdAt));
 
