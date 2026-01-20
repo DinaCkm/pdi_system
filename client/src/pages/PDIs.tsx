@@ -1,26 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DataTablePDIs } from "@/components/DataTablePDIs";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Plus, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -161,13 +143,13 @@ export default function PDIs() {
               Central de controle de Planos de Desenvolvimento Individual
             </p>
           </div>
-          <Button
+          <button
             onClick={() => setShowModal(true)}
-            className="bg-gradient-to-r from-blue-600 to-orange-500"
+            className="bg-gradient-to-r from-blue-600 to-orange-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:opacity-90"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4" />
             Novo PDI
-          </Button>
+          </button>
         </div>
 
         {/* DataTable de PDIs */}
@@ -175,135 +157,140 @@ export default function PDIs() {
           <DataTablePDIs />
         </div>
 
-        {/* Modal de Criação de PDI */}
-        <Dialog open={showModal} onOpenChange={setShowModal}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Criar Novo PDI</DialogTitle>
-              <DialogDescription>
+        {/* Modal de Criação de PDI - HTML PURO */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <h2 className="text-2xl font-bold mb-2">Criar Novo PDI</h2>
+              <p className="text-gray-600 mb-4">
                 {isCreatingBulk
                   ? "Criar PDI para todos os colaboradores sem PDI neste ciclo"
                   : "Criar PDI para um colaborador específico"}
-              </DialogDescription>
-            </DialogHeader>
+              </p>
 
-            <div className="space-y-4">
-              {/* Seletor de Ciclo - HTML NATIVO */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium block mb-1">Ciclo Semestral *</label>
-                <select
-                  className="w-full p-2 border rounded bg-white text-black"
-                  value={selectedCiclo}
-                  onChange={(e) => setSelectedCiclo(e.target.value)}
-                >
-                  <option value="">Selecione um ciclo</option>
-                  {ciclos?.map((ciclo) => (
-                    <option key={ciclo.id} value={ciclo.id.toString()}>
-                      {ciclo.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Toggle: Individual vs Lote */}
-              <div className="flex gap-2">
-                <Button
-                  variant={!isCreatingBulk ? "default" : "outline"}
-                  onClick={() => setIsCreatingBulk(false)}
-                  className="flex-1"
-                >
-                  Individual
-                </Button>
-                <Button
-                  variant={isCreatingBulk ? "default" : "outline"}
-                  onClick={() => setIsCreatingBulk(true)}
-                  className="flex-1"
-                >
-                  Em Lote
-                </Button>
-              </div>
-
-              {/* Seletor de Colaborador - Input com datalist (apenas se Individual) */}
-              {!isCreatingBulk && (
-                <div className="space-y-2">
-                  <Label htmlFor="colaborador">Colaborador *</Label>
-                  <Input
-                    id="colaborador"
-                    placeholder="Digite ou selecione um colaborador"
-                    value={colaboradorSelecionado?.name || selectedColaborador}
-                    onChange={(e) => {
-                      const colab = colaboradores.find(
-                        (c) => c.name === e.target.value || c.id === parseInt(e.target.value)
-                      );
-                      setSelectedColaborador(colab?.id.toString() || "");
-                    }}
-                    list="colaboradores-list"
-                  />
-                  <datalist id="colaboradores-list">
-                    {colaboradores.map((colab) => (
-                      <option key={colab.id} value={colab.name} />
+              <div className="space-y-4">
+                {/* Seletor de Ciclo - HTML NATIVO */}
+                <div>
+                  <label className="text-sm font-medium block mb-1">Ciclo Semestral *</label>
+                  <select
+                    className="w-full p-2 border rounded bg-white text-black"
+                    value={selectedCiclo}
+                    onChange={(e) => setSelectedCiclo(e.target.value)}
+                  >
+                    <option value="">Selecione um ciclo</option>
+                    {ciclos?.map((ciclo) => (
+                      <option key={ciclo.id} value={ciclo.id.toString()}>
+                        {ciclo.nome}
+                      </option>
                     ))}
-                  </datalist>
+                  </select>
                 </div>
-              )}
 
-              {/* Campo Título */}
-              <div className="space-y-2">
-                <Label htmlFor="titulo">Título *</Label>
-                <Input
-                  id="titulo"
-                  placeholder="Ex: PDI 2025 - Desenvolvimento de Liderança"
-                  value={titulo}
-                  onChange={(e) => setTitulo(e.target.value)}
-                />
-              </div>
+                {/* Toggle: Individual vs Lote */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsCreatingBulk(false)}
+                    className={`flex-1 py-2 px-3 rounded text-sm font-medium ${
+                      !isCreatingBulk
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-200 text-gray-800"
+                    }`}
+                  >
+                    Individual
+                  </button>
+                  <button
+                    onClick={() => setIsCreatingBulk(true)}
+                    className={`flex-1 py-2 px-3 rounded text-sm font-medium ${
+                      isCreatingBulk
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-200 text-gray-800"
+                    }`}
+                  >
+                    Em Lote
+                  </button>
+                </div>
 
-              {/* Campo Objetivo Geral */}
-              <div className="space-y-2">
-                <Label htmlFor="objetivo">Objetivo Geral</Label>
-                <Textarea
-                  id="objetivo"
-                  placeholder="Descreva o objetivo geral do PDI..."
-                  value={objetivoGeral}
-                  onChange={(e) => setObjetivoGeral(e.target.value)}
-                  rows={3}
-                />
-              </div>
+                {/* Seletor de Colaborador - Input com datalist (apenas se Individual) */}
+                {!isCreatingBulk && (
+                  <div>
+                    <label className="text-sm font-medium block mb-1">Colaborador *</label>
+                    <input
+                      placeholder="Digite ou selecione um colaborador"
+                      value={colaboradorSelecionado?.name || selectedColaborador}
+                      onChange={(e) => {
+                        const colab = colaboradores.find(
+                          (c) => c.name === e.target.value || c.id === parseInt(e.target.value)
+                        );
+                        setSelectedColaborador(colab?.id.toString() || "");
+                      }}
+                      list="colaboradores-list"
+                      className="w-full p-2 border rounded bg-white text-black"
+                    />
+                    <datalist id="colaboradores-list">
+                      {colaboradores.map((colab) => (
+                        <option key={colab.id} value={colab.name} />
+                      ))}
+                    </datalist>
+                  </div>
+                )}
 
-              {/* Botões de Ação */}
-              <div className="flex gap-2 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowModal(false);
-                    resetForm();
-                  }}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={
-                    isCreatingBulk ? handleCreateBulk : handleCreateIndividual
-                  }
-                  disabled={
-                    createPDIMutation.isPending || createBulkMutation.isPending
-                  }
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-orange-500"
-                >
-                  {createPDIMutation.isPending || createBulkMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Criando...
-                    </>
-                  ) : (
-                    "Criar PDI"
-                  )}
-                </Button>
+                {/* Campo Título */}
+                <div>
+                  <label className="text-sm font-medium block mb-1">Título *</label>
+                  <input
+                    placeholder="Ex: PDI 2025 - Desenvolvimento de Liderança"
+                    value={titulo}
+                    onChange={(e) => setTitulo(e.target.value)}
+                    className="w-full p-2 border rounded bg-white text-black"
+                  />
+                </div>
+
+                {/* Campo Objetivo Geral */}
+                <div>
+                  <label className="text-sm font-medium block mb-1">Objetivo Geral</label>
+                  <textarea
+                    placeholder="Descreva o objetivo geral do PDI..."
+                    value={objetivoGeral}
+                    onChange={(e) => setObjetivoGeral(e.target.value)}
+                    rows={3}
+                    className="w-full p-2 border rounded bg-white text-black"
+                  />
+                </div>
+
+                {/* Botões de Ação */}
+                <div className="flex gap-2 pt-4">
+                  <button
+                    onClick={() => {
+                      setShowModal(false);
+                      resetForm();
+                    }}
+                    className="flex-1 py-2 px-3 border border-gray-300 rounded text-gray-800 hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={
+                      isCreatingBulk ? handleCreateBulk : handleCreateIndividual
+                    }
+                    disabled={
+                      createPDIMutation.isPending || createBulkMutation.isPending
+                    }
+                    className="flex-1 py-2 px-3 bg-gradient-to-r from-blue-600 to-orange-500 text-white rounded hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {createPDIMutation.isPending || createBulkMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Criando...
+                      </>
+                    ) : (
+                      "Criar PDI"
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
