@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DialogSelect, DialogSelectItem } from "@/components/DialogSelect";
 import { Plus, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -197,18 +198,17 @@ export default function PDIs() {
               {/* Seletor de Ciclo */}
               <div className="space-y-2">
                 <Label htmlFor="ciclo">Ciclo Semestral *</Label>
-                <Select value={selectedCiclo} onValueChange={setSelectedCiclo}>
-                  <SelectTrigger id="ciclo">
-                    <SelectValue placeholder="Selecione um ciclo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ciclos.map((ciclo) => (
-                      <SelectItem key={ciclo.id} value={ciclo.id.toString()}>
-                        {ciclo.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <DialogSelect
+                  value={selectedCiclo}
+                  onValueChange={setSelectedCiclo}
+                  placeholder="Selecione um ciclo"
+                >
+                  {ciclos.map((ciclo) => (
+                    <DialogSelectItem key={ciclo.id} value={ciclo.id.toString()}>
+                      {ciclo.nome}
+                    </DialogSelectItem>
+                  ))}
+                </DialogSelect>
               </div>
 
               {/* Toggle: Individual vs Lote */}
