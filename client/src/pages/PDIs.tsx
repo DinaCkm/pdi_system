@@ -206,17 +206,25 @@ export default function PDIs() {
               {/* Seletor de Ciclo */}
               <div className="space-y-2">
                 <Label htmlFor="ciclo">Ciclo Semestral *</Label>
-                <DialogSelect
-                  value={selectedCiclo}
+                <Select
+                  value={selectedCiclo ? selectedCiclo.toString() : ""}
                   onValueChange={setSelectedCiclo}
-                  placeholder="Selecione um ciclo"
                 >
-                  {ciclos.map((ciclo, index) => (
-                    <DialogSelectItem key={`${ciclo.id}-${index}`} value={ciclo.id.toString()}>
-                      {ciclo.nome}
-                    </DialogSelectItem>
-                  ))}
-                </DialogSelect>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o Ciclo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* ARRAY SEGURO: Garante que nunca seja null */}
+                    {(ciclos || []).map((ciclo, index) => (
+                      <SelectItem 
+                        key={`ciclo-${ciclo.id}-${index}`}
+                        value={ciclo.id.toString()}
+                      >
+                        {ciclo.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Toggle: Individual vs Lote */}
