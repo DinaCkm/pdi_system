@@ -77,11 +77,17 @@ export function Dashboard() {
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
-    // Remover o link com segurança
-    if (link.parentNode) {
-      link.parentNode.removeChild(link);
-    }
-    URL.revokeObjectURL(url);
+    // Remover o link com segurança usando setTimeout para evitar race conditions
+    setTimeout(() => {
+      try {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+      } catch (error) {
+        console.warn("Erro ao remover link de download:", error);
+      }
+      URL.revokeObjectURL(url);
+    }, 100);
   };
 
   if (isError) {
