@@ -4,7 +4,9 @@ import { trpc } from '@/lib/trpc';
 
 export function AcoesNova() {
   const [, navigate] = useLocation();
-  const searchString = useSearch(); // Pega os parametros da URL (ex: ?pdiId=1)
+  const searchString = useSearch();
+  
+  const [isManual, setIsManual] = useState(false);
 
   const [formData, setFormData] = useState({
     pdiId: '',
@@ -33,7 +35,6 @@ export function AcoesNova() {
   // Mutations
   const createMutation = trpc.actions.create.useMutation({
     onSuccess: () => {
-      // Volta para a lista ou para o PDI anterior
       setTimeout(() => navigate('/acoes'), 300);
     },
     onError: (error) => {
@@ -51,7 +52,13 @@ export function AcoesNova() {
     const newErrors: Record<string, string> = {};
     
     if (!formData.pdiId) newErrors.pdiId = 'PDI é obrigatório';
-    if (!formData.macroId) newErrors.macroId = 'Competência (Macro) é obrigatória';
+    
+    if (isManual) {
+      if (!formData.microcompetencia.trim()) newErrors.microcompetencia = 'Digite o nome da competência';
+    } else {
+      if (!formData.macroId) newErrors.macroId = 'Selecione uma competência da lista';
+    }
+
     if (!formData.titulo.trim()) newErrors.titulo = 'Título é obrigatório';
     if (!formData.prazo) newErrors.prazo = 'Prazo é obrigatório';
     
@@ -61,25 +68,43 @@ export function AcoesNova() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 1. Validação dos campos visuais
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
-    // Prepara o payload
-    const pdiId = parseInt(formData.pdiId, 10);
-    const macroId = parseInt(formData.macroId, 10);
+    // 2. Conversão segura dos IDs
+    const pdiIdNumerico = Number(formData.pdiId);
+    
+    // Se for manual, mandamos undefined (o backend precisa aceitar opcional). 
+    // Se for seleção, convertemos o ID escolhido.
+    const macroIdNumerico = isManual ? undefined : Number(formData.macroId);
 
-    if (isNaN(pdiId) || isNaN(macroId)) {
-      setErrors({ submit: 'Erro: IDs inválidos.' });
+    // 3. Verificação de segurança final antes de enviar
+    if (!pdiIdNumerico || isNaN(pdiIdNumerico)) {
+      setErrors({ submit: 'Erro: PDI inválido ou não selecionado.' });
       return;
     }
 
+    if (!isManual && (!macroIdNumerico || isNaN(macroIdNumerico))) {
+      setErrors({ submit: 'Erro: Competência inválida.' });
+      return;
+    }
+
+    // 4. Envio (Console log para você ver o que está indo)
+    console.log("Enviando dados:", {
+        pdiId: pdiIdNumerico,
+        macroId: macroIdNumerico,
+        microcompetencia: isManual ? formData.microcompetencia : undefined,
+        titulo: formData.titulo
+    });
+
     createMutation.mutate({
-      pdiId,
-      macroId,
-      microcompetencia: formData.microcompetencia || undefined,
+      pdiId: pdiIdNumerico,
+      macroId: macroIdNumerico,
+      microcompetencia: isManual ? formData.microcompetencia : undefined,
       titulo: formData.titulo,
       descricao: formData.descricao,
       prazo: new Date(formData.prazo),
@@ -96,7 +121,7 @@ export function AcoesNova() {
 
         <form onSubmit={handleSubmit} style={{ backgroundColor: 'white', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* PDI - Agora tenta pegar da URL */}
+          {/* PDI */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label htmlFor="pdiId" style={{ fontWeight: '500' }}>PDI Vinculado *</label>
             <select
@@ -116,38 +141,53 @@ export function AcoesNova() {
             {errors.pdiId && <span style={{ color: 'red', fontSize: '12px' }}>{errors.pdiId}</span>}
           </div>
 
-          {/* Competência Macro (Obrigatória) */}
+          {/* Competência - Modo Seleção ou Manual */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label htmlFor="macroId" style={{ fontWeight: '500' }}>Competência a desenvolver (Macro) *</label>
-            <select
-              id="macroId"
-              name="macroId"
-              value={formData.macroId}
-              onChange={handleChange}
-              style={{ width: '100%', padding: '8px 12px', border: errors.macroId ? '2px solid red' : '1px solid #ccc', borderRadius: '4px' }}
-            >
-              <option value="">Selecione uma competência...</option>
-              {macros.map((macro: any) => (
-                <option key={macro.id} value={String(macro.id)}>
-                  {macro.nome}
-                </option>
-              ))}
-            </select>
-            {errors.macroId && <span style={{ color: 'red', fontSize: '12px' }}>{errors.macroId}</span>}
-          </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label style={{ fontWeight: '500' }}>Competência a desenvolver *</label>
+              <label style={{ fontSize: '13px', color: '#007bff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <input 
+                  type="checkbox" 
+                  checked={isManual} 
+                  onChange={(e) => setIsManual(e.target.checked)} 
+                />
+                Digitar manualmente
+              </label>
+            </div>
 
-          {/* Competência Micro (Opcional) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label htmlFor="microcompetencia" style={{ fontWeight: '500' }}>Competência específica (Micro)</label>
-            <input
-              id="microcompetencia"
-              name="microcompetencia"
-              type="text"
-              placeholder="Ex: Liderança Técnica, Comunicação Assertiva... (opcional)"
-              value={formData.microcompetencia}
-              onChange={handleChange}
-              style={{ width: '100%', padding: '8px 12px', border: '1px solid #ccc', borderRadius: '4px' }}
-            />
+            {!isManual ? (
+              // MODO SELEÇÃO
+              <select
+                id="macroId"
+                name="macroId"
+                value={formData.macroId}
+                onChange={handleChange}
+                style={{ width: '100%', padding: '8px 12px', border: errors.macroId ? '2px solid red' : '1px solid #ccc', borderRadius: '4px' }}
+              >
+                <option value="">Selecione da lista...</option>
+                {macros.map((macro: any) => (
+                  <option key={macro.id} value={String(macro.id)}>
+                    {macro.nome}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              // MODO MANUAL
+              <input
+                type="text"
+                name="microcompetencia"
+                placeholder="Ex: Liderança Técnica, Comunicação Assertiva..."
+                value={formData.microcompetencia}
+                onChange={handleChange}
+                style={{ width: '100%', padding: '8px 12px', border: errors.microcompetencia ? '2px solid red' : '1px solid #ccc', borderRadius: '4px' }}
+              />
+            )}
+            
+            {(errors.macroId || errors.microcompetencia) && (
+              <span style={{ color: 'red', fontSize: '12px' }}>
+                {errors.macroId || errors.microcompetencia}
+              </span>
+            )}
           </div>
 
           {/* Título */}

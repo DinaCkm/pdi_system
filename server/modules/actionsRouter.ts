@@ -44,7 +44,7 @@ export const actionsRouter = router({
   create: protectedProcedure
     .input(z.object({
       pdiId: z.number(),
-      macroId: z.number(),
+      macroId: z.number().optional(),
       microcompetencia: z.string().optional(),
       titulo: z.string().min(3, "Título é obrigatório"),
       descricao: z.string().optional(),
@@ -57,10 +57,13 @@ export const actionsRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'PDI não encontrado' });
       }
 
+      // Se macroId não foi fornecido, usar um ID padrão (ex: 1 para "Outros")
+      const macroIdFinal = input.macroId || 1;
+
       // Criar ação
       await db.createAction({
         pdiId: input.pdiId,
-        macroId: input.macroId,
+        macroId: macroIdFinal,
         microcompetencia: input.microcompetencia || null,
         titulo: input.titulo,
         descricao: input.descricao || '',
