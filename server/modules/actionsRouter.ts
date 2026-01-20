@@ -45,6 +45,7 @@ export const actionsRouter = router({
     .input(z.object({
       pdiId: z.number(),
       macroId: z.number(),
+      microcompetencia: z.string().optional(),
       titulo: z.string().min(3, "Título é obrigatório"),
       descricao: z.string().optional(),
       prazo: z.coerce.date(),
@@ -60,6 +61,7 @@ export const actionsRouter = router({
       await db.createAction({
         pdiId: input.pdiId,
         macroId: input.macroId,
+        microcompetencia: input.microcompetencia || null,
         titulo: input.titulo,
         descricao: input.descricao || '',
         prazo: input.prazo,

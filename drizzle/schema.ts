@@ -18,6 +18,7 @@ export const actions = mysqlTable("actions", {
 	id: int().autoincrement().notNull(),
 	pdiId: int().notNull(),
 	macroId: int().notNull(),
+	microcompetencia: varchar({ length: 255 }),
 	titulo: varchar({ length: 255 }).notNull(),
 	descricao: text(),
 	prazo: date("prazo").notNull(),
