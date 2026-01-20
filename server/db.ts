@@ -345,7 +345,9 @@ export async function createPDI(data: {
   colaboradorId: number;
   cicloId: number;
   titulo: string;
+  objetivoGeral?: string;
   descricao?: string;
+  createdBy: number;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -354,8 +356,10 @@ export async function createPDI(data: {
     colaboradorId: data.colaboradorId,
     cicloId: data.cicloId,
     titulo: data.titulo,
+    objetivoGeral: data.objetivoGeral || "",
     descricao: data.descricao || "",
     status: "rascunho",
+    createdBy: data.createdBy,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
