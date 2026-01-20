@@ -31,6 +31,7 @@ import Auditoria from "./pages/Auditoria";
 import { Dashboard } from "./pages/Dashboard";
 import { AcoesNova } from "./pages/AcoesNova";
 import AcoesEditar from "./pages/AcoesEditar";
+import AcoesDetalhes from "./pages/AcoesDetalhes";
 
 function Router() {
   return (
@@ -120,6 +121,14 @@ function Router() {
         <DashboardLayout>
           <AcoesNova />
         </DashboardLayout>
+      </Route>
+      
+      <Route path={"/acoes/:id"}>
+        {(params) => (
+          <DashboardLayout>
+            <AcoesDetalhes key={params.id} />
+          </DashboardLayout>
+        )}
       </Route>
       
       <Route path={"/acoes/editar/:id"}>

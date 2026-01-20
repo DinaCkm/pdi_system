@@ -1,235 +1,350 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Plus, Edit, Trash2, Eye, History } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Eye, History, Building, Target, Calendar, Filter, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { HistoryModal } from "@/components/HistoryModal";
 
-
 export default function Acoes() {
   const [, navigate] = useLocation();
-  const [searchTerm, setSearchTerm] = useState("");
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [historyActionId, setHistoryActionId] = useState<number | null>(null);
 
-  const { data: acoes, isLoading, refetch } = trpc.actions.list.useQuery();
+  // --- ESTADOS DOS FILTROS ---
+  const [filtroDepartamento, setFiltroDepartamento] = useState("");
+  const [filtroColaborador, setFiltroColaborador] = useState("");
+  const [filtroPDI, setFiltroPDI] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // 1. BUSCA TURBO (LIMIT 1000)
+  const { data: acoes = [], isLoading, refetch } = trpc.actions.list.useQuery({ limit: 1000 });
+  
   const deleteMutation = trpc.actions.delete.useMutation({
     onSuccess: () => {
-      toast.success("Ação deletada com sucesso");
+      toast.success("Ação removida.");
       refetch();
     },
-    onError: (error) => {
-      toast.error(error.message || "Erro ao deletar ação");
-    },
+    onError: (error) => toast.error(error.message || "Erro ao deletar"),
   });
 
   const handleDelete = (id: number) => {
-    if (confirm("Tem certeza que deseja deletar esta ação?")) {
+    if (confirm("Tem certeza que deseja excluir esta ação?")) {
       deleteMutation.mutate({ id });
     }
   };
 
-  const filteredAcoes = acoes?.filter((acao: any) =>
-    acao.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    acao.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  // 2. FUNÇÕES DE LEITURA DE DADOS
+  const getDeptName = (acao: any) => {
+    return acao.pdi?.departamentoNome 
+        || acao.departamentoNome 
+        || acao.pdi?.user?.department 
+        || "Departamento não informado";
+  };
+
+  const getColabName = (acao: any) => {
+    return acao.pdi?.colaboradorNome 
+        || acao.colaboradorNome 
+        || acao.pdi?.user?.name 
+        || "Colaborador não identificado";
+  };
+
+  const getPdiTitle = (acao: any) => {
+    return acao.pdi?.titulo || acao.pdiTitulo || "PDI Geral";
+  };
+
+  // 3. OPÇÕES DE FILTRO
+  const { departamentosUnicos, colaboradoresUnicos, pdisUnicos } = useMemo(() => {
+    const deptos = new Set<string>();
+    const colabs = new Set<string>();
+    const pdis = new Set<string>();
+
+    acoes.forEach((acao: any) => {
+      const d = getDeptName(acao);
+      const c = getColabName(acao);
+      const p = getPdiTitle(acao);
+
+      if (d && d !== "Departamento não informado") deptos.add(d);
+      if (c && c !== "Colaborador não identificado") colabs.add(c);
+      if (p) pdis.add(p);
+    });
+
+    return {
+      departamentosUnicos: Array.from(deptos).sort(),
+      colaboradoresUnicos: Array.from(colabs).sort(),
+      pdisUnicos: Array.from(pdis).sort(),
+    };
+  }, [acoes]);
+
+  // 4. LÓGICA DE FILTRAGEM
+  const filteredAcoes = acoes.filter((acao: any) => {
+    const dept = getDeptName(acao);
+    const colab = getColabName(acao);
+    const pdi = getPdiTitle(acao);
+    
+    const textoGeral = (acao.titulo + (acao.descricao || "") + colab).toLowerCase();
+    const termoBusca = searchTerm.toLowerCase();
+
+    if (filtroDepartamento && dept !== filtroDepartamento) return false;
+    if (filtroColaborador && colab !== filtroColaborador) return false;
+    if (filtroPDI && pdi !== filtroPDI) return false;
+    if (searchTerm && !textoGeral.includes(termoBusca)) return false;
+
+    return true;
+  });
+
+  const clearFilters = () => {
+    setFiltroDepartamento("");
+    setFiltroColaborador("");
+    setFiltroPDI("");
+    setSearchTerm("");
+  };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <div style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div style={{ padding: "24px", maxWidth: "1280px", margin: "0 auto", backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
+      
+      {/* CABEÇALHO */}
+      <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
         <div>
-          <h1 style={{ margin: "0 0 5px 0", fontSize: "28px", fontWeight: "bold" }}>Ações</h1>
-          <p style={{ margin: "0", color: "#666", fontSize: "14px" }}>Gerencie as ações dos PDIs</p>
+          <h1 style={{ margin: "0", fontSize: "28px", fontWeight: "800", color: "#111827" }}>
+            Painel de Ações
+          </h1>
+          <p style={{ margin: "4px 0 0 0", color: "#6b7280", fontSize: "14px" }}>
+            Total: {acoes.length} | Exibindo: {filteredAcoes.length}
+          </p>
         </div>
         <Button
           onClick={() => navigate("/acoes/nova")}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            backgroundColor: "#0066cc",
-            color: "white",
-            padding: "10px 16px",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-            fontSize: "14px",
-            fontWeight: "500",
-          }}
+          style={{ backgroundColor: "#2563eb", color: "white", display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px" }}
         >
-          <Plus size={18} />
-          Nova Ação
+          <Plus size={20} /> Nova Ação
         </Button>
       </div>
 
-      {/* Barra de Busca */}
-      <div style={{ marginBottom: "20px" }}>
-        <Input
-          type="text"
-          placeholder="Buscar ações..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            padding: "10px",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-            fontSize: "14px",
-            width: "100%",
-            boxSizing: "border-box",
-          }}
-        />
+      {/* --- FILTROS --- */}
+      <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "12px", border: "1px solid #e5e7eb", marginBottom: "24px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+        
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", color: "#374151", fontWeight: "600", fontSize: "14px" }}>
+          <Filter size={16} /> Filtros de Segmentação
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+          {/* Depto */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+            <label style={{ fontSize: "11px", fontWeight: "700", color: "#6b7280", textTransform: "uppercase" }}>1. Departamento</label>
+            <select
+              value={filtroDepartamento}
+              onChange={(e) => setFiltroDepartamento(e.target.value)}
+              style={{ padding: "10px", borderRadius: "6px", border: "1px solid #d1d5db", backgroundColor: filtroDepartamento ? "#eff6ff" : "white", width: "100%" }}
+            >
+              <option value="">Todos</option>
+              {departamentosUnicos.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+            </select>
+          </div>
+
+          {/* Colaborador */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+            <label style={{ fontSize: "11px", fontWeight: "700", color: "#6b7280", textTransform: "uppercase" }}>2. Colaborador</label>
+            <select
+              value={filtroColaborador}
+              onChange={(e) => setFiltroColaborador(e.target.value)}
+              style={{ padding: "10px", borderRadius: "6px", border: "1px solid #d1d5db", backgroundColor: filtroColaborador ? "#eff6ff" : "white", width: "100%" }}
+            >
+              <option value="">Todos</option>
+              {colaboradoresUnicos.map(colab => <option key={colab} value={colab}>{colab}</option>)}
+            </select>
+          </div>
+
+          {/* PDI */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+            <label style={{ fontSize: "11px", fontWeight: "700", color: "#6b7280", textTransform: "uppercase" }}>3. PDI Origem</label>
+            <select
+              value={filtroPDI}
+              onChange={(e) => setFiltroPDI(e.target.value)}
+              style={{ padding: "10px", borderRadius: "6px", border: "1px solid #d1d5db", backgroundColor: filtroPDI ? "#eff6ff" : "white", width: "100%" }}
+            >
+              <option value="">Todos</option>
+              {pdisUnicos.map(pdi => <option key={pdi} value={pdi}>{pdi}</option>)}
+            </select>
+          </div>
+
+          {/* Busca */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+            <label style={{ fontSize: "11px", fontWeight: "700", color: "#6b7280", textTransform: "uppercase" }}>Busca Rápida</label>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <Input
+                placeholder="Digite para buscar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              {(filtroDepartamento || filtroColaborador || filtroPDI || searchTerm) && (
+                <Button variant="ghost" onClick={clearFilters} style={{ padding: "0 10px", color: "#ef4444" }} title="Limpar Filtros">
+                  <X size={18} />
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Lista de Ações */}
+      {/* LISTAGEM */}
       {isLoading ? (
-        <div style={{ textAlign: "center", padding: "40px" }}>
-          <Loader2 size={32} style={{ animation: "spin 1s linear infinite", margin: "0 auto" }} />
-          <p style={{ marginTop: "10px", color: "#666" }}>Carregando ações...</p>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "60px", color: "#6b7280" }}>
+          <Loader2 size={40} className="animate-spin text-blue-600" />
+          <p style={{ marginTop: "10px" }}>Carregando dados...</p>
         </div>
       ) : filteredAcoes.length === 0 ? (
-        <Card style={{ padding: "40px", textAlign: "center" }}>
-          <p style={{ color: "#666", marginBottom: "20px" }}>Nenhuma ação encontrada</p>
-          <Button
-            onClick={() => navigate("/acoes/nova")}
-            style={{
-              backgroundColor: "#0066cc",
-              color: "white",
-              padding: "10px 16px",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Criar primeira ação
+        <Card style={{ padding: "60px", textAlign: "center", color: "#6b7280", border: "1px dashed #e5e7eb", backgroundColor: "transparent" }}>
+          <p style={{ fontSize: "16px" }}>Nenhuma ação encontrada com estes filtros.</p>
+          <Button variant="outline" onClick={clearFilters} style={{ marginTop: "10px" }}>
+            Limpar Filtros
           </Button>
         </Card>
       ) : (
-        <div style={{ display: "grid", gap: "16px" }}>
-          {filteredAcoes.map((acao: any) => (
-            <Card key={acao.id} style={{ padding: "16px" }}>
-              <CardHeader style={{ paddingBottom: "12px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                  <div style={{ flex: 1 }}>
-                    <CardTitle style={{ margin: "0 0 4px 0", fontSize: "16px" }}>
-                      {acao.titulo}
-                    </CardTitle>
-                    <CardDescription style={{ margin: "0", fontSize: "13px" }}>
-                      {acao.descricao}
-                    </CardDescription>
-                  </div>
-                  <Badge style={{ marginLeft: "12px" }}>
-                    {acao.status || "Pendente"}
-                  </Badge>
-                </div>
-              </CardHeader>
+        <div style={{ display: "grid", gap: "20px" }}>
+          {filteredAcoes.map((acao: any) => {
+            const nomeColaborador = getColabName(acao);
+            const nomeDepartamento = getDeptName(acao);
+            const tituloPdi = getPdiTitle(acao);
+            const competencia = acao.microcompetencia || acao.macro?.nome || acao.macroNome || "Geral";
+            const dataFormatada = acao.prazo ? new Date(acao.prazo).toLocaleDateString('pt-BR') : "--/--/----";
 
-              <CardContent style={{ paddingTop: "12px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px", marginBottom: "16px", fontSize: "13px" }}>
-                  <div>
-                    <span style={{ color: "#666", fontWeight: "500" }}>PDI:</span>
-                    <p style={{ margin: "4px 0 0 0" }}>{acao.pdiTitulo}</p>
-                  </div>
-                  <div>
-                    <span style={{ color: "#666", fontWeight: "500" }}>Competência:</span>
-                    <p style={{ margin: "4px 0 0 0" }}>{acao.microcompetenciaNome}</p>
-                  </div>
-                  <div>
-                    <span style={{ color: "#666", fontWeight: "500" }}>Prazo:</span>
-                    <p style={{ margin: "4px 0 0 0" }}>
-                      {acao.prazo ? new Date(acao.prazo).toLocaleDateString("pt-BR") : "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <span style={{ color: "#666", fontWeight: "500" }}>Colaborador:</span>
-                    <p style={{ margin: "4px 0 0 0" }}>{acao.colaboradorNome || "-"}</p>
-                  </div>
-                  <div>
-                    <span style={{ color: "#666", fontWeight: "500" }}>Ciclo:</span>
-                    <p style={{ margin: "4px 0 0 0" }}>{acao.cicloNome || "-"}</p>
-                  </div>
-                </div>
+            return (
+              <Card key={acao.id} style={{ border: "1px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  
+                  {/* --- HEADER COM RÓTULOS CLAROS --- */}
+                  <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6", backgroundColor: "white" }}>
+                    
+                    {/* Linha do Título */}
+                    <div style={{ marginBottom: "8px" }}>
+                        <span style={{ fontSize: "11px", fontWeight: "700", color: "#9ca3af", textTransform: "uppercase", display: "block", marginBottom: "2px" }}>
+                            Título da Ação:
+                        </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#1f2937", margin: 0 }}>
+                            {acao.titulo}
+                            </h3>
+                            <Badge variant={acao.status === "concluida" ? "default" : "secondary"}>
+                            {acao.status === "concluida" ? "Concluída" : "Em Andamento"}
+                            </Badge>
+                        </div>
+                    </div>
 
-                {/* Botões de Ação */}
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setHistoryActionId(acao.id);
-                      setHistoryModalOpen(true);
-                    }}                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      padding: "6px 12px",
-                      fontSize: "12px",
-                    }}
-                  >
-                    <Eye size={14} />
-                    Visualizar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate(`/acoes/editar/${acao.id}`)}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      padding: "6px 12px",
-                      fontSize: "12px",
-                    }}
-                  >
-                    <Edit size={14} />
-                    Editar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setHistoryActionId(acao.id);
-                      setHistoryModalOpen(true);
-                    }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      padding: "6px 12px",
-                      fontSize: "12px",
-                    }}
-                  >
-                    <History size={14} />
-                    Histórico
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(acao.id)}
-                    disabled={deleteMutation.isPending}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      padding: "6px 12px",
-                      fontSize: "12px",
-                      color: "#d32f2f",
-                    }}
-                  >
-                    <Trash2 size={14} />
-                    Deletar
-                  </Button>
+                    {/* Linha da Descrição (CORTADA EM 2 LINHAS) */}
+                    <div>
+                        <span style={{ fontSize: "11px", fontWeight: "700", color: "#9ca3af", textTransform: "uppercase", display: "block", marginBottom: "2px" }}>
+                            Descritivo:
+                        </span>
+                        <p style={{ 
+                            margin: 0, 
+                            fontSize: "14px", 
+                            color: "#4b5563",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis"
+                        }}>
+                            {acao.descricao || "Sem detalhes adicionais."}
+                        </p>
+                    </div>
+
+                  </div>
+
+                  {/* DETALHES TÉCNICOS */}
+                  <div style={{ padding: "20px", backgroundColor: "#f9fafb" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "20px" }}>
+                      
+                      {/* Depto e Colab */}
+                      <div style={{ display: "flex", gap: "10px" }}>
+                        <div style={{ padding: "8px", backgroundColor: "#dbeafe", borderRadius: "8px", color: "#1e40af", height: "fit-content" }}>
+                          <Building size={16} />
+                        </div>
+                        <div>
+                          <span style={{ fontSize: "11px", color: "#6b7280", fontWeight: "700", textTransform: "uppercase" }}>Departamento / Colaborador</span>
+                          <div style={{ fontSize: "14px", fontWeight: "700", color: "#111827" }}>{nomeDepartamento}</div>
+                          <div style={{ fontSize: "13px", color: "#4b5563" }}>{nomeColaborador}</div>
+                        </div>
+                      </div>
+
+                      {/* PDI Info */}
+                      <div style={{ display: "flex", gap: "10px" }}>
+                        <div style={{ padding: "8px", backgroundColor: "#d1fae5", borderRadius: "8px", color: "#065f46", height: "fit-content" }}>
+                          <Target size={16} />
+                        </div>
+                        <div>
+                          <span style={{ fontSize: "11px", color: "#6b7280", fontWeight: "700", textTransform: "uppercase" }}>Origem da Ação</span>
+                          <div style={{ fontSize: "14px", fontWeight: "600", color: "#111827" }}>{tituloPdi}</div>
+                          <div style={{ fontSize: "13px", color: "#4b5563" }}>Foco: {competencia}</div>
+                        </div>
+                      </div>
+
+                      {/* Prazo */}
+                      <div style={{ display: "flex", gap: "10px" }}>
+                        <div style={{ padding: "8px", backgroundColor: "#ffedd5", borderRadius: "8px", color: "#9a3412", height: "fit-content" }}>
+                          <Calendar size={16} />
+                        </div>
+                        <div>
+                          <span style={{ fontSize: "11px", color: "#6b7280", fontWeight: "700", textTransform: "uppercase" }}>Prazo</span>
+                          <div style={{ fontSize: "14px", fontWeight: "600", color: "#111827" }}>{dataFormatada}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botões - CORRIGIDO O VISUALIZAR */}
+                    <div style={{ display: "flex", gap: "12px", borderTop: "1px solid #e5e7eb", paddingTop: "16px" }}>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => navigate(`/acoes/${acao.id}`)}
+                        style={{ flex: 1, backgroundColor: "white" }}
+                      >
+                        <Eye size={16} className="mr-2" /> Visualizar
+                      </Button>
+
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => navigate(`/acoes/editar/${acao.id}`)} 
+                        style={{ flex: 1, backgroundColor: "white" }}
+                      >
+                        <Edit size={16} className="mr-2" /> Editar
+                      </Button>
+
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => { 
+                            setHistoryActionId(acao.id); 
+                            setHistoryModalOpen(true); 
+                        }} 
+                      >
+                        <History size={16} />
+                      </Button>
+
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleDelete(acao.id)} 
+                        disabled={deleteMutation.isPending} 
+                        style={{ color: "#ef4444" }}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 
-      {/* History Modal */}
       {historyActionId && (
         <HistoryModal
           isOpen={historyModalOpen}
