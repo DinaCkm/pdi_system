@@ -13,6 +13,7 @@ import { HistoryModal } from "@/components/HistoryModal";
 export default function Acoes() {
   const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [historyActionId, setHistoryActionId] = useState<number | null>(null);
 
   const { data: acoes, isLoading, refetch } = trpc.actions.list.useQuery();
@@ -157,8 +158,10 @@ export default function Acoes() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setSelectedAcaoId(acao.id)}
-                    style={{
+                    onClick={() => {
+                      setHistoryActionId(acao.id);
+                      setHistoryModalOpen(true);
+                    }}                    style={{
                       display: "flex",
                       alignItems: "center",
                       gap: "4px",
@@ -227,10 +230,16 @@ export default function Acoes() {
       )}
 
       {/* History Modal */}
-      <HistoryModal
-        actionId={historyActionId}
-        onClose={() => setHistoryActionId(null)}
-      />
+      {historyActionId && (
+        <HistoryModal
+          isOpen={historyModalOpen}
+          actionId={historyActionId}
+          onClose={() => {
+            setHistoryModalOpen(false);
+            setHistoryActionId(null);
+          }}
+        />
+      )}
     </div>
   );
 }
