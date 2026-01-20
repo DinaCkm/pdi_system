@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
-import { DirecionamentoEstrategico } from "@/components/DirecionamentoEstrategico";
+// import { DirecionamentoEstrategico } from "@/components/DirecionamentoEstrategico";
 import { DataTablePDIs } from "@/components/DataTablePDIs";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,6 +49,10 @@ export default function PDIs() {
       resetForm();
       // Recarregar lista de PDIs
       utils.pdis.list.invalidate();
+      // Recarregar lista Meus PDIs se existir
+      if (utils.pdis.myPDIs) {
+        utils.pdis.myPDIs.invalidate();
+      }
       // Fechar modal apos delay para evitar conflito de renderizacao
       setTimeout(() => setShowModal(false), 300);
     },
@@ -65,6 +69,10 @@ export default function PDIs() {
       resetForm();
       // Recarregar lista de PDIs
       utils.pdis.list.invalidate();
+      // Recarregar lista Meus PDIs se existir
+      if (utils.pdis.myPDIs) {
+        utils.pdis.myPDIs.invalidate();
+      }
       // Fechar modal apos delay para evitar conflito de renderizacao
       setTimeout(() => setShowModal(false), 300);
     },
@@ -170,12 +178,12 @@ export default function PDIs() {
           </Button>
         </div>
 
-        {/* Widget Direcionamento Estratégico (apenas para admin) */}
-        {user?.role === "admin" && (
+        {/* Widget Direcionamento Estratégico (apenas para admin) - DESABILITADO TEMPORARIAMENTE */}
+        {/* {user?.role === "admin" && (
           <div>
             <DirecionamentoEstrategico />
           </div>
-        )}
+        )} */}
 
         {/* DataTable de PDIs */}
         <div>

@@ -558,7 +558,13 @@ export async function getAllCiclos() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.select().from(ciclos).orderBy(ciclos.dataInicio);
+  // Usar groupBy para garantir ciclos únicos (remover duplicidade)
+  const result = await db
+    .select()
+    .from(ciclos)
+    .groupBy(ciclos.nome)
+    .orderBy(ciclos.dataInicio);
+
   return result;
 }
 
