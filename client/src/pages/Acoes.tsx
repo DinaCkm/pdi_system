@@ -144,6 +144,22 @@ export default function Acoes() {
                       {acao.prazo ? new Date(acao.prazo).toLocaleDateString("pt-BR") : "-"}
                     </p>
                   </div>
+                  <div>
+                    <span style={{ color: "#666", fontWeight: "500" }}>Colaborador:</span>
+                    <p style={{ margin: "4px 0 0 0" }}>{acao.colaboradorNome || "-"}</p>
+                  </div>
+                  <div>
+                    <span style={{ color: "#666", fontWeight: "500" }}>Lider:</span>
+                    <p style={{ margin: "4px 0 0 0" }}>{acao.liderNome || "-"}</p>
+                  </div>
+                  <div>
+                    <span style={{ color: "#666", fontWeight: "500" }}>Departamento:</span>
+                    <p style={{ margin: "4px 0 0 0" }}>{acao.departamentoNome || "-"}</p>
+                  </div>
+                  <div>
+                    <span style={{ color: "#666", fontWeight: "500" }}>Ciclo:</span>
+                    <p style={{ margin: "4px 0 0 0" }}>{acao.cicloNome || "-"}</p>
+                  </div>
                 </div>
 
                 {/* Botões de Ação */}
