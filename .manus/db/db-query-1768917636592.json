@@ -1,0 +1,24 @@
+{
+  "query": "SELECT p.id, p.colaboradorId, p.titulo, u.name, u.email FROM pdis p LEFT JOIN users u ON p.colaboradorId = u.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT p.id, p.colaboradorId, p.titulo, u.name, u.email FROM pdis p LEFT JOIN users u ON p.colaboradorId = u.id;",
+  "rows": [
+    {
+      "id": "480001",
+      "colaboradorId": "720001",
+      "titulo": "Desenvolvimento 2026",
+      "name": "Usuarioteste1",
+      "email": "usuarioteste1@teste.com"
+    },
+    {
+      "id": "510001",
+      "colaboradorId": "720002",
+      "titulo": "Desenvolvimento 2026",
+      "name": "usuarioteste2",
+      "email": "usuarioteste2@teste.com"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcolaboradorId\ttitulo\tname\temail\n480001\t720001\tDesenvolvimento 2026\tUsuarioteste1\tusuarioteste1@teste.com\n510001\t720002\tDesenvolvimento 2026\tusuarioteste2\tusuarioteste2@teste.com\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

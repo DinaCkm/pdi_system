@@ -738,3 +738,74 @@ export async function importBulkUsers(users: Array<{
 
   return results;
 }
+
+// ============= FUNÇÕES DE PDI FALTANDO =============
+
+export async function getPDIsByColaboradorId(colaboradorId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select()
+    .from(pdis)
+    .where(eq(pdis.colaboradorId, colaboradorId))
+    .orderBy(pdis.createdAt);
+
+  return result;
+}
+
+export async function getPDIsByCicloId(cicloId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select()
+    .from(pdis)
+    .where(eq(pdis.cicloId, cicloId))
+    .orderBy(pdis.createdAt);
+
+  return result;
+}
+
+// ============= FUNÇÕES DE USUÁRIO FALTANDO =============
+
+export async function getUsersByRole(role: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.role, role))
+    .orderBy(users.name);
+
+  return result;
+}
+
+// ============= FUNÇÕES DE EVIDÊNCIAS FALTANDO =============
+
+export async function getEvidencesByActionId(actionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select()
+    .from(evidences)
+    .where(eq(evidences.actionId, actionId))
+    .orderBy(evidences.createdAt);
+
+  return result;
+}
+
+export async function getPendingEvidences() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select()
+    .from(evidences)
+    .where(eq(evidences.status, 'pendente'))
+    .orderBy(evidences.createdAt);
+
+  return result;
+}
