@@ -213,7 +213,7 @@ export default function PDIs() {
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecione o Ciclo" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent key={ciclos.length}>
                     {/* ARRAY SEGURO: Garante que nunca seja null */}
                     {(ciclos || []).map((ciclo, index) => (
                       <SelectItem 
