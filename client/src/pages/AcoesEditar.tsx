@@ -22,9 +22,14 @@ export default function AcoesEditar() {
   const { data: macros = [] } = trpc.competencias.listAllMacros.useQuery();
   const { data: historico = [] } = trpc.actions.getHistory.useQuery({ actionId: acaoId }, { enabled: !!acaoId });
 
+  // Utils para invalidar cache
+  const utils = trpc.useUtils();
+
   // Mutations
   const updateMutation = trpc.actions.update.useMutation({
     onSuccess: () => {
+      // Invalidar a lista para recarregar
+      utils.actions.list.invalidate();
       setTimeout(() => navigate('/acoes'), 300);
     },
     onError: (error) => {
@@ -77,17 +82,22 @@ export default function AcoesEditar() {
     });
   };
 
-  // Função para formatar datas
-  const formatarData = (valor: string | null | undefined) => {
+  // Funcao para formatar valores do historico
+  const formatarValor = (valor: string | null | undefined, campo?: string) => {
     if (!valor) return '-';
-    // Se já vier formatado (DD/MM/AAAA), retorna direto
-    if (valor.includes('/')) return valor;
-    // Se vier feio (2026-02-06T00...), formata
-    try {
-      return new Date(valor).toLocaleDateString('pt-BR');
-    } catch {
-      return valor;
+    
+    // Se for um campo de data (prazo), tenta formatar como data
+    if (campo === 'prazo' || campo === 'Prazo') {
+      try {
+        const date = new Date(valor);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleDateString('pt-BR');
+        }
+      } catch {}
     }
+    
+    // Para outros campos, retorna o valor como esta
+    return valor;
   };
 
   if (!acao) {
@@ -280,11 +290,11 @@ export default function AcoesEditar() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
                     <span style={{ color: '#d32f2f', backgroundColor: '#ffebee', padding: '4px 8px', borderRadius: '4px' }}>
-                      {formatarData(item.valorAnterior)}
+                      {formatarValor(item.valorAnterior, item.campo)}
                     </span>
                     <span style={{ color: '#666' }}>→</span>
                     <span style={{ color: '#388e3c', backgroundColor: '#e8f5e9', padding: '4px 8px', borderRadius: '4px' }}>
-                      {formatarData(item.valorNovo)}
+                      {formatarValor(item.valorNovo, item.campo)}
                     </span>
                   </div>
                   {item.alteradoPor && (

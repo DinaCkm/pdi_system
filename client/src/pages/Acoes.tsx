@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,12 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Plus, Edit, Trash2, Eye, History } from "lucide-react";
 import { useLocation } from "wouter";
+import { HistoryModal } from "@/components/HistoryModal";
 
 
 export default function Acoes() {
   const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAcaoId, setSelectedAcaoId] = useState<number | null>(null);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [historyActionId, setHistoryActionId] = useState<number | null>(null);
 
   const { data: acoes, isLoading, refetch } = trpc.actions.list.useQuery();
   const deleteMutation = trpc.actions.delete.useMutation({
@@ -178,7 +181,10 @@ export default function Acoes() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate(`/acoes/editar/${acao.id}`)}
+                    onClick={() => {
+                      setHistoryActionId(acao.id);
+                      setHistoryModalOpen(true);
+                    }}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -214,6 +220,17 @@ export default function Acoes() {
         </div>
       )}
 
+      {/* History Modal */}
+      {historyActionId && (
+        <HistoryModal
+          isOpen={historyModalOpen}
+          actionId={historyActionId}
+          onClose={() => {
+            setHistoryModalOpen(false);
+            setHistoryActionId(null);
+          }}
+        />
+      )}
     </div>
   );
 }
