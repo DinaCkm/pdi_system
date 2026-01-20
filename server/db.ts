@@ -120,13 +120,14 @@ export async function getAllActions() {
       macroId: actions.macroId,
       titulo: actions.titulo,
       descricao: actions.descricao,
+      microcompetencia: actions.microcompetencia,
       prazo: actions.prazo,
       status: actions.status,
       createdAt: actions.createdAt,
       updatedAt: actions.updatedAt,
       pdiTitulo: pdis.titulo,
+      colaboradorNome: pdis.colaboradorNome,
       macroNome: competenciasMacros.nome,
-      microcompetenciaNome: competenciasMacros.nome,
     })
     .from(actions)
     .leftJoin(pdis, eq(actions.pdiId, pdis.id))

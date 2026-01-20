@@ -135,7 +135,7 @@ export default function Acoes() {
                   </div>
                   <div>
                     <span style={{ color: "#666", fontWeight: "500" }}>Competência:</span>
-                    <p style={{ margin: "4px 0 0 0" }}>{acao.microcompetenciaNome}</p>
+                    <p style={{ margin: "4px 0 0 0" }}>{acao.microcompetencia || acao.macroNome || '-'}</p>
                   </div>
                   <div>
                     <span style={{ color: "#666", fontWeight: "500" }}>Prazo:</span>
@@ -147,10 +147,6 @@ export default function Acoes() {
                     <span style={{ color: "#666", fontWeight: "500" }}>Colaborador:</span>
                     <p style={{ margin: "4px 0 0 0" }}>{acao.colaboradorNome || "-"}</p>
                   </div>
-                  <div>
-                    <span style={{ color: "#666", fontWeight: "500" }}>Ciclo:</span>
-                    <p style={{ margin: "4px 0 0 0" }}>{acao.cicloNome || "-"}</p>
-                  </div>
                 </div>
 
                 {/* Botões de Ação */}
@@ -158,10 +154,8 @@ export default function Acoes() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setHistoryActionId(acao.id);
-                      setHistoryModalOpen(true);
-                    }}                    style={{
+                    onClick={() => navigate(`/acoes/editar/${acao.id}`)}
+                    style={{
                       display: "flex",
                       alignItems: "center",
                       gap: "4px",
