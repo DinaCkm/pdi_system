@@ -188,32 +188,21 @@ export default function PDIs() {
             </DialogHeader>
 
             <div className="space-y-4">
-              {/* Seletor de Ciclo - CORREÇÃO AQUI */}
+              {/* Seletor de Ciclo - HTML NATIVO */}
               <div className="space-y-2">
-                <Label htmlFor="ciclo">Ciclo Semestral *</Label>
-                {!ciclos || ciclos.length === 0 ? (
-                  <div className="p-2 border rounded text-gray-400 text-sm">Carregando ciclos...</div>
-                ) : (
-                  <Select
-                    value={selectedCiclo ? selectedCiclo.toString() : ""}
-                    onValueChange={setSelectedCiclo}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecione o Ciclo" />
-                    </SelectTrigger>
-                    {/* O SEGREDO: A key muda se o tamanho da lista mudar, forçando remontagem limpa */}
-                    <SelectContent key={ciclos.length}>
-                      {(ciclos || []).map((ciclo, idx) => (
-                        <SelectItem
-                          key={`ciclo-${ciclo.id}-${idx}`}
-                          value={ciclo.id.toString()}
-                        >
-                          {ciclo.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                <label className="text-sm font-medium block mb-1">Ciclo Semestral *</label>
+                <select
+                  className="w-full p-2 border rounded bg-white text-black"
+                  value={selectedCiclo}
+                  onChange={(e) => setSelectedCiclo(e.target.value)}
+                >
+                  <option value="">Selecione um ciclo</option>
+                  {ciclos?.map((ciclo) => (
+                    <option key={ciclo.id} value={ciclo.id.toString()}>
+                      {ciclo.nome}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Toggle: Individual vs Lote */}

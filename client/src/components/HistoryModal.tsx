@@ -14,23 +14,22 @@ export function HistoryModal({ isOpen, actionId, onClose }: HistoryModalProps) {
     { enabled: isOpen && !!actionId }
   );
 
-  // LÓGICA BLINDADA: Só formata se for REALMENTE data
+  // LÓGICA SIMPLES: Só formata se for Prazo
   const renderValor = (campo: string, valor: string | null) => {
-    if (!valor || valor === 'null' || valor === 'undefined') return <span className="text-gray-400 italic">(vazio)</span>;
-
-    // Se o campo for Prazo, tentamos formatar. Se der erro, devolvemos o texto original.
-    if (campo === 'Prazo') {
-       if (valor.includes('/')) return valor; // Já formatado
-       if (!valor.includes('-')) return valor; // Não parece ISO date
-       try {
-         return new Date(valor).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-       } catch {
-         return valor;
-       }
-    }
+    if (!valor) return "Vazio";
     
-    // Para Título, Descrição e Competência: NUNCA tente formatar data.
-    return valor;
+    // SE NÃO FOR O CAMPO PRAZO, NÃO MEXA! RETORNE O TEXTO!
+    if (campo !== 'Prazo') {
+      return valor;
+    }
+
+    // Só tenta formatar se for prazo
+    try {
+      if (valor.includes('/')) return valor; // Já formatado
+      return new Date(valor).toLocaleDateString('pt-BR');
+    } catch {
+      return valor; // Se der erro, mostra o texto original
+    }
   };
 
   return (

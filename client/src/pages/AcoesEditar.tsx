@@ -118,7 +118,7 @@ export default function AcoesEditar() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', padding: '24px' }}>
+    <div key={acaoId} style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', padding: '24px' }}>
       <div style={{ maxWidth: '640px', margin: '0 auto' }}>
         <div style={{ marginBottom: '32px' }}>
           <h1 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '8px' }}>Editar Ação</h1>
