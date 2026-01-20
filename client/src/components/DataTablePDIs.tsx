@@ -32,23 +32,22 @@ export function DataTablePDIs() {
   
   // Filtrar PDIs localmente
   const pdis = pdisList.filter((pdi) => {
-    // Filtro por departamento
-    if (departamentoFilter && pdi.departamentoId !== parseInt(departamentoFilter)) {
-      return false;
+    // 1. Filtro de Texto (Nome do Colaborador)
+    const matchNome = !pessoaFilter || 
+      (pdi.colaboradorNome && pdi.colaboradorNome.toLowerCase().includes(pessoaFilter.toLowerCase()));
+
+    // 2. Filtro de Departamento
+    const matchDepartamento = !departamentoFilter || pdi.departamentoId === parseInt(departamentoFilter);
+
+    // 3. Filtro de Realização (Progresso/Status)
+    let matchRealizacao = true;
+    if (realizacaoFilter === "concluidos") {
+      matchRealizacao = (pdi.progresso === 100) || (pdi.status === "concluido");
+    } else if (realizacaoFilter === "andamento") {
+      matchRealizacao = (pdi.progresso || 0) < 100;
     }
-    // Filtro por pessoa
-    if (pessoaFilter && !pdi.colaboradorNome?.toLowerCase().includes(pessoaFilter.toLowerCase())) {
-      return false;
-    }
-    // Filtro por realização/progresso
-    if (realizacaoFilter !== "todos") {
-      const progresso = pdi.progresso || 0;
-      if (realizacaoFilter === "0" && progresso !== 0) return false;
-      if (realizacaoFilter === "1-50" && (progresso < 1 || progresso > 50)) return false;
-      if (realizacaoFilter === "51-99" && (progresso < 51 || progresso > 99)) return false;
-      if (realizacaoFilter === "100" && progresso !== 100) return false;
-    }
-    return true;
+
+    return matchNome && matchDepartamento && matchRealizacao;
   });
 
   // Mutation para deletar PDI
@@ -142,10 +141,8 @@ export function DataTablePDIs() {
             className="w-full p-2 border rounded bg-white text-black"
           >
             <option value="todos">Todos</option>
-            <option value="0">0% (Não Iniciados)</option>
-            <option value="1-50">1% a 50% (Em Início)</option>
-            <option value="51-99">51% a 99% (Fase Final)</option>
-            <option value="100">100% (Concluídos)</option>
+            <option value="concluidos">100% (Concluídos)</option>
+            <option value="andamento">Em Andamento</option>
           </select>
         </div>
       </div>
