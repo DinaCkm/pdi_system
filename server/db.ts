@@ -476,6 +476,45 @@ export async function getAllActions() {
     .orderBy(desc(actions.createdAt));
 }
 
+export async function getActionById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const pdiAlias = alias(pdis, 'pdi');
+  const userAlias = alias(users, 'user');
+  const cicloAlias = alias(ciclos, 'ciclo');
+  const macroAlias = alias(competenciasMacros, 'macro');
+  
+  const result = await db
+    .select({
+      id: actions.id,
+      pdiId: actions.pdiId,
+      macroId: actions.macroId,
+      titulo: actions.titulo,
+      nome: actions.titulo,
+      descricao: actions.descricao,
+      status: actions.status,
+      prazo: actions.prazo,
+      createdAt: actions.createdAt,
+      pdiTitulo: pdiAlias.titulo,
+      pdiColaboradorId: pdiAlias.colaboradorId,
+      colaboradorNome: userAlias.name,
+      macroNome: macroAlias.nome,
+      microcompetenciaNome: macroAlias.nome,
+      cicloNome: cicloAlias.nome,
+      cicloDataInicio: cicloAlias.dataInicio,
+      cicloDataFim: cicloAlias.dataFim,
+    })
+    .from(actions)
+    .leftJoin(pdiAlias, eq(actions.pdiId, pdiAlias.id))
+    .leftJoin(userAlias, eq(pdiAlias.colaboradorId, userAlias.id))
+    .leftJoin(macroAlias, eq(actions.macroId, macroAlias.id))
+    .leftJoin(cicloAlias, eq(pdiAlias.cicloId, cicloAlias.id))
+    .where(eq(actions.id, id));
+  
+  return result[0] || null;
+}
+
 export async function getActionsByPDIId(pdiId: number) {
   const db = await getDb();
   if (!db) return [];
@@ -2047,4 +2086,27 @@ export async function findCycloBiDate(date: string | Date) {
     .limit(1);
 
   return result.length > 0 ? result[0] : null;
+}
+
+// ============= HISTÓRICO DE AÇÕES =============
+
+export async function createActionHistory(data: {
+  actionId: number;
+  campo: string;
+  valorAnterior?: string;
+  valorNovo?: string;
+  motivoAlteracao?: string;
+  alteradoPor: number;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  return await db.insert(acoesHistorico).values({
+    actionId: data.actionId,
+    campo: data.campo,
+    valorAnterior: data.valorAnterior || null,
+    valorNovo: data.valorNovo || null,
+    motivoAlteracao: data.motivoAlteracao || null,
+    alteradoPor: data.alteradoPor,
+  });
 }

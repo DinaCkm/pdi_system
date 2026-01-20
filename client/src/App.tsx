@@ -25,7 +25,7 @@ import ImportarUsuarios from "./pages/ImportarUsuarios";
 import ImportarCompetencias from "./pages/ImportarCompetencias";
 import ImportarAcoes from "./pages/ImportarAcoes";
 import EvidenciasPendentes from "./pages/EvidenciasPendentes";
-import MinhasAcoes from "./pages/MinhasAcoes";
+// import MinhasAcoes from "./pages/MinhasAcoes"; // DESATUALIZADO
 import HistoricoAlteracoes from "./pages/HistoricoAlteracoes";
 import Auditoria from "./pages/Auditoria";
 import { Dashboard } from "./pages/Dashboard";
@@ -166,11 +166,6 @@ function Router() {
         </DashboardLayout>
       </Route>
       
-      <Route path={"/minhas-acoes"}>
-        <DashboardLayout>
-          <MinhasAcoes />
-        </DashboardLayout>
-      </Route>
       
       <Route path={"/historico-alteracoes"}>
         <DashboardLayout>

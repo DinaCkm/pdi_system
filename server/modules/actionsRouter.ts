@@ -105,4 +105,11 @@ export const actionsRouter = router({
       await db.deleteAction(input.id);
       return { success: true };
     }),
+
+  // Obter histórico de alterações
+  getHistory: protectedProcedure
+    .input(z.object({ actionId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getActionHistory(input.actionId);
+    }),
 });
