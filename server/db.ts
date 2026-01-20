@@ -446,18 +446,24 @@ export async function getAllActions() {
   const pdiAlias = alias(pdis, 'pdi');
   const userAlias = alias(users, 'user');
   const cicloAlias = alias(ciclos, 'ciclo');
+  const macroAlias = alias(competenciasMacros, 'macro');
   
   return await db
     .select({
       id: actions.id,
       pdiId: actions.pdiId,
-      nome: actions.nome,
+      macroId: actions.macroId,
+      titulo: actions.titulo,
+      nome: actions.titulo,
       descricao: actions.descricao,
       status: actions.status,
       prazo: actions.prazo,
       createdAt: actions.createdAt,
+      pdiTitulo: pdiAlias.titulo,
       pdiColaboradorId: pdiAlias.colaboradorId,
       colaboradorNome: userAlias.name,
+      macroNome: macroAlias.nome,
+      microcompetenciaNome: macroAlias.nome,
       cicloNome: cicloAlias.nome,
       cicloDataInicio: cicloAlias.dataInicio,
       cicloDataFim: cicloAlias.dataFim,
@@ -465,41 +471,9 @@ export async function getAllActions() {
     .from(actions)
     .leftJoin(pdiAlias, eq(actions.pdiId, pdiAlias.id))
     .leftJoin(userAlias, eq(pdiAlias.colaboradorId, userAlias.id))
+    .leftJoin(macroAlias, eq(actions.macroId, macroAlias.id))
     .leftJoin(cicloAlias, eq(pdiAlias.cicloId, cicloAlias.id))
     .orderBy(desc(actions.createdAt));
-}
-
-export async function getActionById(id: number) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const pdiAlias = alias(pdis, 'pdi');
-  const userAlias = alias(users, 'user');
-  const cicloAlias = alias(ciclos, 'ciclo');
-
-  const result = await db
-    .select({
-      id: actions.id,
-      pdiId: actions.pdiId,
-      nome: actions.nome,
-      descricao: actions.descricao,
-      status: actions.status,
-      prazo: actions.prazo,
-      createdAt: actions.createdAt,
-      updatedAt: actions.updatedAt,
-      colaboradorNome: userAlias.name,
-      cicloNome: cicloAlias.nome,
-      cicloDataInicio: cicloAlias.dataInicio,
-      cicloDataFim: cicloAlias.dataFim,
-    })
-    .from(actions)
-    .leftJoin(pdiAlias, eq(actions.pdiId, pdiAlias.id))
-    .leftJoin(userAlias, eq(pdiAlias.colaboradorId, userAlias.id))
-    .leftJoin(cicloAlias, eq(pdiAlias.cicloId, cicloAlias.id))
-    .where(eq(actions.id, id))
-    .limit(1);
-
-  return result[0] || null;
 }
 
 export async function getActionsByPDIId(pdiId: number) {
