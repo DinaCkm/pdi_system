@@ -136,14 +136,26 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
       return;
     }
 
-    const prazoFormatted = formatDateForMySQL(data.prazo);
+    const prazoFormatted = new Date(data.prazo).getTime(); // Converte para timestamp em milissegundos
+
+    // Converter todos os IDs para número e validar
+    const pdiId = Number(data.pdiId);
+    const cicloId = Number(data.cicloId);
+    const microId = Number(data.microCompetenciaId);
+    const blocoId = Number(data.blocoId);
+    const macroId = Number(data.macroId);
+
+    if (isNaN(pdiId) || isNaN(cicloId) || isNaN(microId) || isNaN(blocoId) || isNaN(macroId)) {
+      toast.error("Erro: IDs inválidos. Recarregue a página e tente novamente.");
+      return;
+    }
 
     createMutation.mutate({
-      pdiId: data.pdiId,
-      cicloId: data.cicloId,
-      microId: data.microCompetenciaId,
-      blocoId: data.blocoId,
-      macroId: data.macroId,
+      pdiId,
+      cicloId,
+      microId,
+      blocoId,
+      macroId,
       nome: data.nome,
       descricao: data.descricao,
       prazo: prazoFormatted,
