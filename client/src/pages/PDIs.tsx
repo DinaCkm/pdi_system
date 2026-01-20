@@ -103,8 +103,8 @@ export default function PDIs() {
     }
 
     createPDIMutation.mutate({
-      colaboradorId: parseInt(selectedColaborador),
-      cicloId: parseInt(selectedCiclo),
+      colaboradorId: Number(selectedColaborador),
+      cicloId: Number(selectedCiclo),
       titulo,
       objetivoGeral: objetivoGeral || undefined,
     });
@@ -117,7 +117,7 @@ export default function PDIs() {
     }
 
     createBulkMutation.mutate({
-      cicloId: parseInt(selectedCiclo),
+      cicloId: Number(selectedCiclo),
       titulo,
       objetivoGeral: objetivoGeral || undefined,
     });
