@@ -15,6 +15,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -187,26 +194,21 @@ export default function PDIs() {
             </DialogHeader>
 
             <div className="space-y-4">
-              {/* Seletor de Ciclo - Input com datalist */}
+              {/* Seletor de Ciclo */}
               <div className="space-y-2">
                 <Label htmlFor="ciclo">Ciclo Semestral *</Label>
-                <Input
-                  id="ciclo"
-                  placeholder="Digite ou selecione um ciclo"
-                  value={cicloSelecionado?.nome || selectedCiclo}
-                  onChange={(e) => {
-                    const ciclo = ciclos.find(
-                      (c) => c.nome === e.target.value || c.id === parseInt(e.target.value)
-                    );
-                    setSelectedCiclo(ciclo?.id.toString() || "");
-                  }}
-                  list="ciclos-list"
-                />
-                <datalist id="ciclos-list">
-                  {ciclos.map((ciclo) => (
-                    <option key={ciclo.id} value={ciclo.nome} />
-                  ))}
-                </datalist>
+                <Select value={selectedCiclo} onValueChange={setSelectedCiclo}>
+                  <SelectTrigger id="ciclo">
+                    <SelectValue placeholder="Selecione um ciclo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ciclos.map((ciclo) => (
+                      <SelectItem key={ciclo.id} value={ciclo.id.toString()}>
+                        {ciclo.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Toggle: Individual vs Lote */}
