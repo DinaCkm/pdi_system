@@ -45,7 +45,7 @@ export function DirecionamentoEstrategico() {
                     {index + 1}
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-emerald-900">{item.macroNome}</p>
+                    <p className="font-medium text-emerald-900">{item.nome}</p>
                     <p className="text-xs text-emerald-600">
                       {item.totalAcoes} acao{item.totalAcoes !== 1 ? "es" : ""} ({item.percentual}% do total)
                     </p>

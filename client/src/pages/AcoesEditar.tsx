@@ -154,7 +154,7 @@ export default function AcoesEditar() {
               <option value="">Selecione uma competência</option>
               {macros.map((macro: any) => (
                 <option key={macro.id} value={macro.id}>
-                  {macro.macroNome}
+                  {macro.nome}
                 </option>
               ))}
             </select>

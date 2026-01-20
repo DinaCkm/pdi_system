@@ -1923,7 +1923,7 @@ export async function isUserLeaderOfColaborador(userId: number, colaboradorId: n
  * Busca o Top 3 de Macrocompetências com maior volume de ações
  * Calcula percentual em relação ao total global de ações
  * Ignora filtros de departamento - retorna dados globais
- * Retorna: { macroNome, totalAcoes, percentual }
+ * Retorna: { nome, totalAcoes, percentual }
  */
 export async function getTop3CompetenciasComGaps() {
   try {
@@ -1936,7 +1936,7 @@ export async function getTop3CompetenciasComGaps() {
     // Contar ações agrupadas por Macro com percentual
     const result = await db
       .select({
-        macroNome: competenciasMacros.nome,
+        nome: competenciasMacros.nome,
         totalAcoes: sql<number>`COUNT(${actions.id})`,
         percentual: sql<number>`ROUND((COUNT(${actions.id}) * 100.0 / (SELECT COUNT(*) FROM ${actions})), 1)`,
       })
@@ -2038,15 +2038,7 @@ export async function getPDIsComProgresso(filters?: {
 
 /**
  * Retorna a hierarquia completa de competências:
- * - Blocos (com ou sem Macro)
- * - Macros (com ou sem Micro)
- * - Micros (com Bloco + Macro + Micro)
- * 
- * Estrutura:
- * [
- *   { blocoId, blocoNome, macroId, macroNome, microId, microNome, status },
- *   { blocoId, blocoNome, macroId: null, macroNome: null, microId: null, microNome: null, status },
- * ]
+ * Estrutura simplificada: apenas Macros com Ações
  */
 
 /**
