@@ -621,7 +621,8 @@ export const appRouter = router({
 
         await db.createPDI({
           ...input,
-          createdBy: ctx.user!.id,
+          createdBy: ctx.user?.id || 1,
+          status: "em_andamento"
         });
         return { success: true };
       }),
