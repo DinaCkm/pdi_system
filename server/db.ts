@@ -558,14 +558,24 @@ export async function getAllCiclos() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Usar groupBy para garantir ciclos únicos (remover duplicidade)
-  const result = await db
+  // 1. Busca TUDO (sem group by para não quebrar o SQL)
+  const todosCiclos = await db
     .select()
     .from(ciclos)
-    .groupBy(ciclos.nome)
-    .orderBy(ciclos.dataInicio);
+    .orderBy(desc(ciclos.dataInicio));
 
-  return result;
+  // 2. Filtra duplicados via Código (Mais seguro)
+  const ciclosUnicos = [];
+  const nomesVistos = new Set();
+
+  for (const c of todosCiclos) {
+    if (!nomesVistos.has(c.nome)) {
+      nomesVistos.add(c.nome);
+      ciclosUnicos.push(c);
+    }
+  }
+
+  return ciclosUnicos;
 }
 
 export async function getCicloById(id: number) {
