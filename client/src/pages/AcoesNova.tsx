@@ -1,248 +1,236 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
-import { toast } from "sonner";
-import { trpc } from "@/lib/trpc";
+import { useState } from 'react';
+import { useLocation } from 'wouter';
+import { trpc } from '@/lib/trpc';
 
 export function AcoesNova() {
   const [, navigate] = useLocation();
   const [formData, setFormData] = useState({
-    pdiId: "",
-    microCompetenciaId: "",
-    nome: "",
-    descricao: "",
-    prazo: "",
-    cicloId: "", // Campo oculto para cicloId
+    pdiId: '',
+    macroId: '',
+    titulo: '',
+    descricao: '',
+    prazo: '',
   });
 
-  const { data: pdis } = trpc.pdis.list.useQuery();
-  const { data: micros } = trpc.competencias.listAllMicrosWithDetails.useQuery();
-  const { data: ciclos } = trpc.ciclos.list.useQuery();
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Queries
+  const { data: pdis = [] } = trpc.pdis.list.useQuery();
+  const { data: macros = [] } = trpc.competencias.listAllMacros.useQuery();
+  
+  // Mutations
   const createMutation = trpc.actions.create.useMutation({
     onSuccess: () => {
-      // Redirecionar sem toast para evitar erro de Portal
-      setTimeout(() => navigate("/acoes"), 500);
+      setTimeout(() => navigate('/acoes'), 300);
     },
     onError: (error) => {
-      console.error("Erro ao criar ação:", error);
-      toast.error(error.message || "Erro ao criar ação");
+      setErrors({ submit: error.message });
     },
   });
 
-  // Sincronizar ciclo quando PDI for selecionado
-  useEffect(() => {
-    if (formData.pdiId) {
-      const selectedPdi = pdis?.find((p: any) => p.id === parseInt(formData.pdiId));
-      if (selectedPdi && selectedPdi.cicloId) {
-        setFormData(prev => ({
-          ...prev,
-          cicloId: selectedPdi.cicloId.toString()
-        }));
-        console.log("Ciclo sincronizado:", selectedPdi.cicloId);
-      }
-    }
-  }, [formData.pdiId, pdis]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  const handlePdiChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const pdiId = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      pdiId: pdiId
-    }));
-  };
-
-  const handleMicroChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const microId = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      microCompetenciaId: microId
-    }));
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.pdiId) newErrors.pdiId = 'PDI é obrigatório';
+    if (!formData.macroId) newErrors.macroId = 'Competência é obrigatória';
+    if (!formData.titulo.trim()) newErrors.titulo = 'Título é obrigatório';
+    if (!formData.prazo) newErrors.prazo = 'Prazo é obrigatório';
+    return newErrors;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-
-    // Validações
-    if (!formData.pdiId) {
-      toast.error("Selecione um PDI");
+    
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
-    if (!formData.microCompetenciaId) {
-      toast.error("Selecione uma microcompetência");
-      return;
-    }
-    if (!formData.nome.trim()) {
-      toast.error("Nome é obrigatório");
-      return;
-    }
-    if (!formData.descricao.trim()) {
-      toast.error("Descrição é obrigatória");
-      return;
-    }
-    if (!formData.prazo) {
-      toast.error("Selecione uma data");
-      return;
-    }
-    if (!formData.cicloId) {
-      toast.error("Ciclo não foi sincronizado. Selecione o PDI novamente.");
-      return;
-    }
-
-    // Encontrar micro para pegar blocoId e macroId
-    const micro = micros?.find((m: any) => m.id === parseInt(formData.microCompetenciaId));
-    if (!micro) {
-      toast.error("Microcompetência inválida");
-      return;
-    }
-
-    console.log("Enviando dados:", {
-      pdiId: parseInt(formData.pdiId),
-      microId: parseInt(formData.microCompetenciaId),
-      blocoId: micro.blocoId,
-      macroId: micro.macroId,
-      nome: formData.nome,
-      descricao: formData.descricao,
-      prazo: formData.prazo,
-      cicloId: parseInt(formData.cicloId),
-    });
 
     createMutation.mutate({
       pdiId: parseInt(formData.pdiId),
-      microId: parseInt(formData.microCompetenciaId),
-      blocoId: micro.blocoId,
-      macroId: micro.macroId,
-      nome: formData.nome,
+      macroId: parseInt(formData.macroId),
+      titulo: formData.titulo,
       descricao: formData.descricao,
-      prazo: formData.prazo,
+      prazo: new Date(formData.prazo),
     });
   };
 
-  const selectedPdi = pdis?.find((p: any) => p.id === parseInt(formData.pdiId));
-  const selectedCiclo = ciclos?.find((c: any) => c.id === parseInt(formData.cicloId));
-
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f5f5f5", padding: "24px" }}>
-      <div style={{ maxWidth: "640px", margin: "0 auto" }}>
-        <div style={{ marginBottom: "32px" }}>
-          <h1 style={{ fontSize: "30px", fontWeight: "bold", marginBottom: "8px" }}>Nova Ação</h1>
-          <p style={{ color: "#666" }}>Crie uma nova ação para o PDI</p>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', padding: '24px' }}>
+      <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+        <div style={{ marginBottom: '32px' }}>
+          <h1 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '8px' }}>Nova Ação</h1>
+          <p style={{ color: '#666' }}>Crie uma nova ação para o PDI</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ backgroundColor: "white", border: "1px solid #e0e0e0", borderRadius: "8px", padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+        <form onSubmit={handleSubmit} style={{ backgroundColor: 'white', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* PDI */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <label htmlFor="pdiId" style={{ fontWeight: "500" }}>PDI *</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label htmlFor="pdiId" style={{ fontWeight: '500' }}>PDI *</label>
             <select
               id="pdiId"
               name="pdiId"
               value={formData.pdiId}
-              onChange={handlePdiChange}
-              style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "white", color: "black", fontSize: "14px" }}
+              onChange={handleChange}
+              style={{ 
+                width: '100%', 
+                padding: '8px 12px', 
+                border: errors.pdiId ? '2px solid red' : '1px solid #ccc', 
+                borderRadius: '4px', 
+                backgroundColor: 'white', 
+                color: 'black', 
+                fontSize: '14px' 
+              }}
             >
               <option value="">Selecione um PDI</option>
-              {pdis?.map((pdi: any) => (
+              {pdis.map((pdi: any) => (
                 <option key={pdi.id} value={pdi.id}>
                   {pdi.titulo} ({pdi.colaboradorNome})
                 </option>
               ))}
             </select>
+            {errors.pdiId && <span style={{ color: 'red', fontSize: '12px' }}>{errors.pdiId}</span>}
           </div>
 
-          {/* Ciclo Info (sincronizado automaticamente) */}
-          {selectedPdi && selectedCiclo && (
-            <div style={{ padding: "12px", backgroundColor: "#e8f5e9", borderRadius: "4px", border: "1px solid #4caf50", display: "flex", flexDirection: "column", gap: "8px" }}>
-              <p style={{ fontSize: "14px", fontWeight: "500", color: "#2e7d32" }}>✓ Ciclo sincronizado:</p>
-              <p style={{ fontSize: "14px", color: "#1b5e20", fontWeight: "600" }}>{selectedCiclo.nome}</p>
-            </div>
-          )}
-
-          {/* Microcompetência */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <label htmlFor="microCompetenciaId" style={{ fontWeight: "500" }}>Microcompetência *</label>
+          {/* Competência */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label htmlFor="macroId" style={{ fontWeight: '500' }}>Competência *</label>
             <select
-              id="microCompetenciaId"
-              name="microCompetenciaId"
-              value={formData.microCompetenciaId}
-              onChange={handleMicroChange}
-              style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "white", color: "black", fontSize: "14px" }}
+              id="macroId"
+              name="macroId"
+              value={formData.macroId}
+              onChange={handleChange}
+              style={{ 
+                width: '100%', 
+                padding: '8px 12px', 
+                border: errors.macroId ? '2px solid red' : '1px solid #ccc', 
+                borderRadius: '4px', 
+                backgroundColor: 'white', 
+                color: 'black', 
+                fontSize: '14px' 
+              }}
             >
-              <option value="">Selecione uma microcompetência</option>
-              {micros?.map((micro: any) => (
-                <option key={micro.id} value={micro.id}>
-                  {micro.nome} ({micro.macroNome})
+              <option value="">Selecione uma competência</option>
+              {macros.map((macro: any) => (
+                <option key={macro.id} value={macro.id}>
+                  {macro.macroNome}
                 </option>
               ))}
             </select>
+            {errors.macroId && <span style={{ color: 'red', fontSize: '12px' }}>{errors.macroId}</span>}
           </div>
 
-          {/* Nome */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <label htmlFor="nome" style={{ fontWeight: "500" }}>Nome da Ação *</label>
+          {/* Título */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label htmlFor="titulo" style={{ fontWeight: '500' }}>Título *</label>
             <input
-              id="nome"
-              name="nome"
+              id="titulo"
+              name="titulo"
               type="text"
-              placeholder="Digite o nome da ação"
-              value={formData.nome}
-              onChange={handleInputChange}
-              style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "white", color: "black", fontSize: "14px" }}
+              placeholder="Digite o título da ação"
+              value={formData.titulo}
+              onChange={handleChange}
+              style={{ 
+                width: '100%', 
+                padding: '8px 12px', 
+                border: errors.titulo ? '2px solid red' : '1px solid #ccc', 
+                borderRadius: '4px', 
+                backgroundColor: 'white', 
+                color: 'black', 
+                fontSize: '14px' 
+              }}
             />
+            {errors.titulo && <span style={{ color: 'red', fontSize: '12px' }}>{errors.titulo}</span>}
           </div>
 
           {/* Descrição */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <label htmlFor="descricao" style={{ fontWeight: "500" }}>Descrição *</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label htmlFor="descricao" style={{ fontWeight: '500' }}>Descrição</label>
             <textarea
               id="descricao"
               name="descricao"
-              placeholder="Digite a descrição da ação"
+              placeholder="Digite a descrição da ação (opcional)"
               value={formData.descricao}
-              onChange={handleInputChange}
+              onChange={handleChange}
               rows={3}
-              style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "white", color: "black", fontSize: "14px", fontFamily: "inherit" }}
+              style={{ 
+                width: '100%', 
+                padding: '8px 12px', 
+                border: '1px solid #ccc', 
+                borderRadius: '4px', 
+                backgroundColor: 'white', 
+                color: 'black', 
+                fontSize: '14px', 
+                fontFamily: 'inherit' 
+              }}
             />
           </div>
 
           {/* Prazo */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <label htmlFor="prazo" style={{ fontWeight: "500" }}>Prazo *</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label htmlFor="prazo" style={{ fontWeight: '500' }}>Prazo *</label>
             <input
               id="prazo"
               name="prazo"
               type="date"
               value={formData.prazo}
-              onChange={handleInputChange}
-              style={{ width: "100%", padding: "8px 12px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "white", color: "black", fontSize: "14px" }}
+              onChange={handleChange}
+              style={{ 
+                width: '100%', 
+                padding: '8px 12px', 
+                border: errors.prazo ? '2px solid red' : '1px solid #ccc', 
+                borderRadius: '4px', 
+                backgroundColor: 'white', 
+                color: 'black', 
+                fontSize: '14px' 
+              }}
             />
+            {errors.prazo && <span style={{ color: 'red', fontSize: '12px' }}>{errors.prazo}</span>}
           </div>
 
-          {/* Debug Info - Mostrar cicloId (remover em produção) */}
-          <div style={{ padding: "8px", backgroundColor: "#f0f0f0", borderRadius: "4px", fontSize: "12px", color: "#666" }}>
-            <p>Debug - cicloId: {formData.cicloId || "não sincronizado"}</p>
-          </div>
+          {/* Erro de submit */}
+          {errors.submit && (
+            <div style={{ padding: '12px', backgroundColor: '#fee', color: '#c00', borderRadius: '4px', fontSize: '14px' }}>
+              {errors.submit}
+            </div>
+          )}
 
           {/* Botões */}
-          <div style={{ display: "flex", gap: "16px", paddingTop: "16px" }}>
+          <div style={{ display: 'flex', gap: '16px', paddingTop: '16px' }}>
             <button
               type="submit"
               disabled={createMutation.isPending}
-              style={{ flex: 1, padding: "10px 16px", backgroundColor: "#2563eb", color: "white", borderRadius: "4px", border: "none", cursor: "pointer", opacity: createMutation.isPending ? 0.5 : 1 }}
+              style={{ 
+                flex: 1, 
+                padding: '10px 16px', 
+                backgroundColor: '#2563eb', 
+                color: 'white', 
+                borderRadius: '4px', 
+                border: 'none', 
+                cursor: createMutation.isPending ? 'not-allowed' : 'pointer', 
+                opacity: createMutation.isPending ? 0.5 : 1 
+              }}
             >
-              {createMutation.isPending ? "Criando..." : "Criar Ação"}
+              {createMutation.isPending ? 'Criando...' : 'Criar Ação'}
             </button>
             <button
               type="button"
-              onClick={() => navigate("/acoes")}
-              style={{ flex: 1, padding: "10px 16px", border: "1px solid #ccc", borderRadius: "4px", backgroundColor: "white", color: "black", cursor: "pointer" }}
+              onClick={() => navigate('/acoes')}
+              style={{ 
+                flex: 1, 
+                padding: '10px 16px', 
+                border: '1px solid #ccc', 
+                borderRadius: '4px', 
+                backgroundColor: 'white', 
+                color: 'black', 
+                cursor: 'pointer' 
+              }}
             >
               Cancelar
             </button>

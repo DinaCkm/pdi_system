@@ -1,5 +1,6 @@
 import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, varchar, text, timestamp, mysqlEnum, index, foreignKey, bigint, boolean } from "drizzle-orm/mysql-core"
 import { sql } from "drizzle-orm"
+import { date } from "drizzle-orm/mysql-core"
 
 export const acoesHistorico = mysqlTable("acoes_historico", {
 	id: int().autoincrement().notNull(),
@@ -16,16 +17,13 @@ export const acoesHistorico = mysqlTable("acoes_historico", {
 export const actions = mysqlTable("actions", {
 	id: int().autoincrement().notNull(),
 	pdiId: int().notNull(),
-	blocoId: int().notNull(),
 	macroId: int().notNull(),
-	microId: int().notNull(),
-	nome: varchar({ length: 255 }).notNull(),
-	descricao: text().notNull(),
-	prazo: timestamp({ mode: 'string' }).notNull(),
-	status: mysqlEnum(['pendente_aprovacao_lider','aprovada_lider','reprovada_lider','em_andamento','em_discussao','evidencia_enviada','evidencia_aprovada','evidencia_reprovada','correcao_solicitada','concluida','vencida','cancelada']).default('pendente_aprovacao_lider').notNull(),
+	titulo: varchar({ length: 255 }).notNull(),
+	descricao: text(),
+	prazo: date("prazo").notNull(),
+	status: varchar({ length: 50 }).default("nao_iniciada").notNull(),
 	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
-	createdBy: int().notNull(),
 });
 
 export const adjustmentComments = mysqlTable("adjustment_comments", {

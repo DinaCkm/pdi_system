@@ -1,298 +1,256 @@
-import { useParams, useLocation } from "wouter";
-import { useEffect, useState } from "react";
-import { trpc } from "@/lib/trpc";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
+import { trpc } from '@/lib/trpc';
 
 export default function AcoesEditar() {
-  const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const actionId = id ? parseInt(id) : 0;
-
-  const { data: action, isLoading } = trpc.actions.getById.useQuery({ id: actionId });
-  const { data: pdis } = trpc.pdis.list.useQuery();
-  const { data: micros } = trpc.competencias.listAllMicrosWithDetails.useQuery();
-  const { data: ciclos } = trpc.ciclos.list.useQuery();
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const acaoId = parseInt(pathname.split('/').pop() || '0');
 
   const [formData, setFormData] = useState({
-    pdiId: 0,
-    microCompetenciaId: 0,
-    nome: "",
-    descricao: "",
-    prazo: "",
-    cicloId: 0,
+    titulo: '',
+    descricao: '',
+    prazo: '',
+    status: '',
+    macroId: '',
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Queries
+  const { data: acao } = trpc.actions.getById.useQuery({ id: acaoId }, { enabled: !!acaoId });
+  const { data: macros = [] } = trpc.competencias.listAllMacros.useQuery();
+
+  // Mutations
+  const updateMutation = trpc.actions.update.useMutation({
+    onSuccess: () => {
+      setTimeout(() => navigate('/acoes'), 300);
+    },
+    onError: (error) => {
+      setErrors({ submit: error.message });
+    },
   });
 
   // Carregar dados da ação
   useEffect(() => {
-    if (action) {
+    if (acao) {
       setFormData({
-        pdiId: action.pdiId,
-        microCompetenciaId: action.microCompetenciaId,
-        nome: action.nome,
-        descricao: action.descricao,
-        prazo: action.prazo ? new Date(action.prazo).toISOString().split("T")[0] : "",
-        cicloId: action.cicloId,
+        titulo: acao.titulo || '',
+        descricao: acao.descricao || '',
+        prazo: acao.prazo ? new Date(acao.prazo).toISOString().split('T')[0] : '',
+        status: acao.status || '',
+        macroId: acao.macroId?.toString() || '',
       });
     }
-  }, [action]);
+  }, [acao]);
 
-  // Sincronizar ciclo quando PDI for selecionado
-  useEffect(() => {
-    if (formData.pdiId && pdis) {
-      const pdi = pdis.find((p) => p.id === formData.pdiId);
-      if (pdi && pdi.cicloId) {
-        setFormData((prev) => ({ ...prev, cicloId: pdi.cicloId }));
-      }
-    }
-  }, [formData.pdiId, pdis]);
-
-  const updateMutation = trpc.actions.update.useMutation({
-    onSuccess: () => {
-      setTimeout(() => navigate("/acoes"), 500);
-    },
-    onError: (error) => {
-      console.error("Erro ao atualizar ação:", error);
-      toast.error(error.message || "Erro ao atualizar ação");
-    },
-  });
-
-  const handlePdiChange = (pdiId: number) => {
-    setFormData((prev) => ({ ...prev, pdiId }));
-  };
-
-  const handleMicroChange = (microId: number) => {
-    setFormData((prev) => ({ ...prev, microCompetenciaId: microId }));
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.titulo.trim()) newErrors.titulo = 'Título é obrigatório';
+    if (!formData.prazo) newErrors.prazo = 'Prazo é obrigatório';
+    return newErrors;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validações
-    if (!formData.pdiId) {
-      toast.error("PDI é obrigatório");
-      return;
-    }
-    if (!formData.microCompetenciaId) {
-      toast.error("Microcompetência é obrigatória");
-      return;
-    }
-    if (!formData.nome.trim()) {
-      toast.error("Nome da ação é obrigatório");
-      return;
-    }
-    if (!formData.descricao.trim()) {
-      toast.error("Descrição é obrigatória");
-      return;
-    }
-    if (!formData.prazo) {
-      toast.error("Prazo é obrigatório");
-      return;
-    }
-    if (!formData.cicloId) {
-      toast.error("Ciclo não foi sincronizado corretamente");
+    
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
     updateMutation.mutate({
-      id: actionId,
-      pdiId: action.pdiId, // Manter PDI original, não permitir mudança
-      microCompetenciaId: formData.microCompetenciaId,
-      nome: formData.nome,
+      id: acaoId,
+      titulo: formData.titulo,
       descricao: formData.descricao,
-      prazo: formData.prazo, // Enviar como string (YYYY-MM-DD)
-      cicloId: formData.cicloId,
+      prazo: new Date(formData.prazo),
+      status: formData.status,
+      macroId: formData.macroId ? parseInt(formData.macroId) : undefined,
     });
   };
 
-  if (isLoading) {
-    return (
-      <div style={{ padding: "20px", textAlign: "center" }}>
-        <p>Carregando ação...</p>
-      </div>
-    );
-  }
-
-  if (!action) {
-    return (
-      <div style={{ padding: "20px", textAlign: "center" }}>
-        <p>Ação não encontrada</p>
-        <button onClick={() => navigate("/acoes")} style={{ marginTop: "10px" }}>
-          Voltar para Ações
-        </button>
-      </div>
-    );
+  if (!acao) {
+    return <div style={{ padding: '24px' }}>Carregando...</div>;
   }
 
   return (
-    <div style={{ maxWidth: "800px", margin: "0 auto", padding: "20px" }}>
-      <h1>Editar Ação</h1>
-      <p style={{ color: "#666", marginBottom: "20px" }}>Edite os detalhes da ação</p>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', padding: '24px' }}>
+      <div style={{ maxWidth: '640px', margin: '0 auto' }}>
+        <div style={{ marginBottom: '32px' }}>
+          <h1 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '8px' }}>Editar Ação</h1>
+          <p style={{ color: '#666' }}>Atualize os dados da ação</p>
+        </div>
 
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-        {/* PDI - Apenas Informativo (Não pode ser alterado) */}
-        <div>
-          <label style={{ display: "block", marginBottom: "10px", fontWeight: "bold" }}>
-            PDI (Não pode ser alterado)
-          </label>
-          <div style={{ padding: "10px", backgroundColor: "#f5f5f5", borderRadius: "4px", border: "1px solid #ddd" }}>
-            <p style={{ margin: "0" }}>
-              {pdis?.find((p) => p.id === formData.pdiId)?.titulo} ({pdis?.find((p) => p.id === formData.pdiId)?.colaboradorNome})
-            </p>
+        <form onSubmit={handleSubmit} style={{ backgroundColor: 'white', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Título */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label htmlFor="titulo" style={{ fontWeight: '500' }}>Título *</label>
+            <input
+              id="titulo"
+              name="titulo"
+              type="text"
+              value={formData.titulo}
+              onChange={handleChange}
+              style={{ 
+                width: '100%', 
+                padding: '8px 12px', 
+                border: errors.titulo ? '2px solid red' : '1px solid #ccc', 
+                borderRadius: '4px', 
+                backgroundColor: 'white', 
+                color: 'black', 
+                fontSize: '14px' 
+              }}
+            />
+            {errors.titulo && <span style={{ color: 'red', fontSize: '12px' }}>{errors.titulo}</span>}
           </div>
-        </div>
 
-        {/* Microcompetência - RadioGroup */}
-        <div>
-          <label style={{ display: "block", marginBottom: "10px", fontWeight: "bold" }}>
-            Microcompetência *
-          </label>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {micros?.map((micro) => (
-              <label key={micro.id} style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                <input
-                  type="radio"
-                  name="microCompetenciaId"
-                  value={micro.id}
-                  checked={formData.microCompetenciaId === micro.id}
-                  onChange={() => handleMicroChange(micro.id)}
-                  style={{ cursor: "pointer" }}
-                />
-                <span>({micro.nome})</span>
-              </label>
-            ))}
+          {/* Descrição */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label htmlFor="descricao" style={{ fontWeight: '500' }}>Descrição</label>
+            <textarea
+              id="descricao"
+              name="descricao"
+              value={formData.descricao}
+              onChange={handleChange}
+              rows={3}
+              style={{ 
+                width: '100%', 
+                padding: '8px 12px', 
+                border: '1px solid #ccc', 
+                borderRadius: '4px', 
+                backgroundColor: 'white', 
+                color: 'black', 
+                fontSize: '14px', 
+                fontFamily: 'inherit' 
+              }}
+            />
           </div>
-        </div>
 
-        {/* Nome da Ação */}
-        <div>
-          <label htmlFor="nome" style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            Nome da Ação *
-          </label>
-          <input
-            id="nome"
-            name="nome"
-            type="text"
-            value={formData.nome}
-            onChange={handleInputChange}
-            placeholder="Digite o nome da ação"
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              fontSize: "14px",
-              boxSizing: "border-box",
-            }}
-          />
-        </div>
+          {/* Competência */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label htmlFor="macroId" style={{ fontWeight: '500' }}>Competência</label>
+            <select
+              id="macroId"
+              name="macroId"
+              value={formData.macroId}
+              onChange={handleChange}
+              style={{ 
+                width: '100%', 
+                padding: '8px 12px', 
+                border: '1px solid #ccc', 
+                borderRadius: '4px', 
+                backgroundColor: 'white', 
+                color: 'black', 
+                fontSize: '14px' 
+              }}
+            >
+              <option value="">Selecione uma competência</option>
+              {macros.map((macro: any) => (
+                <option key={macro.id} value={macro.id}>
+                  {macro.macroNome}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Descrição */}
-        <div>
-          <label htmlFor="descricao" style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            Descrição *
-          </label>
-          <textarea
-            id="descricao"
-            name="descricao"
-            value={formData.descricao}
-            onChange={handleInputChange}
-            placeholder="Digite a descrição da ação"
-            rows={4}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              fontSize: "14px",
-              boxSizing: "border-box",
-              fontFamily: "inherit",
-            }}
-          />
-        </div>
+          {/* Prazo */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label htmlFor="prazo" style={{ fontWeight: '500' }}>Prazo *</label>
+            <input
+              id="prazo"
+              name="prazo"
+              type="date"
+              value={formData.prazo}
+              onChange={handleChange}
+              style={{ 
+                width: '100%', 
+                padding: '8px 12px', 
+                border: errors.prazo ? '2px solid red' : '1px solid #ccc', 
+                borderRadius: '4px', 
+                backgroundColor: 'white', 
+                color: 'black', 
+                fontSize: '14px' 
+              }}
+            />
+            {errors.prazo && <span style={{ color: 'red', fontSize: '12px' }}>{errors.prazo}</span>}
+          </div>
 
-        {/* Ciclo (informativo) */}
-        <div
-          style={{
-            padding: "10px",
-            backgroundColor: "#f5f5f5",
-            borderRadius: "4px",
-            border: "1px solid #ddd",
-          }}
-        >
-          <p style={{ margin: "0", fontSize: "14px", color: "#666" }}>
-            <strong>Ciclo (vinculado ao PDI):</strong>
-          </p>
-          <p style={{ margin: "5px 0 0 0", fontSize: "14px" }}>
-            {ciclos?.find((c) => c.id === formData.cicloId)?.nome || "Não sincronizado"}
-          </p>
-        </div>
+          {/* Status */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label htmlFor="status" style={{ fontWeight: '500' }}>Status</label>
+            <select
+              id="status"
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              style={{ 
+                width: '100%', 
+                padding: '8px 12px', 
+                border: '1px solid #ccc', 
+                borderRadius: '4px', 
+                backgroundColor: 'white', 
+                color: 'black', 
+                fontSize: '14px' 
+              }}
+            >
+              <option value="">Selecione um status</option>
+              <option value="nao_iniciada">Não Iniciada</option>
+              <option value="em_andamento">Em Andamento</option>
+              <option value="concluida">Concluída</option>
+              <option value="atrasada">Atrasada</option>
+            </select>
+          </div>
 
-        {/* Prazo */}
-        <div>
-          <label htmlFor="prazo" style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
-            Prazo *
-          </label>
-          <input
-            id="prazo"
-            name="prazo"
-            type="date"
-            value={formData.prazo}
-            onChange={handleInputChange}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              fontSize: "14px",
-              boxSizing: "border-box",
-            }}
-          />
-        </div>
+          {/* Erro de submit */}
+          {errors.submit && (
+            <div style={{ padding: '12px', backgroundColor: '#fee', color: '#c00', borderRadius: '4px', fontSize: '14px' }}>
+              {errors.submit}
+            </div>
+          )}
 
-        {/* Botões */}
-        <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
-          <button
-            type="submit"
-            disabled={updateMutation.isPending}
-            style={{
-              flex: 1,
-              padding: "12px",
-              backgroundColor: "#0066cc",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              fontSize: "16px",
-              fontWeight: "bold",
-              cursor: updateMutation.isPending ? "not-allowed" : "pointer",
-              opacity: updateMutation.isPending ? 0.6 : 1,
-            }}
-          >
-            {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("/acoes")}
-            style={{
-              flex: 1,
-              padding: "12px",
-              backgroundColor: "#f0f0f0",
-              color: "#333",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              fontSize: "16px",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
-          >
-            Cancelar
-          </button>
-        </div>
-      </form>
+          {/* Botões */}
+          <div style={{ display: 'flex', gap: '16px', paddingTop: '16px' }}>
+            <button
+              type="submit"
+              disabled={updateMutation.isPending}
+              style={{ 
+                flex: 1, 
+                padding: '10px 16px', 
+                backgroundColor: '#2563eb', 
+                color: 'white', 
+                borderRadius: '4px', 
+                border: 'none', 
+                cursor: updateMutation.isPending ? 'not-allowed' : 'pointer', 
+                opacity: updateMutation.isPending ? 0.5 : 1 
+              }}
+            >
+              {updateMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/acoes')}
+              style={{ 
+                flex: 1, 
+                padding: '10px 16px', 
+                border: '1px solid #ccc', 
+                borderRadius: '4px', 
+                backgroundColor: 'white', 
+                color: 'black', 
+                cursor: 'pointer' 
+              }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
