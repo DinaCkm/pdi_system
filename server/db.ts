@@ -334,8 +334,23 @@ export async function getAllPDIs() {
   if (!db) throw new Error("Database not available");
 
   const result = await db
-    .select()
+    .select({
+      pdiId: pdis.id,
+      titulo: pdis.titulo,
+      status: pdis.status,
+      progresso: pdis.progresso,
+      colaboradorNome: users.name,
+      departamentoNome: departamentos.nome,
+      cicloNome: ciclos.nome,
+      liderNome: users.name,
+      departamentoId: users.departamentoId,
+      totalAcoes: pdis.totalAcoes,
+      acoesConcluidasTotal: pdis.acoesConcluidasTotal,
+    })
     .from(pdis)
+    .leftJoin(users, eq(pdis.colaboradorId, users.id))
+    .leftJoin(ciclos, eq(pdis.cicloId, ciclos.id))
+    .leftJoin(departamentos, eq(users.departamentoId, departamentos.id))
     .orderBy(desc(pdis.createdAt));
 
   return result;
