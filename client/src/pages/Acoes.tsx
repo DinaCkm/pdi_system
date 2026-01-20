@@ -32,7 +32,7 @@ export default function Acoes() {
   };
 
   const filteredAcoes = acoes?.filter((acao: any) =>
-    acao.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    acao.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     acao.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
@@ -113,7 +113,7 @@ export default function Acoes() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
                   <div style={{ flex: 1 }}>
                     <CardTitle style={{ margin: "0 0 4px 0", fontSize: "16px" }}>
-                      {acao.nome}
+                      {acao.titulo}
                     </CardTitle>
                     <CardDescription style={{ margin: "0", fontSize: "13px" }}>
                       {acao.descricao}

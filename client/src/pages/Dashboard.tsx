@@ -77,7 +77,11 @@ export function Dashboard() {
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    // Remover o link com segurança
+    if (link.parentNode) {
+      link.parentNode.removeChild(link);
+    }
+    URL.revokeObjectURL(url);
   };
 
   if (isError) {
