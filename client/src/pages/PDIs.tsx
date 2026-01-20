@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
-// import { DirecionamentoEstrategico } from "@/components/DirecionamentoEstrategico";
 import { DataTablePDIs } from "@/components/DataTablePDIs";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DialogSelect, DialogSelectItem } from "@/components/DialogSelect";
 import { Plus, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -47,13 +45,10 @@ export default function PDIs() {
     onSuccess: () => {
       toast.success("PDI criado com sucesso!");
       resetForm();
-      // Recarregar lista de PDIs
       utils.pdis.list.invalidate();
-      // Recarregar lista Meus PDIs se existir
       if (utils.pdis.myPDIs) {
         utils.pdis.myPDIs.invalidate();
       }
-      // Fechar modal apos delay para evitar conflito de renderizacao
       setTimeout(() => setShowModal(false), 300);
     },
     onError: (error) => {
@@ -67,13 +62,10 @@ export default function PDIs() {
         `${data.created} PDIs criados! ${data.skipped} colaboradores pulados.`
       );
       resetForm();
-      // Recarregar lista de PDIs
       utils.pdis.list.invalidate();
-      // Recarregar lista Meus PDIs se existir
       if (utils.pdis.myPDIs) {
         utils.pdis.myPDIs.invalidate();
       }
-      // Fechar modal apos delay para evitar conflito de renderizacao
       setTimeout(() => setShowModal(false), 300);
     },
     onError: (error) => {
@@ -178,13 +170,6 @@ export default function PDIs() {
           </Button>
         </div>
 
-        {/* Widget Direcionamento Estratégico (apenas para admin) - DESABILITADO TEMPORARIAMENTE */}
-        {/* {user?.role === "admin" && (
-          <div>
-            <DirecionamentoEstrategico />
-          </div>
-        )} */}
-
         {/* DataTable de PDIs */}
         <div>
           <DataTablePDIs />
@@ -203,28 +188,32 @@ export default function PDIs() {
             </DialogHeader>
 
             <div className="space-y-4">
-              {/* Seletor de Ciclo */}
+              {/* Seletor de Ciclo - CORREÇÃO AQUI */}
               <div className="space-y-2">
                 <Label htmlFor="ciclo">Ciclo Semestral *</Label>
-                <Select
-                  value={selectedCiclo ? selectedCiclo.toString() : ""}
-                  onValueChange={setSelectedCiclo}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione o Ciclo" />
-                  </SelectTrigger>
-                  <SelectContent key={ciclos.length}>
-                    {/* ARRAY SEGURO: Garante que nunca seja null */}
-                    {(ciclos || []).map((ciclo, index) => (
-                      <SelectItem 
-                        key={`ciclo-${ciclo.id}-${index}`}
-                        value={ciclo.id.toString()}
-                      >
-                        {ciclo.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {!ciclos || ciclos.length === 0 ? (
+                  <div className="p-2 border rounded text-gray-400 text-sm">Carregando ciclos...</div>
+                ) : (
+                  <Select
+                    value={selectedCiclo ? selectedCiclo.toString() : ""}
+                    onValueChange={setSelectedCiclo}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione o Ciclo" />
+                    </SelectTrigger>
+                    {/* O SEGREDO: A key muda se o tamanho da lista mudar, forçando remontagem limpa */}
+                    <SelectContent key={ciclos.length}>
+                      {(ciclos || []).map((ciclo, idx) => (
+                        <SelectItem
+                          key={`ciclo-${ciclo.id}-${idx}`}
+                          value={ciclo.id.toString()}
+                        >
+                          {ciclo.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               {/* Toggle: Individual vs Lote */}

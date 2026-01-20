@@ -50,6 +50,19 @@ export default function AcoesEditar() {
     }
   }, [acao]);
 
+  // ESTE CÓDIGO FORÇA A ATUALIZAÇÃO DOS CAMPOS:
+  useEffect(() => {
+    if (acao) {
+      setFormData({
+        titulo: acao.titulo,
+        descricao: acao.descricao || "",
+        prazo: acao.prazo ? new Date(acao.prazo).toISOString().split('T')[0] : "",
+        competenciaId: acao.macroId?.toString() || "",
+        status: acao.status
+      });
+    }
+  }, [acao]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
