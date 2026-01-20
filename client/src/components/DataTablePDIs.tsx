@@ -40,6 +40,14 @@ export function DataTablePDIs() {
     if (pessoaFilter && !pdi.colaboradorNome?.toLowerCase().includes(pessoaFilter.toLowerCase())) {
       return false;
     }
+    // Filtro por realização/progresso
+    if (realizacaoFilter !== "todos") {
+      const progresso = pdi.progresso || 0;
+      if (realizacaoFilter === "0" && progresso !== 0) return false;
+      if (realizacaoFilter === "1-50" && (progresso < 1 || progresso > 50)) return false;
+      if (realizacaoFilter === "51-99" && (progresso < 51 || progresso > 99)) return false;
+      if (realizacaoFilter === "100" && progresso !== 100) return false;
+    }
     return true;
   });
 
