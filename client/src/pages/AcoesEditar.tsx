@@ -20,6 +20,7 @@ export default function AcoesEditar() {
   // Queries
   const { data: acao } = trpc.actions.getById.useQuery({ id: acaoId }, { enabled: !!acaoId });
   const { data: macros = [] } = trpc.competencias.listAllMacros.useQuery();
+  const { data: historico = [] } = trpc.actions.getHistory.useQuery({ actionId: acaoId }, { enabled: !!acaoId });
 
   // Mutations
   const updateMutation = trpc.actions.update.useMutation({
@@ -250,6 +251,38 @@ export default function AcoesEditar() {
             </button>
           </div>
         </form>
+
+        {/* ÁREA DE HISTÓRICO */}
+        <div style={{ marginTop: '40px', backgroundColor: 'white', padding: '24px', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>📜 Histórico de Alterações</h3>
+
+          {historico?.length === 0 ? (
+            <p style={{ color: '#999' }}>Nenhuma alteração registada.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {historico?.map((item: any) => (
+                <div key={item.id} style={{ borderBottom: '1px solid #eee', paddingBottom: '8px', fontSize: '14px' }}>
+                  <p>
+                    <strong>{item.alteradorNome || 'Sistema'}</strong> alterou o campo 
+                    <span style={{ color: '#2563eb', fontWeight: 'bold' }}> {item.campo} </span>
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px', color: '#666', marginTop: '4px' }}>
+                    <span style={{ textDecoration: 'line-through', color: '#ef4444' }}>
+                      {item.valorAnterior || '(vazio)'}
+                    </span>
+                    <span>→</span>
+                    <span style={{ color: '#22c55e', fontWeight: 'bold' }}>
+                      {item.valorNovo}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '12px', color: '#999', marginTop: '4px' }}>
+                    {new Date(item.createdAt).toLocaleString('pt-BR')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

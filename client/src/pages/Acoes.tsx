@@ -5,16 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Plus, Edit, Trash2, Eye, History } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Eye } from "lucide-react";
 import { useLocation } from "wouter";
-import { HistoricoAcao } from "@/components/HistoricoAcao";
 
 export default function Acoes() {
   const [, navigate] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAcaoId, setSelectedAcaoId] = useState<number | null>(null);
-  const [historicoOpen, setHistoricoOpen] = useState(false);
-  const [historicoActionId, setHistoricoActionId] = useState<number | null>(null);
 
   const { data: acoes, isLoading, refetch } = trpc.actions.list.useQuery();
   const deleteMutation = trpc.actions.delete.useMutation({
@@ -180,24 +177,6 @@ export default function Acoes() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setHistoricoActionId(acao.id);
-                      setHistoricoOpen(true);
-                    }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      padding: "6px 12px",
-                      fontSize: "12px",
-                    }}
-                  >
-                    <History size={14} />
-                    Histórico
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
                     onClick={() => handleDelete(acao.id)}
                     disabled={deleteMutation.isPending}
                     style={{
@@ -217,14 +196,6 @@ export default function Acoes() {
             </Card>
           ))}
         </div>
-      )}
-      
-      {historicoActionId && (
-        <HistoricoAcao
-          actionId={historicoActionId}
-          open={historicoOpen}
-          onOpenChange={setHistoricoOpen}
-        />
       )}
     </div>
   );
