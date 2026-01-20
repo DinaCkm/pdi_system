@@ -6,7 +6,7 @@ import * as db from "./db";
 import { getAllMacros, createMacro, updateMacro, deleteMacro } from "./db";
 import { invokeLLM } from "./_core/llm";
 import { authRouter } from "./authRouters";
-import { importActionsRouter } from "./importActions";
+
 import { sendEmailSolicitacaoAjuste } from "./_core/email";
 // import { pdiRouter } from "./routers/pdi.router";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
@@ -964,7 +964,7 @@ export const appRouter = router({
   }),
 
   // ============= IMPORTAÇÃO DE AÇÕES =============
-  importActions: importActionsRouter,
+
 });
 
 export type AppRouter = typeof appRouter;
