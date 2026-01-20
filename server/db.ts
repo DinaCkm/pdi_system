@@ -558,11 +558,11 @@ export async function getAllCiclos() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // 1. Busca TUDO (sem group by para não quebrar o SQL)
+  // 1. Traz TUDO do banco (sem groupBy para garantir que o ID venha)
   const todosCiclos = await db
     .select()
     .from(ciclos)
-    .orderBy(desc(ciclos.dataInicio));
+    .orderBy(ciclos.dataInicio);
 
   // 2. Filtra duplicados via Código (Mais seguro)
   const ciclosUnicos = [];
