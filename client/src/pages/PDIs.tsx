@@ -211,8 +211,8 @@ export default function PDIs() {
                   onValueChange={setSelectedCiclo}
                   placeholder="Selecione um ciclo"
                 >
-                  {ciclos.map((ciclo) => (
-                    <DialogSelectItem key={ciclo.id} value={ciclo.id.toString()}>
+                  {ciclos.map((ciclo, index) => (
+                    <DialogSelectItem key={`${ciclo.id}-${index}`} value={ciclo.id.toString()}>
                       {ciclo.nome}
                     </DialogSelectItem>
                   ))}
