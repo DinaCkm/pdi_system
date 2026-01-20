@@ -41,10 +41,17 @@ export function DataTablePDIs() {
 
     // 3. Filtro de Realização (Progresso/Status)
     let matchRealizacao = true;
-    if (realizacaoFilter === "concluidos") {
-      matchRealizacao = (pdi.progresso === 100) || (pdi.status === "concluido");
-    } else if (realizacaoFilter === "andamento") {
-      matchRealizacao = (pdi.progresso || 0) < 100;
+    if (realizacaoFilter !== "todos") {
+      const progresso = pdi.progresso || 0;
+      if (realizacaoFilter === "0") {
+        matchRealizacao = progresso === 0;
+      } else if (realizacaoFilter === "1-50") {
+        matchRealizacao = progresso > 0 && progresso <= 50;
+      } else if (realizacaoFilter === "51-99") {
+        matchRealizacao = progresso > 50 && progresso < 100;
+      } else if (realizacaoFilter === "100") {
+        matchRealizacao = (progresso === 100) || (pdi.status === "concluido");
+      }
     }
 
     return matchNome && matchDepartamento && matchRealizacao;
@@ -141,8 +148,10 @@ export function DataTablePDIs() {
             className="w-full p-2 border rounded bg-white text-black"
           >
             <option value="todos">Todos</option>
-            <option value="concluidos">100% (Concluídos)</option>
-            <option value="andamento">Em Andamento</option>
+            <option value="0">0% (Não Iniciados)</option>
+            <option value="1-50">1% a 50% (Em Início)</option>
+            <option value="51-99">51% a 99% (Fase Final)</option>
+            <option value="100">100% (Concluídos)</option>
           </select>
         </div>
       </div>
