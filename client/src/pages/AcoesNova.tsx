@@ -32,7 +32,7 @@ export function AcoesNova() {
   
   const createMutation = trpc.actions.create.useMutation({
     onSuccess: () => {
-      // Feedback visual simples e redirecionamento
+      // Sucesso! Volta para a lista
       navigate('/acoes');
     },
     onError: (error) => {
@@ -46,40 +46,43 @@ export function AcoesNova() {
     setErrors(prev => ({ ...prev, [name]: '', submit: '' }));
   };
 
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.pdiId) newErrors.pdiId = 'Selecione o PDI vinculado';
+    if (!formData.macroId) newErrors.macroId = 'Selecione a competência Macro';
+    if (!formData.titulo.trim()) newErrors.titulo = 'Título é obrigatório';
+    if (!formData.prazo) newErrors.prazo = 'Prazo é obrigatório';
+    return newErrors;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação Básica
-    if (!formData.pdiId) {
-      setErrors({ pdiId: 'Selecione um PDI na lista.' });
-      return;
-    }
-    if (!formData.titulo) {
-      setErrors({ titulo: 'Digite um título.' });
-      return;
-    }
-    if (!formData.prazo) {
-      setErrors({ prazo: 'Selecione uma data.' });
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
     // Conversão segura
-    const pdiNumber = Number(formData.pdiId);
-    const macroNumber = Number(formData.macroId);
+    const pdiIdNumerico = Number(formData.pdiId);
+    const macroIdNumerico = Number(formData.macroId);
 
-    // Se o ID do PDI não for número, tentamos passar como string se o backend aceitar,
-    // caso contrário, alertamos. Mas aqui o foco é não quebrar a tela.
-    const payload: any = {
-      pdiId: isNaN(pdiNumber) ? formData.pdiId : pdiNumber,
-      macroId: isNaN(macroNumber) ? undefined : macroNumber,
+    // Validação final de segurança
+    if (!pdiIdNumerico || isNaN(pdiIdNumerico)) {
+      setErrors({ submit: 'Erro Interno: ID do PDI inválido. Recarregue a página.' });
+      return;
+    }
+
+    createMutation.mutate({
+      pdiId: pdiIdNumerico,
+      macroId: macroIdNumerico, 
+      // Envia microcompetencia se preenchida
+      microcompetencia: formData.microcompetencia || undefined,
       titulo: formData.titulo,
       descricao: formData.descricao,
       prazo: new Date(formData.prazo),
-      // Envia microcompetencia se preenchida
-      microcompetencia: formData.microcompetencia || undefined
-    };
-
-    createMutation.mutate(payload);
+    });
   };
 
   return (
@@ -87,60 +90,63 @@ export function AcoesNova() {
       <div style={{ maxWidth: '640px', margin: '0 auto' }}>
         
         <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '30px', fontWeight: 'bold' }}>Nova Ação</h1>
+          <h1 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '8px' }}>Nova Ação</h1>
+          <p style={{ color: '#666' }}>Preencha os dados da ação de desenvolvimento</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ backgroundColor: 'white', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form onSubmit={handleSubmit} style={{ backgroundColor: 'white', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           
-          {/* 1. SELEÇÃO DE PDI BLINDADA */}
+          {/* 1. SELEÇÃO DE PDI (CORRIGIDA: pdi.pdiId) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label style={{ fontWeight: 'bold', color: '#2563eb' }}>1. Vincular ao PDI de quem? *</label>
-            <select
-              name="pdiId"
-              value={formData.pdiId}
-              onChange={handleChange}
-              style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-            >
-              <option value="">-- Clique para selecionar --</option>
-              {pdis.map((pdi: any, index: number) => {
-                // CORREÇÃO DO CRASH: Usamos o ID se existir, senão usamos o index
-                // Isso impede que o React encontre chaves duplicadas (que causam o erro insertBefore)
-                const safeKey = pdi.id ? String(pdi.id) : `temp-key-${index}`;
-                const safeValue = pdi.id ? String(pdi.id) : ''; 
-                
-                return (
-                  <option key={safeKey} value={safeValue}>
-                    {pdi.colaboradorNome || 'Sem Nome'} {pdi.id ? `(ID: ${pdi.id})` : '(ID INVÁLIDO/VAZIO)'}
+            <label htmlFor="pdiId" style={{ fontWeight: 'bold', color: '#2563eb' }}>1. Vincular ao PDI de quem? *</label>
+            {loadingPdis ? (
+              <span style={{ fontSize: '14px', color: '#666' }}>Carregando lista de colaboradores...</span>
+            ) : (
+              <select
+                id="pdiId"
+                name="pdiId"
+                value={formData.pdiId}
+                onChange={handleChange}
+                style={{ width: '100%', padding: '10px', border: errors.pdiId ? '2px solid red' : '1px solid #ccc', borderRadius: '4px', fontSize: '15px' }}
+              >
+                <option value="">-- Clique para selecionar --</option>
+                {pdis.map((pdi: any) => (
+                  // AQUI ESTAVA O ERRO: Mudamos de pdi.id para pdi.pdiId
+                  <option key={pdi.pdiId} value={pdi.pdiId}>
+                    {pdi.colaboradorNome} - {pdi.titulo}
                   </option>
-                );
-              })}
-            </select>
-            {errors.pdiId && <span style={{ color: 'red' }}>{errors.pdiId}</span>}
+                ))}
+              </select>
+            )}
+            {errors.pdiId && <span style={{ color: 'red', fontSize: '12px' }}>{errors.pdiId}</span>}
           </div>
 
           {/* 2. COMPETÊNCIA (MACRO) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label style={{ fontWeight: '500' }}>2. Competência Geral (Macro) *</label>
+            <label htmlFor="macroId" style={{ fontWeight: '500' }}>2. Competência Geral (Macro) *</label>
             <select
+              id="macroId"
               name="macroId"
               value={formData.macroId}
               onChange={handleChange}
-              style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
+              style={{ width: '100%', padding: '10px', border: errors.macroId ? '2px solid red' : '1px solid #ccc', borderRadius: '4px' }}
             >
               <option value="">Selecione...</option>
               {macros.map((macro: any) => (
                 <option key={macro.id} value={String(macro.id)}>{macro.nome}</option>
               ))}
             </select>
+            {errors.macroId && <span style={{ color: 'red', fontSize: '12px' }}>{errors.macroId}</span>}
           </div>
 
           {/* 3. COMPETÊNCIA (MICRO) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label style={{ fontWeight: '500' }}>3. Competência Específica (Texto) - Opcional</label>
+            <label htmlFor="microcompetencia" style={{ fontWeight: '500' }}>3. Competência Específica (Texto) - Opcional</label>
             <input
               type="text"
+              id="microcompetencia"
               name="microcompetencia"
-              placeholder="Ex: Comunicação..."
+              placeholder="Ex: Melhorar comunicação no Slack..."
               value={formData.microcompetencia}
               onChange={handleChange}
               style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
@@ -149,61 +155,64 @@ export function AcoesNova() {
 
           {/* 4. TÍTULO */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label style={{ fontWeight: '500' }}>4. Título *</label>
+            <label htmlFor="titulo" style={{ fontWeight: '500' }}>4. O que será feito? (Título) *</label>
             <input
+              id="titulo"
               name="titulo"
               type="text"
               value={formData.titulo}
               onChange={handleChange}
-              style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
+              style={{ width: '100%', padding: '10px', border: errors.titulo ? '2px solid red' : '1px solid #ccc', borderRadius: '4px' }}
             />
-            {errors.titulo && <span style={{ color: 'red' }}>{errors.titulo}</span>}
+            {errors.titulo && <span style={{ color: 'red', fontSize: '12px' }}>{errors.titulo}</span>}
           </div>
 
           {/* 5. DESCRIÇÃO */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label style={{ fontWeight: '500' }}>Detalhes</label>
+            <label htmlFor="descricao" style={{ fontWeight: '500' }}>Detalhes da ação</label>
             <textarea
+              id="descricao"
               name="descricao"
               value={formData.descricao}
               onChange={handleChange}
-              rows={3}
+              rows={4}
               style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
             />
           </div>
 
           {/* 6. PRAZO */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label style={{ fontWeight: '500' }}>5. Prazo *</label>
+            <label htmlFor="prazo" style={{ fontWeight: '500' }}>5. Prazo de conclusão *</label>
             <input
+              id="prazo"
               name="prazo"
               type="date"
               value={formData.prazo}
               onChange={handleChange}
-              style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
+              style={{ width: '100%', padding: '10px', border: errors.prazo ? '2px solid red' : '1px solid #ccc', borderRadius: '4px' }}
             />
-             {errors.prazo && <span style={{ color: 'red' }}>{errors.prazo}</span>}
+            {errors.prazo && <span style={{ color: 'red', fontSize: '12px' }}>{errors.prazo}</span>}
           </div>
 
           {/* MENSAGEM DE ERRO DO SERVIDOR */}
           {errors.submit && (
-            <div style={{ padding: '10px', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '4px' }}>
+            <div style={{ padding: '12px', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '4px', fontSize: '14px', fontWeight: 'bold' }}>
               {errors.submit}
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+          <div style={{ display: 'flex', gap: '16px', paddingTop: '16px' }}>
             <button
               type="submit"
               disabled={createMutation.isPending}
-              style={{ flex: 1, padding: '12px', backgroundColor: '#2563eb', color: 'white', borderRadius: '4px', border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '12px', backgroundColor: '#2563eb', color: 'white', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '16px', fontWeight: '500' }}
             >
-              {createMutation.isPending ? 'ENVIANDO...' : 'SALVAR AÇÃO'}
+              {createMutation.isPending ? 'Salvando...' : 'Salvar Ação'}
             </button>
             <button
               type="button"
               onClick={() => navigate('/acoes')}
-              style={{ flex: 1, padding: '12px', border: '1px solid #ccc', backgroundColor: 'white' }}
+              style={{ flex: 1, padding: '12px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer' }}
             >
               Cancelar
             </button>
