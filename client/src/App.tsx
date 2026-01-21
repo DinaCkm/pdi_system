@@ -163,6 +163,12 @@ function Router() {
         </DashboardLayout>
       </Route>
       
+      <Route path={"/minhas-acoes"}>
+        <DashboardLayout>
+          <MinhasPendencias />
+        </DashboardLayout>
+      </Route>
+      
       <Route path={"/relatorios"}>
         <DashboardLayout>
           <Relatorios />

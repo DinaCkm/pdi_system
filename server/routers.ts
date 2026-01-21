@@ -70,6 +70,11 @@ export const appRouter = router({
   pdis: router({
     list: adminProcedure.query(async () => await db.getAllPDIs()),
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => await db.getPDIById(input.id)),
+    myPDIs: protectedProcedure.query(async ({ ctx }) => {
+      const allPDIs = await db.getAllPDIs();
+      // Filtra apenas os PDIs do usuário logado
+      return allPDIs.filter((pdi) => pdi.usuarioId === ctx.user.id);
+    }),
   }),
 
   // ============= EVIDÊNCIAS (JÁ ATUALIZADO ANTERIORMENTE) =============
