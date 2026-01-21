@@ -443,7 +443,7 @@ export default function PDIsEquipe() {
             ) : (
               actions.map((acao: any) => {
                 const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
-                  nao_iniciada: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Não Iniciada' },
+                  nao_iniciada: { bg: 'bg-red-100', text: 'text-red-700', label: 'Não Iniciada' },
                   em_andamento: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Em Andamento' },
                   concluida: { bg: 'bg-green-100', text: 'text-green-700', label: 'Concluída' },
                   aguardando_avaliacao: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Aguardando Avaliação' },
