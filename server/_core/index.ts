@@ -5,7 +5,7 @@ import net from "net";
 import cookieParser from "cookie-parser";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "../routers";
-import { createCustomContext } from "./customContext";
+import { createTRPCContext } from "./customTrpc";
 import { serveStatic, setupVite } from "./vite";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -40,7 +40,7 @@ async function startServer() {
     "/api/trpc",
     createExpressMiddleware({
       router: appRouter,
-      createContext: createCustomContext,
+      createContext: createTRPCContext,
     })
   );
   // development mode uses Vite, production mode uses static files
