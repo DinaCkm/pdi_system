@@ -1,10 +1,10 @@
 import { initTRPC, TRPCError } from "@trpc/server";
-import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
+import { type CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
 // 1. CONTEXTO SEM DEPENDÊNCIA DE JWT
-export const createTRPCContext = async (opts: CreateNextContextOptions) => {
+export const createTRPCContext = async (opts: CreateExpressContextOptions) => {
   const { req, res } = opts;
   // Pega o token do cabeçalho Authorization
   const token = req.headers.authorization?.split(" ")[1];

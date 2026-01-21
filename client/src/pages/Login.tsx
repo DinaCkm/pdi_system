@@ -13,20 +13,37 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
 
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: async (data) => {
+    onSuccess: (data) => {
+      console.log("[Login] Sucesso! Data recebida:", data);
+      
       if (data?.token) {
-        // 1. Salva o Token
+        // 1. Salva o Token no localStorage
         localStorage.setItem('token', data.token);
+        console.log("[Login] Token salvo no localStorage");
         
+        // 2. Salva dados do usuário
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+          console.log("[Login] Usuário salvo no localStorage:", data.user);
+        }
+        
+        // 3. Mostra mensagem de sucesso
         toast.success("Login realizado com sucesso!");
         
-        // 2. FORÇA O RECARREGAMENTO DA PÁGINA (CRUCIAL)
-        // Isso garante que o sistema leia o token novo imediatamente
-        await new Promise(r => setTimeout(r, 500)); // Pequena pausa para o toast aparecer
-        window.location.href = "/";
+        // 4. Aguarda um pouco e redireciona para o dashboard
+        console.log("[Login] Redirecionando para /dashboard em 500ms...");
+        setTimeout(() => {
+          console.log("[Login] Executando redirecionamento...");
+          window.location.href = "/dashboard";
+        }, 500);
+      } else {
+        console.error("[Login] Erro: token não recebido", data);
+        toast.error("Erro: token não recebido do servidor");
+        setIsLoading(false);
       }
     },
     onError: (error) => {
+      console.error("[Login] Erro de autenticação:", error);
       toast.error(error.message || "Erro ao fazer login");
       setIsLoading(false);
     },
@@ -36,9 +53,13 @@ export default function Login() {
     e.preventDefault();
     if (!email || !cpf) return toast.error("Preencha todos os campos");
 
+    console.log("[Login] Iniciando login com email:", email);
     setIsLoading(true);
+    
     // Limpa CPF antes de enviar
     const cpfLimpo = cpf.replace(/\D/g, "");
+    console.log("[Login] CPF limpo:", cpfLimpo);
+    
     loginMutation.mutate({ email, cpf: cpfLimpo });
   };
 
