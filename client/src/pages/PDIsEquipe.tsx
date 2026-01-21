@@ -462,9 +462,12 @@ export default function PDIsEquipe() {
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-sm text-gray-800 break-words">{acao.titulo}</h4>
                         <p className="text-xs text-muted-foreground mt-1 break-words whitespace-pre-wrap max-w-full">{acao.descricao}</p>
-                        <div className="flex items-center gap-3 mt-3 text-xs">
+                        <div className="flex items-center gap-3 mt-3 text-xs flex-wrap">
                           <span className="text-muted-foreground font-medium">
                             Prazo: {new Date(acao.prazo).toLocaleDateString('pt-BR')}
+                          </span>
+                          <span className="text-muted-foreground font-medium">
+                            Competência: {acao.macroNome || 'Geral'}
                           </span>
                           <Badge className={`${config.bg} ${config.text} border-0`}>
                             {config.label}
