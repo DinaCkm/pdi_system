@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import confetti from "canvas-confetti";
+import { useEffect } from "react";
 
 export default function MinhasPendencias() {
   const authData = useAuth();
@@ -28,6 +30,9 @@ export default function MinhasPendencias() {
   const [evidenceDescription, setEvidenceDescription] = useState("");
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [isSubmittingEvidence, setIsSubmittingEvidence] = useState(false);
+  const [showCelebrationDialog, setShowCelebrationDialog] = useState(false);
+  const [celebrationAcao, setCelebrationAcao] = useState<any>(null);
+  const [previousAcoes, setPreviousAcoes] = useState<any[]>([]);
 
   // Buscando as ações reais
   const { data: acoes, isLoading } = trpc.actions.list.useQuery(
@@ -60,6 +65,32 @@ export default function MinhasPendencias() {
     if (!acoes || !userId) return [];
     return acoes.filter((acao: any) => String(acao.responsavelId) === String(userId));
   }, [acoes, userId]);
+
+  // Detectar mudança de status para celebração
+  useEffect(() => {
+    if (!minhasAcoes || minhasAcoes.length === 0) return;
+    
+    const acaoConcluida = minhasAcoes.find((acao: any) => {
+      const acaoAnterior = previousAcoes.find((prev: any) => prev.id === acao.id);
+      return (
+        acaoAnterior?.status === "aguardando_avaliacao" &&
+        acao.status === "concluida"
+      );
+    });
+
+    if (acaoConcluida) {
+      setCelebrationAcao(acaoConcluida);
+      setShowCelebrationDialog(true);
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#2563eb", "#f97316", "#fbbf24", "#10b981"],
+      });
+    }
+
+    setPreviousAcoes(minhasAcoes);
+  }, [minhasAcoes]);
 
   // Filtrar ações com base em busca e status
   const filteredAcoes = useMemo(() => {
@@ -535,6 +566,37 @@ export default function MinhasPendencias() {
                   Enviar Evidência
                 </>
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Celebração */}
+      <Dialog open={showCelebrationDialog} onOpenChange={setShowCelebrationDialog}>
+        <DialogContent className="max-w-md bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 border-2 border-yellow-300">
+          <DialogHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <Trophy className="h-16 w-16 text-yellow-500 drop-shadow-lg" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-center text-yellow-700">
+              Parabéns, Júlia! Meta Batida!
+            </DialogTitle>
+            <DialogDescription className="text-center text-base mt-4 text-gray-700">
+              Sua evidência foi aprovada e você concluiu mais uma etapa do seu PDI. Continue assim!
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-6 text-center">
+            <p className="text-sm text-gray-600 mb-2">Ação concluída:</p>
+            <p className="font-semibold text-lg text-blue-600">{celebrationAcao?.titulo}</p>
+          </div>
+
+          <DialogFooter className="flex justify-center">
+            <Button
+              className="bg-gradient-to-r from-blue-600 to-orange-500 text-white px-8 py-2 text-lg font-semibold"
+              onClick={() => setShowCelebrationDialog(false)}
+            >
+              Comemorar!
             </Button>
           </DialogFooter>
         </DialogContent>

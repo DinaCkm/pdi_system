@@ -1480,3 +1480,10 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar status "Aguardando Avaliação" com cor amarela/laranja na ação
 - [x] Criar testes vitest para procedures de evidência
 - [x] Testar fluxo completo: envio → aprovação → mudança de status
+
+## Celebração de Conclusão (NOVA IMPLEMENTAÇÃO - JAN 2025)
+- [x] Instalar canvas-confetti
+- [x] Adicionar função de disparo de confetes em MinhasPendencias.tsx
+- [x] Criar modal de sucesso com Trophy em ouro
+- [x] Implementar lógica de detecção de mudança de status (aguardando_avaliacao → concluida)
+- [x] Testar celebração com confetes e modal
