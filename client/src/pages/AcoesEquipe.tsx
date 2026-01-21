@@ -49,18 +49,21 @@ export default function AcoesEquipe() {
     const colabs = new Set<string>();
     const statuses = new Set<string>();
 
-    const macros = new Set<number>();
+    const macros = new Map<number, string>();
+    
     acoes.forEach((acao: any) => {
       const c = getColabName(acao);
       if (c && c !== "Colaborador não identificado") colabs.add(c);
       if (acao.status) statuses.add(acao.status);
-      if (acao.macroId) macros.add(acao.macroId);
+      if (acao.macroId && acao.macroNome) {
+        macros.set(acao.macroId, acao.macroNome);
+      }
     });
 
     return {
       colaboradoresUnicos: Array.from(colabs).sort(),
       statusUnicos: Array.from(statuses).sort(),
-      macrosUnicos: Array.from(macros).sort((a, b) => a - b),
+      macrosUnicos: Array.from(macros.entries()).sort((a, b) => a[0] - b[0]),
     };
   }, [acoes]);
 
@@ -145,8 +148,8 @@ export default function AcoesEquipe() {
               className="p-2 rounded-md border border-input bg-background"
             >
               <option value="">Todas</option>
-              {macrosUnicos.map(macroId => (
-                <option key={macroId} value={macroId}>Macro ID: {macroId}</option>
+              {macrosUnicos.map(([macroId, macroNome]) => (
+                <option key={macroId} value={macroId}>{macroNome}</option>
               ))}
             </select>
           </div>
@@ -201,6 +204,11 @@ export default function AcoesEquipe() {
                       <span className="text-muted-foreground">
                         <strong>PDI:</strong> {getPdiTitle(acao)}
                       </span>
+                      {acao.macroNome && (
+                        <span className="text-muted-foreground">
+                          <strong>Competência:</strong> {acao.macroNome}
+                        </span>
+                      )}
                       {acao.prazo && (
                         <span className="flex items-center gap-1 text-muted-foreground">
                           <Calendar size={14} />

@@ -856,3 +856,17 @@ export async function getPendingEvidences() {
 
   return result;
 }
+
+
+export async function getMacroById(macroId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db
+    .select()
+    .from(competenciasMacros)
+    .where(eq(competenciasMacros.id, macroId))
+    .limit(1);
+  
+  return result[0] || null;
+}

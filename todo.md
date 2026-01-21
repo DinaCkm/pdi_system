@@ -1581,3 +1581,11 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Validar cores de status (Vermelho, Azul, Amarelo, Verde)
 - [x] Testar fluxo completo de aprovação do PDI (24 testes passando)
 - [x] Testar filtros de macrocompetência (24 testes passando)
+
+## Tradução de Macrocompetência - ID para NOME (JAN 2025)
+- [x] Buscar nome da macrocompetência a partir do macroId (getMacroById em db.ts)
+- [x] Exibir nome da macrocompetência em cards de ação
+- [x] Atualizar filtro de macrocompetência para mostrar nomes
+- [x] Adicionar campo de macrocompetência em AcoesEquipe.tsx
+- [x] Enriquecer procedure teamActions com macroNome
+- [x] Testar exibição de nomes de macrocompetências (24 testes passando)

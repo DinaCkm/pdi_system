@@ -183,10 +183,21 @@ export const actionsRouter = router({
     if (subIds.length === 0) return [];
 
     const allActions = await db.getAllActions();
-    return allActions.filter((acao: any) => {
+    const filtered = allActions.filter((acao: any) => {
       const acaoColabId = Number(acao.responsavelId || acao.usuarioId || acao.colaboradorId);
       return subIds.includes(acaoColabId);
     });
+    
+    // Enriquecer com nome da macrocompetência
+    const enriched = await Promise.all(filtered.map(async (acao: any) => {
+      if (acao.macroId) {
+        const macro = await db.getMacroById(acao.macroId);
+        return { ...acao, macroNome: macro?.nome || 'Sem competência' };
+      }
+      return { ...acao, macroNome: 'Sem competência' };
+    }));
+    
+    return enriched;
   }),
 
   // Aprovar ajuste
