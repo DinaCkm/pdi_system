@@ -40,9 +40,12 @@ export default function Acoes() {
   const macroIds = useMemo(() => [...new Set(acoes.map((a: any) => a.macroId).filter(Boolean))], [acoes]);
   const macroNames = useMacroNames(macroIds);
   
+  const utils = trpc.useUtils();
+  
   const deleteMutation = trpc.actions.delete.useMutation({
     onSuccess: () => {
       toast.success("Ação removida.");
+      utils.actions.list.invalidate();
       refetch();
     },
     onError: (error) => toast.error(error.message || "Erro ao deletar"),

@@ -90,7 +90,26 @@ export const actionsRouter = router({
       if (ctx.user.role !== 'admin' && ctx.user.role !== 'lider') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Sem permissão' });
       }
-      return { success: true, id: Math.random() };
+      
+      let prazoDate: Date;
+      if (typeof input.prazo === 'string') {
+        prazoDate = new Date(input.prazo);
+      } else {
+        prazoDate = input.prazo as Date;
+      }
+      
+      const actionId = await db.createAction({
+        pdiId: input.pdiId,
+        macroId: input.macroId,
+        microcompetencia: input.microcompetencia,
+        titulo: input.titulo,
+        descricao: input.descricao,
+        prazo: prazoDate,
+        status: 'nao_iniciada',
+      });
+      
+      console.log('[actions.create] Ação criada com ID:', actionId);
+      return { success: true, id: actionId };
     }),
 
   // Atualizar ação
@@ -106,6 +125,11 @@ export const actionsRouter = router({
       if (ctx.user.role !== 'admin' && ctx.user.role !== 'lider') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Sem permissão' });
       }
+      
+      const { id, ...data } = input;
+      await db.updateAction(id, data, Number(ctx.user.id));
+      
+      console.log('[actions.update] Ação atualizada:', id);
       return { success: true };
     }),
 
@@ -116,6 +140,10 @@ export const actionsRouter = router({
       if (ctx.user.role !== 'admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas admin' });
       }
+      
+      await db.deleteAction(input.id);
+      
+      console.log('[actions.delete] Ação deletada:', input.id);
       return { success: true };
     }),
 

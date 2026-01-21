@@ -30,9 +30,11 @@ export function AcoesNova() {
     }
   }, [searchString]);
   
+  const utils = trpc.useUtils();
+  
   const createMutation = trpc.actions.create.useMutation({
     onSuccess: () => {
-      // Sucesso! Volta para a lista
+      utils.actions.list.invalidate();
       navigate('/acoes');
     },
     onError: (error) => {
