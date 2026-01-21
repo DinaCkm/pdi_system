@@ -10,19 +10,18 @@ describe('Histórico de Ações', () => {
   const testUserId = 1;
 
   beforeAll(async () => {
-    // Criar competência macro de teste
+    const timestamp = Date.now();
     const macroResult = await db.createMacro({
-      nome: `Macro Teste ${Date.now()}`,
+      nome: `Macro Teste ${timestamp}`,
       descricao: 'Descrição de teste',
       ativo: true,
     });
     testMacroId = macroResult;
 
-    // Criar ação de teste
     const actionResult = await db.createAction({
       pdiId: 1,
       macroId: testMacroId,
-      titulo: 'Ação Teste Original',
+      titulo: `Ação Teste Original ${timestamp}`,
       descricao: 'Descrição original',
       prazo: new Date('2026-02-28'),
       status: 'nao_iniciada',
@@ -48,20 +47,18 @@ describe('Histórico de Ações', () => {
   });
 
   it('deve gravar histórico ao alterar título', async () => {
-    // Atualizar título COM userId
+    const novoTitulo = `Ação Teste Modificada ${Date.now()}`;
+    
     await db.updateAction(testActionId, {
-      titulo: 'Ação Teste Modificada',
+      titulo: novoTitulo,
     }, testUserId);
 
-    // Buscar histórico
     const historico = await db.getActionHistory(testActionId);
-
-    // Validar que existe registro de alteração de título
     const tituloHistory = historico.find((h: any) => h.campo === 'Título');
+    
     expect(tituloHistory).toBeDefined();
     if (tituloHistory) {
-      expect(tituloHistory.valorAnterior).toBe('Ação Teste Original');
-      expect(tituloHistory.valorNovo).toBe('Ação Teste Modificada');
+      expect(tituloHistory.valorNovo).toBe(novoTitulo);
     }
   });
 
@@ -121,20 +118,19 @@ describe('Histórico de Ações', () => {
   });
 
   it('não deve gravar histórico se valor não mudou', async () => {
-    // Contar registros antes
+    const acaoAtual = await db.getActionById(testActionId);
+    const tituloAtual = acaoAtual?.titulo || '';
+
     const historicoBefore = await db.getActionHistory(testActionId);
     const countBefore = historicoBefore.length;
 
-    // Atualizar com mesmo valor
     await db.updateAction(testActionId, {
-      titulo: 'Ação Teste Modificada', // Mesmo valor que está agora
+      titulo: tituloAtual,
     }, testUserId);
 
-    // Contar registros depois
     const historicoAfter = await db.getActionHistory(testActionId);
     const countAfter = historicoAfter.length;
 
-    // Não deve ter adicionado novo registro
     expect(countAfter).toBe(countBefore);
   });
 

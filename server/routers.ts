@@ -84,11 +84,21 @@ export const appRouter = router({
   // ============= EVIDÊNCIAS (JÁ ATUALIZADO ANTERIORMENTE) =============
   evidences: router({
     create: protectedProcedure.input(z.object({ actionId: z.number(), descricao: z.string(), files: z.any().optional() })).mutation(async ({ ctx, input }) => {
-        const action = await db.getActionById(input.actionId);
-        if(!action) throw new TRPCError({code: 'NOT_FOUND'});
-        await db.createEvidence({ actionId: input.actionId, colaboradorId: ctx.user!.id, descricao: input.descricao });
-        await db.updateAction(action.id, { status: 'aguardando_avaliacao' });
-        return { success: true };
+        try {
+            const action = await db.getActionById(input.actionId);
+            if(!action) throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
+            await db.createEvidence({ 
+                actionId: input.actionId, 
+                colaboradorId: Number(ctx.user!.id), 
+                descricao: input.descricao,
+                arquivo: input.files?.[0]?.name || ""
+            });
+            await db.updateAction(action.id, { status: 'aguardando_avaliacao' });
+            return { success: true };
+        } catch (error) {
+            console.error('[evidences.create] Erro ao criar evidência:', error);
+            throw error;
+        }
     }),
     listByAction: protectedProcedure.input(z.object({ actionId: z.number() })).query(async ({ input }) => await db.getEvidencesByActionId(input.actionId)),
     aprovar: adminProcedure.input(z.object({ evidenceId: z.number() })).mutation(async ({ ctx, input }) => {

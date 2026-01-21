@@ -1487,3 +1487,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Criar modal de sucesso com Trophy em ouro
 - [x] Implementar lógica de detecção de mudança de status (aguardando_avaliacao → concluida)
 - [x] Testar celebração com confetes e modal
+
+## Correção de Bugs (JAN 2025)
+- [x] Corrigir procedure evidences.create com tratamento de tipos
+- [x] Adicionar console.error para logging de erros
+- [x] Testar envio de evidência após correção
