@@ -13,11 +13,8 @@ const queryClient = new QueryClient();
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
-
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
-
   if (!isUnauthorized) return;
-
   window.location.href = getLoginUrl();
 };
 
@@ -43,14 +40,16 @@ const trpcClient = trpc.createClient({
       url: "/api/trpc",
       transformer: superjson,
       fetch(input, init) {
-        // Ler o token do localStorage e enviar no header Authorization
+        // A MÁGICA ACONTECE AQUI:
+        // 1. Pega o token salvo no login
         const token = localStorage.getItem('token');
         const headers = new Headers(init?.headers ?? {});
-        
+
+        // 2. Se tiver token, anexa no cabeçalho da requisição
         if (token) {
           headers.set('Authorization', `Bearer ${token}`);
         }
-        
+
         return globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
