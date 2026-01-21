@@ -32,12 +32,21 @@ export function useAuth(options?: UseAuthOptions) {
         error instanceof TRPCClientError &&
         error.data?.code === "UNAUTHORIZED"
       ) {
-        return;
+        // Usuário já estava deslogado
+      } else {
+        throw error;
       }
-      throw error;
     } finally {
+      // Limpar token do localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('manus-runtime-user-info');
+      
+      // Limpar cache do tRPC
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
+      
+      // Redirecionar para login
+      window.location.href = '/';
     }
   }, [logoutMutation, utils]);
 
