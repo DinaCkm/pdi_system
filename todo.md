@@ -1541,3 +1541,12 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Modificar procedure list para aceitar pdiId opcional
 - [x] Exibir ações no modal usando map()
 - [x] Testar fluxo completo de abertura do modal com dados (24 testes passando)
+
+## Painel de Ações da Equipe para Líder (JAN 2025)
+- [x] Criar nova página AcoesEquipe.tsx
+- [x] Implementar filtros (Colaborador, Status, Busca)
+- [x] Criar procedure teamActions no backend
+- [x] Adicionar rota /acoes-equipe no App.tsx
+- [x] Adicionar item "Ações da Equipe" no menu do Líder
+- [x] Adicionar link no pop-up para acessar painel completo
+- [x] Testar fluxo completo de visualização e filtros (24 testes passando)

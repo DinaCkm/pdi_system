@@ -31,6 +31,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { AcoesNova } from "./pages/AcoesNova";
 import AcoesEditar from "./pages/AcoesEditar";
 import AcoesDetalhes from "./pages/AcoesDetalhes";
+import AcoesEquipe from "./pages/AcoesEquipe";
 
 function Router() {
   return (
@@ -107,6 +108,12 @@ function Router() {
       <Route path={"/pdis-equipe"}>
         <DashboardLayout>
           <PDIsEquipe />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/acoes-equipe"}>
+        <DashboardLayout>
+          <AcoesEquipe />
         </DashboardLayout>
       </Route>
       

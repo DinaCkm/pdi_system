@@ -50,6 +50,7 @@ const getMenuItems = (userRole: string) => {
     items.push(
       { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
       { icon: Target, label: "PDIs da Equipe", path: "/pdis-equipe" },
+      { icon: CheckSquare, label: "Ações da Equipe", path: "/acoes-equipe" },
     );
   } else if (userRole === "colaborador") {
     items.push(

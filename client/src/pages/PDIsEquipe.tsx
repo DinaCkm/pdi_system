@@ -416,6 +416,21 @@ export default function PDIsEquipe() {
               ))
             )}
           </div>
+
+          <div className="pt-4 border-t mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowActionsModal(false);
+                setLocation('/acoes-equipe');
+              }}
+              className="w-full flex items-center justify-center gap-2"
+            >
+              <List className="h-4 w-4" />
+              Ver painel completo da equipe
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

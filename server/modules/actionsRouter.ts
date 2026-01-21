@@ -169,6 +169,26 @@ export const actionsRouter = router({
       }));
     }),
 
+  // Ações da equipe do líder
+  teamActions: protectedProcedure.query(async ({ ctx }) => {
+    const user = ctx.user!;
+    
+    if (user.role !== 'lider') {
+      throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas líderes podem acessar ações da equipe' });
+    }
+
+    const subordinates = await db.getSubordinates(Number(user.id));
+    const subIds = subordinates.map(s => s.id);
+
+    if (subIds.length === 0) return [];
+
+    const allActions = await db.getAllActions();
+    return allActions.filter((acao: any) => {
+      const acaoColabId = Number(acao.responsavelId || acao.usuarioId || acao.colaboradorId);
+      return subIds.includes(acaoColabId);
+    });
+  }),
+
   // Aprovar ajuste
   aprovarAjuste: protectedProcedure
     .input(z.object({ adjustmentId: z.number() }))
