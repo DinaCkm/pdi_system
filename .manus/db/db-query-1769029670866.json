@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, name, role, email, departamentoId FROM users WHERE role = 'lider' ORDER BY name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, role, email, departamentoId FROM users WHERE role = 'lider' ORDER BY name;",
+  "rows": [
+    {
+      "id": "780050",
+      "name": "Líder Test Actions",
+      "role": "lider",
+      "email": "leader-actions-1768678061030@test.com",
+      "departamentoId": "NULL"
+    },
+    {
+      "id": "780041",
+      "name": "Líder Teste PDI",
+      "role": "lider",
+      "email": "lider.pdi1768678059213@test.com",
+      "departamentoId": "NULL"
+    },
+    {
+      "id": "780058",
+      "name": "Líder Teste PDI",
+      "role": "lider",
+      "email": "lider.pdi1768678108117@test.com",
+      "departamentoId": "NULL"
+    },
+    {
+      "id": "720003",
+      "name": "liderteste1",
+      "role": "lider",
+      "email": "liderteste1@teste.com",
+      "departamentoId": "30001"
+    },
+    {
+      "id": "840002",
+      "name": "mariza da silva",
+      "role": "lider",
+      "email": "financeiro@makiyama.com.br",
+      "departamentoId": "30001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\trole\temail\tdepartamentoId\n780050\tLíder Test Actions\tlider\tleader-actions-1768678061030@test.com\tNULL\n780041\tLíder Teste PDI\tlider\tlider.pdi1768678059213@test.com\tNULL\n780058\tLíder Teste PDI\tlider\tlider.pdi1768678108117@test.com\tNULL\n720003\tliderteste1\tlider\tliderteste1@teste.com\t30001\n840002\tmariza da silva\tlider\tfinanceiro@makiyama.com.br\t30001\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

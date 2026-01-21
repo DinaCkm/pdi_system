@@ -9,6 +9,19 @@ import { Loader2, Plus, Edit, Trash2, Eye, History, Building, Target, Calendar, 
 import { useLocation } from "wouter";
 import { HistoryModal } from "@/components/HistoryModal";
 
+// Hook para buscar nomes de competências
+function useMacroNames(macroIds: number[]) {
+  const { data: competencias = [] } = trpc.competencias.list.useQuery();
+  
+  return useMemo(() => {
+    const map: Record<number, string> = {};
+    competencias.forEach((comp: any) => {
+      map[comp.id] = comp.nome;
+    });
+    return map;
+  }, [competencias]);
+}
+
 export default function Acoes() {
   const [, navigate] = useLocation();
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
@@ -22,6 +35,10 @@ export default function Acoes() {
 
   // 1. BUSCA TURBO (LIMIT 1000)
   const { data: acoes = [], isLoading, refetch } = trpc.actions.list.useQuery({ limit: 1000 });
+  
+  // Buscar nomes de competências
+  const macroIds = useMemo(() => [...new Set(acoes.map((a: any) => a.macroId).filter(Boolean))], [acoes]);
+  const macroNames = useMacroNames(macroIds);
   
   const deleteMutation = trpc.actions.delete.useMutation({
     onSuccess: () => {
@@ -210,7 +227,7 @@ export default function Acoes() {
             const nomeColaborador = getColabName(acao);
             const nomeDepartamento = getDeptName(acao);
             const tituloPdi = getPdiTitle(acao);
-            const competencia = acao.microcompetencia || acao.macro?.nome || acao.macroNome || "Geral";
+            const competencia = acao.microcompetencia || acao.macro?.nome || acao.macroNome || (acao.macroId ? macroNames[acao.macroId] || `Competência ${acao.macroId}` : "Geral");
             const dataFormatada = acao.prazo ? new Date(acao.prazo).toLocaleDateString('pt-BR') : "--/--/----";
 
             return (

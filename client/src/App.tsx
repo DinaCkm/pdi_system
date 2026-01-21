@@ -32,6 +32,7 @@ import { AcoesNova } from "./pages/AcoesNova";
 import AcoesEditar from "./pages/AcoesEditar";
 import AcoesDetalhes from "./pages/AcoesDetalhes";
 import AcoesEquipe from "./pages/AcoesEquipe";
+import CentralComando from "./pages/CentralComando";
 
 function Router() {
   return (
@@ -43,6 +44,12 @@ function Router() {
       <Route path={"/dashboard"}>
         <DashboardLayout>
           <Dashboard />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/central-comando"}>
+        <DashboardLayout>
+          <CentralComando />
         </DashboardLayout>
       </Route>
       

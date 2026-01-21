@@ -1,0 +1,42 @@
+{
+  "query": "SELECT u.id, u.name, u.role, u.email, u.departamentoId, u.leaderId FROM users u WHERE u.leaderId = (SELECT id FROM users WHERE email = 'liderteste1@teste.com') ORDER BY u.name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT u.id, u.name, u.role, u.email, u.departamentoId, u.leaderId FROM users u WHERE u.leaderId = (SELECT id FROM users WHERE email = 'liderteste1@teste.com') ORDER BY u.name;",
+  "rows": [
+    {
+      "id": "810001",
+      "name": "Admin Teste",
+      "role": "colaborador",
+      "email": "admin.teste@empresa.com",
+      "departamentoId": "90001",
+      "leaderId": "720003"
+    },
+    {
+      "id": "840001",
+      "name": "Julia Souza Makiyama",
+      "role": "colaborador",
+      "email": "dina@ckmtalents.net",
+      "departamentoId": "90001",
+      "leaderId": "720003"
+    },
+    {
+      "id": "720001",
+      "name": "Usuarioteste1",
+      "role": "colaborador",
+      "email": "usuarioteste1@teste.com",
+      "departamentoId": "90001",
+      "leaderId": "720003"
+    },
+    {
+      "id": "720002",
+      "name": "usuarioteste2",
+      "role": "colaborador",
+      "email": "usuarioteste2@teste.com",
+      "departamentoId": "90001",
+      "leaderId": "720003"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\trole\temail\tdepartamentoId\tleaderId\n810001\tAdmin Teste\tcolaborador\tadmin.teste@empresa.com\t90001\t720003\n840001\tJulia Souza Makiyama\tcolaborador\tdina@ckmtalents.net\t90001\t720003\n720001\tUsuarioteste1\tcolaborador\tusuarioteste1@teste.com\t90001\t720003\n720002\tusuarioteste2\tcolaborador\tusuarioteste2@teste.com\t90001\t720003\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}
