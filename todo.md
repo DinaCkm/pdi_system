@@ -1510,3 +1510,12 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [ ] Implementar trava de segurança no botão "Enviar Evidência"
 - [ ] Botão cinza com cadeado quando PDI não está validado
 - [ ] Testar fluxo completo de validação
+
+## Ajustes de Gestão da Área do Líder (JAN 2025)
+- [x] Implementar função getSubordinates em db.ts (já existia)
+- [x] Corrigir procedure teamPDIs para filtrar por subordinados
+- [ ] Adicionar informação visual "Líder do Departamento: [Nome]"
+- [x] Remover link de Solicitações do menu lateral
+- [x] Remover rota de Solicitações do sistema
+- [ ] Adicionar mensagem motivadora quando equipe vazia
+- [x] Testar visualização de PDIs da equipe (24 testes passando)

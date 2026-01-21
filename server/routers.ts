@@ -79,7 +79,15 @@ export const appRouter = router({
         return pdiUserId === ctxUserId;
       });
     }),
-    teamPDIs: protectedProcedure.query(async () => await db.getAllPDIs()),
+    teamPDIs: protectedProcedure.query(async ({ ctx }) => {
+      const subordinates = await db.getSubordinates(Number(ctx.user.id));
+      const subIds = subordinates.map(s => s.id);
+      
+      if (subIds.length === 0) return [];
+
+      const allPDIs = await db.getAllPDIs();
+      return allPDIs.filter(pdi => subIds.includes(Number(pdi.colaboradorId)));
+    }),
     validate: adminProcedure.input(z.object({ pdiId: z.number() })).mutation(async ({ input }) => {
       await db.updatePDI(input.pdiId, { status: 'em_andamento' });
       return { success: true };
