@@ -169,9 +169,9 @@ export default function AcoesEquipe() {
             return (
               <Card key={acao.id} className="p-4 hover:shadow-md transition">
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-base">{acao.titulo}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{acao.descricao}</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-base break-words">{acao.titulo}</h3>
+                    <p className="text-sm text-muted-foreground mt-1 break-words whitespace-pre-wrap max-w-full">{acao.descricao}</p>
                     
                     <div className="flex flex-wrap items-center gap-3 mt-3 text-xs">
                       <span className="text-muted-foreground">

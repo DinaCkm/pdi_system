@@ -1562,3 +1562,12 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar selo de departamento no topo (já adicionado)
 - [x] Adicionar botão "Ver Painel Completo da Equipe" (já adicionado)
 - [x] Testar fluxo completo do mini-dashboard (24 testes passando)
+
+## Finalização da Área do Líder - Usabilidade (JAN 2025)
+- [x] Corrigir quebra de texto em descrições longas (break-words, whitespace-pre-wrap)
+- [x] Aplicar max-width em campos de descrição
+- [x] Testar responsividade do layout
+- [x] Verificar se todas as datas inválidas foram removidas
+- [x] Confirmar que Solicitações foi removido completamente
+- [x] Validar selo de departamento no topo
+- [x] Testar fluxo completo do dashboard do Líder (24 testes passando)

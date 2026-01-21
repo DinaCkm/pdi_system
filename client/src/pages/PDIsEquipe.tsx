@@ -454,9 +454,9 @@ export default function PDIsEquipe() {
                 return (
                   <div key={acao.id} className="p-4 border rounded-lg hover:shadow-md transition bg-white">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-sm text-gray-800">{acao.titulo}</h4>
-                        <p className="text-xs text-muted-foreground mt-1">{acao.descricao}</p>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm text-gray-800 break-words">{acao.titulo}</h4>
+                        <p className="text-xs text-muted-foreground mt-1 break-words whitespace-pre-wrap max-w-full">{acao.descricao}</p>
                         <div className="flex items-center gap-3 mt-3 text-xs">
                           <span className="text-muted-foreground font-medium">
                             Prazo: {new Date(acao.prazo).toLocaleDateString('pt-BR')}
