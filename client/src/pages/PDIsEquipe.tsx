@@ -4,17 +4,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectContentNoPortal } from "@/components/ui/select";
-import { Eye, Target, User, Calendar, CheckCircle2, Search, Filter, List, TrendingUp } from "lucide-react";
+import { Eye, Target, User, Calendar, CheckCircle2, Search, Filter, List, TrendingUp, CheckCircle } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { useLocation } from "wouter";
 
 export default function PDIsEquipe() {
   const { data: pdis, isLoading } = trpc.pdis.teamPDIs.useQuery();
   const { data: ciclos } = trpc.ciclos.list.useQuery();
+  const { mutate: validatePDI } = trpc.pdis.validate.useMutation();
   const [selectedPDI, setSelectedPDI] = useState<any>(null);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showValidateAlert, setShowValidateAlert] = useState(false);
+  const [pdiToValidate, setPDIToValidate] = useState<any>(null);
   const [, setLocation] = useLocation();
   
   // Estados de filtros

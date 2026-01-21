@@ -1499,3 +1499,14 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Melhorar mensagens de erro no frontend
 - [x] Validar aceitar qualquer tipo de arquivo no backend
 - [x] Testar envio com diferentes tipos de arquivo
+
+## Fluxo de Validação do PDI pelo Líder (JAN 2025)
+- [x] Criar procedure para mudar status do PDI para "em_andamento" (pdis.validate)
+- [x] Criar procedure teamPDIs para listar PDIs do time
+- [ ] Criar botão "Aprovar e Validar Plano" na área do Líder (PDIsEquipe.tsx)
+- [ ] Implementar AlertDialog com mensagem crítica de confirmação
+- [ ] Adicionar selo "✅ PLANO ATIVO & VALIDADO" em MeuPDI.tsx
+- [ ] Exibir "Validado por: [Nome do Líder]" em MeuPDI.tsx
+- [ ] Implementar trava de segurança no botão "Enviar Evidência"
+- [ ] Botão cinza com cadeado quando PDI não está validado
+- [ ] Testar fluxo completo de validação

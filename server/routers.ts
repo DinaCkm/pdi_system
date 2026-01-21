@@ -79,6 +79,11 @@ export const appRouter = router({
         return pdiUserId === ctxUserId;
       });
     }),
+    teamPDIs: protectedProcedure.query(async () => await db.getAllPDIs()),
+    validate: adminProcedure.input(z.object({ pdiId: z.number() })).mutation(async ({ input }) => {
+      await db.updatePDI(input.pdiId, { status: 'em_andamento' });
+      return { success: true };
+    }),
   }),
 
   // ============= EVIDÊNCIAS (JÁ ATUALIZADO ANTERIORMENTE) =============
