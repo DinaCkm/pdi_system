@@ -15,6 +15,7 @@ export default function AcoesEquipe() {
   // --- ESTADOS DOS FILTROS ---
   const [filtroColaborador, setFiltroColaborador] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
+  const [filtroMacro, setFiltroMacro] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
   // 1. BUSCA DE AÇÕES DA EQUIPE
@@ -44,19 +45,22 @@ export default function AcoesEquipe() {
   };
 
   // 3. OPÇÕES DE FILTRO
-  const { colaboradoresUnicos, statusUnicos } = useMemo(() => {
+  const { colaboradoresUnicos, statusUnicos, macrosUnicos } = useMemo(() => {
     const colabs = new Set<string>();
     const statuses = new Set<string>();
 
+    const macros = new Set<number>();
     acoes.forEach((acao: any) => {
       const c = getColabName(acao);
       if (c && c !== "Colaborador não identificado") colabs.add(c);
       if (acao.status) statuses.add(acao.status);
+      if (acao.macroId) macros.add(acao.macroId);
     });
 
     return {
       colaboradoresUnicos: Array.from(colabs).sort(),
       statusUnicos: Array.from(statuses).sort(),
+      macrosUnicos: Array.from(macros).sort((a, b) => a - b),
     };
   }, [acoes]);
 
@@ -68,6 +72,7 @@ export default function AcoesEquipe() {
 
     if (filtroColaborador && colab !== filtroColaborador) return false;
     if (filtroStatus && acao.status !== filtroStatus) return false;
+    if (filtroMacro && acao.macroId !== Number(filtroMacro)) return false;
     if (searchTerm && !textoGeral.includes(termoBusca)) return false;
 
     return true;
@@ -76,6 +81,7 @@ export default function AcoesEquipe() {
   const clearFilters = () => {
     setFiltroColaborador("");
     setFiltroStatus("");
+    setFiltroMacro("");
     setSearchTerm("");
   };
 
@@ -130,6 +136,21 @@ export default function AcoesEquipe() {
             </select>
           </div>
 
+          {/* Macrocompetência */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-muted-foreground uppercase">Macrocompetência</label>
+            <select
+              value={filtroMacro}
+              onChange={(e) => setFiltroMacro(e.target.value)}
+              className="p-2 rounded-md border border-input bg-background"
+            >
+              <option value="">Todas</option>
+              {macrosUnicos.map(macroId => (
+                <option key={macroId} value={macroId}>Macro ID: {macroId}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Busca */}
           <div className="flex flex-col gap-2">
             <label className="text-xs font-bold text-muted-foreground uppercase">Busca</label>
@@ -141,7 +162,7 @@ export default function AcoesEquipe() {
           </div>
         </div>
 
-        {(filtroColaborador || filtroStatus || searchTerm) && (
+        {(filtroColaborador || filtroStatus || filtroMacro || searchTerm) && (
           <Button
             variant="outline"
             size="sm"

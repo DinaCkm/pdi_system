@@ -280,6 +280,20 @@ export default function PDIsEquipe() {
                     <List className="h-4 w-4 mr-2" />
                     Ações
                   </Button>
+                  {pdi.status !== 'em_andamento' && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"
+                      onClick={() => {
+                        setPDIToValidate(pdi);
+                        setShowValidateAlert(true);
+                      }}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Validar
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -489,6 +503,36 @@ export default function PDIsEquipe() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog de Validação do PDI */}
+      <AlertDialog open={showValidateAlert} onOpenChange={setShowValidateAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Validar PDI do Colaborador</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está validando cada uma das ações de desenvolvimento do seu colaborador com este OK. Ao prosseguir, este PDI entrará em execução. Está certo disto?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pdiToValidate) {
+                  validatePDI({ pdiId: pdiToValidate.id }, {
+                    onSuccess: () => {
+                      setShowValidateAlert(false);
+                      setPDIToValidate(null);
+                    },
+                  });
+                }
+              }}
+              className="bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"
+            >
+              Confirmar Validação
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

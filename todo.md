@@ -1571,3 +1571,13 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Confirmar que Solicitações foi removido completamente
 - [x] Validar selo de departamento no topo
 - [x] Testar fluxo completo do dashboard do Líder (24 testes passando)
+
+## Aprovação do PDI e Filtros Estratégicos (JAN 2025)
+- [x] Implementar botão "Aprovar e Validar Plano" em PDIsEquipe.tsx
+- [x] Criar AlertDialog com mensagem crítica de confirmação
+- [x] Implementar procedure para mudar status PDI para "em_andamento" (já existia)
+- [x] Adicionar filtro de Macrocompetência em AcoesEquipe.tsx
+- [x] Adicionar filtro de Macrocompetência no Painel de Ações
+- [x] Validar cores de status (Vermelho, Azul, Amarelo, Verde)
+- [x] Testar fluxo completo de aprovação do PDI (24 testes passando)
+- [x] Testar filtros de macrocompetência (24 testes passando)
