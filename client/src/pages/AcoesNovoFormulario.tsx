@@ -136,7 +136,8 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
       return;
     }
 
-    const prazoFormatted = new Date(data.prazo).getTime(); // Converte para timestamp em milissegundos
+    // Enviar prazo como string ISO (YYYY-MM-DD)
+    const prazoFormatted = data.prazo;
 
     // Converter todos os IDs para número e validar
     const pdiId = Number(data.pdiId);

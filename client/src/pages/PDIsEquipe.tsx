@@ -271,7 +271,7 @@ export default function PDIsEquipe() {
                     <List className="h-4 w-4 mr-2" />
                     Ações
                   </Button>
-                  {pdi.status === 'aguardando_aprovacao' && (
+                  {pdi.aguardandoAprovacao && (
                     <Button
                       variant="default"
                       size="sm"

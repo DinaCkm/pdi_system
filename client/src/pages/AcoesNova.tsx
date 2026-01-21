@@ -81,7 +81,7 @@ export function AcoesNova() {
       microcompetencia: formData.microcompetencia || undefined,
       titulo: formData.titulo,
       descricao: formData.descricao,
-      prazo: new Date(formData.prazo),
+      prazo: formData.prazo, // Enviar como string ISO (YYYY-MM-DD)
     });
   };
 

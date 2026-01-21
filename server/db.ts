@@ -1,6 +1,6 @@
 import { eq, and, isNull, not, inArray, desc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, departamentos, ciclos, evidences, notifications } from "../drizzle/schema";
+import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, departamentos, ciclos, evidences, notifications, pdiValidacoes } from "../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./_core/env";
 
@@ -869,4 +869,42 @@ export async function getMacroById(macroId: number) {
     .limit(1);
   
   return result[0] || null;
+}
+
+
+// ============= FUNÇÕES DE VALIDAÇÃO DE PDI =============
+
+export async function getPDIValidacao(pdiId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db
+    .select()
+    .from(pdiValidacoes)
+    .where(eq(pdiValidacoes.pdiId, pdiId))
+    .limit(1);
+  
+  return result[0] || null;
+}
+
+export async function createPDIValidacao(data: {
+  pdiId: number;
+  liderId: number;
+  justificativa?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(pdiValidacoes).values({
+    pdiId: data.pdiId,
+    liderId: data.liderId,
+    justificativa: data.justificativa,
+  });
+  
+  return result;
+}
+
+export async function isPDIAguardandoAprovacao(pdiId: number) {
+  const validacao = await getPDIValidacao(pdiId);
+  return !validacao; // Se não existe validação, está aguardando aprovação
 }

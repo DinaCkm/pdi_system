@@ -186,5 +186,14 @@ export const users = mysqlTable("users", {
 	index("users_openId_unique").on(table.openId),
 ]);
 
+export const pdiValidacoes = mysqlTable("pdi_validacoes", {
+	id: int().autoincrement().notNull(),
+	pdiId: int().notNull().references(() => pdis.id, { onDelete: "cascade" }),
+	liderId: int().notNull().references(() => users.id, { onDelete: "cascade" }),
+	aprovadoEm: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	justificativa: text(),
+	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+});
+
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;

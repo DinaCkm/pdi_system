@@ -1600,3 +1600,41 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Ajustar função de criação de PDI para status inicial "em_andamento" (status disponível no banco)
 - [x] Validar que botão "Aprovar e Validar Plano" aparece quando PDI precisa validação
 - [x] Testar fluxo completo: criar PDI → validar → status "em_andamento" (24 testes passando)
+
+## Comando Corretivo Consolidado (JAN 2025)
+
+### 1. Corrigir Erro de Criação de Ação (ADMIN) ✅
+- [x] Investigar erro de tipo no campo 'prazo' (esperava string, recebeu Date)
+- [x] Converter valor do campo 'prazo' para string (ISO ou YYYY-MM-DD) antes de enviar
+- [x] Testar criação de ação sem erros de tipo (AcoesNova.tsx e AcoesNovoFormulario.tsx corrigidos)
+
+### 2. Arquitetura de Validação com Tabela pdi_validacoes ✅
+- [x] Criar tabela pdi_validacoes para rastrear aprovações (audit trail)
+- [x] Adicionar funções: getPDIValidacao(), createPDIValidacao(), isPDIAguardandoAprovacao()
+- [x] Atualizar procedure validate para criar registro em pdi_validacoes
+- [x] Enriquecer procedure teamPDIs com aguardandoAprovacao, validadoEm, validadoPor
+
+### 3. Botão de Aprovação do Líder ✅
+- [x] Mostrar botão 'Aprovar e Validar Plano' APENAS se aguardandoAprovacao === true
+- [x] Implementar AlertDialog de responsabilidade (PDIsEquipe.tsx)
+- [x] Ao confirmar, criar registro em pdi_validacoes
+
+### 4. Tradução de Macrocompetências ✅
+- [x] Usar macroNome em todos os cards de ação
+- [x] Exibir NOME da competência em filtros (AcoesEquipe.tsx)
+- [x] Exibir NOME da competência em modais
+- [x] Remover exibição de IDs numéricos
+
+### 5. Limpeza e Dashboard no Modal ✅
+- [x] Botão 'Ações' implementado (sem botão 'Detalhes')
+- [x] Mini-dashboard com contadores (Total, Concluídas, Em Andamento)
+- [x] Barra visual de progresso com gradiente verde
+- [x] Aplicar break-words em descrições longas
+- [x] Remover linhas de 'Invalid Date'
+
+### 6. Cores e Menu ✅
+- [x] Status Não Iniciada: Vermelho (bg-red-100)
+- [x] Status Aguardando: Amarelo (bg-yellow-100)
+- [x] Status Concluída: Verde (bg-green-100)
+- [x] Página 'Solicitações' removida do menu
+- [x] Link 'Solicitações' removido de todos os roles
