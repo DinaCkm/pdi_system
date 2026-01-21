@@ -1519,3 +1519,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Remover rota de Solicitações do sistema
 - [ ] Adicionar mensagem motivadora quando equipe vazia
 - [x] Testar visualização de PDIs da equipe (24 testes passando)
+
+## Limpeza do Modal do Líder (JAN 2025)
+- [x] Remover campos "Criado em" e "Atualizado em" do modal de detalhes
+- [x] Verificar alinhamento do rodápé do modal
+- [x] Adicionar selo colorido com nome do departamento no topo de PDIsEquipe.tsx
+- [x] Testar visual do modal após limpeza (24 testes passando)

@@ -107,6 +107,13 @@ export default function PDIsEquipe() {
           <p className="text-muted-foreground mt-1">
             Visualize e acompanhe os Planos de Desenvolvimento Individual dos seus subordinados
           </p>
+          {pdis && pdis.length > 0 && pdis[0]?.departamentoNome && (
+            <div className="mt-3 inline-block">
+              <div className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-100 to-orange-100 border-l-4 border-blue-600">
+                <p className="text-sm font-semibold text-blue-900">Lider do Departamento: <span className="text-orange-600">{pdis[0].departamentoNome}</span></p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -347,22 +354,6 @@ export default function PDIsEquipe() {
                     <p className="text-2xl font-bold text-primary">{selectedPDI.progressPercentage || 0}%</p>
                     <p className="text-sm text-muted-foreground">de conclusão</p>
                   </div>
-                </div>
-              </div>
-
-              {/* Datas */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Criado em</label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {new Date(selectedPDI.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Atualizado em</label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {new Date(selectedPDI.updatedAt).toLocaleDateString()}
-                  </p>
                 </div>
               </div>
 
