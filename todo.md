@@ -1525,3 +1525,12 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Verificar alinhamento do rodápé do modal
 - [x] Adicionar selo colorido com nome do departamento no topo de PDIsEquipe.tsx
 - [x] Testar visual do modal após limpeza (24 testes passando)
+
+## Manutenção da Área do Líder - Correções (JAN 2025)
+- [x] Corrigir botão "Ações" para abrir modal em vez de redirecionar
+- [x] Criar modal de ações com lista de ações do PDI
+- [x] Adicionar ícone de Lista no botão "Ações"
+- [x] Remover datas inválidas do modal de detalhes
+- [x] Adicionar selo de departamento no topo
+- [x] Remover Solicitações do menu
+- [x] Testar fluxo completo (24 testes passando)

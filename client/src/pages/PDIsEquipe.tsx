@@ -19,6 +19,9 @@ export default function PDIsEquipe() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showValidateAlert, setShowValidateAlert] = useState(false);
   const [pdiToValidate, setPDIToValidate] = useState<any>(null);
+  const [showActionsModal, setShowActionsModal] = useState(false);
+  const [selectedPDIForActions, setSelectedPDIForActions] = useState<any>(null);
+  const { data: actions } = trpc.actions.list.useQuery({ pdiId: selectedPDIForActions?.id }, { enabled: !!selectedPDIForActions?.id });
   const [, setLocation] = useLocation();
   
   // Estados de filtros
@@ -42,8 +45,9 @@ export default function PDIsEquipe() {
     setShowViewModal(true);
   };
 
-  const handleViewActions = (pdiId: number) => {
-    setLocation(`/acoes?pdiId=${pdiId}`);
+  const handleViewActions = (pdi: any) => {
+    setSelectedPDIForActions(pdi);
+    setShowActionsModal(true);
   };
 
   // Extrair lista única de colaboradores
@@ -271,7 +275,7 @@ export default function PDIsEquipe() {
                     variant="default"
                     size="sm"
                     className="flex-1"
-                    onClick={() => handleViewActions(pdi.id)}
+                    onClick={() => handleViewActions(pdi)}
                   >
                     <List className="h-4 w-4 mr-2" />
                     Ações
@@ -363,7 +367,7 @@ export default function PDIsEquipe() {
                   className="w-full"
                   onClick={() => {
                     setShowViewModal(false);
-                    handleViewActions(selectedPDI.id);
+                    handleViewActions(selectedPDI);
                   }}
                 >
                   <List className="h-4 w-4 mr-2" />
@@ -372,6 +376,46 @@ export default function PDIsEquipe() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Ações do PDI */}
+      <Dialog open={showActionsModal} onOpenChange={setShowActionsModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <List className="h-5 w-5 text-blue-600" />
+              Ações do PDI: {selectedPDIForActions?.titulo}
+            </DialogTitle>
+            <DialogDescription>
+              Colaborador: {selectedPDIForActions?.colaboradorNome}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            {!actions || actions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Nenhuma ação cadastrada para este PDI</p>
+              </div>
+            ) : (
+              actions.map((acao: any) => (
+                <div key={acao.id} className="p-4 border rounded-lg hover:bg-muted/50 transition">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-sm">{acao.titulo}</h4>
+                      <p className="text-xs text-muted-foreground mt-1">{acao.descricao}</p>
+                      <div className="flex items-center gap-4 mt-2 text-xs">
+                        <span className="text-muted-foreground">Prazo: {new Date(acao.prazo).toLocaleDateString('pt-BR')}</span>
+                        <Badge variant="outline" className={acao.status === 'concluida' ? 'bg-green-50 text-green-700 border-green-300' : 'bg-yellow-50 text-yellow-700 border-yellow-300'}>
+                          {acao.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
