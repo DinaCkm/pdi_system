@@ -1492,3 +1492,10 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Corrigir procedure evidences.create com tratamento de tipos
 - [x] Adicionar console.error para logging de erros
 - [x] Testar envio de evidência após correção
+
+## Refinamento do Modal de Envio (JAN 2025)
+- [x] Adicionar instrução visual sobre ZIP no modal
+- [x] Usar ícone FileArchive ou Package
+- [x] Melhorar mensagens de erro no frontend
+- [x] Validar aceitar qualquer tipo de arquivo no backend
+- [x] Testar envio com diferentes tipos de arquivo

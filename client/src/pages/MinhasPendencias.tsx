@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search, AlertTriangle, Eye, MessageSquare, Upload, History, User, Zap, Sparkles, Trophy } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search, AlertTriangle, Eye, MessageSquare, Upload, History, User, Zap, Sparkles, Trophy, FileArchive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -56,7 +56,8 @@ export default function MinhasPendencias() {
       trpc.useUtils().actions.list.invalidate();
     },
     onError: (error: any) => {
-      toast.error("Erro ao enviar evidência");
+      const mensagem = error?.message || "Não foi possível enviar. Verifique se o arquivo não é muito grande ou se sua conexão está estável.";
+      toast.error(mensagem);
     },
   });
 
@@ -523,6 +524,15 @@ export default function MinhasPendencias() {
                     </div>
                   )}
                 </label>
+              </div>
+            </div>
+
+            {/* Instrução Visual sobre ZIP */}
+            <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-md flex gap-3">
+              <FileArchive className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-blue-900">Dica: Múltiplos arquivos?</p>
+                <p className="text-xs text-blue-700 mt-1">Se você tiver mais de um arquivo (fotos, PDFs, planilhas), coloque todos em um único arquivo .ZIP antes de enviar.</p>
               </div>
             </div>
           </div>
