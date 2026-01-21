@@ -1735,3 +1735,52 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Declaração de ciência antes de confirmar
 - [x] Menu "Solicitações" removido permanentemente
 - [x] Sem linhas de "Invalid Date" no sistema
+
+
+## COMANDO FINAL DE AJUSTE (JAN 2025)
+
+### 1. BUG DA DATA (URGENTE)
+- [ ] Forçar prazo como String (ISO) em AcoesNova.tsx
+- [ ] Usar .toISOString().split('T')[0] antes de enviar
+- [ ] Validar que erro 'expected string, received Date' desapareceu
+
+### 2. NOMES DE MACROS
+- [ ] Usar getMacroById em Acoes.tsx para exibir NOME
+- [ ] Remover exibição de IDs numéricos
+
+### 3. PENTE FINO DO COLABORADOR
+- [ ] Remover 'Histórico de Alterações' do menu
+- [ ] Adicionar contador visual (Total, Concluídas, Pendentes, Atrasadas)
+- [ ] Aplicar break-words em descrições
+
+### 4. BUG DE EVIDÊNCIAS
+- [ ] Corrigir erro 'Invalid hook call' em página de evidências
+
+### 5. CHECAGEM OBRIGATÓRIA
+- [ ] Simular criação de ação
+- [ ] Validar que erro de data sumiu
+
+
+## COMANDO DE AUDITORIA E SINCRONIZACAO TOTAL (JAN 2025)
+
+### 1. SINCRONIZAR STATUS DE DEPARTAMENTOS
+- [ ] Corrigir lógica de CentralComando.tsx para refletir status real
+- [ ] Adicionar botão de "Alternar Status" (Ativar/Desativar)
+- [ ] Validar que status é igual em todas as telas
+
+### 2. BLINDAGEM DO FORMULÁRIO (ERRO DE DATA)
+- [ ] Forçar prazo como String ISO em nova.tsx
+- [ ] Usar .toISOString().split('T')[0] antes de enviar
+
+### 3. IDENTIDADE DO COLABORADOR
+- [ ] Substituir ID 5 pelo Nome da Macrocompetência
+- [ ] Adicionar contadores (Total, Concluídas, Pendentes, Atrasadas)
+- [ ] Remover "Histórico de Alterações" do menu
+
+### 4. CORREÇÃO TÉCNICA
+- [ ] Corrigir erro "Invalid hook call" em evidências
+- [ ] Aplicar break-words em descrições de ações
+
+### 5. TRAVA DE AUTOLIDERANÇA
+- [ ] Garantir que liderteste1 não seja líder de si mesmo
+- [ ] Corrigir vínculo no banco
