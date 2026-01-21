@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search, AlertTriangle, Eye, Edit, Trash2 } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search, AlertTriangle, Eye, MessageSquare, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -196,12 +196,12 @@ export default function MinhasPendencias() {
                 </div>
 
                 {/* Botões de Ação */}
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleViewDetails(acao)}
-                    className="gap-2"
+                    className="gap-2 flex-1 min-w-[120px]"
                   >
                     <Eye className="h-4 w-4" />
                     Detalhes
@@ -209,10 +209,20 @@ export default function MinhasPendencias() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 flex-1 min-w-[140px]"
+                    onClick={() => toast.info("Solicitar alteração - Em desenvolvimento")}
                   >
-                    <Edit className="h-4 w-4" />
-                    Editar
+                    <MessageSquare className="h-4 w-4" />
+                    Solicitar Alteração
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="gap-2 flex-1 min-w-[130px] bg-gradient-to-r from-blue-600 to-orange-500"
+                    onClick={() => toast.info("Enviar evidência - Em desenvolvimento")}
+                  >
+                    <Upload className="h-4 w-4" />
+                    Enviar Evidência
                   </Button>
                 </div>
               </CardContent>
