@@ -158,20 +158,11 @@ export default function MeuPDI() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1"
+                      className="w-full"
                       onClick={() => handleView(pdi)}
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       Detalhes
-                    </Button>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-orange-500"
-                      onClick={() => handleViewActions(pdi.id)}
-                    >
-                      <List className="h-4 w-4 mr-2" />
-                      Ações
                     </Button>
                   </div>
 
@@ -293,20 +284,9 @@ export default function MeuPDI() {
                 <Button
                   variant="outline"
                   onClick={() => setShowViewModal(false)}
-                  className="flex-1"
+                  className="w-full"
                 >
                   Fechar
-                </Button>
-                <Button
-                  variant="default"
-                  onClick={() => {
-                    setShowViewModal(false);
-                    handleViewActions(selectedPDI.id);
-                  }}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-orange-500"
-                >
-                  <List className="h-4 w-4 mr-2" />
-                  Ver Ações
                 </Button>
               </div>
             </div>
