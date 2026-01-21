@@ -654,24 +654,12 @@ export async function getEvidenceById(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [result] = await db
-    .select({
-      id: evidences.id,
-      actionId: evidences.actionId,
-      colaboradorId: evidences.colaboradorId,
-      descricao: evidences.descricao,
-      arquivo: evidences.arquivo,
-      status: evidences.status,
-      createdAt: evidences.createdAt,
-      actionNome: actions.titulo,
-      colaboradorNome: users.name,
-    })
+  const result = await db
+    .select()
     .from(evidences)
-    .leftJoin(actions, eq(evidences.actionId, actions.id))
-    .leftJoin(users, eq(evidences.colaboradorId, users.id))
     .where(eq(evidences.id, id));
 
-  return result;
+  return result[0];
 }
 
 export async function updateEvidenceStatus(

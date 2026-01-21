@@ -1470,3 +1470,13 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
   - [ ] Teste com data fora de qualquer ciclo (deve dar erro)
   - [ ] Validar que ações são salvas corretamente
   - [ ] Criar checkpoint final
+
+## Fluxo de Evidências (NOVA IMPLEMENTAÇÃO - JAN 2025)
+- [x] Implementar dialog colorido de envio de evidência em MinhasPendencias.tsx
+- [x] Adicionar campo de descrição e upload de arquivo no dialog
+- [x] Implementar procedure de envio de evidência no backend (já existia)
+- [x] Implementar procedure de aprovação de evidência (muda ação para "concluida")
+- [x] Implementar procedure de reprovação de evidência (volta ação para "em_andamento")
+- [x] Adicionar status "Aguardando Avaliação" com cor amarela/laranja na ação
+- [x] Criar testes vitest para procedures de evidência
+- [x] Testar fluxo completo: envio → aprovação → mudança de status

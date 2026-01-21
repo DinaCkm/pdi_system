@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search, AlertTriangle, Eye, MessageSquare, Upload, History, User, Zap } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search, AlertTriangle, Eye, MessageSquare, Upload, History, User, Zap, Sparkles, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function MinhasPendencias() {
   const authData = useAuth();
@@ -22,6 +23,11 @@ export default function MinhasPendencias() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedAcaoHistory, setSelectedAcaoHistory] = useState<any>(null);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [selectedAcaoEvidence, setSelectedAcaoEvidence] = useState<any>(null);
+  const [showEvidenceDialog, setShowEvidenceDialog] = useState(false);
+  const [evidenceDescription, setEvidenceDescription] = useState("");
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [isSubmittingEvidence, setIsSubmittingEvidence] = useState(false);
 
   // Buscando as ações reais
   const { data: acoes, isLoading } = trpc.actions.list.useQuery(
@@ -34,6 +40,20 @@ export default function MinhasPendencias() {
     { actionId: selectedAcaoHistory?.id || 0 },
     { enabled: !!selectedAcaoHistory?.id }
   );
+
+  // Mutation para enviar evidência
+  const submitEvidenceMutation = trpc.evidences.create.useMutation({
+    onSuccess: () => {
+      toast.success("Evidência enviada com sucesso! Aguardando avaliação...");
+      setShowEvidenceDialog(false);
+      setEvidenceDescription("");
+      setEvidenceFile(null);
+      trpc.useUtils().actions.list.invalidate();
+    },
+    onError: (error: any) => {
+      toast.error("Erro ao enviar evidência");
+    },
+  });
 
   // Filtrando para garantir que mostra apenas as ações do usuário logado
   const minhasAcoes = useMemo(() => {
@@ -239,7 +259,10 @@ export default function MinhasPendencias() {
                     variant="default"
                     size="sm"
                     className="gap-2 flex-1 min-w-[130px] bg-gradient-to-r from-blue-600 to-orange-500"
-                    onClick={() => toast.info("Enviar evidência - Em desenvolvimento")}
+                    onClick={() => {
+                      setSelectedAcaoEvidence(acao);
+                      setShowEvidenceDialog(true);
+                    }}
                   >
                     <Upload className="h-4 w-4" />
                     Enviar Evidência
@@ -410,6 +433,108 @@ export default function MinhasPendencias() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
               Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Envio de Evidência */}
+      <Dialog open={showEvidenceDialog} onOpenChange={setShowEvidenceDialog}>
+        <DialogContent className="max-w-md bg-gradient-to-br from-blue-50 via-orange-50 to-blue-50">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              Registrar Minha Conquista!
+              <Trophy className="h-5 w-5 text-orange-500" />
+            </DialogTitle>
+            <DialogDescription>
+              {selectedAcaoEvidence?.titulo}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Campo de Descrição */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Descreva sua conquista
+              </label>
+              <Textarea
+                placeholder="Explique o que foi realizado, resultados alcançados e como isso contribui para o desenvolvimento..."
+                value={evidenceDescription}
+                onChange={(e) => setEvidenceDescription(e.target.value)}
+                className="min-h-[120px] resize-none"
+              />
+            </div>
+
+            {/* Upload de Arquivo */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Anexar arquivo (opcional)
+              </label>
+              <div className="border-2 border-dashed border-blue-300 rounded-lg p-4 text-center hover:bg-blue-50 transition">
+                <input
+                  type="file"
+                  onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                  id="evidence-file"
+                />
+                <label htmlFor="evidence-file" className="cursor-pointer block">
+                  {evidenceFile ? (
+                    <div className="flex items-center justify-center gap-2 text-green-600">
+                      <FileText className="h-5 w-5" />
+                      <span className="text-sm font-medium">{evidenceFile.name}</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-blue-600">
+                      <Upload className="h-5 w-5" />
+                      <span className="text-sm font-medium">Clique para selecionar arquivo</span>
+                      <span className="text-xs text-gray-500">PDF, Word, Imagem...</span>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowEvidenceDialog(false)}
+              disabled={isSubmittingEvidence}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-gradient-to-r from-blue-600 to-orange-500 text-white"
+              onClick={async () => {
+                if (!evidenceDescription.trim()) {
+                  toast.error("Por favor, descreva sua conquista");
+                  return;
+                }
+                setIsSubmittingEvidence(true);
+                try {
+                  await submitEvidenceMutation.mutateAsync({
+                    actionId: selectedAcaoEvidence.id,
+                    descricao: evidenceDescription,
+                    files: evidenceFile ? [evidenceFile] : undefined,
+                  });
+                } finally {
+                  setIsSubmittingEvidence(false);
+                }
+              }}
+              disabled={isSubmittingEvidence}
+            >
+              {isSubmittingEvidence ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Enviar Evidência
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
