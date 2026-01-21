@@ -1550,3 +1550,15 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar item "Ações da Equipe" no menu do Líder
 - [x] Adicionar link no pop-up para acessar painel completo
 - [x] Testar fluxo completo de visualização e filtros (24 testes passando)
+
+## Reestruturação do Painel do Líder - Mini-Dashboard (JAN 2025)
+- [x] Trocar fonte de dados para getActionsByPdiId (já estava correto)
+- [x] Remover conexão com histórico/logs de auditoria
+- [x] Criar contadores de status (Total, Concluídas, Em Andamento)
+- [x] Adicionar barra de progresso de conclusão
+- [x] Listar ações reais com badges coloridas
+- [x] Exibir prazo final de cada ação
+- [x] Remover campos "Criado em" e "Atualizado em" (já removidos)
+- [x] Adicionar selo de departamento no topo (já adicionado)
+- [x] Adicionar botão "Ver Painel Completo da Equipe" (já adicionado)
+- [x] Testar fluxo completo do mini-dashboard (24 testes passando)

@@ -381,7 +381,7 @@ export default function PDIsEquipe() {
 
       {/* Modal de Ações do PDI */}
       <Dialog open={showActionsModal} onOpenChange={setShowActionsModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <List className="h-5 w-5 text-blue-600" />
@@ -392,32 +392,88 @@ export default function PDIsEquipe() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 max-h-96 overflow-y-auto">
+          {/* MINI-DASHBOARD DE STATUS */}
+          {actions && actions.length > 0 && (() => {
+            const total = actions.length;
+            const concluidas = actions.filter((a: any) => a.status === 'concluida').length;
+            const emAndamento = actions.filter((a: any) => a.status === 'em_andamento' || a.status === 'aguardando_avaliacao').length;
+            const percentualConclusao = Math.round((concluidas / total) * 100);
+
+            return (
+              <div className="space-y-4 mb-6 p-4 bg-gradient-to-r from-blue-50 to-orange-50 rounded-lg border border-blue-200">
+                {/* Contadores */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center p-3 bg-white rounded-lg border">
+                    <p className="text-2xl font-bold text-gray-800">{total}</p>
+                    <p className="text-xs text-muted-foreground">Total de Ações</p>
+                  </div>
+                  <div className="text-center p-3 bg-white rounded-lg border">
+                    <p className="text-2xl font-bold text-green-600">{concluidas}</p>
+                    <p className="text-xs text-muted-foreground">Concluídas</p>
+                  </div>
+                  <div className="text-center p-3 bg-white rounded-lg border">
+                    <p className="text-2xl font-bold text-blue-600">{emAndamento}</p>
+                    <p className="text-xs text-muted-foreground">Em Andamento</p>
+                  </div>
+                </div>
+
+                {/* Barra de Progresso */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-700">Progresso de Conclusão</span>
+                    <span className="text-sm font-bold text-green-600">{percentualConclusao}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-green-400 to-green-600 h-full transition-all duration-300"
+                      style={{ width: `${percentualConclusao}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+          
+          {/* LISTA DE AÇÕES */}
+          <div className="space-y-3">
             {!actions || actions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <p>Nenhuma ação cadastrada para este PDI</p>
               </div>
             ) : (
-              actions.map((acao: any) => (
-                <div key={acao.id} className="p-4 border rounded-lg hover:bg-muted/50 transition">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-sm">{acao.titulo}</h4>
-                      <p className="text-xs text-muted-foreground mt-1">{acao.descricao}</p>
-                      <div className="flex items-center gap-4 mt-2 text-xs">
-                        <span className="text-muted-foreground">Prazo: {new Date(acao.prazo).toLocaleDateString('pt-BR')}</span>
-                        <Badge variant="outline" className={acao.status === 'concluida' ? 'bg-green-50 text-green-700 border-green-300' : 'bg-yellow-50 text-yellow-700 border-yellow-300'}>
-                          {acao.status}
-                        </Badge>
+              actions.map((acao: any) => {
+                const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
+                  nao_iniciada: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Não Iniciada' },
+                  em_andamento: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Em Andamento' },
+                  concluida: { bg: 'bg-green-100', text: 'text-green-700', label: 'Concluída' },
+                  aguardando_avaliacao: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Aguardando Avaliação' },
+                  cancelada: { bg: 'bg-red-100', text: 'text-red-700', label: 'Cancelada' },
+                };
+                const config = statusConfig[acao.status] || statusConfig.nao_iniciada;
+
+                return (
+                  <div key={acao.id} className="p-4 border rounded-lg hover:shadow-md transition bg-white">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm text-gray-800">{acao.titulo}</h4>
+                        <p className="text-xs text-muted-foreground mt-1">{acao.descricao}</p>
+                        <div className="flex items-center gap-3 mt-3 text-xs">
+                          <span className="text-muted-foreground font-medium">
+                            Prazo: {new Date(acao.prazo).toLocaleDateString('pt-BR')}
+                          </span>
+                          <Badge className={`${config.bg} ${config.text} border-0`}>
+                            {config.label}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
-          <div className="pt-4 border-t mt-4">
+          <div className="pt-4 border-t mt-6">
             <Button
               variant="outline"
               size="sm"
