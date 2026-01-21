@@ -115,7 +115,9 @@ export const appRouter = router({
       });
       
       // Atualizar status do PDI para 'em_andamento'
+      console.log(`[PDI.validate] Atualizando status do PDI ${input.pdiId} para em_andamento`);
       await db.updatePDIStatus(input.pdiId, 'em_andamento');
+      console.log(`[PDI.validate] Status atualizado com sucesso`);
       
       return { success: true };
     }),

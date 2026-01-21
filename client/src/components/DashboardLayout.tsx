@@ -44,7 +44,6 @@ const getMenuItems = (userRole: string) => {
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
       { icon: Upload, label: "Importar Ações", path: "/importar-acoes" },
       { icon: ClipboardCheck, label: "Evidências Pendentes", path: "/evidencias-pendentes" },
-      { icon: FileText, label: "Histórico de Alterações", path: "/historico-alteracoes" },
       { icon: BarChart, label: "Relatórios", path: "/relatorios" },
     );
   } else if (userRole === "lider") {
@@ -57,7 +56,6 @@ const getMenuItems = (userRole: string) => {
     items.push(
       { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
       { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
-      { icon: FileText, label: "Histórico de Alterações", path: "/historico-alteracoes" },
     );
   }
   
