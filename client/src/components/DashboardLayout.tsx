@@ -142,7 +142,7 @@ function DashboardLayoutContent({
   children,
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -154,16 +154,22 @@ function DashboardLayoutContent({
 
   // Cleanup de Portals removido - causava erro de removeChild
   
-  // Carregar contagem de pendências
+  // Carregar contagem de pendências (só se autenticado)
   const { data: pendenciesSummary } = trpc.notifications.getPendenciesSummary.useQuery(
     undefined,
-    { refetchInterval: 30000 } // Atualizar a cada 30 segundos
+    { 
+      refetchInterval: 30000, // Atualizar a cada 30 segundos
+      enabled: Boolean(user) // Só faz query se usuário está logado
+    }
   );
 
-  // Carregar contadores nao lidos por role
+  // Carregar contadores nao lidos por role (só se autenticado)
   const { data: unreadCounts } = trpc.notifications.getUnreadCounts.useQuery(
     undefined,
-    { refetchInterval: 30000 } // Atualizar a cada 30 segundos
+    { 
+      refetchInterval: 30000, // Atualizar a cada 30 segundos
+      enabled: Boolean(user) // Só faz query se usuário está logado
+    }
   );
 
   useEffect(() => {
