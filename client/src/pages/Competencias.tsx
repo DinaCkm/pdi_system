@@ -16,6 +16,7 @@ export default function Competencias() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingNome, setEditingNome] = useState("");
   const [editingDescricao, setEditingDescricao] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Mutações
   const createMacro = trpc.competencias.create.useMutation({
@@ -87,6 +88,11 @@ export default function Competencias() {
     setEditingDescricao("");
   };
 
+  const filteredMacros = macros.filter((macro: any) =>
+    macro.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (macro.descricao && macro.descricao.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Gestão de Competências</h1>
@@ -130,11 +136,29 @@ export default function Competencias() {
       {/* Lista de Competências */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Competências Cadastradas</h2>
+        
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Buscar por nome ou descrição..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          {searchTerm && (
+            <p className="text-sm text-gray-600 mt-2">
+              Exibindo {filteredMacros.length} de {macros.length} competências
+            </p>
+          )}
+        </div>
+        
         {macros.length === 0 ? (
           <p className="text-gray-500">Nenhuma competência cadastrada ainda.</p>
+        ) : filteredMacros.length === 0 ? (
+          <p className="text-gray-500">Nenhuma competência encontrada com "{searchTerm}".</p>
         ) : (
           <div className="space-y-4">
-            {macros.map((macro: any) => (
+            {filteredMacros.map((macro: any) => (
               <div key={macro.id} className="border rounded-lg p-4">
                 {editingId === macro.id ? (
                   // Modo Edição
