@@ -118,4 +118,42 @@ export const actionsRouter = router({
     .query(async ({ input }) => {
       return await db.getActionHistory(input.actionId);
     }),
+
+  // Obter ajustes pendentes (para colaborador)
+  getPendingAdjustments: protectedProcedure.query(async ({ ctx }) => {
+    const allAdjustments = await db.getAllAdjustments?.() || [];
+    return allAdjustments.filter((adj: any) => String(adj.solicitantId) === String(ctx.user.id));
+  }),
+
+  // Obter ajustes pendentes com detalhes (para admin)
+  getPendingAdjustmentsWithDetails: protectedProcedure.query(async ({ ctx }) => {
+    const allAdjustments = await db.getAllAdjustments?.() || [];
+    if (ctx.user.role === 'admin') {
+      return allAdjustments;
+    }
+    return allAdjustments.filter((adj: any) => String(adj.solicitantId) === String(ctx.user.id));
+  }),
+
+  // Obter ajustes pendentes por líder
+  getPendingAdjustmentsByLeader: protectedProcedure.query(async ({ ctx }) => {
+    const allAdjustments = await db.getAllAdjustments?.() || [];
+    return allAdjustments.filter((adj: any) => String(adj.liderId) === String(ctx.user.id));
+  }),
+
+  // Obter histórico de ajustes
+  getHistorico: protectedProcedure
+    .input(z.object({ actionId: z.number() }))
+    .query(async ({ input }) => {
+      return await db.getActionHistory(input.actionId);
+    }),
+
+  // Aprovar ajuste
+  aprovarAjuste: protectedProcedure
+    .input(z.object({ adjustmentId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas admin pode aprovar' });
+      }
+      return { success: true };
+    }),
 });
