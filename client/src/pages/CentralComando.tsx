@@ -190,7 +190,7 @@ export default function CentralComando() {
                   {users.filter((u: any) => u.departamentoId === dept.id).length} usuários
                 </div>
               </div>
-              <Badge variant="outline">{Number(dept.ativo) === 1 || dept.ativo === true ? "Ativo" : "Inativo"}</Badge>
+              <Badge variant="outline">{dept.status === 'ativo' ? "Ativo" : "Inativo"}</Badge>
             </div>
 
             {/* CONTEÚDO EXPANDIDO */}

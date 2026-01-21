@@ -288,7 +288,18 @@ export async function deleteAction(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.delete(actions).where(eq(actions.id, id));
+  try {
+    // Deletar em cascata: evidências, ajustes, histórico, depois a ação
+    await db.delete(evidences).where(eq(evidences.actionId, id));
+    await db.delete(adjustmentRequests).where(eq(adjustmentRequests.actionId, id));
+    await db.delete(acoesHistorico).where(eq(acoesHistorico.actionId, id));
+    await db.delete(actions).where(eq(actions.id, id));
+    
+    console.log('[deleteAction] Ação deletada com cascata:', id);
+  } catch (error) {
+    console.error('[deleteAction] Erro ao deletar ação:', error);
+    throw error;
+  }
 }
 
 // ============= FUNÇÕES DE HISTÓRICO =============
@@ -498,7 +509,7 @@ export async function updateUser(
     cpf: string;
     role: string;
     cargo: string;
-    leaderId: number;
+    leaderId: number | null;
     departamentoId: number;
     status: string;
   }>
