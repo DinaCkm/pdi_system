@@ -32,6 +32,7 @@ export default function Acoes() {
   const [filtroColaborador, setFiltroColaborador] = useState("");
   const [filtroPDI, setFiltroPDI] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [filtroSemVinculo, setFiltroSemVinculo] = useState(false);
 
   // 1. BUSCA TURBO (LIMIT 1000)
   const { data: acoes = [], isLoading, refetch } = trpc.actions.list.useQuery({ limit: 1000 });
@@ -111,7 +112,7 @@ export default function Acoes() {
     };
   }, [acoes]);
 
-  // 4. LÓGICA DE FILTRAGEM
+  // 4. LÓGICA DE FILTRAGEM (COM FALLBACK SEGURO)
   const filteredAcoes = acoes.filter((acao: any) => {
     const dept = getDeptName(acao);
     const colab = getColabName(acao);
@@ -126,6 +127,12 @@ export default function Acoes() {
     ).toLowerCase();
     const termoBusca = searchTerm.toLowerCase();
 
+    // Filtro de ações sem vínculo (orfãs)
+    if (filtroSemVinculo) {
+      const temVinculo = dept !== "Departamento não informado" && colab !== "Colaborador não identificado";
+      if (temVinculo) return false;
+    }
+
     if (filtroDepartamento && dept !== filtroDepartamento) return false;
     if (filtroColaborador && colab !== filtroColaborador) return false;
     if (filtroPDI && pdi !== filtroPDI) return false;
@@ -139,6 +146,7 @@ export default function Acoes() {
     setFiltroColaborador("");
     setFiltroPDI("");
     setSearchTerm("");
+    setFiltroSemVinculo(false);
   };
 
   return (
@@ -219,11 +227,25 @@ export default function Acoes() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{ flex: 1 }}
               />
-              {(filtroDepartamento || filtroColaborador || filtroPDI || searchTerm) && (
+              {(filtroDepartamento || filtroColaborador || filtroPDI || searchTerm || filtroSemVinculo) && (
                 <Button variant="ghost" onClick={clearFilters} style={{ padding: "0 10px", color: "#ef4444" }} title="Limpar Filtros">
                   <X size={18} />
                 </Button>
               )}
+            </div>
+          </div>
+
+          {/* Filtro de Ações sem Vínculo */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "5px", justifyContent: "flex-end" }}>
+            <label style={{ fontSize: "11px", fontWeight: "700", color: "#6b7280", textTransform: "uppercase" }}>Limpeza</label>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px", borderRadius: "6px", border: "1px solid #fee2e2", backgroundColor: filtroSemVinculo ? "#fee2e2" : "white", cursor: "pointer" }} onClick={() => setFiltroSemVinculo(!filtroSemVinculo)}>
+              <input
+                type="checkbox"
+                checked={filtroSemVinculo}
+                onChange={(e) => setFiltroSemVinculo(e.target.checked)}
+                style={{ cursor: "pointer" }}
+              />
+              <span style={{ fontSize: "13px", fontWeight: "600", color: filtroSemVinculo ? "#dc2626" : "#6b7280" }}>Ações sem Vínculo</span>
             </div>
           </div>
         </div>
@@ -300,13 +322,27 @@ export default function Acoes() {
                       
                       {/* Depto e Colab */}
                       <div style={{ display: "flex", gap: "10px" }}>
-                        <div style={{ padding: "8px", backgroundColor: "#dbeafe", borderRadius: "8px", color: "#1e40af", height: "fit-content" }}>
+                        <div style={{ padding: "8px", backgroundColor: nomeColaborador === "Colaborador não identificado" || nomeDepartamento === "Departamento não informado" ? "#fee2e2" : "#dbeafe", borderRadius: "8px", color: nomeColaborador === "Colaborador não identificado" || nomeDepartamento === "Departamento não informado" ? "#991b1b" : "#1e40af", height: "fit-content" }}>
                           <Building size={16} />
                         </div>
                         <div>
                           <span style={{ fontSize: "11px", color: "#6b7280", fontWeight: "700", textTransform: "uppercase" }}>Departamento / Colaborador</span>
-                          <div style={{ fontSize: "14px", fontWeight: "700", color: "#111827" }}>{nomeDepartamento}</div>
-                          <div style={{ fontSize: "13px", color: "#4b5563" }}>{nomeColaborador}</div>
+                          <div style={{ fontSize: "14px", fontWeight: "700", color: nomeDepartamento === "Departamento não informado" ? "#dc2626" : "#111827" }}>
+                            {nomeDepartamento}
+                            {nomeDepartamento === "Departamento não informado" && (
+                              <span style={{ marginLeft: "8px", fontSize: "11px", fontWeight: "700", color: "#dc2626", backgroundColor: "#fee2e2", padding: "2px 6px", borderRadius: "4px" }}>
+                                ⚠️ INATIVO/DELETADO
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: "13px", color: nomeColaborador === "Colaborador não identificado" ? "#dc2626" : "#4b5563" }}>
+                            {nomeColaborador}
+                            {nomeColaborador === "Colaborador não identificado" && (
+                              <span style={{ marginLeft: "8px", fontSize: "11px", fontWeight: "700", color: "#dc2626", backgroundColor: "#fee2e2", padding: "2px 6px", borderRadius: "4px" }}>
+                                ⚠️ USUÁRIO DELETADO
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
