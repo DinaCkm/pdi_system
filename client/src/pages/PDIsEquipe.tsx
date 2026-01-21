@@ -223,7 +223,7 @@ export default function PDIsEquipe() {
                   <CardTitle className="text-lg">{pdi.titulo}</CardTitle>
                   {getStatusBadge(pdi.status)}
                 </div>
-                <CardDescription className="line-clamp-2">
+                <CardDescription className="line-clamp-2 break-words">
                   {pdi.descricao || "Sem descrição"}
                 </CardDescription>
               </CardHeader>
@@ -271,7 +271,7 @@ export default function PDIsEquipe() {
                     <List className="h-4 w-4 mr-2" />
                     Ações
                   </Button>
-                  {pdi.aguardandoAprovacao && (
+                  {!pdi.validadoEm && (
                     <Button
                       variant="default"
                       size="sm"

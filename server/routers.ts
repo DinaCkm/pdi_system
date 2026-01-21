@@ -86,22 +86,7 @@ export const appRouter = router({
       if (subIds.length === 0) return [];
 
       const allPDIs = await db.getAllPDIs();
-      const filteredPDIs = allPDIs.filter(pdi => subIds.includes(Number(pdi.colaboradorId)));
-      
-      // Adicionar informacao de validacao
-      const pdiComValidacao = await Promise.all(
-        filteredPDIs.map(async (pdi: any) => {
-          const validacao = await db.getPDIValidacao(pdi.id);
-          return {
-            ...pdi,
-            aguardandoAprovacao: !validacao,
-            validadoEm: validacao?.aprovadoEm,
-            validadoPor: validacao?.liderId,
-          };
-        })
-      );
-      
-      return pdiComValidacao;
+      return allPDIs.filter(pdi => subIds.includes(Number(pdi.colaboradorId)));
     }),
     validate: protectedProcedure.input(z.object({ pdiId: z.number() })).mutation(async ({ input, ctx }) => {
       const pdi = await db.getPDIById(input.pdiId);

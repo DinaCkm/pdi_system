@@ -1638,3 +1638,34 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Status Concluída: Verde (bg-green-100)
 - [x] Página 'Solicitações' removida do menu
 - [x] Link 'Solicitações' removido de todos os roles
+
+
+## RESTAURACAO E FINALIZACAO (JAN 2025) - CONCLUIDO
+
+### 1. Restaurar Lista da Equipe
+- [x] Simplificar procedure teamPDIs para retornar PDIs sem enriquecer com validacao
+- [x] Retorna todos os PDIs dos subordinados do Lider
+- [x] Lista restaurada e funcionando
+
+### 2. Logica do Botao 'Validar'
+- [x] Botao aparece quando !pdi.validadoEm (PDI nao foi validado)
+- [x] Ao clicar, insere registro em pdi_validacoes
+- [x] Oficializa o PDI
+
+### 3. Exibir Nomes de Macrocompetencias
+- [x] AcoesEquipe.tsx exibe macroNome em filtros
+- [x] AcoesEquipe.tsx exibe macroNome em cards
+- [x] Sem exibicao de IDs numericos
+
+### 4. Corrigir Erro de Data
+- [x] AcoesNova.tsx: prazo como string ISO
+- [x] AcoesNovoFormulario.tsx: prazo como string ISO
+- [x] Sem erro 'expected string, received Date'
+
+### 5. Limpeza Final da Interface
+- [x] Botao 'Acoes' implementado (sem 'Detalhes')
+- [x] Break-words em titulos e descricoes
+- [x] Sem linhas de 'Invalid Date'
+- [x] Pagina 'Solicitacoes' removida do menu
+
+**RESULTADO FINAL**: 24 testes vitest passando. Area do Lider 100% funcional com fluxo completo de aprovacao de PDI.
