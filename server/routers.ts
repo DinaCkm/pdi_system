@@ -88,7 +88,18 @@ export const appRouter = router({
       const allPDIs = await db.getAllPDIs();
       return allPDIs.filter(pdi => subIds.includes(Number(pdi.colaboradorId)));
     }),
-    validate: adminProcedure.input(z.object({ pdiId: z.number() })).mutation(async ({ input }) => {
+    validate: protectedProcedure.input(z.object({ pdiId: z.number() })).mutation(async ({ input, ctx }) => {
+      const pdi = await db.getPDIById(input.pdiId);
+      if (!pdi) throw new TRPCError({ code: 'NOT_FOUND', message: 'PDI nao encontrado' });
+      
+      if (ctx.user.role === 'lider') {
+        const subordinates = await db.getSubordinates(Number(ctx.user.id));
+        const subIds = subordinates.map(s => s.id);
+        if (!subIds.includes(Number(pdi.colaboradorId))) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Voce nao pode validar PDI de outro departamento' });
+        }
+      }
+      
       await db.updatePDI(input.pdiId, { status: 'em_andamento' });
       return { success: true };
     }),

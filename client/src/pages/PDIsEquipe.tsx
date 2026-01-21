@@ -263,15 +263,6 @@ export default function PDIsEquipe() {
                 {/* Botões de Ação */}
                 <div className="flex gap-2 pt-2">
                   <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleView(pdi)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Detalhes
-                  </Button>
-                  <Button
                     variant="default"
                     size="sm"
                     className="flex-1"

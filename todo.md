@@ -1589,3 +1589,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar campo de macrocompetência em AcoesEquipe.tsx
 - [x] Enriquecer procedure teamActions com macroNome
 - [x] Testar exibição de nomes de macrocompetências (24 testes passando)
+
+## Refinamento Final - Limpeza e Ativação (JAN 2025)
+- [x] Remover botão "Detalhes" dos cards de PDI
+- [x] Corrigir procedure validate para permitir Líder validar PDI (mudado de adminProcedure para protectedProcedure)
+- [x] Adicionar validação de subordinados em procedure validate
+- [x] Testar fluxo completo de aprovação e visualização de ações (24 testes passando)
