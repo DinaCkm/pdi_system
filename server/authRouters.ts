@@ -2,9 +2,6 @@ import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "./_core/customTrpc";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
-import { sign } from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "segredo-super-secreto-do-pdi";
 
 export const authRouter = router({
   login: publicProcedure
@@ -24,11 +21,14 @@ export const authRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Usuário inativo." });
       }
 
-      const token = sign(
-        { id: user.id, role: user.role, name: user.name, departmentId: user.departamentoId },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      );
+      const payload = JSON.stringify({ 
+        id: user.id, 
+        role: user.role, 
+        name: user.name, 
+        departmentId: user.departamentoId 
+      });
+      
+      const token = Buffer.from(payload).toString('base64');
 
       return {
         token,

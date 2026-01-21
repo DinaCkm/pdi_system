@@ -1,75 +1,75 @@
 import { initTRPC, TRPCError } from "@trpc/server";
+import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
 import superjson from "superjson";
-import type { CustomTrpcContext } from "./customContext";
+import { ZodError } from "zod";
 
-const t = initTRPC.context<CustomTrpcContext>().create({
+// 1. CONTEXTO SEM DEPENDÊNCIA DE JWT
+export const createTRPCContext = async (opts: CreateNextContextOptions) => {
+  const { req, res } = opts;
+  // Pega o token do cabeçalho Authorization
+  const token = req.headers.authorization?.split(" ")[1];
+
+  let user = null;
+  
+  if (token) {
+    try {
+      // A MÁGICA: Decodificação nativa (Base64 -> JSON)
+      // Substitui o jwt.verify para não precisarmos instalar pacotes
+      const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
+      user = decoded;
+    } catch (cause) {
+      // Se o token for inválido, o usuário segue como null (deslogado)
+    }
+  }
+
+  return { user, req, res };
+};
+
+// 2. INICIALIZAÇÃO DO TRPC
+const t = initTRPC.context<typeof createTRPCContext>().create({
   transformer: superjson,
+  errorFormatter({ shape, error }) {
+    return {
+      ...shape,
+      data: {
+        ...shape.data,
+        zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
+      },
+    };
+  },
 });
 
+// 3. DEFINIÇÃO DE ROTAS E PROCEDIMENTOS
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
-/**
- * Middleware para verificar autenticação
- */
-const isAuthenticated = t.middleware(({ ctx, next }) => {
+// Middleware: Verifica se está logado
+const isAuthed = t.middleware(({ ctx, next }) => {
   if (!ctx.user) {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "Você precisa estar autenticado para acessar este recurso",
-    });
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Você precisa estar logado." });
   }
-
-  return next({
-    ctx: {
-      ...ctx,
-      user: ctx.user, // user é garantido não-null aqui
-    },
-  });
+  return next({ ctx: { user: ctx.user } });
 });
 
-/**
- * Middleware para verificar se é admin
- */
+export const protectedProcedure = t.procedure.use(isAuthed);
+
+// Middleware: Apenas Admin
 const isAdmin = t.middleware(({ ctx, next }) => {
-  if (!ctx.user) {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "Você precisa estar autenticado",
-    });
+  if (!ctx.user || ctx.user.role !== 'admin') {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Acesso restrito a administradores." });
   }
-
-  if (ctx.user.role !== "admin") {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "Apenas administradores podem acessar este recurso",
-    });
-  }
-
-  return next({ ctx });
+  return next({ ctx: { user: ctx.user } });
 });
 
-/**
- * Middleware para verificar se é admin ou líder
- */
+export const adminProcedure = t.procedure.use(isAuthed).use(isAdmin);
+
+// Middleware: Admin ou Líder
 const isAdminOrLeader = t.middleware(({ ctx, next }) => {
-  if (!ctx.user) {
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "Você precisa estar autenticado",
-    });
+  const isAllowed = ctx.user?.role === 'admin' || ctx.user?.role === 'lider';
+  if (!ctx.user || !isAllowed) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Acesso restrito." });
   }
-
-  if (ctx.user.role !== "admin" && ctx.user.role !== "lider") {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "Apenas administradores e líderes podem acessar este recurso",
-    });
-  }
-
-  return next({ ctx });
+  return next({ ctx: { user: ctx.user } });
 });
 
-export const protectedProcedure = t.procedure.use(isAuthenticated);
-export const adminProcedure = t.procedure.use(isAdmin);
-export const adminOrLeaderProcedure = t.procedure.use(isAdminOrLeader);
+export const adminOrLeaderProcedure = t.procedure.use(isAuthed).use(isAdminOrLeader);

@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure } from "../_core/customTrpc";
 import { z } from "zod";
 import { eq, and } from "drizzle-orm";
 import { pdis, actions, users, departamentos, adjustmentRequests } from "../../drizzle/schema";
