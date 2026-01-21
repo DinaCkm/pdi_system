@@ -9,11 +9,20 @@ import { TRPCError } from "@trpc/server";
 export const actionsRouter = router({
   
   // Lista todas as ações (com controle de permissão)
-  list: protectedProcedure.query(async ({ ctx }) => {
+  list: protectedProcedure
+    .input(z.object({ pdiId: z.number().optional() }).optional())
+    .query(async ({ ctx, input }) => {
     const user = ctx.user!;
+    const pdiId = input?.pdiId;
     
     // LOG PARA DIAGNÓSTICO
-    console.log("[actions.list] Usuário:", { id: user.id, role: user.role, tipo: typeof user.id });
+    console.log("[actions.list] Usuário:", { id: user.id, role: user.role, tipo: typeof user.id, pdiId });
+    
+    if (pdiId) {
+      // Se pdiId foi fornecido, buscar ações desse PDI
+      const allActions = await db.getAllActions();
+      return allActions.filter((a: any) => a.pdiId === pdiId);
+    }
     
     if (user.role === "admin") {
       // Admin vê todas as ações

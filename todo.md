@@ -1534,3 +1534,10 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar selo de departamento no topo
 - [x] Remover Solicitações do menu
 - [x] Testar fluxo completo (24 testes passando)
+
+## Correção de Conexão de Dados - Modal de Ações (JAN 2025)
+- [x] Capturar ID do PDI ao clicar no botão "Ações"
+- [x] Disparar query list com pdiId como parâmetro
+- [x] Modificar procedure list para aceitar pdiId opcional
+- [x] Exibir ações no modal usando map()
+- [x] Testar fluxo completo de abertura do modal com dados (24 testes passando)
