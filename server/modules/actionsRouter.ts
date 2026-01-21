@@ -12,12 +12,34 @@ export const actionsRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     const user = ctx.user!;
     
+    // LOG PARA DIAGNÓSTICO
+    console.log("[actions.list] Usuário:", { id: user.id, role: user.role, tipo: typeof user.id });
+    
     if (user.role === "admin") {
       // Admin vê todas as ações
-      return await db.getAllActions();
+      const allActions = await db.getAllActions();
+      console.log("[actions.list] Admin vendo todas as ações:", allActions.length);
+      return allActions;
     } else {
       // Colaborador vê apenas suas próprias ações
-      return await db.getActionsByColaboradorId(user.id);
+      const userActions = await db.getActionsByColaboradorId(user.id);
+      console.log("[actions.list] Ações do colaborador", user.id, ":", userActions.length);
+      if (userActions.length === 0) {
+        // Tenta buscar todas e filtrar manualmente
+        const allActions = await db.getAllActions();
+        console.log("[actions.list] Total de ações no banco:", allActions.length);
+        console.log("[actions.list] Primeiras ações:", allActions.slice(0, 2).map((a: any) => ({ id: a.id, responsavelId: a.responsavelId, usuarioId: a.usuarioId })));
+        
+        // Comparação flexível
+        const filtered = allActions.filter((acao: any) => {
+          const acaoUserId = String(acao.responsavelId || acao.usuarioId);
+          const ctxUserId = String(user.id);
+          return acaoUserId === ctxUserId;
+        });
+        console.log("[actions.list] Ações filtradas manualmente:", filtered.length);
+        return filtered;
+      }
+      return userActions;
     }
   }),
 

@@ -127,6 +127,8 @@ export async function getAllActions() {
       pdiTitulo: pdis.titulo,
       macroNome: competenciasMacros.nome,
       microcompetenciaNome: competenciasMacros.nome,
+      colaboradorId: pdis.colaboradorId,
+      responsavelId: pdis.colaboradorId,
       colaboradorNome: users.name,
       departamentoNome: departamentos.nome
     })
@@ -171,6 +173,8 @@ export async function getActionsByColaboradorId(colaboradorId: number) {
       pdiTitulo: pdis.titulo,
       macroNome: competenciasMacros.nome,
       microcompetenciaNome: competenciasMacros.nome,
+      colaboradorId: pdis.colaboradorId,
+      responsavelId: pdis.colaboradorId,
       colaboradorNome: users.name,
       departamentoNome: departamentos.nome
     })
@@ -356,9 +360,12 @@ export async function getAllPDIs() {
       
       return {
         pdiId: pdi.id,
+        id: pdi.id,
         titulo: pdi.titulo,
         status: pdi.status,
         progresso: pdi.progresso || 0,
+        colaboradorId: pdi.colaboradorId,
+        usuarioId: pdi.colaboradorId,
         colaboradorNome: user?.name || "—",
         departamentoNome: dept?.nome || "—",
         cicloNome: ciclo?.nome || "—",

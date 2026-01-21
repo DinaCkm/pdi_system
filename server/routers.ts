@@ -72,8 +72,12 @@ export const appRouter = router({
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => await db.getPDIById(input.id)),
     myPDIs: protectedProcedure.query(async ({ ctx }) => {
       const allPDIs = await db.getAllPDIs();
-      // Converte ambos para String para garantir que "5" seja igual a 5
-      return allPDIs.filter((pdi) => String(pdi.usuarioId) === String(ctx.user.id));
+      
+      return allPDIs.filter((pdi: any) => {
+        const pdiUserId = String(pdi.colaboradorId || pdi.usuarioId);
+        const ctxUserId = String(ctx.user.id);
+        return pdiUserId === ctxUserId;
+      });
     }),
   }),
 
