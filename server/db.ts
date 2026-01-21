@@ -369,6 +369,8 @@ export async function getAllPDIs() {
         colaboradorNome: user?.name || "—",
         departamentoNome: dept?.nome || "—",
         cicloNome: ciclo?.nome || "—",
+        ciclo: ciclo || null,
+        lider: user || null,
         liderNome: user?.name || "—",
         departamentoId: user?.departamentoId || 0,
         totalAcoes: pdi.totalAcoes || 0,
