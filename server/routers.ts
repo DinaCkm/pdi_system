@@ -114,6 +114,9 @@ export const appRouter = router({
         liderId: Number(ctx.user.id),
       });
       
+      // Atualizar status do PDI para 'em_andamento'
+      await db.updatePDIStatus(input.pdiId, 'em_andamento');
+      
       return { success: true };
     }),
   }),

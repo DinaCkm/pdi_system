@@ -14,7 +14,12 @@ import { useLocation } from "wouter";
 export default function PDIsEquipe() {
   const { data: pdis, isLoading } = trpc.pdis.teamPDIs.useQuery();
   const { data: ciclos } = trpc.ciclos.list.useQuery();
-  const { mutate: validatePDI } = trpc.pdis.validate.useMutation();
+  const utils = trpc.useUtils();
+  const { mutate: validatePDI } = trpc.pdis.validate.useMutation({
+    onSuccess: () => {
+      utils.pdis.teamPDIs.invalidate();
+    },
+  });
   const [selectedPDI, setSelectedPDI] = useState<any>(null);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showValidateAlert, setShowValidateAlert] = useState(false);
@@ -519,12 +524,9 @@ export default function PDIsEquipe() {
             <AlertDialogAction
               onClick={() => {
                 if (pdiToValidate) {
-                  validatePDI({ pdiId: pdiToValidate.id }, {
-                    onSuccess: () => {
-                      setShowValidateAlert(false);
-                      setPDIToValidate(null);
-                    },
-                  });
+                  validatePDI({ pdiId: pdiToValidate.id });
+                  setShowValidateAlert(false);
+                  setPDIToValidate(null);
                 }
               }}
               className="bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"

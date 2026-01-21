@@ -908,3 +908,16 @@ export async function isPDIAguardandoAprovacao(pdiId: number) {
   const validacao = await getPDIValidacao(pdiId);
   return !validacao; // Se não existe validação, está aguardando aprovação
 }
+
+// ============= FUNÇÕES DE ATUALIZAÇÃO DE PDI =============
+export async function updatePDIStatus(pdiId: number, status: 'em_andamento' | 'concluido' | 'cancelado') {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db
+    .update(pdis)
+    .set({ status })
+    .where(eq(pdis.id, pdiId));
+  
+  return result;
+}
