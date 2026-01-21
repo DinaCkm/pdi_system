@@ -84,10 +84,10 @@ export const appRouter = router({
       const lider = await db.getUserById(Number(ctx.user.id));
       if (!lider || !lider.departamentoId) return [];
       
-      // Buscar todos os usuarios do departamento
+      // Buscar todos os usuarios do departamento (qualquer role)
       const allUsers = await db.getAllUsers();
       const teamUserIds = allUsers
-        .filter(u => u.departamentoId === lider.departamentoId && u.role === 'colaborador')
+        .filter(u => u.departamentoId === lider.departamentoId)
         .map(u => u.id);
       
       if (teamUserIds.length === 0) return [];

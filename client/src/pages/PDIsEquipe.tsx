@@ -501,14 +501,14 @@ export default function PDIsEquipe() {
           <AlertDialogHeader>
             <AlertDialogTitle>Aprovar e Validar Plano de Desenvolvimento</AlertDialogTitle>
             <AlertDialogDescription className="space-y-3 text-sm text-left">
-              <p className="font-semibold">Antes de validar, verifique:</p>
+              <p className="font-semibold">Antes de validar, por favor, verifique:</p>
               <ul className="space-y-2 text-muted-foreground ml-4">
                 <li>✓ Você já se reuniu com seu liderado para discutir este plano? 🤝</li>
                 <li>✓ Avaliaram juntos cada uma das ações propostas?</li>
-                <li>✓ Caso ajustes sejam necessários, você já orientou o liderado a solicitar a alteração?</li>
-                <li>✓ Todas as ações foram discutidas, alinhadas e validadas por ambos?</li>
+                <li>✓ Caso ajustes sejam necessários, você orientou o liderado a solicitar a alteração informando sua aprovação?</li>
+                <li>✓ Todas as ações foram discutidas e alinhadas por ambos?</li>
               </ul>
-              <p className="text-xs pt-2 border-t mt-3">Ao clicar em Confirmar, você declara estar ciente de que este PDI foi revisado em conjunto e está pronto para entrar em execução oficial.</p>
+              <p className="text-xs pt-2 border-t mt-3">Ao clicar em Confirmar Validação, você confirma que está ciente de que este plano foi revisado em conjunto e está pronto para entrar em execução oficial.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex gap-3">

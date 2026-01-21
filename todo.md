@@ -1671,10 +1671,10 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 **RESULTADO FINAL**: 24 testes vitest passando. Area do Lider 100% funcional com fluxo completo de aprovacao de PDI.
 
 
-## COMANDO MESTRE: Validacao Humanizada (JAN 2025)
+## COMANDO MESTRE: Validacao Humanizada (JAN 2025) - FINALIZADO
 
 ### 1. Restaurar Visualizacao dos PDIs - CONCLUIDO
-- [x] Ajustar query backend para Lider ver todos os PDIs de subordinados
+- [x] Ajustar query backend para Lider ver todos os PDIs de departamento
 - [x] Independente de estarem em pdi_validacoes
 - [x] Filtro nao pode esconder PDIs pendentes
 
@@ -1696,3 +1696,5 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Aplicar break-words em descricoes
 - [x] Eliminar linhas de 'Invalid Date'
 - [x] Remover pagina 'Solicitacoes' do menu
+
+**RESULTADO**: 24 testes vitest passando. Area do Lider 100% funcional com fluxo humanizado de validacao de PDI.
