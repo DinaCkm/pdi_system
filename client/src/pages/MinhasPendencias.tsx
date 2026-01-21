@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search, AlertTriangle, Eye, MessageSquare, Upload } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search, AlertTriangle, Eye, MessageSquare, Upload, History, User, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,11 +20,19 @@ export default function MinhasPendencias() {
   const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [selectedAcao, setSelectedAcao] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [selectedAcaoHistory, setSelectedAcaoHistory] = useState<any>(null);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
 
   // Buscando as ações reais
   const { data: acoes, isLoading } = trpc.actions.list.useQuery(
     undefined,
     { enabled: !!userId }
+  );
+
+  // Buscando histórico de uma ação específica
+  const { data: actionHistory } = trpc.actions.getHistory.useQuery(
+    { actionId: selectedAcaoHistory?.id || 0 },
+    { enabled: !!selectedAcaoHistory?.id }
   );
 
   // Filtrando para garantir que mostra apenas as ações do usuário logado
@@ -207,6 +215,18 @@ export default function MinhasPendencias() {
                     Detalhes
                   </Button>
                   <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-2 flex-1 min-w-[120px] text-purple-600 hover:bg-purple-50"
+                    onClick={() => {
+                      setSelectedAcaoHistory(acao);
+                      setShowHistoryDialog(true);
+                    }}
+                  >
+                    <History className="h-4 w-4" />
+                    Histórico
+                  </Button>
+                  <Button
                     variant="outline"
                     size="sm"
                     className="gap-2 flex-1 min-w-[140px]"
@@ -230,6 +250,117 @@ export default function MinhasPendencias() {
           ))}
         </div>
       )}
+
+      {/* Dialog de Histórico */}
+      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-purple-600" />
+              Histórico de Mudanças
+            </DialogTitle>
+            <DialogDescription>
+              {selectedAcaoHistory?.titulo}
+            </DialogDescription>
+          </DialogHeader>
+
+          {actionHistory && actionHistory.length > 0 ? (
+            <div className="space-y-4">
+              {/* Timeline */}
+              <div className="relative">
+                {actionHistory.map((entry: any, index: number) => {
+                  const isSystem = entry.mudadoPor === "sistema" || !entry.usuarioNome;
+                  const timestamp = new Date(entry.dataMudanca).toLocaleString("pt-BR");
+                  
+                  return (
+                    <div key={index} className="flex gap-4 pb-6 relative">
+                      {/* Linha vertical */}
+                      {index < actionHistory.length - 1 && (
+                        <div className="absolute left-5 top-12 w-0.5 h-12 bg-gray-200" />
+                      )}
+
+                      {/* Ícone e ponto */}
+                      <div className="flex flex-col items-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          isSystem 
+                            ? "bg-blue-100 text-blue-600" 
+                            : "bg-orange-100 text-orange-600"
+                        }`}>
+                          {isSystem ? (
+                            <Zap className="h-5 w-5" />
+                          ) : (
+                            <User className="h-5 w-5" />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Conteúdo */}
+                      <div className="flex-1 pt-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="font-medium text-sm">
+                            {isSystem ? "Alteração do Sistema" : entry.usuarioNome || "Usuário"}
+                          </p>
+                          <span className="text-xs text-muted-foreground">{timestamp}</span>
+                        </div>
+
+                        {/* Mudanças */}
+                        <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
+                          {entry.campoAlterado && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-600 mb-1">
+                                Campo: {entry.campoAlterado}
+                              </p>
+                              <div className="flex gap-2 items-start">
+                                {/* Valor Antigo */}
+                                {entry.valorAntigo && (
+                                  <div className="flex-1 bg-red-50 border border-red-200 rounded p-2">
+                                    <p className="text-xs text-red-600 font-medium mb-1">Antigo:</p>
+                                    <p className="text-sm text-red-800 break-words">
+                                      {entry.valorAntigo}
+                                    </p>
+                                  </div>
+                                )}
+                                {/* Valor Novo */}
+                                {entry.valorNovo && (
+                                  <div className="flex-1 bg-green-50 border border-green-200 rounded p-2">
+                                    <p className="text-xs text-green-600 font-medium mb-1">Novo:</p>
+                                    <p className="text-sm text-green-800 break-words">
+                                      {entry.valorNovo}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Motivo/Descrição */}
+                          {entry.motivo && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-600 mb-1">Motivo:</p>
+                              <p className="text-sm text-gray-700">{entry.motivo}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Clock className="h-12 w-12 text-gray-300 mb-3" />
+              <p className="text-muted-foreground">Nenhuma alteração registrada ainda</p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowHistoryDialog(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog de Detalhes */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
