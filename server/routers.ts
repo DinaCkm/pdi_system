@@ -80,13 +80,21 @@ export const appRouter = router({
       });
     }),
     teamPDIs: protectedProcedure.query(async ({ ctx }) => {
-      const subordinates = await db.getSubordinates(Number(ctx.user.id));
-      const subIds = subordinates.map(s => s.id);
+      // Buscar departamento do Lider
+      const lider = await db.getUserById(Number(ctx.user.id));
+      if (!lider || !lider.departamentoId) return [];
       
-      if (subIds.length === 0) return [];
-
+      // Buscar todos os usuarios do departamento
+      const allUsers = await db.getAllUsers();
+      const teamUserIds = allUsers
+        .filter(u => u.departamentoId === lider.departamentoId && u.role === 'colaborador')
+        .map(u => u.id);
+      
+      if (teamUserIds.length === 0) return [];
+      
+      // Retornar PDIs de usuarios do departamento
       const allPDIs = await db.getAllPDIs();
-      return allPDIs.filter(pdi => subIds.includes(Number(pdi.colaboradorId)));
+      return allPDIs.filter(pdi => teamUserIds.includes(Number(pdi.colaboradorId)));
     }),
     validate: protectedProcedure.input(z.object({ pdiId: z.number() })).mutation(async ({ input, ctx }) => {
       const pdi = await db.getPDIById(input.pdiId);

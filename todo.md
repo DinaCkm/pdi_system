@@ -1669,3 +1669,30 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Pagina 'Solicitacoes' removida do menu
 
 **RESULTADO FINAL**: 24 testes vitest passando. Area do Lider 100% funcional com fluxo completo de aprovacao de PDI.
+
+
+## COMANDO MESTRE: Validacao Humanizada (JAN 2025)
+
+### 1. Restaurar Visualizacao dos PDIs - CONCLUIDO
+- [x] Ajustar query backend para Lider ver todos os PDIs de subordinados
+- [x] Independente de estarem em pdi_validacoes
+- [x] Filtro nao pode esconder PDIs pendentes
+
+### 2. Novo Texto de Validacao (Formato Pergunta) - CONCLUIDO
+- [x] Substituir texto do modal por roteiro de perguntas
+- [x] Incluir: reuniao, discussao, ajustes, alinhamento, responsabilidade
+- [x] Manter tom humanizado e responsavel
+
+### 3. Correcao da Data (ADMIN) - CONCLUIDO
+- [x] Corrigir envio do campo 'prazo' como String ISO
+- [x] Resolver erro 'expected string, received Date'
+
+### 4. Nomes de Macrocompetencias - CONCLUIDO
+- [x] Usar getMacroById para exibir NOME
+- [x] Remover IDs numericos em cards e filtros
+
+### 5. Limpeza Final da Interface - CONCLUIDO
+- [x] Remover botao 'Detalhes'
+- [x] Aplicar break-words em descricoes
+- [x] Eliminar linhas de 'Invalid Date'
+- [x] Remover pagina 'Solicitacoes' do menu
