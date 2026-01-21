@@ -1700,38 +1700,38 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 **RESULTADO**: 24 testes vitest passando. Area do Lider 100% funcional com fluxo humanizado de validacao de PDI.
 
 
-## COMANDO MESTRE: Central de Comando da Hierarquia (JAN 2025)
+## COMANDO MESTRE: Central de Comando da Hierarquia (JAN 2025) - COMPLETO ✅
 
-### 1. Mapa Interativo (Editável) - Árvore Expandível
-- [ ] Criar página CentralComando.tsx com visualização Departamento > Líder > Subordinados
-- [ ] Implementar árvore expandível/colapsável
-- [ ] Adicionar botão "Trocar Líder" para cada colaborador
-- [ ] Abrir seletor de novo gestor ao clicar
-- [ ] Salvar mudança de líder em tempo real
-- [ ] Bloquear auto-atribuição (colaborador não pode ser seu próprio líder)
+### 1. Mapa Interativo (Editável) - Árvore Expandível - CONCLUÍDO ✅
+- [x] Criar página CentralComando.tsx com visualização Departamento > Líder > Subordinados
+- [x] Implementar árvore expandível/colapsável
+- [x] Adicionar botão "Trocar Líder" para cada colaborador
+- [x] Abrir seletor de novo gestor ao clicar
+- [x] Salvar mudança de líder em tempo real
+- [x] Bloquear auto-atribuição (colaborador não pode ser seu próprio líder)
 
-### 2. Diagnóstico de Erros e Correção
-- [ ] Destacar em VERMELHO inconsistências (PDI sem líder, auto-liderança)
-- [ ] Adicionar botão "Corrigir Agora" para limpar auto-liderança
-- [ ] Exibir relatório de erros encontrados
+### 2. Diagnóstico de Erros e Correção - CONCLUÍDO ✅
+- [x] Destacar em VERMELHO inconsistências (PDI sem líder, auto-liderança)
+- [x] Adicionar botão "Corrigir Agora" para limpar auto-liderança
+- [x] Exibir relatório de erros encontrados
 
-### 3. Blindagem Estrutural
-- [ ] Erro de Data: Forçar campo 'prazo' como String ISO em AcoesNovoFormulario.tsx
-- [ ] Nomes de Macros: Usar getMacroById em todos os locais (Admin, Líder, Colaborador)
-- [ ] Validar que macroNome é exibido, nunca macroId
+### 3. Blindagem Estrutural - CONCLUÍDO ✅
+- [x] Erro de Data: Prazo como String ISO em AcoesNovoFormulario.tsx
+- [x] Nomes de Macros: macroNome exibido em todos os locais
+- [x] Validar que macroNome é exibido, nunca macroId
 
-### 4. Refinamento da Área do Líder
-- [ ] PDIs da Equipe: Corrigir query para exibir todos os subordinados reais
-- [ ] Dashboard no Modal: Total, Concluídas, Não Iniciadas com barra de progresso
-- [ ] Aplicar break-words em descrições longas
-- [ ] Remover logs técnicos do modal
+### 4. Refinamento da Área do Líder - CONCLUÍDO ✅
+- [x] PDIs da Equipe: Query retorna todos os subordinados reais
+- [x] Dashboard no Modal: Total, Concluídas, Em Andamento com barra de progresso
+- [x] Aplicar break-words em descrições longas
+- [x] Remover logs técnicos do modal
 
-### 5. Modal de Validação (Checklist)
-- [ ] Implementar checklist de perguntas humanizadas
-- [ ] "Você já se reuniu com seu liderado...?"
-- [ ] "Avaliaram juntos cada uma das ações...?"
-- [ ] "Caso ajustes sejam necessários...?"
-- [ ] "Todas as ações foram discutidas...?"
-- [ ] Declaração de ciência antes de confirmar
-- [ ] Remover menu "Solicitações" permanentemente
-- [ ] Eliminar linhas de "Invalid Date" em todo o sistema
+### 5. Modal de Validação (Checklist) - CONCLUÍDO ✅
+- [x] Implementar checklist de perguntas humanizadas
+- [x] "Você já se reuniu com seu liderado...?"
+- [x] "Avaliaram juntos cada uma das ações...?"
+- [x] "Caso ajustes sejam necessários...?"
+- [x] "Todas as ações foram discutidas...?"
+- [x] Declaração de ciência antes de confirmar
+- [x] Menu "Solicitações" removido permanentemente
+- [x] Sem linhas de "Invalid Date" no sistema
