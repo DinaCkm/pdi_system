@@ -1595,3 +1595,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Corrigir procedure validate para permitir Líder validar PDI (mudado de adminProcedure para protectedProcedure)
 - [x] Adicionar validação de subordinados em procedure validate
 - [x] Testar fluxo completo de aprovação e visualização de ações (24 testes passando)
+
+## Regra de Ouro - Status Inicial Obrigatório (JAN 2025)
+- [x] Ajustar função de criação de PDI para status inicial "em_andamento" (status disponível no banco)
+- [x] Validar que botão "Aprovar e Validar Plano" aparece quando PDI precisa validação
+- [x] Testar fluxo completo: criar PDI → validar → status "em_andamento" (24 testes passando)
