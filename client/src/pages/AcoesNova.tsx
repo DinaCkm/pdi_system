@@ -74,14 +74,19 @@ export function AcoesNova() {
       return;
     }
 
+    // Validar e garantir que prazo seja string ISO (YYYY-MM-DD)
+    let prazoFormatado = formData.prazo;
+    if (formData.prazo instanceof Date) {
+      prazoFormatado = formData.prazo.toISOString().split('T')[0];
+    }
+    
     createMutation.mutate({
       pdiId: pdiIdNumerico,
       macroId: macroIdNumerico, 
-      // Envia microcompetencia se preenchida
       microcompetencia: formData.microcompetencia || undefined,
       titulo: formData.titulo,
       descricao: formData.descricao,
-      prazo: formData.prazo, // Enviar como string ISO (YYYY-MM-DD)
+      prazo: prazoFormatado,
     });
   };
 

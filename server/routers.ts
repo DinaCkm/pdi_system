@@ -56,11 +56,24 @@ export const appRouter = router({
        const users = await db.getAllUsers();
        return users.find(u => u.cpf?.replace(/\D/g, "") === input.cpf.replace(/\D/g, "")) || null;
     }),
+    update: adminProcedure.input(z.object({ id: z.number(), leaderId: z.number().nullable().optional(), role: z.string().optional(), name: z.string().optional(), email: z.string().optional(), cargo: z.string().optional(), departamentoId: z.number().optional(), status: z.string().optional() })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updateUser(id, data);
+      return { success: true };
+    }),
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await db.updateUser(input.id, { status: 'inativo' });
+      return { success: true };
+    }),
   }),
 
   // MANTENDO COMPETÊNCIAS E CICLOS (SIMPLIFICADO PARA O TESTE)
   competencias: router({
     listAllMacros: publicProcedure.query(async () => await db.getAllMacros()),
+    create: adminProcedure.input(z.object({ nome: z.string(), descricao: z.string().optional() })).mutation(async ({ input }) => {
+      await db.createMacro(input);
+      return { success: true };
+    }),
   }),
   
   ciclos: router({
@@ -120,6 +133,13 @@ export const appRouter = router({
       console.log(`[PDI.validate] Status atualizado com sucesso`);
       
       return { success: true };
+    }),
+    create: protectedProcedure.input(z.object({ colaboradorId: z.number(), cicloId: z.number(), titulo: z.string(), objetivoGeral: z.string().optional() })).mutation(async ({ input, ctx }) => {
+      const pdiId = await db.createPDI({
+        ...input,
+        createdBy: Number(ctx.user.id),
+      });
+      return { success: true, pdiId };
     }),
   }),
 

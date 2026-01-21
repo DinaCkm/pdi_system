@@ -54,23 +54,35 @@ export default function Acoes() {
     }
   };
 
-  // 2. FUNÇÕES DE LEITURA DE DADOS
+  // 2. FUNÇÕES DE LEITURA DE DADOS (REFINADAS COM MELHOR FALLBACK)
   const getDeptName = (acao: any) => {
-    return acao.pdi?.departamentoNome 
-        || acao.departamentoNome 
-        || acao.pdi?.user?.department 
-        || "Departamento não informado";
+    if (acao.departamentoNome && acao.departamentoNome !== "Departamento não informado") {
+      return acao.departamentoNome;
+    }
+    if (acao.pdi?.departamentoNome && acao.pdi.departamentoNome !== "—") {
+      return acao.pdi.departamentoNome;
+    }
+    return "Departamento não informado";
   };
 
   const getColabName = (acao: any) => {
-    return acao.pdi?.colaboradorNome 
-        || acao.colaboradorNome 
-        || acao.pdi?.user?.name 
-        || "Colaborador não identificado";
+    if (acao.colaboradorNome && acao.colaboradorNome !== "Colaborador não identificado") {
+      return acao.colaboradorNome;
+    }
+    if (acao.pdi?.colaboradorNome && acao.pdi.colaboradorNome !== "—") {
+      return acao.pdi.colaboradorNome;
+    }
+    return "Colaborador não identificado";
   };
 
   const getPdiTitle = (acao: any) => {
-    return acao.pdi?.titulo || acao.pdiTitulo || "PDI Geral";
+    if (acao.pdiTitulo && acao.pdiTitulo !== "PDI Geral") {
+      return acao.pdiTitulo;
+    }
+    if (acao.pdi?.titulo && acao.pdi.titulo !== "—") {
+      return acao.pdi.titulo;
+    }
+    return "PDI Geral";
   };
 
   // 3. OPÇÕES DE FILTRO
@@ -102,7 +114,13 @@ export default function Acoes() {
     const colab = getColabName(acao);
     const pdi = getPdiTitle(acao);
     
-    const textoGeral = (acao.titulo + (acao.descricao || "") + colab).toLowerCase();
+    const textoGeral = (
+      (acao.titulo || "") + 
+      " " + 
+      (acao.descricao || "") + 
+      " " + 
+      colab
+    ).toLowerCase();
     const termoBusca = searchTerm.toLowerCase();
 
     if (filtroDepartamento && dept !== filtroDepartamento) return false;

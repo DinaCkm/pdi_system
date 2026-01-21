@@ -136,8 +136,11 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
       return;
     }
 
-    // Enviar prazo como string ISO (YYYY-MM-DD)
-    const prazoFormatted = data.prazo;
+    // Garantir que prazo seja string ISO (YYYY-MM-DD)
+    let prazoFormatted = data.prazo;
+    if (data.prazo instanceof Date) {
+      prazoFormatted = data.prazo.toISOString().split('T')[0];
+    }
 
     // Converter todos os IDs para número e validar
     const pdiId = Number(data.pdiId);
