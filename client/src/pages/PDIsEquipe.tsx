@@ -271,18 +271,18 @@ export default function PDIsEquipe() {
                     <List className="h-4 w-4 mr-2" />
                     Ações
                   </Button>
-                  {pdi.status !== 'em_andamento' && (
+                  {pdi.status === 'aguardando_aprovacao' && (
                     <Button
                       variant="default"
                       size="sm"
-                      className="flex-1 bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white"
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-orange-500 hover:from-blue-600 hover:to-orange-600 text-white font-semibold"
                       onClick={() => {
                         setPDIToValidate(pdi);
                         setShowValidateAlert(true);
                       }}
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Validar
+                      Aprovar e Validar Plano
                     </Button>
                   )}
                 </div>
