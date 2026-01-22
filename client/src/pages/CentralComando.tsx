@@ -35,6 +35,11 @@ export default function CentralComando() {
     });
 
     users.forEach((user: any) => {
+      // FILTRO: Ignorar usuários inativos na hierarquia
+      if (user.status === 'inativo') {
+        return;
+      }
+      
       if (user.departamentoId && map[user.departamentoId]) {
         const leaderId = user.leaderId || 0;
         if (!map[user.departamentoId][leaderId]) {
@@ -52,6 +57,11 @@ export default function CentralComando() {
     const errorList: Array<{ type: string; user: any; message: string }> = [];
     
     users.forEach((user: any) => {
+      // FILTRO: Ignorar usuários inativos
+      if (user.status === 'inativo') {
+        return;
+      }
+      
       // Verificar auto-liderança
       if (user.leaderId === user.id) {
         errorList.push({
