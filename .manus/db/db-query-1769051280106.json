@@ -1,0 +1,15 @@
+{
+  "query": "SELECT id, status, createdAt FROM evidences ORDER BY id DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, status, createdAt FROM evidences ORDER BY id DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "120039",
+      "status": "aprovada",
+      "createdAt": "2026-01-22 03:06:32"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tstatus\tcreatedAt\n120039\taprovada\t2026-01-22 03:06:32\n",
+  "stderr": "",
+  "execution_time_ms": 73
+}

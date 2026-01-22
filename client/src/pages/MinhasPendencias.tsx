@@ -77,11 +77,13 @@ export default function MinhasPendencias() {
 
   const submitEvidenceMutation = trpc.evidences.create.useMutation({
     onSuccess: () => {
-      toast.success("Evidência enviada com sucesso! Aguardando avaliação...");
-      setShowEvidenceDialog(false);
-      setEvidenceDescription("");
-      setEvidenceFile(null);
+      toast.success("Evidência enviada!");
       utils.actions.list.invalidate();
+      setTimeout(() => {
+        setShowEvidenceDialog(false);
+        setEvidenceDescription("");
+        setEvidenceFile(null);
+      }, 100);
     },
     onError: (error: any) => {
       const mensagem = error?.message || "Não foi possível enviar. Verifique se o arquivo não é muito grande ou se sua conexão está estável.";

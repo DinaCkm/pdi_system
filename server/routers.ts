@@ -153,23 +153,45 @@ export const appRouter = router({
 
   // ============= EVIDÊNCIAS (JÁ ATUALIZADO ANTERIORMENTE) =============
   evidences: router({
-    create: protectedProcedure.input(z.object({ actionId: z.number(), descricao: z.string(), files: z.any().optional() })).mutation(async ({ ctx, input }) => {
+    create: protectedProcedure
+      .input(z.object({ 
+        actionId: z.number(), 
+        descricao: z.string(), 
+        files: z.array(z.any()).optional() 
+      }))
+      .mutation(async ({ ctx, input }) => {
         try {
-            const action = await db.getActionById(input.actionId);
-            if(!action) throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
-            await db.createEvidence({ 
-                actionId: input.actionId, 
-                colaboradorId: Number(ctx.user!.id), 
-                descricao: input.descricao,
-                arquivo: input.files?.[0]?.name || ""
-            });
-            await db.updateAction(action.id, { status: 'aguardando_avaliacao' });
-            return { success: true };
+          // 1. Criar a evidência principal e capturar o ID (MySQL insertId)
+          const evidenceId = await db.createEvidence({ 
+            actionId: input.actionId, 
+            colaboradorId: Number(ctx.user!.id), 
+            descricao: input.descricao,
+            status: 'pendente' // Garante que apareça na tela de aprovação
+          });
+          
+          // 2. Salvar as URLs reais dos arquivos (fileUrl)
+          if (input.files && input.files.length > 0) {
+            for (const file of input.files) {
+              // Captura a URL real gerada pelo upload
+              const url = file.fileUrl || file.url || file.name;
+              await db.createEvidenceFile(evidenceId, url);
+            }
+          }
+          
+          // 3. Salvar o texto na tabela vinculada
+          if (input.descricao) {
+            await db.createEvidenceText(evidenceId, input.descricao);
+          }
+          
+          // 4. Atualizar status da ação
+          await db.updateAction(input.actionId, { status: 'aguardando_avaliacao' });
+          
+          return { success: true, evidenceId };
         } catch (error) {
-            console.error('[evidences.create] Erro ao criar evidência:', error);
-            throw error;
+          console.error('[evidences.create] Erro:', error);
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Falha ao salvar evidência' });
         }
-    }),
+      }),
     listByAction: protectedProcedure.input(z.object({ actionId: z.number() })).query(async ({ input }) => await db.getEvidencesByActionId(input.actionId)),
     aprovar: adminProcedure.input(z.object({ evidenceId: z.number() })).mutation(async ({ ctx, input }) => {
         const ev = await db.getEvidenceById(input.evidenceId);

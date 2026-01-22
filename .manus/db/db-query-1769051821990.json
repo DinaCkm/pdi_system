@@ -1,0 +1,22 @@
+{
+  "query": "SELECT 'evidences' as tabela, COUNT(*) as total FROM evidences WHERE id = 120040\nUNION ALL\nSELECT 'evidence_files', COUNT(*) FROM evidence_files WHERE evidenceId = 120040\nUNION ALL\nSELECT 'evidence_texts', COUNT(*) FROM evidence_texts WHERE evidenceId = 120040;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT 'evidences' as tabela, COUNT(*) as total FROM evidences WHERE id = 120040\nUNION ALL\nSELECT 'evidence_files', COUNT(*) FROM evidence_files WHERE evidenceId = 120040\nUNION ALL\nSELECT 'evidence_texts', COUNT(*) FROM evidence_texts WHERE evidenceId = 120040;",
+  "rows": [
+    {
+      "tabela": "evidence_files",
+      "total": "0"
+    },
+    {
+      "tabela": "evidences",
+      "total": "0"
+    },
+    {
+      "tabela": "evidence_texts",
+      "total": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "tabela\ttotal\nevidence_files\t0\nevidences\t0\nevidence_texts\t0\n",
+  "stderr": "",
+  "execution_time_ms": 68
+}

@@ -640,27 +640,13 @@ export async function getCicloById(id: number) {
 
 // ============= FUNÇÕES DE EVIDÊNCIAS =============
 
-export async function createEvidence(data: {
-  actionId: number;
-  colaboradorId: number;
-  descricao: string;
-  arquivo?: string;
-}) {
+export async function createEvidence(data: any) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-
-  const result = await db.insert(evidences).values({
-    actionId: data.actionId,
-    colaboradorId: data.colaboradorId,
-    descricao: data.descricao,
-    arquivo: data.arquivo,
-    status: 'aguardando_avaliacao',
-    createdAt: new Date(),
-  });
-
-  const evidenceId = result[0]?.insertId;
-  if (!evidenceId) throw new Error('Falha ao criar evidencia');
-  return evidenceId;
+  const [result] = await db.insert(evidences).values(data);
+  // MySQL2 retorna o ID em result.insertId
+  const generatedId = result.insertId; 
+  return generatedId;
 }
 
 export async function getEvidenceById(id: number) {
@@ -688,6 +674,16 @@ export async function updateEvidenceStatus(
   if (!db) throw new Error("Database not available");
 
   await db.update(evidences).set(data).where(eq(evidences.id, id));
+}
+
+export async function createEvidenceFile(evidenceId: number, arquivoUrl: string) {
+  const db = await getDb();
+  return await db.insert(evidenceFiles).values({ evidenceId, arquivoUrl });
+}
+
+export async function createEvidenceText(evidenceId: number, conteudo: string) {
+  const db = await getDb();
+  return await db.insert(evidenceTexts).values({ evidenceId, conteudo });
 }
 
 // ============= FUNÇÕES DE NOTIFICAÇÕES =============
@@ -861,11 +857,18 @@ export async function getPendingEvidences() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db
-    .select()
-    .from(evidences)
-    .where(eq(evidences.status, 'pendente'))
-    .orderBy(evidences.createdAt);
+  // Busca evidências e traz dados do colaborador e contagens
+  const result = await db.execute(sql`
+    SELECT 
+      e.*, 
+      u.name as colaboradorNome,
+      (SELECT COUNT(*) FROM evidence_files WHERE evidenceId = e.id) as totalArquivos,
+      (SELECT COUNT(*) FROM evidence_texts WHERE evidenceId = e.id) as totalTextos
+    FROM evidences e
+    LEFT JOIN users u ON e.colaboradorId = u.id
+    WHERE e.status = 'pendente'
+    ORDER BY e.createdAt DESC
+  `);
 
   return result;
 }
