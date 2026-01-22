@@ -74,6 +74,14 @@ export const appRouter = router({
       await db.createMacro(input);
       return { success: true };
     }),
+    update: adminProcedure.input(z.object({ id: z.number(), nome: z.string(), descricao: z.string().optional() })).mutation(async ({ input }) => {
+      await db.updateMacro(input.id, { nome: input.nome, descricao: input.descricao });
+      return { success: true };
+    }),
+    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      await db.deleteMacro(input.id);
+      return { success: true };
+    }),
   }),
   
   ciclos: router({
