@@ -39,12 +39,11 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
     setUploading(false);
   };
 
-  // RESET POR MUDANÇA DE AÇÃO: Limpar formulário quando actionId ou open mudar
   useEffect(() => {
     if (open) {
       setTextoEvidencia("");
       setArquivos([]);
-      setUploading(false); // DESTRAVA O BOTÃO
+      setUploading(false);
       console.log("MODAL RESETADO PARA ACTION:", actionId);
     }
   }, [actionId, open]);
