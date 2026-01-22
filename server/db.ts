@@ -643,9 +643,21 @@ export async function getCicloById(id: number) {
 export async function createEvidence(data: any) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [result] = await db.insert(evidences).values(data);
-  // MySQL2 retorna o ID em result.insertId
-  const generatedId = result.insertId; 
+  
+  // Garantir que status seja 'pendente' se não for fornecido
+  const dataWithStatus = {
+    ...data,
+    status: data.status || 'pendente',
+    createdAt: new Date()
+  };
+  
+  const result = await db.insert(evidences).values(dataWithStatus);
+  const generatedId = result[0]?.insertId;
+  
+  if (!generatedId) {
+    throw new Error("Falha ao gerar ID da evidência");
+  }
+  
   return generatedId;
 }
 
