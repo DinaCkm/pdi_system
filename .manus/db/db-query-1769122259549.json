@@ -1,0 +1,60 @@
+{
+  "query": "SELECT id, email, role FROM users LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, email, role FROM users LIMIT 10;",
+  "rows": [
+    {
+      "id": "150008",
+      "email": "relacionamento@ckmtalents.net",
+      "role": "admin"
+    },
+    {
+      "id": "720001",
+      "email": "usuarioteste1@teste.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "720002",
+      "email": "usuarioteste2@teste.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "720003",
+      "email": "liderteste1@teste.com",
+      "role": "lider"
+    },
+    {
+      "id": "780040",
+      "email": "admin.pdi1768678059213@test.com",
+      "role": "admin"
+    },
+    {
+      "id": "780041",
+      "email": "lider.pdi1768678059213@test.com",
+      "role": "lider"
+    },
+    {
+      "id": "780043",
+      "email": "colab.pdi1768678059213@test.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "780047",
+      "email": "colaborador-limite-1768678060391@test.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "780048",
+      "email": "colaborador-stats-1768678060684@test.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "780049",
+      "email": "colaborador-pending-1768678060743@test.com",
+      "role": "colaborador"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\trole\n150008\trelacionamento@ckmtalents.net\tadmin\n720001\tusuarioteste1@teste.com\tcolaborador\n720002\tusuarioteste2@teste.com\tcolaborador\n720003\tliderteste1@teste.com\tlider\n780040\tadmin.pdi1768678059213@test.com\tadmin\n780041\tlider.pdi1768678059213@test.com\tlider\n780043\tcolab.pdi1768678059213@test.com\tcolaborador\n780047\tcolaborador-limite-1768678060391@test.com\tcolaborador\n780048\tcolaborador-stats-1768678060684@test.com\tcolaborador\n780049\tcolaborador-pending-1768678060743@test.com\tcolaborador\n",
+  "stderr": "",
+  "execution_time_ms": 87
+}

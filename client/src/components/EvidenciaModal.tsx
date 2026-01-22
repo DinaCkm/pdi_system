@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Loader2, Upload, X, FileText } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -39,6 +39,13 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
     setUploading(false);
   };
 
+  // RESET POR MUDANÇA DE AÇÃO: Limpar formulário quando actionId ou open mudar
+  useEffect(() => {
+    if (open) {
+      resetForm();
+    }
+  }, [actionId, open]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
@@ -74,14 +81,17 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
         const uploaded = await uploadFileToS3(file);
         uploadedFiles.push(uploaded);
       }
-      // CORREÇÃO: Enviando 'descricao' como string, não 'texts' como array
+      // MUDANÇA: 'descricao' em vez de 'texts' para bater com o servidor
       await createEvidenceMutation.mutateAsync({
         actionId,
         descricao: textoEvidencia.trim(),
         files: uploadedFiles.length > 0 ? uploadedFiles : undefined,
       });
     } catch (error) {
-      console.error("Erro ao enviar evidência:", error);
+      console.error("Erro ao enviar:", error);
+      toast.error("Erro ao enviar evidência. Tente novamente.");
+    } finally {
+      // DESTRAVAR BOTÃO: Garantir que setUploading(false) seja chamado sempre
       setUploading(false);
     }
   };

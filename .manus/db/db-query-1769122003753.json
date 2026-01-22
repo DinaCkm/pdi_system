@@ -1,0 +1,15 @@
+{
+  "query": "SELECT id, descricao, status FROM evidences ORDER BY id DESC LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, descricao, status FROM evidences ORDER BY id DESC LIMIT 1;",
+  "rows": [
+    {
+      "id": "150004",
+      "descricao": "eveidencia 3",
+      "status": "aguardando_avaliacao"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tdescricao\tstatus\n150004\teveidencia 3\taguardando_avaliacao\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

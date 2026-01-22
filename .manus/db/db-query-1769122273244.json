@@ -1,0 +1,100 @@
+{
+  "query": "SELECT id, email, cpf, role FROM users ORDER BY id LIMIT 15;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, email, cpf, role FROM users ORDER BY id LIMIT 15;",
+  "rows": [
+    {
+      "id": "150008",
+      "email": "relacionamento@ckmtalents.net",
+      "cpf": "00000000000",
+      "role": "admin"
+    },
+    {
+      "id": "720001",
+      "email": "usuarioteste1@teste.com",
+      "cpf": "00000000001",
+      "role": "colaborador"
+    },
+    {
+      "id": "720002",
+      "email": "usuarioteste2@teste.com",
+      "cpf": "00000000002",
+      "role": "colaborador"
+    },
+    {
+      "id": "720003",
+      "email": "liderteste1@teste.com",
+      "cpf": "00000000011",
+      "role": "lider"
+    },
+    {
+      "id": "780040",
+      "email": "admin.pdi1768678059213@test.com",
+      "cpf": "11178059213",
+      "role": "admin"
+    },
+    {
+      "id": "780041",
+      "email": "lider.pdi1768678059213@test.com",
+      "cpf": "22278059213",
+      "role": "lider"
+    },
+    {
+      "id": "780043",
+      "email": "colab.pdi1768678059213@test.com",
+      "cpf": "33378059213",
+      "role": "colaborador"
+    },
+    {
+      "id": "780047",
+      "email": "colaborador-limite-1768678060391@test.com",
+      "cpf": "22357829742",
+      "role": "colaborador"
+    },
+    {
+      "id": "780048",
+      "email": "colaborador-stats-1768678060684@test.com",
+      "cpf": "92970020383",
+      "role": "colaborador"
+    },
+    {
+      "id": "780049",
+      "email": "colaborador-pending-1768678060743@test.com",
+      "cpf": "20420879555",
+      "role": "colaborador"
+    },
+    {
+      "id": "780050",
+      "email": "leader-actions-1768678061030@test.com",
+      "cpf": "6057294672",
+      "role": "lider"
+    },
+    {
+      "id": "780051",
+      "email": "user-actions-1768678061040@test.com",
+      "cpf": "20698868906",
+      "role": "colaborador"
+    },
+    {
+      "id": "780052",
+      "email": "teste.auth@test.com",
+      "cpf": "12345678901",
+      "role": "colaborador"
+    },
+    {
+      "id": "780057",
+      "email": "admin.pdi1768678108117@test.com",
+      "cpf": "11178108117",
+      "role": "admin"
+    },
+    {
+      "id": "780058",
+      "email": "lider.pdi1768678108117@test.com",
+      "cpf": "22278108117",
+      "role": "lider"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tcpf\trole\n150008\trelacionamento@ckmtalents.net\t00000000000\tadmin\n720001\tusuarioteste1@teste.com\t00000000001\tcolaborador\n720002\tusuarioteste2@teste.com\t00000000002\tcolaborador\n720003\tliderteste1@teste.com\t00000000011\tlider\n780040\tadmin.pdi1768678059213@test.com\t11178059213\tadmin\n780041\tlider.pdi1768678059213@test.com\t22278059213\tlider\n780043\tcolab.pdi1768678059213@test.com\t33378059213\tcolaborador\n780047\tcolaborador-limite-1768678060391@test.com\t22357829742\tcolaborador\n780048\tcolaborador-stats-1768678060684@test.com\t92970020383\tcolaborador\n780049\tcolaborador-pending-1768678060743@test.com\t20420879555\tcolaborador\n780050\tleader-actions-1768678061030@test.com\t6057294672\tlider\n780051\tuser-actions-1768678061040@test.com\t20698868906\tcolaborador\n780052\tteste.auth@test.com\t12345678901\tcolaborador\n780057\tadmin.pdi1768678108117@test.com\t11178108117\tadmin\n780058\tlider.pdi1768678108117@test.com\t22278108117\tlider\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}
