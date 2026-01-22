@@ -98,7 +98,8 @@ export const dashboardRouter = router({
             .where(
               and(
                 eq(users.departamentoId, departamentoFilter),
-                eq(users.role, "colaborador")
+                eq(users.role, "colaborador"),
+                eq(users.status, "ativo")
               )
             );
 
@@ -108,7 +109,8 @@ export const dashboardRouter = router({
             .where(
               and(
                 eq(users.departamentoId, departamentoFilter),
-                eq(users.role, "lider")
+                eq(users.role, "lider"),
+                eq(users.status, "ativo")
               )
             );
 
@@ -119,12 +121,22 @@ export const dashboardRouter = router({
           const colaboradoresResult = await db
             .select({ count: count() })
             .from(users)
-            .where(eq(users.role, "colaborador"));
+            .where(
+              and(
+                eq(users.role, "colaborador"),
+                eq(users.status, "ativo")
+              )
+            );
 
           const lideresResult = await db
             .select({ count: count() })
             .from(users)
-            .where(eq(users.role, "lider"));
+            .where(
+              and(
+                eq(users.role, "lider"),
+                eq(users.status, "ativo")
+              )
+            );
 
           stats.blocoA.totalColaboradores = colaboradoresResult[0]?.count || 0;
           stats.blocoA.totalLideres = lideresResult[0]?.count || 0;
