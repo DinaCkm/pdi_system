@@ -14,7 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 
 // Hook para buscar nomes de competências
 function useMacroNames(macroIds: number[]) {
-  const { data: competencias = [] } = trpc.competencias.list.useQuery();
+  const { data: competencias = [] } = trpc.competencias.listAllMacros.useQuery();
   
   return useMemo(() => {
     const map: Record<number, string> = {};
@@ -282,18 +282,7 @@ export default function MinhasPendencias() {
                     <Eye className="h-4 w-4" />
                     Detalhes
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-2 flex-1 min-w-[120px] text-purple-600 hover:bg-purple-50"
-                    onClick={() => {
-                      setSelectedAcaoHistory(acao);
-                      setShowHistoryDialog(true);
-                    }}
-                  >
-                    <History className="h-4 w-4" />
-                    Histórico
-                  </Button>
+
                   <Button
                     variant="outline"
                     size="sm"

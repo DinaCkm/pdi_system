@@ -116,6 +116,8 @@ export const evidences = mysqlTable("evidences", {
 	id: int().autoincrement().notNull(),
 	actionId: int().notNull(),
 	colaboradorId: int().notNull(),
+	descricao: text(),
+	arquivo: varchar({ length: 255 }),
 	status: mysqlEnum(['aguardando_avaliacao','aprovada','reprovada','correcao_solicitada']).default('aguardando_avaliacao').notNull(),
 	justificativaAdmin: text(),
 	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),

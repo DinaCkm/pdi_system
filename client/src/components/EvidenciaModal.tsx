@@ -20,9 +20,11 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
   const createEvidenceMutation = trpc.evidences.create.useMutation({
     onSuccess: () => {
       toast.success("Evidência enviada com sucesso! O admin será notificado.");
-      resetForm();
-      onOpenChange(false);
-      onSuccess();
+      setTimeout(() => {
+        onOpenChange(false);
+        resetForm();
+        onSuccess();
+      }, 100);
     },
     onError: (error) => {
       toast.error(`Erro ao enviar evidência: ${error.message}`);
