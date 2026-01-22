@@ -658,7 +658,9 @@ export async function createEvidence(data: {
     createdAt: new Date(),
   });
 
-  return result[0]?.insertId || 0;
+  const evidenceId = result[0]?.insertId;
+  if (!evidenceId) throw new Error('Falha ao criar evidencia');
+  return evidenceId;
 }
 
 export async function getEvidenceById(id: number) {

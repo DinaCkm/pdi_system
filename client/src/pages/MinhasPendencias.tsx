@@ -64,6 +64,17 @@ export default function MinhasPendencias() {
   );
 
   // Mutation para enviar evidência
+  // Buscar evidências da ação selecionada
+  const { data: acaoEvidences } = trpc.evidences.listByAction.useQuery(
+    { actionId: selectedAcaoEvidence?.id || 0 },
+    { enabled: !!selectedAcaoEvidence?.id }
+  );
+
+  // Obter última evidência e seu status
+  const ultimaEvidencia = acaoEvidences?.[0];
+  const podeEnviarEvidencia = !ultimaEvidencia || ultimaEvidencia.status === 'reprovada';
+  const justificativaReprovacao = ultimaEvidencia?.justificativaAdmin;
+
   const submitEvidenceMutation = trpc.evidences.create.useMutation({
     onSuccess: () => {
       toast.success("Evidência enviada com sucesso! Aguardando avaliação...");
@@ -490,6 +501,17 @@ export default function MinhasPendencias() {
             </DialogDescription>
           </DialogHeader>
 
+          {/* Banner de Reprovação */}
+          {justificativaReprovacao && (
+            <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 rounded-md flex gap-3">
+              <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-red-900">Evidência Reprovada</p>
+                <p className="text-xs text-red-700 mt-1">{justificativaReprovacao}</p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-4 py-4">
             {/* Campo de Descrição */}
             <div>
@@ -544,14 +566,7 @@ export default function MinhasPendencias() {
           </div>
 
           <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowEvidenceDialog(false)}
-              disabled={isSubmittingEvidence}
-            >
-              Cancelar
-            </Button>
-            <Button
+                        <Button
               className="bg-gradient-to-r from-blue-600 to-orange-500 text-white"
               onClick={async () => {
                 if (!evidenceDescription.trim()) {
@@ -569,12 +584,54 @@ export default function MinhasPendencias() {
                   setIsSubmittingEvidence(false);
                 }
               }}
-              disabled={isSubmittingEvidence}
+              disabled={isSubmittingEvidence || !podeEnviarEvidencia}
             >
               {isSubmittingEvidence ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   Enviando...
+                </>
+              ) : !podeEnviarEvidencia ? (
+                <>
+                  <Clock className="h-4 w-4 mr-2" />
+                  Em Análise...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Enviar Evidência
+                </>
+              )}
+            </Button>
+                        <Button
+              className="bg-gradient-to-r from-blue-600 to-orange-500 text-white"
+              onClick={async () => {
+                if (!evidenceDescription.trim()) {
+                  toast.error("Por favor, descreva sua conquista");
+                  return;
+                }
+                setIsSubmittingEvidence(true);
+                try {
+                  await submitEvidenceMutation.mutateAsync({
+                    actionId: selectedAcaoEvidence.id,
+                    descricao: evidenceDescription,
+                    files: evidenceFile ? [evidenceFile] : undefined,
+                  });
+                } finally {
+                  setIsSubmittingEvidence(false);
+                }
+              }}
+              disabled={isSubmittingEvidence || !podeEnviarEvidencia}
+            >
+              {isSubmittingEvidence ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Enviando...
+                </>
+              ) : !podeEnviarEvidencia ? (
+                <>
+                  <Clock className="h-4 w-4 mr-2" />
+                  Em Análise...
                 </>
               ) : (
                 <>
@@ -608,11 +665,42 @@ export default function MinhasPendencias() {
           </div>
 
           <DialogFooter className="flex justify-center">
-            <Button
-              className="bg-gradient-to-r from-blue-600 to-orange-500 text-white px-8 py-2 text-lg font-semibold"
-              onClick={() => setShowCelebrationDialog(false)}
+                        <Button
+              className="bg-gradient-to-r from-blue-600 to-orange-500 text-white"
+              onClick={async () => {
+                if (!evidenceDescription.trim()) {
+                  toast.error("Por favor, descreva sua conquista");
+                  return;
+                }
+                setIsSubmittingEvidence(true);
+                try {
+                  await submitEvidenceMutation.mutateAsync({
+                    actionId: selectedAcaoEvidence.id,
+                    descricao: evidenceDescription,
+                    files: evidenceFile ? [evidenceFile] : undefined,
+                  });
+                } finally {
+                  setIsSubmittingEvidence(false);
+                }
+              }}
+              disabled={isSubmittingEvidence || !podeEnviarEvidencia}
             >
-              Comemorar!
+              {isSubmittingEvidence ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Enviando...
+                </>
+              ) : !podeEnviarEvidencia ? (
+                <>
+                  <Clock className="h-4 w-4 mr-2" />
+                  Em Análise...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Enviar Evidência
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
