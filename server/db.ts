@@ -1,6 +1,6 @@
 import { eq, and, isNull, not, inArray, desc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, departamentos, ciclos, evidences, notifications, pdiValidacoes } from "../drizzle/schema";
+import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, departamentos, ciclos, evidences, evidenceFiles, evidenceTexts, notifications, pdiValidacoes } from "../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./_core/env";
 
@@ -9,13 +9,20 @@ import { ENV } from "./_core/env";
 let dbInstance: any = null;
 
 export async function getDb() {
-  if (dbInstance) return dbInstance;
+  console.log('--- TENTANDO CONEXÃO DB ---');
+  if (dbInstance) {
+    console.log('--- DB JÁ CONECTADO ---');
+    return dbInstance;
+  }
 
   try {
     if (process.env.DATABASE_URL) {
+      console.log('--- DATABASE_URL ENCONTRADA ---');
       dbInstance = drizzle(process.env.DATABASE_URL);
+      console.log('--- DB CONECTADO COM SUCESSO ---');
       return dbInstance;
     }
+    console.log('--- DATABASE_URL NÃO ENCONTRADA ---');
     return null;
   } catch (error) {
     console.error("Database connection error:", error);
@@ -644,21 +651,34 @@ export async function createEvidence(data: any) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  // Garantir que status seja 'pendente' se não for fornecido
-  const dataWithStatus = {
+  console.log('[createEvidence] Iniciando com data:', JSON.stringify(data, null, 2));
+  
+  const dataWithDefaults = {
     ...data,
-    status: data.status || 'pendente',
-    createdAt: new Date()
+    createdAt: new Date(),
+    status: data.status || 'aguardando_avaliacao'
   };
   
-  const result = await db.insert(evidences).values(dataWithStatus);
-  const generatedId = result[0]?.insertId;
+  console.log('[createEvidence] Dados com defaults:', JSON.stringify(dataWithDefaults, null, 2));
   
-  if (!generatedId) {
-    throw new Error("Falha ao gerar ID da evidência");
+  try {
+    const result = await db.insert(evidences).values(dataWithDefaults);
+    console.log('[createEvidence] Resultado do insert:', JSON.stringify(result, null, 2));
+    
+    const generatedId = result?.[0]?.insertId || result?.insertId;
+    console.log('[createEvidence] GeneratedId extraido:', generatedId);
+    
+    if (!generatedId) {
+      console.error('[createEvidence] Falha ao gerar ID - result:', result);
+      throw new Error("Falha ao gerar ID no MySQL");
+    }
+    
+    console.log('[createEvidence] SUCESSO - ID:', generatedId);
+    return generatedId;
+  } catch (error) {
+    console.error('[createEvidence] ERRO ao inserir:', error);
+    throw error;
   }
-  
-  return generatedId;
 }
 
 export async function getEvidenceById(id: number) {
@@ -690,12 +710,43 @@ export async function updateEvidenceStatus(
 
 export async function createEvidenceFile(evidenceId: number, arquivoUrl: string) {
   const db = await getDb();
-  return await db.insert(evidenceFiles).values({ evidenceId, arquivoUrl });
+  console.log('[createEvidenceFile] Salvando arquivo para evidence:', evidenceId, 'URL:', arquivoUrl);
+  
+  const fileName = arquivoUrl.split('/').pop() || 'arquivo';
+  const fileType = fileName.split('.').pop() || 'unknown';
+  
+  try {
+    const result = await db.insert(evidenceFiles).values({ 
+      evidenceId, 
+      fileName,
+      fileType,
+      fileSize: 0,
+      fileUrl: arquivoUrl,
+      fileKey: `evidence-${evidenceId}-${Date.now()}`
+    });
+    console.log('[createEvidenceFile] Arquivo salvo com sucesso');
+    return result;
+  } catch (error) {
+    console.error('[createEvidenceFile] Erro ao salvar arquivo:', error);
+    throw error;
+  }
 }
 
 export async function createEvidenceText(evidenceId: number, conteudo: string) {
   const db = await getDb();
-  return await db.insert(evidenceTexts).values({ evidenceId, conteudo });
+  console.log('[createEvidenceText] Salvando texto para evidence:', evidenceId);
+  
+  try {
+    const result = await db.insert(evidenceTexts).values({ 
+      evidenceId, 
+      texto: conteudo
+    });
+    console.log('[createEvidenceText] Texto salvo com sucesso');
+    return result;
+  } catch (error) {
+    console.error('[createEvidenceText] Erro ao salvar texto:', error);
+    throw error;
+  }
 }
 
 // ============= FUNÇÕES DE NOTIFICAÇÕES =============

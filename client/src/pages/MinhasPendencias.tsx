@@ -605,43 +605,6 @@ export default function MinhasPendencias() {
                 </>
               )}
             </Button>
-                        <Button
-              className="bg-gradient-to-r from-blue-600 to-orange-500 text-white"
-              onClick={async () => {
-                if (!evidenceDescription.trim()) {
-                  toast.error("Por favor, descreva sua conquista");
-                  return;
-                }
-                setIsSubmittingEvidence(true);
-                try {
-                  await submitEvidenceMutation.mutateAsync({
-                    actionId: selectedAcaoEvidence.id,
-                    descricao: evidenceDescription,
-                    files: evidenceFile ? [evidenceFile] : undefined,
-                  });
-                } finally {
-                  setIsSubmittingEvidence(false);
-                }
-              }}
-              disabled={isSubmittingEvidence || !podeEnviarEvidencia}
-            >
-              {isSubmittingEvidence ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Enviando...
-                </>
-              ) : !podeEnviarEvidencia ? (
-                <>
-                  <Clock className="h-4 w-4 mr-2" />
-                  Em Análise...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Enviar Evidência
-                </>
-              )}
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -160,35 +160,46 @@ export const appRouter = router({
         files: z.array(z.any()).optional() 
       }))
       .mutation(async ({ ctx, input }) => {
+        console.log('[evidences.create] INICIANDO - Input:', JSON.stringify(input, null, 2));
+        console.log('[evidences.create] User ID:', ctx.user?.id, 'Role:', ctx.user?.role);
+        
         try {
           // 1. Criar a evidência principal e capturar o ID (MySQL insertId)
+          console.log('[evidences.create] Chamando db.createEvidence com:', { actionId: input.actionId, colaboradorId: ctx.user!.id, status: 'aguardando_avaliacao' });
           const evidenceId = await db.createEvidence({ 
             actionId: input.actionId, 
             colaboradorId: Number(ctx.user!.id), 
             descricao: input.descricao,
-            status: 'pendente' // Garante que apareça na tela de aprovação
+            status: 'aguardando_avaliacao'
           });
+          console.log('[evidences.create] ✅ Evidence criada com ID:', evidenceId);
           
           // 2. Salvar as URLs reais dos arquivos (fileUrl)
           if (input.files && input.files.length > 0) {
+            console.log('[evidences.create] Salvando', input.files.length, 'arquivos...');
             for (const file of input.files) {
               // Captura a URL real gerada pelo upload
               const url = file.fileUrl || file.url || file.name;
+              console.log('[evidences.create] Salvando arquivo URL:', url);
               await db.createEvidenceFile(evidenceId, url);
             }
           }
           
           // 3. Salvar o texto na tabela vinculada
           if (input.descricao) {
+            console.log('[evidences.create] Salvando descrição...');
             await db.createEvidenceText(evidenceId, input.descricao);
           }
           
           // 4. Atualizar status da ação
+          console.log('[evidences.create] Atualizando ação', input.actionId, 'para aguardando_avaliacao...');
           await db.updateAction(input.actionId, { status: 'aguardando_avaliacao' });
           
+          console.log('[evidences.create] ✅ SUCESSO COMPLETO - Evidence ID:', evidenceId);
           return { success: true, evidenceId };
         } catch (error) {
-          console.error('[evidences.create] Erro:', error);
+          console.error('[evidences.create] ❌ ERRO CAPTURADO:', error);
+          console.error('[evidences.create] Stack trace:', (error as any)?.stack);
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Falha ao salvar evidência' });
         }
       }),

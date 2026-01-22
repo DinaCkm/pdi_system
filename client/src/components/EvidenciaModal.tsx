@@ -67,23 +67,18 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
       toast.error("Adicione pelo menos um texto ou arquivo como evidência");
       return;
     }
-
     setUploading(true);
-
     try {
       const uploadedFiles = [];
       for (const file of arquivos) {
         const uploaded = await uploadFileToS3(file);
         uploadedFiles.push(uploaded);
       }
-
+      // CORREÇÃO: Enviando 'descricao' como string, não 'texts' como array
       await createEvidenceMutation.mutateAsync({
         actionId,
+        descricao: textoEvidencia.trim(),
         files: uploadedFiles.length > 0 ? uploadedFiles : undefined,
-        texts: textoEvidencia.trim() ? [{
-          titulo: tituloEvidencia.trim() || undefined,
-          texto: textoEvidencia.trim(),
-        }] : undefined,
       });
     } catch (error) {
       console.error("Erro ao enviar evidência:", error);
