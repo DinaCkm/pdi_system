@@ -187,6 +187,7 @@ export const appRouter = router({
         }
         return { success: true };
     }),
+    getPending: adminProcedure.query(async () => await db.getPendingEvidences()),
   })
 });
 

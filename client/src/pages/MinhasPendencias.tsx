@@ -29,6 +29,7 @@ export default function MinhasPendencias() {
   const authData = useAuth();
   const user = authData?.user;
   const userId = user?.id;
+  const utils = trpc.useUtils();
 
   // Estados de filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -69,7 +70,7 @@ export default function MinhasPendencias() {
       setShowEvidenceDialog(false);
       setEvidenceDescription("");
       setEvidenceFile(null);
-      trpc.useUtils().actions.list.invalidate();
+      utils.actions.list.invalidate();
     },
     onError: (error: any) => {
       const mensagem = error?.message || "Não foi possível enviar. Verifique se o arquivo não é muito grande ou se sua conexão está estável.";
