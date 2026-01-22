@@ -73,10 +73,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
   };
 
   const handleSubmit = async () => {
-    if (!textoEvidencia.trim() && arquivos.length === 0) {
-      toast.error("Adicione pelo menos um texto ou arquivo como evidência");
-      return;
-    }
+
     setUploading(true);
     try {
       const uploadedFiles = [];
@@ -90,9 +87,9 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
         descricao: textoEvidencia.trim(),
         files: uploadedFiles.length > 0 ? uploadedFiles : undefined,
       });
+      onSuccess();
     } catch (error) {
-      console.error("Erro ao enviar:", error);
-      toast.error("Erro ao enviar evidência. Tente novamente.");
+      toast.error("Falha ao salvar evidencia");
     } finally {
       // DESTRAVAR BOTÃO: Garantir que setUploading(false) seja chamado sempre
       setUploading(false);
