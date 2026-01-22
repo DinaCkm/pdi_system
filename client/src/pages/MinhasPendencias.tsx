@@ -1,4 +1,3 @@
-import { useState, useMemo } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,20 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import confetti from "canvas-confetti";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+// Hook para buscar nomes de competências
+function useMacroNames(macroIds: number[]) {
+  const { data: competencias = [] } = trpc.competencias.list.useQuery();
+  
+  return useMemo(() => {
+    const map: Record<number, string> = {};
+    competencias.forEach((comp: any) => {
+      map[comp.id] = comp.nome;
+    });
+    return map;
+  }, [competencias]);
+}
 
 export default function MinhasPendencias() {
   const authData = useAuth();
@@ -39,6 +51,10 @@ export default function MinhasPendencias() {
     undefined,
     { enabled: !!userId }
   );
+  
+  // Buscar nomes de competências
+  const macroIds = useMemo(() => [...new Set((acoes || []).map((a: any) => a.macroId).filter(Boolean))], [acoes]);
+  const macroNames = useMacroNames(macroIds);
 
   // Buscando histórico de uma ação específica
   const { data: actionHistory } = trpc.actions.getHistory.useQuery(
@@ -242,7 +258,7 @@ export default function MinhasPendencias() {
                   {acao.macroId && (
                     <div>
                       <p className="text-xs text-muted-foreground font-medium">Macro</p>
-                      <p className="text-sm font-medium mt-1">{acao.macroId}</p>
+                      <p className="text-sm font-medium mt-1">{macroNames[acao.macroId] || `Competência ${acao.macroId}`}</p>
                     </div>
                   )}
 
@@ -448,7 +464,7 @@ export default function MinhasPendencias() {
                 {selectedAcao.macroId && (
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Macro Competência</p>
-                    <p className="mt-1">{selectedAcao.macroId}</p>
+                    <p className="mt-1">{macroNames[selectedAcao.macroId] || `Competência ${selectedAcao.macroId}`}</p>
                   </div>
                 )}
 
