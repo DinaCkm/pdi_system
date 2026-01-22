@@ -156,8 +156,14 @@ export const appRouter = router({
     create: protectedProcedure
       .input(z.object({ 
         actionId: z.number(), 
-        descricao: z.string(), 
-        files: z.array(z.any()).optional() 
+        descricao: z.string().optional(), 
+        files: z.array(z.object({
+          fileName: z.string(),
+          fileType: z.string(),
+          fileSize: z.number(),
+          fileUrl: z.string(),
+          fileKey: z.string()
+        })).optional() 
       }))
       .mutation(async ({ ctx, input }) => {
         console.log('[evidences.create] INICIANDO - Input:', JSON.stringify(input, null, 2));
@@ -174,14 +180,16 @@ export const appRouter = router({
           });
           console.log('[evidences.create] ✅ Evidence criada com ID:', evidenceId);
           
-          // 2. Salvar as URLs reais dos arquivos (fileUrl)
+          // 2. Salvar os arquivos com todos os metadados
           if (input.files && input.files.length > 0) {
             console.log('[evidences.create] Salvando', input.files.length, 'arquivos...');
             for (const file of input.files) {
-              // Captura a URL real gerada pelo upload
-              const url = file.fileUrl || file.url || file.name;
-              console.log('[evidences.create] Salvando arquivo URL:', url);
-              await db.createEvidenceFile(evidenceId, url);
+              console.log('[evidences.create] Arquivo recebido:', JSON.stringify(file, null, 2));
+              if (!file.fileUrl) {
+                console.error('[evidences.create] ERRO: fileUrl ausente');
+                throw new Error('Arquivo sem URL');
+              }
+              await db.createEvidenceFile(evidenceId, file.fileUrl);
             }
           }
           
