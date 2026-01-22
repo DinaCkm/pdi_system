@@ -1,0 +1,82 @@
+{
+  "query": "SELECT id, name, email, role, status, departamentoId FROM users WHERE status = 'ativo' ORDER BY name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, role, status, departamentoId FROM users WHERE status = 'ativo' ORDER BY name;",
+  "rows": [
+    {
+      "id": "810001",
+      "name": "Admin Teste",
+      "email": "admin.teste@empresa.com",
+      "role": "colaborador",
+      "status": "ativo",
+      "departamentoId": "90001"
+    },
+    {
+      "id": "870001",
+      "name": "JOSE DA SILVA",
+      "email": "josedasilva@empresa.com",
+      "role": "colaborador",
+      "status": "ativo",
+      "departamentoId": "510001"
+    },
+    {
+      "id": "840001",
+      "name": "Julia Souza Makiyama",
+      "email": "dina@ckmtalents.net",
+      "role": "colaborador",
+      "status": "ativo",
+      "departamentoId": "90001"
+    },
+    {
+      "id": "720003",
+      "name": "liderteste1",
+      "email": "liderteste1@teste.com",
+      "role": "lider",
+      "status": "ativo",
+      "departamentoId": "30001"
+    },
+    {
+      "id": "900001",
+      "name": "MARIA DE SOUZA ",
+      "email": "mariadesouza@empregado.com",
+      "role": "colaborador",
+      "status": "ativo",
+      "departamentoId": "90001"
+    },
+    {
+      "id": "840002",
+      "name": "mariza da silva",
+      "email": "financeiro@makiyama.com.br",
+      "role": "lider",
+      "status": "ativo",
+      "departamentoId": "30001"
+    },
+    {
+      "id": "150008",
+      "name": "Sebrae TO - Administrador",
+      "email": "relacionamento@ckmtalents.net",
+      "role": "admin",
+      "status": "ativo",
+      "departamentoId": "NULL"
+    },
+    {
+      "id": "720001",
+      "name": "Usuarioteste1",
+      "email": "usuarioteste1@teste.com",
+      "role": "colaborador",
+      "status": "ativo",
+      "departamentoId": "90001"
+    },
+    {
+      "id": "720002",
+      "name": "usuarioteste2",
+      "email": "usuarioteste2@teste.com",
+      "role": "colaborador",
+      "status": "ativo",
+      "departamentoId": "510001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\tstatus\tdepartamentoId\n810001\tAdmin Teste\tadmin.teste@empresa.com\tcolaborador\tativo\t90001\n870001\tJOSE DA SILVA\tjosedasilva@empresa.com\tcolaborador\tativo\t510001\n840001\tJulia Souza Makiyama\tdina@ckmtalents.net\tcolaborador\tativo\t90001\n720003\tliderteste1\tliderteste1@teste.com\tlider\tativo\t30001\n900001\tMARIA DE SOUZA \tmariadesouza@empregado.com\tcolaborador\tativo\t90001\n840002\tmariza da silva\tfinanceiro@makiyama.com.br\tlider\tativo\t30001\n150008\tSebrae TO - Administrador\trelacionamento@ckmtalents.net\tadmin\tativo\tNULL\n720001\tUsuarioteste1\tusuarioteste1@teste.com\tcolaborador\tativo\t90001\n720002\tusuarioteste2\tusuarioteste2@teste.com\tcolaborador\tativo\t510001\n",
+  "stderr": "",
+  "execution_time_ms": 406
+}

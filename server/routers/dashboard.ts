@@ -117,14 +117,29 @@ export const dashboardRouter = router({
           stats.blocoA.totalColaboradores = colaboradoresResult[0]?.count || 0;
           stats.blocoA.totalLideres = lideresResult[0]?.count || 0;
         } else if (user.role === "admin") {
-          // Admin vendo tudo - CONTAR TODOS OS USUÁRIOS ATIVOS
-          const totalAtivosResult = await db
+          // Admin vendo tudo - CONTAR LÍDERES E COLABORADORES SEPARADAMENTE
+          const colaboradoresResult = await db
             .select({ count: count() })
             .from(users)
-            .where(eq(users.status, "ativo"));
+            .where(
+              and(
+                eq(users.role, "colaborador"),
+                eq(users.status, "ativo")
+              )
+            );
 
-          stats.blocoA.totalColaboradores = totalAtivosResult[0]?.count || 0;
-          stats.blocoA.totalLideres = 0; // Não usar este campo para admin
+          const lideresResult = await db
+            .select({ count: count() })
+            .from(users)
+            .where(
+              and(
+                eq(users.role, "lider"),
+                eq(users.status, "ativo")
+              )
+            );
+
+          stats.blocoA.totalColaboradores = colaboradoresResult[0]?.count || 0;
+          stats.blocoA.totalLideres = lideresResult[0]?.count || 0;
         }
 
         // Taxa de engajamento: PDIs ativos / Total colaboradores
