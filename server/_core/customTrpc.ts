@@ -55,7 +55,8 @@ export const protectedProcedure = t.procedure.use(isAuthed);
 
 // Middleware: Apenas Admin
 const isAdmin = t.middleware(({ ctx, next }) => {
-  if (!ctx.user || ctx.user.role !== 'admin') {
+  const isAdminRole = ctx.user?.role === 'admin' || ctx.user?.role === 'Administrador';
+  if (!ctx.user || !isAdminRole) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Acesso restrito a administradores." });
   }
   return next({ ctx: { user: ctx.user } });

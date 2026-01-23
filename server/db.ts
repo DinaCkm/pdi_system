@@ -129,6 +129,7 @@ export async function getAllActions() {
       descricao: actions.descricao,
       prazo: actions.prazo,
       status: actions.status,
+      evidence_status: actions.evidence_status,
       createdAt: actions.createdAt,
       updatedAt: actions.updatedAt,
       pdiTitulo: pdis.titulo,
@@ -936,7 +937,7 @@ export async function getPendingEvidences() {
     FROM evidences e
     LEFT JOIN users u ON e.colaboradorId = u.id
     LEFT JOIN actions a ON e.actionId = a.id
-    WHERE e.status = 'aguardando_avaliacao'
+    WHERE e.status IN ('aguardando_avaliacao', 'aguardando_analise')
     ORDER BY e.createdAt DESC
   `);
 
