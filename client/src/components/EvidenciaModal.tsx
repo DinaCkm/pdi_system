@@ -74,16 +74,31 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
   const handleSubmit = async () => {
     setUploading(true);
     try {
+      console.log("[CRÍTICO] arquivos.length antes do Promise.all:", arquivos.length);
+      console.log("[CRÍTICO] arquivos antes do Promise.all:", arquivos);
+      
+      if (arquivos.length === 0) {
+        console.log("[CRÍTICO] SEM ARQUIVOS! Enviando apenas texto.");
+        await createEvidenceMutation.mutateAsync({
+          actionId,
+          descricao: textoEvidencia.trim(),
+          files: undefined,
+        });
+        onSuccess?.();
+        onOpenChange(false);
+        return;
+      }
+      
       const uploadedFiles = await Promise.all(
         arquivos.map(async (file) => {
           const result = await uploadFileToS3(file);
-          console.log("RESULTADO DO S3:", JSON.stringify(result, null, 2));
+          console.log("LOG REAL DO S3:", result);
           return {
-            fileName: result.fileName,
-            fileType: result.fileType,
-            fileSize: result.fileSize,
+            fileName: result.fileName || file.name,
+            fileType: result.fileType || file.type,
+            fileSize: result.fileSize || file.size,
             fileUrl: result.fileUrl,
-            fileKey: result.fileKey,
+            fileKey: result.fileKey
           };
         })
       );

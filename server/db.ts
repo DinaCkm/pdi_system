@@ -708,21 +708,27 @@ export async function updateEvidenceStatus(
   await db.update(evidences).set(data).where(eq(evidences.id, id));
 }
 
-export async function createEvidenceFile(evidenceId: number, arquivoUrl: string) {
+export async function createEvidenceFile(
+  evidenceId: number, 
+  file: {
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    fileUrl: string;
+    fileKey: string;
+  }
+) {
   const db = await getDb();
-  console.log('[createEvidenceFile] Salvando arquivo para evidence:', evidenceId, 'URL:', arquivoUrl);
-  
-  const fileName = arquivoUrl.split('/').pop() || 'arquivo';
-  const fileType = fileName.split('.').pop() || 'unknown';
+  console.log('[createEvidenceFile] Salvando arquivo:', file);
   
   try {
     const result = await db.insert(evidenceFiles).values({ 
       evidenceId, 
-      fileName,
-      fileType,
-      fileSize: 0,
-      fileUrl: arquivoUrl,
-      fileKey: `evidence-${evidenceId}-${Date.now()}`
+      fileName: file.fileName,
+      fileType: file.fileType,
+      fileSize: file.fileSize,
+      fileUrl: file.fileUrl,
+      fileKey: file.fileKey
     });
     console.log('[createEvidenceFile] Arquivo salvo com sucesso');
     return result;

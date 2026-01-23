@@ -189,7 +189,7 @@ export const appRouter = router({
                 console.error('[evidences.create] ERRO: fileUrl ausente');
                 throw new Error('Arquivo sem URL');
               }
-              await db.createEvidenceFile(evidenceId, file.fileUrl);
+              await db.createEvidenceFile(evidenceId, file);
             }
           }
           
