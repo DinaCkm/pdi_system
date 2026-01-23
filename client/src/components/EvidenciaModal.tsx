@@ -130,6 +130,15 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
     }
   };
 
+  const handleCloseWithConfirm = () => {
+    const confirmClose = window.confirm(
+      'TENHA CERTEZA QUE ENVIOU O EMAIL COM TODAS INSTRUÇÕES CORRETAS E O ANEXO - SEM ESTE ENVIO A SUA EVIDENCIA NÃO SERÁ ANALISADA.'
+    );
+    if (confirmClose) {
+      onOpenChange(false);
+    }
+  };
+
   if (!open) return null;
 
   return (
@@ -215,17 +224,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                 </div>
               </div>
 
-              {/* Botão de envio de email */}
-              <button
-                onClick={handleOpenEmail}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition"
-              >
-                <Mail className="w-5 h-5" />
-                CLIQUE AQUI PARA ABRIR O SEU GMAIL/OUTLOOK
-                <ExternalLink className="w-4 h-4" />
-              </button>
-
-              {/* Texto honesto e funcional */}
+              {/* Texto honesto e funcional - ACIMA do botão verde */}
               <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
@@ -237,6 +236,16 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                   </div>
                 </div>
               </div>
+
+              {/* Botão de envio de email */}
+              <button
+                onClick={handleOpenEmail}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition"
+              >
+                <Mail className="w-5 h-5" />
+                CLIQUE AQUI PARA ABRIR O SEU GMAIL/OUTLOOK
+                <ExternalLink className="w-4 h-4" />
+              </button>
 
               {/* Dados para cópia manual (Plano B) */}
               <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 space-y-3">
@@ -302,21 +311,10 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                 </div>
               </div>
 
-              {/* Próximos passos */}
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                <h3 className="font-semibold text-blue-900 mb-2">Próximos passos:</h3>
-                <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-                  <li>Clique no botão verde acima para abrir seu email</li>
-                  <li>Se não abrir, copie os dados acima manualmente</li>
-                  <li>Anexe seus comprovantes</li>
-                  <li>Envie para o administrador</li>
-                </ol>
-              </div>
-
-              {/* Botão de fechamento */}
+              {/* Botão de fechamento com alerta de segurança */}
               <button
-                onClick={() => onOpenChange(false)}
-                className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                onClick={handleCloseWithConfirm}
+                className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
               >
                 Fechar
               </button>
