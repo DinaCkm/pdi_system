@@ -210,6 +210,15 @@
 - [ ] Reabilitar botão após admin avaliar (aprovar ou rejeitar)
 - [ ] Testar fluxo completo de solicitação múltipla
 
+## Fase 7: Sistema de Notificações
+- [ ] Adicionar notificação quando admin aprova evidência
+- [ ] Adicionar notificação quando admin reprova evidência com justificativa
+- [ ] Adicionar notificação quando admin aprova solicitação de ajuste
+- [ ] Adicionar notificação quando admin reprova solicitação de ajuste
+- [ ] Adicionar notificação quando admin solicita mais informações
+- [ ] Testar fluxo completo de notificações
+- [ ] Verificar se notificações chegam corretamente
+
 ## Próximas Implementações (Ordem da Arquitetura)
 - [ ] Criar página de gestão de Departamentos (CRUD completo)
 - [ ] Atualizar página de usuários para incluir seleção de departamento

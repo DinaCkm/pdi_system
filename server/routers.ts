@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { notifyOwner } from "./_core/notification";
 import { router, publicProcedure, protectedProcedure, adminProcedure, adminOrLeaderProcedure } from "./_core/customTrpc"; // <--- IMPORT CORRIGIDO
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
@@ -219,6 +220,15 @@ export const appRouter = router({
         if(ev) {
             await db.updateEvidenceStatus(input.evidenceId, { status: 'aprovada', evaluatedBy: ctx.user!.id, evaluatedAt: new Date() });
             await db.updateAction(ev.actionId, { status: 'concluida' });
+            
+            // Notificar o proprietário sobre aprovação
+            const action = await db.getActionById(ev.actionId);
+            if(action) {
+                await notifyOwner({
+                    title: '✅ Evidência Aprovada',
+                    content: `A evidência para a ação "${action.titulo}" foi aprovada pelo administrador.`
+                });
+            }
         }
         return { success: true };
     }),
@@ -227,6 +237,15 @@ export const appRouter = router({
         if(ev) {
             await db.updateEvidenceStatus(input.evidenceId, { status: 'reprovada', evaluatedBy: ctx.user!.id, evaluatedAt: new Date() });
             await db.updateAction(ev.actionId, { status: 'em_andamento' });
+            
+            // Notificar o proprietário sobre reprovação
+            const action = await db.getActionById(ev.actionId);
+            if(action) {
+                await notifyOwner({
+                    title: '❌ Evidência Reprovada',
+                    content: `A evidência para a ação "${action.titulo}" foi reprovada. Por favor, envie uma nova evidência com as correções necessárias.`
+                });
+            }
         }
         return { success: true };
     }),

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/customTrpc";
 import * as db from "../db";
 import { TRPCError } from "@trpc/server";
+import { notifyOwner } from "../_core/notification";
 
 export const adjustmentRequestsRouter = router({
   // Criar solicitação de ajuste
@@ -105,10 +106,22 @@ export const adjustmentRequestsRouter = router({
 
       const result = await db.updateAdjustmentRequest(input.id, {
         status: "aprovada",
-        justificativaAdmin: input.justificativa,
+        justificativa: input.justificativa,
         evaluatedBy: user.id,
         evaluatedAt: new Date().toISOString(),
       });
+
+      // Notificar o proprietário sobre aprovação
+      const request = await db.getAdjustmentRequestById(input.id);
+      if(request) {
+        const action = await db.getActionById(request.actionId);
+        if(action) {
+          await notifyOwner({
+            title: '✅ Solicitação de Ajuste Aprovada',
+            content: `Sua solicitação de ajuste para a ação "${action.titulo}" foi aprovada pelo administrador.`
+          });
+        }
+      }
 
       return result;
     }),
@@ -139,6 +152,18 @@ export const adjustmentRequestsRouter = router({
         evaluatedAt: new Date().toISOString(),
       });
 
+      // Notificar o proprietário sobre reprovação
+      const request = await db.getAdjustmentRequestById(input.id);
+      if(request) {
+        const action = await db.getActionById(request.actionId);
+        if(action) {
+          await notifyOwner({
+            title: '❌ Solicitação de Ajuste Reprovada',
+            content: `Sua solicitação de ajuste para a ação "${action.titulo}" foi reprovada. Motivo: ${input.justificativa}`
+          });
+        }
+      }
+
       return result;
     }),
 
@@ -167,6 +192,18 @@ export const adjustmentRequestsRouter = router({
         evaluatedBy: user.id,
         evaluatedAt: new Date().toISOString(),
       });
+
+      // Notificar o proprietário sobre solicitação de mais informações
+      const request = await db.getAdjustmentRequestById(input.id);
+      if(request) {
+        const action = await db.getActionById(request.actionId);
+        if(action) {
+          await notifyOwner({
+            title: '❓ Mais Informações Solicitadas',
+            content: `O administrador solicitou mais informações sobre sua solicitação de ajuste para a ação "${action.titulo}". Motivo: ${input.justificativa}`
+          });
+        }
+      }
 
       return result;
     }),
