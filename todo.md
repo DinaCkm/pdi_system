@@ -203,6 +203,13 @@
 - [ ] Corrigir erro React removeChild
 - [ ] Salvar checkpoint final com sistema funcionando
 
+## Fase 6: Melhorias no Fluxo de Solicitações de Ajuste
+- [ ] Abrir todos os campos da ação no modal de solicitação (Prazo, Descrição, Título, Macro Competência)
+- [ ] Permitir que colaborador edite cada campo individualmente
+- [ ] Desabilitar botão "Solicitar Alteração" quando houver solicitação pendente
+- [ ] Reabilitar botão após admin avaliar (aprovar ou rejeitar)
+- [ ] Testar fluxo completo de solicitação múltipla
+
 ## Próximas Implementações (Ordem da Arquitetura)
 - [ ] Criar página de gestão de Departamentos (CRUD completo)
 - [ ] Atualizar página de usuários para incluir seleção de departamento

@@ -1,4 +1,3 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import confetti from "canvas-confetti";
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { EvidenciaModal } from "@/components/EvidenciaModal";
 import { SolicitarAjusteModal } from "@/components/SolicitarAjusteModal";
+import { SolicitarAjusteModalMelhorado } from "@/components/SolicitarAjusteModalMelhorado";
 
 // Hook para buscar nomes de competências
 function useMacroNames(macroIds: number[]) {
@@ -50,6 +51,20 @@ export default function MinhasPendencias() {
   const [previousAcoes, setPreviousAcoes] = useState<any[]>([]);
   const [showAjusteModal, setShowAjusteModal] = useState(false);
   const [selectedAcaoAjuste, setSelectedAcaoAjuste] = useState<any>(null);
+
+  // Buscar solicitações de ajuste pendentes
+  const { data: adjustmentRequests = [] } = trpc.adjustmentRequests.list.useQuery(
+    undefined,
+    { enabled: !!userId }
+  );
+
+  // Verificar se há solicitação pendente para a ação selecionada
+  const hasPendingAdjustmentRequest = useMemo(() => {
+    if (!selectedAcaoAjuste?.id) return false;
+    return adjustmentRequests.some(
+      (req: any) => req.actionId === selectedAcaoAjuste.id && req.status === 'pendente'
+    );
+  }, [selectedAcaoAjuste, adjustmentRequests]);
 
   // Buscando as ações reais
   const { data: acoes, isLoading } = trpc.actions.list.useQuery(
@@ -309,6 +324,9 @@ export default function MinhasPendencias() {
                       setSelectedAcaoAjuste(acao);
                       setShowAjusteModal(true);
                     }}
+                    disabled={adjustmentRequests.some(
+                      (req: any) => req.actionId === acao.id && req.status === 'pendente'
+                    )}
                   >
                     <MessageSquare className="h-4 w-4" />
                     Solicitar Alteração
@@ -576,16 +594,19 @@ export default function MinhasPendencias() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Solicitar Ajuste */}
-      <SolicitarAjusteModal
-        isOpen={showAjusteModal}
-        onClose={() => setShowAjusteModal(false)}
-        actionId={selectedAcaoAjuste?.id || 0}
+      {/* Modal de Solicitar Ajuste Melhorado */}
+      <SolicitarAjusteModalMelhorado
+        open={showAjusteModal}
+        onOpenChange={setShowAjusteModal}
+        actionId={selectedAcaoAjuste?.id || ""}
         actionTitle={selectedAcaoAjuste?.titulo || ""}
-        onSuccess={() => {
-          utils.actions.list.invalidate();
-          toast.success("Solicitação enviada com sucesso!");
+        currentData={{
+          titulo: selectedAcaoAjuste?.titulo,
+          descricao: selectedAcaoAjuste?.descricao,
+          prazo: selectedAcaoAjuste?.prazo,
+          macroCompetencia: selectedAcaoAjuste?.macroCompetencia,
         }}
+        hasPendingRequest={hasPendingAdjustmentRequest}
       />
     </div>
   );
