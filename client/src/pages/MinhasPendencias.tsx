@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import confetti from "canvas-confetti";
 import { useEffect, useMemo, useState } from "react";
+import { EvidenciaModal } from "@/components/EvidenciaModal";
 
 // Hook para buscar nomes de competências
 function useMacroNames(macroIds: number[]) {
@@ -493,125 +494,16 @@ export default function MinhasPendencias() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Envio de Evidência */}
-      <Dialog open={showEvidenceDialog} onOpenChange={setShowEvidenceDialog}>
-        <DialogContent className="max-w-md bg-gradient-to-br from-blue-50 via-orange-50 to-blue-50">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <Sparkles className="h-5 w-5 text-blue-600" />
-              Registrar Minha Conquista!
-              <Trophy className="h-5 w-5 text-orange-500" />
-            </DialogTitle>
-            <DialogDescription>
-              {selectedAcaoEvidence?.titulo}
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Banner de Reprovação */}
-          {justificativaReprovacao && (
-            <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 rounded-md flex gap-3">
-              <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-red-900">Evidência Reprovada</p>
-                <p className="text-xs text-red-700 mt-1">{justificativaReprovacao}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-4 py-4">
-            {/* Campo de Descrição */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Descreva sua conquista
-              </label>
-              <Textarea
-                placeholder="Explique o que foi realizado, resultados alcançados e como isso contribui para o desenvolvimento..."
-                value={evidenceDescription}
-                onChange={(e) => setEvidenceDescription(e.target.value)}
-                className="min-h-[120px] resize-none"
-              />
-            </div>
-
-            {/* Upload de Arquivo */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Anexar arquivo (opcional)
-              </label>
-              <div className="border-2 border-dashed border-blue-300 rounded-lg p-4 text-center hover:bg-blue-50 transition">
-                <input
-                  type="file"
-                  onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
-                  className="hidden"
-                  id="evidence-file"
-                />
-                <label htmlFor="evidence-file" className="cursor-pointer block">
-                  {evidenceFile ? (
-                    <div className="flex items-center justify-center gap-2 text-green-600">
-                      <FileText className="h-5 w-5" />
-                      <span className="text-sm font-medium">{evidenceFile.name}</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 text-blue-600">
-                      <Upload className="h-5 w-5" />
-                      <span className="text-sm font-medium">Clique para selecionar arquivo</span>
-                      <span className="text-xs text-gray-500">PDF, Word, Imagem...</span>
-                    </div>
-                  )}
-                </label>
-              </div>
-            </div>
-
-            {/* Instrução Visual sobre ZIP */}
-            <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-md flex gap-3">
-              <FileArchive className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-blue-900">Dica: Múltiplos arquivos?</p>
-                <p className="text-xs text-blue-700 mt-1">Se você tiver mais de um arquivo (fotos, PDFs, planilhas), coloque todos em um único arquivo .ZIP antes de enviar.</p>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-                        <Button
-              className="bg-gradient-to-r from-blue-600 to-orange-500 text-white"
-              onClick={async () => {
-                if (!evidenceDescription.trim()) {
-                  toast.error("Por favor, descreva sua conquista");
-                  return;
-                }
-                setIsSubmittingEvidence(true);
-                try {
-                  await submitEvidenceMutation.mutateAsync({
-                    actionId: selectedAcaoEvidence.id,
-                    descricao: evidenceDescription,
-                    files: evidenceFile ? [evidenceFile] : undefined,
-                  });
-                } finally {
-                  setIsSubmittingEvidence(false);
-                }
-              }}
-              disabled={isSubmittingEvidence || !podeEnviarEvidencia}
-            >
-              {isSubmittingEvidence ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Enviando...
-                </>
-              ) : !podeEnviarEvidencia ? (
-                <>
-                  <Clock className="h-4 w-4 mr-2" />
-                  Em Análise...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Enviar Evidência
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Modal de Envio de Evidência com Fluxo de Email */}
+      <EvidenciaModal
+        open={showEvidenceDialog}
+        onOpenChange={setShowEvidenceDialog}
+        actionId={selectedAcaoEvidence?.id || 0}
+        actionNome={selectedAcaoEvidence?.titulo || ""}
+        onSuccess={() => {
+          utils.actions.list.invalidate();
+        }}
+      />
 
       {/* Modal de Celebração */}
       <Dialog open={showCelebrationDialog} onOpenChange={setShowCelebrationDialog}>
