@@ -266,19 +266,26 @@ export const appRouter = router({
       );
     }),
     listPending: adminProcedure.query(async () => {
-      const rawEvidences = await db.getPendingEvidences();
-      // Para cada evidência, buscamos os arquivos e textos vinculados
-      return await Promise.all(
-        rawEvidences.map(async (ev: any) => {
-          const [filesRows]: any = await db.execute(sql`SELECT * FROM evidence_files WHERE evidenceId = ${ev.id}`);
-          const [textsRows]: any = await db.execute(sql`SELECT * FROM evidence_texts WHERE evidenceId = ${ev.id}`);
-          return { 
-            ...ev, 
-            files: filesRows || [], 
-            texts: textsRows || [] 
-          };
-        })
-      );
+      try {
+        const rawEvidences = await db.getPendingEvidences();
+        return await Promise.all(
+          rawEvidences.map(async (ev: any) => {
+            try {
+              const [filesRows]: any = await db.execute(sql`SELECT * FROM evidence_files WHERE evidenceId = ${ev.id}`);
+              const [textsRows]: any = await db.execute(sql`SELECT * FROM evidence_texts WHERE evidenceId = ${ev.id}`);
+              return { 
+                ...ev, 
+                files: filesRows || [], 
+                texts: textsRows || [] 
+              };
+            } catch (error) {
+              return { ...ev, files: [], texts: [] };
+            }
+          })
+        );
+      } catch (error) {
+        throw error;
+      }
     }),
   })
 });
