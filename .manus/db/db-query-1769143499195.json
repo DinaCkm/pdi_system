@@ -1,0 +1,60 @@
+{
+  "query": "SELECT id, titulo, status FROM actions LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, titulo, status FROM actions LIMIT 10;",
+  "rows": [
+    {
+      "id": "60001",
+      "titulo": "curso novo ",
+      "status": "nao_iniciada"
+    },
+    {
+      "id": "90001",
+      "titulo": "XXXXXXXXXXXXXXXXX",
+      "status": "nao_iniciada"
+    },
+    {
+      "id": "90002",
+      "titulo": "Ação Sem Histórico - TESTE 10:40",
+      "status": "nao_iniciada"
+    },
+    {
+      "id": "180008",
+      "titulo": "Curso de Gestão de Projetos",
+      "status": "nao_iniciada"
+    },
+    {
+      "id": "210011",
+      "titulo": "Curso e workshop",
+      "status": "nao_iniciada"
+    },
+    {
+      "id": "210012",
+      "titulo": "FAZER CURSO DE IA",
+      "status": "nao_iniciada"
+    },
+    {
+      "id": "210019",
+      "titulo": "Ação Teste Modificada 1769049805681",
+      "status": "nao_iniciada"
+    },
+    {
+      "id": "210022",
+      "titulo": "Ação Teste para Evidência",
+      "status": "nao_iniciada"
+    },
+    {
+      "id": "210024",
+      "titulo": "Ação Sem Histórico",
+      "status": "nao_iniciada"
+    },
+    {
+      "id": "210025",
+      "titulo": "Ação Teste Modificada 1769049853294",
+      "status": "nao_iniciada"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitulo\tstatus\n60001\tcurso novo \tnao_iniciada\n90001\tXXXXXXXXXXXXXXXXX\tnao_iniciada\n90002\tAção Sem Histórico - TESTE 10:40\tnao_iniciada\n180008\tCurso de Gestão de Projetos\tnao_iniciada\n210011\tCurso e workshop\tnao_iniciada\n210012\tFAZER CURSO DE IA\tnao_iniciada\n210019\tAção Teste Modificada 1769049805681\tnao_iniciada\n210022\tAção Teste para Evidência\tnao_iniciada\n210024\tAção Sem Histórico\tnao_iniciada\n210025\tAção Teste Modificada 1769049853294\tnao_iniciada\n",
+  "stderr": "",
+  "execution_time_ms": 59
+}
