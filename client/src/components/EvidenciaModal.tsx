@@ -231,7 +231,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                   <div className="text-sm text-yellow-800">
                     <p className="font-semibold mb-2">Atenção: a sua evidência será enviada por e-mail.</p>
                     <p className="mb-2">
-                      Clique em enviar e-mail e anexe o documento de comprovação. Caso o e-mail não abra, copie os dados e envie o e-mail diretamente do seu provedor de e-mail, mas em hipótese alguma deixe de colar o assunto e todos os demais campos para que possamos localizar sua evidência.
+                      Clique em enviar e-mail e anexe o documento de comprovação. <span className="font-bold text-red-700 bg-yellow-100 px-1 py-0.5 rounded">Caso o seu provedor de email não abra de forma automática</span>, copie os dados e envie o e-mail diretamente do seu provedor de e-mail, mas em hipótese alguma deixe de colar o assunto e todos os demais campos para que possamos localizar sua evidência.
                     </p>
                   </div>
                 </div>
