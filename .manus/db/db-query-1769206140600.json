@@ -1,0 +1,20 @@
+{
+  "query": "SELECT id, status, createdAt FROM adjustment_requests ORDER BY createdAt DESC LIMIT 2;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, status, createdAt FROM adjustment_requests ORDER BY createdAt DESC LIMIT 2;",
+  "rows": [
+    {
+      "id": "60002",
+      "status": "pendente",
+      "createdAt": "2026-01-23 22:05:29"
+    },
+    {
+      "id": "60001",
+      "status": "pendente",
+      "createdAt": "2026-01-23 22:04:46"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tstatus\tcreatedAt\n60002\tpendente\t2026-01-23 22:05:29\n60001\tpendente\t2026-01-23 22:04:46\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

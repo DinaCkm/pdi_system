@@ -1,0 +1,94 @@
+{
+  "query": "SELECT id, actionId, status, justificativa FROM adjustment_requests LIMIT 15;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, actionId, status, justificativa FROM adjustment_requests LIMIT 15;",
+  "rows": [
+    {
+      "id": "1",
+      "actionId": "270002",
+      "status": "aprovada",
+      "justificativa": "Preciso estender o prazo porque estou com muitas atividades no departamento. Também gostaria de deixar a descrição mais clara."
+    },
+    {
+      "id": "2",
+      "actionId": "240001",
+      "status": "pendente",
+      "justificativa": "preciso alterar"
+    },
+    {
+      "id": "30001",
+      "actionId": "240001",
+      "status": "pendente",
+      "justificativa": "xxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "id": "30002",
+      "actionId": "270002",
+      "status": "pendente",
+      "justificativa": "Preciso ajustar o título e descrição da ação para melhor refletir os objetivos"
+    },
+    {
+      "id": "30003",
+      "actionId": "240001",
+      "status": "pendente",
+      "justificativa": "ajuste 2 cccc"
+    },
+    {
+      "id": "30004",
+      "actionId": "240002",
+      "status": "pendente",
+      "justificativa": "alteração minha"
+    },
+    {
+      "id": "30005",
+      "actionId": "240002",
+      "status": "pendente",
+      "justificativa": "porque eu qyuero"
+    },
+    {
+      "id": "30006",
+      "actionId": "270002",
+      "status": "pendente",
+      "justificativa": "Preciso alterar o prazo e a descrição da ação para melhor adequação"
+    },
+    {
+      "id": "30007",
+      "actionId": "240002",
+      "status": "pendente",
+      "justificativa": "xxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "id": "30008",
+      "actionId": "240002",
+      "status": "pendente",
+      "justificativa": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "id": "30009",
+      "actionId": "270002",
+      "status": "pendente",
+      "justificativa": "Preciso alterar o prazo porque tive um imprevisto no projeto"
+    },
+    {
+      "id": "30010",
+      "actionId": "270002",
+      "status": "pendente",
+      "justificativa": "Preciso estender o prazo da ação porque o projeto foi atrasado"
+    },
+    {
+      "id": "60001",
+      "actionId": "270005",
+      "status": "pendente",
+      "justificativa": "QUERO ALTERAR O TITULO DA MINHA AÇÃO"
+    },
+    {
+      "id": "60002",
+      "actionId": "270006",
+      "status": "pendente",
+      "justificativa": "XXXXXXXXXXXXXXXXXXXXXXX"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tstatus\tjustificativa\n1\t270002\taprovada\tPreciso estender o prazo porque estou com muitas atividades no departamento. Também gostaria de deixar a descrição mais clara.\n2\t240001\tpendente\tpreciso alterar\n30001\t240001\tpendente\txxxxxxxxxxxxxxxxxxxxxxx\n30002\t270002\tpendente\tPreciso ajustar o título e descrição da ação para melhor refletir os objetivos\n30003\t240001\tpendente\tajuste 2 cccc\n30004\t240002\tpendente\talteração minha\n30005\t240002\tpendente\tporque eu qyuero\n30006\t270002\tpendente\tPreciso alterar o prazo e a descrição da ação para melhor adequação\n30007\t240002\tpendente\txxxxxxxxxxxxxxxxxxxxxx\n30008\t240002\tpendente\txxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n30009\t270002\tpendente\tPreciso alterar o prazo porque tive um imprevisto no projeto\n30010\t270002\tpendente\tPreciso estender o prazo da ação porque o projeto foi atrasado\n60001\t270005\tpendente\tQUERO ALTERAR O TITULO DA MINHA AÇÃO\n60002\t270006\tpendente\tXXXXXXXXXXXXXXXXXXXXXXX\n",
+  "stderr": "",
+  "execution_time_ms": 50
+}

@@ -1870,3 +1870,11 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Após editar, Admin clica em "Aprovar" (com ajustes já aplicados)
 - [ ] Testar fluxo completo: Avaliar → Editar Ação → Aprovar (NO SISTEMA PUBLICADO)
 - [ ] Testar fluxo de rejeição (sem editar) (NO SISTEMA PUBLICADO)
+
+
+## Fase 13: CORRIGIR - Solicitação não está vinculada à Ação
+- [ ] Verificar se getPendingAdjustmentRequests() está fazendo JOIN correto com actions
+- [ ] Verificar se dados da ação estão sendo retornados
+- [ ] Verificar mapeamento de nomes (acao, titulo, etc)
+- [ ] Testar query no banco de dados
+- [ ] Corrigir vinculação entre solicitação e ação

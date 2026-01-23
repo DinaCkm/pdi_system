@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, actionId, solicitanteId, status, justificativa FROM adjustment_requests LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, actionId, solicitanteId, status, justificativa FROM adjustment_requests LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "actionId": "270002",
+      "solicitanteId": "960001",
+      "status": "aprovada",
+      "justificativa": "Preciso estender o prazo porque estou com muitas atividades no departamento. Também gostaria de deixar a descrição mais clara."
+    },
+    {
+      "id": "2",
+      "actionId": "240001",
+      "solicitanteId": "720001",
+      "status": "pendente",
+      "justificativa": "preciso alterar"
+    },
+    {
+      "id": "30001",
+      "actionId": "240001",
+      "solicitanteId": "720001",
+      "status": "pendente",
+      "justificativa": "xxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "id": "30002",
+      "actionId": "270002",
+      "solicitanteId": "960001",
+      "status": "pendente",
+      "justificativa": "Preciso ajustar o título e descrição da ação para melhor refletir os objetivos"
+    },
+    {
+      "id": "30003",
+      "actionId": "240001",
+      "solicitanteId": "720001",
+      "status": "pendente",
+      "justificativa": "ajuste 2 cccc"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tsolicitanteId\tstatus\tjustificativa\n1\t270002\t960001\taprovada\tPreciso estender o prazo porque estou com muitas atividades no departamento. Também gostaria de deixar a descrição mais clara.\n2\t240001\t720001\tpendente\tpreciso alterar\n30001\t240001\t720001\tpendente\txxxxxxxxxxxxxxxxxxxxxxx\n30002\t270002\t960001\tpendente\tPreciso ajustar o título e descrição da ação para melhor refletir os objetivos\n30003\t240001\t720001\tpendente\tajuste 2 cccc\n",
+  "stderr": "",
+  "execution_time_ms": 52
+}
