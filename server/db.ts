@@ -926,15 +926,18 @@ export async function getPendingEvidences() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Busca evidências e traz dados do colaborador e contagens
+  // Busca evidencias com dados do colaborador, acao e contagens
   const result = await db.execute(sql`
     SELECT 
       e.*, 
       u.name as colaboradorNome,
+      u.email as colaboradorEmail,
+      a.titulo as actionNome,
       (SELECT COUNT(*) FROM evidence_files WHERE evidenceId = e.id) as totalArquivos,
       (SELECT COUNT(*) FROM evidence_texts WHERE evidenceId = e.id) as totalTextos
     FROM evidences e
     LEFT JOIN users u ON e.colaboradorId = u.id
+    LEFT JOIN actions a ON e.actionId = a.id
     WHERE e.status = 'aguardando_avaliacao'
     ORDER BY e.createdAt DESC
   `);
