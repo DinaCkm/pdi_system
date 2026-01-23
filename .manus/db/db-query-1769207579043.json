@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, CAST(status AS CHAR) as status_text FROM adjustment_requests LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, CAST(status AS CHAR) as status_text FROM adjustment_requests LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "status_text": "aprovada"
+    },
+    {
+      "id": "2",
+      "status_text": "pendente"
+    },
+    {
+      "id": "30001",
+      "status_text": "pendente"
+    },
+    {
+      "id": "30002",
+      "status_text": "pendente"
+    },
+    {
+      "id": "30003",
+      "status_text": "pendente"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tstatus_text\n1\taprovada\n2\tpendente\n30001\tpendente\n30002\tpendente\n30003\tpendente\n",
+  "stderr": "",
+  "execution_time_ms": 76
+}

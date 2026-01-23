@@ -1,0 +1,66 @@
+{
+  "query": "SELECT id, status FROM adjustment_requests;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, status FROM adjustment_requests;",
+  "rows": [
+    {
+      "id": "1",
+      "status": "aprovada"
+    },
+    {
+      "id": "2",
+      "status": "pendente"
+    },
+    {
+      "id": "30001",
+      "status": "pendente"
+    },
+    {
+      "id": "30002",
+      "status": "pendente"
+    },
+    {
+      "id": "30003",
+      "status": "pendente"
+    },
+    {
+      "id": "30004",
+      "status": "pendente"
+    },
+    {
+      "id": "30005",
+      "status": "pendente"
+    },
+    {
+      "id": "30006",
+      "status": "pendente"
+    },
+    {
+      "id": "30007",
+      "status": "pendente"
+    },
+    {
+      "id": "30008",
+      "status": "pendente"
+    },
+    {
+      "id": "30009",
+      "status": "pendente"
+    },
+    {
+      "id": "30010",
+      "status": "pendente"
+    },
+    {
+      "id": "60001",
+      "status": "pendente"
+    },
+    {
+      "id": "60002",
+      "status": "pendente"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tstatus\n1\taprovada\n2\tpendente\n30001\tpendente\n30002\tpendente\n30003\tpendente\n30004\tpendente\n30005\tpendente\n30006\tpendente\n30007\tpendente\n30008\tpendente\n30009\tpendente\n30010\tpendente\n60001\tpendente\n60002\tpendente\n",
+  "stderr": "",
+  "execution_time_ms": 73
+}

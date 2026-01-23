@@ -215,10 +215,10 @@ export const appRouter = router({
         }
       }),
     listByAction: protectedProcedure.input(z.object({ actionId: z.number() })).query(async ({ input }) => await db.getEvidencesByActionId(input.actionId)),
-    aprovar: adminProcedure.input(z.object({ evidenceId: z.number() })).mutation(async ({ ctx, input }) => {
-        const ev = await db.getEvidenceById(input.evidenceId);
+    approve: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+        const ev = await db.getEvidenceById(input.id);
         if(ev) {
-            await db.updateEvidenceStatus(input.evidenceId, { status: 'aprovada', evaluatedBy: ctx.user!.id, evaluatedAt: new Date() });
+            await db.updateEvidenceStatus(input.id, { status: 'aprovada', evaluatedBy: ctx.user!.id, evaluatedAt: new Date() });
             await db.updateAction(ev.actionId, { status: 'concluida' });
             
             // Notificar o proprietário sobre aprovação
@@ -232,10 +232,10 @@ export const appRouter = router({
         }
         return { success: true };
     }),
-    reprovar: adminProcedure.input(z.object({ evidenceId: z.number() })).mutation(async ({ ctx, input }) => {
-        const ev = await db.getEvidenceById(input.evidenceId);
+    reject: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+        const ev = await db.getEvidenceById(input.id);
         if(ev) {
-            await db.updateEvidenceStatus(input.evidenceId, { status: 'reprovada', evaluatedBy: ctx.user!.id, evaluatedAt: new Date() });
+            await db.updateEvidenceStatus(input.id, { status: 'reprovada', evaluatedBy: ctx.user!.id, evaluatedAt: new Date() });
             await db.updateAction(ev.actionId, { status: 'em_andamento' });
             
             // Notificar o proprietário sobre reprovação
@@ -254,12 +254,12 @@ export const appRouter = router({
       // Para cada evidência, buscamos os arquivos e textos vinculados
       return await Promise.all(
         rawEvidences.map(async (ev: any) => {
-          const [files]: any = await db.execute(sql`SELECT * FROM evidence_files WHERE evidenceId = ${ev.id}`);
-          const [texts]: any = await db.execute(sql`SELECT * FROM evidence_texts WHERE evidenceId = ${ev.id}`);
+          const [filesRows]: any = await db.execute(sql`SELECT * FROM evidence_files WHERE evidenceId = ${ev.id}`);
+          const [textsRows]: any = await db.execute(sql`SELECT * FROM evidence_texts WHERE evidenceId = ${ev.id}`);
           return { 
             ...ev, 
-            files: files || [], 
-            texts: texts || [] 
+            files: filesRows || [], 
+            texts: textsRows || [] 
           };
         })
       );
@@ -269,12 +269,12 @@ export const appRouter = router({
       // Para cada evidência, buscamos os arquivos e textos vinculados
       return await Promise.all(
         rawEvidences.map(async (ev: any) => {
-          const [files]: any = await db.execute(sql`SELECT * FROM evidence_files WHERE evidenceId = ${ev.id}`);
-          const [texts]: any = await db.execute(sql`SELECT * FROM evidence_texts WHERE evidenceId = ${ev.id}`);
+          const [filesRows]: any = await db.execute(sql`SELECT * FROM evidence_files WHERE evidenceId = ${ev.id}`);
+          const [textsRows]: any = await db.execute(sql`SELECT * FROM evidence_texts WHERE evidenceId = ${ev.id}`);
           return { 
             ...ev, 
-            files: files || [], 
-            texts: texts || [] 
+            files: filesRows || [], 
+            texts: textsRows || [] 
           };
         })
       );

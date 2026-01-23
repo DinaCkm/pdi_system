@@ -1061,7 +1061,8 @@ export async function getPendingAdjustmentRequests() {
       a.titulo as action_title,
       a.descricao as action_desc,
       a.prazo as action_prazo,
-      a.macroCompetencia as action_macro,
+      a.macroId as action_macro_id,
+      a.microcompetencia as action_micro,
       u.name as user_name,
       u.email as user_email
     FROM adjustment_requests ar
@@ -1071,31 +1072,32 @@ export async function getPendingAdjustmentRequests() {
     ORDER BY ar.createdAt DESC
   `);
 
-
-  return rows.map((row: any) => ({
-    id: row.id,
-    actionId: row.actionId,
-    solicitanteId: row.solicitanteId,
-    tipoSolicitante: row.tipoSolicitante,
-    justificativa: row.justificativa,
-    camposAjustar: row.camposAjustar,
-    status: row.status,
-    justificativaAdmin: row.justificativaAdmin,
-    createdAt: row.createdAt,
-    evaluatedAt: row.evaluatedAt,
-    evaluatedBy: row.evaluatedBy,
-    acao: {
-      id: row.action_id,
-      titulo: row.action_title,
-      descricao: row.action_desc,
-      prazo: row.action_prazo,
-      macroCompetencia: row.action_macro,
-    },
-    solicitante: {
-      name: row.user_name,
-      email: row.user_email,
-    },
-  }));
+  const result = rows.map((row: any) => ({
+      id: row.id,
+      actionId: row.actionId,
+      solicitanteId: row.solicitanteId,
+      tipoSolicitante: row.tipoSolicitante,
+      justificativa: row.justificativa,
+      camposAjustar: row.camposAjustar,
+      status: row.status,
+      justificativaAdmin: row.justificativaAdmin,
+      createdAt: row.createdAt,
+      evaluatedAt: row.evaluatedAt,
+      evaluatedBy: row.evaluatedBy,
+      acao: {
+        id: row.action_id,
+        titulo: row.action_title,
+        descricao: row.action_desc,
+        prazo: row.action_prazo,
+        macroId: row.action_macro_id,
+        microcompetencia: row.action_micro,
+      },
+      solicitante: {
+        name: row.user_name,
+        email: row.user_email,
+      },
+    }));
+  return result;
 }
 export async function getAdjustmentRequestsByUser(userId: number) {
   const db = await getDb();

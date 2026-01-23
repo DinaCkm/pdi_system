@@ -41,6 +41,7 @@ export const adjustmentRequestsRouter = router({
 
   // Listar solicitações de ajuste (para admin avaliar)
   listPending: protectedProcedure.query(async ({ ctx }) => {
+    console.log('[adjustmentRequests.listPending] User:', user.id, 'Role:', user.role);
     const user = ctx.user!;
 
     // Apenas admin pode ver todas as solicitações pendentes
@@ -51,6 +52,7 @@ export const adjustmentRequestsRouter = router({
       });
     }
 
+    console.log('[adjustmentRequests.listPending] Chamando getPendingAdjustmentRequests...');
     return await db.getPendingAdjustmentRequests();
   }),
 
