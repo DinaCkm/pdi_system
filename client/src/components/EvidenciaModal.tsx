@@ -74,11 +74,18 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
   const handleSubmit = async () => {
     setUploading(true);
     try {
-      const uploadedFiles = [];
-      for (const file of arquivos) {
-        const uploaded = await uploadFileToS3(file);
-        uploadedFiles.push(uploaded);
-      }
+      const uploadedFiles = await Promise.all(
+        arquivos.map(async (file) => {
+          const result = await uploadFileToS3(file);
+          return {
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+            fileUrl: result.url || result.fileUrl,
+            fileKey: result.key || result.fileKey || `evidencias/${Date.now()}-${file.name}`,
+          };
+        })
+      );
       await createEvidenceMutation.mutateAsync({
         actionId,
         descricao: textoEvidencia.trim(),
