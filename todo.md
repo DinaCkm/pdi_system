@@ -1860,3 +1860,13 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## BLOQUEADOR: Usuário Admin não consegue fazer login
 - Necessário verificar e criar usuário admin com credenciais corretas
 - Ou usar usuário existente para testar AdminDashboard
+
+
+## Fase 12: Implementar Fluxo Completo de Solicitação de Ajuste (CRÍTICO)
+- [x] Adicionar botão "Editar Ação" no dialog de Avaliar Solicitação
+- [x] Criar modal de edição de ação dentro do dialog
+- [x] Permitir que Admin edite os campos solicitados (Título, Descrição, Prazo, Macro Competência)
+- [x] Implementar lógica de salvar alterações na ação
+- [x] Após editar, Admin clica em "Aprovar" (com ajustes já aplicados)
+- [ ] Testar fluxo completo: Avaliar → Editar Ação → Aprovar (NO SISTEMA PUBLICADO)
+- [ ] Testar fluxo de rejeição (sem editar) (NO SISTEMA PUBLICADO)

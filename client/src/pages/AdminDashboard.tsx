@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, MessageSquare, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, Clock, MessageSquare, Edit2 } from "lucide-react";
 
 export default function AdminDashboard() {
   const [selectedEvidence, setSelectedEvidence] = useState<any>(null);
@@ -17,16 +17,16 @@ export default function AdminDashboard() {
   const [selectedAdjustment, setSelectedAdjustment] = useState<any>(null);
   const [showAdjustmentDialog, setShowAdjustmentDialog] = useState(false);
   const [adjustmentReason, setAdjustmentReason] = useState("");
+  
+  // Estado para edição de ação
+  const [showEditActionModal, setShowEditActionModal] = useState(false);
+  const [editingActionData, setEditingActionData] = useState<any>(null);
 
-  // Buscar evidências pendentes
   const { data: pendingEvidences = [] } = trpc.evidences.listPending.useQuery();
-
-  // Buscar solicitações de ajuste pendentes
   const { data: pendingAdjustments = [] } = trpc.adjustmentRequests.listPending.useQuery();
 
   const utils = trpc.useUtils();
 
-  // Mutations para evidências
   const approveEvidenceMutation = trpc.evidences.approve.useMutation({
     onSuccess: () => {
       toast.success("✅ Evidência aprovada!");
@@ -48,7 +48,6 @@ export default function AdminDashboard() {
     onError: (error) => toast.error(error.message || "Erro ao rejeitar"),
   });
 
-  // Mutations para solicitações de ajuste
   const approveAdjustmentMutation = trpc.adjustmentRequests.approve.useMutation({
     onSuccess: () => {
       toast.success("✅ Solicitação aprovada!");
@@ -102,6 +101,30 @@ export default function AdminDashboard() {
     });
   };
 
+  const handleOpenEditAction = () => {
+    if (!selectedAdjustment?.acao) {
+      toast.error("Ação não encontrada");
+      return;
+    }
+    setEditingActionData({ ...selectedAdjustment.acao });
+    setShowEditActionModal(true);
+  };
+
+  const handleSaveActionEdits = async () => {
+    if (!editingActionData) return;
+    
+    try {
+      setSelectedAdjustment({
+        ...selectedAdjustment,
+        acao: editingActionData
+      });
+      toast.success("✅ Ação atualizada com sucesso!");
+      setShowEditActionModal(false);
+    } catch (error: any) {
+      toast.error("Erro ao salvar alterações");
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div>
@@ -109,13 +132,11 @@ export default function AdminDashboard() {
         <p className="text-gray-600 mt-2">Gerencie evidências e solicitações de ajuste</p>
       </div>
 
-      {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-600" />
-              Evidências Pendentes
+              📋 Evidências Pendentes
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -127,8 +148,7 @@ export default function AdminDashboard() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-orange-600" />
-              Solicitações Pendentes
+              💬 Solicitações Pendentes
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -138,7 +158,6 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Tabs */}
       <Tabs defaultValue="evidences" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="evidences">
@@ -149,7 +168,6 @@ export default function AdminDashboard() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab de Evidências */}
         <TabsContent value="evidences" className="space-y-4">
           {pendingEvidences.length === 0 ? (
             <Card className="text-center py-8">
@@ -194,7 +212,6 @@ export default function AdminDashboard() {
           )}
         </TabsContent>
 
-        {/* Tab de Solicitações */}
         <TabsContent value="adjustments" className="space-y-4">
           {pendingAdjustments.length === 0 ? (
             <Card className="text-center py-8">
@@ -330,12 +347,20 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <DialogFooter className="gap-2">
+          <DialogFooter className="gap-2 flex-wrap">
             <Button
               variant="outline"
               onClick={() => setShowAdjustmentDialog(false)}
             >
               Cancelar
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleOpenEditAction}
+              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+            >
+              <Edit2 className="h-4 w-4 mr-2" />
+              Editar Ação
             </Button>
             <Button
               variant="destructive"
@@ -356,9 +381,96 @@ export default function AdminDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de Edição de Ação */}
+      <Dialog open={showEditActionModal} onOpenChange={setShowEditActionModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Ação</DialogTitle>
+            <DialogDescription>
+              Aplique os ajustes solicitados antes de aprovar
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingActionData && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold">Título:</label>
+                <input
+                  type="text"
+                  value={editingActionData.titulo || ""}
+                  onChange={(e) =>
+                    setEditingActionData({
+                      ...editingActionData,
+                      titulo: e.target.value,
+                    })
+                  }
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold">Descrição:</label>
+                <Textarea
+                  value={editingActionData.descricao || ""}
+                  onChange={(e) =>
+                    setEditingActionData({
+                      ...editingActionData,
+                      descricao: e.target.value,
+                    })
+                  }
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold">Prazo:</label>
+                <input
+                  type="date"
+                  value={editingActionData.prazo || ""}
+                  onChange={(e) =>
+                    setEditingActionData({
+                      ...editingActionData,
+                      prazo: e.target.value,
+                    })
+                  }
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-semibold">Macro Competência:</label>
+                <input
+                  type="text"
+                  value={editingActionData.macroCompetencia || ""}
+                  onChange={(e) =>
+                    setEditingActionData({
+                      ...editingActionData,
+                      macroCompetencia: e.target.value,
+                    })
+                  }
+                  className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowEditActionModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveActionEdits}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-// Ícone FileText (faltava no import)
-import { FileText } from "lucide-react";
