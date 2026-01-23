@@ -204,7 +204,7 @@ export const appRouter = router({
           await db.updateAction(input.actionId, { status: 'aguardando_avaliacao' });
           
           console.log('[evidences.create] ✅ SUCESSO COMPLETO - Evidence ID:', evidenceId);
-          return { success: true, evidenceId };
+          return { id: evidenceId };
         } catch (error) {
           console.error('[evidences.create] ❌ ERRO CAPTURADO:', error);
           console.error('[evidences.create] Stack trace:', (error as any)?.stack);

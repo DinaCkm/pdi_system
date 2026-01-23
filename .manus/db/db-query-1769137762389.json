@@ -1,0 +1,40 @@
+{
+  "query": "SELECT id, actionId, descricao, createdAt FROM evidences ORDER BY id DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, actionId, descricao, createdAt FROM evidences ORDER BY id DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "210017",
+      "actionId": "270002",
+      "descricao": "Completei o teste de email com sucesso!",
+      "createdAt": "2026-01-22 22:09:04"
+    },
+    {
+      "id": "210016",
+      "actionId": "270003",
+      "descricao": "xxxxxxxxxxxxxxx",
+      "createdAt": "2026-01-22 21:58:01"
+    },
+    {
+      "id": "210015",
+      "actionId": "270002",
+      "descricao": "Completei o teste com sucesso!",
+      "createdAt": "2026-01-22 21:55:57"
+    },
+    {
+      "id": "210014",
+      "actionId": "270001",
+      "descricao": "Completei o treinamento com sucesso!",
+      "createdAt": "2026-01-22 21:54:31"
+    },
+    {
+      "id": "210013",
+      "actionId": "270001",
+      "descricao": "Completei o treinamento de cabelos com sucesso. Aprendi todas as técnicas básicas e avançadas.",
+      "createdAt": "2026-01-22 21:52:38"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tdescricao\tcreatedAt\n210017\t270002\tCompletei o teste de email com sucesso!\t2026-01-22 22:09:04\n210016\t270003\txxxxxxxxxxxxxxx\t2026-01-22 21:58:01\n210015\t270002\tCompletei o teste com sucesso!\t2026-01-22 21:55:57\n210014\t270001\tCompletei o treinamento com sucesso!\t2026-01-22 21:54:31\n210013\t270001\tCompletei o treinamento de cabelos com sucesso. Aprendi todas as técnicas básicas e avançadas.\t2026-01-22 21:52:38\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}
