@@ -500,6 +500,9 @@ export default function MinhasPendencias() {
         onOpenChange={setShowEvidenceDialog}
         actionId={selectedAcaoEvidence?.id || 0}
         actionNome={selectedAcaoEvidence?.titulo || ""}
+        macrocompetencia={selectedAcaoEvidence?.macroNome || ""}
+        descricao={selectedAcaoEvidence?.descricao || ""}
+        prazo={selectedAcaoEvidence?.prazo || null}
         onSuccess={() => {
           utils.actions.list.invalidate();
         }}

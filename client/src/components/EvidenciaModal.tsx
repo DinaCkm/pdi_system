@@ -10,15 +10,29 @@ interface EvidenciaModalProps {
   onOpenChange: (open: boolean) => void;
   actionId: number;
   actionNome: string;
+  macrocompetencia?: string;
+  descricao?: string;
+  prazo?: string | Date | null;
   onSuccess: () => void;
 }
 
-export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuccess }: EvidenciaModalProps) {
+export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macrocompetencia, descricao, prazo, onSuccess }: EvidenciaModalProps) {
   const [textoEvidencia, setTextoEvidencia] = useState("");
   const [uploading, setUploading] = useState(false);
   const [registrada, setRegistrada] = useState(false);
   const [evidenceId, setEvidenceId] = useState<number | null>(null);
   const { user } = useAuth();
+  
+  // 🔍 DEBUG: Verificar se os dados estão sendo recebidos
+  useEffect(() => {
+    console.log('[EvidenciaModal] Props recebidas:', {
+      actionId,
+      actionNome,
+      macrocompetencia,
+      descricao,
+      prazo,
+    });
+  }, [actionId, actionNome, macrocompetencia, descricao, prazo]);
 
   const createEvidenceMutation = trpc.evidences.create.useMutation({
     onSuccess: (result) => {
@@ -117,8 +131,12 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
       const evidenceIdFormatted = `EV-${String(evidenceId).padStart(6, '0')}`;
       const adminEmail = "relacionamento@ckmtalents.net";
       const assunto = encodeURIComponent(`[${evidenceIdFormatted}] ${actionNome} - ${user?.name || 'Colaborador'}`);
+      const dataFormatada = prazo 
+        ? new Date(prazo).toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' })
+        : new Date().toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      
       const corpo = encodeURIComponent(
-        `ID: ${evidenceIdFormatted}. Seguem anexas as evidências.`
+        `ID: ${evidenceIdFormatted}\n\nCompetência: ${macrocompetencia || 'N/A'}\n\nDescrição: ${descricao || 'N/A'}\n\nData de Conclusão: ${dataFormatada}\n\nSeguem anexas as evidências.`
       );
       const mailtoLink = `mailto:${adminEmail}?subject=${assunto}&body=${corpo}`;
       
