@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 import { notifyOwner } from "./_core/notification";
 import { router, publicProcedure, protectedProcedure, adminProcedure, adminOrLeaderProcedure } from "./_core/customTrpc"; // <--- IMPORT CORRIGIDO
 import { TRPCError } from "@trpc/server";

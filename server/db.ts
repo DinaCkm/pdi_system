@@ -937,7 +937,7 @@ export async function getPendingEvidences() {
     FROM evidences e
     LEFT JOIN users u ON e.colaboradorId = u.id
     LEFT JOIN actions a ON e.actionId = a.id
-    WHERE e.status IN ('aguardando_avaliacao', 'aguardando_analise')
+    WHERE e.status IN ('aguardando_avaliacao', 'aguardando_analise', 'pending', 'pendente')
     ORDER BY e.createdAt DESC
   `);
 

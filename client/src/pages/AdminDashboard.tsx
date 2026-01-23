@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,8 +22,15 @@ export default function AdminDashboard() {
   const [showEditActionModal, setShowEditActionModal] = useState(false);
   const [editingActionData, setEditingActionData] = useState<any>(null);
 
-  const { data: pendingEvidences = [] } = trpc.evidences.listPending.useQuery();
-  const { data: pendingAdjustments = [] } = trpc.adjustmentRequests.listPending.useQuery();
+  const { data: pendingEvidences = [], isLoading: evLoading, error: evError } = trpc.evidences.listPending.useQuery();
+  const { data: pendingAdjustments = [], isLoading: adjLoading, error: adjError } = trpc.adjustmentRequests.listPending.useQuery();
+  
+  useEffect(() => {
+    console.log('📊 AdminDashboard - Dados carregados:');
+    console.log('  Evidências:', pendingEvidences?.length || 0, pendingEvidences);
+    console.log('  Ajustes:', pendingAdjustments?.length || 0, pendingAdjustments);
+    console.log('  Erros:', { evError, adjError });
+  }, [pendingEvidences, pendingAdjustments, evError, adjError]);
 
   const utils = trpc.useUtils();
 
