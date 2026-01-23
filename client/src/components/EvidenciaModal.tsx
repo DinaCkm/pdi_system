@@ -77,12 +77,13 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
       const uploadedFiles = await Promise.all(
         arquivos.map(async (file) => {
           const result = await uploadFileToS3(file);
+          console.log("RESULTADO DO S3:", JSON.stringify(result, null, 2));
           return {
-            fileName: file.name,
-            fileType: file.type,
-            fileSize: file.size,
-            fileUrl: result.url || result.fileUrl,
-            fileKey: result.key || result.fileKey || `evidencias/${Date.now()}-${file.name}`,
+            fileName: result.fileName,
+            fileType: result.fileType,
+            fileSize: result.fileSize,
+            fileUrl: result.fileUrl,
+            fileKey: result.fileKey,
           };
         })
       );
