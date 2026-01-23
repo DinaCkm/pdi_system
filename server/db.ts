@@ -929,7 +929,7 @@ export async function getPendingEvidences() {
       (SELECT COUNT(*) FROM evidence_texts WHERE evidenceId = e.id) as totalTextos
     FROM evidences e
     LEFT JOIN users u ON e.colaboradorId = u.id
-    WHERE e.status = 'pendente'
+    WHERE e.status = 'aguardando_avaliacao'
     ORDER BY e.createdAt DESC
   `);
 

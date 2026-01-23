@@ -72,7 +72,6 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
   };
 
   const handleSubmit = async () => {
-
     setUploading(true);
     try {
       const uploadedFiles = [];
@@ -80,17 +79,17 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
         const uploaded = await uploadFileToS3(file);
         uploadedFiles.push(uploaded);
       }
-      // MUDANÇA: 'descricao' em vez de 'texts' para bater com o servidor
       await createEvidenceMutation.mutateAsync({
         actionId,
         descricao: textoEvidencia.trim(),
         files: uploadedFiles.length > 0 ? uploadedFiles : undefined,
       });
-      onSuccess();
+      onSuccess?.();
+      onOpenChange(false);
     } catch (error) {
-      toast.error("Falha ao salvar evidencia");
+      console.error(error);
+      toast.error("Falha ao salvar evidência");
     } finally {
-      // DESTRAVAR BOTÃO: Garantir que setUploading(false) seja chamado sempre
       setUploading(false);
     }
   };

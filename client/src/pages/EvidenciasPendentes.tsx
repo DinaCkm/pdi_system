@@ -131,17 +131,17 @@ export default function EvidenciasPendentes() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    Enviado em {formatDate(evidence.createdAt)}
+                    Enviado em: {evidence.createdAt ? new Date(evidence.createdAt).toLocaleDateString('pt-BR') : 'Data não disponível'}
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Arquivos:</span>
-                      <span className="font-medium">{evidence.files?.length || 0}</span>
+                      <span className="font-medium">{evidence.totalArquivos || 0}</span>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Textos:</span>
-                      <span className="font-medium">{evidence.texts?.length || 0}</span>
+                      <span className="font-medium">{evidence.totalTextos || 0}</span>
                     </div>
                   </div>
 
