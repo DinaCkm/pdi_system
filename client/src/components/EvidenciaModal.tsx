@@ -1,7 +1,7 @@
-// FORCE REBUILD: 2026-01-23T02:05:00Z
+// FORCE REBUILD: 2026-01-23T02:30:00Z - 3 TRAVAS DE SEGURANÇA
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Loader2, Mail, CheckCircle, Copy, AlertTriangle } from "lucide-react";
+import { Loader2, Mail, CheckCircle, Copy, AlertTriangle, ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -22,14 +22,36 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
 
   const createEvidenceMutation = trpc.evidences.create.useMutation({
     onSuccess: (result) => {
-      // Após salvar no banco, mostra botão para abrir email
+      // ✅ TRAVA 1: ALERTA VERDE DE SUCESSO
+      toast.success("✅ SUCESSO: Registro salvo! Agora clique no botão abaixo para enviar o e-mail.", {
+        duration: 5000,
+        style: {
+          background: "#10b981",
+          color: "#ffffff",
+          border: "2px solid #059669",
+          fontSize: "14px",
+          fontWeight: "bold",
+        },
+      });
+
       setRegistrada(true);
       setEvidenceId(result.evidenceId);
       setUploading(false);
-      toast.success("Evidência registrada com sucesso!");
     },
     onError: (error) => {
-      toast.error(`Erro ao registrar evidência: ${error.message}`);
+      // ✅ TRAVA 1: ALERTA VERMELHO DE ERRO
+      toast.error("❌ ERRO: O sistema não conseguiu registrar sua intenção. Tente novamente.", {
+        duration: 5000,
+        style: {
+          background: "#ef4444",
+          color: "#ffffff",
+          border: "2px solid #dc2626",
+          fontSize: "14px",
+          fontWeight: "bold",
+        },
+      });
+
+      console.error("[EvidenciaModal] Erro ao registrar evidência:", error);
       setUploading(false);
     },
   });
@@ -55,7 +77,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
 
     setUploading(true);
     try {
-      // Envia apenas a descrição, com array vazio para evitar erro Zod
+      // Envia apenas a descrição, com array vazio obrigatório
       await createEvidenceMutation.mutateAsync({
         actionId,
         descricao: textoEvidencia.trim(),
@@ -68,31 +90,20 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
     }
   };
 
-  const handleOpenEmail = () => {
-    if (!evidenceId) return;
+  const handleCopyField = (text: string, fieldName: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${fieldName} copiado!`);
+  };
 
+  const getMailtoLink = () => {
+    if (!evidenceId) return "#";
     const evidenceIdFormatted = `EV-${String(evidenceId).padStart(6, '0')}`;
     const adminEmail = "relacionamento@ckmtalents.net";
     const assunto = encodeURIComponent(`[${evidenceIdFormatted}] ${actionNome} - ${user?.name || 'Colaborador'}`);
     const corpo = encodeURIComponent(
-      `ID: ${evidenceIdFormatted}\nCOLABORADOR: ${user?.name || 'Colaborador'}\nAÇÃO: ${actionNome}\n\n[ANEXE SEUS ARQUIVOS ABAIXO]`
+      `ID: ${evidenceIdFormatted}. Seguem anexas as evidências.`
     );
-    
-    window.location.href = `mailto:${adminEmail}?subject=${assunto}&body=${corpo}`;
-    
-    setTimeout(() => {
-      onOpenChange(false);
-      resetForm();
-      onSuccess();
-    }, 500);
-  };
-
-  const handleCopySubject = () => {
-    if (!evidenceId) return;
-    const evidenceIdFormatted = `EV-${String(evidenceId).padStart(6, '0')}`;
-    const subject = `[${evidenceIdFormatted}] ${actionNome} - ${user?.name || 'Colaborador'}`;
-    navigator.clipboard.writeText(subject);
-    toast.success("Assunto copiado para a área de transferência!");
+    return `mailto:${adminEmail}?subject=${assunto}&body=${corpo}`;
   };
 
   if (!open) return null;
@@ -119,9 +130,9 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
                   <ol className="text-sm text-blue-800 mt-2 space-y-1 ml-4 list-decimal">
                     <li>Descreva sua evidência abaixo</li>
                     <li>Clique em "Registrar Evidência"</li>
+                    <li>Um alerta verde confirmará o sucesso</li>
                     <li>Clique no botão para abrir seu cliente de email</li>
                     <li>Anexe seus comprovantes e envie</li>
-                    <li>O administrador analisará e aprovará</li>
                   </ol>
                 </div>
               </div>
@@ -148,67 +159,106 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
             {/* Sucesso */}
             <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
               <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-green-900 mb-2">Evidência Registrada!</h3>
+              <h3 className="text-lg font-bold text-green-900 mb-2">✅ Evidência Registrada!</h3>
               <p className="text-sm text-green-800 mb-4">
-                ID: <strong>EV-{String(evidenceId).padStart(6, '0')}</strong>
+                ID: <strong className="text-lg">EV-{String(evidenceId).padStart(6, '0')}</strong>
               </p>
-              <p className="text-sm text-green-700">
-                Agora clique no botão abaixo para abrir seu cliente de email com a máscara pré-preenchida.
+              <p className="text-xs text-green-700">
+                Seu ID foi salvo no sistema. Agora clique no botão abaixo para enviar o e-mail.
               </p>
             </div>
 
-            {/* Botão Principal - Automático */}
+            {/* ✅ TRAVA 2: BOTÃO FÍSICO GRANDE E DESTACADO */}
             <div className="flex justify-center">
-              <button
-                onClick={handleOpenEmail}
-                className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-3 font-bold text-lg shadow-lg"
+              <a
+                href={getMailtoLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-3 font-bold text-lg shadow-lg border-2 border-green-700 transition-all hover:scale-105"
               >
                 <Mail className="h-6 w-6" />
-                CLIQUE AQUI PARA ABRIR SEU E-MAIL
-              </button>
+                CLIQUE AQUI PARA ABRIR O SEU GMAIL/OUTLOOK
+                <ExternalLink className="h-5 w-5" />
+              </a>
             </div>
 
-            {/* Plano B - Manual */}
-            <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-5">
-              <div className="flex gap-3">
-                <AlertTriangle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-yellow-900 mb-3">
-                    ⚠️ ATENÇÃO: Se o seu computador por segurança não abrir o e-mail automaticamente, siga os passos abaixo:
-                  </p>
-                  
-                  <div className="space-y-3 text-sm text-yellow-800">
-                    <div>
-                      <p className="font-medium">Passo 1: Abra o seu e-mail corporativo manualmente</p>
-                      <p className="text-xs text-yellow-700 ml-4">(Outlook, Gmail ou outro provedor)</p>
-                    </div>
-                    
-                    <div>
-                      <p className="font-medium">Passo 2: Envie para:</p>
-                      <p className="text-xs text-yellow-700 ml-4 font-mono bg-yellow-100 p-2 rounded">
-                        relacionamento@ckmtalents.net
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <p className="font-medium mb-2">Passo 3: Copie e cole o Assunto abaixo:</p>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          readOnly
-                          value={`[EV-${String(evidenceId).padStart(6, '0')}] ${actionNome} - ${user?.name || 'Colaborador'}`}
-                          className="text-xs bg-yellow-100 p-2 rounded flex-1 font-mono border border-yellow-300"
-                        />
-                        <button
-                          onClick={handleCopySubject}
-                          className="px-3 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 flex items-center gap-1"
-                          title="Copiar assunto"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+            {/* Dados para Cópia Manual */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-4">
+              <p className="text-sm font-medium text-gray-900">Se o e-mail não abrir, copie os dados abaixo:</p>
+
+              {/* Enviar Para */}
+              <div>
+                <label className="text-xs font-medium text-gray-700 block mb-1">Enviar para:</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value="relacionamento@ckmtalents.net"
+                    className="text-sm bg-white p-2 rounded flex-1 border border-gray-300 font-mono"
+                  />
+                  <button
+                    onClick={() => handleCopyField("relacionamento@ckmtalents.net", "Email")}
+                    className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                    title="Copiar email"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Assunto */}
+              <div>
+                <label className="text-xs font-medium text-gray-700 block mb-1">Assunto:</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={`[EV-${String(evidenceId).padStart(6, '0')}] ${actionNome} - ${user?.name || 'Colaborador'}`}
+                    className="text-sm bg-white p-2 rounded flex-1 border border-gray-300 font-mono"
+                  />
+                  <button
+                    onClick={() => handleCopyField(`[EV-${String(evidenceId).padStart(6, '0')}] ${actionNome} - ${user?.name || 'Colaborador'}`, "Assunto")}
+                    className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                    title="Copiar assunto"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Corpo */}
+              <div>
+                <label className="text-xs font-medium text-gray-700 block mb-1">Corpo do email:</label>
+                <div className="flex gap-2">
+                  <textarea
+                    readOnly
+                    value={`ID: EV-${String(evidenceId).padStart(6, '0')}. Seguem anexas as evidências.`}
+                    rows={2}
+                    className="text-sm bg-white p-2 rounded flex-1 border border-gray-300 font-mono resize-none"
+                  />
+                  <button
+                    onClick={() => handleCopyField(`ID: EV-${String(evidenceId).padStart(6, '0')}. Seguem anexas as evidências.`, "Corpo")}
+                    className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1 self-start"
+                    title="Copiar corpo"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Instruções Finais */}
+            <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4">
+              <div className="flex gap-2">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-yellow-800">
+                  <p className="font-medium mb-2">Próximos passos:</p>
+                  <ol className="list-decimal ml-4 space-y-1">
+                    <li>Clique no botão verde acima para abrir seu email</li>
+                    <li>Se não abrir, copie os dados acima manualmente</li>
+                    <li>Anexe seus comprovantes</li>
+                    <li>Envie para o administrador</li>
+                  </ol>
                 </div>
               </div>
             </div>
