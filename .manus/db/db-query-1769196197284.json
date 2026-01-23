@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE actions SET status = 'nao_iniciada' WHERE id = (SELECT a.id FROM actions a WHERE a.pdiId IN (SELECT id FROM pdis WHERE colaboradorId = 960001) LIMIT 1);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute UPDATE actions SET status = 'nao_iniciada' WHERE id = (SELECT a.id FROM actions a WHERE a.pdiId IN (SELECT id FROM pdis WHERE colaboradorId = 960001) LIMIT 1);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 36011
+}

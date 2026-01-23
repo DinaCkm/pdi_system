@@ -226,14 +226,14 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
         ) : (
           <div className="space-y-6">
             {/* Sucesso */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+            <div className="bg-green-50 border-2 border-green-300 rounded-lg p-6 text-center shadow-md">
               <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-green-900 mb-2">✅ Evidência Registrada!</h3>
+              <h3 className="text-lg font-bold text-green-900 mb-3">✅ Evidência Registrada!</h3>
               <p className="text-sm text-green-800 mb-4">
-                ID: <strong className="text-lg">EV-{String(evidenceId).padStart(6, '0')}</strong>
+                ID: <strong className="text-2xl font-bold text-green-700">EV-{String(evidenceId).padStart(6, '0')}</strong>
               </p>
-              <p className="text-xs text-green-700">
-                Seu ID foi salvo no sistema. Agora clique no botão abaixo para enviar o e-mail.
+              <p className="text-sm text-green-800 font-medium leading-relaxed">
+                Seu ID foi salvo no sistema. Agora clique no botão abaixo para enviar o e-mail, se não funcionar envie o email manual com os dados abaixo e não esqueça o anexo.
               </p>
             </div>
 
