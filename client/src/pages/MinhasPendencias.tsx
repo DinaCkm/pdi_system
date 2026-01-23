@@ -55,7 +55,7 @@ export default function MinhasPendencias() {
   // Buscar solicitações de ajuste pendentes
   const { data: adjustmentRequests = [] } = trpc.adjustmentRequests.list.useQuery(
     undefined,
-    { enabled: !!userId }
+    { enabled: !!userId, staleTime: 0 }
   );
 
   // Verificar se há solicitação pendente para a ação selecionada
@@ -607,6 +607,9 @@ export default function MinhasPendencias() {
           macroCompetencia: selectedAcaoAjuste?.macroCompetencia,
         }}
         hasPendingRequest={hasPendingAdjustmentRequest}
+        onSuccess={() => {
+          utils.adjustmentRequests.list.invalidate();
+        }}
       />
     </div>
   );

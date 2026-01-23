@@ -36,6 +36,7 @@ const getMenuItems = (userRole: string) => {
     items.push(
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
       { icon: Building2, label: "Central de Comando", path: "/central-comando" },
+      { icon: ClipboardCheck, label: "Admin Dashboard", path: "/admin-dashboard" },
       { icon: Users, label: "Usuários", path: "/usuarios" },
       { icon: Building2, label: "Departamentos", path: "/departamentos" },
       { icon: Target, label: "Competências", path: "/competencias" },

@@ -264,6 +264,21 @@ export const appRouter = router({
         })
       );
     }),
+    listPending: adminProcedure.query(async () => {
+      const rawEvidences = await db.getPendingEvidences();
+      // Para cada evidência, buscamos os arquivos e textos vinculados
+      return await Promise.all(
+        rawEvidences.map(async (ev: any) => {
+          const files = await db.execute(sql`SELECT * FROM evidence_files WHERE evidenceId = ${ev.id}`);
+          const texts = await db.execute(sql`SELECT * FROM evidence_texts WHERE evidenceId = ${ev.id}`);
+          return { 
+            ...ev, 
+            files: files || [], 
+            texts: texts || [] 
+          };
+        })
+      );
+    }),
   })
 });
 

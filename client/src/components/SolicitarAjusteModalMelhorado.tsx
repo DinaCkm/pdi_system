@@ -26,6 +26,7 @@ interface SolicitarAjusteModalMelhoradoProps {
     macroCompetencia?: string;
   };
   hasPendingRequest: boolean;
+  onSuccess?: () => void;
 }
 
 export function SolicitarAjusteModalMelhorado({
@@ -35,6 +36,7 @@ export function SolicitarAjusteModalMelhorado({
   actionTitle,
   currentData,
   hasPendingRequest,
+  onSuccess,
 }: SolicitarAjusteModalMelhoradoProps) {
   const [titulo, setTitulo] = useState(currentData.titulo || "");
   const [descricao, setDescricao] = useState(currentData.descricao || "");
@@ -70,35 +72,33 @@ export function SolicitarAjusteModalMelhorado({
 
     try {
       await createMutation.mutateAsync({
-        actionId,
-        fieldsToAdjust: changedFields.join(", "),
-        justification: justificativa,
-        proposedChanges: {
-          titulo: titulo !== currentData.titulo ? titulo : undefined,
-          descricao: descricao !== currentData.descricao ? descricao : undefined,
-          prazo: prazo !== currentData.prazo ? prazo : undefined,
-          macroCompetencia:
-            macroCompetencia !== currentData.macroCompetencia
-              ? macroCompetencia
-              : undefined,
-        },
+        actionId: parseInt(actionId),
+        camposAjustar: changedFields.join(", "),
+        justificativa: justificativa,
+        tipoSolicitante: "colaborador",
       });
 
       setSuccess(true);
-      toast.success("Solicitação de ajuste enviada com sucesso!");
+      toast.success("✅ Solicitação de ajuste enviada com sucesso!");
+      
+      // Chamar callback de sucesso para invalidar cache
+      if (onSuccess) {
+        onSuccess();
+      }
 
       setTimeout(() => {
         onOpenChange(false);
         setSuccess(false);
-        setTitulo("");
-        setDescricao("");
-        setPrazo("");
-        setMacroCompetencia("");
+        setTitulo(currentData.titulo || "");
+        setDescricao(currentData.descricao || "");
+        setPrazo(currentData.prazo || "");
+        setMacroCompetencia(currentData.macroCompetencia || "");
         setJustificativa("");
       }, 2000);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao enviar solicitação:", error);
-      toast.error("Erro ao enviar solicitação de ajuste");
+      const errorMessage = error?.message || "Erro ao enviar solicitação de ajuste";
+      toast.error(`❌ ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }

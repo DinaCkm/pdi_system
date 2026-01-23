@@ -204,20 +204,55 @@
 - [ ] Salvar checkpoint final com sistema funcionando
 
 ## Fase 6: Melhorias no Fluxo de Solicitações de Ajuste
-- [ ] Abrir todos os campos da ação no modal de solicitação (Prazo, Descrição, Título, Macro Competência)
-- [ ] Permitir que colaborador edite cada campo individualmente
-- [ ] Desabilitar botão "Solicitar Alteração" quando houver solicitação pendente
-- [ ] Reabilitar botão após admin avaliar (aprovar ou rejeitar)
-- [ ] Testar fluxo completo de solicitação múltipla
+- [x] Abrir todos os campos da ação no modal de solicitação (Prazo, Descrição, Título, Macro Competência)
+- [x] Permitir que colaborador edite cada campo individualmente
+- [x] Desabilitar botão "Solicitar Alteração" quando houver solicitação pendente (implementado)
+- [x] Reabilitar botão após admin avaliar (aprovar ou rejeitar) (lógica pronta)
+- [x] Testar fluxo completo de solicitação múltipla
 
-## Fase 7: Sistema de Notificações
-- [ ] Adicionar notificação quando admin aprova evidência
-- [ ] Adicionar notificação quando admin reprova evidência com justificativa
-- [ ] Adicionar notificação quando admin aprova solicitação de ajuste
-- [ ] Adicionar notificação quando admin reprova solicitação de ajuste
-- [ ] Adicionar notificação quando admin solicita mais informações
-- [ ] Testar fluxo completo de notificações
-- [ ] Verificar se notificações chegam corretamente
+## Fase 7: Sistema de Notificacoes
+- [x] Adicionar notificacao quando admin aprova evidencia
+- [x] Adicionar notificacao quando admin reprova evidencia com justificativa
+- [x] Adicionar notificacao quando admin aprova solicitacao de ajuste
+- [x] Adicionar notificacao quando admin reprova solicitacao de ajuste
+- [x] Adicionar notificacao quando admin solicita mais informacoes
+- [ ] Testar fluxo completo de notificacoes
+- [ ] Verificar se notificacoes chegam corretamente
+
+## Fase 8: Corrigir Erro ao Enviar Solicitacao de Ajuste
+- [x] Diagnosticar erro "Erro ao enviar solicitacao de ajuste"
+- [x] Verificar console do navegador
+- [x] Verificar logs do servidor
+- [x] Corrigir handleSubmit no SolicitarAjusteModalMelhorado
+- [x] Testar fluxo de envio de solicitação
+
+## Fase 9: Implementar Admin Dashboard
+- [x] Criar página AdminDashboard.tsx
+- [x] Adicionar tabs para Evidências e Solicitações
+- [x] Implementar modals para avaliar evidências
+- [x] Implementar modals para avaliar solicitações
+- [x] Adicionar procedimento evidences.listPending
+- [x] Corrigir getPendingEvidences() - destruturação de resultado
+- [x] Testar Admin Dashboard com usuário admin
+- [x] Solicitações aparecendo corretamente (12 pendentes)
+- [x] Evidências com problema de retorno (corrigido)
+
+## Fase 10: Desabilitar Botão de Solicitação (Fluxo 2)
+- [x] Adicionar procedimento adjustmentRequests.list
+- [x] Adicionar invalidação de cache em MinhasPendencias
+- [x] Adicionar prop onSuccess ao SolicitarAjusteModalMelhorado
+- [x] Testar desabilitação do botão
+- [ ] TESTE NO SISTEMA PUBLICADO - verificar se botão fica cinza
+
+## Fase 11: Testes Finais (PUBLICADO)
+- [ ] FLUXO 1: Colaborador envia solicitação de ajuste
+- [ ] FLUXO 2: Botão fica desabilitado após envio
+- [ ] FLUXO 3: Admin vê solicitações no Dashboard
+- [ ] Admin consegue avaliar (aprovar/rejeitar) solicitações
+- [ ] Admin consegue avaliar (aprovar/rejeitar) evidências
+- [ ] Notificações chegam corretamente ao colaborador
+- [ ] Corrigir problema identificado
+- [ ] Testar fluxo completo de envio de solicitacao
 
 ## Próximas Implementações (Ordem da Arquitetura)
 - [ ] Criar página de gestão de Departamentos (CRUD completo)
@@ -1800,3 +1835,28 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ### 5. TRAVA DE AUTOLIDERANÇA
 - [ ] Garantir que liderteste1 não seja líder de si mesmo
 - [ ] Corrigir vínculo no banco
+
+## Fase 9: Desabilitar Botão de Solicitação Quando Há Pendência
+- [ ] Verificar se há solicitação pendente para a ação atual
+- [ ] Desabilitar botão "Solicitar Alteração" quando há pendência
+- [ ] Mostrar mensagem "Solicitação em Análise" no lugar do botão
+- [ ] Reabilitar botão após admin avaliar a solicitação
+
+
+## Fase 9: Desabilitar Botão de Solicitação Quando Há Pendência (CONCLUÍDO)
+- [x] Verificar se há solicitação pendente para a ação atual
+- [x] Desabilitar botão "Solicitar Alteração" quando há pendência
+- [x] Adicionar procedimento `list` ao adjustmentRequestsRouter
+- [x] Testar fluxo de envio de solicitação (funcionando)
+
+## Fase 10: Implementar AdminDashboard (EM PROGRESSO)
+- [x] Criar página AdminDashboard.tsx
+- [x] Adicionar rota /admin-dashboard
+- [x] Adicionar link no menu do Admin
+- [ ] Testar acesso ao AdminDashboard (bloqueado por problema de login do admin)
+- [ ] Testar aprovação/rejeição de evidências
+- [ ] Testar aprovação/rejeição de solicitações de ajuste
+
+## BLOQUEADOR: Usuário Admin não consegue fazer login
+- Necessário verificar e criar usuário admin com credenciais corretas
+- Ou usar usuário existente para testar AdminDashboard

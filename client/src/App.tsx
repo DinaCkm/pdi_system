@@ -33,6 +33,7 @@ import AcoesEditar from "./pages/AcoesEditar";
 import AcoesDetalhes from "./pages/AcoesDetalhes";
 import AcoesEquipe from "./pages/AcoesEquipe";
 import CentralComando from "./pages/CentralComando";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function Router() {
   return (
@@ -192,6 +193,12 @@ function Router() {
       <Route path={"/auditoria"}>
         <DashboardLayout>
           <Auditoria />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/admin-dashboard"}>
+        <DashboardLayout>
+          <AdminDashboard />
         </DashboardLayout>
       </Route>
       

@@ -926,15 +926,13 @@ export async function getPendingEvidences() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Busca evidencias com dados do colaborador, acao e contagens
-  const result = await db.execute(sql`
+  // Destruturamos para pegar apenas as linhas [rows]
+  const [rows]: any = await db.execute(sql`
     SELECT 
       e.*, 
       u.name as colaboradorNome,
       u.email as colaboradorEmail,
-      a.titulo as actionNome,
-      (SELECT COUNT(*) FROM evidence_files WHERE evidenceId = e.id) as totalArquivos,
-      (SELECT COUNT(*) FROM evidence_texts WHERE evidenceId = e.id) as totalTextos
+      a.titulo as actionNome
     FROM evidences e
     LEFT JOIN users u ON e.colaboradorId = u.id
     LEFT JOIN actions a ON e.actionId = a.id
@@ -942,9 +940,13 @@ export async function getPendingEvidences() {
     ORDER BY e.createdAt DESC
   `);
 
-  return result;
+  // Mapeamos os nomes do SQL para o que o Frontend espera
+  return rows.map((ev: any) => ({
+    ...ev,
+    solicitante: { name: ev.colaboradorNome, email: ev.colaboradorEmail },
+    acao: { titulo: ev.actionNome }
+  }));
 }
-
 
 export async function getMacroById(macroId: number) {
   const db = await getDb();
@@ -1087,7 +1089,7 @@ export async function getAdjustmentRequestsByUser(userId: number) {
     })
     .from(adjustmentRequests)
     .leftJoin(actions, eq(adjustmentRequests.actionId, actions.id))
-    .where(eq(adjustmentRequests.solicitanteId, userId))
+    .where(and(eq(adjustmentRequests.solicitanteId, userId), eq(adjustmentRequests.status, 'pendente')))
     .orderBy(adjustmentRequests.createdAt);
 
   return result;

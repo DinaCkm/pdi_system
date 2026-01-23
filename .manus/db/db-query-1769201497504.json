@@ -1,0 +1,58 @@
+{
+  "query": "SELECT id, actionId, status, createdAt FROM evidences LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, actionId, status, createdAt FROM evidences LIMIT 10;",
+  "rows": [
+    {
+      "id": "210025",
+      "actionId": "270001",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-01-22 22:53:37"
+    },
+    {
+      "id": "240001",
+      "actionId": "270007",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-01-23 04:18:36"
+    },
+    {
+      "id": "240002",
+      "actionId": "270006",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-01-23 04:23:00"
+    },
+    {
+      "id": "240003",
+      "actionId": "270002",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-01-22 23:31:49"
+    },
+    {
+      "id": "270001",
+      "actionId": "270001",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-01-23 13:52:47"
+    },
+    {
+      "id": "270002",
+      "actionId": "240002",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-01-23 14:11:57"
+    },
+    {
+      "id": "270003",
+      "actionId": "240002",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-01-23 14:15:42"
+    },
+    {
+      "id": "270004",
+      "actionId": "270001",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-01-23 14:26:07"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tstatus\tcreatedAt\n210025\t270001\taguardando_avaliacao\t2026-01-22 22:53:37\n240001\t270007\taguardando_avaliacao\t2026-01-23 04:18:36\n240002\t270006\taguardando_avaliacao\t2026-01-23 04:23:00\n240003\t270002\taguardando_avaliacao\t2026-01-22 23:31:49\n270001\t270001\taguardando_avaliacao\t2026-01-23 13:52:47\n270002\t240002\taguardando_avaliacao\t2026-01-23 14:11:57\n270003\t240002\taguardando_avaliacao\t2026-01-23 14:15:42\n270004\t270001\taguardando_avaliacao\t2026-01-23 14:26:07\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

@@ -60,6 +60,12 @@ export const adjustmentRequestsRouter = router({
     return await db.getAdjustmentRequestsByUser(user.id);
   }),
 
+  // Listar todas as solicitações do usuário (para verificar pendências)
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const user = ctx.user!;
+    return await db.getAdjustmentRequestsByUser(user.id);
+  }),
+
   // Obter detalhes de uma solicitação
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
