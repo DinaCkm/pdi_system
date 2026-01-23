@@ -1009,3 +1009,172 @@ export async function updatePDIStatus(pdiId: number, status: 'em_andamento' | 'c
   
   return result;
 }
+
+
+// ============= FUNÇÕES DE ADJUSTMENT REQUESTS =============
+
+export async function createAdjustmentRequest(data: {
+  actionId: number;
+  solicitanteId: number;
+  tipoSolicitante: 'colaborador' | 'lider';
+  justificativa: string;
+  camposAjustar: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .insert(adjustmentRequests)
+    .values({
+      actionId: data.actionId,
+      solicitanteId: data.solicitanteId,
+      tipoSolicitante: data.tipoSolicitante,
+      justificativa: data.justificativa,
+      camposAjustar: data.camposAjustar,
+      status: 'pendente',
+      createdAt: new Date().toISOString(),
+    });
+
+  return result;
+}
+
+export async function getPendingAdjustmentRequests() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select({
+      id: adjustmentRequests.id,
+      actionId: adjustmentRequests.actionId,
+      actionTitulo: actions.titulo,
+      solicitanteId: adjustmentRequests.solicitanteId,
+      solicitanteNome: users.name,
+      tipoSolicitante: adjustmentRequests.tipoSolicitante,
+      justificativa: adjustmentRequests.justificativa,
+      camposAjustar: adjustmentRequests.camposAjustar,
+      status: adjustmentRequests.status,
+      justificativaAdmin: adjustmentRequests.justificativaAdmin,
+      createdAt: adjustmentRequests.createdAt,
+      evaluatedAt: adjustmentRequests.evaluatedAt,
+      evaluatedBy: adjustmentRequests.evaluatedBy,
+    })
+    .from(adjustmentRequests)
+    .leftJoin(actions, eq(adjustmentRequests.actionId, actions.id))
+    .leftJoin(users, eq(adjustmentRequests.solicitanteId, users.id))
+    .where(eq(adjustmentRequests.status, 'pendente'))
+    .orderBy(adjustmentRequests.createdAt);
+
+  return result;
+}
+
+export async function getAdjustmentRequestsByUser(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select({
+      id: adjustmentRequests.id,
+      actionId: adjustmentRequests.actionId,
+      actionTitulo: actions.titulo,
+      solicitanteId: adjustmentRequests.solicitanteId,
+      tipoSolicitante: adjustmentRequests.tipoSolicitante,
+      justificativa: adjustmentRequests.justificativa,
+      camposAjustar: adjustmentRequests.camposAjustar,
+      status: adjustmentRequests.status,
+      justificativaAdmin: adjustmentRequests.justificativaAdmin,
+      createdAt: adjustmentRequests.createdAt,
+      evaluatedAt: adjustmentRequests.evaluatedAt,
+    })
+    .from(adjustmentRequests)
+    .leftJoin(actions, eq(adjustmentRequests.actionId, actions.id))
+    .where(eq(adjustmentRequests.solicitanteId, userId))
+    .orderBy(adjustmentRequests.createdAt);
+
+  return result;
+}
+
+export async function getAdjustmentRequestById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select({
+      id: adjustmentRequests.id,
+      actionId: adjustmentRequests.actionId,
+      actionTitulo: actions.titulo,
+      solicitanteId: adjustmentRequests.solicitanteId,
+      solicitanteNome: users.name,
+      tipoSolicitante: adjustmentRequests.tipoSolicitante,
+      justificativa: adjustmentRequests.justificativa,
+      camposAjustar: adjustmentRequests.camposAjustar,
+      status: adjustmentRequests.status,
+      justificativaAdmin: adjustmentRequests.justificativaAdmin,
+      createdAt: adjustmentRequests.createdAt,
+      evaluatedAt: adjustmentRequests.evaluatedAt,
+      evaluatedBy: adjustmentRequests.evaluatedBy,
+    })
+    .from(adjustmentRequests)
+    .leftJoin(actions, eq(adjustmentRequests.actionId, actions.id))
+    .leftJoin(users, eq(adjustmentRequests.solicitanteId, users.id))
+    .where(eq(adjustmentRequests.id, id));
+
+  return result[0] || null;
+}
+
+export async function updateAdjustmentRequest(id: number, data: Partial<{
+  status: 'pendente' | 'mais_informacoes' | 'aprovada' | 'reprovada' | 'aguardando_lider';
+  justificativaAdmin: string;
+  evaluatedBy: number;
+  evaluatedAt: string;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .update(adjustmentRequests)
+    .set(data)
+    .where(eq(adjustmentRequests.id, id));
+
+  return result;
+}
+
+export async function addAdjustmentComment(data: {
+  adjustmentRequestId: number;
+  autorId: number;
+  comentario: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .insert(adjustmentComments)
+    .values({
+      adjustmentRequestId: data.adjustmentRequestId,
+      autorId: data.autorId,
+      comentario: data.comentario,
+      createdAt: new Date().toISOString(),
+    });
+
+  return result;
+}
+
+export async function getAdjustmentComments(adjustmentRequestId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select({
+      id: adjustmentComments.id,
+      adjustmentRequestId: adjustmentComments.adjustmentRequestId,
+      autorId: adjustmentComments.autorId,
+      autorNome: users.name,
+      comentario: adjustmentComments.comentario,
+      createdAt: adjustmentComments.createdAt,
+    })
+    .from(adjustmentComments)
+    .leftJoin(users, eq(adjustmentComments.autorId, users.id))
+    .where(eq(adjustmentComments.adjustmentRequestId, adjustmentRequestId))
+    .orderBy(adjustmentComments.createdAt);
+
+  return result;
+}

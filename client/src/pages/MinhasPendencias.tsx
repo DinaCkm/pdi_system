@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import confetti from "canvas-confetti";
 import { useEffect, useMemo, useState } from "react";
 import { EvidenciaModal } from "@/components/EvidenciaModal";
+import { SolicitarAjusteModal } from "@/components/SolicitarAjusteModal";
 
 // Hook para buscar nomes de competências
 function useMacroNames(macroIds: number[]) {
@@ -47,6 +48,8 @@ export default function MinhasPendencias() {
   const [showCelebrationDialog, setShowCelebrationDialog] = useState(false);
   const [celebrationAcao, setCelebrationAcao] = useState<any>(null);
   const [previousAcoes, setPreviousAcoes] = useState<any[]>([]);
+  const [showAjusteModal, setShowAjusteModal] = useState(false);
+  const [selectedAcaoAjuste, setSelectedAcaoAjuste] = useState<any>(null);
 
   // Buscando as ações reais
   const { data: acoes, isLoading } = trpc.actions.list.useQuery(
@@ -302,7 +305,10 @@ export default function MinhasPendencias() {
                     variant="outline"
                     size="sm"
                     className="gap-2 flex-1 min-w-[140px]"
-                    onClick={() => toast.info("Solicitar alteração - Em desenvolvimento")}
+                    onClick={() => {
+                      setSelectedAcaoAjuste(acao);
+                      setShowAjusteModal(true);
+                    }}
                   >
                     <MessageSquare className="h-4 w-4" />
                     Solicitar Alteração
@@ -569,6 +575,18 @@ export default function MinhasPendencias() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Solicitar Ajuste */}
+      <SolicitarAjusteModal
+        isOpen={showAjusteModal}
+        onClose={() => setShowAjusteModal(false)}
+        actionId={selectedAcaoAjuste?.id || 0}
+        actionTitle={selectedAcaoAjuste?.titulo || ""}
+        onSuccess={() => {
+          utils.actions.list.invalidate();
+          toast.success("Solicitação enviada com sucesso!");
+        }}
+      />
     </div>
   );
 }

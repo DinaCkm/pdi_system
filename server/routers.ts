@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import * as db from "./db";
 import { authRouter } from "./authRouters"; // <--- CONECTANDO O NOVO LOGIN
 import { actionsRouter } from "./modules/actionsRouter";
+import { adjustmentRequestsRouter } from "./modules/adjustmentRequestsRouter";
 import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
@@ -18,6 +19,7 @@ export const appRouter = router({
   notifications: notificationsRouter,
   dashboard: dashboardRouter,
   actions: actionsRouter,
+  adjustmentRequests: adjustmentRequestsRouter,
 
   // MANTENDO A ESTRUTURA ORIGINAL DE DEPARTAMENTOS
   departamentos: router({
