@@ -95,15 +95,16 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
     toast.success(`${fieldName} copiado!`);
   };
 
-  const getMailtoLink = () => {
-    if (!evidenceId) return "#";
+  const handleOpenEmail = () => {
+    if (!evidenceId) return;
     const evidenceIdFormatted = `EV-${String(evidenceId).padStart(6, '0')}`;
     const adminEmail = "relacionamento@ckmtalents.net";
     const assunto = encodeURIComponent(`[${evidenceIdFormatted}] ${actionNome} - ${user?.name || 'Colaborador'}`);
     const corpo = encodeURIComponent(
       `ID: ${evidenceIdFormatted}. Seguem anexas as evidências.`
     );
-    return `mailto:${adminEmail}?subject=${assunto}&body=${corpo}`;
+    const mailtoLink = `mailto:${adminEmail}?subject=${assunto}&body=${corpo}`;
+    window.location.href = mailtoLink;
   };
 
   if (!open) return null;
@@ -170,16 +171,14 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
 
             {/* ✅ TRAVA 2: BOTÃO FÍSICO GRANDE E DESTACADO */}
             <div className="flex justify-center">
-              <a
-                href={getMailtoLink()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-3 font-bold text-lg shadow-lg border-2 border-green-700 transition-all hover:scale-105"
+              <button
+                onClick={handleOpenEmail}
+                className="px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-3 font-bold text-lg shadow-lg border-2 border-green-700 transition-all hover:scale-105 cursor-pointer"
               >
                 <Mail className="h-6 w-6" />
                 CLIQUE AQUI PARA ABRIR O SEU GMAIL/OUTLOOK
                 <ExternalLink className="h-5 w-5" />
-              </a>
+              </button>
             </div>
 
             {/* Dados para Cópia Manual */}
