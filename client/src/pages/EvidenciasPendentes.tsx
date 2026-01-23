@@ -135,14 +135,9 @@ export default function EvidenciasPendentes() {
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Arquivos:</span>
-                      <span className="font-medium">{evidence.totalArquivos || 0}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Textos:</span>
-                      <span className="font-medium">{evidence.totalTextos || 0}</span>
-                    </div>
+                    <p className="text-sm text-muted-foreground italic">
+                      Os arquivos foram enviados por email. Verifique sua caixa de entrada.
+                    </p>
                   </div>
 
                   <div className="flex gap-2 pt-4">

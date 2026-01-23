@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Loader2, Upload, X, FileText } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/hooks/useAuth";
 
 interface EvidenciaModalProps {
   open: boolean;
@@ -13,13 +14,22 @@ interface EvidenciaModalProps {
 
 export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuccess }: EvidenciaModalProps) {
   const [textoEvidencia, setTextoEvidencia] = useState("");
-  const [tituloEvidencia, setTituloEvidencia] = useState("");
-  const [arquivos, setArquivos] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const { user } = useAuth();
 
   const createEvidenceMutation = trpc.evidences.create.useMutation({
-    onSuccess: () => {
-      toast.success("Evidência enviada com sucesso! O admin será notificado.");
+    onSuccess: (result) => {
+      // Após salvar no banco, abre o email com máscara pré-preenchida
+      const evidenceIdFormatted = `EV-${String(result.evidenceId).padStart(6, '0')}`;
+      const adminEmail = "relacionamento@ckmtalents.net";
+      const assunto = encodeURIComponent(`[${evidenceIdFormatted}] ${actionNome} - ${user?.name || 'Colaborador'}`);
+      const corpo = encodeURIComponent(
+        `ID: ${evidenceIdFormatted}\nCOLABORADOR: ${user?.name || 'Colaborador'}\nAÇÃO: ${actionNome}\n\n[ANEXE SEUS ARQUIVOS ABAIXO]`
+      );
+      
+      window.location.href = `mailto:${adminEmail}?subject=${assunto}&body=${corpo}`;
+      
+      toast.success("Evidência registrada! Seu cliente de email será aberto com a máscara pré-preenchida.");
       setTimeout(() => {
         onOpenChange(false);
         resetForm();
@@ -27,100 +37,42 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
       }, 100);
     },
     onError: (error) => {
-      toast.error(`Erro ao enviar evidência: ${error.message}`);
+      toast.error(`Erro ao registrar evidência: ${error.message}`);
       setUploading(false);
     },
   });
 
   const resetForm = () => {
     setTextoEvidencia("");
-    setTituloEvidencia("");
-    setArquivos([]);
     setUploading(false);
   };
 
   useEffect(() => {
     if (open) {
       setTextoEvidencia("");
-      setArquivos([]);
       setUploading(false);
-      console.log("MODAL RESETADO PARA ACTION:", actionId);
     }
   }, [actionId, open]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setArquivos(prev => [...prev, ...newFiles]);
-    }
-  };
-
-  const removeFile = (index: number) => {
-    setArquivos(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const uploadFileToS3 = async (file: File): Promise<{ fileName: string; fileType: string; fileSize: number; fileUrl: string; fileKey: string }> => {
-    const randomKey = `evidencias/${Date.now()}-${file.name}`;
-    
-    return {
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-      fileUrl: `https://placeholder-url.com/${randomKey}`,
-      fileKey: randomKey,
-    };
-  };
-
   const handleSubmit = async () => {
+    if (!textoEvidencia.trim()) {
+      toast.error("Por favor, descreva a evidência antes de enviar");
+      return;
+    }
+
     setUploading(true);
     try {
-      console.log("[CRÍTICO] arquivos.length antes do Promise.all:", arquivos.length);
-      console.log("[CRÍTICO] arquivos antes do Promise.all:", arquivos);
-      
-      if (arquivos.length === 0) {
-        console.log("[CRÍTICO] SEM ARQUIVOS! Enviando apenas texto.");
-        await createEvidenceMutation.mutateAsync({
-          actionId,
-          descricao: textoEvidencia.trim(),
-          files: undefined,
-        });
-        onSuccess?.();
-        onOpenChange(false);
-        return;
-      }
-      
-      const uploadedFiles = await Promise.all(
-        arquivos.map(async (file) => {
-          const result = await uploadFileToS3(file);
-          console.log("LOG REAL DO S3:", result);
-          return {
-            fileName: result.fileName || file.name,
-            fileType: result.fileType || file.type,
-            fileSize: result.fileSize || file.size,
-            fileUrl: result.fileUrl,
-            fileKey: result.fileKey
-          };
-        })
-      );
+      // Envia apenas a descrição, sem arquivos (fluxo manual por email)
       await createEvidenceMutation.mutateAsync({
         actionId,
         descricao: textoEvidencia.trim(),
-        files: uploadedFiles.length > 0 ? uploadedFiles : undefined,
+        files: [],
       });
-      onSuccess?.();
-      onOpenChange(false);
     } catch (error) {
       console.error(error);
-      toast.error("Falha ao salvar evidência");
-    } finally {
+      toast.error("Falha ao registrar evidência");
       setUploading(false);
     }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   if (!open) return null;
@@ -130,31 +82,35 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
       <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-xl font-bold">Adicionar Evidência</h2>
+          <h2 className="text-xl font-bold">Enviar Evidência por Email</h2>
           <p className="text-gray-600 text-sm mt-1">
-            Envie evidências de conclusão para a ação: <strong>{actionNome}</strong>
+            Ação: <strong>{actionNome}</strong>
           </p>
         </div>
 
         <div className="space-y-6">
-          {/* Título */}
-          <div>
-            <label className="text-sm font-medium block mb-2">Título da Evidência (Opcional)</label>
-            <input
-              type="text"
-              placeholder="Ex: Certificado de Conclusão, Relatório Final..."
-              value={tituloEvidencia}
-              onChange={(e) => setTituloEvidencia(e.target.value)}
-              disabled={uploading}
-              className="w-full p-2 border rounded bg-white text-black disabled:bg-gray-100"
-            />
+          {/* Instruções */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex gap-2">
+              <Mail className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-blue-900">Como funciona:</p>
+                <ol className="text-sm text-blue-800 mt-2 space-y-1 ml-4 list-decimal">
+                  <li>Descreva sua evidência abaixo</li>
+                  <li>Clique em "Abrir Email"</li>
+                  <li>Seu cliente de email abrirá com a máscara pré-preenchida</li>
+                  <li>Anexe seus comprovantes e envie</li>
+                  <li>O administrador analisará e aprovará</li>
+                </ol>
+              </div>
+            </div>
           </div>
 
           {/* Descrição */}
           <div>
             <label className="text-sm font-medium block mb-2">Descrição da Evidência *</label>
             <textarea
-              placeholder="Descreva o que você fez para concluir esta ação..."
+              placeholder="Descreva detalhadamente como você cumpriu esta ação..."
               value={textoEvidencia}
               onChange={(e) => setTextoEvidencia(e.target.value)}
               rows={6}
@@ -162,54 +118,8 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
               className="w-full p-2 border rounded bg-white text-black disabled:bg-gray-100"
             />
             <p className="text-xs text-gray-500 mt-1">
-              Explique detalhadamente como você cumpriu esta ação
+              Seja específico e detalhado. O administrador usará esta descrição para avaliar sua evidência.
             </p>
-          </div>
-
-          {/* Upload de Arquivos */}
-          <div>
-            <label className="text-sm font-medium block mb-2">Arquivos (Opcional)</label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm text-gray-600 mb-2">
-                Arraste arquivos ou clique para selecionar
-              </p>
-              <input
-                type="file"
-                multiple
-                onChange={handleFileChange}
-                disabled={uploading}
-                className="max-w-xs mx-auto"
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                Certificados, fotos, documentos, etc.
-              </p>
-            </div>
-
-            {/* Lista de Arquivos */}
-            {arquivos.length > 0 && (
-              <div className="space-y-2 mt-4">
-                <label className="text-sm font-medium block">Arquivos Selecionados ({arquivos.length})</label>
-                {arquivos.map((file, index) => (
-                  <div key={`file-${index}`} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <FileText className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{file.name}</p>
-                        <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removeFile(index)}
-                      disabled={uploading}
-                      className="p-2 hover:bg-gray-200 rounded disabled:opacity-50"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </div>
 
@@ -227,16 +137,19 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
           </button>
           <button
             onClick={handleSubmit}
-            disabled={uploading || (!textoEvidencia.trim() && arquivos.length === 0)}
+            disabled={uploading || !textoEvidencia.trim()}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
           >
             {uploading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Enviando...
+                Processando...
               </>
             ) : (
-              "Enviar Evidência"
+              <>
+                <Mail className="h-4 w-4" />
+                Abrir Email
+              </>
             )}
           </button>
         </div>
