@@ -77,15 +77,27 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
 
     setUploading(true);
     try {
-      // Envia apenas a descrição, com array vazio obrigatório
+      // 🛑 MATA O UNDEFINED - Envia APENAS files: [] (array vazio obrigatório)
+      console.log('[EvidenciaModal] Enviando evidência com files: []');
       await createEvidenceMutation.mutateAsync({
         actionId,
         descricao: textoEvidencia.trim(),
-        files: [], // Array vazio obrigatório
+        files: [], // 🛑 Array vazio obrigatório - sem undefined
       });
     } catch (error) {
-      console.error(error);
-      toast.error("Falha ao registrar evidência");
+      console.error('[EvidenciaModal] Erro ao registrar:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      // 📢 FEEDBACK VISUAL - Alerta vermelho de erro
+      toast.error(`Erro ao registrar: ${errorMessage}`, {
+        duration: 5000,
+        style: {
+          background: "#ef4444",
+          color: "#ffffff",
+          border: "2px solid #dc2626",
+          fontSize: "14px",
+          fontWeight: "bold",
+        },
+      });
       setUploading(false);
     }
   };
@@ -96,15 +108,53 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
   };
 
   const handleOpenEmail = () => {
-    if (!evidenceId) return;
-    const evidenceIdFormatted = `EV-${String(evidenceId).padStart(6, '0')}`;
-    const adminEmail = "relacionamento@ckmtalents.net";
-    const assunto = encodeURIComponent(`[${evidenceIdFormatted}] ${actionNome} - ${user?.name || 'Colaborador'}`);
-    const corpo = encodeURIComponent(
-      `ID: ${evidenceIdFormatted}. Seguem anexas as evidências.`
-    );
-    const mailtoLink = `mailto:${adminEmail}?subject=${assunto}&body=${corpo}`;
-    window.location.href = mailtoLink;
+    if (!evidenceId) {
+      toast.error("Erro: ID da evidência não encontrado.");
+      return;
+    }
+    
+    try {
+      const evidenceIdFormatted = `EV-${String(evidenceId).padStart(6, '0')}`;
+      const adminEmail = "relacionamento@ckmtalents.net";
+      const assunto = encodeURIComponent(`[${evidenceIdFormatted}] ${actionNome} - ${user?.name || 'Colaborador'}`);
+      const corpo = encodeURIComponent(
+        `ID: ${evidenceIdFormatted}. Seguem anexas as evidências.`
+      );
+      const mailtoLink = `mailto:${adminEmail}?subject=${assunto}&body=${corpo}`;
+      
+      // 💻 LOG NO CONSOLE
+      console.log('[EvidenciaModal] Iniciando tentativa de mailto...');
+      console.log('[EvidenciaModal] Link mailto:', mailtoLink);
+      
+      // 📢 FEEDBACK VISUAL - Alerta de sucesso
+      toast.success(`✅ Registro ${evidenceIdFormatted} salvo! Abrindo e-mail...`, {
+        duration: 3000,
+        style: {
+          background: "#10b981",
+          color: "#ffffff",
+          border: "2px solid #059669",
+          fontSize: "14px",
+          fontWeight: "bold",
+        },
+      });
+      
+      // Abre o email
+      window.location.href = mailtoLink;
+    } catch (error) {
+      // 📢 FEEDBACK VISUAL - Alerta de erro
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      console.error('[EvidenciaModal] Erro ao abrir email:', error);
+      toast.error(`Erro ao abrir e-mail: ${errorMessage}`, {
+        duration: 5000,
+        style: {
+          background: "#ef4444",
+          color: "#ffffff",
+          border: "2px solid #dc2626",
+          fontSize: "14px",
+          fontWeight: "bold",
+        },
+      });
+    }
   };
 
   if (!open) return null;
