@@ -94,6 +94,15 @@ export default function MinhasPendencias() {
     undefined,
     { enabled: !!userId }
   );
+  
+  // DEBUG: Verificar se as evidências estão sendo carregadas
+  useEffect(() => {
+    console.log('[MinhasPendencias] allUserEvidences:', allUserEvidences);
+    console.log('[MinhasPendencias] Total de evidências:', allUserEvidences?.length);
+    if (allUserEvidences && allUserEvidences.length > 0) {
+      console.log('[MinhasPendencias] Primeira evidência:', allUserEvidences[0]);
+    }
+  }, [allUserEvidences]);
 
   // Obter última evidência e seu status (para o modal de envio)
   const ultimaEvidencia = acaoEvidences?.[0];
@@ -104,6 +113,7 @@ export default function MinhasPendencias() {
     onSuccess: () => {
       toast.success("Evidência enviada!");
       utils.actions.list.invalidate();
+      utils.evidences.listByUser.invalidate(); // Recarregar todas as evidências do usuário
       setTimeout(() => {
         setShowEvidenceDialog(false);
         setEvidenceDescription("");
@@ -340,13 +350,13 @@ export default function MinhasPendencias() {
                   </Button>
                   <div className="mt-4 w-full">
                     {(() => {
-                      // 1. Procurar se existe alguma evidência para ESTA ação específica
+                      // Usar status da AÇÃO para determinar o que mostrar
                       const evidenciaDesta_Acao = allUserEvidences?.find(
                         (e: any) => e.actionId === acao.id
                       );
-
-                      // 2. Lógica de decisão individual
-                      if (evidenciaDesta_Acao?.status === 'aprovada') {
+                      
+                      // Se a ação está concluída, mostrar verde com ID
+                      if (acao.status === 'concluida' && evidenciaDesta_Acao) {
                         return (
                           <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 rounded-lg font-bold flex flex-col items-center justify-center cursor-default">
                             <div className="flex items-center justify-center">
@@ -358,8 +368,17 @@ export default function MinhasPendencias() {
                           </div>
                         );
                       }
-
-                      // 3. Se não cair em nenhum dos casos acima, mostra o botão original
+                      
+                      // Se a ação está em análise, mostrar amarelo
+                      if (acao.status === 'aguardando_avaliacao') {
+                        return (
+                          <div className="w-full py-3 px-4 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg font-medium flex items-center justify-center cursor-wait">
+                            <span className="mr-2">⏳</span> Evidência em Análise
+                          </div>
+                        );
+                      }
+                      
+                      // Caso contrário, mostrar botão azul
                       return (
                         <button
                           onClick={() => {
