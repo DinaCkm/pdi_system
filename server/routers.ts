@@ -291,21 +291,16 @@ export const appRouter = router({
       const userId = ctx.user?.id;
       if (!userId) return [];
       
-      // Buscar todas as ações do usuário
-      const userActions = await db.execute(
-        sql`SELECT id FROM actions WHERE responsavelId = ${userId}`
-      );
-      const [actions]: any = userActions;
-      
-      if (!actions || actions.length === 0) return [];
-      
-      // Buscar todas as evidências dessas ações
-      const actionIds = actions.map((a: any) => a.id);
+      // Query com INNER JOIN para trazer todas as evidencias com ID
       const evidencesData = await db.execute(
-        sql`SELECT * FROM evidences WHERE actionId IN (${actionIds.join(',')})`
+        sql`SELECT e.id, e.actionId, e.colaboradorId, e.status, e.descricao, e.createdAt, e.evaluatedAt, e.evaluatedBy, e.justificativaAdmin
+            FROM evidences e
+            INNER JOIN actions a ON e.actionId = a.id
+            WHERE a.responsavelId = ${userId}`
       );
       const [evidences]: any = evidencesData;
       
+      console.log('[listByUser] Evidencias encontradas para userId', userId, ':', evidences);
       return evidences || [];
     }),
   })

@@ -232,6 +232,11 @@ export default function AdminDashboard() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] font-mono bg-orange-100 text-orange-700 px-2 py-0.5 rounded border border-orange-200">
+                          ID #{adjustment.id.toString().padStart(5, '0')}
+                        </span>
+                      </div>
                       <CardTitle className="text-lg">{adjustment.acao?.titulo || "Ação desconhecida"}</CardTitle>
                       <CardDescription>
                         Solicitada por: {adjustment.solicitante?.name || "Desconhecido"}

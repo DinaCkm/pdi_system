@@ -357,6 +357,7 @@ export default function MinhasPendencias() {
                       
                       // CASO 1: AÇÃO APROVADA/CONCLUÍDA
                       if (acao.status === 'concluida') {
+                        console.log(`[DEBUG] Ação ${acao.id} concluída. Evidência:`, evidenciaDesta_Acao);
                         return (
                           <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 rounded-lg font-bold flex flex-col items-center justify-center cursor-default">
                             <div className="flex items-center justify-center">
