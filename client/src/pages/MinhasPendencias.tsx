@@ -98,234 +98,282 @@ export default function MinhasPendencias() {
   // DEBUG: Verificar se as evidências estão sendo carregadas
   useEffect(() => {
     console.log('[MinhasPendencias] allUserEvidences:', allUserEvidences);
+    console.log('[MinhasPendencias] Total de evidências:', allUserEvidences?.length);
+    if (allUserEvidences && allUserEvidences.length > 0) {
+      console.log('[MinhasPendencias] Primeira evidência:', allUserEvidences[0]);
+    }
   }, [allUserEvidences]);
 
-  const createEvidenceMutation = trpc.evidences.create.useMutation({
-    onSuccess: async () => {
-      toast.success("Evidência enviada com sucesso!");
-      setShowEvidenceDialog(false);
-      setEvidenceDescription("");
-      setEvidenceFile(null);
-      setCelebrationAcao(selectedAcaoEvidence);
+  // Obter última evidência e seu status (para o modal de envio)
+  const ultimaEvidencia = acaoEvidences?.[0];
+  const podeEnviarEvidencia = !ultimaEvidencia || ultimaEvidencia.status === 'reprovada';
+  const justificativaReprovacao = ultimaEvidencia?.justificativaAdmin;
+
+  const submitEvidenceMutation = trpc.evidences.create.useMutation({
+    onSuccess: () => {
+      toast.success("Evidência enviada!");
+      utils.actions.list.invalidate();
+      utils.evidences.listByUser.invalidate(); // Recarregar todas as evidências do usuário
+      setTimeout(() => {
+        setShowEvidenceDialog(false);
+        setEvidenceDescription("");
+        setEvidenceFile(null);
+      }, 100);
+    },
+    onError: (error: any) => {
+      const mensagem = error?.message || "Não foi possível enviar. Verifique se o arquivo não é muito grande ou se sua conexão está estável.";
+      toast.error(mensagem);
+    },
+  });
+
+  // Filtrando para garantir que mostra apenas as ações do usuário logado
+  const minhasAcoes = useMemo(() => {
+    if (!acoes || !userId) return [];
+    return acoes.filter((acao: any) => String(acao.responsavelId) === String(userId));
+  }, [acoes, userId]);
+
+  // Detectar mudança de status para celebração
+  useEffect(() => {
+    if (!minhasAcoes || minhasAcoes.length === 0) return;
+    
+    const acaoConcluida = minhasAcoes.find((acao: any) => {
+      const acaoAnterior = previousAcoes.find((prev: any) => prev.id === acao.id);
+      return (
+        acaoAnterior?.status === "aguardando_avaliacao" &&
+        acao.status === "concluida"
+      );
+    });
+
+    if (acaoConcluida) {
+      setCelebrationAcao(acaoConcluida);
       setShowCelebrationDialog(true);
-      
-      // Invalidar queries para atualizar dados
-      await utils.evidences.listByUser.invalidate();
-      await utils.actions.list.invalidate();
-      
-      // Confetti
       confetti({
         particleCount: 100,
         spread: 70,
-        origin: { y: 0.6 }
+        origin: { y: 0.6 },
+        colors: ["#2563eb", "#f97316", "#fbbf24", "#10b981"],
       });
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Erro ao enviar evidência");
-    }
-  });
-
-  const handleSubmitEvidence = async () => {
-    if (!selectedAcaoEvidence) {
-      toast.error("Ação não selecionada");
-      return;
     }
 
-    if (!evidenceDescription.trim()) {
-      toast.error("Descrição é obrigatória");
-      return;
-    }
+    setPreviousAcoes(minhasAcoes);
+  }, [minhasAcoes]);
 
-    setIsSubmittingEvidence(true);
-    try {
-      await createEvidenceMutation.mutateAsync({
-        actionId: selectedAcaoEvidence.id,
-        descricao: evidenceDescription,
-        arquivo: evidenceFile
-      });
-    } finally {
-      setIsSubmittingEvidence(false);
-    }
-  };
-
-  const handleViewDetails = (acao: any) => {
-    setSelectedAcaoHistory(acao);
-    setShowHistoryDialog(true);
-  };
-
-  const handleCloseCelebration = () => {
-    setShowCelebrationDialog(false);
-    setCelebrationAcao(null);
-  };
-
-  // Filtrar ações
+  // Filtrar ações com base em busca e status
   const filteredAcoes = useMemo(() => {
-    if (!acoes) return [];
-    
-    let result = acoes;
-
-    if (searchTerm) {
-      result = result.filter((acao: any) =>
+    return minhasAcoes.filter((acao: any) => {
+      // Filtro de busca (título ou descrição)
+      const matchesSearch =
+        searchTerm === "" ||
         acao.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        acao.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+        acao.descricao?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    if (filterStatus !== "todos") {
-      result = result.filter((acao: any) => acao.status === filterStatus);
-    }
+      // Filtro de status
+      const matchesStatus = filterStatus === "todos" || acao.status === filterStatus;
 
-    return result;
-  }, [acoes, searchTerm, filterStatus]);
+      return matchesSearch && matchesStatus;
+    });
+  }, [minhasAcoes, searchTerm, filterStatus]);
 
+  // Função para obter badge de status
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string; className?: string }> = {
+      nao_iniciada: { variant: "outline", label: "Não Iniciada", className: "bg-gray-50 text-gray-700 border-gray-300" },
+      em_andamento: { variant: "default", label: "Em Andamento", className: "bg-blue-500 text-white" },
+      concluida: { variant: "outline", label: "Concluída", className: "bg-green-50 text-green-700 border-green-300" },
+      cancelada: { variant: "destructive", label: "Cancelada" },
+    };
+    const config = variants[status] || variants.nao_iniciada;
+    return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
+  };
+
+  // Função para formatar data
   const formatDate = (date: any) => {
     if (!date) return "-";
-    return new Date(date).toLocaleDateString("pt-BR");
+    const d = new Date(date);
+    return d.toLocaleDateString("pt-BR");
+  };
+
+  // Função para abrir detalhes
+  const handleViewDetails = (acao: any) => {
+    setSelectedAcao(acao);
+    setShowDetailsDialog(true);
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Minhas Ações</h1>
-          <p className="text-gray-600">Acompanhe o andamento das suas ações do PDI.</p>
-        </div>
+    <div className="container mx-auto py-8">
+      {/* Cabeçalho */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">
+          Minhas Ações
+        </h1>
+        <p className="text-muted-foreground">
+          Acompanhe o andamento das suas ações do PDI.
+        </p>
+      </div>
 
-        {/* Filtros */}
-        <Card className="mb-6 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-blue-600" />
-              Filtros e Busca
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex gap-4 flex-wrap">
-              <div className="flex-1 min-w-[250px]">
-                <Input
-                  placeholder="Buscar por título ou descrição..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Todos os Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os Status</SelectItem>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="concluida">Concluída</SelectItem>
-                </SelectContent>
-              </Select>
+      {/* Filtros e Busca */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros e Busca
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Busca por Título */}
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por título ou descrição..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
-            <p className="text-sm text-gray-600">Exibindo {filteredAcoes.length} de {acoes?.length || 0} ações</p>
+
+            {/* Filtro de Status */}
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os Status</SelectItem>
+                <SelectItem value="nao_iniciada">Não Iniciada</SelectItem>
+                <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                <SelectItem value="concluida">Concluída</SelectItem>
+                <SelectItem value="cancelada">Cancelada</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <p className="text-sm text-muted-foreground">
+            Exibindo <strong>{filteredAcoes.length}</strong> de <strong>{minhasAcoes.length}</strong> ações
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Lista de Ações */}
+      {filteredAcoes.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <AlertCircle className="h-16 w-16 text-muted-foreground mb-4" />
+            <p className="text-lg font-medium text-muted-foreground">Nenhuma ação encontrada</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              {minhasAcoes.length === 0
+                ? "Você ainda não possui ações cadastradas."
+                : "Nenhuma ação corresponde aos filtros selecionados."}
+            </p>
           </CardContent>
         </Card>
+      ) : (
+        <div className="grid gap-4">
+          {filteredAcoes.map((acao: any) => {
+            return (
+            <Card key={acao.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg truncate">{acao.titulo}</CardTitle>
+                    <CardDescription className="mt-1 line-clamp-2">
+                      {acao.descricao || "Sem descrição"}
+                    </CardDescription>
+                  </div>
+                  <div className="ml-4">
+                    {getStatusBadge(acao.status)}
+                  </div>
+                </div>
+              </CardHeader>
 
-        {/* Lista de Ações */}
-        {filteredAcoes.length === 0 ? (
-          <Card className="shadow-lg">
-            <CardContent className="py-12 text-center">
-              <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">Nenhuma ação encontrada</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {filteredAcoes.map((acao: any) => {
-              return (
-                <Card key={acao.id} className="shadow-lg hover:shadow-xl transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-xl">{acao.titulo}</CardTitle>
-                        <CardDescription className="mt-1">{acao.descricao}</CardDescription>
-                      </div>
-                      <Badge variant={acao.status === 'concluida' ? 'default' : 'secondary'}>
-                        {acao.status === 'concluida' ? 'Concluída' : 'Pendente'}
-                      </Badge>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  {/* Prazo */}
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">Prazo</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Clock className="h-4 w-4 text-orange-500" />
+                      <p className="text-sm font-medium">{formatDate(acao.prazo)}</p>
                     </div>
-                  </CardHeader>
+                  </div>
 
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                      {/* Prazo */}
-                      <div>
-                        <p className="text-xs text-muted-foreground font-medium">Prazo</p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Clock className="h-4 w-4 text-orange-500" />
-                          <p className="text-sm font-medium">{formatDate(acao.prazo)}</p>
-                        </div>
-                      </div>
-
-                      {/* Macro Competência */}
-                      {acao.macroId && (
-                        <div>
-                          <p className="text-xs text-muted-foreground font-medium">Macro</p>
-                          <p className="text-sm font-medium mt-1">{macroNames[acao.macroId] || `Competência ${acao.macroId}`}</p>
-                        </div>
-                      )}
-
-                      {/* Micro Competência */}
-                      {acao.microcompetencia && (
-                        <div>
-                          <p className="text-xs text-muted-foreground font-medium">Micro</p>
-                          <p className="text-sm font-medium mt-1 truncate">{acao.microcompetencia}</p>
-                        </div>
-                      )}
+                  {/* Macro Competência */}
+                  {acao.macroId && (
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Macro</p>
+                      <p className="text-sm font-medium mt-1">{macroNames[acao.macroId] || `Competência ${acao.macroId}`}</p>
                     </div>
+                  )}
 
-                    {/* Botões de Ação */}
-                    <div className="flex gap-2 flex-wrap">
-                      {/* Botão Detalhes - SEMPRE MOSTRA */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewDetails(acao)}
-                        className="gap-2 flex-1 min-w-[120px]"
-                      >
-                        <Eye className="h-4 w-4" />
-                        Detalhes
-                      </Button>
-
-                      {/* Botão Solicitar Alteração - SÓ SE NÃO ESTÁ CONCLUÍDA */}
-                      {acao.status !== 'concluida' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2 flex-1 min-w-[140px]"
-                          onClick={() => {
-                            setSelectedAcaoAjuste(acao);
-                            setShowAjusteModal(true);
-                          }}
-                          disabled={adjustmentRequests.some(
-                            (req: any) => req.actionId === acao.id && req.status === 'pendente'
-                          )}
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                          Solicitar Alteração
-                        </Button>
-                      )}
+                  {/* Micro Competência */}
+                  {acao.microcompetencia && (
+                    <div>
+                      <p className="text-xs text-muted-foreground font-medium">Micro</p>
+                      <p className="text-sm font-medium mt-1 truncate">{acao.microcompetencia}</p>
                     </div>
+                  )}
+                </div>
 
-                    {/* Status ou Botão de Enviar Evidência */}
-                    {acao.status === 'concluida' ? (
-                      <div className="mt-4 w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 rounded-lg font-bold text-center cursor-default">
-                        ✓ Ação Concluída
-                      </div>
-                    ) : (
-                      <div className="mt-4 w-full">
+                {/* Botões de Ação */}
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewDetails(acao)}
+                    className="gap-2 flex-1 min-w-[120px]"
+                  >
+                    <Eye className="h-4 w-4" />
+                    Detalhes
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 flex-1 min-w-[140px]"
+                    onClick={() => {
+                      setSelectedAcaoAjuste(acao);
+                      setShowAjusteModal(true);
+                    }}
+                    disabled={adjustmentRequests.some(
+                      (req: any) => req.actionId === acao.id && req.status === 'pendente'
+                    )}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Solicitar Alteração
+                  </Button>
+                  <div className="mt-4 w-full">
+                    {(() => {
+                      // 1. SE A AÇÃO TÁ CONCLUÍDA, MOSTRA VERDE E ACABOU.
+                      if (acao.status === 'concluida') {
+                        return (
+                          <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 rounded-lg font-bold text-center cursor-default">
+                            ✓ Ação Concluída
+                          </div>
+                        );
+                      }
+
+                      // 2. SE TEM EVIDÊNCIA EM ANÁLISE, MOSTRA AMARELO.
+                      const temEvidenciaPendente = allUserEvidences?.some(
+                        (e: any) => String(e.actionId) === String(acao.id) && e.status === 'aguardando_avaliacao'
+                      );
+
+                      if (temEvidenciaPendente) {
+                        return (
+                          <div className="w-full py-3 px-4 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg font-medium text-center cursor-wait">
+                            ⏳ Evidência em Análise
+                          </div>
+                        );
+                      }
+
+                      // 3. SÓ MOSTRA O BOTÃO SE NÃO FOR NADA DISSO.
+                      return (
                         <button
                           onClick={() => {
                             setSelectedAcaoEvidence(acao);
@@ -335,100 +383,274 @@ export default function MinhasPendencias() {
                         >
                           Registrar Minha Conquista
                         </button>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Dialog de Histórico */}
+      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-purple-600" />
+              Histórico de Mudanças
+            </DialogTitle>
+            <DialogDescription>
+              {selectedAcaoHistory?.titulo}
+            </DialogDescription>
+          </DialogHeader>
+
+          {actionHistory && actionHistory.length > 0 ? (
+            <div className="space-y-4">
+              {/* Timeline */}
+              <div className="relative">
+                {actionHistory.map((entry: any, index: number) => {
+                  const isSystem = entry.mudadoPor === "sistema" || !entry.usuarioNome;
+                  const timestamp = new Date(entry.dataMudanca).toLocaleString("pt-BR");
+                  
+                  return (
+                    <div key={index} className="flex gap-4 pb-6 relative">
+                      {/* Linha vertical */}
+                      {index < actionHistory.length - 1 && (
+                        <div className="absolute left-5 top-12 w-0.5 h-12 bg-gray-200" />
+                      )}
+
+                      {/* Ícone e ponto */}
+                      <div className="flex flex-col items-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          isSystem 
+                            ? "bg-blue-100 text-blue-600" 
+                            : "bg-orange-100 text-orange-600"
+                        }`}>
+                          {isSystem ? (
+                            <Zap className="h-5 w-5" />
+                          ) : (
+                            <User className="h-5 w-5" />
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
 
-        {/* Dialog de Histórico */}
-        <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <History className="h-5 w-5 text-purple-600" />
-                Histórico da Ação
-              </DialogTitle>
-            </DialogHeader>
-            {actionHistory ? (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{selectedAcaoHistory?.titulo}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{selectedAcaoHistory?.descricao}</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{actionHistory}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto" />
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+                      {/* Conteúdo */}
+                      <div className="flex-1 pt-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="font-medium text-sm">
+                            {isSystem ? "Alteração do Sistema" : entry.usuarioNome || "Usuário"}
+                          </p>
+                          <span className="text-xs text-muted-foreground">{timestamp}</span>
+                        </div>
 
-        {/* Dialog de Celebração */}
-        <Dialog open={showCelebrationDialog} onOpenChange={setShowCelebrationDialog}>
-          <DialogContent className="max-w-md text-center">
-            <div className="py-8">
-              <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4 animate-bounce" />
-              <DialogTitle className="text-2xl mb-2">Parabéns!</DialogTitle>
-              <p className="text-gray-600 mb-4">
-                Sua evidência foi enviada com sucesso para análise.
-              </p>
-              <p className="text-sm text-gray-500">
-                Ação: <strong>{celebrationAcao?.titulo}</strong>
-              </p>
+                        {/* Mudanças */}
+                        <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
+                          {entry.campoAlterado && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-600 mb-1">
+                                Campo: {entry.campoAlterado}
+                              </p>
+                              <div className="flex gap-2 items-start">
+                                {/* Valor Antigo */}
+                                {entry.valorAntigo && (
+                                  <div className="flex-1 bg-red-50 border border-red-200 rounded p-2">
+                                    <p className="text-xs text-red-600 font-medium mb-1">Antigo:</p>
+                                    <p className="text-sm text-red-800 break-words">
+                                      {entry.valorAntigo}
+                                    </p>
+                                  </div>
+                                )}
+                                {/* Valor Novo */}
+                                {entry.valorNovo && (
+                                  <div className="flex-1 bg-green-50 border border-green-200 rounded p-2">
+                                    <p className="text-xs text-green-600 font-medium mb-1">Novo:</p>
+                                    <p className="text-sm text-green-800 break-words">
+                                      {entry.valorNovo}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Motivo/Descrição */}
+                          {entry.motivo && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-600 mb-1">Motivo:</p>
+                              <p className="text-sm text-gray-700">{entry.motivo}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <DialogFooter>
-              <Button onClick={handleCloseCelebration} className="w-full">
-                Fechar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Clock className="h-12 w-12 text-gray-300 mb-3" />
+              <p className="text-muted-foreground">Nenhuma alteração registrada ainda</p>
+            </div>
+          )}
 
-        {/* Modal de Evidência */}
-        {showEvidenceDialog && selectedAcaoEvidence && (
-          <EvidenciaModal
-            acao={selectedAcaoEvidence}
-            isOpen={showEvidenceDialog}
-            onClose={() => {
-              setShowEvidenceDialog(false);
-              setSelectedAcaoEvidence(null);
-              setEvidenceDescription("");
-              setEvidenceFile(null);
-            }}
-            onSubmit={handleSubmitEvidence}
-            isLoading={isSubmittingEvidence}
-            evidenceDescription={evidenceDescription}
-            onDescriptionChange={setEvidenceDescription}
-            evidenceFile={evidenceFile}
-            onFileChange={setEvidenceFile}
-          />
-        )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowHistoryDialog(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Modal de Ajuste */}
-        {showAjusteModal && selectedAcaoAjuste && (
-          <SolicitarAjusteModalMelhorado
-            acao={selectedAcaoAjuste}
-            isOpen={showAjusteModal}
-            onClose={() => {
-              setShowAjusteModal(false);
-              setSelectedAcaoAjuste(null);
-            }}
-            onSuccess={() => {
-              setShowAjusteModal(false);
-              setSelectedAcaoAjuste(null);
-              utils.adjustmentRequests.list.invalidate();
-            }}
-          />
-        )}
-      </div>
+      {/* Dialog de Detalhes */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{selectedAcao?.titulo}</DialogTitle>
+            <DialogDescription>
+              Detalhes completos da ação
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedAcao && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Descrição</p>
+                <p className="mt-1">{selectedAcao.descricao || "Sem descrição"}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <div className="mt-1">{getStatusBadge(selectedAcao.status)}</div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Prazo</p>
+                  <p className="mt-1">{formatDate(selectedAcao.prazo)}</p>
+                </div>
+
+                {selectedAcao.macroId && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Macro Competência</p>
+                    <p className="mt-1">{macroNames[selectedAcao.macroId] || `Competência ${selectedAcao.macroId}`}</p>
+                  </div>
+                )}
+
+                {selectedAcao.microcompetencia && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Micro Competência</p>
+                    <p className="mt-1">{selectedAcao.microcompetencia}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDetailsDialog(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Envio de Evidência com Fluxo de Email */}
+      <EvidenciaModal
+        open={showEvidenceDialog}
+        onOpenChange={setShowEvidenceDialog}
+        actionId={selectedAcaoEvidence?.id || 0}
+        actionNome={selectedAcaoEvidence?.titulo || ""}
+        macrocompetencia={selectedAcaoEvidence?.macroNome || ""}
+        descricao={selectedAcaoEvidence?.descricao || ""}
+        prazo={selectedAcaoEvidence?.prazo || null}
+        onSuccess={() => {
+          utils.actions.list.invalidate();
+        }}
+      />
+
+      {/* Modal de Celebração */}
+      <Dialog open={showCelebrationDialog} onOpenChange={setShowCelebrationDialog}>
+        <DialogContent className="max-w-md bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-50 border-2 border-yellow-300">
+          <DialogHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <Trophy className="h-16 w-16 text-yellow-500 drop-shadow-lg" />
+            </div>
+            <DialogTitle className="text-2xl font-bold text-center text-yellow-700">
+              Parabéns, Júlia! Meta Batida!
+            </DialogTitle>
+            <DialogDescription className="text-center text-base mt-4 text-gray-700">
+              Sua evidência foi aprovada e você concluiu mais uma etapa do seu PDI. Continue assim!
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-6 text-center">
+            <p className="text-sm text-gray-600 mb-2">Ação concluída:</p>
+            <p className="font-semibold text-lg text-blue-600">{celebrationAcao?.titulo}</p>
+          </div>
+
+          <DialogFooter className="flex justify-center">
+                        <Button
+              className="bg-gradient-to-r from-blue-600 to-orange-500 text-white"
+              onClick={async () => {
+                if (!evidenceDescription.trim()) {
+                  toast.error("Por favor, descreva sua conquista");
+                  return;
+                }
+                setIsSubmittingEvidence(true);
+                try {
+                  await submitEvidenceMutation.mutateAsync({
+                    actionId: selectedAcaoEvidence.id,
+                    descricao: evidenceDescription,
+                    files: evidenceFile ? [evidenceFile] : undefined,
+                  });
+                } finally {
+                  setIsSubmittingEvidence(false);
+                }
+              }}
+              disabled={isSubmittingEvidence || !podeEnviarEvidencia}
+            >
+              {isSubmittingEvidence ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Enviando...
+                </>
+              ) : !podeEnviarEvidencia ? (
+                <>
+                  <Clock className="h-4 w-4 mr-2" />
+                  Em Análise...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Enviar Evidência
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Solicitar Ajuste Melhorado */}
+      <SolicitarAjusteModalMelhorado
+        open={showAjusteModal}
+        onOpenChange={setShowAjusteModal}
+        actionId={selectedAcaoAjuste?.id || ""}
+        actionTitle={selectedAcaoAjuste?.titulo || ""}
+        currentData={{
+          titulo: selectedAcaoAjuste?.titulo,
+          descricao: selectedAcaoAjuste?.descricao,
+          prazo: selectedAcaoAjuste?.prazo,
+          macroCompetencia: selectedAcaoAjuste?.macroCompetencia,
+        }}
+        hasPendingRequest={hasPendingAdjustmentRequest}
+        onSuccess={() => {
+          utils.adjustmentRequests.list.invalidate();
+        }}
+      />
     </div>
   );
 }
