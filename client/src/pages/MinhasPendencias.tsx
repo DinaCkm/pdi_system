@@ -331,7 +331,12 @@ export default function MinhasPendencias() {
                     <MessageSquare className="h-4 w-4" />
                     Solicitar Alteração
                   </Button>
-                  {acao.status === 'aguardando_avaliacao' ? (
+                  {acao.status === 'concluida' ? (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-500 rounded-lg font-medium border border-gray-300 cursor-not-allowed">
+                      <CheckCircle className="h-4 w-4" />
+                      Acao Concluida
+                    </div>
+                  ) : acao.status === 'aguardando_avaliacao' ? (
                     <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-lg font-medium border border-amber-200 cursor-default">
                       <Clock className="h-4 w-4" />
                       Evidência em Análise
