@@ -350,37 +350,29 @@ export default function MinhasPendencias() {
                   </Button>
                   <div className="mt-4 w-full">
                     {(() => {
-                      // CORREÇÃO 1: Filtro com comparação STRING segura
-                      const evidenciaDesta_Acao = allUserEvidences?.find(
-                        (e: any) => String(e.actionId) === String(acao.id)
-                      );
-                      
-                      console.log(`[DEBUG] Ação ${acao.id} (status: ${acao.status}). Evidência encontrada:`, evidenciaDesta_Acao);
-                      
-                      // CASO 1: AÇÃO APROVADA/CONCLUÍDA - PRIORIDADE MÁXIMA
+                      // 1. SE A AÇÃO TÁ CONCLUÍDA, MOSTRA VERDE E ACABOU.
                       if (acao.status === 'concluida') {
                         return (
-                          <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 rounded-lg font-bold flex flex-col items-center justify-center cursor-default">
-                            <div className="flex items-center justify-center">
-                              <span className="mr-2">✓</span> Ação Concluída
-                            </div>
-                            <div className="text-[10px] mt-1 font-mono">
-                              ID VALIDAÇÃO: {evidenciaDesta_Acao?.id || 'BUSCANDO NO BANCO...'}
-                            </div>
+                          <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 rounded-lg font-bold text-center cursor-default">
+                            ✓ Ação Concluída
                           </div>
                         );
                       }
-                      
-                      // CASO 2: EM ANÁLISE
-                      if (evidenciaDesta_Acao?.status === 'aguardando_avaliacao') {
+
+                      // 2. SE TEM EVIDÊNCIA EM ANÁLISE, MOSTRA AMARELO.
+                      const temEvidenciaPendente = allUserEvidences?.some(
+                        (e: any) => String(e.actionId) === String(acao.id) && e.status === 'aguardando_avaliacao'
+                      );
+
+                      if (temEvidenciaPendente) {
                         return (
-                          <div className="w-full py-3 px-4 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg font-medium flex items-center justify-center cursor-wait">
-                            <span className="mr-2">⏳</span> Evidência em Análise
+                          <div className="w-full py-3 px-4 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg font-medium text-center cursor-wait">
+                            ⏳ Evidência em Análise
                           </div>
                         );
                       }
-                      
-                      // CASO 3: BOTÃO AZUL - SÓ MOSTRA SE NÃO FOR NENHUM DOS ACIMA
+
+                      // 3. SÓ MOSTRA O BOTÃO SE NÃO FOR NADA DISSO.
                       return (
                         <button
                           onClick={() => {
