@@ -21,6 +21,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
   const [uploading, setUploading] = useState(false);
   const [registrada, setRegistrada] = useState(false);
   const [evidenceId, setEvidenceId] = useState<number | null>(null);
+  const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
   const { user } = useAuth();
   
   // 🔍 DEBUG: Verificar se os dados estão sendo recebidos
@@ -314,6 +315,13 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
               </div>
             </div>
 
+            {/* Termo de Ciência */}
+            <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
+              <p className="text-sm text-orange-900 italic font-medium leading-relaxed">
+                ⚠️ O EMPREGADO ESTÁ CIENTE QUE A CONFIRMAÇÃO DO ENVIO DESTA EVIDÊNCIA SÓ SERÁ REGISTRADO QUANDO O EMAIL FOR ENVIADO CONFORME INSTRUÇÕES ACIMA.
+              </p>
+            </div>
+
             {/* Instruções Finais */}
             <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4">
               <div className="flex gap-2">
@@ -336,13 +344,17 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
         <div className="flex justify-end gap-4 mt-6">
           <button
             onClick={() => {
-              resetForm();
-              onOpenChange(false);
+              if (registrada) {
+                setShowConfirmationPopup(true);
+              } else {
+                resetForm();
+                onOpenChange(false);
+              }
             }}
             disabled={uploading}
             className="px-4 py-2 border border-gray-300 rounded text-gray-800 hover:bg-gray-50 disabled:opacity-50"
           >
-            Cancelar
+            Fechar
           </button>
           {!registrada && (
             <button
@@ -364,6 +376,31 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
             </button>
           )}
         </div>
+
+        {/* Popup de Confirmacao ao Fechar */}
+        {showConfirmationPopup && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+            <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
+              <div className="text-center">
+                <AlertTriangle className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Confirmacao Importante</h3>
+                <p className="text-sm text-gray-700 italic font-medium leading-relaxed mb-6">
+                  O EMPREGADO ESTA CIENTE QUE A CONFIRMACAO DO ENVIO DESTA EVIDENCIA SO SERA REGISTRADO QUANDO O EMAIL FOR ENVIADO CONFORME INSTRUCOES ACIMA.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowConfirmationPopup(false);
+                    resetForm();
+                    onOpenChange(false);
+                  }}
+                  className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
+                >
+                  Entendi
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

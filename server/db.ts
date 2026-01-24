@@ -120,34 +120,13 @@ export async function getAllActions() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db
-    .select({
-      id: actions.id,
-      pdiId: actions.pdiId,
-      macroId: actions.macroId,
-      titulo: actions.titulo,
-      descricao: actions.descricao,
-      prazo: actions.prazo,
-      status: actions.status,
-      evidence_status: actions.evidence_status,
-      createdAt: actions.createdAt,
-      updatedAt: actions.updatedAt,
-      pdiTitulo: pdis.titulo,
-      macroNome: competenciasMacros.nome,
-      microcompetenciaNome: competenciasMacros.nome,
-      colaboradorId: pdis.colaboradorId,
-      responsavelId: pdis.colaboradorId,
-      colaboradorNome: users.name,
-      departamentoNome: departamentos.nome
-    })
-    .from(actions)
-    .leftJoin(pdis, eq(actions.pdiId, pdis.id))
-    .leftJoin(competenciasMacros, eq(actions.macroId, competenciasMacros.id))
-    .leftJoin(users, eq(pdis.colaboradorId, users.id))
-    .leftJoin(departamentos, eq(users.departamentoId, departamentos.id))
-    .orderBy(desc(actions.createdAt));
-
-  return result;
+  try {
+    const [rows]: any = await db.execute(sql`SELECT * FROM actions ORDER BY createdAt DESC`);
+    return rows;
+  } catch (error) {
+    console.error('Erro em getAllActions:', error);
+    return [];
+  }
 }
 
 export async function getActionsByPDIId(pdiId: number) {
