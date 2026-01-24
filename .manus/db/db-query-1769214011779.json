@@ -1,0 +1,26 @@
+{
+  "query": "SELECT u.id, u.name, u.departamentoId, u.leaderId, d.nome as departamento, l.name as lider FROM users u LEFT JOIN departamentos d ON u.departamentoId = d.id LEFT JOIN users l ON u.leaderId = l.id WHERE u.name LIKE '%Julia%' OR u.name LIKE '%Dinica%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT u.id, u.name, u.departamentoId, u.leaderId, d.nome as departamento, l.name as lider FROM users u LEFT JOIN departamentos d ON u.departamentoId = d.id LEFT JOIN users l ON u.leaderId = l.id WHERE u.name LIKE '%Julia%' OR u.name LIKE '%Dinica%';",
+  "rows": [
+    {
+      "id": "840001",
+      "name": "Dinica Souza Makiyama",
+      "departamentoId": "90001",
+      "leaderId": "720003",
+      "departamento": "DEPARTAMENTO DE TESTES",
+      "lider": "liderteste1"
+    },
+    {
+      "id": "960001",
+      "name": "Julia Silva",
+      "departamentoId": "510001",
+      "leaderId": "840002",
+      "departamento": "DEPARTAMENTO JURIDICO ",
+      "lider": "mariza da silva"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tdepartamentoId\tleaderId\tdepartamento\tlider\n840001\tDinica Souza Makiyama\t90001\t720003\tDEPARTAMENTO DE TESTES\tliderteste1\n960001\tJulia Silva\t510001\t840002\tDEPARTAMENTO JURIDICO \tmariza da silva\n",
+  "stderr": "",
+  "execution_time_ms": 66
+}
