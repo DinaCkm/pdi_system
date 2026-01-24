@@ -933,14 +933,10 @@ export async function getPendingEvidences() {
       e.*, 
       u.name as colaboradorNome,
       u.email as colaboradorEmail,
-      a.titulo as actionNome,
-      d.nome as departamentoNome,
-      lider.name as liderNome
+      a.titulo as actionNome
     FROM evidences e
     LEFT JOIN users u ON e.colaboradorId = u.id
     LEFT JOIN actions a ON e.actionId = a.id
-    LEFT JOIN departamentos d ON u.departamentoId = d.id
-    LEFT JOIN users lider ON u.leaderId = lider.id
     WHERE e.status IN ('aguardando_avaliacao', 'aguardando_analise', 'pending', 'pendente')
     ORDER BY e.createdAt DESC
   `);
@@ -948,12 +944,7 @@ export async function getPendingEvidences() {
   // Mapeamos os nomes do SQL para o que o Frontend espera
   return rows.map((ev: any) => ({
     ...ev,
-    solicitante: { 
-      name: ev.colaboradorNome, 
-      email: ev.colaboradorEmail,
-      departamento: ev.departamentoNome,
-      lider: ev.liderNome
-    },
+    solicitante: { name: ev.colaboradorNome, email: ev.colaboradorEmail },
     acao: { titulo: ev.actionNome }
   }));
 }

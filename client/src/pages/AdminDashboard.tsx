@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Eye } from "lucide-react";
+import { CheckCircle, XCircle, Clock, MessageSquare, Edit2 } from "lucide-react";
 
 export default function AdminDashboard() {
   const [selectedEvidence, setSelectedEvidence] = useState<any>(null);
@@ -21,9 +21,6 @@ export default function AdminDashboard() {
   // Estado para edição de ação
   const [showEditActionModal, setShowEditActionModal] = useState(false);
   const [editingActionData, setEditingActionData] = useState<any>(null);
-  
-  // Estado para controlar qual lista mostrar
-  const [activeView, setActiveView] = useState<null | 'evidences' | 'adjustments'>(null);
 
   const { data: pendingEvidences = [], isLoading: evLoading, error: evError } = trpc.evidences.listPending.useQuery();
   const { data: pendingAdjustments = [], isLoading: adjLoading, error: adjError } = trpc.adjustmentRequests.listPending.useQuery();
@@ -149,17 +146,9 @@ export default function AdminDashboard() {
               📋 Evidências Pendentes
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             <div className="text-3xl font-bold text-blue-600">{pendingEvidences.length}</div>
             <p className="text-sm text-gray-600">aguardando avaliação</p>
-            <Button 
-              onClick={() => setActiveView(activeView === 'evidences' ? null : 'evidences')}
-              variant="outline"
-              className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              {activeView === 'evidences' ? 'Ocultar Lista' : 'Ver Lista'}
-            </Button>
           </CardContent>
         </Card>
 
@@ -169,25 +158,24 @@ export default function AdminDashboard() {
               💬 Solicitações Pendentes
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             <div className="text-3xl font-bold text-orange-600">{pendingAdjustments.length}</div>
             <p className="text-sm text-gray-600">aguardando avaliação</p>
-            <Button 
-              onClick={() => setActiveView(activeView === 'adjustments' ? null : 'adjustments')}
-              variant="outline"
-              className="w-full border-orange-600 text-orange-600 hover:bg-orange-50"
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              {activeView === 'adjustments' ? 'Ocultar Lista' : 'Ver Lista'}
-            </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Lista de Evidências - Sob Demanda */}
-      {activeView === 'evidences' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-blue-600">Evidências Pendentes ({pendingEvidences.length})</h2>
+      <Tabs defaultValue="evidences" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="evidences">
+            Evidências ({pendingEvidences.length})
+          </TabsTrigger>
+          <TabsTrigger value="adjustments">
+            Solicitações ({pendingAdjustments.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="evidences" className="space-y-4">
           {pendingEvidences.length === 0 ? (
             <Card className="text-center py-8">
               <p className="text-gray-600">Nenhuma evidência pendente</p>
@@ -198,11 +186,9 @@ export default function AdminDashboard() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="text-lg">
-                        {evidence.id} - {evidence.acao?.titulo || "Ação desconhecida"}
-                      </CardTitle>
-                      <CardDescription className="mt-2">
-                        Nome: {evidence.solicitante?.name || "Desconhecido"} | Depto: {evidence.solicitante?.departamento || "N/A"} | Líder: {evidence.solicitante?.lider || "N/A"}
+                      <CardTitle className="text-lg">{evidence.acao?.titulo || "Ação desconhecida"}</CardTitle>
+                      <CardDescription>
+                        Enviada por: {evidence.solicitante?.name || "Desconhecido"}
                       </CardDescription>
                     </div>
                     <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
@@ -231,13 +217,9 @@ export default function AdminDashboard() {
               </Card>
             ))
           )}
-        </div>
-      )}
+        </TabsContent>
 
-      {/* Lista de Solicitações - Sob Demanda */}
-      {activeView === 'adjustments' && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-orange-600">Solicitações Pendentes ({pendingAdjustments.length})</h2>
+        <TabsContent value="adjustments" className="space-y-4">
           {pendingAdjustments.length === 0 ? (
             <Card className="text-center py-8">
               <p className="text-gray-600">Nenhuma solicitação pendente</p>
@@ -264,12 +246,10 @@ export default function AdminDashboard() {
                     <p className="text-sm font-semibold text-gray-700">Campos a Alterar:</p>
                     <p className="text-sm text-gray-600 mt-1">{adjustment.camposAjustar}</p>
                   </div>
-
                   <div>
                     <p className="text-sm font-semibold text-gray-700">Justificativa:</p>
                     <p className="text-sm text-gray-600 mt-1">{adjustment.justificativa}</p>
                   </div>
-
                   <div className="flex gap-2">
                     <Button
                       onClick={() => {
@@ -285,8 +265,8 @@ export default function AdminDashboard() {
               </Card>
             ))
           )}
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
 
       {/* Dialog de Avaliação de Evidência */}
       <Dialog open={showEvidenceDialog} onOpenChange={setShowEvidenceDialog}>
@@ -294,16 +274,11 @@ export default function AdminDashboard() {
           <DialogHeader>
             <DialogTitle>Avaliar Evidência</DialogTitle>
             <DialogDescription>
-              Esta evidência foi enviada no seu email com o ID {selectedEvidence?.id}
+              {selectedEvidence?.acao?.titulo}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div>
-              <p className="text-sm font-semibold">Ação:</p>
-              <p className="text-sm text-gray-600 mt-1">{selectedEvidence?.acao?.titulo}</p>
-            </div>
-
             <div>
               <p className="text-sm font-semibold">Descrição:</p>
               <p className="text-sm text-gray-600 mt-1">{selectedEvidence?.descricao}</p>
