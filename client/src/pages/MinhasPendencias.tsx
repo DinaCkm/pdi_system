@@ -350,27 +350,29 @@ export default function MinhasPendencias() {
                   </Button>
                   <div className="mt-4 w-full">
                     {(() => {
-                      // Usar status da AÇÃO para determinar o que mostrar
+                      // CORREÇÃO 1: Filtro com comparação numérica segura
                       const evidenciaDesta_Acao = allUserEvidences?.find(
-                        (e: any) => e.actionId === acao.id
+                        (e: any) => Number(e.actionId) === Number(acao.id)
                       );
                       
-                      // Se a ação está concluída, mostrar verde com ID
-                      if (acao.status === 'concluida' && evidenciaDesta_Acao) {
+                      // CASO 1: AÇÃO APROVADA/CONCLUÍDA
+                      if (acao.status === 'concluida') {
                         return (
                           <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 rounded-lg font-bold flex flex-col items-center justify-center cursor-default">
                             <div className="flex items-center justify-center">
                               <span className="mr-2">✓</span> Ação Concluída
                             </div>
-                            <div className="text-xs text-green-600 mt-1 font-normal">
-                              ID Validação: {evidenciaDesta_Acao.id}
-                            </div>
+                            {evidenciaDesta_Acao && (
+                              <div className="text-xs text-green-600 mt-1 font-normal italic">
+                                ID Validação: {evidenciaDesta_Acao.id}
+                              </div>
+                            )}
                           </div>
                         );
                       }
                       
-                      // Se a ação está em análise, mostrar amarelo
-                      if (acao.status === 'aguardando_avaliacao') {
+                      // CASO 2: EM ANÁLISE
+                      if (acao.status === 'aguardando_avaliacao' || evidenciaDesta_Acao?.status === 'aguardando_avaliacao') {
                         return (
                           <div className="w-full py-3 px-4 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg font-medium flex items-center justify-center cursor-wait">
                             <span className="mr-2">⏳</span> Evidência em Análise
@@ -378,7 +380,7 @@ export default function MinhasPendencias() {
                         );
                       }
                       
-                      // Caso contrário, mostrar botão azul
+                      // CASO 3: BOTÃO ATIVO (Opção padrão - SEMPRE ÙLTIMA)
                       return (
                         <button
                           onClick={() => {

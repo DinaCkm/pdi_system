@@ -38,6 +38,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       toast.success("✅ Evidência aprovada!");
       utils.evidences.listPending.invalidate();
+      utils.evidences.listByUser.invalidate(); // Refresh na página do colaborador
       setShowEvidenceDialog(false);
       setSelectedEvidence(null);
     },
@@ -48,6 +49,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       toast.success("❌ Evidência rejeitada!");
       utils.evidences.listPending.invalidate();
+      utils.evidences.listByUser.invalidate(); // Refresh na página do colaborador
       setShowEvidenceDialog(false);
       setSelectedEvidence(null);
       setRejectionReason("");
