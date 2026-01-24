@@ -362,11 +362,10 @@ export default function MinhasPendencias() {
                             <div className="flex items-center justify-center">
                               <span className="mr-2">✓</span> Ação Concluída
                             </div>
-                            {evidenciaDesta_Acao && (
-                              <div className="text-xs text-green-600 mt-1 font-normal italic">
-                                ID Validação: {evidenciaDesta_Acao.id}
-                              </div>
-                            )}
+                            {/* SELO DE VALIDAÇÃO */}
+                            <div className="text-[10px] uppercase tracking-wider text-green-600 mt-1 font-normal opacity-80">
+                              ID de Validação: {evidenciaDesta_Acao?.id || 'N/A'}
+                            </div>
                           </div>
                         );
                       }
