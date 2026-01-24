@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS `actions` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`pdiId` int NOT NULL,\n\t`blocoId` int NOT NULL,\n\t`macroId` int NOT NULL,\n\t`microId` int NOT NULL,\n\t`nome` varchar(255) NOT NULL,\n\t`descricao` text NOT NULL,\n\t`prazo` timestamp NOT NULL,\n\t`status` enum('pendente_aprovacao_lider','aprovada_lider','reprovada_lider','em_andamento','em_discussao','evidencia_enviada','evidencia_aprovada','evidencia_reprovada','correcao_solicitada','concluida','vencida','cancelada') NOT NULL DEFAULT 'pendente_aprovacao_lider',\n\t`justificativaReprovacaoLider` text,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\t`createdBy` int NOT NULL,\n\tCONSTRAINT `actions_id` PRIMARY KEY(`id`)\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute CREATE TABLE IF NOT EXISTS `actions` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`pdiId` int NOT NULL,\n\t`blocoId` int NOT NULL,\n\t`macroId` int NOT NULL,\n\t`microId` int NOT NULL,\n\t`nome` varchar(255) NOT NULL,\n\t`descricao` text NOT NULL,\n\t`prazo` timestamp NOT NULL,\n\t`status` enum('pendente_aprovacao_lider','aprovada_lider','reprovada_lider','em_andamento','em_discussao','evidencia_enviada','evidencia_aprovada','evidencia_reprovada','correcao_solicitada','concluida','vencida','cancelada') NOT NULL DEFAULT 'pendente_aprovacao_lider',\n\t`justificativaReprovacaoLider` text,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\t`createdBy` int NOT NULL,\n\tCONSTRAINT `actions_id` PRIMARY KEY(`id`)\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 387
-}

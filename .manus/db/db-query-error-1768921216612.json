@@ -1,8 +1,0 @@
-{
-  "query": "INSERT INTO ciclos (nome, dataInicio, dataFim, ativo) VALUES \n('2025/1', '2025-01-01', '2025-06-30', true),\n('2025/2', '2025-07-01', '2025-12-31', true),\n('2026/1', '2026-01-01', '2026-06-30', true),\n('2026/2', '2026-07-01', '2026-12-31', true);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute INSERT INTO ciclos (nome, dataInicio, dataFim, ativo) VALUES \n('2025/1', '2025-01-01', '2025-06-30', true),\n('2025/2', '2025-07-01', '2025-12-31', true),\n('2026/1', '2026-01-01', '2026-06-30', true),\n('2026/2', '2026-07-01', '2026-12-31', true);",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'ativo' in 'field list'"
-  ]
-}

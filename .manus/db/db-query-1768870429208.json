@@ -1,9 +1,0 @@
-{
-  "query": "ALTER TABLE actions DROP COLUMN blocoId; ALTER TABLE actions DROP COLUMN microId; ALTER TABLE actions DROP COLUMN createdBy; ALTER TABLE actions CHANGE COLUMN nome titulo VARCHAR(255) NOT NULL; ALTER TABLE actions CHANGE COLUMN descricao descricao TEXT; ALTER TABLE actions CHANGE COLUMN prazo prazo DATE NOT NULL; ALTER TABLE actions CHANGE COLUMN status status VARCHAR(50) DEFAULT 'nao_iniciada' NOT NULL;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute ALTER TABLE actions DROP COLUMN blocoId; ALTER TABLE actions DROP COLUMN microId; ALTER TABLE actions DROP COLUMN createdBy; ALTER TABLE actions CHANGE COLUMN nome titulo VARCHAR(255) NOT NULL; ALTER TABLE actions CHANGE COLUMN descricao descricao TEXT; ALTER TABLE actions CHANGE COLUMN prazo prazo DATE NOT NULL; ALTER TABLE actions CHANGE COLUMN status status VARCHAR(50) DEFAULT 'nao_iniciada' NOT NULL;",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 2616
-}

@@ -105,19 +105,13 @@ export const appRouter = router({
       });
     }),
     teamPDIs: protectedProcedure.query(async ({ ctx }) => {
-      // Buscar departamento do Lider
-      const lider = await db.getUserById(Number(ctx.user.id));
-      if (!lider || !lider.departamentoId) return [];
-      
-      // Buscar todos os usuarios do departamento (qualquer role)
-      const allUsers = await db.getAllUsers();
-      const teamUserIds = allUsers
-        .filter(u => u.departamentoId === lider.departamentoId)
-        .map(u => u.id);
+      // Buscar subordinados diretos do Líder (usuários que têm leaderId = id do líder logado)
+      const subordinates = await db.getSubordinates(Number(ctx.user.id));
+      const teamUserIds = subordinates.map(u => u.id);
       
       if (teamUserIds.length === 0) return [];
       
-      // Retornar PDIs de usuarios do departamento
+      // Retornar PDIs dos subordinados diretos
       const allPDIs = await db.getAllPDIs();
       return allPDIs.filter(pdi => teamUserIds.includes(Number(pdi.colaboradorId)));
     }),
@@ -321,6 +315,105 @@ export const appRouter = router({
         console.error('[listByUser] Erro ao buscar evidências:', error);
         return [];
       }
+    }),
+    
+    // ============= PROCEDURES PARA LÍDER =============
+    
+    // Listar evidências pendentes da equipe do líder
+    getPendingByTeam: adminOrLeaderProcedure.query(async ({ ctx }) => {
+      const leaderId = ctx.user?.id;
+      if (!leaderId) return [];
+      
+      try {
+        const rawEvidences = await db.getPendingEvidencesByLeader(leaderId);
+        // Para cada evidência, buscamos os arquivos e textos vinculados
+        return await Promise.all(
+          rawEvidences.map(async (ev: any) => {
+            const [filesRows]: any = await db.execute(sql`SELECT * FROM evidence_files WHERE evidenceId = ${ev.id}`);
+            const [textsRows]: any = await db.execute(sql`SELECT * FROM evidence_texts WHERE evidenceId = ${ev.id}`);
+            return { 
+              ...ev, 
+              files: filesRows || [], 
+              texts: textsRows || [] 
+            };
+          })
+        );
+      } catch (error) {
+        console.error('[getPendingByTeam] Erro:', error);
+        return [];
+      }
+    }),
+    
+    // Aprovar evidência (líder)
+    aprovar: adminOrLeaderProcedure.input(z.object({ evidenceId: z.number() })).mutation(async ({ ctx, input }) => {
+      const ev = await db.getEvidenceById(input.evidenceId);
+      if (!ev) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Evidência não encontrada' });
+      }
+      
+      // Verificar se o líder tem permissão (se não for admin, verificar se é líder do colaborador)
+      if (ctx.user?.role !== 'admin') {
+        const colaborador = await db.getUserById(ev.colaboradorId);
+        if (!colaborador || colaborador.leaderId !== ctx.user?.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Você não tem permissão para aprovar esta evidência' });
+        }
+      }
+      
+      await db.updateEvidenceStatus(input.evidenceId, { 
+        status: 'aprovada', 
+        evaluatedBy: ctx.user!.id, 
+        evaluatedAt: new Date() 
+      });
+      await db.updateAction(ev.actionId, { status: 'concluida' });
+      
+      // Notificar o proprietário sobre aprovação
+      const action = await db.getActionById(ev.actionId);
+      if (action) {
+        await notifyOwner({
+          title: '✅ Evidência Aprovada pelo Líder',
+          content: `A evidência para a ação "${action.titulo}" foi aprovada.`
+        });
+      }
+      
+      return { success: true };
+    }),
+    
+    // Reprovar evidência (líder)
+    reprovar: adminOrLeaderProcedure.input(z.object({ 
+      evidenceId: z.number(),
+      justificativa: z.string().min(10, 'Justificativa deve ter pelo menos 10 caracteres')
+    })).mutation(async ({ ctx, input }) => {
+      const ev = await db.getEvidenceById(input.evidenceId);
+      if (!ev) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Evidência não encontrada' });
+      }
+      
+      // Verificar se o líder tem permissão (se não for admin, verificar se é líder do colaborador)
+      if (ctx.user?.role !== 'admin') {
+        const colaborador = await db.getUserById(ev.colaboradorId);
+        if (!colaborador || colaborador.leaderId !== ctx.user?.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Você não tem permissão para reprovar esta evidência' });
+        }
+      }
+      
+      await db.updateEvidenceStatus(input.evidenceId, { 
+        status: 'reprovada', 
+        evaluatedBy: ctx.user!.id, 
+        evaluatedAt: new Date(),
+        justificativaAdmin: input.justificativa
+      });
+      await db.updateAction(ev.actionId, { status: 'em_andamento' });
+      
+      // Notificar o proprietário sobre reprovação
+      const action = await db.getActionById(ev.actionId);
+      if (action) {
+        await notifyOwner({
+          title: '❌ Evidência Reprovada',
+          content: `A evidência para a ação "${action.titulo}" foi reprovada. Justificativa: ${input.justificativa}`
+        });
+      }
+      
+      return { success: true };
     }),
   })
 });

@@ -1878,3 +1878,19 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [ ] Verificar mapeamento de nomes (acao, titulo, etc)
 - [ ] Testar query no banco de dados
 - [ ] Corrigir vinculação entre solicitação e ação
+
+## Bug: Departamento e Colaborador não aparecem nos cards de Ações (Admin)
+- [x] Corrigir getAllActions() para incluir JOINs com PDI, usuário e departamento
+- [x] Retornar colaboradorNome e departamentoNome na query
+- [x] Testar visualização dos cards no AdminDashboard
+
+## Avaliação de Evidências na Visão do Líder
+- [ ] Verificar se existe página de evidências pendentes para o líder
+- [ ] Implementar listagem de evidências dos subordinados aguardando aprovação
+- [ ] Implementar funcionalidade de aprovar/rejeitar evidências
+- [ ] Testar fluxo completo de avaliação de evidências pelo líder
+
+## Bug: Líder não vê PDIs dos colaboradores do seu departamento
+- [x] Investigar query getPdisByLeader - estava buscando pelo departamentoId do líder
+- [x] Corrigir para buscar PDIs dos colaboradores vinculados ao líder (leaderId)
+- [x] Testar com liderteste1 e Dinica Souza Makiyama - FUNCIONANDO

@@ -1,8 +1,0 @@
-{
-  "query": "SELECT a.id, a.nome, a.descricao, a.status, p.userId FROM actions a JOIN pdis p ON a.pdiId = p.id WHERE p.userId = (SELECT id FROM users WHERE email LIKE '%teste2%' OR name LIKE '%teste2%') ORDER BY a.id DESC;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT a.id, a.nome, a.descricao, a.status, p.userId FROM actions a JOIN pdis p ON a.pdiId = p.id WHERE p.userId = (SELECT id FROM users WHERE email LIKE '%teste2%' OR name LIKE '%teste2%') ORDER BY a.id DESC;",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'p.userid' in 'where clause'"
-  ]
-}

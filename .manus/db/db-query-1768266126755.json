@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS `pdis` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`colaboradorId` int NOT NULL,\n\t`cicloId` int NOT NULL,\n\t`titulo` varchar(255) NOT NULL,\n\t`objetivoGeral` text,\n\t`status` enum('em_andamento','concluido','cancelado') NOT NULL DEFAULT 'em_andamento',\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\t`createdBy` int NOT NULL,\n\tCONSTRAINT `pdis_id` PRIMARY KEY(`id`)\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute CREATE TABLE IF NOT EXISTS `pdis` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`colaboradorId` int NOT NULL,\n\t`cicloId` int NOT NULL,\n\t`titulo` varchar(255) NOT NULL,\n\t`objetivoGeral` text,\n\t`status` enum('em_andamento','concluido','cancelado') NOT NULL DEFAULT 'em_andamento',\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\t`createdBy` int NOT NULL,\n\tCONSTRAINT `pdis_id` PRIMARY KEY(`id`)\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 503
-}

@@ -1,8 +1,0 @@
-{
-  "query": "SELECT DISTINCT u.id, u.email, u.cpf, u.nome, COUNT(a.id) as total_acoes FROM users u LEFT JOIN pdis p ON u.id = p.colaboradorId LEFT JOIN actions a ON p.id = a.pdiId WHERE a.id IS NOT NULL GROUP BY u.id, u.email, u.cpf, u.nome ORDER BY total_acoes DESC LIMIT 10;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT DISTINCT u.id, u.email, u.cpf, u.nome, COUNT(a.id) as total_acoes FROM users u LEFT JOIN pdis p ON u.id = p.colaboradorId LEFT JOIN actions a ON p.id = a.pdiId WHERE a.id IS NOT NULL GROUP BY u.id, u.email, u.cpf, u.nome ORDER BY total_acoes DESC LIMIT 10;",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'u.nome' in 'group statement'"
-  ]
-}

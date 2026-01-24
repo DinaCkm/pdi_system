@@ -1,9 +1,0 @@
-{
-  "query": "UPDATE users \nSET leaderId = (SELECT id FROM users WHERE email = 'dina.makiyama@sebrae.to.gov.br'),\n    departamentoId = (SELECT id FROM departamentos WHERE nome LIKE '%Ckm Talents%')\nWHERE email = 'bruno.vieira@to.sebrae.com.br';",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute UPDATE users \nSET leaderId = (SELECT id FROM users WHERE email = 'dina.makiyama@sebrae.to.gov.br'),\n    departamentoId = (SELECT id FROM departamentos WHERE nome LIKE '%Ckm Talents%')\nWHERE email = 'bruno.vieira@to.sebrae.com.br';",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 68
-}

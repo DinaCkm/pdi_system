@@ -1,8 +1,0 @@
-{
-  "query": "SELECT \n  ar.id,\n  ar.actionId,\n  ar.solicitanteId,\n  ar.tipoSolicitante,\n  ar.justificativa,\n  ar.camposAjustar,\n  ar.status,\n  ar.justificativaAdmin,\n  ar.createdAt,\n  ar.evaluatedAt,\n  ar.evaluatedBy,\n  a.id as action_id,\n  a.titulo as action_title,\n  a.descricao as action_desc,\n  a.prazo as action_prazo,\n  a.macroCompetencia as action_macro,\n  u.name as user_name,\n  u.email as user_email\nFROM adjustment_requests ar\nLEFT JOIN actions a ON CAST(ar.actionId AS UNSIGNED) = a.id\nLEFT JOIN users u ON ar.solicitanteId = u.id\nWHERE ar.status IN ('pendente', 'pending')\nORDER BY ar.createdAt DESC LIMIT 3;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT \n  ar.id,\n  ar.actionId,\n  ar.solicitanteId,\n  ar.tipoSolicitante,\n  ar.justificativa,\n  ar.camposAjustar,\n  ar.status,\n  ar.justificativaAdmin,\n  ar.createdAt,\n  ar.evaluatedAt,\n  ar.evaluatedBy,\n  a.id as action_id,\n  a.titulo as action_title,\n  a.descricao as action_desc,\n  a.prazo as action_prazo,\n  a.macroCompetencia as action_macro,\n  u.name as user_name,\n  u.email as user_email\nFROM adjustment_requests ar\nLEFT JOIN actions a ON CAST(ar.actionId AS UNSIGNED) = a.id\nLEFT JOIN users u ON ar.solicitanteId = u.id\nWHERE ar.status IN ('pendente', 'pending')\nORDER BY ar.createdAt DESC LIMIT 3;",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'a.macrocompetencia' in 'field list'"
-  ]
-}

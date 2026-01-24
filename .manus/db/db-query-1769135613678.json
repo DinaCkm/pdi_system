@@ -1,9 +1,0 @@
-{
-  "query": "INSERT INTO actions (pdiId, macroId, titulo, descricao, prazo, status, createdAt) VALUES ((SELECT id FROM pdis WHERE colaboradorId = (SELECT id FROM users WHERE email = 'julia@ckmtalents.net' LIMIT 1) LIMIT 1), 1, 'Teste Email', 'Testar fluxo de email', DATE_ADD(NOW(), INTERVAL 30 DAY), 'nao_iniciada', NOW());",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute INSERT INTO actions (pdiId, macroId, titulo, descricao, prazo, status, createdAt) VALUES ((SELECT id FROM pdis WHERE colaboradorId = (SELECT id FROM users WHERE email = 'julia@ckmtalents.net' LIMIT 1) LIMIT 1), 1, 'Teste Email', 'Testar fluxo de email', DATE_ADD(NOW(), INTERVAL 30 DAY), 'nao_iniciada', NOW());",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 95
-}

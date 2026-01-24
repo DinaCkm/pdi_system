@@ -121,8 +121,36 @@ export async function getAllActions() {
   if (!db) throw new Error("Database not available");
 
   try {
-    const [rows]: any = await db.execute(sql`SELECT * FROM actions ORDER BY createdAt DESC`);
-    return rows;
+    // Query com JOINs para trazer colaborador e departamento
+    const result = await db
+      .select({
+        id: actions.id,
+        pdiId: actions.pdiId,
+        macroId: actions.macroId,
+        titulo: actions.titulo,
+        descricao: actions.descricao,
+        prazo: actions.prazo,
+        status: actions.status,
+        createdAt: actions.createdAt,
+        updatedAt: actions.updatedAt,
+        microcompetencia: actions.microcompetencia,
+        pdiTitulo: pdis.titulo,
+        macroNome: competenciasMacros.nome,
+        colaboradorId: pdis.colaboradorId,
+        responsavelId: pdis.colaboradorId,
+        colaboradorNome: users.name,
+        departamentoNome: departamentos.nome,
+        departamentoId: users.departamentoId,
+        leaderId: users.leaderId
+      })
+      .from(actions)
+      .leftJoin(pdis, eq(actions.pdiId, pdis.id))
+      .leftJoin(competenciasMacros, eq(actions.macroId, competenciasMacros.id))
+      .leftJoin(users, eq(pdis.colaboradorId, users.id))
+      .leftJoin(departamentos, eq(users.departamentoId, departamentos.id))
+      .orderBy(desc(actions.createdAt));
+
+    return result;
   } catch (error) {
     console.error('Erro em getAllActions:', error);
     return [];
@@ -1189,4 +1217,46 @@ export async function getAdjustmentComments(adjustmentRequestId: number) {
     .orderBy(adjustmentComments.createdAt);
 
   return result;
+}
+
+
+// ============= FUNÇÕES DE EVIDÊNCIAS PARA LÍDER =============
+
+export async function getPendingEvidencesByLeader(leaderId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Buscar evidências pendentes dos subordinados do líder
+  const [rows]: any = await db.execute(sql`
+    SELECT 
+      e.*, 
+      u.name as colaboradorNome,
+      u.email as colaboradorEmail,
+      a.titulo as actionNome,
+      a.descricao as actionDescricao,
+      a.prazo as actionPrazo,
+      p.titulo as pdiTitulo,
+      d.nome as departamentoNome
+    FROM evidences e
+    LEFT JOIN users u ON e.colaboradorId = u.id
+    LEFT JOIN actions a ON e.actionId = a.id
+    LEFT JOIN pdis p ON a.pdiId = p.id
+    LEFT JOIN departamentos d ON u.departamentoId = d.id
+    WHERE e.status IN ('aguardando_avaliacao', 'aguardando_analise', 'pending', 'pendente')
+      AND u.leaderId = ${leaderId}
+    ORDER BY e.createdAt DESC
+  `);
+
+  // Mapeamos os nomes do SQL para o que o Frontend espera
+  return rows.map((ev: any) => ({
+    ...ev,
+    solicitante: { name: ev.colaboradorNome, email: ev.colaboradorEmail },
+    acao: { 
+      titulo: ev.actionNome, 
+      descricao: ev.actionDescricao,
+      prazo: ev.actionPrazo 
+    },
+    pdi: { titulo: ev.pdiTitulo },
+    departamento: { nome: ev.departamentoNome }
+  }));
 }
