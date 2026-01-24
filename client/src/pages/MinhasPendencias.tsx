@@ -89,7 +89,13 @@ export default function MinhasPendencias() {
     { enabled: !!selectedAcaoEvidence?.id }
   );
 
-  // Obter última evidência e seu status
+  // Buscar TODAS as evidências do usuário (para filtrar por ação dentro do map)
+  const { data: allUserEvidences = [] } = trpc.evidences.listByUser.useQuery(
+    undefined,
+    { enabled: !!userId }
+  );
+
+  // Obter última evidência e seu status (para o modal de envio)
   const ultimaEvidencia = acaoEvidences?.[0];
   const podeEnviarEvidencia = !ultimaEvidencia || ultimaEvidencia.status === 'reprovada';
   const justificativaReprovacao = ultimaEvidencia?.justificativaAdmin;
@@ -260,7 +266,14 @@ export default function MinhasPendencias() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {filteredAcoes.map((acao: any) => (
+          {filteredAcoes.map((acao: any) => {
+            // FILTRAR evidências apenas para esta ação específica
+            const evidenciasDA_Acao = allUserEvidences.filter(
+              (ev: any) => ev.actionId === acao.id
+            );
+            const ultimaEvidencia_DA_Acao = evidenciasDA_Acao?.[0];
+
+            return (
             <Card key={acao.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -333,9 +346,8 @@ export default function MinhasPendencias() {
                   </Button>
                   <div className="mt-4 w-full">
                     {(() => {
-                      const lastEvidence = acaoEvidences?.[0];
-                      
-                      if (lastEvidence?.status === 'aprovada') {
+                      // USAR a evidência filtrada DESTA AÇÃO
+                      if (ultimaEvidencia_DA_Acao?.status === 'aprovada') {
                         return (
                           <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 text-center rounded-lg font-bold flex items-center justify-center cursor-default">
                             <CheckCircle className="h-4 w-4 mr-2" />
@@ -344,7 +356,7 @@ export default function MinhasPendencias() {
                         );
                       }
                       
-                      if (lastEvidence?.status === 'aguardando_avaliacao') {
+                      if (ultimaEvidencia_DA_Acao?.status === 'aguardando_avaliacao') {
                         return (
                           <div className="w-full py-3 px-4 bg-amber-50 text-amber-700 border border-amber-200 text-center rounded-lg font-medium flex items-center justify-center cursor-wait">
                             <Clock className="h-4 w-4 mr-2" />
@@ -369,7 +381,8 @@ export default function MinhasPendencias() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
