@@ -287,6 +287,27 @@ export const appRouter = router({
         throw error;
       }
     }),
+    listByUser: protectedProcedure.query(async ({ ctx }) => {
+      const userId = ctx.user?.id;
+      if (!userId) return [];
+      
+      // Buscar todas as ações do usuário
+      const userActions = await db.execute(
+        sql`SELECT id FROM actions WHERE responsavelId = ${userId}`
+      );
+      const [actions]: any = userActions;
+      
+      if (!actions || actions.length === 0) return [];
+      
+      // Buscar todas as evidências dessas ações
+      const actionIds = actions.map((a: any) => a.id);
+      const evidencesData = await db.execute(
+        sql`SELECT * FROM evidences WHERE actionId IN (${actionIds.join(',')})`
+      );
+      const [evidences]: any = evidencesData;
+      
+      return evidences || [];
+    }),
   })
 });
 
