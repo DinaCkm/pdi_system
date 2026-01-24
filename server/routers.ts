@@ -291,17 +291,36 @@ export const appRouter = router({
       const userId = ctx.user?.id;
       if (!userId) return [];
       
-      // Query com INNER JOIN para trazer todas as evidencias com ID
-      const evidencesData = await db.execute(
-        sql`SELECT e.id, e.actionId, e.colaboradorId, e.status, e.descricao, e.createdAt, e.evaluatedAt, e.evaluatedBy, e.justificativaAdmin
-            FROM evidences e
-            INNER JOIN actions a ON e.actionId = a.id
-            WHERE a.responsavelId = ${userId}`
-      );
-      const [evidences]: any = evidencesData;
-      
-      console.log('[listByUser] Evidencias encontradas para userId', userId, ':', evidences);
-      return evidences || [];
+      try {
+        // Buscar todas as ações do usuário
+        const userActions = await db.select({ id: actions.id }).from(actions).where(eq(actions.responsavelId, userId));
+        
+        if (!userActions || userActions.length === 0) {
+          console.log('[listByUser] Nenhuma ação encontrada para userId', userId);
+          return [];
+        }
+        
+        const actionIds = userActions.map((a: any) => a.id);
+        
+        // Buscar todas as evidências dessas ações
+        const evidencesList = await db.select({
+          id: evidences.id,
+          actionId: evidences.actionId,
+          colaboradorId: evidences.colaboradorId,
+          status: evidences.status,
+          descricao: evidences.descricao,
+          createdAt: evidences.createdAt,
+          evaluatedAt: evidences.evaluatedAt,
+          evaluatedBy: evidences.evaluatedBy,
+          justificativaAdmin: evidences.justificativaAdmin,
+        }).from(evidences).where(inArray(evidences.actionId, actionIds));
+        
+        console.log('[listByUser] Evidencias encontradas para userId', userId, ':', evidencesList);
+        return evidencesList || [];
+      } catch (error) {
+        console.error('[listByUser] Erro ao buscar evidências:', error);
+        return [];
+      }
     }),
   })
 });
