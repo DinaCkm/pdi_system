@@ -331,16 +331,28 @@ export default function MinhasPendencias() {
                     <MessageSquare className="h-4 w-4" />
                     Solicitar Alteração
                   </Button>
-                  {acao.status === 'concluida' ? (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-500 rounded-lg font-medium border border-gray-300 cursor-not-allowed">
-                      <CheckCircle className="h-4 w-4" />
-                      Acao Concluida
-                    </div>
-                  ) : acao.status === 'aguardando_avaliacao' ? (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-lg font-medium border border-amber-200 cursor-default">
-                      <Clock className="h-4 w-4" />
-                      Evidência em Análise
-                    </div>
+                  {acao.id === selectedAcaoEvidence?.id && acaoEvidences ? (
+                    ultimaEvidencia?.status === 'aprovada' ? (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg font-medium border border-green-600 cursor-default shadow-sm">
+                        <CheckCircle className="h-4 w-4" />
+                        Acao Concluida
+                      </div>
+                    ) : ultimaEvidencia?.status === 'aguardando_avaliacao' ? (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-lg font-medium border border-amber-200 cursor-default">
+                        <Clock className="h-4 w-4" />
+                        Evidencia em Analise
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setSelectedAcaoEvidence(acao);
+                          setShowEvidenceDialog(true);
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                      >
+                        Registrar Minha Conquista
+                      </button>
+                    )
                   ) : (
                     <button
                       onClick={() => {
