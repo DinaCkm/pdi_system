@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectContentNoPortal } from "@/components/ui/select";
-import { Eye, Target, User, Calendar, CheckCircle2, Search, Filter, List, TrendingUp, CheckCircle } from "lucide-react";
+import { Eye, Target, User, Calendar, CheckCircle2, Search, Filter, List, TrendingUp, CheckCircle, Users, BarChart3, Award } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -67,6 +67,42 @@ export default function PDIsEquipe() {
     return Array.from(uniqueColaboradores.values());
   }, [pdis]);
 
+  // Calcular estatísticas gerais do departamento
+  const departmentStats = useMemo(() => {
+    if (!pdis || pdis.length === 0) return { totalActions: 0, completedActions: 0, progressPercentage: 0, collaboratorStats: [] };
+    
+    let totalActions = 0;
+    let completedActions = 0;
+    const collaboratorMap = new Map<number, { name: string; total: number; completed: number }>();
+    
+    pdis.forEach((pdi: any) => {
+      const actions = pdi.actionCount || 0;
+      const completed = pdi.completedCount || 0;
+      totalActions += actions;
+      completedActions += completed;
+      
+      // Agrupar por colaborador
+      if (pdi.colaboradorId) {
+        const existing = collaboratorMap.get(pdi.colaboradorId);
+        if (existing) {
+          existing.total += actions;
+          existing.completed += completed;
+        } else {
+          collaboratorMap.set(pdi.colaboradorId, {
+            name: pdi.colaboradorNome || 'Desconhecido',
+            total: actions,
+            completed: completed
+          });
+        }
+      }
+    });
+    
+    const progressPercentage = totalActions > 0 ? Math.round((completedActions / totalActions) * 100) : 0;
+    const collaboratorStats = Array.from(collaboratorMap.values()).sort((a, b) => b.completed - a.completed);
+    
+    return { totalActions, completedActions, progressPercentage, collaboratorStats };
+  }, [pdis]);
+
   // Filtrar PDIs
   const filteredPDIs = useMemo(() => {
     if (!pdis) return [];
@@ -125,6 +161,96 @@ export default function PDIsEquipe() {
           )}
         </div>
       </div>
+
+      {/* Card de Estatísticas do Departamento */}
+      {pdis && pdis.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Total de Ações */}
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600">Total de Ações</p>
+                  <p className="text-3xl font-bold text-blue-900">{departmentStats.totalActions}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <Target className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Ações Concluídas */}
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-600">Ações Concluídas</p>
+                  <p className="text-3xl font-bold text-green-900">{departmentStats.completedActions}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Evolução Geral */}
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm font-medium text-orange-600">Evolução Geral</p>
+                  <p className="text-3xl font-bold text-orange-900">{departmentStats.progressPercentage}%</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-orange-500/20 flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-orange-600" />
+                </div>
+              </div>
+              <Progress value={departmentStats.progressPercentage} className="h-2" />
+              <p className="text-xs text-orange-700 mt-2">
+                {departmentStats.completedActions} de {departmentStats.totalActions} ações concluídas
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Gráfico de Evolução por Colaborador */}
+      {departmentStats.collaboratorStats.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Evolução por Colaborador
+            </CardTitle>
+            <CardDescription>Ações concluídas vs total por colaborador</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {departmentStats.collaboratorStats.map((colab, index) => {
+                const percentage = colab.total > 0 ? Math.round((colab.completed / colab.total) * 100) : 0;
+                return (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">{colab.name}</span>
+                      </div>
+                      <span className="text-muted-foreground">
+                        {colab.completed}/{colab.total} ({percentage}%)
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <Progress value={percentage} className="h-3" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filtros e Busca */}
       <Card>

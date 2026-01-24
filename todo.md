@@ -1900,3 +1900,49 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Implementar procedure pdis.delete - IMPLEMENTADO
 - [x] Implementar função deletePDI no db.ts - IMPLEMENTADO
 - [ ] Testar deleção de PDI como administrador - AGUARDANDO TESTE DO USUÁRIO
+
+## Bug: Progresso dos PDIs mostrando 0% mesmo com ações concluídas
+- [ ] Analisar código de cálculo de progresso na página PDIs da Equipe
+- [ ] Corrigir query para contar ações concluídas corretamente por PDI
+- [ ] Testar com PDIs que têm ações concluídas
+
+## Feature: Card/Gráfico geral de evolução do departamento
+- [ ] Adicionar card com total de ações do departamento
+- [ ] Mostrar evolução: ações concluídas / total de ações
+- [ ] Adicionar gráfico de evolução (colaboradores x ações concluídas)
+
+
+## Bug: Progresso dos PDIs mostra 0% mesmo com ações concluídas (24/01/2026)
+- [x] Investigar cálculo de progresso no backend (getAllPDIs)
+- [x] Corrigir para buscar contagem real de ações da tabela actions
+- [x] Adicionar campos actionCount, completedCount, progressPercentage
+- [x] Testar com PDIs que têm ações concluídas - FUNCIONANDO
+
+## Feature: Card/Gráfico Geral de Evolução do Departamento (24/01/2026)
+- [x] Adicionar card com total de ações do departamento (15)
+- [x] Adicionar card com ações concluídas / total (7/15 = 47%)
+- [x] Adicionar gráfico de evolução por colaborador
+- [x] Testar na visão do líder - FUNCIONANDO
+
+## Bug: Líder não vê PDIs dos colaboradores do seu departamento (24/01/2026)
+- [x] Investigar query getPdisByLeader - estava buscando pelo departamentoId do líder
+- [x] Corrigir para buscar PDIs dos colaboradores vinculados ao líder (leaderId)
+- [x] Testar com liderteste1 e Dinica Souza Makiyama - FUNCIONANDO
+
+## Bug: Departamento e Colaborador não aparecem nos cards de Ações (Admin) (24/01/2026)
+- [x] Corrigir getAllActions() para incluir JOINs com PDI, usuário e departamento
+- [x] Retornar colaboradorNome e departamentoNome na query
+- [x] Testar visualização dos cards no AdminDashboard - FUNCIONANDO
+
+## Bug: Erro ao deletar PDI - "No procedure found on path pdis.delete" (24/01/2026)
+- [x] Verificar se procedure pdis.delete existe no routers.ts - NÃO EXISTIA
+- [x] Implementar procedure pdis.delete - IMPLEMENTADO
+- [x] Implementar função deletePDI no db.ts - IMPLEMENTADO
+- [x] Testar deleção de PDI como administrador - AGUARDANDO TESTE DO USUÁRIO
+
+## Avaliação de Evidências na Visão do Líder (24/01/2026)
+- [x] Adicionar item "Evidências da Equipe" no menu do líder
+- [x] Criar procedure getPendingByTeam para retornar evidências dos subordinados
+- [x] Criar procedures approveByLeader e rejectByLeader para o líder aprovar/reprovar
+- [x] Criar página EvidenciasEquipe.tsx para o líder avaliar evidências
+- [x] Testar fluxo de aprovação/reprovação de evidências pelo líder

@@ -384,6 +384,12 @@ export async function getAllPDIs() {
       const [ciclo] = await db.select().from(ciclos).where(eq(ciclos.id, pdi.cicloId));
       const [dept] = user ? await db.select().from(departamentos).where(eq(departamentos.id, user.departamentoId)) : [null];
       
+      // Buscar contagem real de ações da tabela actions
+      const pdiActions = await db.select().from(actions).where(eq(actions.pdiId, pdi.id));
+      const actionCount = pdiActions.length;
+      const completedCount = pdiActions.filter(a => a.status === 'concluida').length;
+      const progressPercentage = actionCount > 0 ? Math.round((completedCount / actionCount) * 100) : 0;
+      
       return {
         pdiId: pdi.id,
         id: pdi.id,
@@ -401,6 +407,10 @@ export async function getAllPDIs() {
         departamentoId: user?.departamentoId || 0,
         totalAcoes: pdi.totalAcoes || 0,
         acoesConcluidasTotal: pdi.acoesConcluidasTotal || 0,
+        // Campos calculados em tempo real
+        actionCount,
+        completedCount,
+        progressPercentage,
       };
     })
   );
