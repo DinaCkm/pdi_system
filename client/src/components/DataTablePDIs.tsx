@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Eye, Edit2, Trash2, CheckCircle2 } from "lucide-react";
+import { Eye, Edit2, Trash2, CheckCircle2, Clock } from "lucide-react";
 // Input removido - usando input HTML puro
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -192,10 +192,15 @@ export function DataTablePDIs() {
                       <span className={`px-2 py-1 rounded text-xs font-medium inline-block w-fit ${getStatusColor(pdi.status)}`}>
                         {getStatusLabel(pdi.status)}
                       </span>
-                      {pdi.validadoEm && (
+                      {pdi.validadoEm ? (
                         <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
                           <CheckCircle2 className="h-3 w-3" />
                           Validado pelo Líder
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs text-amber-600 font-medium">
+                          <Clock className="h-3 w-3" />
+                          Aguardando Aprovação do Líder
                         </span>
                       )}
                     </div>

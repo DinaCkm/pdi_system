@@ -1967,3 +1967,20 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar indicação na visão do Empregado (Meu PDI) - IMPLEMENTADO
 - [x] Adicionar indicação na visão do Administrador (Gestão de PDIs) - IMPLEMENTADO
 - [x] Testar visão do Líder - FUNCIONANDO com badge verde "PDI Validado pelo Líder"
+
+## Bug: Visão do Empregado (Usuarioteste1) - Ações e Validação não aparecem
+- [ ] Investigar se PDI do Usuarioteste1 foi validado pelo líder
+- [ ] Verificar se existem ações vinculadas ao PDI do Usuarioteste1
+- [ ] Verificar se query de Meu PDI retorna campo validadoEm
+- [ ] Corrigir para mostrar indicação de validação na visão do empregado
+
+## Feature: Indicação "PDI aguardando aprovação do líder" nos PDIs não validados
+- [ ] Adicionar indicação na visão do Empregado (Meu PDI)
+- [ ] Adicionar indicação na visão do Líder (PDIs da Equipe)
+- [ ] Adicionar indicação na visão do Administrador (Gestão de PDIs)
+- [ ] Testar em todas as visões
+
+## Feature: Indicação "PDI aguardando aprovação do líder" nos PDIs não validados (24/01/2026)
+- [x] Adicionar indicação na visão do Empregado (Meu PDI) - IMPLEMENTADO
+- [x] Adicionar indicação na visão do Líder (PDIs da Equipe) - IMPLEMENTADO
+- [x] Adicionar indicação na visão do Administrador (Gestão de PDIs) - IMPLEMENTADO
