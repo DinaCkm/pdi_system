@@ -390,6 +390,9 @@ export async function getAllPDIs() {
       const completedCount = pdiActions.filter(a => a.status === 'concluida').length;
       const progressPercentage = actionCount > 0 ? Math.round((completedCount / actionCount) * 100) : 0;
       
+      // Buscar validação do líder na tabela pdi_validacoes
+      const [validacao] = await db.select().from(pdiValidacoes).where(eq(pdiValidacoes.pdiId, pdi.id));
+      
       return {
         pdiId: pdi.id,
         id: pdi.id,
@@ -411,6 +414,9 @@ export async function getAllPDIs() {
         actionCount,
         completedCount,
         progressPercentage,
+        // Campo de validação do líder
+        validadoEm: validacao?.aprovadoEm || null,
+        validadoPor: validacao?.liderId || null,
       };
     })
   );

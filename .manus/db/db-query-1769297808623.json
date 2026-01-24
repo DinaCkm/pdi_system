@@ -1,0 +1,18 @@
+{
+  "query": "SELECT * FROM pdi_validacoes",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT * FROM pdi_validacoes",
+  "rows": [
+    {
+      "id": "1",
+      "pdiId": "840001",
+      "liderId": "720003",
+      "aprovadoEm": "2026-01-24 23:36:27",
+      "justificativa": "NULL",
+      "createdAt": "2026-01-24 23:36:27"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tpdiId\tliderId\taprovadoEm\tjustificativa\tcreatedAt\n1\t840001\t720003\t2026-01-24 23:36:27\tNULL\t2026-01-24 23:36:27\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Eye, Edit2, Trash2 } from "lucide-react";
+import { Eye, Edit2, Trash2, CheckCircle2 } from "lucide-react";
 // Input removido - usando input HTML puro
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -15,6 +15,7 @@ interface PDI {
   totalAcoes: number;
   acoesConcluidasTotal: number;
   progresso: number;
+  validadoEm?: string | null;
 }
 
 export function DataTablePDIs() {
@@ -187,9 +188,17 @@ export function DataTablePDIs() {
                   <td className="p-3">{pdi.liderNome || "—"}</td>
                   <td className="p-3">{pdi.cicloNome || "—"}</td>
                   <td className="p-3">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(pdi.status)}`}>
-                      {getStatusLabel(pdi.status)}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className={`px-2 py-1 rounded text-xs font-medium inline-block w-fit ${getStatusColor(pdi.status)}`}>
+                        {getStatusLabel(pdi.status)}
+                      </span>
+                      {pdi.validadoEm && (
+                        <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Validado pelo Líder
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="p-3">
                     <div className="flex items-center gap-2">

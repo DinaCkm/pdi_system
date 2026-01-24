@@ -1,0 +1,10 @@
+{
+  "query": "SELECT COUNT(*) as total FROM pdis; SELECT COUNT(*) as validacoes FROM pdi_validacoes;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT COUNT(*) as total FROM pdis; SELECT COUNT(*) as validacoes FROM pdi_validacoes;",
+  "returncode": 1,
+  "logs": [
+    "total",
+    "10",
+    "ERROR 1146 (42S02) at line 1: Table 'uksxtg83zjdkzpjl3fcmwt.pdi_validacoes' doesn't exist"
+  ]
+}

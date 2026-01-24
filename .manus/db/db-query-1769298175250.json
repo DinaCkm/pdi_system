@@ -1,0 +1,15 @@
+{
+  "query": "SELECT email, cpf, name FROM users WHERE name LIKE '%Julia%' LIMIT 1",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT email, cpf, name FROM users WHERE name LIKE '%Julia%' LIMIT 1",
+  "rows": [
+    {
+      "email": "julia@ckmtalents.net",
+      "cpf": "12345678900",
+      "name": "Julia Silva"
+    }
+  ],
+  "messages": [],
+  "stdout": "email\tcpf\tname\njulia@ckmtalents.net\t12345678900\tJulia Silva\n",
+  "stderr": "",
+  "execution_time_ms": 62
+}

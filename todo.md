@@ -1946,3 +1946,24 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Criar procedures approveByLeader e rejectByLeader para o líder aprovar/reprovar
 - [x] Criar página EvidenciasEquipe.tsx para o líder avaliar evidências
 - [x] Testar fluxo de aprovação/reprovação de evidências pelo líder
+
+## Bug: Aprovação de PDI pelo Líder não atualiza status (24/01/2026)
+- [ ] Investigar procedure de aprovação de PDI no backend (pdis.approve ou similar)
+- [ ] Verificar se o status está sendo atualizado no banco de dados
+- [ ] Verificar se o frontend está chamando a procedure correta
+- [ ] Verificar se há invalidação de cache após aprovação
+- [ ] Testar aprovação de PDI pelo líder
+
+## Feature: Indicação visual "PDI Validado pelo Líder"
+- [ ] Adicionar badge/indicação na visão do Líder (PDIs da Equipe)
+- [ ] Adicionar badge/indicação na visão do Empregado (Meu PDI)
+- [ ] Adicionar badge/indicação na visão do Administrador (Gestão de PDIs)
+- [ ] Testar todas as visões
+
+## Feature: Indicação visual "PDI Validado pelo Líder" em todas as visões (CONCLUÍDO)
+- [x] Criar tabela pdi_validacoes no banco de dados
+- [x] Modificar getAllPDIs para retornar campo validadoEm via LEFT JOIN
+- [x] Adicionar indicação na visão do Líder (PDIs da Equipe) - FUNCIONANDO
+- [x] Adicionar indicação na visão do Empregado (Meu PDI) - IMPLEMENTADO
+- [x] Adicionar indicação na visão do Administrador (Gestão de PDIs) - IMPLEMENTADO
+- [x] Testar visão do Líder - FUNCIONANDO com badge verde "PDI Validado pelo Líder"
