@@ -267,12 +267,6 @@ export default function MinhasPendencias() {
       ) : (
         <div className="grid gap-4">
           {filteredAcoes.map((acao: any) => {
-            // FILTRAR evidências apenas para esta ação específica
-            const evidenciasDA_Acao = allUserEvidences.filter(
-              (ev: any) => ev.actionId === acao.id
-            );
-            const ultimaEvidencia_DA_Acao = evidenciasDA_Acao?.[0];
-
             return (
             <Card key={acao.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
@@ -346,25 +340,29 @@ export default function MinhasPendencias() {
                   </Button>
                   <div className="mt-4 w-full">
                     {(() => {
-                      // USAR a evidência filtrada DESTA AÇÃO
-                      if (ultimaEvidencia_DA_Acao?.status === 'aprovada') {
+                      // 1. Procurar se existe alguma evidência para ESTA ação específica
+                      const evidenciaDesta_Acao = allUserEvidences?.find(
+                        (e: any) => e.actionId === acao.id
+                      );
+
+                      // 2. Lógica de decisão individual
+                      if (evidenciaDesta_Acao?.status === 'aprovada') {
                         return (
-                          <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 text-center rounded-lg font-bold flex items-center justify-center cursor-default">
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Acao Concluida
+                          <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 rounded-lg font-bold flex items-center justify-center cursor-default">
+                            <span className="mr-2">✓</span> Ação Concluída
                           </div>
                         );
                       }
-                      
-                      if (ultimaEvidencia_DA_Acao?.status === 'aguardando_avaliacao') {
+
+                      if (evidenciaDesta_Acao?.status === 'aguardando_avaliacao') {
                         return (
-                          <div className="w-full py-3 px-4 bg-amber-50 text-amber-700 border border-amber-200 text-center rounded-lg font-medium flex items-center justify-center cursor-wait">
-                            <Clock className="h-4 w-4 mr-2" />
-                            Em Analise pelo Admin
+                          <div className="w-full py-3 px-4 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg font-medium flex items-center justify-center cursor-wait">
+                            <span className="mr-2">⏳</span> Evidência em Análise
                           </div>
                         );
                       }
-                      
+
+                      // 3. Se não cair em nenhum dos casos acima, mostra o botão original
                       return (
                         <button
                           onClick={() => {
