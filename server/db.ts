@@ -442,6 +442,19 @@ export async function updatePDI(
   await db.update(pdis).set({ ...data, updatedAt: new Date() }).where(eq(pdis.id, id));
 }
 
+export async function deletePDI(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Primeiro deletar as ações vinculadas ao PDI
+  await db.delete(actions).where(eq(actions.pdiId, id));
+  
+  // Depois deletar o PDI
+  await db.delete(pdis).where(eq(pdis.id, id));
+  
+  return { success: true };
+}
+
 // ============= FUNÇÕES DE USUÁRIOS =============
 
 export async function getAllUsers() {

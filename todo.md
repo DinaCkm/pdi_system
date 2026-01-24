@@ -1894,3 +1894,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Investigar query getPdisByLeader - estava buscando pelo departamentoId do líder
 - [x] Corrigir para buscar PDIs dos colaboradores vinculados ao líder (leaderId)
 - [x] Testar com liderteste1 e Dinica Souza Makiyama - FUNCIONANDO
+
+## Bug: Erro ao deletar PDI - "No procedure found on path pdis.delete"
+- [x] Verificar se procedure pdis.delete existe no routers.ts - NÃO EXISTIA
+- [x] Implementar procedure pdis.delete - IMPLEMENTADO
+- [x] Implementar função deletePDI no db.ts - IMPLEMENTADO
+- [ ] Testar deleção de PDI como administrador - AGUARDANDO TESTE DO USUÁRIO
