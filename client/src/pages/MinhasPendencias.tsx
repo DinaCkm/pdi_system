@@ -331,39 +331,41 @@ export default function MinhasPendencias() {
                     <MessageSquare className="h-4 w-4" />
                     Solicitar Alteração
                   </Button>
-                  {acao.id === selectedAcaoEvidence?.id && acaoEvidences ? (
-                    ultimaEvidencia?.status === 'aprovada' ? (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg font-medium border border-green-600 cursor-default shadow-sm">
-                        <CheckCircle className="h-4 w-4" />
-                        Acao Concluida
-                      </div>
-                    ) : ultimaEvidencia?.status === 'aguardando_avaliacao' ? (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-lg font-medium border border-amber-200 cursor-default">
-                        <Clock className="h-4 w-4" />
-                        Evidencia em Analise
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setSelectedAcaoEvidence(acao);
-                          setShowEvidenceDialog(true);
-                        }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-                      >
-                        Registrar Minha Conquista
-                      </button>
-                    )
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setSelectedAcaoEvidence(acao);
-                        setShowEvidenceDialog(true);
-                      }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-                    >
-                      Registrar Minha Conquista
-                    </button>
-                  )}
+                  <div className="mt-4 w-full">
+                    {(() => {
+                      const lastEvidence = acaoEvidences?.[0];
+                      
+                      if (lastEvidence?.status === 'aprovada') {
+                        return (
+                          <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 text-center rounded-lg font-bold flex items-center justify-center cursor-default">
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Acao Concluida
+                          </div>
+                        );
+                      }
+                      
+                      if (lastEvidence?.status === 'aguardando_avaliacao') {
+                        return (
+                          <div className="w-full py-3 px-4 bg-amber-50 text-amber-700 border border-amber-200 text-center rounded-lg font-medium flex items-center justify-center cursor-wait">
+                            <Clock className="h-4 w-4 mr-2" />
+                            Em Analise pelo Admin
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <button
+                          onClick={() => {
+                            setSelectedAcaoEvidence(acao);
+                            setShowEvidenceDialog(true);
+                          }}
+                          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all shadow-md active:scale-95"
+                        >
+                          Registrar Minha Conquista
+                        </button>
+                      );
+                    })()}
+                  </div>
                 </div>
               </CardContent>
             </Card>
