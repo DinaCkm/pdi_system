@@ -24,16 +24,14 @@ export default function AdminDashboard() {
 
   const { data: pendingEvidences = [], isLoading: evLoading, error: evError } = trpc.evidences.listPending.useQuery();
   const { data: pendingAdjustments = [], isLoading: adjLoading, error: adjError } = trpc.adjustmentRequests.listPending.useQuery();
-  
-  // Contar quantas solicitações têm parecer do líder
-  const adjustmentsWithLeaderComment = pendingAdjustments.filter((adj: any) => adj.temParecerLider);
+  const { data: adjustmentsWithLeaderComments = [], isLoading: leaderLoading } = trpc.adjustmentRequests.listWithLeaderComments.useQuery();
   
   useEffect(() => {
     console.log('📊 AdminDashboard - Dados carregados:');
     console.log('  Evidências:', pendingEvidences?.length || 0);
     console.log('  Ajustes:', pendingAdjustments?.length || 0);
-    console.log('  Com parecer do líder:', adjustmentsWithLeaderComment?.length || 0);
-  }, [pendingEvidences, pendingAdjustments, adjustmentsWithLeaderComment]);
+    console.log('  Com comentário do líder:', adjustmentsWithLeaderComments?.length || 0);
+  }, [pendingEvidences, pendingAdjustments, adjustmentsWithLeaderComments]);
 
   const utils = trpc.useUtils();
 
@@ -64,6 +62,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       toast.success("✅ Solicitação aprovada!");
       utils.adjustmentRequests.listPending.invalidate();
+      utils.adjustmentRequests.listWithLeaderComments.invalidate();
       setShowAdjustmentDialog(false);
       setSelectedAdjustment(null);
     },
@@ -74,6 +73,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       toast.success("❌ Solicitação rejeitada!");
       utils.adjustmentRequests.listPending.invalidate();
+      utils.adjustmentRequests.listWithLeaderComments.invalidate();
       setShowAdjustmentDialog(false);
       setSelectedAdjustment(null);
       setAdjustmentReason("");
@@ -185,7 +185,20 @@ export default function AdminDashboard() {
 
   // Função para renderizar comentários do líder
   const renderLeaderComments = (comentariosLider: any) => {
-    if (!comentariosLider || comentariosLider.length === 0) return null;
+    if (!comentariosLider) return null;
+    
+    let comentarios: any[] = [];
+    try {
+      if (typeof comentariosLider === 'string') {
+        comentarios = JSON.parse(comentariosLider);
+      } else if (Array.isArray(comentariosLider)) {
+        comentarios = comentariosLider;
+      }
+    } catch {
+      return null;
+    }
+
+    if (!comentarios || comentarios.length === 0) return null;
 
     return (
       <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
@@ -193,7 +206,7 @@ export default function AdminDashboard() {
           <UserCheck className="h-5 w-5 text-purple-600" />
           <span className="font-semibold text-purple-800">Parecer do Líder</span>
         </div>
-        {comentariosLider.map((comentario: any, index: number) => (
+        {comentarios.map((comentario: any, index: number) => (
           <div key={index} className="bg-white p-3 rounded border border-purple-100 mb-2">
             <div className="flex items-center justify-between mb-2">
               <span className="font-medium text-purple-700">{comentario.autorNome}</span>
@@ -249,58 +262,54 @@ export default function AdminDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-600">{adjustmentsWithLeaderComment.length}</div>
+            <div className="text-3xl font-bold text-purple-600">{adjustmentsWithLeaderComments.length}</div>
             <p className="text-sm text-purple-700">prontas para decisão</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabs - Apenas 2 abas agora */}
-      <Tabs defaultValue="adjustments" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="adjustments">
-            Solicitações ({pendingAdjustments.length})
+      {/* Tabs */}
+      <Tabs defaultValue="leaderComments" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="leaderComments" className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-800">
+            Com Parecer do Líder ({adjustmentsWithLeaderComments.length})
           </TabsTrigger>
           <TabsTrigger value="evidences">
             Evidências ({pendingEvidences.length})
           </TabsTrigger>
+          <TabsTrigger value="adjustments">
+            Solicitações ({pendingAdjustments.length})
+          </TabsTrigger>
         </TabsList>
 
-        {/* Aba de Solicitações - AGORA COM COMENTÁRIOS DO LÍDER INTEGRADOS */}
-        <TabsContent value="adjustments" className="space-y-4">
-          {pendingAdjustments.length === 0 ? (
+        {/* Aba de Solicitações com Comentário do Líder */}
+        <TabsContent value="leaderComments" className="space-y-4">
+          {adjustmentsWithLeaderComments.length === 0 ? (
             <Card className="text-center py-8">
-              <p className="text-gray-600">Nenhuma solicitação pendente</p>
+              <p className="text-gray-600">Nenhuma solicitação com parecer do líder</p>
+              <p className="text-sm text-gray-500 mt-2">Quando um líder comentar em uma solicitação de ajuste, ela aparecerá aqui.</p>
             </Card>
           ) : (
-            pendingAdjustments.map((adjustment: any) => (
-              <Card 
-                key={adjustment.id} 
-                className={adjustment.temParecerLider ? "border-purple-300 bg-purple-50/30" : ""}
-              >
+            adjustmentsWithLeaderComments.map((adjustment: any) => (
+              <Card key={adjustment.id} className="border-purple-200">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[10px] font-mono bg-orange-100 text-orange-700 px-2 py-0.5 rounded border border-orange-200">
+                        <span className="text-[10px] font-mono bg-purple-100 text-purple-700 px-2 py-0.5 rounded border border-purple-200">
                           ID #{adjustment.id.toString().padStart(5, '0')}
                         </span>
-                        {adjustment.temParecerLider && (
-                          <Badge className="bg-purple-100 text-purple-700 border-purple-200">
-                            <UserCheck className="h-3 w-3 mr-1" />
-                            Líder comentou
-                          </Badge>
-                        )}
+                        <Badge className="bg-purple-100 text-purple-700 border-purple-200">
+                          <UserCheck className="h-3 w-3 mr-1" />
+                          Líder comentou
+                        </Badge>
                       </div>
-                      <CardTitle className="text-lg">{adjustment.acao?.titulo || "Ação desconhecida"}</CardTitle>
+                      <CardTitle className="text-lg">{adjustment.acaoTitulo || "Ação desconhecida"}</CardTitle>
                       <CardDescription>
-                        Solicitada por: {adjustment.solicitante?.name || "Desconhecido"}
+                        Solicitada por: {adjustment.solicitanteNome || "Desconhecido"}
+                        {adjustment.departamentoNome && ` • ${adjustment.departamentoNome}`}
                       </CardDescription>
                     </div>
-                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                      <Clock className="h-3 w-3 mr-1" />
-                      Pendente
-                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -316,17 +325,24 @@ export default function AdminDashboard() {
                     {renderChanges(adjustment)}
                   </div>
 
-                  {/* Comentários do Líder - INTEGRADO NA MESMA ABA */}
-                  {adjustment.comentariosLider && renderLeaderComments(adjustment.comentariosLider)}
+                  {/* Comentários do Líder - DESTAQUE */}
+                  {renderLeaderComments(adjustment.comentariosLider)}
 
                   {/* Botões de ação */}
                   <div className="flex gap-2 pt-4 border-t">
                     <Button
                       onClick={() => {
-                        setSelectedAdjustment(adjustment);
+                        setSelectedAdjustment({
+                          ...adjustment,
+                          acao: {
+                            titulo: adjustment.acaoTitulo,
+                            descricao: adjustment.acaoDescricao,
+                            prazo: adjustment.acaoPrazo,
+                          }
+                        });
                         setShowAdjustmentDialog(true);
                       }}
-                      className={adjustment.temParecerLider ? "flex-1 bg-purple-600 hover:bg-purple-700" : "flex-1"}
+                      className="flex-1 bg-purple-600 hover:bg-purple-700"
                     >
                       Avaliar Solicitação
                     </Button>
@@ -370,6 +386,56 @@ export default function AdminDashboard() {
                       onClick={() => {
                         setSelectedEvidence(evidence);
                         setShowEvidenceDialog(true);
+                      }}
+                      className="flex-1"
+                    >
+                      Avaliar
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
+        {/* Aba de Solicitações */}
+        <TabsContent value="adjustments" className="space-y-4">
+          {pendingAdjustments.length === 0 ? (
+            <Card className="text-center py-8">
+              <p className="text-gray-600">Nenhuma solicitação pendente</p>
+            </Card>
+          ) : (
+            pendingAdjustments.map((adjustment: any) => (
+              <Card key={adjustment.id}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] font-mono bg-orange-100 text-orange-700 px-2 py-0.5 rounded border border-orange-200">
+                          ID #{adjustment.id.toString().padStart(5, '0')}
+                        </span>
+                      </div>
+                      <CardTitle className="text-lg">{adjustment.acao?.titulo || "Ação desconhecida"}</CardTitle>
+                      <CardDescription>
+                        Solicitada por: {adjustment.solicitante?.name || "Desconhecido"}
+                      </CardDescription>
+                    </div>
+                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Pendente
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">Justificativa:</p>
+                    <p className="text-sm text-gray-600 mt-1">{adjustment.justificativa}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => {
+                        setSelectedAdjustment(adjustment);
+                        setShowAdjustmentDialog(true);
                       }}
                       className="flex-1"
                     >
@@ -457,7 +523,7 @@ export default function AdminDashboard() {
           <DialogHeader>
             <DialogTitle>Avaliar Solicitação de Ajuste</DialogTitle>
             <DialogDescription>
-              Analise a solicitação e o parecer do líder (se houver) para tomar sua decisão
+              Analise a solicitação e o parecer do líder para tomar sua decisão
             </DialogDescription>
           </DialogHeader>
 
@@ -466,11 +532,11 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-semibold">Ação:</p>
-                  <p className="text-sm text-gray-600">{selectedAdjustment.acao?.titulo}</p>
+                  <p className="text-sm text-gray-600">{selectedAdjustment.acao?.titulo || selectedAdjustment.acaoTitulo}</p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold">Solicitante:</p>
-                  <p className="text-sm text-gray-600">{selectedAdjustment.solicitante?.name}</p>
+                  <p className="text-sm text-gray-600">{selectedAdjustment.solicitante?.name || selectedAdjustment.solicitanteNome}</p>
                 </div>
               </div>
 
@@ -484,7 +550,7 @@ export default function AdminDashboard() {
                 {renderChanges(selectedAdjustment)}
               </div>
 
-              {/* Parecer do Líder no Dialog - DESTAQUE */}
+              {/* Parecer do Líder no Dialog */}
               {selectedAdjustment.comentariosLider && renderLeaderComments(selectedAdjustment.comentariosLider)}
 
               <div className="border-t pt-4">
