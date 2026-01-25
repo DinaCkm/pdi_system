@@ -2116,3 +2116,7 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar botão "Sugerir Ação com IA" no formulário de Nova Ação
 - [x] Implementar prompt com formato estruturado (O que fazer, Flexibilidade, Evidência esperada)
 - [x] Integrar com LLM para gerar sugestões baseadas em competência macro e micro
+
+## Botão Gerar Outra Sugestão
+- [ ] Adicionar botão "Gerar outra sugestão" no formulário de Nova Ação
+- [ ] Permitir que usuário receba múltiplas opções de ações da IA

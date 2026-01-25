@@ -32,6 +32,7 @@ export function AcoesNova() {
           titulo: data.sugestao.titulo,
           descricao: data.sugestao.detalhes,
         }));
+        setSugestaoGerada(true);
       }
       setIsSuggesting(false);
     },
@@ -135,6 +136,7 @@ export function AcoesNova() {
   };
 
   const canSuggest = formData.macroId && !isSuggesting;
+  const [sugestaoGerada, setSugestaoGerada] = useState(false);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', padding: '24px' }}>
@@ -220,38 +222,67 @@ export function AcoesNova() {
             <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}>
               Selecione a competência Macro (e opcionalmente a Micro) e clique no botão abaixo para receber uma sugestão de ação de desenvolvimento.
             </p>
-            <button
-              type="button"
-              onClick={handleSugerirComIA}
-              disabled={!canSuggest}
-              style={{ 
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                padding: '12px 20px', 
-                backgroundColor: canSuggest ? '#0284c7' : '#94a3b8', 
-                color: 'white', 
-                borderRadius: '6px', 
-                border: 'none', 
-                cursor: canSuggest ? 'pointer' : 'not-allowed',
-                fontSize: '15px',
-                fontWeight: '500',
-                transition: 'background-color 0.2s'
-              }}
-            >
-              {isSuggesting ? (
-                <>
-                  <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                  Gerando sugestão...
-                </>
-              ) : (
-                <>
-                  <Sparkles size={18} />
-                  ✨ Sugerir Ação com IA
-                </>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={handleSugerirComIA}
+                disabled={!canSuggest}
+                style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  padding: '12px 20px', 
+                  backgroundColor: canSuggest ? '#0284c7' : '#94a3b8', 
+                  color: 'white', 
+                  borderRadius: '6px', 
+                  border: 'none', 
+                  cursor: canSuggest ? 'pointer' : 'not-allowed',
+                  fontSize: '15px',
+                  fontWeight: '500',
+                  transition: 'background-color 0.2s',
+                  flex: sugestaoGerada ? '1' : 'auto'
+                }}
+              >
+                {isSuggesting ? (
+                  <>
+                    <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                    Gerando sugestão...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={18} />
+                    ✨ Sugerir Ação com IA
+                  </>
+                )}
+              </button>
+              
+              {sugestaoGerada && !isSuggesting && (
+                <button
+                  type="button"
+                  onClick={handleSugerirComIA}
+                  disabled={!canSuggest}
+                  style={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '12px 20px', 
+                    backgroundColor: '#f59e0b', 
+                    color: 'white', 
+                    borderRadius: '6px', 
+                    border: 'none', 
+                    cursor: 'pointer',
+                    fontSize: '15px',
+                    fontWeight: '500',
+                    transition: 'background-color 0.2s',
+                    flex: '1'
+                  }}
+                >
+                  🔄 Gerar outra sugestão
+                </button>
               )}
-            </button>
+            </div>
           </div>
 
           {/* 4. TÍTULO */}
