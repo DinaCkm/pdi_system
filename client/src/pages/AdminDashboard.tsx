@@ -242,18 +242,10 @@ export default function AdminDashboard() {
                         Solicitada por: {adjustment.solicitante?.name || "Desconhecido"}
                       </CardDescription>
                     </div>
-                    <div className="flex flex-col gap-1 items-end">
-                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                        <Clock className="h-3 w-3 mr-1" />
-                        Pendente
-                      </Badge>
-                      {adjustment.comentariosLider && adjustment.comentariosLider.length > 0 && (
-                        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                          <MessageSquare className="h-3 w-3 mr-1" />
-                          Líder comentou
-                        </Badge>
-                      )}
-                    </div>
+                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Pendente
+                    </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -320,25 +312,6 @@ export default function AdminDashboard() {
                     <p className="text-sm font-semibold text-gray-700">Justificativa:</p>
                     <p className="text-sm text-gray-600 mt-1 bg-blue-50 p-2 rounded border border-blue-100">{adjustment.justificativa}</p>
                   </div>
-                  
-                  {/* Comentários do Líder */}
-                  {adjustment.comentariosLider && adjustment.comentariosLider.length > 0 && (
-                    <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <MessageSquare className="h-4 w-4 text-purple-600" />
-                        <p className="text-sm font-semibold text-purple-700">Parecer do Líder:</p>
-                      </div>
-                      {adjustment.comentariosLider.map((comentario: any) => (
-                        <div key={comentario.id} className="bg-white p-3 rounded border border-purple-100 mt-2">
-                          <p className="text-sm text-gray-700">{comentario.comentario}</p>
-                          <p className="text-xs text-gray-500 mt-2">
-                            Por: <span className="font-medium">{comentario.autorName}</span> em {new Date(comentario.createdAt).toLocaleString('pt-BR')}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
                   <div className="flex gap-2">
                     <Button
                       onClick={() => {

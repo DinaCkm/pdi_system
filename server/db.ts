@@ -1083,7 +1083,6 @@ export async function getPendingAdjustmentRequests() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Buscar solicitações pendentes (incluindo aguardando_admin e aguardando_lider)
   const [rows]: any = await db.execute(`
     SELECT 
       ar.id,
@@ -1109,30 +1108,11 @@ export async function getPendingAdjustmentRequests() {
     FROM adjustment_requests ar
     LEFT JOIN actions a ON CAST(ar.actionId AS UNSIGNED) = a.id
     LEFT JOIN users u ON ar.solicitanteId = u.id
-    WHERE ar.status IN ('pendente', 'pending', 'aguardando_admin', 'aguardando_lider')
+    WHERE ar.status IN ('pendente', 'pending')
     ORDER BY ar.createdAt DESC
   `);
 
-  // Buscar comentários do líder para cada solicitação
-  const result = await Promise.all(rows.map(async (row: any) => {
-    // Buscar comentários do líder para esta solicitação
-    const [comments]: any = await db.execute(`
-      SELECT 
-        ac.id,
-        ac.comentario,
-        ac.createdAt,
-        u.name as autor_name,
-        u.role as autor_role
-      FROM adjustment_comments ac
-      LEFT JOIN users u ON ac.autorId = u.id
-      WHERE ac.adjustmentRequestId = ?
-      ORDER BY ac.createdAt DESC
-    `, [row.id]);
-
-    // Filtrar apenas comentários de líderes
-    const comentariosLider = comments.filter((c: any) => c.autor_role === 'lider');
-
-    return {
+  const result = rows.map((row: any) => ({
       id: row.id,
       actionId: row.actionId,
       solicitanteId: row.solicitanteId,
@@ -1157,14 +1137,7 @@ export async function getPendingAdjustmentRequests() {
         name: row.user_name,
         email: row.user_email,
       },
-      comentariosLider: comentariosLider.map((c: any) => ({
-        id: c.id,
-        comentario: c.comentario,
-        createdAt: c.createdAt,
-        autorName: c.autor_name,
-      })),
-    };
-  }));
+    }));
   return result;
 }
 export async function getAdjustmentRequestsByUser(userId: number) {
