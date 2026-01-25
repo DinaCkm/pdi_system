@@ -2010,3 +2010,11 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Ajustes de Menu (24 JAN 2025)
 - [x] Remover item "Evidências da Equipe" do menu do líder
+
+## Bug - Ações do Líder não aparecem em "Meu PDI" (24 JAN 2025)
+- [ ] Investigar porque as ações do líder não aparecem na página "Meu PDI"
+- [ ] Verificar se as ações do líder estão misturadas com as ações da equipe
+- [ ] Corrigir a query para separar ações pessoais do líder das ações da equipe
+
+## Menu do Líder - Adicionar "Minhas Ações" (24 JAN 2025)
+- [x] Adicionar item "Minhas Ações" no menu do líder para visualizar suas próprias ações
