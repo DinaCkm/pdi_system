@@ -389,15 +389,33 @@ export default function AdminDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Mostrar alterações De → Para */}
+                  {/* Mostrar campos que o colaborador quer alterar */}
                   <div>
-                    <p className="text-sm font-semibold text-gray-700 mb-2">Alterações Solicitadas:</p>
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Campos que o colaborador deseja alterar:</p>
                     {(() => {
                       try {
-                        const novosValores = JSON.parse(adjustment.camposAjustar || '{}');
-                        const valoresAnteriores = JSON.parse(adjustment.dadosAntesAjuste || '{}');
+                        const dados = JSON.parse(adjustment.camposAjustar || '{}');
                         
-                        const campos = Object.keys(novosValores);
+                        // Novo formato: { camposSelecionados: ["Título", "Prazo", ...] }
+                        if (dados.camposSelecionados && Array.isArray(dados.camposSelecionados)) {
+                          const campos = dados.camposSelecionados;
+                          if (campos.length === 0) {
+                            return <p className="text-sm text-gray-500 italic">Nenhum campo especificado</p>;
+                          }
+                          return (
+                            <div className="flex flex-wrap gap-2">
+                              {campos.map((campo: string) => (
+                                <Badge key={campo} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1">
+                                  {campo}
+                                </Badge>
+                              ))}
+                            </div>
+                          );
+                        }
+                        
+                        // Formato antigo: { titulo: "novo valor", prazo: "novo valor", ... }
+                        const valoresAnteriores = JSON.parse(adjustment.dadosAntesAjuste || '{}');
+                        const campos = Object.keys(dados);
                         if (campos.length === 0) {
                           return <p className="text-sm text-gray-500 italic">Detalhes não especificados</p>;
                         }
@@ -413,7 +431,7 @@ export default function AdminDashboard() {
                           <div className="space-y-2 bg-gray-50 p-3 rounded-lg border">
                             {campos.map((campo) => {
                               const valorAnterior = valoresAnteriores[campo] || 'N/A';
-                              const novoValor = novosValores[campo] || 'N/A';
+                              const novoValor = dados[campo] || 'N/A';
                               const label = labelMap[campo] || campo;
                               
                               const formatValue = (val: any) => {

@@ -2165,3 +2165,15 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Colaborador apenas descreve o que quer alterar no campo de justificativa
 - [x] Admin faz a edição manualmente usando botão "Editar" no painel dele
 - [x] Removida aplicação automática de alterações na procedure approve
+
+
+## Melhoria - Checkboxes para selecionar campos a alterar (25 Jan 2025)
+- [ ] Adicionar checkboxes no modal de solicitação (Título, Descrição, Prazo, Competência)
+- [ ] Salvar campos selecionados na solicitação
+- [ ] Exibir campos selecionados no Dashboard do Admin
+
+
+## Melhoria - Checkboxes para Campos de Alteração (Janeiro 2025)
+- [x] Adicionar checkboxes no modal de solicitação para colaborador selecionar quais campos quer alterar (Título, Descrição, Prazo, Macro Competência)
+- [x] Atualizar exibição no Dashboard do Admin para mostrar campos selecionados como badges
+- [x] Manter compatibilidade com formato antigo de solicitações

@@ -9,6 +9,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -40,18 +41,55 @@ export function SolicitarAjusteModalMelhorado({
   const [justificativa, setJustificativa] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  
+  // Checkboxes para selecionar quais campos o colaborador quer alterar
+  const [camposSelecionados, setCamposSelecionados] = useState({
+    titulo: false,
+    descricao: false,
+    prazo: false,
+    macroCompetencia: false,
+  });
 
   // Resetar campos quando o modal abre com uma nova ação
   useEffect(() => {
     if (open) {
       setJustificativa("");
       setSuccess(false);
+      setCamposSelecionados({
+        titulo: false,
+        descricao: false,
+        prazo: false,
+        macroCompetencia: false,
+      });
     }
   }, [open, actionId]);
 
   const createMutation = trpc.adjustmentRequests.create.useMutation();
 
+  const handleCheckboxChange = (campo: keyof typeof camposSelecionados) => {
+    setCamposSelecionados(prev => ({
+      ...prev,
+      [campo]: !prev[campo]
+    }));
+  };
+
+  const getCamposSelecionadosArray = () => {
+    const campos: string[] = [];
+    if (camposSelecionados.titulo) campos.push("Título");
+    if (camposSelecionados.descricao) campos.push("Descrição");
+    if (camposSelecionados.prazo) campos.push("Prazo");
+    if (camposSelecionados.macroCompetencia) campos.push("Macro Competência");
+    return campos;
+  };
+
   const handleSubmit = async () => {
+    const camposArray = getCamposSelecionadosArray();
+    
+    if (camposArray.length === 0) {
+      toast.error("Selecione pelo menos um campo que deseja alterar");
+      return;
+    }
+
     if (justificativa.trim().length < 10) {
       toast.error("Justificativa deve ter no mínimo 10 caracteres");
       return;
@@ -62,8 +100,8 @@ export function SolicitarAjusteModalMelhorado({
     try {
       await createMutation.mutateAsync({
         actionId: parseInt(actionId),
-        // camposAjustar vazio - colaborador não edita campos diretamente
-        camposAjustar: JSON.stringify({}),
+        // Salvar os campos selecionados no camposAjustar
+        camposAjustar: JSON.stringify({ camposSelecionados: camposArray }),
         justificativa: justificativa,
         tipoSolicitante: "colaborador",
       });
@@ -80,6 +118,12 @@ export function SolicitarAjusteModalMelhorado({
         onOpenChange(false);
         setSuccess(false);
         setJustificativa("");
+        setCamposSelecionados({
+          titulo: false,
+          descricao: false,
+          prazo: false,
+          macroCompetencia: false,
+        });
       }, 2000);
     } catch (error: any) {
       console.error("Erro ao enviar solicitação:", error);
@@ -118,6 +162,9 @@ export function SolicitarAjusteModalMelhorado({
       return prazo;
     }
   };
+
+  const nenhumCampoSelecionado = !camposSelecionados.titulo && !camposSelecionados.descricao && 
+    !camposSelecionados.prazo && !camposSelecionados.macroCompetencia;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -178,18 +225,96 @@ export function SolicitarAjusteModalMelhorado({
             </Alert>
           )}
 
-          {/* Campo de Justificativa - Único campo editável */}
+          {/* Seleção de Campos a Alterar */}
+          <div className="border-t pt-4">
+            <Label className="text-sm font-medium">
+              Quais campos você deseja alterar? *
+            </Label>
+            <p className="text-xs text-gray-500 mb-3">
+              Selecione um ou mais campos que você gostaria de solicitar alteração
+            </p>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                <Checkbox
+                  id="campo-titulo"
+                  checked={camposSelecionados.titulo}
+                  onCheckedChange={() => handleCheckboxChange('titulo')}
+                  disabled={hasPendingRequest}
+                />
+                <label
+                  htmlFor="campo-titulo"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Título
+                </label>
+              </div>
+              
+              <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                <Checkbox
+                  id="campo-descricao"
+                  checked={camposSelecionados.descricao}
+                  onCheckedChange={() => handleCheckboxChange('descricao')}
+                  disabled={hasPendingRequest}
+                />
+                <label
+                  htmlFor="campo-descricao"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Descrição
+                </label>
+              </div>
+              
+              <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                <Checkbox
+                  id="campo-prazo"
+                  checked={camposSelecionados.prazo}
+                  onCheckedChange={() => handleCheckboxChange('prazo')}
+                  disabled={hasPendingRequest}
+                />
+                <label
+                  htmlFor="campo-prazo"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Prazo
+                </label>
+              </div>
+              
+              <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                <Checkbox
+                  id="campo-competencia"
+                  checked={camposSelecionados.macroCompetencia}
+                  onCheckedChange={() => handleCheckboxChange('macroCompetencia')}
+                  disabled={hasPendingRequest}
+                />
+                <label
+                  htmlFor="campo-competencia"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Macro Competência
+                </label>
+              </div>
+            </div>
+            
+            {nenhumCampoSelecionado && (
+              <p className="text-xs text-orange-600 mt-2">
+                Selecione pelo menos um campo para continuar
+              </p>
+            )}
+          </div>
+
+          {/* Campo de Justificativa */}
           <div className="border-t pt-4">
             <Label htmlFor="justificativa" className="text-sm font-medium">
-              Descreva o que você gostaria de alterar *
+              Descreva detalhadamente o que você gostaria de alterar *
             </Label>
             <Textarea
               id="justificativa"
               value={justificativa}
               onChange={(e) => setJustificativa(e.target.value)}
-              placeholder="Explique detalhadamente o que você gostaria de alterar nesta ação. Por exemplo: 'Gostaria de alterar o prazo de 15/03/2026 para 30/04/2026 porque...' ou 'Solicito alteração do título para...' "
+              placeholder={`Explique o que você gostaria de alterar nos campos selecionados. Por exemplo:\n\n• Se selecionou Prazo: "Gostaria de alterar o prazo de 15/03/2026 para 30/04/2026 porque..."\n• Se selecionou Título: "Solicito alteração do título para 'Novo Título' porque..."`}
               disabled={hasPendingRequest}
-              className="mt-2 min-h-[150px]"
+              className="mt-2 min-h-[120px]"
             />
             <p className="text-xs text-gray-500 mt-1">
               Mínimo 10 caracteres. Seja específico sobre o que deseja alterar e o motivo.
@@ -216,7 +341,7 @@ export function SolicitarAjusteModalMelhorado({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isLoading || hasPendingRequest}
+            disabled={isLoading || hasPendingRequest || nenhumCampoSelecionado}
             className="bg-blue-600 hover:bg-blue-700"
           >
             {isLoading ? "Enviando..." : "Enviar Solicitação"}
