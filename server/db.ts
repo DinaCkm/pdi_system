@@ -1108,7 +1108,6 @@ export async function getPendingAdjustmentRequests() {
     FROM adjustment_requests ar
     LEFT JOIN actions a ON CAST(ar.actionId AS UNSIGNED) = a.id
     LEFT JOIN users u ON ar.solicitanteId = u.id
-    WHERE ar.status IN ('pendente', 'pending')
     ORDER BY ar.createdAt DESC
   `);
 

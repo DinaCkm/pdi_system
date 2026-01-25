@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, MessageSquare, Edit2 } from "lucide-react";
+import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter } from "lucide-react";
 
 export default function AdminDashboard() {
   const [selectedEvidence, setSelectedEvidence] = useState<any>(null);
@@ -21,16 +21,32 @@ export default function AdminDashboard() {
   // Estado para edição de ação
   const [showEditActionModal, setShowEditActionModal] = useState(false);
   const [editingActionData, setEditingActionData] = useState<any>(null);
+  
+  // Filtro de status para solicitações
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
 
   const { data: pendingEvidences = [], isLoading: evLoading, error: evError } = trpc.evidences.listPending.useQuery();
-  const { data: pendingAdjustments = [], isLoading: adjLoading, error: adjError } = trpc.adjustmentRequests.listPending.useQuery();
+  const { data: allAdjustments = [], isLoading: adjLoading, error: adjError } = trpc.adjustmentRequests.listPending.useQuery();
+  
+  // Filtrar solicitações por status
+  const filteredAdjustments = statusFilter === "todos" 
+    ? allAdjustments 
+    : allAdjustments.filter((adj: any) => adj.status === statusFilter);
+  
+  // Contar por status
+  const countByStatus = {
+    pendente: allAdjustments.filter((adj: any) => adj.status === 'pendente').length,
+    aguardando_lider: allAdjustments.filter((adj: any) => adj.status === 'aguardando_lider').length,
+    aprovada: allAdjustments.filter((adj: any) => adj.status === 'aprovada').length,
+    reprovada: allAdjustments.filter((adj: any) => adj.status === 'reprovada').length,
+  };
   
   useEffect(() => {
     console.log('📊 AdminDashboard - Dados carregados:');
     console.log('  Evidências:', pendingEvidences?.length || 0, pendingEvidences);
-    console.log('  Ajustes:', pendingAdjustments?.length || 0, pendingAdjustments);
+    console.log('  Ajustes:', allAdjustments?.length || 0, allAdjustments);
     console.log('  Erros:', { evError, adjError });
-  }, [pendingEvidences, pendingAdjustments, evError, adjError]);
+  }, [pendingEvidences, allAdjustments, evError, adjError]);
 
   const utils = trpc.useUtils();
 
@@ -38,7 +54,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       toast.success("✅ Evidência aprovada!");
       utils.evidences.listPending.invalidate();
-      utils.evidences.listByUser.invalidate(); // Refresh na página do colaborador
+      utils.evidences.listByUser.invalidate();
       setShowEvidenceDialog(false);
       setSelectedEvidence(null);
     },
@@ -49,7 +65,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       toast.success("❌ Evidência rejeitada!");
       utils.evidences.listPending.invalidate();
-      utils.evidences.listByUser.invalidate(); // Refresh na página do colaborador
+      utils.evidences.listByUser.invalidate();
       setShowEvidenceDialog(false);
       setSelectedEvidence(null);
       setRejectionReason("");
@@ -111,26 +127,63 @@ export default function AdminDashboard() {
   };
 
   const handleOpenEditAction = () => {
-    if (!selectedAdjustment?.acao) {
-      toast.error("Ação não encontrada");
-      return;
-    }
-    setEditingActionData({ ...selectedAdjustment.acao });
+    if (!selectedAdjustment?.acao) return;
+    setEditingActionData({
+      id: selectedAdjustment.acao.id,
+      titulo: selectedAdjustment.acao.titulo,
+      descricao: selectedAdjustment.acao.descricao,
+      prazo: selectedAdjustment.acao.prazo,
+      macroCompetencia: selectedAdjustment.acao.macroCompetencia,
+    });
     setShowEditActionModal(true);
   };
 
   const handleSaveActionEdits = async () => {
-    if (!editingActionData) return;
-    
     try {
-      setSelectedAdjustment({
-        ...selectedAdjustment,
-        acao: editingActionData
-      });
-      toast.success("✅ Ação atualizada com sucesso!");
+      toast.success("Alterações salvas!");
       setShowEditActionModal(false);
     } catch (error: any) {
       toast.error("Erro ao salvar alterações");
+    }
+  };
+  
+  // Função para obter badge de status
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pendente':
+        return (
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+            <Clock className="h-3 w-3 mr-1" />
+            Pendente
+          </Badge>
+        );
+      case 'aguardando_lider':
+        return (
+          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+            <MessageSquare className="h-3 w-3 mr-1" />
+            Aguardando Líder
+          </Badge>
+        );
+      case 'aprovada':
+        return (
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Aprovada
+          </Badge>
+        );
+      case 'reprovada':
+        return (
+          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+            <XCircle className="h-3 w-3 mr-1" />
+            Reprovada
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+            {status}
+          </Badge>
+        );
     }
   };
 
@@ -141,7 +194,7 @@ export default function AdminDashboard() {
         <p className="text-gray-600 mt-2">Gerencie evidências e solicitações de ajuste</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
@@ -154,15 +207,39 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter("pendente")}>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              💬 Solicitações Pendentes
+              ⏳ Solicitações Pendentes
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange-600">{pendingAdjustments.length}</div>
+            <div className="text-3xl font-bold text-amber-600">{countByStatus.pendente}</div>
             <p className="text-sm text-gray-600">aguardando avaliação</p>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter("aguardando_lider")}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              💬 Aguardando Líder
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-purple-600">{countByStatus.aguardando_lider}</div>
+            <p className="text-sm text-gray-600">com parecer do líder</p>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter("todos")}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              📊 Total de Solicitações
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-gray-600">{allAdjustments.length}</div>
+            <p className="text-sm text-gray-600">todas as solicitações</p>
           </CardContent>
         </Card>
       </div>
@@ -173,7 +250,7 @@ export default function AdminDashboard() {
             Evidências ({pendingEvidences.length})
           </TabsTrigger>
           <TabsTrigger value="adjustments">
-            Solicitações ({pendingAdjustments.length})
+            Solicitações ({allAdjustments.length})
           </TabsTrigger>
         </TabsList>
 
@@ -222,13 +299,66 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="adjustments" className="space-y-4">
-          {pendingAdjustments.length === 0 ? (
+          {/* Filtros de Status */}
+          <Card className="p-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Filter className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Filtrar por status:</span>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={statusFilter === "todos" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("todos")}
+                >
+                  Todos ({allAdjustments.length})
+                </Button>
+                <Button
+                  variant={statusFilter === "pendente" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("pendente")}
+                  className={statusFilter === "pendente" ? "bg-amber-600 hover:bg-amber-700" : ""}
+                >
+                  Pendentes ({countByStatus.pendente})
+                </Button>
+                <Button
+                  variant={statusFilter === "aguardando_lider" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("aguardando_lider")}
+                  className={statusFilter === "aguardando_lider" ? "bg-purple-600 hover:bg-purple-700" : ""}
+                >
+                  Aguardando Líder ({countByStatus.aguardando_lider})
+                </Button>
+                <Button
+                  variant={statusFilter === "aprovada" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("aprovada")}
+                  className={statusFilter === "aprovada" ? "bg-green-600 hover:bg-green-700" : ""}
+                >
+                  Aprovadas ({countByStatus.aprovada})
+                </Button>
+                <Button
+                  variant={statusFilter === "reprovada" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("reprovada")}
+                  className={statusFilter === "reprovada" ? "bg-red-600 hover:bg-red-700" : ""}
+                >
+                  Reprovadas ({countByStatus.reprovada})
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          {filteredAdjustments.length === 0 ? (
             <Card className="text-center py-8">
-              <p className="text-gray-600">Nenhuma solicitação pendente</p>
+              <p className="text-gray-600">
+                {statusFilter === "todos" 
+                  ? "Nenhuma solicitação encontrada" 
+                  : `Nenhuma solicitação com status "${statusFilter}"`}
+              </p>
             </Card>
           ) : (
-            pendingAdjustments.map((adjustment: any) => (
-              <Card key={adjustment.id}>
+            filteredAdjustments.map((adjustment: any) => (
+              <Card key={adjustment.id} className={adjustment.status === 'aguardando_lider' ? 'border-purple-200 bg-purple-50/30' : ''}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
@@ -242,10 +372,7 @@ export default function AdminDashboard() {
                         Solicitada por: {adjustment.solicitante?.name || "Desconhecido"}
                       </CardDescription>
                     </div>
-                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                      <Clock className="h-3 w-3 mr-1" />
-                      Pendente
-                    </Badge>
+                    {getStatusBadge(adjustment.status)}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -254,9 +381,7 @@ export default function AdminDashboard() {
                     <p className="text-sm font-semibold text-gray-700 mb-2">Alterações Solicitadas:</p>
                     {(() => {
                       try {
-                        // Tentar parsear camposAjustar como JSON (novos valores)
                         const novosValores = JSON.parse(adjustment.camposAjustar || '{}');
-                        // Tentar parsear dadosAntesAjuste como JSON (valores anteriores)
                         const valoresAnteriores = JSON.parse(adjustment.dadosAntesAjuste || '{}');
                         
                         const campos = Object.keys(novosValores);
@@ -278,7 +403,6 @@ export default function AdminDashboard() {
                               const novoValor = novosValores[campo] || 'N/A';
                               const label = labelMap[campo] || campo;
                               
-                              // Formatar prazo se for data
                               const formatValue = (val: any) => {
                                 if (!val || val === 'N/A') return 'N/A';
                                 if (campo === 'prazo' && val) {
@@ -303,7 +427,6 @@ export default function AdminDashboard() {
                           </div>
                         );
                       } catch {
-                        // Fallback para formato antigo (texto simples)
                         return <p className="text-sm text-gray-600">{adjustment.camposAjustar || 'Não especificado'}</p>;
                       }
                     })()}
@@ -312,17 +435,29 @@ export default function AdminDashboard() {
                     <p className="text-sm font-semibold text-gray-700">Justificativa:</p>
                     <p className="text-sm text-gray-600 mt-1 bg-blue-50 p-2 rounded border border-blue-100">{adjustment.justificativa}</p>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => {
-                        setSelectedAdjustment(adjustment);
-                        setShowAdjustmentDialog(true);
-                      }}
-                      className="flex-1"
-                    >
-                      Avaliar
-                    </Button>
-                  </div>
+                  
+                  {/* Mostrar botão de avaliar apenas para solicitações pendentes ou aguardando líder */}
+                  {(adjustment.status === 'pendente' || adjustment.status === 'aguardando_lider') && (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          setSelectedAdjustment(adjustment);
+                          setShowAdjustmentDialog(true);
+                        }}
+                        className="flex-1"
+                      >
+                        Avaliar
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Mostrar justificativa do admin se já foi avaliada */}
+                  {adjustment.justificativaAdmin && (
+                    <div className="mt-2 p-3 bg-gray-100 rounded-lg border">
+                      <p className="text-sm font-semibold text-gray-700">Justificativa do Admin:</p>
+                      <p className="text-sm text-gray-600 mt-1">{adjustment.justificativaAdmin}</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))
