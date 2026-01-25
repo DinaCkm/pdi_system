@@ -203,7 +203,7 @@ export const adjustmentRequestsRouter = router({
       // Atualizar status da solicitação
       const result = await db.updateAdjustmentRequest(input.id, {
         status: "aprovada",
-        justificativa: input.justificativa,
+        justificativaAdmin: input.justificativa,
         evaluatedBy: user.id,
         evaluatedAt: new Date().toISOString(),
       });

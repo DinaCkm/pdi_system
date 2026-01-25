@@ -52,6 +52,8 @@ export const dashboardRouter = router({
             colaboradorId: number;
             colaboradorNome: string;
             acoesConcluidasTotal: number;
+            acoesTotal: number;
+            taxaConclusao: number;
             posicao: number;
             medalha?: "ouro" | "prata" | "bronze";
           }>,
@@ -142,24 +144,26 @@ export const dashboardRouter = router({
           stats.blocoA.totalLideres = lideresResult[0]?.count || 0;
         }
 
-        // Taxa de engajamento: PDIs ativos / Total colaboradores
-        if (stats.blocoA.totalColaboradores > 0) {
-          const pdisAtivosResult = await db
-            .select({ count: count() })
-            .from(pdis)
-            .where(
-              departamentoFilter
-                ? and(
-                    eq(pdis.status, "ativo"),
-                    eq(pdis.departamentoId, departamentoFilter)
-                  )
-                : eq(pdis.status, "ativo")
-            );
-
-          const pdisAtivos = pdisAtivosResult[0]?.count || 0;
-          stats.blocoA.taxaEngajamento =
-            Math.round((pdisAtivos / stats.blocoA.totalColaboradores) * 100) ||
-            0;
+        // Taxa de engajamento: Ações Concluídas / Total de Ações
+        let acoesQuery = db
+          .select({
+            total: count(),
+            concluidas: count(sql`CASE WHEN ${actions.status} = 'concluida' THEN 1 END`),
+          })
+          .from(actions)
+          .leftJoin(pdis, eq(actions.pdiId, pdis.id))
+          .leftJoin(users, eq(pdis.colaboradorId, users.id));
+        
+        if (departamentoFilter) {
+          acoesQuery = acoesQuery.where(eq(users.departamentoId, departamentoFilter));
+        }
+        
+        const acoesResult = await acoesQuery;
+        const totalAcoesEngajamento = acoesResult[0]?.total || 0;
+        const acoesConcluidasEngajamento = acoesResult[0]?.concluidas || 0;
+        
+        if (totalAcoesEngajamento > 0) {
+          stats.blocoA.taxaEngajamento = Math.round((acoesConcluidasEngajamento / totalAcoesEngajamento) * 100);
         }
 
         // ============= BLOCO B: FUNIL DE EXECUÇÃO =============
@@ -180,10 +184,10 @@ export const dashboardRouter = router({
 
         const statusCounts = await statusCountsQuery.groupBy(actions.status);
 
-        const totalAcoes = statusCounts.reduce((sum, item) => sum + item.count, 0);
+        const totalAcoes = statusCounts.reduce((sum: number, item: { status: string | null; count: number }) => sum + item.count, 0);
 
-        statusCounts.forEach((item) => {
-          if (item.status === "pendente") {
+        statusCounts.forEach((item: { status: string | null; count: number }) => {
+          if (item.status === "nao_iniciada" || item.status === "pendente") {
             stats.blocoB.pendente = item.count;
           } else if (item.status === "em_andamento") {
             stats.blocoB.emAndamento = item.count;
@@ -205,7 +209,8 @@ export const dashboardRouter = router({
         }
 
         // ============= BLOCO C: TOP 5 DEPARTAMENTOS =============
-        if (user.role === "admin" || user.role === "lider") {
+        // Só mostra para admin (para líder não faz sentido ver ranking de departamentos)
+        if (user.role === "admin") {
           const departamentosStats = await db
             .select({
               departamentoId: departamentos.id,
@@ -224,7 +229,7 @@ export const dashboardRouter = router({
             .limit(5);
 
           stats.blocoC.top5Departamentos = departamentosStats
-            .map((item) => ({
+            .map((item: { departamentoId: number; departamentoNome: string | null; acoesConcluidas: number; acoesTotal: number }) => ({
               departamentoId: item.departamentoId,
               departamentoNome: item.departamentoNome,
               acoesConcluidas: item.acoesConcluidas || 0,
@@ -236,10 +241,11 @@ export const dashboardRouter = router({
                     )
                   : 0,
             }))
-            .sort((a, b) => b.taxaConclusao - a.taxaConclusao);
+            .sort((a: { departamentoId: number; departamentoNome: string | null; acoesConcluidas: number; acoesTotal: number; taxaConclusao: number }, b: { departamentoId: number; departamentoNome: string | null; acoesConcluidas: number; acoesTotal: number; taxaConclusao: number }) => b.taxaConclusao - a.taxaConclusao);
         }
 
         // ============= BLOCO D: TOP 10 COLABORADORES =============
+        // Visão geral (todos os departamentos) - não filtra por departamento
         const colaboradoresStats = await db
           .select({
             colaboradorId: users.id,
@@ -247,40 +253,63 @@ export const dashboardRouter = router({
             acoesConcluidasTotal: count(
               sql`CASE WHEN ${actions.status} = 'concluida' THEN 1 END`
             ),
+            acoesTotal: count(actions.id),
           })
           .from(users)
           .leftJoin(pdis, eq(pdis.colaboradorId, users.id))
           .leftJoin(actions, eq(actions.pdiId, pdis.id))
           .where(
-            departamentoFilter
-              ? and(
-                  eq(users.role, "colaborador"),
-                  eq(users.departamentoId, departamentoFilter)
-                )
-              : eq(users.role, "colaborador")
+            and(
+              eq(users.role, "colaborador"),
+              eq(users.status, "ativo")
+            )
           )
-          .groupBy(users.id, users.name)
-          .orderBy(desc(sql`COUNT(CASE WHEN ${actions.status} = 'concluida' THEN 1 END)`))
-          .limit(11); // Pegar 11 para verificar empate no 10º
+          .groupBy(users.id, users.name);
 
-        // Aplicar regra de empate
-        let posicao = 1;
-        let ultimoValor = -1;
-        const top10Final = [];
-
-        for (const item of colaboradoresStats) {
-          if (item.acoesConcluidasTotal !== ultimoValor) {
-            if (top10Final.length >= 10 && item.acoesConcluidasTotal !== ultimoValor) {
-              break;
+        // Calcular taxa de conclusão e filtrar quem tem ações concluídas
+        const colaboradoresComTaxa = colaboradoresStats
+          .map((item: { colaboradorId: number | null; colaboradorNome: string | null; acoesConcluidasTotal: number; acoesTotal: number }) => ({
+            colaboradorId: item.colaboradorId as number,
+            colaboradorNome: (item.colaboradorNome || "Sem nome") as string,
+            acoesConcluidasTotal: (item.acoesConcluidasTotal || 0) as number,
+            acoesTotal: (item.acoesTotal || 0) as number,
+            taxaConclusao: item.acoesTotal > 0 
+              ? Math.round(((item.acoesConcluidasTotal || 0) / item.acoesTotal) * 100) 
+              : 0,
+          }))
+          // Filtrar apenas quem tem ações concluídas (> 0)
+          .filter((item: { colaboradorId: number; colaboradorNome: string; acoesConcluidasTotal: number; acoesTotal: number; taxaConclusao: number }) => item.acoesConcluidasTotal > 0)
+          // Ordenar por taxa de conclusão (desc), depois por quantidade (desc) como desempate
+          .sort((a: { colaboradorId: number; colaboradorNome: string; acoesConcluidasTotal: number; acoesTotal: number; taxaConclusao: number }, b: { colaboradorId: number; colaboradorNome: string; acoesConcluidasTotal: number; acoesTotal: number; taxaConclusao: number }) => {
+            if (b.taxaConclusao !== a.taxaConclusao) {
+              return b.taxaConclusao - a.taxaConclusao;
             }
+            return b.acoesConcluidasTotal - a.acoesConcluidasTotal;
+          })
+          .slice(0, 10); // Pegar top 10
+
+        // Aplicar posição e medalhas
+        let posicao = 1;
+        let ultimaTaxa = -1;
+        const top10Final: Array<{
+          colaboradorId: number;
+          colaboradorNome: string;
+          acoesConcluidasTotal: number;
+          acoesTotal: number;
+          taxaConclusao: number;
+          posicao: number;
+          medalha?: "ouro" | "prata" | "bronze";
+        }> = [];
+
+        for (const item of colaboradoresComTaxa) {
+          // Se a taxa for diferente da anterior, atualiza a posição
+          if (item.taxaConclusao !== ultimaTaxa) {
             posicao = top10Final.length + 1;
-            ultimoValor = item.acoesConcluidasTotal;
+            ultimaTaxa = item.taxaConclusao;
           }
 
           top10Final.push({
-            colaboradorId: item.colaboradorId,
-            colaboradorNome: item.colaboradorNome || "Sem nome",
-            acoesConcluidasTotal: item.acoesConcluidasTotal || 0,
+            ...item,
             posicao,
             medalha:
               posicao === 1 ? "ouro" : posicao === 2 ? "prata" : posicao === 3 ? "bronze" : undefined,

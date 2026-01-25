@@ -1,6 +1,6 @@
 import { eq, and, isNull, not, inArray, desc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, departamentos, ciclos, evidences, evidenceFiles, evidenceTexts, notifications, pdiValidacoes } from "../drizzle/schema";
+import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, adjustmentComments, departamentos, ciclos, evidences, evidenceFiles, evidenceTexts, notifications, pdiValidacoes } from "../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./_core/env";
 
@@ -1426,4 +1426,42 @@ export async function getAdjustmentRequestsByLeader(leaderId: number) {
     departamentoNome: row.departamentoNome,
     macroNome: row.macroNome
   }));
+}
+
+
+// ============= FUNÇÕES GENÉRICAS PARA QUERIES =============
+
+export async function select(fields: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.select(fields);
+}
+
+export async function execute(query: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.execute(query);
+}
+
+// Função para buscar evidências por IDs de ações
+export async function getEvidencesByActionIds(actionIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select({
+      id: evidences.id,
+      actionId: evidences.actionId,
+      colaboradorId: evidences.colaboradorId,
+      status: evidences.status,
+      descricao: evidences.descricao,
+      createdAt: evidences.createdAt,
+      evaluatedAt: evidences.evaluatedAt,
+      evaluatedBy: evidences.evaluatedBy,
+      justificativaAdmin: evidences.justificativaAdmin,
+    })
+    .from(evidences)
+    .where(inArray(evidences.actionId, actionIds));
+
+  return result;
 }

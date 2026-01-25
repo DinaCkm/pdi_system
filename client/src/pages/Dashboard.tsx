@@ -179,7 +179,7 @@ export function Dashboard() {
           <DirecionamentoEstrategico />
           
           {/* Estatísticas Gerais do Dashboard */}
-          <DashboardStats stats={stats} />
+          <DashboardStats stats={stats} userRole={user?.role} />
         </>
       ) : null}
     </div>

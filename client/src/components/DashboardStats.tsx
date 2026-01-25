@@ -4,6 +4,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { Medal } from "lucide-react";
 
 interface DashboardStatsProps {
+  userRole?: string;
   stats: {
     blocoA: {
       totalColaboradores: number;
@@ -32,6 +33,8 @@ interface DashboardStatsProps {
         colaboradorId: number;
         colaboradorNome: string;
         acoesConcluidasTotal: number;
+        acoesTotal: number;
+        taxaConclusao: number;
         posicao: number;
         medalha?: "ouro" | "prata" | "bronze";
       }>;
@@ -39,7 +42,7 @@ interface DashboardStatsProps {
   };
 }
 
-export function DashboardStats({ stats }: DashboardStatsProps) {
+export function DashboardStats({ stats, userRole }: DashboardStatsProps) {
   // Dados para o gráfico de rosca (Funil de Execução)
   const funnelData = [
     { name: "Pendente", value: stats.blocoB.percentualPendente, color: "#ef4444" },
@@ -118,35 +121,38 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
       </Card>
 
       {/* ============= BLOCO C: TOP 5 DEPARTAMENTOS ============= */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Top 5 Departamentos (Taxa de Conclusão)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {departamentosData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={departamentosData}
-                layout="vertical"
-                margin={{ top: 5, right: 30, left: 200, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" domain={[0, 100]} />
-                <YAxis dataKey="name" type="category" width={190} />
-                <Tooltip formatter={(value) => `${value}%`} />
-                <Bar dataKey="taxa" fill="#3b82f6" radius={[0, 8, 8, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="text-center text-muted-foreground py-8">Sem dados disponíveis</div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Só mostra para admin */}
+      {userRole === "admin" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Top 5 Departamentos (Taxa de Conclusão)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {departamentosData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={departamentosData}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 200, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" domain={[0, 100]} />
+                  <YAxis dataKey="name" type="category" width={190} />
+                  <Tooltip formatter={(value) => `${value}%`} />
+                  <Bar dataKey="taxa" fill="#3b82f6" radius={[0, 8, 8, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-center text-muted-foreground py-8">Sem dados disponíveis</div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* ============= BLOCO D: TOP 10 COLABORADORES ============= */}
       <Card>
         <CardHeader>
-          <CardTitle>Top 10 Colaboradores (Alta Performance)</CardTitle>
+          <CardTitle>Os Empregados Destaques em % de Conclusão de Ações</CardTitle>
         </CardHeader>
         <CardContent>
           {stats.blocoD.top10Colaboradores.length > 0 ? (
@@ -171,12 +177,12 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
                     <div>
                       <p className="font-medium">{colaborador.colaboradorNome}</p>
                       <p className="text-xs text-muted-foreground">
-                        {colaborador.acoesConcluidasTotal} ações concluídas
+                        {colaborador.acoesConcluidasTotal} de {colaborador.acoesTotal} ações concluídas
                       </p>
                     </div>
                   </div>
                   <div className="text-lg font-bold text-primary">
-                    {colaborador.acoesConcluidasTotal}
+                    {colaborador.taxaConclusao}%
                   </div>
                 </div>
               ))}

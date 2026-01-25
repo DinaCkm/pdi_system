@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/customTrpc";
 import * as db from "../db";
-import { acoes } from "../../drizzle/schema";
+import { actions as acoes } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 
@@ -100,7 +100,7 @@ export const actionsRouter = router({
       
       const actionId = await db.createAction({
         pdiId: input.pdiId,
-        macroId: input.macroId,
+        macroId: input.macroId || 1,
         microcompetencia: input.microcompetencia,
         titulo: input.titulo,
         descricao: input.descricao,
@@ -156,19 +156,19 @@ export const actionsRouter = router({
 
   // Obter ajustes pendentes
   getPendingAdjustments: protectedProcedure.query(async ({ ctx }) => {
-    const allAdjustments = await db.getAllAdjustments?.() || [];
+    const allAdjustments = await db.getAllAdjustmentRequests?.() || [];
     return allAdjustments.filter((adj: any) => adj.status === 'pendente');
   }),
 
   // Obter ajustes pendentes com detalhes
   getPendingAdjustmentsWithDetails: protectedProcedure.query(async ({ ctx }) => {
-    const allAdjustments = await db.getAllAdjustments?.() || [];
+    const allAdjustments = await db.getAllAdjustmentRequests?.() || [];
     return allAdjustments.filter((adj: any) => adj.status === 'pendente');
   }),
 
   // Obter ajustes pendentes por líder
   getPendingAdjustmentsByLeader: protectedProcedure.query(async ({ ctx }) => {
-    const allAdjustments = await db.getAllAdjustments?.() || [];
+    const allAdjustments = await db.getAllAdjustmentRequests?.() || [];
     return allAdjustments.filter((adj: any) => String(adj.liderId) === String(ctx.user.id));
   }),
 
@@ -206,7 +206,7 @@ export const actionsRouter = router({
     }
 
     const subordinates = await db.getSubordinates(Number(user.id));
-    const subIds = subordinates.map(s => s.id);
+    const subIds = subordinates.map((s: { id: number }) => s.id);
 
     if (subIds.length === 0) return [];
 

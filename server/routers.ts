@@ -36,8 +36,8 @@ export const appRouter = router({
       return { success: true };
     }),
     update: adminProcedure.input(z.object({ id: z.number(), nome: z.string().optional(), leaderId: z.number().optional().nullable() })).mutation(async ({ input }) => {
-      const { id, ...data } = input;
-      await db.updateDepartamento(id, data);
+      const { id, leaderId, ...rest } = input;
+      await db.updateDepartamento(id, { ...rest, leaderId: leaderId ?? undefined });
       return { success: true };
     }),
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
@@ -58,7 +58,7 @@ export const appRouter = router({
     // Endpoint simplificado para não quebrar a tipagem antiga
     buscarPorCpf: publicProcedure.input(z.object({ cpf: z.string() })).query(async ({ input }) => {
        const users = await db.getAllUsers();
-       return users.find(u => u.cpf?.replace(/\D/g, "") === input.cpf.replace(/\D/g, "")) || null;
+       return users.find((u: { cpf?: string | null }) => u.cpf?.replace(/\D/g, "") === input.cpf.replace(/\D/g, "")) || null;
     }),
     update: adminProcedure.input(z.object({ id: z.number(), leaderId: z.number().nullable().optional(), role: z.string().optional(), name: z.string().optional(), email: z.string().optional(), cargo: z.string().optional(), departamentoId: z.number().optional(), status: z.string().optional() })).mutation(async ({ input }) => {
       const { id, ...data } = input;
@@ -75,11 +75,11 @@ export const appRouter = router({
   competencias: router({
     listAllMacros: publicProcedure.query(async () => await db.getAllMacros()),
     create: adminProcedure.input(z.object({ nome: z.string(), descricao: z.string().optional() })).mutation(async ({ input }) => {
-      await db.createMacro(input);
+      await db.createMacro({ nome: input.nome, descricao: input.descricao || '' });
       return { success: true };
     }),
     update: adminProcedure.input(z.object({ id: z.number(), nome: z.string(), descricao: z.string().optional() })).mutation(async ({ input }) => {
-      await db.updateMacro(input.id, { nome: input.nome, descricao: input.descricao });
+      await db.updateMacro(input.id, { nome: input.nome, descricao: input.descricao || '' });
       return { success: true };
     }),
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
@@ -107,7 +107,7 @@ export const appRouter = router({
     teamPDIs: protectedProcedure.query(async ({ ctx }) => {
       // Buscar subordinados diretos do Líder (usuários que têm leaderId = id do líder logado)
       const subordinates = await db.getSubordinates(Number(ctx.user.id));
-      const teamUserIds = subordinates.map(u => u.id);
+      const teamUserIds = subordinates.map((u: { id: number }) => u.id);
       
       if (teamUserIds.length === 0) return [];
       
@@ -121,7 +121,7 @@ export const appRouter = router({
       
       if (ctx.user.role === 'lider') {
         const subordinates = await db.getSubordinates(Number(ctx.user.id));
-        const subIds = subordinates.map(s => s.id);
+        const subIds = subordinates.map((s: { id: number }) => s.id);
         if (!subIds.includes(Number(pdi.colaboradorId))) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Voce nao pode validar PDI de outro departamento' });
         }
@@ -291,7 +291,7 @@ export const appRouter = router({
       
       try {
         // Buscar todas as ações do usuário
-        const userActions = await db.select({ id: actions.id }).from(actions).where(eq(actions.responsavelId, userId));
+        const userActions = await db.getActionsByColaboradorId(userId);
         
         if (!userActions || userActions.length === 0) {
           console.log('[listByUser] Nenhuma ação encontrada para userId', userId);
@@ -301,17 +301,7 @@ export const appRouter = router({
         const actionIds = userActions.map((a: any) => a.id);
         
         // Buscar todas as evidências dessas ações
-        const evidencesList = await db.select({
-          id: evidences.id,
-          actionId: evidences.actionId,
-          colaboradorId: evidences.colaboradorId,
-          status: evidences.status,
-          descricao: evidences.descricao,
-          createdAt: evidences.createdAt,
-          evaluatedAt: evidences.evaluatedAt,
-          evaluatedBy: evidences.evaluatedBy,
-          justificativaAdmin: evidences.justificativaAdmin,
-        }).from(evidences).where(inArray(evidences.actionId, actionIds));
+        const evidencesList = await db.getEvidencesByActionIds(actionIds);
         
         console.log('[listByUser] Evidencias encontradas para userId', userId, ':', evidencesList);
         return evidencesList || [];

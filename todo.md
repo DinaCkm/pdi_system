@@ -2052,3 +2052,44 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Renomear página Solicitações de Ajuste (24 JAN 2025)
 - [x] Renomear para "Histórico de Alteração nas Ações" no menu
 - [x] Renomear título da página
+
+## Bug - Dashboard Estratégico com dados incorretos (25 JAN 2025)
+- [ ] Corrigir Total de Colaboradores (mostra 8, deveria ser 18)
+- [ ] Corrigir Total de Líderes (mostra 2, deveria ser 5)
+- [ ] Corrigir Taxa de Engajamento (mostra 0%, deveria ser 32.1%)
+- [ ] Corrigir Ações em Desenvolvimento (mostra "Nenhuma", deveria mostrar 2)
+
+## Bug - Top 10 Colaboradores mostrando inativos (25 JAN 2025)
+- [x] Filtrar apenas colaboradores com status "ativo" no ranking Top 10
+
+## Melhoria - Ranking Top 10 por percentual (25 JAN 2025)
+- [x] Alterar ranking para usar Taxa de Conclusão (%) em vez de quantidade
+- [x] Mostrar apenas colaboradores com ações concluídas (excluir quem tem 0)
+- [x] Usar quantidade como critério de desempate
+
+## Bug - Dashboard do Líder não mostra dados corretos (25 JAN 2025)
+- [x] Verificar filtro por departamento do líder
+- [x] Corrigir Total de Líderes (mostra 0 - correto, não há outros líderes no departamento)
+- [x] Corrigir Funil de Execução (corrigido status nao_iniciada)
+- [x] Top 10 deve ser visão geral (todos departamentos)
+- [x] Top 5 Departamentos não faz sentido para líder - escondido
+
+## Alterar cálculo da Taxa de Engajamento (25 JAN 2025)
+- [x] Mudar de (PDIs ativos / Colaboradores) para (Ações Concluídas / Total de Ações)
+
+## Esconder Top 5 Departamentos no Dashboard do Líder (25 JAN 2025)
+- [x] Esconder completamente o bloco Top 5 Departamentos para o líder
+
+## Renomear gráfico Top 10 Colaboradores (25 JAN 2025)
+- [x] Mudar nome para "Os Empregados Destaques em % de Conclusão de Ações"
+
+## Bug - Falta botão de enviar comentário na página do líder (25 JAN 2025)
+- [x] Botão já existe (balãozinho)
+- [ ] Corrigir erro: tabela adjustmentComments não existe no banco
+
+
+## Correção de Comentários em Solicitações de Ajuste (25 JAN 2026)
+- [x] Corrigir erro "relation 'adjustmentComments' does not exist"
+- [x] Adicionar import de adjustmentComments no db.ts
+- [x] Testar funcionalidade de adicionar comentários como líder
+- [x] Verificar que comentários são salvos e exibidos corretamente
