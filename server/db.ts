@@ -1058,6 +1058,7 @@ export async function createAdjustmentRequest(data: {
   tipoSolicitante: 'colaborador' | 'lider';
   justificativa: string;
   camposAjustar: string;
+  dadosAntesAjuste?: string;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -1070,6 +1071,7 @@ export async function createAdjustmentRequest(data: {
       tipoSolicitante: data.tipoSolicitante,
       justificativa: data.justificativa,
       camposAjustar: data.camposAjustar,
+      dadosAntesAjuste: data.dadosAntesAjuste || null,
       status: 'pendente',
       createdAt: new Date().toISOString(),
     });
@@ -1287,5 +1289,73 @@ export async function getPendingEvidencesByLeader(leaderId: number) {
     },
     pdi: { titulo: ev.pdiTitulo },
     departamento: { nome: ev.departamentoNome }
+  }));
+}
+
+
+// ============= FUNÇÕES DE SOLICITAÇÕES DE AJUSTE PARA LÍDER =============
+
+export async function getAdjustmentRequestsByLeader(leaderId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Buscar solicitações de ajuste dos subordinados do líder
+  const [rows]: any = await db.execute(sql`
+    SELECT 
+      ar.id,
+      ar.actionId,
+      ar.solicitanteId,
+      ar.tipoSolicitante,
+      ar.justificativa,
+      ar.camposAjustar,
+      ar.status,
+      ar.justificativaAdmin,
+      ar.createdAt,
+      ar.evaluatedAt,
+      ar.evaluatedBy,
+      ar.dadosAntesAjuste,
+      ar.dadosAposAjuste,
+      a.titulo as actionTitulo,
+      a.descricao as actionDescricao,
+      a.prazo as actionPrazo,
+      a.macroId as actionMacroId,
+      u.name as solicitanteNome,
+      u.email as solicitanteEmail,
+      p.titulo as pdiTitulo,
+      d.nome as departamentoNome,
+      cm.nome as macroNome
+    FROM adjustment_requests ar
+    LEFT JOIN actions a ON ar.actionId = a.id
+    LEFT JOIN users u ON ar.solicitanteId = u.id
+    LEFT JOIN pdis p ON a.pdiId = p.id
+    LEFT JOIN departamentos d ON u.departamentoId = d.id
+    LEFT JOIN competencias_macros cm ON a.macroId = cm.id
+    WHERE u.leaderId = ${leaderId}
+    ORDER BY ar.createdAt DESC
+  `);
+
+  return rows.map((row: any) => ({
+    id: row.id,
+    actionId: row.actionId,
+    solicitanteId: row.solicitanteId,
+    tipoSolicitante: row.tipoSolicitante,
+    justificativa: row.justificativa,
+    camposAjustar: row.camposAjustar,
+    status: row.status,
+    justificativaAdmin: row.justificativaAdmin,
+    createdAt: row.createdAt,
+    evaluatedAt: row.evaluatedAt,
+    evaluatedBy: row.evaluatedBy,
+    dadosAntesAjuste: row.dadosAntesAjuste,
+    dadosAposAjuste: row.dadosAposAjuste,
+    actionTitulo: row.actionTitulo,
+    actionDescricao: row.actionDescricao,
+    actionPrazo: row.actionPrazo,
+    actionMacroId: row.actionMacroId,
+    solicitanteNome: row.solicitanteNome,
+    solicitanteEmail: row.solicitanteEmail,
+    pdiTitulo: row.pdiTitulo,
+    departamentoNome: row.departamentoNome,
+    macroNome: row.macroNome
   }));
 }

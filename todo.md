@@ -1984,3 +1984,26 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar indicação na visão do Empregado (Meu PDI) - IMPLEMENTADO
 - [x] Adicionar indicação na visão do Líder (PDIs da Equipe) - IMPLEMENTADO
 - [x] Adicionar indicação na visão do Administrador (Gestão de PDIs) - IMPLEMENTADO
+
+## Feature: Visualização de Solicitações de Ajuste da Equipe para o Líder (24/01/2026)
+- [ ] Criar procedure backend para buscar solicitações de ajuste dos subordinados do líder
+- [ ] Criar página SolicitacoesEquipe.tsx com visualização somente leitura
+- [ ] Mostrar: colaborador, ação, campos alterados (de/para), status, data
+- [ ] Adicionar item "Solicitações da Equipe" no menu do líder
+- [ ] Testar funcionalidade
+
+
+## Visualização de Solicitações de Ajuste para Líder (24 JAN 2025)
+- [x] Criar página /solicitacoes-equipe para líder visualizar solicitações da equipe
+- [x] Adicionar item "Solicitações de Ajuste" no menu do líder
+- [x] Implementar procedure listByTeam no adjustmentRequestsRouter
+- [x] Implementar função getAdjustmentRequestsByLeader no db.ts
+- [x] Mostrar informações da ação (PDI, Competência, Prazo, Tipo de Solicitante)
+- [x] Mostrar justificativa do colaborador
+- [x] Mostrar status da solicitação (Aguardando Admin, Aprovada, Reprovada)
+- [x] Permitir líder adicionar comentários nas solicitações
+- [x] Atualizar modal de solicitação para salvar dados "De → Para" (camposAjustar como JSON)
+- [x] Atualizar função createAdjustmentRequest para salvar dadosAntesAjuste
+- [x] Mostrar alterações no formato "De → Para" na página do líder
+- [ ] Testar criação de nova solicitação com dados De/Para
+- [ ] Verificar se líder consegue ver as alterações corretamente

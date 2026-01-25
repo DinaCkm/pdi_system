@@ -27,13 +27,28 @@ export const adjustmentRequestsRouter = router({
         });
       }
 
-      // Criar solicitação de ajuste
+      // Salvar dados atuais da ação para histórico (De -> Para)
+      let competenciaNome = null;
+      if (action.macroId) {
+        const macro = await db.getMacroById(action.macroId);
+        competenciaNome = macro?.nome || null;
+      }
+      
+      const dadosAntesAjuste = JSON.stringify({
+        titulo: action.titulo,
+        descricao: action.descricao,
+        prazo: action.prazo,
+        competencia: competenciaNome,
+      });
+
+      // Criar solicitação de ajuste com dados anteriores
       const result = await db.createAdjustmentRequest({
         actionId: input.actionId,
         solicitanteId: user.id,
         tipoSolicitante: input.tipoSolicitante,
         justificativa: input.justificativa,
         camposAjustar: input.camposAjustar,
+        dadosAntesAjuste: dadosAntesAjuste,
       });
 
       return result;
@@ -66,6 +81,21 @@ export const adjustmentRequestsRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     const user = ctx.user!;
     return await db.getAdjustmentRequestsByUser(user.id);
+  }),
+
+  // Listar solicitações de ajuste da equipe do líder (somente visualização)
+  listByTeam: protectedProcedure.query(async ({ ctx }) => {
+    const user = ctx.user!;
+
+    // Apenas líder ou admin pode ver solicitações da equipe
+    if (user.role !== "lider" && user.role !== "admin") {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Apenas líderes podem visualizar solicitações da equipe",
+      });
+    }
+
+    return await db.getAdjustmentRequestsByLeader(user.id);
   }),
 
   // Obter detalhes de uma solicitação

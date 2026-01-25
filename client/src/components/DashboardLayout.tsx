@@ -53,6 +53,7 @@ const getMenuItems = (userRole: string) => {
       { icon: Target, label: "PDIs da Equipe", path: "/pdis-equipe" },
       { icon: CheckSquare, label: "Ações da Equipe", path: "/acoes-equipe" },
       { icon: ClipboardCheck, label: "Evidências da Equipe", path: "/evidencias-equipe" },
+      { icon: MessageSquarePlus, label: "Solicitações de Ajuste", path: "/solicitacoes-equipe" },
     );
   } else if (userRole === "colaborador") {
     items.push(

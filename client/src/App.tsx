@@ -33,6 +33,7 @@ import { AcoesNova } from "./pages/AcoesNova";
 import AcoesEditar from "./pages/AcoesEditar";
 import AcoesDetalhes from "./pages/AcoesDetalhes";
 import AcoesEquipe from "./pages/AcoesEquipe";
+import SolicitacoesEquipe from "./pages/SolicitacoesEquipe";
 import CentralComando from "./pages/CentralComando";
 import AdminDashboard from "./pages/AdminDashboard";
 
@@ -187,6 +188,12 @@ function Router() {
       <Route path={"/evidencias-equipe"}>
         <DashboardLayout>
           <EvidenciasEquipe />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/solicitacoes-equipe"}>
+        <DashboardLayout>
+          <SolicitacoesEquipe />
         </DashboardLayout>
       </Route>
       

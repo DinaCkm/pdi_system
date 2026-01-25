@@ -1,7 +1,7 @@
 import { router, protectedProcedure } from "../_core/customTrpc";
 import { z } from "zod";
-import { eq, and } from "drizzle-orm";
-import { pdis, actions, users, departamentos, adjustmentRequests } from "../../drizzle/schema";
+import { eq, and, sql } from "drizzle-orm";
+import { pdis, actions, users, departamentos, adjustmentRequests, notifications } from "../../drizzle/schema";
 import { getDb } from "../db";
 
 /**
@@ -25,7 +25,7 @@ export const notificationsRouter = router({
       }
 
       try {
-        // Contar PDIs com status "aguardando_aprovacao" que pertencem à equipe do líder
+        // Contar PDIs com status "em_andamento" que pertencem à equipe do líder
         const departamentoLiderado = await db
           .select()
           .from(departamentos)
@@ -37,17 +37,17 @@ export const notificationsRouter = router({
         }
 
         const result = await db
-          .select({ count: db.fn.count() })
+          .select({ count: sql<number>`count(*)` })
           .from(pdis)
           .innerJoin(users, eq(pdis.colaboradorId, users.id))
           .where(
             and(
-              eq(pdis.status, "aguardando_aprovacao"),
+              eq(pdis.status, "em_andamento"),
               eq(users.departamentoId, departamentoLiderado[0].id)
             )
           );
 
-        return result[0]?.count || 0;
+        return Number(result[0]?.count) || 0;
       } catch (error) {
         console.error("Erro ao contar PDIs aguardando aprovação:", error);
         return 0;
@@ -70,13 +70,13 @@ export const notificationsRouter = router({
       }
 
       try {
-        // Contar ações com status "aguardando_evidencia"
+        // Contar ações com status "evidencia_enviada"
         const result = await db
-          .select({ count: db.fn.count() })
+          .select({ count: sql<number>`count(*)` })
           .from(actions)
-          .where(eq(actions.status, "aguardando_evidencia"));
+          .where(eq(actions.status, "evidencia_enviada"));
 
-        return result[0]?.count || 0;
+        return Number(result[0]?.count) || 0;
       } catch (error) {
         console.error("Erro ao contar ações com evidência pendente:", error);
         return 0;
@@ -101,11 +101,11 @@ export const notificationsRouter = router({
       try {
         // Contar solicitações com status "pendente"
         const result = await db
-          .select({ count: db.fn.count() })
+          .select({ count: sql<number>`count(*)` })
           .from(adjustmentRequests)
           .where(eq(adjustmentRequests.status, "pendente"));
 
-        return result[0]?.count || 0;
+        return Number(result[0]?.count) || 0;
       } catch (error) {
         console.error("Erro ao contar solicitações de ajuste pendentes:", error);
         return 0;
@@ -140,34 +140,34 @@ export const notificationsRouter = router({
 
           if (departamentoLiderado.length) {
             const result = await db
-              .select({ count: db.fn.count() })
+              .select({ count: sql<number>`count(*)` })
               .from(pdis)
               .innerJoin(users, eq(pdis.colaboradorId, users.id))
               .where(
                 and(
-                  eq(pdis.status, "aguardando_aprovacao"),
+                  eq(pdis.status, "em_andamento"),
                   eq(users.departamentoId, departamentoLiderado[0].id)
                 )
               );
 
-            summary.pdisAwaitingApproval = result[0]?.count || 0;
+            summary.pdisAwaitingApproval = Number(result[0]?.count) || 0;
           }
         }
 
         if (user.role === "admin") {
           const actionsResult = await db
-            .select({ count: db.fn.count() })
+            .select({ count: sql<number>`count(*)` })
             .from(actions)
-            .where(eq(actions.status, "aguardando_evidencia"));
+            .where(eq(actions.status, "evidencia_enviada"));
 
-          summary.actionsWithPendingEvidence = actionsResult[0]?.count || 0;
+          summary.actionsWithPendingEvidence = Number(actionsResult[0]?.count) || 0;
 
           const adjustmentsResult = await db
-            .select({ count: db.fn.count() })
+            .select({ count: sql<number>`count(*)` })
             .from(adjustmentRequests)
             .where(eq(adjustmentRequests.status, "pendente"));
 
-          summary.pendingAdjustmentRequests = adjustmentsResult[0]?.count || 0;
+          summary.pendingAdjustmentRequests = Number(adjustmentsResult[0]?.count) || 0;
         }
 
         summary.total = 
@@ -187,7 +187,7 @@ export const notificationsRouter = router({
    * Usado para exibir badges no menu lateral
    * 
    * Admin (Dina): Evidências com status 'evidencia_enviada'
-   * Líder: Ajustes com status 'aguardando_autorizacao_lider_para_ajuste'
+   * Líder: Ajustes com status 'aguardando_lider'
    * Colaborador: Mensagens não lidas em notifications
    */
   getUnreadCounts: protectedProcedure
@@ -208,44 +208,37 @@ export const notificationsRouter = router({
         // Admin: Contar evidências com status 'evidencia_enviada'
         if (user.role === "admin") {
           const evidenciasResult = await db
-            .select({ count: db.fn.count() })
+            .select({ count: sql<number>`count(*)` })
             .from(actions)
             .where(eq(actions.status, "evidencia_enviada"));
 
-          counts.evidenciasPendentes = evidenciasResult[0]?.count || 0;
+          counts.evidenciasPendentes = Number(evidenciasResult[0]?.count) || 0;
         }
 
-        // Líder: Contar ajustes com status 'aguardando_autorizacao_lider_para_ajuste'
+        // Líder: Contar ajustes com status 'aguardando_lider'
         if (user.role === "lider") {
           const ajustesResult = await db
-            .select({ count: db.fn.count() })
+            .select({ count: sql<number>`count(*)` })
             .from(adjustmentRequests)
-            .where(
-              and(
-                eq(adjustmentRequests.status, "aguardando_autorizacao_lider_para_ajuste"),
-                eq(adjustmentRequests.solicitanteLiderId, user.id)
-              )
-            );
+            .where(eq(adjustmentRequests.status, "aguardando_lider"));
 
-          counts.ajustesPendentes = ajustesResult[0]?.count || 0;
+          counts.ajustesPendentes = Number(ajustesResult[0]?.count) || 0;
         }
 
         // Colaborador: Contar mensagens não lidas
         if (user.role === "colaborador") {
-          // Importar tabela notifications se existir
           try {
-            const notificationsTable = require("../../drizzle/schema").notifications;
             const notificationsResult = await db
-              .select({ count: db.fn.count() })
-              .from(notificationsTable)
+              .select({ count: sql<number>`count(*)` })
+              .from(notifications)
               .where(
                 and(
-                  eq(notificationsTable.userId, user.id),
-                  eq(notificationsTable.isRead, false)
+                  eq(notifications.destinatarioId, user.id),
+                  eq(notifications.lida, false)
                 )
               );
 
-            counts.mensagensNaoLidas = notificationsResult[0]?.count || 0;
+            counts.mensagensNaoLidas = Number(notificationsResult[0]?.count) || 0;
           } catch (e) {
             // Tabela notifications pode não existir, ignorar erro
             counts.mensagensNaoLidas = 0;

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { eq, and } from "drizzle-orm";
 import { adjustmentRequests, actions, pdis, users, departamentos, ciclos } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
+import { getDb } from "../db";
 
 /**
  * REGRA CRÍTICA #10 REFINADA: Fluxo de Solicitação de Ajuste com Precedência do Líder
@@ -41,7 +42,9 @@ export const pdiAjustesRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      const user = ctx.user;
 
       // Validar que ação existe
       const acao = await db
@@ -115,8 +118,10 @@ export const pdiAjustesRouter = router({
       const totalSolicitacoes = await db
         .select()
         .from(adjustmentRequests)
-        .where(eq(adjustmentRequests.actionId, input.acaoId))
-        .where(eq(adjustmentRequests.solicitanteId, user.id));
+        .where(and(
+          eq(adjustmentRequests.actionId, input.acaoId),
+          eq(adjustmentRequests.solicitanteId, user.id)
+        ));
 
       if (totalSolicitacoes.length >= 5) {
         throw new TRPCError({
@@ -127,11 +132,11 @@ export const pdiAjustesRouter = router({
 
       // ARQUITETURA DE PRECEDÊNCIA DO LÍDER
       // Determinar status inicial baseado na fase da ação
-      let statusInicial: "pendente_admin" | "aguardando_autorizacao_lider_para_ajuste";
+      let statusInicial: "pendente" | "aguardando_lider";
 
       if (acao[0].status === "pendente_aprovacao_lider") {
         // FASE 1: PROPOSTA - Dina é autoridade principal
-        statusInicial = "pendente_admin";
+        statusInicial = "pendente";
       } else if (
         acao[0].status === "aprovada_lider" ||
         acao[0].status === "em_andamento" ||
@@ -140,7 +145,7 @@ export const pdiAjustesRouter = router({
       ) {
         // FASE 2: COMPROMISSO - Líder é "dono"
         // Requer autorização do Líder antes de Dina editar
-        statusInicial = "aguardando_autorizacao_lider_para_ajuste";
+        statusInicial = "aguardando_lider";
       } else {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -158,12 +163,12 @@ export const pdiAjustesRouter = router({
       });
 
       const mensagem =
-        statusInicial === "pendente_admin"
+        statusInicial === "pendente"
           ? "Solicitação enviada para o administrador (ação ainda não foi validada pelo líder)"
           : "Solicitação enviada. Aguardando autorização do seu líder para o RH proceder com a alteração";
 
       return {
-        id: result.insertId,
+        id: Number(result.insertId),
         acaoId: input.acaoId,
         status: statusInicial,
         mensagem,
@@ -184,7 +189,9 @@ export const pdiAjustesRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      const user = ctx.user;
 
       // Validar que usuário é Líder
       if (user.role !== "lider" && user.role !== "admin") {
@@ -209,9 +216,7 @@ export const pdiAjustesRouter = router({
       }
 
       // Validar que solicitação está aguardando autorização do líder
-      if (
-        solicitacao[0].status !== "aguardando_autorizacao_lider_para_ajuste"
-      ) {
+      if (solicitacao[0].status !== "aguardando_lider") {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Solicitação não está aguardando autorização do líder",
@@ -267,7 +272,7 @@ export const pdiAjustesRouter = router({
       }
 
       // Atualizar solicitação com autorização do líder
-      const novoStatus = input.autoriza ? "lider_de_acordo" : "rejeitada";
+      const novoStatus = input.autoriza ? "pendente" : "reprovada";
       await db
         .update(adjustmentRequests)
         .set({
@@ -305,7 +310,9 @@ export const pdiAjustesRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      const user = ctx.user;
 
       // Validar que solicitação existe
       const solicitacao = await db
@@ -322,7 +329,7 @@ export const pdiAjustesRouter = router({
       }
 
       // Validar que solicitação está aguardando aprovação do admin
-      if (solicitacao[0].status !== "pendente_admin" && solicitacao[0].status !== "lider_de_acordo") {
+      if (solicitacao[0].status !== "pendente") {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Solicitação não está aguardando aprovação do admin",
@@ -330,8 +337,8 @@ export const pdiAjustesRouter = router({
       }
 
       // TRAVA DE PRECEDÊNCIA DO LÍDER
-      // Se a solicitação estava em "aguardando_autorizacao_lider_para_ajuste"
-      // ela DEVE estar em "lider_de_acordo" para Admin poder editar
+      // Se a solicitação estava em "aguardando_lider"
+      // ela DEVE estar em "pendente" (após líder aprovar) para Admin poder editar
       const acao = await db
         .select()
         .from(actions)
@@ -343,18 +350,6 @@ export const pdiAjustesRouter = router({
           code: "NOT_FOUND",
           message: "Ação não encontrada",
         });
-      }
-
-      // Se ação foi aprovada pelo líder anteriormente
-      if (acao[0].status !== "pendente_aprovacao_lider") {
-        // Requer que solicitação esteja com lider_de_acordo
-        if (solicitacao[0].status !== "lider_de_acordo") {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message:
-              "Ação bloqueada: Este ajuste requer autorização prévia do Líder, pois a ação já havia sido validada por ele",
-          });
-        }
       }
 
       // Se aprovada, fazer o ajuste na ação
@@ -401,7 +396,7 @@ export const pdiAjustesRouter = router({
       }
 
       // Atualizar solicitação
-      const novoStatus = input.aprovada ? "aprovada" : "rejeitada";
+      const novoStatus = input.aprovada ? "aprovada" : "reprovada";
       await db
         .update(adjustmentRequests)
         .set({
@@ -430,17 +425,19 @@ export const pdiAjustesRouter = router({
       z.object({
         status: z
           .enum([
-            "pendente_admin",
-            "aguardando_autorizacao_lider_para_ajuste",
-            "lider_de_acordo",
+            "pendente",
+            "aguardando_lider",
             "aprovada",
-            "rejeitada",
+            "reprovada",
+            "mais_informacoes",
           ])
           .optional(),
       })
     )
     .query(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      const user = ctx.user;
 
       if (user.role !== "lider" && user.role !== "admin") {
         throw new TRPCError({
@@ -449,21 +446,19 @@ export const pdiAjustesRouter = router({
         });
       }
 
-      let query = db.select().from(adjustmentRequests);
-
+      let results;
+      
       if (input.status) {
-        query = query.where(eq(adjustmentRequests.status, input.status));
-      }
-
-      if (user.role === "lider") {
+        results = await db.select().from(adjustmentRequests).where(eq(adjustmentRequests.status, input.status));
+      } else if (user.role === "lider") {
         // Líder vê apenas solicitações que aguardam sua autorização
-        return await query.where(
-          eq(adjustmentRequests.status, "aguardando_autorizacao_lider_para_ajuste")
-        );
+        results = await db.select().from(adjustmentRequests).where(eq(adjustmentRequests.status, "aguardando_lider"));
+      } else {
+        // Admin vê todas
+        results = await db.select().from(adjustmentRequests);
       }
 
-      // Admin vê todas
-      return await query;
+      return results;
     }),
 
   /**
@@ -472,7 +467,9 @@ export const pdiAjustesRouter = router({
   obterSolicitacao: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
-      const { db, user } = ctx;
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      const user = ctx.user;
 
       const solicitacao = await db
         .select()

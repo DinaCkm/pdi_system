@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -56,14 +56,23 @@ export function SolicitarAjusteModalMelhorado({
       return;
     }
 
-    const changedFields = [];
-    if (titulo !== currentData.titulo) changedFields.push("Título");
-    if (descricao !== currentData.descricao) changedFields.push("Descrição");
-    if (prazo !== currentData.prazo) changedFields.push("Prazo");
-    if (macroCompetencia !== currentData.macroCompetencia)
-      changedFields.push("Macro Competência");
+    // Construir objeto com os campos alterados (novos valores)
+    const camposAlterados: Record<string, any> = {};
+    
+    if (titulo !== currentData.titulo) {
+      camposAlterados.titulo = titulo;
+    }
+    if (descricao !== currentData.descricao) {
+      camposAlterados.descricao = descricao;
+    }
+    if (prazo !== currentData.prazo) {
+      camposAlterados.prazo = prazo;
+    }
+    if (macroCompetencia !== currentData.macroCompetencia) {
+      camposAlterados.competencia = macroCompetencia;
+    }
 
-    if (changedFields.length === 0) {
+    if (Object.keys(camposAlterados).length === 0) {
       toast.error("Nenhum campo foi alterado");
       return;
     }
@@ -73,7 +82,8 @@ export function SolicitarAjusteModalMelhorado({
     try {
       await createMutation.mutateAsync({
         actionId: parseInt(actionId),
-        camposAjustar: changedFields.join(", "),
+        // camposAjustar agora contém um JSON com os NOVOS valores
+        camposAjustar: JSON.stringify(camposAlterados),
         justificativa: justificativa,
         tipoSolicitante: "colaborador",
       });
@@ -149,6 +159,7 @@ export function SolicitarAjusteModalMelhorado({
           )}
 
           <div className="space-y-4 border-t pt-4">
+            {/* Título */}
             <div>
               <Label htmlFor="titulo" className="text-sm font-medium">
                 Título
@@ -161,13 +172,18 @@ export function SolicitarAjusteModalMelhorado({
                 disabled={hasPendingRequest}
                 className="mt-1"
               />
-              {titulo !== currentData.titulo && (
-                <p className="text-xs text-blue-600 mt-1">
-                  ✓ Campo será alterado
-                </p>
+              {titulo !== currentData.titulo && titulo && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-600 line-through">{currentData.titulo || "N/A"}</span>
+                    <ArrowRight className="h-3 w-3 text-gray-400" />
+                    <span className="text-green-600 font-medium">{titulo}</span>
+                  </div>
+                </div>
               )}
             </div>
 
+            {/* Descrição */}
             <div>
               <Label htmlFor="descricao" className="text-sm font-medium">
                 Descrição
@@ -180,13 +196,15 @@ export function SolicitarAjusteModalMelhorado({
                 disabled={hasPendingRequest}
                 className="mt-1 min-h-[100px]"
               />
-              {descricao !== currentData.descricao && (
-                <p className="text-xs text-blue-600 mt-1">
-                  ✓ Campo será alterado
-                </p>
+              {descricao !== currentData.descricao && descricao && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                  <p className="text-red-600 line-through mb-1">{currentData.descricao || "N/A"}</p>
+                  <p className="text-green-600 font-medium">{descricao}</p>
+                </div>
               )}
             </div>
 
+            {/* Prazo */}
             <div>
               <Label htmlFor="prazo" className="text-sm font-medium">
                 Prazo
@@ -199,13 +217,22 @@ export function SolicitarAjusteModalMelhorado({
                 disabled={hasPendingRequest}
                 className="mt-1"
               />
-              {prazo !== currentData.prazo && (
-                <p className="text-xs text-blue-600 mt-1">
-                  ✓ Campo será alterado
-                </p>
+              {prazo !== currentData.prazo && prazo && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-600 line-through">
+                      {currentData.prazo ? new Date(currentData.prazo).toLocaleDateString("pt-BR") : "N/A"}
+                    </span>
+                    <ArrowRight className="h-3 w-3 text-gray-400" />
+                    <span className="text-green-600 font-medium">
+                      {new Date(prazo).toLocaleDateString("pt-BR")}
+                    </span>
+                  </div>
+                </div>
               )}
             </div>
 
+            {/* Macro Competência */}
             <div>
               <Label htmlFor="macroCompetencia" className="text-sm font-medium">
                 Macro Competência
@@ -218,13 +245,18 @@ export function SolicitarAjusteModalMelhorado({
                 disabled={hasPendingRequest}
                 className="mt-1"
               />
-              {macroCompetencia !== currentData.macroCompetencia && (
-                <p className="text-xs text-blue-600 mt-1">
-                  ✓ Campo será alterado
-                </p>
+              {macroCompetencia !== currentData.macroCompetencia && macroCompetencia && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-600 line-through">{currentData.macroCompetencia || "N/A"}</span>
+                    <ArrowRight className="h-3 w-3 text-gray-400" />
+                    <span className="text-green-600 font-medium">{macroCompetencia}</span>
+                  </div>
+                </div>
               )}
             </div>
 
+            {/* Justificativa */}
             <div>
               <Label htmlFor="justificativa" className="text-sm font-medium">
                 Justificativa *

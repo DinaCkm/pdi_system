@@ -1,0 +1,18 @@
+{
+  "query": "SELECT id, name, email, cpf, role, status FROM users WHERE role = 'lider' AND status = 'ativo' LIMIT 1",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, cpf, role, status FROM users WHERE role = 'lider' AND status = 'ativo' LIMIT 1",
+  "rows": [
+    {
+      "id": "720003",
+      "name": "liderteste1",
+      "email": "liderteste1@teste.com",
+      "cpf": "00000000011",
+      "role": "lider",
+      "status": "ativo"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tcpf\trole\tstatus\n720003\tliderteste1\tliderteste1@teste.com\t00000000011\tlider\tativo\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}
