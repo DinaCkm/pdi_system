@@ -2120,3 +2120,7 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Botão Gerar Outra Sugestão
 - [ ] Adicionar botão "Gerar outra sugestão" no formulário de Nova Ação
 - [ ] Permitir que usuário receba múltiplas opções de ações da IA
+
+
+## Bug Fixes (Janeiro 2025)
+- [x] Corrigir modal de solicitação de alteração que mantém dados da ação anterior (useEffect para resetar campos)

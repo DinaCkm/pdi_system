@@ -1,0 +1,28 @@
+{
+  "query": "\nSELECT \n  ar.*,\n  a.titulo as acao_titulo\nFROM adjustment_requests ar\nLEFT JOIN actions a ON ar.actionId = a.id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute \nSELECT \n  ar.*,\n  a.titulo as acao_titulo\nFROM adjustment_requests ar\nLEFT JOIN actions a ON ar.actionId = a.id;\n",
+  "rows": [
+    {
+      "id": "210001",
+      "actionId": "420005",
+      "solicitanteId": "720003",
+      "tipoSolicitante": "colaborador",
+      "justificativa": "já fiz esta técnica antes.",
+      "camposAjustar": "{\"titulo\":\"Trocar por outra técnica\",\"descricao\":\"\",\"prazo\":\"\",\"competencia\":\"\"}",
+      "status": "pendente",
+      "justificativaAdmin": "NULL",
+      "createdAt": "2026-01-25 21:31:08",
+      "evaluatedAt": "NULL",
+      "evaluatedBy": "NULL",
+      "dadosAntesAjuste": "{\"titulo\":\"Implementação do Hábito de Foco Diário (Técnica Pomodoro)\",\"descricao\":\"📌 O QUE FAZER:\\r\\nImplemente a Técnica Pomodoro (ou outra técnica de blocos de tempo) em suas atividades diárias por um período de 30 dias. A disciplina será desenvolvida ao manter a consistência em seguir os blocos de trabalho focado (25 minutos) e as pausas (5 minutos), sem interrupções externas ou internas. Utilize um aplicativo de rastreamento de tempo (como Toggl Track, Forest ou Focus Keeper) para registrar o número de 'Pomodoros' completados diariamente e as tarefas associadas. Foque em completar no mínimo 8 Pomodoros por dia útil.\\r\\n\\r\\n💡 ESTA É UMA SUGESTÃO!\\r\\nVocê pode optar por uma ação similar (outro método de gestão de foco, como Time Blocking rigoroso ou a regra 52/17) desde que desenvolva a competência de Disciplina.\\r\\n\\r\\n📎 EVIDÊNCIA ESPERADA:\\r\\nApresentação de um relatório semanal (por 4 semanas) contendo o registro dos Pomodoros completados, as tarefas executadas em cada bloco, e uma breve autoavaliação sobre os desafios encontrados e as estratégias utilizadas para manter a disciplina e evitar a procrastinação.\",\"prazo\":\"2026-05-01T00:00:00.000Z\",\"competencia\":\"COMPORTAMENTAL-Gestão do Tempo, Organização e Disciplina\"}",
+      "dadosAposAjuste": "NULL",
+      "approvedByLeaderAt": "NULL",
+      "approvedByLeaderId": "NULL",
+      "acao_titulo": "Implementação do Hábito de Foco Diário (Técnica Pomodoro)"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tsolicitanteId\ttipoSolicitante\tjustificativa\tcamposAjustar\tstatus\tjustificativaAdmin\tcreatedAt\tevaluatedAt\tevaluatedBy\tdadosAntesAjuste\tdadosAposAjuste\tapprovedByLeaderAt\tapprovedByLeaderId\tacao_titulo\n210001\t420005\t720003\tcolaborador\tjá fiz esta técnica antes.\t{\"titulo\":\"Trocar por outra técnica\",\"descricao\":\"\",\"prazo\":\"\",\"competencia\":\"\"}\tpendente\tNULL\t2026-01-25 21:31:08\tNULL\tNULL\t{\"titulo\":\"Implementação do Hábito de Foco Diário (Técnica Pomodoro)\",\"descricao\":\"📌 O QUE FAZER:\\r\\nImplemente a Técnica Pomodoro (ou outra técnica de blocos de tempo) em suas atividades diárias por um período de 30 dias. A disciplina será desenvolvida ao manter a consistência em seguir os blocos de trabalho focado (25 minutos) e as pausas (5 minutos), sem interrupções externas ou internas. Utilize um aplicativo de rastreamento de tempo (como Toggl Track, Forest ou Focus Keeper) para registrar o número de 'Pomodoros' completados diariamente e as tarefas associadas. Foque em completar no mínimo 8 Pomodoros por dia útil.\\r\\n\\r\\n💡 ESTA É UMA SUGESTÃO!\\r\\nVocê pode optar por uma ação similar (outro método de gestão de foco, como Time Blocking rigoroso ou a regra 52/17) desde que desenvolva a competência de Disciplina.\\r\\n\\r\\n📎 EVIDÊNCIA ESPERADA:\\r\\nApresentação de um relatório semanal (por 4 semanas) contendo o registro dos Pomodoros completados, as tarefas executadas em cada bloco, e uma breve autoavaliação sobre os desafios encontrados e as estratégias utilizadas para manter a disciplina e evitar a procrastinação.\",\"prazo\":\"2026-05-01T00:00:00.000Z\",\"competencia\":\"COMPORTAMENTAL-Gestão do Tempo, Organização e Disciplina\"}\tNULL\tNULL\tNULL\tImplementação do Hábito de Foco Diário (Técnica Pomodoro)\n",
+  "stderr": "",
+  "execution_time_ms": 356
+}

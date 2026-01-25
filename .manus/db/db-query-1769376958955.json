@@ -1,0 +1,59 @@
+{
+  "query": "\nSELECT \n  a.id as action_id,\n  LEFT(a.titulo, 50) as titulo,\n  a.status,\n  ar.id as adjustment_id,\n  ar.status as adjustment_status\nFROM actions a\nLEFT JOIN adjustment_requests ar ON a.id = ar.actionId\nORDER BY a.createdAt DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute \nSELECT \n  a.id as action_id,\n  LEFT(a.titulo, 50) as titulo,\n  a.status,\n  ar.id as adjustment_id,\n  ar.status as adjustment_status\nFROM actions a\nLEFT JOIN adjustment_requests ar ON a.id = ar.actionId\nORDER BY a.createdAt DESC;\n",
+  "rows": [
+    {
+      "action_id": "420007",
+      "titulo": "Projeto Piloto de Marketing Interno Interáreas",
+      "status": "nao_iniciada",
+      "adjustment_id": "NULL",
+      "adjustment_status": "NULL"
+    },
+    {
+      "action_id": "420006",
+      "titulo": "Projeto de Análise de Tendências e Cenários Futuro",
+      "status": "nao_iniciada",
+      "adjustment_id": "NULL",
+      "adjustment_status": "NULL"
+    },
+    {
+      "action_id": "420005",
+      "titulo": "Implementação do Hábito de Foco Diário (Técnica Po",
+      "status": "nao_iniciada",
+      "adjustment_id": "210001",
+      "adjustment_status": "pendente"
+    },
+    {
+      "action_id": "420004",
+      "titulo": "Implementação de Projeto 'Sprint de Performance' c",
+      "status": "nao_iniciada",
+      "adjustment_id": "NULL",
+      "adjustment_status": "NULL"
+    },
+    {
+      "action_id": "420003",
+      "titulo": "Implementação de Painel de Controle de Projetos (D",
+      "status": "nao_iniciada",
+      "adjustment_id": "NULL",
+      "adjustment_status": "NULL"
+    },
+    {
+      "action_id": "420002",
+      "titulo": "Projeto Prático: Análise de Tendências de Mercado ",
+      "status": "nao_iniciada",
+      "adjustment_id": "NULL",
+      "adjustment_status": "NULL"
+    },
+    {
+      "action_id": "420001",
+      "titulo": "Implementação do Diário de Emoções e Respostas Com",
+      "status": "nao_iniciada",
+      "adjustment_id": "NULL",
+      "adjustment_status": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "action_id\ttitulo\tstatus\tadjustment_id\tadjustment_status\n420007\tProjeto Piloto de Marketing Interno Interáreas\tnao_iniciada\tNULL\tNULL\n420006\tProjeto de Análise de Tendências e Cenários Futuro\tnao_iniciada\tNULL\tNULL\n420005\tImplementação do Hábito de Foco Diário (Técnica Po\tnao_iniciada\t210001\tpendente\n420004\tImplementação de Projeto 'Sprint de Performance' c\tnao_iniciada\tNULL\tNULL\n420003\tImplementação de Painel de Controle de Projetos (D\tnao_iniciada\tNULL\tNULL\n420002\tProjeto Prático: Análise de Tendências de Mercado \tnao_iniciada\tNULL\tNULL\n420001\tImplementação do Diário de Emoções e Respostas Com\tnao_iniciada\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 351
+}

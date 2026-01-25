@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -47,6 +47,18 @@ export function SolicitarAjusteModalMelhorado({
   const [justificativa, setJustificativa] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Resetar campos quando o modal abre com uma nova ação
+  useEffect(() => {
+    if (open) {
+      setTitulo(currentData.titulo || "");
+      setDescricao(currentData.descricao || "");
+      setPrazo(currentData.prazo || "");
+      setMacroCompetencia(currentData.macroCompetencia || "");
+      setJustificativa("");
+      setSuccess(false);
+    }
+  }, [open, actionId, currentData]);
 
   const createMutation = trpc.adjustmentRequests.create.useMutation();
 

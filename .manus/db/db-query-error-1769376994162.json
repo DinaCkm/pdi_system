@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT \n  ar.*,\n  a.titulo as acao_titulo,\n  u.name as solicitante_nome\nFROM adjustment_requests ar\nLEFT JOIN actions a ON ar.actionId = a.id\nLEFT JOIN users u ON ar.userId = u.id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute \nSELECT \n  ar.*,\n  a.titulo as acao_titulo,\n  u.name as solicitante_nome\nFROM adjustment_requests ar\nLEFT JOIN actions a ON ar.actionId = a.id\nLEFT JOIN users u ON ar.userId = u.id;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'ar.userid' in 'on clause'"
+  ]
+}

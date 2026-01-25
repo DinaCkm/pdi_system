@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, LEFT(titulo, 60) as titulo, createdAt FROM actions ORDER BY createdAt DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, LEFT(titulo, 60) as titulo, createdAt FROM actions ORDER BY createdAt DESC;",
+  "rows": [
+    {
+      "id": "420007",
+      "titulo": "Projeto Piloto de Marketing Interno Interáreas",
+      "createdAt": "2026-01-25 21:19:39"
+    },
+    {
+      "id": "420006",
+      "titulo": "Projeto de Análise de Tendências e Cenários Futuros (Horizon",
+      "createdAt": "2026-01-25 21:18:32"
+    },
+    {
+      "id": "420005",
+      "titulo": "Implementação do Hábito de Foco Diário (Técnica Pomodoro)",
+      "createdAt": "2026-01-25 21:17:37"
+    },
+    {
+      "id": "420004",
+      "titulo": "Implementação de Projeto 'Sprint de Performance' com Equipe",
+      "createdAt": "2026-01-25 21:12:18"
+    },
+    {
+      "id": "420003",
+      "titulo": "Implementação de Painel de Controle de Projetos (Dashboard)",
+      "createdAt": "2026-01-25 20:45:10"
+    },
+    {
+      "id": "420002",
+      "titulo": "Projeto Prático: Análise de Tendências de Mercado e Indicado",
+      "createdAt": "2026-01-25 20:41:58"
+    },
+    {
+      "id": "420001",
+      "titulo": "Implementação do Diário de Emoções e Respostas Comportamenta",
+      "createdAt": "2026-01-25 20:40:36"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitulo\tcreatedAt\n420007\tProjeto Piloto de Marketing Interno Interáreas\t2026-01-25 21:19:39\n420006\tProjeto de Análise de Tendências e Cenários Futuros (Horizon\t2026-01-25 21:18:32\n420005\tImplementação do Hábito de Foco Diário (Técnica Pomodoro)\t2026-01-25 21:17:37\n420004\tImplementação de Projeto 'Sprint de Performance' com Equipe\t2026-01-25 21:12:18\n420003\tImplementação de Painel de Controle de Projetos (Dashboard)\t2026-01-25 20:45:10\n420002\tProjeto Prático: Análise de Tendências de Mercado e Indicado\t2026-01-25 20:41:58\n420001\tImplementação do Diário de Emoções e Respostas Comportamenta\t2026-01-25 20:40:36\n",
+  "stderr": "",
+  "execution_time_ms": 344
+}
