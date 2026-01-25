@@ -34,6 +34,7 @@ import AcoesEditar from "./pages/AcoesEditar";
 import AcoesDetalhes from "./pages/AcoesDetalhes";
 import AcoesEquipe from "./pages/AcoesEquipe";
 import SolicitacoesEquipe from "./pages/SolicitacoesEquipe";
+import SolicitacoesAdmin from "./pages/SolicitacoesAdmin";
 import CentralComando from "./pages/CentralComando";
 import AdminDashboard from "./pages/AdminDashboard";
 
@@ -194,6 +195,12 @@ function Router() {
       <Route path={"/solicitacoes-equipe"}>
         <DashboardLayout>
           <SolicitacoesEquipe />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/solicitacoes-admin"}>
+        <DashboardLayout>
+          <SolicitacoesAdmin />
         </DashboardLayout>
       </Route>
       

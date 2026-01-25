@@ -2018,3 +2018,29 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Menu do Líder - Adicionar "Minhas Ações" (24 JAN 2025)
 - [x] Adicionar item "Minhas Ações" no menu do líder para visualizar suas próprias ações
+
+## Bug - Solicitações Pendentes zeradas no Admin Dashboard (24 JAN 2025)
+- [ ] Investigar porque o contador de Solicitações Pendentes está zerado no Admin Dashboard
+- [ ] Verificar a query que busca as solicitações pendentes
+- [ ] Corrigir para mostrar o número correto de solicitações
+
+## Melhorar Card de Solicitação de Ajuste no Admin Dashboard (24 JAN 2025)
+- [x] Mostrar detalhes das alterações no card (De → Para)
+- [x] Exibir cada campo alterado com valor atual e novo valor
+
+## Atualizar Solicitações Antigas para formato De/Para (24 JAN 2025)
+- [ ] Atualizar solicitações antigas no banco para ter o formato De/Para
+- [ ] Preencher campos dadosAntesAjuste e camposAjustar em formato JSON
+
+## Melhorar formulário de solicitação de ajuste (24 JAN 2025)
+- [ ] Mostrar comparação visual lado a lado (Valor Atual | Novo Valor)
+
+## Bug - Histórico não registra alterações de solicitação aprovada (24 JAN 2025)
+- [x] Investigar porque alterações aprovadas não são registradas no histórico
+- [x] Corrigir para salvar histórico quando solicitação é aprovada
+
+## Nova página de Solicitações de Ajuste para Admin (24 JAN 2025)
+- [x] Criar página com visualização de todas as solicitações
+- [x] Adicionar filtros por Ação, Empregado, Departamento e Status
+- [x] Incluir botões de Aprovar/Reprovar nos cards
+- [x] Adicionar rota e menu para admin

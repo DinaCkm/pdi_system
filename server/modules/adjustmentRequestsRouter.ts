@@ -56,8 +56,8 @@ export const adjustmentRequestsRouter = router({
 
   // Listar solicitações de ajuste (para admin avaliar)
   listPending: protectedProcedure.query(async ({ ctx }) => {
-    console.log('[adjustmentRequests.listPending] User:', user.id, 'Role:', user.role);
     const user = ctx.user!;
+    console.log('[adjustmentRequests.listPending] User:', user.id, 'Role:', user.role);
 
     // Apenas admin pode ver todas as solicitações pendentes
     if (user.role !== "admin") {
@@ -68,7 +68,9 @@ export const adjustmentRequestsRouter = router({
     }
 
     console.log('[adjustmentRequests.listPending] Chamando getPendingAdjustmentRequests...');
-    return await db.getPendingAdjustmentRequests();
+    const result = await db.getPendingAdjustmentRequests();
+    console.log('[adjustmentRequests.listPending] Resultado:', result?.length || 0, 'solicitações');
+    return result;
   }),
 
   // Listar minhas solicitações de ajuste
@@ -96,6 +98,21 @@ export const adjustmentRequestsRouter = router({
     }
 
     return await db.getAdjustmentRequestsByLeader(user.id);
+  }),
+
+  // Listar TODAS as solicitações de ajuste (para admin)
+  listAll: protectedProcedure.query(async ({ ctx }) => {
+    const user = ctx.user!;
+
+    // Apenas admin pode ver todas as solicitações
+    if (user.role !== "admin") {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Apenas administradores podem listar todas as solicitações",
+      });
+    }
+
+    return await db.getAllAdjustmentRequests();
   }),
 
   // Obter detalhes de uma solicitação
@@ -142,6 +159,48 @@ export const adjustmentRequestsRouter = router({
         });
       }
 
+      // Buscar a solicitação para obter os dados das alterações
+      const request = await db.getAdjustmentRequestById(input.id);
+      if (!request) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Solicitação não encontrada",
+        });
+      }
+
+      // Aplicar as alterações na ação
+      try {
+        const camposAlterados = JSON.parse(request.camposAjustar || '{}');
+        const updateData: any = {};
+        
+        if (camposAlterados.titulo) {
+          updateData.titulo = camposAlterados.titulo;
+        }
+        if (camposAlterados.descricao) {
+          updateData.descricao = camposAlterados.descricao;
+        }
+        if (camposAlterados.prazo) {
+          updateData.prazo = camposAlterados.prazo;
+        }
+        if (camposAlterados.competencia) {
+          // Se for um número, é o macroId
+          const macroId = parseInt(camposAlterados.competencia);
+          if (!isNaN(macroId)) {
+            updateData.macroId = macroId;
+          }
+        }
+
+        // Atualizar a ação com os novos valores (passando userId para gravar histórico)
+        if (Object.keys(updateData).length > 0) {
+          await db.updateAction(request.actionId, updateData, user.id);
+          console.log('[approve] Alterações aplicadas na ação:', request.actionId, updateData);
+        }
+      } catch (error) {
+        console.error('[approve] Erro ao aplicar alterações:', error);
+        // Continua mesmo se falhar ao parsear JSON (solicitações antigas)
+      }
+
+      // Atualizar status da solicitação
       const result = await db.updateAdjustmentRequest(input.id, {
         status: "aprovada",
         justificativa: input.justificativa,
@@ -150,15 +209,12 @@ export const adjustmentRequestsRouter = router({
       });
 
       // Notificar o proprietário sobre aprovação
-      const request = await db.getAdjustmentRequestById(input.id);
-      if(request) {
-        const action = await db.getActionById(request.actionId);
-        if(action) {
-          await notifyOwner({
-            title: '✅ Solicitação de Ajuste Aprovada',
-            content: `Sua solicitação de ajuste para a ação "${action.titulo}" foi aprovada pelo administrador.`
-          });
-        }
+      const action = await db.getActionById(request.actionId);
+      if(action) {
+        await notifyOwner({
+          title: '✅ Solicitação de Ajuste Aprovada',
+          content: `Sua solicitação de ajuste para a ação "${action.titulo}" foi aprovada pelo administrador.`
+        });
       }
 
       return result;

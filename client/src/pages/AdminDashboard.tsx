@@ -249,13 +249,68 @@ export default function AdminDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Mostrar alterações De → Para */}
                   <div>
-                    <p className="text-sm font-semibold text-gray-700">Campos a Alterar:</p>
-                    <p className="text-sm text-gray-600 mt-1">{adjustment.camposAjustar}</p>
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Alterações Solicitadas:</p>
+                    {(() => {
+                      try {
+                        // Tentar parsear camposAjustar como JSON (novos valores)
+                        const novosValores = JSON.parse(adjustment.camposAjustar || '{}');
+                        // Tentar parsear dadosAntesAjuste como JSON (valores anteriores)
+                        const valoresAnteriores = JSON.parse(adjustment.dadosAntesAjuste || '{}');
+                        
+                        const campos = Object.keys(novosValores);
+                        if (campos.length === 0) {
+                          return <p className="text-sm text-gray-500 italic">Detalhes não especificados</p>;
+                        }
+                        
+                        const labelMap: Record<string, string> = {
+                          titulo: 'Título',
+                          descricao: 'Descrição',
+                          prazo: 'Prazo',
+                          competencia: 'Competência'
+                        };
+                        
+                        return (
+                          <div className="space-y-2 bg-gray-50 p-3 rounded-lg border">
+                            {campos.map((campo) => {
+                              const valorAnterior = valoresAnteriores[campo] || 'N/A';
+                              const novoValor = novosValores[campo] || 'N/A';
+                              const label = labelMap[campo] || campo;
+                              
+                              // Formatar prazo se for data
+                              const formatValue = (val: any) => {
+                                if (!val || val === 'N/A') return 'N/A';
+                                if (campo === 'prazo' && val) {
+                                  try {
+                                    return new Date(val).toLocaleDateString('pt-BR');
+                                  } catch { return val; }
+                                }
+                                return String(val).substring(0, 100) + (String(val).length > 100 ? '...' : '');
+                              };
+                              
+                              return (
+                                <div key={campo} className="text-sm">
+                                  <span className="font-medium text-gray-700">{label}:</span>
+                                  <div className="flex items-center gap-2 mt-1 ml-2">
+                                    <span className="text-red-600 line-through bg-red-50 px-2 py-0.5 rounded">{formatValue(valorAnterior)}</span>
+                                    <span className="text-gray-400">→</span>
+                                    <span className="text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded">{formatValue(novoValor)}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      } catch {
+                        // Fallback para formato antigo (texto simples)
+                        return <p className="text-sm text-gray-600">{adjustment.camposAjustar || 'Não especificado'}</p>;
+                      }
+                    })()}
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-gray-700">Justificativa:</p>
-                    <p className="text-sm text-gray-600 mt-1">{adjustment.justificativa}</p>
+                    <p className="text-sm text-gray-600 mt-1 bg-blue-50 p-2 rounded border border-blue-100">{adjustment.justificativa}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button

@@ -1091,6 +1091,7 @@ export async function getPendingAdjustmentRequests() {
       ar.tipoSolicitante,
       ar.justificativa,
       ar.camposAjustar,
+      ar.dadosAntesAjuste,
       ar.status,
       ar.justificativaAdmin,
       ar.createdAt,
@@ -1118,6 +1119,7 @@ export async function getPendingAdjustmentRequests() {
       tipoSolicitante: row.tipoSolicitante,
       justificativa: row.justificativa,
       camposAjustar: row.camposAjustar,
+      dadosAntesAjuste: row.dadosAntesAjuste,
       status: row.status,
       justificativaAdmin: row.justificativaAdmin,
       createdAt: row.createdAt,
@@ -1294,6 +1296,72 @@ export async function getPendingEvidencesByLeader(leaderId: number) {
 
 
 // ============= FUNÇÕES DE SOLICITAÇÕES DE AJUSTE PARA LÍDER =============
+
+// Buscar TODAS as solicitações de ajuste (para admin)
+export async function getAllAdjustmentRequests() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [rows]: any = await db.execute(sql`
+    SELECT 
+      ar.id,
+      ar.actionId,
+      ar.solicitanteId,
+      ar.tipoSolicitante,
+      ar.justificativa,
+      ar.camposAjustar,
+      ar.status,
+      ar.justificativaAdmin,
+      ar.createdAt,
+      ar.evaluatedAt,
+      ar.evaluatedBy,
+      ar.dadosAntesAjuste,
+      ar.dadosAposAjuste,
+      a.titulo as actionTitulo,
+      a.descricao as actionDescricao,
+      a.prazo as actionPrazo,
+      a.macroId as actionMacroId,
+      u.name as solicitanteNome,
+      u.email as solicitanteEmail,
+      u.departamentoId as departamentoId,
+      p.titulo as pdiTitulo,
+      d.nome as departamentoNome,
+      cm.nome as macroNome
+    FROM adjustment_requests ar
+    LEFT JOIN actions a ON ar.actionId = a.id
+    LEFT JOIN users u ON ar.solicitanteId = u.id
+    LEFT JOIN pdis p ON a.pdiId = p.id
+    LEFT JOIN departamentos d ON u.departamentoId = d.id
+    LEFT JOIN competencias_macros cm ON a.macroId = cm.id
+    ORDER BY ar.createdAt DESC
+  `);
+
+  return rows.map((row: any) => ({
+    id: row.id,
+    actionId: row.actionId,
+    solicitanteId: row.solicitanteId,
+    tipoSolicitante: row.tipoSolicitante,
+    justificativa: row.justificativa,
+    camposAjustar: row.camposAjustar,
+    status: row.status,
+    justificativaAdmin: row.justificativaAdmin,
+    createdAt: row.createdAt,
+    evaluatedAt: row.evaluatedAt,
+    evaluatedBy: row.evaluatedBy,
+    dadosAntesAjuste: row.dadosAntesAjuste,
+    dadosAposAjuste: row.dadosAposAjuste,
+    actionTitulo: row.actionTitulo,
+    actionDescricao: row.actionDescricao,
+    actionPrazo: row.actionPrazo,
+    actionMacroId: row.actionMacroId,
+    solicitanteNome: row.solicitanteNome,
+    solicitanteEmail: row.solicitanteEmail,
+    departamentoId: row.departamentoId,
+    pdiTitulo: row.pdiTitulo,
+    departamentoNome: row.departamentoNome,
+    macroNome: row.macroNome
+  }));
+}
 
 export async function getAdjustmentRequestsByLeader(leaderId: number) {
   const db = await getDb();
