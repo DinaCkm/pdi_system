@@ -804,8 +804,6 @@ export async function createNotification(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  console.log('[createNotification] Criando notificação:', data);
-
   const result = await db.insert(notifications).values({
     destinatarioId: data.destinatarioId,
     tipo: data.tipo,
@@ -816,7 +814,6 @@ export async function createNotification(data: {
     createdAt: new Date(),
   });
 
-  console.log('[createNotification] Resultado:', result);
   return result[0]?.insertId || 0;
 }
 
@@ -934,7 +931,7 @@ export async function getPDIsByCicloId(cicloId: number) {
 
 // ============= FUNÇÕES DE USUÁRIO FALTANDO =============
 
-export async function getUsersByRole(role: "admin" | "lider" | "colaborador") {
+export async function getUsersByRole(role: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -1467,67 +1464,4 @@ export async function getEvidencesByActionIds(actionIds: number[]) {
     .where(inArray(evidences.actionId, actionIds));
 
   return result;
-}
-
-
-// ============= FUNÇÃO PARA BUSCAR SOLICITAÇÕES COM COMENTÁRIO DO LÍDER =============
-
-export async function getAdjustmentRequestsWithLeaderComments() {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  // Buscar solicitações pendentes que têm pelo menos um comentário de um líder
-  const [rows]: any = await db.execute(sql`
-    SELECT DISTINCT
-      ar.id,
-      ar.actionId,
-      ar.solicitanteId,
-      ar.tipoSolicitante,
-      ar.justificativa,
-      ar.camposAjustar,
-      ar.dadosAntesAjuste,
-      ar.status,
-      ar.createdAt,
-      ar.updatedAt,
-      u_solicitante.name as solicitanteNome,
-      u_solicitante.email as solicitanteEmail,
-      d.nome as departamentoNome,
-      a.titulo as acaoTitulo,
-      a.descricao as acaoDescricao,
-      a.prazo as acaoPrazo,
-      p.titulo as pdiTitulo,
-      cm.nome as competenciaNome,
-      (
-        SELECT JSON_ARRAYAGG(
-          JSON_OBJECT(
-            'id', ac.id,
-            'autorId', ac.autorId,
-            'autorNome', u_autor.name,
-            'autorRole', u_autor.role,
-            'comentario', ac.comentario,
-            'createdAt', ac.createdAt
-          )
-        )
-        FROM adjustment_comments ac
-        LEFT JOIN users u_autor ON ac.autorId = u_autor.id
-        WHERE ac.adjustmentRequestId = ar.id
-        AND u_autor.role = 'lider'
-      ) as comentariosLider
-    FROM adjustment_requests ar
-    LEFT JOIN users u_solicitante ON ar.solicitanteId = u_solicitante.id
-    LEFT JOIN departamentos d ON u_solicitante.departamentoId = d.id
-    LEFT JOIN actions a ON ar.actionId = a.id
-    LEFT JOIN pdis p ON a.pdiId = p.id
-    LEFT JOIN competencias_macros cm ON a.macroId = cm.id
-    WHERE ar.status = 'pendente'
-    AND EXISTS (
-      SELECT 1 FROM adjustment_comments ac2
-      LEFT JOIN users u2 ON ac2.autorId = u2.id
-      WHERE ac2.adjustmentRequestId = ar.id
-      AND u2.role = 'lider'
-    )
-    ORDER BY ar.createdAt DESC
-  `);
-
-  return rows || [];
 }

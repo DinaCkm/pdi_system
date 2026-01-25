@@ -322,54 +322,11 @@ export const adjustmentRequestsRouter = router({
         });
       }
 
-      // Adicionar o comentário
-      const result = await db.addAdjustmentComment({
+      return await db.addAdjustmentComment({
         adjustmentRequestId: input.adjustmentRequestId,
         autorId: user.id,
         comentario: input.comentario,
       });
-
-      // Se o usuário é líder, notificar os admins
-      const userRole = String(user.role || '').toLowerCase().trim();
-      const isLider = userRole === 'lider';
-      console.log('[addComment] ========== VERIFICANDO NOTIFICAÇÃO ==========');
-      console.log('[addComment] User ID:', user.id);
-      console.log('[addComment] User Name:', user.name);
-      console.log('[addComment] User Role (raw):', user.role);
-      console.log('[addComment] User Role (processed):', userRole);
-      console.log('[addComment] Is Líder?', isLider);
-      if (isLider) {
-        console.log('[addComment] Usuário é líder, iniciando notificação para admins');
-        try {
-          // Buscar dados da ação e do solicitante
-          const action = await db.getActionById(request.actionId);
-          const solicitante = await db.getUserById(request.solicitanteId);
-          console.log('[addComment] Ação:', action?.titulo, 'Solicitante:', solicitante?.name);
-          
-          // Buscar todos os admins
-          const admins = await db.getUsersByRole("admin");
-          console.log('[addComment] Admins encontrados:', admins.length);
-          
-          // Criar notificação para cada admin
-          console.log('[addComment] Criando notificações para admins:', admins.map((a: any) => a.id));
-          for (const admin of admins) {
-            console.log('[addComment] Criando notificação para admin:', admin.id, admin.name);
-            const notifResult = await db.createNotification({
-              destinatarioId: admin.id,
-              tipo: "comentario_lider",
-              titulo: "Líder comentou em solicitação de ajuste",
-              mensagem: `O líder ${user.name} comentou na solicitação de ajuste de ${solicitante?.name || 'colaborador'} para a ação "${action?.titulo || 'Ação'}": "${input.comentario.substring(0, 100)}${input.comentario.length > 100 ? '...' : ''}"`,
-              referenciaId: input.adjustmentRequestId,
-            });
-          }
-          console.log(`[addComment] Notificação enviada para ${admins.length} admin(s)`);
-        } catch (error) {
-          console.error('[addComment] Erro ao notificar admins:', error);
-          // Não falha a operação se a notificação falhar
-        }
-      }
-
-      return result;
     }),
 
   // Listar comentários
@@ -377,21 +334,5 @@ export const adjustmentRequestsRouter = router({
     .input(z.object({ adjustmentRequestId: z.number() }))
     .query(async ({ input }) => {
       return await db.getAdjustmentComments(input.adjustmentRequestId);
-    }),
-
-  // Listar solicitações com comentário do líder (para Admin Dashboard)
-  listWithLeaderComments: protectedProcedure
-    .query(async ({ ctx }) => {
-      const user = ctx.user!;
-      
-      // Apenas admins podem ver esta lista
-      if (user.role !== "admin") {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Apenas administradores podem acessar esta lista",
-        });
-      }
-
-      return await db.getAdjustmentRequestsWithLeaderComments();
     }),
 });
