@@ -2128,3 +2128,11 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Bug Fixes (Janeiro 2025) - Continuação
 - [x] Corrigir Dashboard do Admin mostrando 0 solicitações (problema: SQL com placeholders ? não suportado, solução: usar sql template literal do Drizzle)
+- [x] Corrigir card de feedback de solicitação de ajuste não aparecendo (problema: verificava 'rejeitada' em vez de 'reprovada')
+
+## Feedback de Solicitação de Ajuste para Colaborador
+- [x] Implementar card de feedback na tela de Minhas Pendências mostrando resultado da avaliação
+- [x] Mostrar se solicitação foi APROVADA ou NÃO ACEITA
+- [x] Mostrar motivo da rejeição quando não aceita
+- [ ] Exibir motivo da rejeição quando aplicável
+- [ ] Card visível até colaborador dispensar ou por período de tempo

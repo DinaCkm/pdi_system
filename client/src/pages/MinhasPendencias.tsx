@@ -348,6 +348,56 @@ export default function MinhasPendencias() {
                     <MessageSquare className="h-4 w-4" />
                     Solicitar Alteração
                   </Button>
+
+                  {/* Card de Feedback de Solicitação de Ajuste */}
+                  {(() => {
+                    // Buscar solicitações avaliadas (aprovadas ou rejeitadas) para esta ação
+                    const solicitacoesAvaliadas = adjustmentRequests.filter(
+                      (req: any) => req.actionId === acao.id && (req.status === 'aprovada' || req.status === 'reprovada')
+                    );
+                    
+                    // Pegar a mais recente
+                    const ultimaSolicitacao = solicitacoesAvaliadas.sort((a: any, b: any) => 
+                      new Date(b.evaluatedAt || b.createdAt).getTime() - new Date(a.evaluatedAt || a.createdAt).getTime()
+                    )[0];
+                    
+                    if (!ultimaSolicitacao) return null;
+                    
+                    const isAprovada = ultimaSolicitacao.status === 'aprovada';
+                    const isReprovada = ultimaSolicitacao.status === 'reprovada';
+                    
+                    return (
+                      <div className={`w-full mt-2 p-3 rounded-lg border ${
+                        isAprovada 
+                          ? 'bg-green-50 border-green-200 text-green-800' 
+                          : 'bg-red-50 border-red-200 text-red-800'
+                      }`}>
+                        <div className="flex items-center gap-2 font-semibold text-sm">
+                          {isAprovada ? (
+                            <>
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                              <span>Solicitação de Ajuste #{ultimaSolicitacao.id} - APROVADA</span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="h-4 w-4 text-red-600" />
+                              <span>Solicitação de Ajuste #{ultimaSolicitacao.id} - NÃO ACEITA</span>
+                            </>
+                          )}
+                        </div>
+                        {!isAprovada && ultimaSolicitacao.justificativaAdmin && (
+                          <div className="mt-2 text-xs bg-white/50 p-2 rounded border border-red-100">
+                            <span className="font-medium">Motivo:</span> {ultimaSolicitacao.justificativaAdmin}
+                          </div>
+                        )}
+                        {isAprovada && (
+                          <div className="mt-1 text-xs opacity-75">
+                            Alterações aplicadas com sucesso
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                   <div className="mt-4 w-full">
                     {(() => {
                       // CORREÇÃO 1: Filtro com comparação STRING segura

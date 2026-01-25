@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, name, email, cpf FROM users WHERE role = 'colaborador' AND name LIKE '%Dinica%' OR name LIKE '%Souza%' LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, cpf FROM users WHERE role = 'colaborador' AND name LIKE '%Dinica%' OR name LIKE '%Souza%' LIMIT 10;",
+  "rows": [
+    {
+      "id": "840001",
+      "name": "Dinica Souza Makiyama",
+      "email": "dina@ckmtalents.net",
+      "cpf": "00000000023"
+    },
+    {
+      "id": "900001",
+      "name": "MARIA DE SOUZA ",
+      "email": "mariadesouza@empregado.com",
+      "cpf": "00000000057"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tcpf\n840001\tDinica Souza Makiyama\tdina@ckmtalents.net\t00000000023\n900001\tMARIA DE SOUZA \tmariadesouza@empregado.com\t00000000057\n",
+  "stderr": "",
+  "execution_time_ms": 352
+}
