@@ -1,0 +1,40 @@
+{
+  "query": "SELECT id, SUBSTRING(camposAjustar, 1, 200) as campos, SUBSTRING(justificativa, 1, 100) as just, status FROM adjustment_requests ORDER BY id DESC LIMIT 5",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, SUBSTRING(camposAjustar, 1, 200) as campos, SUBSTRING(justificativa, 1, 100) as just, status FROM adjustment_requests ORDER BY id DESC LIMIT 5",
+  "rows": [
+    {
+      "id": "210005",
+      "campos": "{\"titulo\":\"Discordo deste projeto pela 2ª vez\",\"competencia\":\"\"}",
+      "just": "discordo pela 2 vez",
+      "status": "reprovada"
+    },
+    {
+      "id": "210004",
+      "campos": "{\"titulo\":\"Discordo deste projeto\",\"competencia\":\"\"}",
+      "just": "discordo deste projeto",
+      "status": "aprovada"
+    },
+    {
+      "id": "210003",
+      "campos": "{\"competencia\":\"ALTERAR A COMPETENCIA\"}",
+      "just": "NÃO PRECISO DESENVOLVER ESTA COMPETENCIA",
+      "status": "reprovada"
+    },
+    {
+      "id": "210002",
+      "campos": "{\"competencia\":\"\"}",
+      "just": "Alterar a Data",
+      "status": "reprovada"
+    },
+    {
+      "id": "210001",
+      "campos": "{\"titulo\":\"Trocar por outra técnica\",\"descricao\":\"\",\"prazo\":\"\",\"competencia\":\"\"}",
+      "just": "já fiz esta técnica antes.",
+      "status": "reprovada"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcampos\tjust\tstatus\n210005\t{\"titulo\":\"Discordo deste projeto pela 2ª vez\",\"competencia\":\"\"}\tdiscordo pela 2 vez\treprovada\n210004\t{\"titulo\":\"Discordo deste projeto\",\"competencia\":\"\"}\tdiscordo deste projeto\taprovada\n210003\t{\"competencia\":\"ALTERAR A COMPETENCIA\"}\tNÃO PRECISO DESENVOLVER ESTA COMPETENCIA\treprovada\n210002\t{\"competencia\":\"\"}\tAlterar a Data\treprovada\n210001\t{\"titulo\":\"Trocar por outra técnica\",\"descricao\":\"\",\"prazo\":\"\",\"competencia\":\"\"}\tjá fiz esta técnica antes.\treprovada\n",
+  "stderr": "",
+  "execution_time_ms": 347
+}

@@ -6,11 +6,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle2, ArrowRight } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -38,12 +37,6 @@ export function SolicitarAjusteModalMelhorado({
   hasPendingRequest,
   onSuccess,
 }: SolicitarAjusteModalMelhoradoProps) {
-  const [titulo, setTitulo] = useState(currentData.titulo || "");
-  const [descricao, setDescricao] = useState(currentData.descricao || "");
-  const [prazo, setPrazo] = useState(currentData.prazo || "");
-  const [macroCompetencia, setMacroCompetencia] = useState(
-    currentData.macroCompetencia || ""
-  );
   const [justificativa, setJustificativa] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -51,14 +44,10 @@ export function SolicitarAjusteModalMelhorado({
   // Resetar campos quando o modal abre com uma nova ação
   useEffect(() => {
     if (open) {
-      setTitulo(currentData.titulo || "");
-      setDescricao(currentData.descricao || "");
-      setPrazo(currentData.prazo || "");
-      setMacroCompetencia(currentData.macroCompetencia || "");
       setJustificativa("");
       setSuccess(false);
     }
-  }, [open, actionId, currentData]);
+  }, [open, actionId]);
 
   const createMutation = trpc.adjustmentRequests.create.useMutation();
 
@@ -68,34 +57,13 @@ export function SolicitarAjusteModalMelhorado({
       return;
     }
 
-    // Construir objeto com os campos alterados (novos valores)
-    const camposAlterados: Record<string, any> = {};
-    
-    if (titulo !== currentData.titulo) {
-      camposAlterados.titulo = titulo;
-    }
-    if (descricao !== currentData.descricao) {
-      camposAlterados.descricao = descricao;
-    }
-    if (prazo !== currentData.prazo) {
-      camposAlterados.prazo = prazo;
-    }
-    if (macroCompetencia !== currentData.macroCompetencia) {
-      camposAlterados.competencia = macroCompetencia;
-    }
-
-    if (Object.keys(camposAlterados).length === 0) {
-      toast.error("Nenhum campo foi alterado");
-      return;
-    }
-
     setIsLoading(true);
 
     try {
       await createMutation.mutateAsync({
         actionId: parseInt(actionId),
-        // camposAjustar agora contém um JSON com os NOVOS valores
-        camposAjustar: JSON.stringify(camposAlterados),
+        // camposAjustar vazio - colaborador não edita campos diretamente
+        camposAjustar: JSON.stringify({}),
         justificativa: justificativa,
         tipoSolicitante: "colaborador",
       });
@@ -111,10 +79,6 @@ export function SolicitarAjusteModalMelhorado({
       setTimeout(() => {
         onOpenChange(false);
         setSuccess(false);
-        setTitulo(currentData.titulo || "");
-        setDescricao(currentData.descricao || "");
-        setPrazo(currentData.prazo || "");
-        setMacroCompetencia(currentData.macroCompetencia || "");
         setJustificativa("");
       }, 2000);
     } catch (error: any) {
@@ -145,6 +109,16 @@ export function SolicitarAjusteModalMelhorado({
     );
   }
 
+  // Formatar prazo para exibição
+  const formatPrazo = (prazo?: string) => {
+    if (!prazo) return "Não definido";
+    try {
+      return new Date(prazo).toLocaleDateString("pt-BR");
+    } catch {
+      return prazo;
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -153,10 +127,44 @@ export function SolicitarAjusteModalMelhorado({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-900">
-              <strong>Ação:</strong> {actionTitle}
-            </p>
+          {/* Informações da Ação - Somente Leitura */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+            <div className="flex items-center gap-2 text-gray-600 mb-2">
+              <Info className="h-4 w-4" />
+              <span className="text-sm font-medium">Dados atuais da ação (somente leitura)</span>
+            </div>
+            
+            <div className="grid gap-3">
+              <div>
+                <span className="text-xs text-gray-500 uppercase tracking-wide">Título</span>
+                <p className="text-sm font-medium text-gray-900 mt-0.5">
+                  {currentData.titulo || "Não definido"}
+                </p>
+              </div>
+              
+              <div>
+                <span className="text-xs text-gray-500 uppercase tracking-wide">Descrição</span>
+                <p className="text-sm text-gray-900 mt-0.5 whitespace-pre-wrap">
+                  {currentData.descricao || "Não definida"}
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-xs text-gray-500 uppercase tracking-wide">Prazo</span>
+                  <p className="text-sm font-medium text-gray-900 mt-0.5">
+                    {formatPrazo(currentData.prazo)}
+                  </p>
+                </div>
+                
+                <div>
+                  <span className="text-xs text-gray-500 uppercase tracking-wide">Macro Competência</span>
+                  <p className="text-sm font-medium text-gray-900 mt-0.5">
+                    {currentData.macroCompetencia || "Não definida"}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {hasPendingRequest && (
@@ -170,128 +178,30 @@ export function SolicitarAjusteModalMelhorado({
             </Alert>
           )}
 
-          <div className="space-y-4 border-t pt-4">
-            {/* Título */}
-            <div>
-              <Label htmlFor="titulo" className="text-sm font-medium">
-                Título
-              </Label>
-              <Input
-                id="titulo"
-                value={titulo}
-                onChange={(e) => setTitulo(e.target.value)}
-                placeholder={currentData.titulo || "Novo título da ação"}
-                disabled={hasPendingRequest}
-                className="mt-1"
-              />
-              {titulo !== currentData.titulo && titulo && (
-                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="text-red-600 line-through">{currentData.titulo || "N/A"}</span>
-                    <ArrowRight className="h-3 w-3 text-gray-400" />
-                    <span className="text-green-600 font-medium">{titulo}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Descrição */}
-            <div>
-              <Label htmlFor="descricao" className="text-sm font-medium">
-                Descrição
-              </Label>
-              <Textarea
-                id="descricao"
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-                placeholder={currentData.descricao || "Nova descrição da ação"}
-                disabled={hasPendingRequest}
-                className="mt-1 min-h-[100px]"
-              />
-              {descricao !== currentData.descricao && descricao && (
-                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
-                  <p className="text-red-600 line-through mb-1">{currentData.descricao || "N/A"}</p>
-                  <p className="text-green-600 font-medium">{descricao}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Prazo */}
-            <div>
-              <Label htmlFor="prazo" className="text-sm font-medium">
-                Prazo
-              </Label>
-              <Input
-                id="prazo"
-                type="date"
-                value={prazo}
-                onChange={(e) => setPrazo(e.target.value)}
-                disabled={hasPendingRequest}
-                className="mt-1"
-              />
-              {prazo !== currentData.prazo && prazo && (
-                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="text-red-600 line-through">
-                      {currentData.prazo ? new Date(currentData.prazo).toLocaleDateString("pt-BR") : "N/A"}
-                    </span>
-                    <ArrowRight className="h-3 w-3 text-gray-400" />
-                    <span className="text-green-600 font-medium">
-                      {new Date(prazo).toLocaleDateString("pt-BR")}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Macro Competência */}
-            <div>
-              <Label htmlFor="macroCompetencia" className="text-sm font-medium">
-                Macro Competência
-              </Label>
-              <Input
-                id="macroCompetencia"
-                value={macroCompetencia}
-                onChange={(e) => setMacroCompetencia(e.target.value)}
-                placeholder={currentData.macroCompetencia || "Nova macro competência"}
-                disabled={hasPendingRequest}
-                className="mt-1"
-              />
-              {macroCompetencia !== currentData.macroCompetencia && macroCompetencia && (
-                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="text-red-600 line-through">{currentData.macroCompetencia || "N/A"}</span>
-                    <ArrowRight className="h-3 w-3 text-gray-400" />
-                    <span className="text-green-600 font-medium">{macroCompetencia}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Justificativa */}
-            <div>
-              <Label htmlFor="justificativa" className="text-sm font-medium">
-                Justificativa *
-              </Label>
-              <Textarea
-                id="justificativa"
-                value={justificativa}
-                onChange={(e) => setJustificativa(e.target.value)}
-                placeholder="Explique por que você precisa fazer essa alteração..."
-                disabled={hasPendingRequest}
-                className="mt-1 min-h-[100px]"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Mínimo 10 caracteres
-              </p>
-            </div>
+          {/* Campo de Justificativa - Único campo editável */}
+          <div className="border-t pt-4">
+            <Label htmlFor="justificativa" className="text-sm font-medium">
+              Descreva o que você gostaria de alterar *
+            </Label>
+            <Textarea
+              id="justificativa"
+              value={justificativa}
+              onChange={(e) => setJustificativa(e.target.value)}
+              placeholder="Explique detalhadamente o que você gostaria de alterar nesta ação. Por exemplo: 'Gostaria de alterar o prazo de 15/03/2026 para 30/04/2026 porque...' ou 'Solicito alteração do título para...' "
+              disabled={hasPendingRequest}
+              className="mt-2 min-h-[150px]"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Mínimo 10 caracteres. Seja específico sobre o que deseja alterar e o motivo.
+            </p>
           </div>
 
           <Alert className="border-blue-200 bg-blue-50">
             <AlertCircle className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-900">
-              Sua solicitação será analisada pelo administrador. Você receberá
-              uma notificação quando ela for avaliada.
+              <strong>Como funciona:</strong> Sua solicitação será analisada pelo administrador. 
+              Se aprovada, o administrador fará as alterações necessárias na ação. 
+              Você receberá uma notificação quando ela for avaliada.
             </AlertDescription>
           </Alert>
         </div>

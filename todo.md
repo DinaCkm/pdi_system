@@ -2148,3 +2148,20 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
   - Problema: função getAdjustmentRequestsByUser filtrava apenas status='pendente'
   - Solução: remover filtro de status para retornar todas as solicitações do usuário
   - Testado: card verde "APROVADA" aparece corretamente para Dinica
+
+
+## Bug - Botão de Avaliar não aparece para Admin
+- [ ] Botão de avaliar não aparece no painel do admin quando colaborador faz nova solicitação após anterior ter sido avaliada
+
+
+## Bug GRAVE - Solicitação de Alteração Editando Ação Original
+- [ ] Quando colaborador solicita alteração, o sistema está editando a ação original diretamente
+- [ ] Comportamento esperado: apenas registrar a solicitação, manter ação original inalterada até admin aprovar
+
+
+## Bug GRAVE CORRIGIDO - Solicitação de Alteração editando ação original (25 Jan 2025)
+- [x] Quando colaborador solicitava alteração, o sistema estava editando a ação original diretamente
+- [x] Corrigido: Modal agora mostra dados originais como SOMENTE LEITURA
+- [x] Colaborador apenas descreve o que quer alterar no campo de justificativa
+- [x] Admin faz a edição manualmente usando botão "Editar" no painel dele
+- [x] Removida aplicação automática de alterações na procedure approve

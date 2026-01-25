@@ -159,7 +159,7 @@ export const adjustmentRequestsRouter = router({
         });
       }
 
-      // Buscar a solicitação para obter os dados das alterações
+      // Buscar a solicitação
       const request = await db.getAdjustmentRequestById(input.id);
       if (!request) {
         throw new TRPCError({
@@ -168,37 +168,10 @@ export const adjustmentRequestsRouter = router({
         });
       }
 
-      // Aplicar as alterações na ação
-      try {
-        const camposAlterados = JSON.parse(request.camposAjustar || '{}');
-        const updateData: any = {};
-        
-        if (camposAlterados.titulo) {
-          updateData.titulo = camposAlterados.titulo;
-        }
-        if (camposAlterados.descricao) {
-          updateData.descricao = camposAlterados.descricao;
-        }
-        if (camposAlterados.prazo) {
-          updateData.prazo = camposAlterados.prazo;
-        }
-        if (camposAlterados.competencia) {
-          // Se for um número, é o macroId
-          const macroId = parseInt(camposAlterados.competencia);
-          if (!isNaN(macroId)) {
-            updateData.macroId = macroId;
-          }
-        }
-
-        // Atualizar a ação com os novos valores (passando userId para gravar histórico)
-        if (Object.keys(updateData).length > 0) {
-          await db.updateAction(request.actionId, updateData, user.id);
-          console.log('[approve] Alterações aplicadas na ação:', request.actionId, updateData);
-        }
-      } catch (error) {
-        console.error('[approve] Erro ao aplicar alterações:', error);
-        // Continua mesmo se falhar ao parsear JSON (solicitações antigas)
-      }
+      // IMPORTANTE: NÃO aplicar alterações automaticamente!
+      // O admin deve usar o botão "Editar" para fazer as alterações manualmente
+      // e depois clicar em "Aceitar" para aprovar a solicitação.
+      // Isso garante que o admin tenha controle total sobre o que é alterado.
 
       // Atualizar status da solicitação
       const result = await db.updateAdjustmentRequest(input.id, {
