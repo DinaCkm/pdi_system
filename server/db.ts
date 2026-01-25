@@ -365,8 +365,26 @@ export async function getPDIById(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [result] = await db.select().from(pdis).where(eq(pdis.id, id));
-  return result;
+  const [pdi] = await db.select().from(pdis).where(eq(pdis.id, id));
+  if (!pdi) return null;
+
+  // Enriquecer com dados do colaborador, departamento e ciclo
+  const [user] = await db.select().from(users).where(eq(users.id, pdi.colaboradorId));
+  const [ciclo] = await db.select().from(ciclos).where(eq(ciclos.id, pdi.cicloId));
+  const [dept] = user ? await db.select().from(departamentos).where(eq(departamentos.id, user.departamentoId)) : [null];
+  
+  // Buscar validação do líder
+  const [validacao] = await db.select().from(pdiValidacoes).where(eq(pdiValidacoes.pdiId, pdi.id));
+  
+  return {
+    ...pdi,
+    colaboradorNome: user?.name || "—",
+    departamentoNome: dept?.nome || "—",
+    cicloNome: ciclo?.nome || "—",
+    validadoEm: validacao?.aprovadoEm || null,
+    validadoPor: validacao?.liderId || null,
+    objetivoGeral: pdi.objetivoGeral || pdi.titulo,
+  };
 }
 
 export async function getAllPDIs() {
