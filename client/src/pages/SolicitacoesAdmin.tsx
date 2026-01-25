@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MessageSquare, Clock, User, FileText, ArrowRight, Target, Calendar, FileEdit, CheckCircle, XCircle, Filter } from "lucide-react";
+import { MessageSquare, Clock, User, FileText, ArrowRight, Target, Calendar, FileEdit, Filter } from "lucide-react";
 import { toast } from "sonner";
 
 // Função para obter o badge de status
@@ -145,9 +145,9 @@ export default function SolicitacoesAdmin() {
   return (
     <div className="container py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Solicitações de Ajuste</h1>
+        <h1 className="text-3xl font-bold mb-2">Histórico de Alteração nas Ações</h1>
         <p className="text-muted-foreground">
-          Gerencie todas as solicitações de ajuste dos colaboradores
+          Visualize todas as solicitações de alteração nas ações dos colaboradores
         </p>
       </div>
 
@@ -420,59 +420,6 @@ export default function SolicitacoesAdmin() {
                     <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
                       <h4 className="font-medium mb-2 text-orange-800">Resposta do Administrador:</h4>
                       <p className="text-sm text-orange-700">{solicitacao.justificativaAdmin}</p>
-                    </div>
-                  )}
-
-                  {/* Botões de Aprovar/Reprovar */}
-                  {isPending && (
-                    <div className="border-t pt-4">
-                      {rejectingId === solicitacao.id ? (
-                        <div className="space-y-3">
-                          <Textarea
-                            placeholder="Justificativa para reprovação (mínimo 10 caracteres)..."
-                            value={justificativaRejeicao}
-                            onChange={(e) => setJustificativaRejeicao(e.target.value)}
-                            rows={3}
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setRejectingId(null);
-                                setJustificativaRejeicao("");
-                              }}
-                            >
-                              Cancelar
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              onClick={() => handleReject(solicitacao.id)}
-                              disabled={rejectMutation.isPending}
-                            >
-                              Confirmar Reprovação
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex gap-3">
-                          <Button
-                            className="flex-1 bg-green-600 hover:bg-green-700"
-                            onClick={() => handleApprove(solicitacao.id)}
-                            disabled={approveMutation.isPending}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Aprovar
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            className="flex-1"
-                            onClick={() => setRejectingId(solicitacao.id)}
-                          >
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Reprovar
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   )}
 

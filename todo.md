@@ -2044,3 +2044,11 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar filtros por Ação, Empregado, Departamento e Status
 - [x] Incluir botões de Aprovar/Reprovar nos cards
 - [x] Adicionar rota e menu para admin
+
+## Ajuste página Solicitações de Ajuste Admin (24 JAN 2025)
+- [x] Remover botões de Aprovar/Reprovar da página SolicitacoesAdmin
+- [x] Manter apenas visualização com filtros
+
+## Renomear página Solicitações de Ajuste (24 JAN 2025)
+- [x] Renomear para "Histórico de Alteração nas Ações" no menu
+- [x] Renomear título da página
