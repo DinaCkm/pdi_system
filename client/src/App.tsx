@@ -14,6 +14,7 @@ import Competencias from "./pages/Competencias";
 import Departamentos from "./pages/Departamentos";
 import Ciclos from "./pages/Ciclos";
 import PDIs from "./pages/PDIs";
+import PDIDetalhes from "./pages/PDIDetalhes";
 import Acoes from "./pages/Acoes";
 import MinhasPendencias from "./pages/MinhasPendencias";
 import Relatorios from "./pages/Relatorios";
@@ -108,6 +109,14 @@ function Router() {
         <DashboardLayout>
           <PDIs />
         </DashboardLayout>
+      </Route>
+      
+      <Route path={"/pdis/:id"}>
+        {(params) => (
+          <DashboardLayout>
+            <PDIDetalhes key={params.id} />
+          </DashboardLayout>
+        )}
       </Route>
       
       <Route path={"/meu-pdi"}>
