@@ -25,6 +25,7 @@ export function DataTablePDIs() {
   const [departamentoFilter, setDepartamentoFilter] = useState<string>("");
   const [pessoaFilter, setPessoaFilter] = useState<string>("");
   const [realizacaoFilter, setRealizacaoFilter] = useState<string>("todos");
+  const [validacaoFilter, setValidacaoFilter] = useState<string>("todos");
   const [pdiToDelete, setPdiToDelete] = useState<number | null>(null);
   
   // Estado para modal de edição
@@ -68,7 +69,17 @@ export function DataTablePDIs() {
       }
     }
 
-    return matchNome && matchDepartamento && matchRealizacao;
+    // 4. Filtro de Validação do Líder
+    let matchValidacao = true;
+    if (validacaoFilter !== "todos") {
+      if (validacaoFilter === "validado") {
+        matchValidacao = !!pdi.validadoEm;
+      } else if (validacaoFilter === "nao_validado") {
+        matchValidacao = !pdi.validadoEm;
+      }
+    }
+
+    return matchNome && matchDepartamento && matchRealizacao && matchValidacao;
   });
 
   // Mutation para deletar PDI
@@ -164,7 +175,7 @@ export function DataTablePDIs() {
   return (
     <div className="space-y-6">
       {/* Filtros - HTML PURO */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Filtro por Departamento */}
         <div>
           <label className="text-sm font-medium mb-2 block">Filtrar por Departamento</label>
@@ -207,6 +218,20 @@ export function DataTablePDIs() {
             <option value="1-50">1% a 50% (Em Início)</option>
             <option value="51-99">51% a 99% (Fase Final)</option>
             <option value="100">100% (Concluídos)</option>
+          </select>
+        </div>
+
+        {/* Filtro por Validação do Líder */}
+        <div>
+          <label className="text-sm font-medium mb-2 block">Validação do Líder</label>
+          <select
+            value={validacaoFilter}
+            onChange={(e) => setValidacaoFilter(e.target.value)}
+            className="w-full p-2 border rounded bg-white text-black"
+          >
+            <option value="todos">Todos</option>
+            <option value="validado">✅ Validados pelo Líder</option>
+            <option value="nao_validado">⏳ Aguardando Validação</option>
           </select>
         </div>
       </div>
