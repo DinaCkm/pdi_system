@@ -152,6 +152,17 @@ export const appRouter = router({
       await db.deletePDI(input.id);
       return { success: true };
     }),
+    update: adminProcedure.input(z.object({ 
+      id: z.number(), 
+      titulo: z.string().optional(), 
+      objetivoGeral: z.string().optional(),
+      cicloId: z.number().optional(),
+      status: z.string().optional()
+    })).mutation(async ({ input }) => {
+      const { id, ...data } = input;
+      await db.updatePDI(id, data);
+      return { success: true };
+    }),
   }),
 
   // ============= EVIDÊNCIAS (JÁ ATUALIZADO ANTERIORMENTE) =============

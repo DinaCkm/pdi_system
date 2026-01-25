@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Eye, Edit2, Trash2, CheckCircle2, Clock } from "lucide-react";
-// Input removido - usando input HTML puro
+import { Eye, Edit2, Trash2, CheckCircle2, Clock, X } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 
@@ -11,6 +10,9 @@ interface PDI {
   departamentoNome: string;
   liderNome: string;
   cicloNome: string;
+  cicloId?: number;
+  titulo?: string;
+  objetivoGeral?: string;
   status: string;
   totalAcoes: number;
   acoesConcluidasTotal: number;
@@ -24,9 +26,20 @@ export function DataTablePDIs() {
   const [pessoaFilter, setPessoaFilter] = useState<string>("");
   const [realizacaoFilter, setRealizacaoFilter] = useState<string>("todos");
   const [pdiToDelete, setPdiToDelete] = useState<number | null>(null);
+  
+  // Estado para modal de edição
+  const [pdiToEdit, setPdiToEdit] = useState<PDI | null>(null);
+  const [editForm, setEditForm] = useState({
+    titulo: "",
+    objetivoGeral: "",
+    cicloId: "",
+  });
 
   // Buscar departamentos para filtro
   const { data: departamentos = [] } = trpc.departamentos.list.useQuery();
+  
+  // Buscar ciclos para o select de edição
+  const { data: ciclos = [] } = trpc.ciclos.list.useQuery();
 
   // Buscar PDIs com filtros
   const { data: pdisList = [], isLoading, refetch } = trpc.pdis.list.useQuery();
@@ -71,6 +84,45 @@ export function DataTablePDIs() {
       toast.error(`Erro ao deletar PDI: ${error.message}`);
     },
   });
+
+  // Mutation para atualizar PDI
+  const updatePDIMutation = trpc.pdis.update.useMutation({
+    onSuccess: () => {
+      toast.success("PDI atualizado com sucesso!");
+      utils.pdis.list.invalidate();
+      setPdiToEdit(null);
+    },
+    onError: (error) => {
+      toast.error(`Erro ao atualizar PDI: ${error.message}`);
+    },
+  });
+
+  // Função para abrir modal de edição
+  const handleOpenEdit = (pdi: PDI) => {
+    setPdiToEdit(pdi);
+    setEditForm({
+      titulo: pdi.titulo || "",
+      objetivoGeral: pdi.objetivoGeral || "",
+      cicloId: pdi.cicloId ? String(pdi.cicloId) : "",
+    });
+  };
+
+  // Função para salvar edição
+  const handleSaveEdit = () => {
+    if (!pdiToEdit) return;
+    
+    if (!editForm.titulo.trim()) {
+      toast.error("O título é obrigatório");
+      return;
+    }
+
+    updatePDIMutation.mutate({
+      id: pdiToEdit.pdiId,
+      titulo: editForm.titulo,
+      objetivoGeral: editForm.objetivoGeral || undefined,
+      cicloId: editForm.cicloId ? Number(editForm.cicloId) : undefined,
+    });
+  };
 
   // Função para obter cor do status
   const getStatusColor = (status: string) => {
@@ -226,7 +278,7 @@ export function DataTablePDIs() {
                         <Eye className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => navigate(`/pdis/${pdi.pdiId}/editar`)}
+                        onClick={() => handleOpenEdit(pdi)}
                         className="p-2 hover:bg-gray-200 rounded"
                         title="Editar"
                       >
@@ -247,6 +299,94 @@ export function DataTablePDIs() {
           </tbody>
         </table>
       </div>
+
+      {/* Modal de Edição de PDI */}
+      {pdiToEdit !== null && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800">✏️ Editar PDI</h2>
+              <button
+                onClick={() => setPdiToEdit(null)}
+                className="p-1 hover:bg-gray-100 rounded"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Colaborador:</strong> {pdiToEdit.colaboradorNome}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Título */}
+              <div>
+                <label className="text-sm font-bold text-gray-700 block mb-1">
+                  Título do PDI *
+                </label>
+                <input
+                  type="text"
+                  value={editForm.titulo}
+                  onChange={(e) => setEditForm({ ...editForm, titulo: e.target.value })}
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="Ex: Desenvolvimento de Liderança 2026"
+                />
+              </div>
+
+              {/* Ciclo */}
+              <div>
+                <label className="text-sm font-bold text-gray-700 block mb-1">
+                  Ciclo
+                </label>
+                <select
+                  value={editForm.cicloId}
+                  onChange={(e) => setEditForm({ ...editForm, cicloId: e.target.value })}
+                  className="w-full p-2.5 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="">Selecione um ciclo...</option>
+                  {ciclos.map((ciclo: any) => (
+                    <option key={ciclo.id} value={ciclo.id.toString()}>
+                      {ciclo.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Objetivo Geral */}
+              <div>
+                <label className="text-sm font-bold text-gray-700 block mb-1">
+                  Objetivo Geral (Opcional)
+                </label>
+                <textarea
+                  value={editForm.objetivoGeral}
+                  onChange={(e) => setEditForm({ ...editForm, objetivoGeral: e.target.value })}
+                  rows={3}
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                  placeholder="Descreva o objetivo principal do PDI..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4 mt-6">
+              <button
+                onClick={() => setPdiToEdit(null)}
+                className="px-4 py-2 border border-gray-300 rounded text-gray-800 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={updatePDIMutation.isPending}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {updatePDIMutation.isPending ? "Salvando..." : "Salvar Alterações"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dialog de Confirmação de Exclusão - HTML PURO */}
       {pdiToDelete !== null && (
