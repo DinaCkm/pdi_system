@@ -2101,3 +2101,17 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar filtro por status
 - [x] Adicionar botão para limpar filtros
 - [x] Mostrar contador de solicitações filtradas
+
+
+## Card de Solicitações com Comentário do Líder no Dashboard Admin (25 JAN 2026)
+- [ ] Adicionar card mostrando solicitações com comentário do líder
+- [ ] Destacar visualmente essas solicitações
+- [ ] Mostrar o comentário do líder junto com os detalhes da solicitação
+
+
+## Card de Solicitações com Parecer do Líder no Dashboard Admin (25 JAN 2026)
+- [x] Criar procedure listWithLeaderComments no backend
+- [x] Adicionar função getAdjustmentRequestsWithLeaderComments no db.ts
+- [x] Adicionar card "Com Parecer do Líder" no Dashboard Admin
+- [x] Adicionar aba "Com Parecer do Líder" para listar solicitações com comentário
+- [x] Mostrar comentário do líder junto com os detalhes da solicitação
