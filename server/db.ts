@@ -1115,7 +1115,21 @@ export async function getPendingAdjustmentRequests() {
     ORDER BY ar.createdAt DESC
   `);
 
-  const result = rows.map((row: any) => ({
+  // Buscar comentários do líder para cada solicitação
+  const result = await Promise.all(rows.map(async (row: any) => {
+    // Buscar comentários desta solicitação
+    const [commentRows]: any = await db.execute(`
+      SELECT ac.*, u.name as autorNome, u.role as autorRole
+      FROM adjustment_comments ac
+      LEFT JOIN users u ON ac.autorId = u.id
+      WHERE ac.adjustmentRequestId = ?
+      ORDER BY ac.createdAt ASC
+    `, [row.id]);
+
+    // Filtrar apenas comentários de líderes
+    const leaderComments = commentRows.filter((c: any) => c.autorRole === 'lider');
+
+    return {
       id: row.id,
       actionId: row.actionId,
       solicitanteId: row.solicitanteId,
@@ -1140,7 +1154,10 @@ export async function getPendingAdjustmentRequests() {
         name: row.user_name,
         email: row.user_email,
       },
-    }));
+      comentariosLider: leaderComments.length > 0 ? leaderComments : null,
+      temParecerLider: leaderComments.length > 0,
+    };
+  }));
   return result;
 }
 export async function getAdjustmentRequestsByUser(userId: number) {
