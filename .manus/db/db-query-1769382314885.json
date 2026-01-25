@@ -1,0 +1,38 @@
+{
+  "query": "SELECT id, actionId, solicitanteId, status, justificativaAdmin FROM adjustment_requests;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, actionId, solicitanteId, status, justificativaAdmin FROM adjustment_requests;",
+  "rows": [
+    {
+      "id": "210001",
+      "actionId": "420005",
+      "solicitanteId": "720003",
+      "status": "reprovada",
+      "justificativaAdmin": "não concordo com todas estas mudanças"
+    },
+    {
+      "id": "210002",
+      "actionId": "420004",
+      "solicitanteId": "720003",
+      "status": "reprovada",
+      "justificativaAdmin": "Não vou alterar"
+    },
+    {
+      "id": "210003",
+      "actionId": "420008",
+      "solicitanteId": "840001",
+      "status": "reprovada",
+      "justificativaAdmin": "DISCORDO DESTA ALTERAÇÃO"
+    },
+    {
+      "id": "210004",
+      "actionId": "420008",
+      "solicitanteId": "840001",
+      "status": "aprovada",
+      "justificativaAdmin": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tsolicitanteId\tstatus\tjustificativaAdmin\n210001\t420005\t720003\treprovada\tnão concordo com todas estas mudanças\n210002\t420004\t720003\treprovada\tNão vou alterar\n210003\t420008\t840001\treprovada\tDISCORDO DESTA ALTERAÇÃO\n210004\t420008\t840001\taprovada\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 360
+}

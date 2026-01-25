@@ -1,0 +1,8 @@
+{
+  "query": "SELECT ar.id, ar.action_id, ar.solicitante_id, ar.status, ar.justificativa_admin, ar.created_at, ar.evaluated_at, u.nome as solicitante_nome, a.titulo as acao_titulo FROM adjustment_requests ar LEFT JOIN users u ON ar.solicitante_id = u.id LEFT JOIN actions a ON ar.action_id = a.id WHERE u.nome LIKE '%Dinica%' OR u.email LIKE '%dina%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT ar.id, ar.action_id, ar.solicitante_id, ar.status, ar.justificativa_admin, ar.created_at, ar.evaluated_at, u.nome as solicitante_nome, a.titulo as acao_titulo FROM adjustment_requests ar LEFT JOIN users u ON ar.solicitante_id = u.id LEFT JOIN actions a ON ar.action_id = a.id WHERE u.nome LIKE '%Dinica%' OR u.email LIKE '%dina%';",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'ar.solicitante_id' in 'on clause'"
+  ]
+}

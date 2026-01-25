@@ -1203,6 +1203,8 @@ export async function getAdjustmentRequestsByUser(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Retorna TODAS as solicitações do usuário, independente do status
+  // Isso permite que o colaborador veja o feedback de solicitações aprovadas/reprovadas
   const result = await db
     .select({
       id: adjustmentRequests.id,
@@ -1219,7 +1221,7 @@ export async function getAdjustmentRequestsByUser(userId: number) {
     })
     .from(adjustmentRequests)
     .leftJoin(actions, eq(adjustmentRequests.actionId, actions.id))
-    .where(and(eq(adjustmentRequests.solicitanteId, userId), eq(adjustmentRequests.status, 'pendente')))
+    .where(eq(adjustmentRequests.solicitanteId, userId))
     .orderBy(adjustmentRequests.createdAt);
 
   return result;

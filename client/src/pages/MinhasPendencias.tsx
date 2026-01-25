@@ -351,7 +351,7 @@ export default function MinhasPendencias() {
 
                   {/* Card de Feedback de Solicitação de Ajuste */}
                   {(() => {
-                    // Buscar solicitações avaliadas (aprovadas ou rejeitadas) para esta ação
+                    // Buscar solicitações avaliadas (aprovadas ou reprovadas) para esta ação
                     const solicitacoesAvaliadas = adjustmentRequests.filter(
                       (req: any) => req.actionId === acao.id && (req.status === 'aprovada' || req.status === 'reprovada')
                     );

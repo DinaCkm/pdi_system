@@ -2136,3 +2136,15 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Mostrar motivo da rejeição quando não aceita
 - [ ] Exibir motivo da rejeição quando aplicável
 - [ ] Card visível até colaborador dispensar ou por período de tempo
+
+## Bug - Card de Feedback não aparece para colaborador (25/01/2025)
+- [ ] Investigar por que o card de feedback não aparece para Dinica após publicação
+- [ ] Verificar se a query adjustmentRequests.list retorna dados para o colaborador
+- [ ] Corrigir o problema
+
+
+## Bug Fixes - Card de Feedback (Janeiro 2025)
+- [x] Corrigir card de feedback de solicitação de ajuste não aparecendo para colaborador
+  - Problema: função getAdjustmentRequestsByUser filtrava apenas status='pendente'
+  - Solução: remover filtro de status para retornar todas as solicitações do usuário
+  - Testado: card verde "APROVADA" aparece corretamente para Dinica
