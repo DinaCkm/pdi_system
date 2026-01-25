@@ -1,0 +1,130 @@
+{
+  "query": "SELECT id, name, email, role, departamentoId, leaderId FROM users WHERE name LIKE '%teste%' OR name LIKE '%lider%' ORDER BY id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, role, departamentoId, leaderId FROM users WHERE name LIKE '%teste%' OR name LIKE '%lider%' ORDER BY id",
+  "rows": [
+    {
+      "id": "720001",
+      "name": "Usuarioteste1",
+      "email": "usuarioteste1@teste.com",
+      "role": "colaborador",
+      "departamentoId": "90001",
+      "leaderId": "720003"
+    },
+    {
+      "id": "720002",
+      "name": "usuarioteste2",
+      "email": "usuarioteste2@teste.com",
+      "role": "colaborador",
+      "departamentoId": "510001",
+      "leaderId": "840002"
+    },
+    {
+      "id": "720003",
+      "name": "liderteste1",
+      "email": "liderteste1@teste.com",
+      "role": "lider",
+      "departamentoId": "30001",
+      "leaderId": "150008"
+    },
+    {
+      "id": "780040",
+      "name": "Admin Teste PDI",
+      "email": "admin.pdi1768678059213@test.com",
+      "role": "admin",
+      "departamentoId": "NULL",
+      "leaderId": "NULL"
+    },
+    {
+      "id": "780041",
+      "name": "Líder Teste PDI",
+      "email": "lider.pdi1768678059213@test.com",
+      "role": "lider",
+      "departamentoId": "NULL",
+      "leaderId": "NULL"
+    },
+    {
+      "id": "780043",
+      "name": "Colaborador Teste PDI",
+      "email": "colab.pdi1768678059213@test.com",
+      "role": "colaborador",
+      "departamentoId": "NULL",
+      "leaderId": "2"
+    },
+    {
+      "id": "780047",
+      "name": "Colaborador Teste Limite",
+      "email": "colaborador-limite-1768678060391@test.com",
+      "role": "colaborador",
+      "departamentoId": "NULL",
+      "leaderId": "NULL"
+    },
+    {
+      "id": "780050",
+      "name": "Líder Test Actions",
+      "email": "leader-actions-1768678061030@test.com",
+      "role": "lider",
+      "departamentoId": "NULL",
+      "leaderId": "NULL"
+    },
+    {
+      "id": "780052",
+      "name": "Teste Auth",
+      "email": "teste.auth@test.com",
+      "role": "colaborador",
+      "departamentoId": "NULL",
+      "leaderId": "NULL"
+    },
+    {
+      "id": "780057",
+      "name": "Admin Teste PDI",
+      "email": "admin.pdi1768678108117@test.com",
+      "role": "admin",
+      "departamentoId": "NULL",
+      "leaderId": "NULL"
+    },
+    {
+      "id": "780058",
+      "name": "Líder Teste PDI",
+      "email": "lider.pdi1768678108117@test.com",
+      "role": "lider",
+      "departamentoId": "NULL",
+      "leaderId": "NULL"
+    },
+    {
+      "id": "780059",
+      "name": "Colaborador Teste PDI",
+      "email": "colab.pdi1768678108117@test.com",
+      "role": "colaborador",
+      "departamentoId": "NULL",
+      "leaderId": "2"
+    },
+    {
+      "id": "780060",
+      "name": "Colaborador Teste Limite",
+      "email": "colaborador-limite-1768678109045@test.com",
+      "role": "colaborador",
+      "departamentoId": "NULL",
+      "leaderId": "NULL"
+    },
+    {
+      "id": "810001",
+      "name": "Admin Teste",
+      "email": "admin.teste@empresa.com",
+      "role": "colaborador",
+      "departamentoId": "90001",
+      "leaderId": "720003"
+    },
+    {
+      "id": "930001",
+      "name": "Admin Teste",
+      "email": "admin.teste@empresa.com",
+      "role": "admin",
+      "departamentoId": "NULL",
+      "leaderId": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\tdepartamentoId\tleaderId\n720001\tUsuarioteste1\tusuarioteste1@teste.com\tcolaborador\t90001\t720003\n720002\tusuarioteste2\tusuarioteste2@teste.com\tcolaborador\t510001\t840002\n720003\tliderteste1\tliderteste1@teste.com\tlider\t30001\t150008\n780040\tAdmin Teste PDI\tadmin.pdi1768678059213@test.com\tadmin\tNULL\tNULL\n780041\tLíder Teste PDI\tlider.pdi1768678059213@test.com\tlider\tNULL\tNULL\n780043\tColaborador Teste PDI\tcolab.pdi1768678059213@test.com\tcolaborador\tNULL\t2\n780047\tColaborador Teste Limite\tcolaborador-limite-1768678060391@test.com\tcolaborador\tNULL\tNULL\n780050\tLíder Test Actions\tleader-actions-1768678061030@test.com\tlider\tNULL\tNULL\n780052\tTeste Auth\tteste.auth@test.com\tcolaborador\tNULL\tNULL\n780057\tAdmin Teste PDI\tadmin.pdi1768678108117@test.com\tadmin\tNULL\tNULL\n780058\tLíder Teste PDI\tlider.pdi1768678108117@test.com\tlider\tNULL\tNULL\n780059\tColaborador Teste PDI\tcolab.pdi1768678108117@test.com\tcolaborador\tNULL\t2\n780060\tColaborador Teste Limite\tcolaborador-limite-1768678109045@test.com\tcolaborador\tNULL\tNULL\n810001\tAdmin Teste\tadmin.teste@empresa.com\tcolaborador\t90001\t720003\n930001\tAdmin Teste\tadmin.teste@empresa.com\tadmin\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 61
+}

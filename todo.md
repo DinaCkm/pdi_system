@@ -2007,3 +2007,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Mostrar alterações no formato "De → Para" na página do líder
 - [ ] Testar criação de nova solicitação com dados De/Para
 - [ ] Verificar se líder consegue ver as alterações corretamente
+
+## Ajustes de Menu (24 JAN 2025)
+- [x] Remover item "Evidências da Equipe" do menu do líder
