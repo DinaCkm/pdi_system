@@ -1111,7 +1111,23 @@ export async function getPendingAdjustmentRequests() {
     ORDER BY ar.createdAt DESC
   `);
 
-  const result = rows.map((row: any) => ({
+  // Buscar comentários do líder para cada solicitação
+  const result = await Promise.all(rows.map(async (row: any) => {
+    // Buscar comentários do líder para esta solicitação
+    const [commentsRows]: any = await db.execute(`
+      SELECT 
+        ac.id,
+        ac.comentario,
+        ac.createdAt,
+        u.name as autor_name,
+        u.role as autor_role
+      FROM adjustment_comments ac
+      LEFT JOIN users u ON ac.autorId = u.id
+      WHERE ac.adjustmentRequestId = ?
+      ORDER BY ac.createdAt DESC
+    `, [row.id]);
+    
+    return {
       id: row.id,
       actionId: row.actionId,
       solicitanteId: row.solicitanteId,
@@ -1136,7 +1152,15 @@ export async function getPendingAdjustmentRequests() {
         name: row.user_name,
         email: row.user_email,
       },
-    }));
+      comentariosLider: commentsRows.map((c: any) => ({
+        id: c.id,
+        comentario: c.comentario,
+        createdAt: c.createdAt,
+        autorName: c.autor_name,
+        autorRole: c.autor_role,
+      })),
+    };
+  }));
   return result;
 }
 export async function getAdjustmentRequestsByUser(userId: number) {

@@ -31,6 +31,8 @@ export default function AdminDashboard() {
   // Filtrar solicitações por status
   const filteredAdjustments = statusFilter === "todos" 
     ? allAdjustments 
+    : statusFilter === "com_parecer"
+    ? allAdjustments.filter((adj: any) => adj.comentariosLider && adj.comentariosLider.length > 0)
     : allAdjustments.filter((adj: any) => adj.status === statusFilter);
   
   // Contar por status
@@ -39,6 +41,7 @@ export default function AdminDashboard() {
     aguardando_lider: allAdjustments.filter((adj: any) => adj.status === 'aguardando_lider').length,
     aprovada: allAdjustments.filter((adj: any) => adj.status === 'aprovada').length,
     reprovada: allAdjustments.filter((adj: any) => adj.status === 'reprovada').length,
+    comParecerLider: allAdjustments.filter((adj: any) => adj.comentariosLider && adj.comentariosLider.length > 0).length,
   };
   
   useEffect(() => {
@@ -219,15 +222,15 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setStatusFilter("aguardando_lider")}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-purple-200 bg-purple-50/30" onClick={() => setStatusFilter("com_parecer")}>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              💬 Aguardando Líder
+              💬 Com Parecer do Líder
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-600">{countByStatus.aguardando_lider}</div>
-            <p className="text-sm text-gray-600">com parecer do líder</p>
+            <div className="text-3xl font-bold text-purple-600">{countByStatus.comParecerLider}</div>
+            <p className="text-sm text-gray-600">solicitações comentadas</p>
           </CardContent>
         </Card>
 
@@ -344,6 +347,14 @@ export default function AdminDashboard() {
                 >
                   Reprovadas ({countByStatus.reprovada})
                 </Button>
+                <Button
+                  variant={statusFilter === "com_parecer" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("com_parecer")}
+                  className={statusFilter === "com_parecer" ? "bg-purple-600 hover:bg-purple-700" : "border-purple-300 text-purple-700"}
+                >
+                  💬 Com Parecer ({countByStatus.comParecerLider})
+                </Button>
               </div>
             </div>
           </Card>
@@ -353,12 +364,14 @@ export default function AdminDashboard() {
               <p className="text-gray-600">
                 {statusFilter === "todos" 
                   ? "Nenhuma solicitação encontrada" 
+                  : statusFilter === "com_parecer"
+                  ? "Nenhuma solicitação com parecer do líder"
                   : `Nenhuma solicitação com status "${statusFilter}"`}
               </p>
             </Card>
           ) : (
             filteredAdjustments.map((adjustment: any) => (
-              <Card key={adjustment.id} className={adjustment.status === 'aguardando_lider' ? 'border-purple-200 bg-purple-50/30' : ''}>
+              <Card key={adjustment.id} className={adjustment.comentariosLider && adjustment.comentariosLider.length > 0 ? 'border-purple-200 bg-purple-50/30' : ''}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
@@ -435,6 +448,29 @@ export default function AdminDashboard() {
                     <p className="text-sm font-semibold text-gray-700">Justificativa:</p>
                     <p className="text-sm text-gray-600 mt-1 bg-blue-50 p-2 rounded border border-blue-100">{adjustment.justificativa}</p>
                   </div>
+                  
+                  {/* Mostrar comentários do líder */}
+                  {adjustment.comentariosLider && adjustment.comentariosLider.length > 0 && (
+                    <div className="mt-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MessageSquare className="h-4 w-4 text-purple-600" />
+                        <p className="text-sm font-semibold text-purple-700">Parecer do Líder:</p>
+                        <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 text-xs">
+                          {adjustment.comentariosLider.length} comentário(s)
+                        </Badge>
+                      </div>
+                      <div className="space-y-2">
+                        {adjustment.comentariosLider.map((comentario: any) => (
+                          <div key={comentario.id} className="bg-white p-2 rounded border border-purple-100">
+                            <p className="text-sm text-gray-700">{comentario.comentario}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Por: {comentario.autorName || 'Líder'} • {new Date(comentario.createdAt).toLocaleDateString('pt-BR')} às {new Date(comentario.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Mostrar botão de avaliar apenas para solicitações pendentes ou aguardando líder */}
                   {(adjustment.status === 'pendente' || adjustment.status === 'aguardando_lider') && (
