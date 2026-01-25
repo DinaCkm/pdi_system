@@ -1,0 +1,199 @@
+{
+  "query": "SELECT id, name, email, cpf, role FROM users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, cpf, role FROM users;",
+  "rows": [
+    {
+      "id": "150008",
+      "name": "Sebrae TO - Administrador",
+      "email": "relacionamento@ckmtalents.net",
+      "cpf": "00000000000",
+      "role": "admin"
+    },
+    {
+      "id": "720001",
+      "name": "Usuarioteste1",
+      "email": "usuarioteste1@teste.com",
+      "cpf": "00000000001",
+      "role": "colaborador"
+    },
+    {
+      "id": "720002",
+      "name": "usuarioteste2",
+      "email": "usuarioteste2@teste.com",
+      "cpf": "00000000002",
+      "role": "colaborador"
+    },
+    {
+      "id": "720003",
+      "name": "liderteste1",
+      "email": "liderteste1@teste.com",
+      "cpf": "00000000011",
+      "role": "lider"
+    },
+    {
+      "id": "780040",
+      "name": "Admin Teste PDI",
+      "email": "admin.pdi1768678059213@test.com",
+      "cpf": "11178059213",
+      "role": "admin"
+    },
+    {
+      "id": "780041",
+      "name": "Líder Teste PDI",
+      "email": "lider.pdi1768678059213@test.com",
+      "cpf": "22278059213",
+      "role": "lider"
+    },
+    {
+      "id": "780043",
+      "name": "Colaborador Teste PDI",
+      "email": "colab.pdi1768678059213@test.com",
+      "cpf": "33378059213",
+      "role": "colaborador"
+    },
+    {
+      "id": "780047",
+      "name": "Colaborador Teste Limite",
+      "email": "colaborador-limite-1768678060391@test.com",
+      "cpf": "22357829742",
+      "role": "colaborador"
+    },
+    {
+      "id": "780048",
+      "name": "Colaborador Stats",
+      "email": "colaborador-stats-1768678060684@test.com",
+      "cpf": "92970020383",
+      "role": "colaborador"
+    },
+    {
+      "id": "780049",
+      "name": "Colaborador Pending",
+      "email": "colaborador-pending-1768678060743@test.com",
+      "cpf": "20420879555",
+      "role": "colaborador"
+    },
+    {
+      "id": "780050",
+      "name": "Líder Test Actions",
+      "email": "leader-actions-1768678061030@test.com",
+      "cpf": "6057294672",
+      "role": "lider"
+    },
+    {
+      "id": "780051",
+      "name": "User Test Actions",
+      "email": "user-actions-1768678061040@test.com",
+      "cpf": "20698868906",
+      "role": "colaborador"
+    },
+    {
+      "id": "780052",
+      "name": "Teste Auth",
+      "email": "teste.auth@test.com",
+      "cpf": "12345678901",
+      "role": "colaborador"
+    },
+    {
+      "id": "780057",
+      "name": "Admin Teste PDI",
+      "email": "admin.pdi1768678108117@test.com",
+      "cpf": "11178108117",
+      "role": "admin"
+    },
+    {
+      "id": "780058",
+      "name": "Líder Teste PDI",
+      "email": "lider.pdi1768678108117@test.com",
+      "cpf": "22278108117",
+      "role": "lider"
+    },
+    {
+      "id": "780059",
+      "name": "Colaborador Teste PDI",
+      "email": "colab.pdi1768678108117@test.com",
+      "cpf": "33378108117",
+      "role": "colaborador"
+    },
+    {
+      "id": "780060",
+      "name": "Colaborador Teste Limite",
+      "email": "colaborador-limite-1768678109045@test.com",
+      "cpf": "96827921519",
+      "role": "colaborador"
+    },
+    {
+      "id": "780061",
+      "name": "Colaborador Stats",
+      "email": "colaborador-stats-1768678109309@test.com",
+      "cpf": "74480697146",
+      "role": "colaborador"
+    },
+    {
+      "id": "780062",
+      "name": "Colaborador Pending",
+      "email": "colaborador-pending-1768678109349@test.com",
+      "cpf": "51986381303",
+      "role": "colaborador"
+    },
+    {
+      "id": "810001",
+      "name": "Admin Teste",
+      "email": "admin.teste@empresa.com",
+      "cpf": "11111111111",
+      "role": "colaborador"
+    },
+    {
+      "id": "840001",
+      "name": "Dinica Souza Makiyama",
+      "email": "dina@ckmtalents.net",
+      "cpf": "00000000023",
+      "role": "colaborador"
+    },
+    {
+      "id": "840002",
+      "name": "mariza da silva",
+      "email": "financeiro@makiyama.com.br",
+      "cpf": "00000000089",
+      "role": "lider"
+    },
+    {
+      "id": "870001",
+      "name": "JOSE DA SILVA",
+      "email": "josedasilva@empresa.com",
+      "cpf": "00000000056",
+      "role": "colaborador"
+    },
+    {
+      "id": "900001",
+      "name": "MARIA DE SOUZA ",
+      "email": "mariadesouza@empregado.com",
+      "cpf": "00000000057",
+      "role": "colaborador"
+    },
+    {
+      "id": "930001",
+      "name": "Admin Teste",
+      "email": "admin.teste@empresa.com",
+      "cpf": "111.222.333-44",
+      "role": "admin"
+    },
+    {
+      "id": "960001",
+      "name": "Julia Silva",
+      "email": "julia@ckmtalents.net",
+      "cpf": "12345678900",
+      "role": "colaborador"
+    },
+    {
+      "id": "1050001",
+      "name": "Plern",
+      "email": "plern@empresa.com",
+      "cpf": "98765432101",
+      "role": "colaborador"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tcpf\trole\n150008\tSebrae TO - Administrador\trelacionamento@ckmtalents.net\t00000000000\tadmin\n720001\tUsuarioteste1\tusuarioteste1@teste.com\t00000000001\tcolaborador\n720002\tusuarioteste2\tusuarioteste2@teste.com\t00000000002\tcolaborador\n720003\tliderteste1\tliderteste1@teste.com\t00000000011\tlider\n780040\tAdmin Teste PDI\tadmin.pdi1768678059213@test.com\t11178059213\tadmin\n780041\tLíder Teste PDI\tlider.pdi1768678059213@test.com\t22278059213\tlider\n780043\tColaborador Teste PDI\tcolab.pdi1768678059213@test.com\t33378059213\tcolaborador\n780047\tColaborador Teste Limite\tcolaborador-limite-1768678060391@test.com\t22357829742\tcolaborador\n780048\tColaborador Stats\tcolaborador-stats-1768678060684@test.com\t92970020383\tcolaborador\n780049\tColaborador Pending\tcolaborador-pending-1768678060743@test.com\t20420879555\tcolaborador\n780050\tLíder Test Actions\tleader-actions-1768678061030@test.com\t6057294672\tlider\n780051\tUser Test Actions\tuser-actions-1768678061040@test.com\t20698868906\tcolaborador\n780052\tTeste Auth\tteste.auth@test.com\t12345678901\tcolaborador\n780057\tAdmin Teste PDI\tadmin.pdi1768678108117@test.com\t11178108117\tadmin\n780058\tLíder Teste PDI\tlider.pdi1768678108117@test.com\t22278108117\tlider\n780059\tColaborador Teste PDI\tcolab.pdi1768678108117@test.com\t33378108117\tcolaborador\n780060\tColaborador Teste Limite\tcolaborador-limite-1768678109045@test.com\t96827921519\tcolaborador\n780061\tColaborador Stats\tcolaborador-stats-1768678109309@test.com\t74480697146\tcolaborador\n780062\tColaborador Pending\tcolaborador-pending-1768678109349@test.com\t51986381303\tcolaborador\n810001\tAdmin Teste\tadmin.teste@empresa.com\t11111111111\tcolaborador\n840001\tDinica Souza Makiyama\tdina@ckmtalents.net\t00000000023\tcolaborador\n840002\tmariza da silva\tfinanceiro@makiyama.com.br\t00000000089\tlider\n870001\tJOSE DA SILVA\tjosedasilva@empresa.com\t00000000056\tcolaborador\n900001\tMARIA DE SOUZA \tmariadesouza@empregado.com\t00000000057\tcolaborador\n930001\tAdmin Teste\tadmin.teste@empresa.com\t111.222.333-44\tadmin\n960001\tJulia Silva\tjulia@ckmtalents.net\t12345678900\tcolaborador\n1050001\tPlern\tplern@empresa.com\t98765432101\tcolaborador\n",
+  "stderr": "",
+  "execution_time_ms": 369
+}

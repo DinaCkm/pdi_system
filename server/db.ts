@@ -1101,86 +1101,104 @@ export async function getPendingAdjustmentRequests() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [rows]: any = await db.execute(`
-    SELECT 
-      ar.id,
-      ar.actionId,
-      ar.solicitanteId,
-      ar.tipoSolicitante,
-      ar.justificativa,
-      ar.camposAjustar,
-      ar.dadosAntesAjuste,
-      ar.status,
-      ar.justificativaAdmin,
-      ar.createdAt,
-      ar.evaluatedAt,
-      ar.evaluatedBy,
-      a.id as action_id,
-      a.titulo as action_title,
-      a.descricao as action_desc,
-      a.prazo as action_prazo,
-      a.macroId as action_macro_id,
-      a.microcompetencia as action_micro,
-      u.name as user_name,
-      u.email as user_email
-    FROM adjustment_requests ar
-    LEFT JOIN actions a ON CAST(ar.actionId AS UNSIGNED) = a.id
-    LEFT JOIN users u ON ar.solicitanteId = u.id
-    ORDER BY ar.createdAt DESC
-  `);
+  console.log('[getPendingAdjustmentRequests] Iniciando busca de TODAS as solicitações...');
 
-  // Buscar comentários do líder para cada solicitação
-  const result = await Promise.all(rows.map(async (row: any) => {
-    // Buscar comentários do líder para esta solicitação
-    const [commentsRows]: any = await db.execute(`
+  try {
+    // Usar sql template para garantir compatibilidade
+    const [rows]: any = await db.execute(sql`
       SELECT 
-        ac.id,
-        ac.comentario,
-        ac.createdAt,
-        u.name as autor_name,
-        u.role as autor_role
-      FROM adjustment_comments ac
-      LEFT JOIN users u ON ac.autorId = u.id
-      WHERE ac.adjustmentRequestId = ?
-      ORDER BY ac.createdAt DESC
-    `, [row.id]);
-    
-    return {
-      id: row.id,
-      actionId: row.actionId,
-      solicitanteId: row.solicitanteId,
-      tipoSolicitante: row.tipoSolicitante,
-      justificativa: row.justificativa,
-      camposAjustar: row.camposAjustar,
-      dadosAntesAjuste: row.dadosAntesAjuste,
-      status: row.status,
-      justificativaAdmin: row.justificativaAdmin,
-      createdAt: row.createdAt,
-      evaluatedAt: row.evaluatedAt,
-      evaluatedBy: row.evaluatedBy,
-      acao: {
-        id: row.action_id,
-        titulo: row.action_title,
-        descricao: row.action_desc,
-        prazo: row.action_prazo,
-        macroId: row.action_macro_id,
-        microcompetencia: row.action_micro,
-      },
-      solicitante: {
-        name: row.user_name,
-        email: row.user_email,
-      },
-      comentariosLider: commentsRows.map((c: any) => ({
-        id: c.id,
-        comentario: c.comentario,
-        createdAt: c.createdAt,
-        autorName: c.autor_name,
-        autorRole: c.autor_role,
-      })),
-    };
-  }));
-  return result;
+        ar.id,
+        ar.actionId,
+        ar.solicitanteId,
+        ar.tipoSolicitante,
+        ar.justificativa,
+        ar.camposAjustar,
+        ar.dadosAntesAjuste,
+        ar.status,
+        ar.justificativaAdmin,
+        ar.createdAt,
+        ar.evaluatedAt,
+        ar.evaluatedBy,
+        a.id as action_id,
+        a.titulo as action_title,
+        a.descricao as action_desc,
+        a.prazo as action_prazo,
+        a.macroId as action_macro_id,
+        a.microcompetencia as action_micro,
+        u.name as user_name,
+        u.email as user_email
+      FROM adjustment_requests ar
+      LEFT JOIN actions a ON ar.actionId = a.id
+      LEFT JOIN users u ON ar.solicitanteId = u.id
+      ORDER BY ar.createdAt DESC
+    `);
+
+    console.log('[getPendingAdjustmentRequests] Encontradas', rows?.length || 0, 'solicitações no banco');
+
+    if (!rows || rows.length === 0) {
+      console.log('[getPendingAdjustmentRequests] Nenhuma solicitação encontrada');
+      return [];
+    }
+
+    // Buscar comentários do líder para cada solicitação usando sql template
+    const result = await Promise.all(rows.map(async (row: any) => {
+      const requestId = row.id;
+      const [commentsRows]: any = await db.execute(sql`
+        SELECT 
+          ac.id,
+          ac.comentario,
+          ac.createdAt,
+          u.name as autor_name,
+          u.role as autor_role
+        FROM adjustment_comments ac
+        LEFT JOIN users u ON ac.autorId = u.id
+        WHERE ac.adjustmentRequestId = ${requestId}
+        ORDER BY ac.createdAt DESC
+      `);
+      
+      return {
+        id: row.id,
+        actionId: row.actionId,
+        solicitanteId: row.solicitanteId,
+        tipoSolicitante: row.tipoSolicitante,
+        justificativa: row.justificativa,
+        camposAjustar: row.camposAjustar,
+        dadosAntesAjuste: row.dadosAntesAjuste,
+        status: row.status,
+        justificativaAdmin: row.justificativaAdmin,
+        createdAt: row.createdAt,
+        evaluatedAt: row.evaluatedAt,
+        evaluatedBy: row.evaluatedBy,
+        acao: {
+          id: row.action_id,
+          titulo: row.action_title,
+          descricao: row.action_desc,
+          prazo: row.action_prazo,
+          macroId: row.action_macro_id,
+          microcompetencia: row.action_micro,
+        },
+        solicitante: {
+          name: row.user_name,
+          email: row.user_email,
+        },
+        comentariosLider: (commentsRows || []).map((c: any) => ({
+          id: c.id,
+          comentario: c.comentario,
+          createdAt: c.createdAt,
+          autorName: c.autor_name,
+          autorRole: c.autor_role,
+        })),
+      };
+    }));
+
+    console.log('[getPendingAdjustmentRequests] Retornando', result.length, 'solicitações processadas');
+    return result;
+  } catch (error) {
+    console.error('[getPendingAdjustmentRequests] Erro:', error);
+    throw error;
+  }
 }
+
 export async function getAdjustmentRequestsByUser(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

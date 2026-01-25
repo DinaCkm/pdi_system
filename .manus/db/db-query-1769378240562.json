@@ -1,0 +1,61 @@
+{
+  "query": "SELECT * FROM adjustment_requests;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT * FROM adjustment_requests;",
+  "rows": [
+    {
+      "id": "210001",
+      "actionId": "420005",
+      "solicitanteId": "720003",
+      "tipoSolicitante": "colaborador",
+      "justificativa": "já fiz esta técnica antes.",
+      "camposAjustar": "{\"titulo\":\"Trocar por outra técnica\",\"descricao\":\"\",\"prazo\":\"\",\"competencia\":\"\"}",
+      "status": "pendente",
+      "justificativaAdmin": "NULL",
+      "createdAt": "2026-01-25 21:31:08",
+      "evaluatedAt": "NULL",
+      "evaluatedBy": "NULL",
+      "dadosAntesAjuste": "{\"titulo\":\"Implementação do Hábito de Foco Diário (Técnica Pomodoro)\",\"descricao\":\"📌 O QUE FAZER:\\r\\nImplemente a Técnica Pomodoro (ou outra técnica de blocos de tempo) em suas atividades diárias por um período de 30 dias. A disciplina será desenvolvida ao manter a consistência em seguir os blocos de trabalho focado (25 minutos) e as pausas (5 minutos), sem interrupções externas ou internas. Utilize um aplicativo de rastreamento de tempo (como Toggl Track, Forest ou Focus Keeper) para registrar o número de 'Pomodoros' completados diariamente e as tarefas associadas. Foque em completar no mínimo 8 Pomodoros por dia útil.\\r\\n\\r\\n💡 ESTA É UMA SUGESTÃO!\\r\\nVocê pode optar por uma ação similar (outro método de gestão de foco, como Time Blocking rigoroso ou a regra 52/17) desde que desenvolva a competência de Disciplina.\\r\\n\\r\\n📎 EVIDÊNCIA ESPERADA:\\r\\nApresentação de um relatório semanal (por 4 semanas) contendo o registro dos Pomodoros completados, as tarefas executadas em cada bloco, e uma breve autoavaliação sobre os desafios encontrados e as estratégias utilizadas para manter a disciplina e evitar a procrastinação.\",\"prazo\":\"2026-05-01T00:00:00.000Z\",\"competencia\":\"COMPORTAMENTAL-Gestão do Tempo, Organização e Disciplina\"}",
+      "dadosAposAjuste": "NULL",
+      "approvedByLeaderAt": "NULL",
+      "approvedByLeaderId": "NULL"
+    },
+    {
+      "id": "210002",
+      "actionId": "420004",
+      "solicitanteId": "720003",
+      "tipoSolicitante": "colaborador",
+      "justificativa": "Alterar a Data",
+      "camposAjustar": "{\"competencia\":\"\"}",
+      "status": "pendente",
+      "justificativaAdmin": "NULL",
+      "createdAt": "2026-01-25 21:47:37",
+      "evaluatedAt": "NULL",
+      "evaluatedBy": "NULL",
+      "dadosAntesAjuste": "{\"titulo\":\"Implementação de Projeto 'Sprint de Performance' com Equipe\",\"descricao\":\"📌 O QUE FAZER:\\r\\nImplemente um projeto prático de 60 dias (Sprint de Performance) focado em elevar a produtividade e coesão de sua equipe atual. O projeto deve incluir:\\r\\n1. Definição de OKRs (Objectives and Key Results) ambiciosos e claros para o período.\\r\\n2. Implementação de rituais de feedback contínuo (ex: reuniões diárias de 15 minutos e sessões semanais de 1:1 focadas em desenvolvimento).\\r\\n3. Criação de um plano de reconhecimento e motivação para a equipe baseado em resultados alcançados.\\r\\n\\r\\n💡 ESTA É UMA SUGESTÃO!\\r\\nVocê pode optar por uma ação similar (outro curso, workshop, livro, etc.) desde que desenvolva a competência de Liderança de Equipes de Alta Performance.\\r\\n\\r\\n📎 EVIDÊNCIA ESPERADA:\\r\\nApresentação de um relatório final (máximo 3 páginas) contendo:\\r\\n1. Os OKRs definidos e os resultados atingidos (métricas de performance).\\r\\n2. Descrição dos rituais implementados e exemplos de feedback fornecido.\\r\\n3. Análise crítica dos desafios encontrados e lições aprendidas sobre gestão de performance.\",\"prazo\":\"2026-01-31T00:00:00.000Z\",\"competencia\":\"COMPORTAMENTAL-Gestão de Equipes e Clima Organizacional\"}",
+      "dadosAposAjuste": "NULL",
+      "approvedByLeaderAt": "NULL",
+      "approvedByLeaderId": "NULL"
+    },
+    {
+      "id": "210003",
+      "actionId": "420008",
+      "solicitanteId": "840001",
+      "tipoSolicitante": "colaborador",
+      "justificativa": "NÃO PRECISO DESENVOLVER ESTA COMPETENCIA",
+      "camposAjustar": "{\"competencia\":\"ALTERAR A COMPETENCIA\"}",
+      "status": "pendente",
+      "justificativaAdmin": "NULL",
+      "createdAt": "2026-01-25 21:53:05",
+      "evaluatedAt": "NULL",
+      "evaluatedBy": "NULL",
+      "dadosAntesAjuste": "{\"titulo\":\"Projeto Prático: Ciclo de Feedback 360º para Equipe\",\"descricao\":\"📌 O QUE FAZER:\\r\\nImplemente um ciclo de feedback estruturado com a sua equipe, focado na metodologia SBI (Situação-Comportamento-Impacto) ou STAR (Situação-Tarefa-Ação-Resultado) para garantir a objetividade. O projeto deve durar 4 semanas e incluir:\\r\\n1. Treinamento rápido (self-learning) sobre a metodologia escolhida (ex: assistir ao curso \\\"Dando e Recebendo Feedback de Alto Impacto\\\" no LinkedIn Learning).\\r\\n2. Realização de pelo menos 5 sessões de feedback formal (positivo e construtivo) com membros diferentes da equipe.\\r\\n3. Recebimento de feedback sobre sua própria habilidade de dar feedback (solicitado a 3 colegas ou ao gestor).\\r\\n\\r\\n💡 ESTA É UMA SUGESTÃO!\\r\\nVocê pode optar por uma ação similar (outro curso, workshop, livro, etc.) desde que desenvolva a competência de Feedback.\\r\\n\\r\\n📎 EVIDÊNCIA ESPERADA:\\r\\nApresentação de um breve relatório (máximo 1 página) descrevendo a metodologia utilizada, os principais aprendizados (insights), e um resumo dos feedbacks recebidos sobre sua performance na aplicação do feedback.\",\"prazo\":\"2026-04-28T00:00:00.000Z\",\"competencia\":\"COMPORTAMENTAL-Gestão de Equipes e Clima Organizacional\"}",
+      "dadosAposAjuste": "NULL",
+      "approvedByLeaderAt": "NULL",
+      "approvedByLeaderId": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tsolicitanteId\ttipoSolicitante\tjustificativa\tcamposAjustar\tstatus\tjustificativaAdmin\tcreatedAt\tevaluatedAt\tevaluatedBy\tdadosAntesAjuste\tdadosAposAjuste\tapprovedByLeaderAt\tapprovedByLeaderId\n210001\t420005\t720003\tcolaborador\tjá fiz esta técnica antes.\t{\"titulo\":\"Trocar por outra técnica\",\"descricao\":\"\",\"prazo\":\"\",\"competencia\":\"\"}\tpendente\tNULL\t2026-01-25 21:31:08\tNULL\tNULL\t{\"titulo\":\"Implementação do Hábito de Foco Diário (Técnica Pomodoro)\",\"descricao\":\"📌 O QUE FAZER:\\r\\nImplemente a Técnica Pomodoro (ou outra técnica de blocos de tempo) em suas atividades diárias por um período de 30 dias. A disciplina será desenvolvida ao manter a consistência em seguir os blocos de trabalho focado (25 minutos) e as pausas (5 minutos), sem interrupções externas ou internas. Utilize um aplicativo de rastreamento de tempo (como Toggl Track, Forest ou Focus Keeper) para registrar o número de 'Pomodoros' completados diariamente e as tarefas associadas. Foque em completar no mínimo 8 Pomodoros por dia útil.\\r\\n\\r\\n💡 ESTA É UMA SUGESTÃO!\\r\\nVocê pode optar por uma ação similar (outro método de gestão de foco, como Time Blocking rigoroso ou a regra 52/17) desde que desenvolva a competência de Disciplina.\\r\\n\\r\\n📎 EVIDÊNCIA ESPERADA:\\r\\nApresentação de um relatório semanal (por 4 semanas) contendo o registro dos Pomodoros completados, as tarefas executadas em cada bloco, e uma breve autoavaliação sobre os desafios encontrados e as estratégias utilizadas para manter a disciplina e evitar a procrastinação.\",\"prazo\":\"2026-05-01T00:00:00.000Z\",\"competencia\":\"COMPORTAMENTAL-Gestão do Tempo, Organização e Disciplina\"}\tNULL\tNULL\tNULL\n210002\t420004\t720003\tcolaborador\tAlterar a Data\t{\"competencia\":\"\"}\tpendente\tNULL\t2026-01-25 21:47:37\tNULL\tNULL\t{\"titulo\":\"Implementação de Projeto 'Sprint de Performance' com Equipe\",\"descricao\":\"📌 O QUE FAZER:\\r\\nImplemente um projeto prático de 60 dias (Sprint de Performance) focado em elevar a produtividade e coesão de sua equipe atual. O projeto deve incluir:\\r\\n1. Definição de OKRs (Objectives and Key Results) ambiciosos e claros para o período.\\r\\n2. Implementação de rituais de feedback contínuo (ex: reuniões diárias de 15 minutos e sessões semanais de 1:1 focadas em desenvolvimento).\\r\\n3. Criação de um plano de reconhecimento e motivação para a equipe baseado em resultados alcançados.\\r\\n\\r\\n💡 ESTA É UMA SUGESTÃO!\\r\\nVocê pode optar por uma ação similar (outro curso, workshop, livro, etc.) desde que desenvolva a competência de Liderança de Equipes de Alta Performance.\\r\\n\\r\\n📎 EVIDÊNCIA ESPERADA:\\r\\nApresentação de um relatório final (máximo 3 páginas) contendo:\\r\\n1. Os OKRs definidos e os resultados atingidos (métricas de performance).\\r\\n2. Descrição dos rituais implementados e exemplos de feedback fornecido.\\r\\n3. Análise crítica dos desafios encontrados e lições aprendidas sobre gestão de performance.\",\"prazo\":\"2026-01-31T00:00:00.000Z\",\"competencia\":\"COMPORTAMENTAL-Gestão de Equipes e Clima Organizacional\"}\tNULL\tNULL\tNULL\n210003\t420008\t840001\tcolaborador\tNÃO PRECISO DESENVOLVER ESTA COMPETENCIA\t{\"competencia\":\"ALTERAR A COMPETENCIA\"}\tpendente\tNULL\t2026-01-25 21:53:05\tNULL\tNULL\t{\"titulo\":\"Projeto Prático: Ciclo de Feedback 360º para Equipe\",\"descricao\":\"📌 O QUE FAZER:\\r\\nImplemente um ciclo de feedback estruturado com a sua equipe, focado na metodologia SBI (Situação-Comportamento-Impacto) ou STAR (Situação-Tarefa-Ação-Resultado) para garantir a objetividade. O projeto deve durar 4 semanas e incluir:\\r\\n1. Treinamento rápido (self-learning) sobre a metodologia escolhida (ex: assistir ao curso \\\"Dando e Recebendo Feedback de Alto Impacto\\\" no LinkedIn Learning).\\r\\n2. Realização de pelo menos 5 sessões de feedback formal (positivo e construtivo) com membros diferentes da equipe.\\r\\n3. Recebimento de feedback sobre sua própria habilidade de dar feedback (solicitado a 3 colegas ou ao gestor).\\r\\n\\r\\n💡 ESTA É UMA SUGESTÃO!\\r\\nVocê pode optar por uma ação similar (outro curso, workshop, livro, etc.) desde que desenvolva a competência de Feedback.\\r\\n\\r\\n📎 EVIDÊNCIA ESPERADA:\\r\\nApresentação de um breve relatório (máximo 1 página) descrevendo a metodologia utilizada, os principais aprendizados (insights), e um resumo dos feedbacks recebidos sobre sua performance na aplicação do feedback.\",\"prazo\":\"2026-04-28T00:00:00.000Z\",\"competencia\":\"COMPORTAMENTAL-Gestão de Equipes e Clima Organizacional\"}\tNULL\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 344
+}

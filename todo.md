@@ -2124,3 +2124,7 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Bug Fixes (Janeiro 2025)
 - [x] Corrigir modal de solicitação de alteração que mantém dados da ação anterior (useEffect para resetar campos)
+- [ ] Corrigir Dashboard do Admin mostrando 0 solicitações (mesmo com solicitações criadas e comentadas pelo líder)
+
+## Bug Fixes (Janeiro 2025) - Continuação
+- [x] Corrigir Dashboard do Admin mostrando 0 solicitações (problema: SQL com placeholders ? não suportado, solução: usar sql template literal do Drizzle)
