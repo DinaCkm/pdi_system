@@ -1,0 +1,26 @@
+{
+  "query": "SELECT adjustmentRequestId, COUNT(*) as count FROM adjustment_comments GROUP BY adjustmentRequestId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT adjustmentRequestId, COUNT(*) as count FROM adjustment_comments GROUP BY adjustmentRequestId;",
+  "rows": [
+    {
+      "adjustmentRequestId": "2",
+      "count": "6"
+    },
+    {
+      "adjustmentRequestId": "60004",
+      "count": "1"
+    },
+    {
+      "adjustmentRequestId": "60005",
+      "count": "1"
+    },
+    {
+      "adjustmentRequestId": "180001",
+      "count": "4"
+    }
+  ],
+  "messages": [],
+  "stdout": "adjustmentRequestId\tcount\n2\t6\n60004\t1\n60005\t1\n180001\t4\n",
+  "stderr": "",
+  "execution_time_ms": 365
+}

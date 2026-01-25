@@ -2101,3 +2101,18 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar filtro por status
 - [x] Adicionar botão para limpar filtros
 - [x] Mostrar contador de solicitações filtradas
+
+## Melhorias na Página do Líder
+- [x] Adicionar ID da solicitação na página do Líder (Solicitações de Ajuste da Equipe)
+- [ ] Corrigir exibição dos comentários do líder no Dashboard Admin
+
+## Sugestão de Ações com IA
+- [ ] Criar procedure no backend para gerar sugestões com IA
+- [ ] Adicionar botão "Sugerir com IA" no formulário de Nova Ação
+- [ ] Integrar IA para sugerir título e detalhes da ação baseado em competência macro e micro
+
+## Sugestão de Ações com IA (IMPLEMENTADO)
+- [x] Criar procedure trpc.ia.sugerirAcao no backend
+- [x] Adicionar botão "Sugerir Ação com IA" no formulário de Nova Ação
+- [x] Implementar prompt com formato estruturado (O que fazer, Flexibilidade, Evidência esperada)
+- [x] Integrar com LLM para gerar sugestões baseadas em competência macro e micro

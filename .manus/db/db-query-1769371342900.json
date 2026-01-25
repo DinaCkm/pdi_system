@@ -1,0 +1,115 @@
+{
+  "query": "SELECT ar.id as adjustment_id, ac.adjustmentRequestId as comment_ref, COUNT(ac.id) as comment_count FROM adjustment_requests ar LEFT JOIN adjustment_comments ac ON ar.id = ac.adjustmentRequestId GROUP BY ar.id, ac.adjustmentRequestId ORDER BY ar.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT ar.id as adjustment_id, ac.adjustmentRequestId as comment_ref, COUNT(ac.id) as comment_count FROM adjustment_requests ar LEFT JOIN adjustment_comments ac ON ar.id = ac.adjustmentRequestId GROUP BY ar.id, ac.adjustmentRequestId ORDER BY ar.id;",
+  "rows": [
+    {
+      "adjustment_id": "1",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "2",
+      "comment_ref": "2",
+      "comment_count": "6"
+    },
+    {
+      "adjustment_id": "30001",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "30002",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "30003",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "30004",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "30005",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "30006",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "30007",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "30008",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "30009",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "30010",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "60001",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "60002",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "60003",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "60004",
+      "comment_ref": "60004",
+      "comment_count": "1"
+    },
+    {
+      "adjustment_id": "60005",
+      "comment_ref": "60005",
+      "comment_count": "1"
+    },
+    {
+      "adjustment_id": "90001",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "120001",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "150001",
+      "comment_ref": "NULL",
+      "comment_count": "0"
+    },
+    {
+      "adjustment_id": "180001",
+      "comment_ref": "180001",
+      "comment_count": "4"
+    }
+  ],
+  "messages": [],
+  "stdout": "adjustment_id\tcomment_ref\tcomment_count\n1\tNULL\t0\n2\t2\t6\n30001\tNULL\t0\n30002\tNULL\t0\n30003\tNULL\t0\n30004\tNULL\t0\n30005\tNULL\t0\n30006\tNULL\t0\n30007\tNULL\t0\n30008\tNULL\t0\n30009\tNULL\t0\n30010\tNULL\t0\n60001\tNULL\t0\n60002\tNULL\t0\n60003\tNULL\t0\n60004\t60004\t1\n60005\t60005\t1\n90001\tNULL\t0\n120001\tNULL\t0\n150001\tNULL\t0\n180001\t180001\t4\n",
+  "stderr": "",
+  "execution_time_ms": 350
+}

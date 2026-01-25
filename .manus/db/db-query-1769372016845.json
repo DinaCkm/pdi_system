@@ -1,0 +1,28 @@
+{
+  "query": "SELECT p.id as pdi_id, p.colaboradorId, u.name as colaborador_nome, u.id as user_id FROM pdis p JOIN users u ON p.colaboradorId = u.id LIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT p.id as pdi_id, p.colaboradorId, u.name as colaborador_nome, u.id as user_id FROM pdis p JOIN users u ON p.colaboradorId = u.id LIMIT 3;",
+  "rows": [
+    {
+      "pdi_id": "540004",
+      "colaboradorId": "720001",
+      "colaborador_nome": "Usuarioteste1",
+      "user_id": "720001"
+    },
+    {
+      "pdi_id": "570001",
+      "colaboradorId": "720002",
+      "colaborador_nome": "usuarioteste2",
+      "user_id": "720002"
+    },
+    {
+      "pdi_id": "660001",
+      "colaboradorId": "720003",
+      "colaborador_nome": "liderteste1",
+      "user_id": "720003"
+    }
+  ],
+  "messages": [],
+  "stdout": "pdi_id\tcolaboradorId\tcolaborador_nome\tuser_id\n540004\t720001\tUsuarioteste1\t720001\n570001\t720002\tusuarioteste2\t720002\n660001\t720003\tliderteste1\t720003\n",
+  "stderr": "",
+  "execution_time_ms": 362
+}

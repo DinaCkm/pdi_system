@@ -1,0 +1,106 @@
+{
+  "query": "SELECT ac.id, ac.adjustmentRequestId, ac.autorId, ac.comentario, ac.createdAt, u.name as autor_name FROM adjustment_comments ac LEFT JOIN users u ON ac.autorId = u.id ORDER BY ac.createdAt DESC LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT ac.id, ac.adjustmentRequestId, ac.autorId, ac.comentario, ac.createdAt, u.name as autor_name FROM adjustment_comments ac LEFT JOIN users u ON ac.autorId = u.id ORDER BY ac.createdAt DESC LIMIT 20;",
+  "rows": [
+    {
+      "id": "30001",
+      "adjustmentRequestId": "2",
+      "autorId": "720003",
+      "comentario": "eu quero mudar este pdi - não aceito os ajustes que meu empregado pediu ",
+      "createdAt": "2026-01-25 19:59:31",
+      "autor_name": "liderteste1"
+    },
+    {
+      "id": "11",
+      "adjustmentRequestId": "180001",
+      "autorId": "720003",
+      "comentario": "Teste com logs detalhados",
+      "createdAt": "2026-01-25 14:39:06",
+      "autor_name": "liderteste1"
+    },
+    {
+      "id": "10",
+      "adjustmentRequestId": "2",
+      "autorId": "720003",
+      "comentario": "Teste final de notificação com logs",
+      "createdAt": "2026-01-25 14:37:18",
+      "autor_name": "liderteste1"
+    },
+    {
+      "id": "9",
+      "adjustmentRequestId": "2",
+      "autorId": "720003",
+      "comentario": "Teste 2 de notificação - concordo com a solicitação",
+      "createdAt": "2026-01-25 14:34:48",
+      "autor_name": "liderteste1"
+    },
+    {
+      "id": "8",
+      "adjustmentRequestId": "180001",
+      "autorId": "720003",
+      "comentario": "EU CONCORDO ",
+      "createdAt": "2026-01-25 14:32:48",
+      "autor_name": "liderteste1"
+    },
+    {
+      "id": "7",
+      "adjustmentRequestId": "2",
+      "autorId": "720003",
+      "comentario": "Teste final de notificação - concordo com a solicitação",
+      "createdAt": "2026-01-25 14:31:30",
+      "autor_name": "liderteste1"
+    },
+    {
+      "id": "6",
+      "adjustmentRequestId": "2",
+      "autorId": "720003",
+      "comentario": "Teste de notificação para admin - concordo com esta solicitação",
+      "createdAt": "2026-01-25 14:28:58",
+      "autor_name": "liderteste1"
+    },
+    {
+      "id": "5",
+      "adjustmentRequestId": "2",
+      "autorId": "720003",
+      "comentario": "Concordo com esta solicitação. Favor aprovar.",
+      "createdAt": "2026-01-25 14:26:46",
+      "autor_name": "liderteste1"
+    },
+    {
+      "id": "4",
+      "adjustmentRequestId": "60004",
+      "autorId": "720003",
+      "comentario": "Não concordo com esta alteração. O colaborador deveria manter a ação original.",
+      "createdAt": "2026-01-25 14:24:22",
+      "autor_name": "liderteste1"
+    },
+    {
+      "id": "3",
+      "adjustmentRequestId": "180001",
+      "autorId": "720003",
+      "comentario": "Concordo com esta alteração solicitada pelo colaborador. Pode aprovar.",
+      "createdAt": "2026-01-25 14:22:25",
+      "autor_name": "liderteste1"
+    },
+    {
+      "id": "2",
+      "adjustmentRequestId": "60005",
+      "autorId": "720003",
+      "comentario": "ESTOU TESTANDO OS COMENTARIOS",
+      "createdAt": "2026-01-25 14:08:22",
+      "autor_name": "liderteste1"
+    },
+    {
+      "id": "1",
+      "adjustmentRequestId": "180001",
+      "autorId": "720003",
+      "comentario": "Teste de comentário do líder - verificando se a funcionalidade está funcionando corretamente.",
+      "createdAt": "2026-01-25 14:07:22",
+      "autor_name": "liderteste1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tadjustmentRequestId\tautorId\tcomentario\tcreatedAt\tautor_name\n30001\t2\t720003\teu quero mudar este pdi - não aceito os ajustes que meu empregado pediu \t2026-01-25 19:59:31\tliderteste1\n11\t180001\t720003\tTeste com logs detalhados\t2026-01-25 14:39:06\tliderteste1\n10\t2\t720003\tTeste final de notificação com logs\t2026-01-25 14:37:18\tliderteste1\n9\t2\t720003\tTeste 2 de notificação - concordo com a solicitação\t2026-01-25 14:34:48\tliderteste1\n8\t180001\t720003\tEU CONCORDO \t2026-01-25 14:32:48\tliderteste1\n7\t2\t720003\tTeste final de notificação - concordo com a solicitação\t2026-01-25 14:31:30\tliderteste1\n6\t2\t720003\tTeste de notificação para admin - concordo com esta solicitação\t2026-01-25 14:28:58\tliderteste1\n5\t2\t720003\tConcordo com esta solicitação. Favor aprovar.\t2026-01-25 14:26:46\tliderteste1\n4\t60004\t720003\tNão concordo com esta alteração. O colaborador deveria manter a ação original.\t2026-01-25 14:24:22\tliderteste1\n3\t180001\t720003\tConcordo com esta alteração solicitada pelo colaborador. Pode aprovar.\t2026-01-25 14:22:25\tliderteste1\n2\t60005\t720003\tESTOU TESTANDO OS COMENTARIOS\t2026-01-25 14:08:22\tliderteste1\n1\t180001\t720003\tTeste de comentário do líder - verificando se a funcionalidade está funcionando corretamente.\t2026-01-25 14:07:22\tliderteste1\n",
+  "stderr": "",
+  "execution_time_ms": 362
+}

@@ -1,0 +1,8 @@
+{
+  "query": "SELECT DISTINCT adjustmentRequestId, typeof(adjustmentRequestId) FROM adjustment_comments LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT DISTINCT adjustmentRequestId, typeof(adjustmentRequestId) FROM adjustment_comments LIMIT 5;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1305 (42000) at line 1: FUNCTION Uksxtg83ZJDkZPJL3fCmwT.typeof does not exist"
+  ]
+}

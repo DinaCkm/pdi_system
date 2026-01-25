@@ -1,0 +1,59 @@
+{
+  "query": "SELECT ar.id, ar.status, ar.createdAt, a.titulo, u.name as solicitante FROM adjustment_requests ar LEFT JOIN actions a ON ar.actionId = a.id LEFT JOIN users u ON ar.solicitanteId = u.id WHERE a.titulo LIKE '%sem título%' OR a.titulo IS NULL OR a.titulo = '' ORDER BY ar.createdAt DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT ar.id, ar.status, ar.createdAt, a.titulo, u.name as solicitante FROM adjustment_requests ar LEFT JOIN actions a ON ar.actionId = a.id LEFT JOIN users u ON ar.solicitanteId = u.id WHERE a.titulo LIKE '%sem título%' OR a.titulo IS NULL OR a.titulo = '' ORDER BY ar.createdAt DESC;",
+  "rows": [
+    {
+      "id": "30008",
+      "status": "aprovada",
+      "createdAt": "2026-01-23 20:31:25",
+      "titulo": "NULL",
+      "solicitante": "Usuarioteste1"
+    },
+    {
+      "id": "30007",
+      "status": "aprovada",
+      "createdAt": "2026-01-23 20:19:24",
+      "titulo": "NULL",
+      "solicitante": "Usuarioteste1"
+    },
+    {
+      "id": "30005",
+      "status": "aprovada",
+      "createdAt": "2026-01-23 20:00:18",
+      "titulo": "NULL",
+      "solicitante": "Usuarioteste1"
+    },
+    {
+      "id": "30004",
+      "status": "aprovada",
+      "createdAt": "2026-01-23 19:59:57",
+      "titulo": "NULL",
+      "solicitante": "Usuarioteste1"
+    },
+    {
+      "id": "30003",
+      "status": "aprovada",
+      "createdAt": "2026-01-23 19:59:23",
+      "titulo": "NULL",
+      "solicitante": "Usuarioteste1"
+    },
+    {
+      "id": "30001",
+      "status": "aprovada",
+      "createdAt": "2026-01-23 19:58:54",
+      "titulo": "NULL",
+      "solicitante": "Usuarioteste1"
+    },
+    {
+      "id": "2",
+      "status": "pendente",
+      "createdAt": "2026-01-23 19:17:52",
+      "titulo": "NULL",
+      "solicitante": "Usuarioteste1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tstatus\tcreatedAt\ttitulo\tsolicitante\n30008\taprovada\t2026-01-23 20:31:25\tNULL\tUsuarioteste1\n30007\taprovada\t2026-01-23 20:19:24\tNULL\tUsuarioteste1\n30005\taprovada\t2026-01-23 20:00:18\tNULL\tUsuarioteste1\n30004\taprovada\t2026-01-23 19:59:57\tNULL\tUsuarioteste1\n30003\taprovada\t2026-01-23 19:59:23\tNULL\tUsuarioteste1\n30001\taprovada\t2026-01-23 19:58:54\tNULL\tUsuarioteste1\n2\tpendente\t2026-01-23 19:17:52\tNULL\tUsuarioteste1\n",
+  "stderr": "",
+  "execution_time_ms": 345
+}

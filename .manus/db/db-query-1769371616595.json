@@ -1,0 +1,30 @@
+{
+  "query": "SELECT ar.id as request_id, a.titulo as acao_titulo, COUNT(ac.id) as num_comments FROM adjustment_requests ar LEFT JOIN actions a ON ar.actionId = a.id LEFT JOIN adjustment_comments ac ON ar.id = ac.adjustmentRequestId GROUP BY ar.id, a.titulo HAVING num_comments > 0 ORDER BY ar.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT ar.id as request_id, a.titulo as acao_titulo, COUNT(ac.id) as num_comments FROM adjustment_requests ar LEFT JOIN actions a ON ar.actionId = a.id LEFT JOIN adjustment_comments ac ON ar.id = ac.adjustmentRequestId GROUP BY ar.id, a.titulo HAVING num_comments > 0 ORDER BY ar.id;",
+  "rows": [
+    {
+      "request_id": "2",
+      "acao_titulo": "NULL",
+      "num_comments": "6"
+    },
+    {
+      "request_id": "60004",
+      "acao_titulo": "Dinamicas de Grupo",
+      "num_comments": "1"
+    },
+    {
+      "request_id": "60005",
+      "acao_titulo": "DESENVOLVIMENTO  TÉCNICO/COMPORTAMENTAL ",
+      "num_comments": "1"
+    },
+    {
+      "request_id": "180001",
+      "acao_titulo": "usuario teste 1 ação 1",
+      "num_comments": "4"
+    }
+  ],
+  "messages": [],
+  "stdout": "request_id\tacao_titulo\tnum_comments\n2\tNULL\t6\n60004\tDinamicas de Grupo\t1\n60005\tDESENVOLVIMENTO  TÉCNICO/COMPORTAMENTAL \t1\n180001\tusuario teste 1 ação 1\t4\n",
+  "stderr": "",
+  "execution_time_ms": 358
+}

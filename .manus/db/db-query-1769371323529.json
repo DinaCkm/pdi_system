@@ -1,0 +1,80 @@
+{
+  "query": "SELECT ar.id, ar.actionId, ar.status, ar.justificativa, ar.createdAt FROM adjustment_requests ar ORDER BY ar.createdAt DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT ar.id, ar.actionId, ar.status, ar.justificativa, ar.createdAt FROM adjustment_requests ar ORDER BY ar.createdAt DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "180001",
+      "actionId": "390005",
+      "status": "aprovada",
+      "justificativa": "quero muuto alterar",
+      "createdAt": "2026-01-25 00:23:42"
+    },
+    {
+      "id": "150001",
+      "actionId": "360001",
+      "status": "aprovada",
+      "justificativa": "xxxxxxxxxxxxxxxxxxxxxxx",
+      "createdAt": "2026-01-24 15:58:56"
+    },
+    {
+      "id": "120001",
+      "actionId": "330001",
+      "status": "aprovada",
+      "justificativa": "é muitos dias",
+      "createdAt": "2026-01-24 15:06:44"
+    },
+    {
+      "id": "90001",
+      "actionId": "210012",
+      "status": "aprovada",
+      "justificativa": "NÃO GOSTO DE CURSO DE TECNOLOGIA",
+      "createdAt": "2026-01-24 00:08:52"
+    },
+    {
+      "id": "60005",
+      "actionId": "270003",
+      "status": "aprovada",
+      "justificativa": "teste testetetetette",
+      "createdAt": "2026-01-23 23:26:12"
+    },
+    {
+      "id": "60004",
+      "actionId": "270004",
+      "status": "aprovada",
+      "justificativa": "xxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "createdAt": "2026-01-23 22:42:22"
+    },
+    {
+      "id": "60003",
+      "actionId": "270007",
+      "status": "aprovada",
+      "justificativa": "xxxxxxxxxxxxxxxxxxx",
+      "createdAt": "2026-01-23 22:41:42"
+    },
+    {
+      "id": "60002",
+      "actionId": "270006",
+      "status": "aprovada",
+      "justificativa": "XXXXXXXXXXXXXXXXXXXXXXX",
+      "createdAt": "2026-01-23 22:05:29"
+    },
+    {
+      "id": "60001",
+      "actionId": "270005",
+      "status": "aprovada",
+      "justificativa": "QUERO ALTERAR O TITULO DA MINHA AÇÃO",
+      "createdAt": "2026-01-23 22:04:46"
+    },
+    {
+      "id": "30010",
+      "actionId": "270002",
+      "status": "aprovada",
+      "justificativa": "Preciso estender o prazo da ação porque o projeto foi atrasado",
+      "createdAt": "2026-01-23 20:42:37"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tstatus\tjustificativa\tcreatedAt\n180001\t390005\taprovada\tquero muuto alterar\t2026-01-25 00:23:42\n150001\t360001\taprovada\txxxxxxxxxxxxxxxxxxxxxxx\t2026-01-24 15:58:56\n120001\t330001\taprovada\té muitos dias\t2026-01-24 15:06:44\n90001\t210012\taprovada\tNÃO GOSTO DE CURSO DE TECNOLOGIA\t2026-01-24 00:08:52\n60005\t270003\taprovada\tteste testetetetette\t2026-01-23 23:26:12\n60004\t270004\taprovada\txxxxxxxxxxxxxxxxxxxxxxxxxx\t2026-01-23 22:42:22\n60003\t270007\taprovada\txxxxxxxxxxxxxxxxxxx\t2026-01-23 22:41:42\n60002\t270006\taprovada\tXXXXXXXXXXXXXXXXXXXXXXX\t2026-01-23 22:05:29\n60001\t270005\taprovada\tQUERO ALTERAR O TITULO DA MINHA AÇÃO\t2026-01-23 22:04:46\n30010\t270002\taprovada\tPreciso estender o prazo da ação porque o projeto foi atrasado\t2026-01-23 20:42:37\n",
+  "stderr": "",
+  "execution_time_ms": 360
+}

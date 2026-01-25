@@ -1,0 +1,73 @@
+{
+  "query": "SELECT id FROM adjustment_requests;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id FROM adjustment_requests;",
+  "rows": [
+    {
+      "id": "1"
+    },
+    {
+      "id": "2"
+    },
+    {
+      "id": "30001"
+    },
+    {
+      "id": "30002"
+    },
+    {
+      "id": "30003"
+    },
+    {
+      "id": "30004"
+    },
+    {
+      "id": "30005"
+    },
+    {
+      "id": "30006"
+    },
+    {
+      "id": "30007"
+    },
+    {
+      "id": "30008"
+    },
+    {
+      "id": "30009"
+    },
+    {
+      "id": "30010"
+    },
+    {
+      "id": "60001"
+    },
+    {
+      "id": "60002"
+    },
+    {
+      "id": "60003"
+    },
+    {
+      "id": "60004"
+    },
+    {
+      "id": "60005"
+    },
+    {
+      "id": "90001"
+    },
+    {
+      "id": "120001"
+    },
+    {
+      "id": "150001"
+    },
+    {
+      "id": "180001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\n1\n2\n30001\n30002\n30003\n30004\n30005\n30006\n30007\n30008\n30009\n30010\n60001\n60002\n60003\n60004\n60005\n90001\n120001\n150001\n180001\n",
+  "stderr": "",
+  "execution_time_ms": 358
+}

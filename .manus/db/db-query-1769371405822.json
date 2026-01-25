@@ -1,0 +1,52 @@
+{
+  "query": "SELECT ar.id as request_id, ar.status, a.titulo, (SELECT COUNT(*) FROM adjustment_comments ac WHERE ac.adjustmentRequestId = ar.id) as num_comments FROM adjustment_requests ar LEFT JOIN actions a ON ar.actionId = a.id WHERE a.titulo LIKE '%sem título%' OR a.titulo IS NULL OR a.titulo = '';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT ar.id as request_id, ar.status, a.titulo, (SELECT COUNT(*) FROM adjustment_comments ac WHERE ac.adjustmentRequestId = ar.id) as num_comments FROM adjustment_requests ar LEFT JOIN actions a ON ar.actionId = a.id WHERE a.titulo LIKE '%sem título%' OR a.titulo IS NULL OR a.titulo = '';",
+  "rows": [
+    {
+      "request_id": "2",
+      "status": "pendente",
+      "titulo": "NULL",
+      "num_comments": "6"
+    },
+    {
+      "request_id": "30001",
+      "status": "aprovada",
+      "titulo": "NULL",
+      "num_comments": "0"
+    },
+    {
+      "request_id": "30003",
+      "status": "aprovada",
+      "titulo": "NULL",
+      "num_comments": "0"
+    },
+    {
+      "request_id": "30004",
+      "status": "aprovada",
+      "titulo": "NULL",
+      "num_comments": "0"
+    },
+    {
+      "request_id": "30005",
+      "status": "aprovada",
+      "titulo": "NULL",
+      "num_comments": "0"
+    },
+    {
+      "request_id": "30007",
+      "status": "aprovada",
+      "titulo": "NULL",
+      "num_comments": "0"
+    },
+    {
+      "request_id": "30008",
+      "status": "aprovada",
+      "titulo": "NULL",
+      "num_comments": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "request_id\tstatus\ttitulo\tnum_comments\n2\tpendente\tNULL\t6\n30001\taprovada\tNULL\t0\n30003\taprovada\tNULL\t0\n30004\taprovada\tNULL\t0\n30005\taprovada\tNULL\t0\n30007\taprovada\tNULL\t0\n30008\taprovada\tNULL\t0\n",
+  "stderr": "",
+  "execution_time_ms": 347
+}

@@ -1,0 +1,70 @@
+{
+  "query": "SELECT id, adjustmentRequestId, comentario FROM adjustment_comments;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, adjustmentRequestId, comentario FROM adjustment_comments;",
+  "rows": [
+    {
+      "id": "1",
+      "adjustmentRequestId": "180001",
+      "comentario": "Teste de comentário do líder - verificando se a funcionalidade está funcionando corretamente."
+    },
+    {
+      "id": "2",
+      "adjustmentRequestId": "60005",
+      "comentario": "ESTOU TESTANDO OS COMENTARIOS"
+    },
+    {
+      "id": "3",
+      "adjustmentRequestId": "180001",
+      "comentario": "Concordo com esta alteração solicitada pelo colaborador. Pode aprovar."
+    },
+    {
+      "id": "4",
+      "adjustmentRequestId": "60004",
+      "comentario": "Não concordo com esta alteração. O colaborador deveria manter a ação original."
+    },
+    {
+      "id": "5",
+      "adjustmentRequestId": "2",
+      "comentario": "Concordo com esta solicitação. Favor aprovar."
+    },
+    {
+      "id": "6",
+      "adjustmentRequestId": "2",
+      "comentario": "Teste de notificação para admin - concordo com esta solicitação"
+    },
+    {
+      "id": "7",
+      "adjustmentRequestId": "2",
+      "comentario": "Teste final de notificação - concordo com a solicitação"
+    },
+    {
+      "id": "8",
+      "adjustmentRequestId": "180001",
+      "comentario": "EU CONCORDO "
+    },
+    {
+      "id": "9",
+      "adjustmentRequestId": "2",
+      "comentario": "Teste 2 de notificação - concordo com a solicitação"
+    },
+    {
+      "id": "10",
+      "adjustmentRequestId": "2",
+      "comentario": "Teste final de notificação com logs"
+    },
+    {
+      "id": "11",
+      "adjustmentRequestId": "180001",
+      "comentario": "Teste com logs detalhados"
+    },
+    {
+      "id": "30001",
+      "adjustmentRequestId": "2",
+      "comentario": "eu quero mudar este pdi - não aceito os ajustes que meu empregado pediu "
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tadjustmentRequestId\tcomentario\n1\t180001\tTeste de comentário do líder - verificando se a funcionalidade está funcionando corretamente.\n2\t60005\tESTOU TESTANDO OS COMENTARIOS\n3\t180001\tConcordo com esta alteração solicitada pelo colaborador. Pode aprovar.\n4\t60004\tNão concordo com esta alteração. O colaborador deveria manter a ação original.\n5\t2\tConcordo com esta solicitação. Favor aprovar.\n6\t2\tTeste de notificação para admin - concordo com esta solicitação\n7\t2\tTeste final de notificação - concordo com a solicitação\n8\t180001\tEU CONCORDO \n9\t2\tTeste 2 de notificação - concordo com a solicitação\n10\t2\tTeste final de notificação com logs\n11\t180001\tTeste com logs detalhados\n30001\t2\teu quero mudar este pdi - não aceito os ajustes que meu empregado pediu \n",
+  "stderr": "",
+  "execution_time_ms": 347
+}

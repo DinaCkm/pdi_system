@@ -1,0 +1,60 @@
+{
+  "query": "SELECT ar.id, ac.adjustmentRequestId, ac.comentario FROM adjustment_requests ar INNER JOIN adjustment_comments ac ON ar.id = ac.adjustmentRequestId LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT ar.id, ac.adjustmentRequestId, ac.comentario FROM adjustment_requests ar INNER JOIN adjustment_comments ac ON ar.id = ac.adjustmentRequestId LIMIT 10;",
+  "rows": [
+    {
+      "id": "180001",
+      "adjustmentRequestId": "180001",
+      "comentario": "Teste de comentário do líder - verificando se a funcionalidade está funcionando corretamente."
+    },
+    {
+      "id": "60005",
+      "adjustmentRequestId": "60005",
+      "comentario": "ESTOU TESTANDO OS COMENTARIOS"
+    },
+    {
+      "id": "180001",
+      "adjustmentRequestId": "180001",
+      "comentario": "Concordo com esta alteração solicitada pelo colaborador. Pode aprovar."
+    },
+    {
+      "id": "60004",
+      "adjustmentRequestId": "60004",
+      "comentario": "Não concordo com esta alteração. O colaborador deveria manter a ação original."
+    },
+    {
+      "id": "2",
+      "adjustmentRequestId": "2",
+      "comentario": "Concordo com esta solicitação. Favor aprovar."
+    },
+    {
+      "id": "2",
+      "adjustmentRequestId": "2",
+      "comentario": "Teste de notificação para admin - concordo com esta solicitação"
+    },
+    {
+      "id": "2",
+      "adjustmentRequestId": "2",
+      "comentario": "Teste final de notificação - concordo com a solicitação"
+    },
+    {
+      "id": "180001",
+      "adjustmentRequestId": "180001",
+      "comentario": "EU CONCORDO "
+    },
+    {
+      "id": "2",
+      "adjustmentRequestId": "2",
+      "comentario": "Teste 2 de notificação - concordo com a solicitação"
+    },
+    {
+      "id": "2",
+      "adjustmentRequestId": "2",
+      "comentario": "Teste final de notificação com logs"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tadjustmentRequestId\tcomentario\n180001\t180001\tTeste de comentário do líder - verificando se a funcionalidade está funcionando corretamente.\n60005\t60005\tESTOU TESTANDO OS COMENTARIOS\n180001\t180001\tConcordo com esta alteração solicitada pelo colaborador. Pode aprovar.\n60004\t60004\tNão concordo com esta alteração. O colaborador deveria manter a ação original.\n2\t2\tConcordo com esta solicitação. Favor aprovar.\n2\t2\tTeste de notificação para admin - concordo com esta solicitação\n2\t2\tTeste final de notificação - concordo com a solicitação\n180001\t180001\tEU CONCORDO \n2\t2\tTeste 2 de notificação - concordo com a solicitação\n2\t2\tTeste final de notificação com logs\n",
+  "stderr": "",
+  "execution_time_ms": 344
+}

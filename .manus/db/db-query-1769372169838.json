@@ -1,0 +1,38 @@
+{
+  "query": "SELECT id, nome FROM blocos ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, nome FROM blocos ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "nome": "Competências Comportamentais e Relacionais"
+    },
+    {
+      "id": "2",
+      "nome": "Liderança, Gestão e Visão Sistêmica"
+    },
+    {
+      "id": "3",
+      "nome": "Gestão Administrativa e Institucional"
+    },
+    {
+      "id": "4",
+      "nome": "Finanças, Conformidade e Sustentação Institucional"
+    },
+    {
+      "id": "5",
+      "nome": "Desenvolvimento Econômico e Finalístico"
+    },
+    {
+      "id": "6",
+      "nome": "Tecnologia, Dados e Inovação"
+    },
+    {
+      "id": "7",
+      "nome": "Competências Técnicas Específicas"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnome\n1\tCompetências Comportamentais e Relacionais\n2\tLiderança, Gestão e Visão Sistêmica\n3\tGestão Administrativa e Institucional\n4\tFinanças, Conformidade e Sustentação Institucional\n5\tDesenvolvimento Econômico e Finalístico\n6\tTecnologia, Dados e Inovação\n7\tCompetências Técnicas Específicas\n",
+  "stderr": "",
+  "execution_time_ms": 346
+}

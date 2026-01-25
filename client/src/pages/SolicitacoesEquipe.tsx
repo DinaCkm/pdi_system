@@ -292,6 +292,11 @@ export default function SolicitacoesEquipe() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[10px] font-mono bg-orange-100 text-orange-700 px-2 py-0.5 rounded border border-orange-200">
+                          ID #{solicitacao.id.toString().padStart(5, '0')}
+                        </span>
+                      </div>
                       <CardTitle className="flex items-center gap-2">
                         <FileText className="h-5 w-5 text-blue-600" />
                         {solicitacao.actionTitulo || "Ação sem título"}

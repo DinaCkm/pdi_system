@@ -1,0 +1,28 @@
+{
+  "query": "SELECT p.id as pdi_id, p.titulo as pdi_titulo, p.colaboradorId, u.name as colaborador_nome FROM pdis p JOIN users u ON p.colaboradorId = u.id LIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT p.id as pdi_id, p.titulo as pdi_titulo, p.colaboradorId, u.name as colaborador_nome FROM pdis p JOIN users u ON p.colaboradorId = u.id LIMIT 3;",
+  "rows": [
+    {
+      "pdi_id": "540004",
+      "pdi_titulo": "DESENVOLVIMENTO  TÉCNICO/COMPORTAMENTAL ",
+      "colaboradorId": "720001",
+      "colaborador_nome": "Usuarioteste1"
+    },
+    {
+      "pdi_id": "570001",
+      "pdi_titulo": "DESENVOLVIMENTO  TÉCNICO/COMPORTAMENTAL ",
+      "colaboradorId": "720002",
+      "colaborador_nome": "usuarioteste2"
+    },
+    {
+      "pdi_id": "660001",
+      "pdi_titulo": "XXXXXXX",
+      "colaboradorId": "720003",
+      "colaborador_nome": "liderteste1"
+    }
+  ],
+  "messages": [],
+  "stdout": "pdi_id\tpdi_titulo\tcolaboradorId\tcolaborador_nome\n540004\tDESENVOLVIMENTO  TÉCNICO/COMPORTAMENTAL \t720001\tUsuarioteste1\n570001\tDESENVOLVIMENTO  TÉCNICO/COMPORTAMENTAL \t720002\tusuarioteste2\n660001\tXXXXXXX\t720003\tliderteste1\n",
+  "stderr": "",
+  "execution_time_ms": 369
+}

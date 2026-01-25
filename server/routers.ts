@@ -10,6 +10,7 @@ import { adjustmentRequestsRouter } from "./modules/adjustmentRequestsRouter";
 import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
+import { invokeLLM } from "./_core/llm";
 
 // Mantendo os roteadores que já existiam
 import { systemRouter } from "./_core/systemRouter";
@@ -154,6 +155,89 @@ export const appRouter = router({
   }),
 
   // ============= EVIDÊNCIAS (JÁ ATUALIZADO ANTERIORMENTE) =============
+  // ============= IA - SUGESTÃO DE AÇÕES =============
+  ia: router({
+    sugerirAcao: adminProcedure
+      .input(z.object({
+        competenciaMacro: z.string(),
+        competenciaMicro: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { competenciaMacro, competenciaMicro } = input;
+        
+        const prompt = `Você é um especialista em desenvolvimento de pessoas e PDI (Plano de Desenvolvimento Individual).
+
+Baseado nas competências abaixo, sugira UMA ação de desenvolvimento específica e prática.
+
+**Competência Macro (Geral):** ${competenciaMacro}
+${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}` : ''}
+
+**Tipos de ações que você pode sugerir:**
+- Cursos online ou presenciais (Coursera, Udemy, LinkedIn Learning, Alura, etc.)
+- Workshops ou treinamentos
+- Tarefas práticas no trabalho
+- Palestras ou webinars
+- Filmes ou documentários
+- TEDTalks específicos (cite o nome do TED)
+- Vídeos do YouTube (cite canais ou vídeos específicos)
+- Livros ou artigos (cite títulos e autores)
+- Podcasts (cite nomes específicos)
+- Mentorias ou coaching
+- Projetos práticos
+- Job rotation
+- Shadowing (acompanhamento)
+
+**IMPORTANTE:** A resposta deve conter:
+1. O QUE FAZER: Descrição clara e específica da ação
+2. AVISO DE FLEXIBILIDADE: Informar que é uma sugestão e que pode fazer algo similar desde que desenvolva a competência
+3. EVIDÊNCIA ESPERADA: O que o colaborador deve apresentar como prova de conclusão
+
+**Responda EXATAMENTE no formato JSON abaixo:**
+{
+  "titulo": "Título curto e objetivo da ação (máximo 80 caracteres)",
+  "detalhes": "Texto formatado com:\n\n📌 O QUE FAZER:\n[Descrição detalhada da ação com recursos específicos - nomes de cursos, livros, vídeos, etc. e duração estimada]\n\n💡 ESTA É UMA SUGESTÃO!\nVocê pode optar por uma ação similar (outro curso, workshop, livro, etc.) desde que desenvolva a competência de [nome da competência].\n\n📎 EVIDÊNCIA ESPERADA:\n[Descreva o que deve ser apresentado como prova: certificado, relatório, apresentação, etc.]",
+  "tipo": "curso|workshop|tarefa_pratica|palestra|filme|tedtalk|video_youtube|livro|podcast|mentoria|projeto|job_rotation|shadowing"
+}`;
+
+        try {
+          const response = await invokeLLM({
+            messages: [
+              { role: 'system', content: 'Você é um assistente especializado em desenvolvimento de competências profissionais. Sempre responda em JSON válido.' },
+              { role: 'user', content: prompt }
+            ],
+            response_format: {
+              type: 'json_schema',
+              json_schema: {
+                name: 'sugestao_acao',
+                strict: true,
+                schema: {
+                  type: 'object',
+                  properties: {
+                    titulo: { type: 'string', description: 'Título curto da ação' },
+                    detalhes: { type: 'string', description: 'Descrição detalhada da ação' },
+                    tipo: { type: 'string', description: 'Tipo da ação sugerida' }
+                  },
+                  required: ['titulo', 'detalhes', 'tipo'],
+                  additionalProperties: false
+                }
+              }
+            }
+          });
+          
+          const content = response.choices[0]?.message?.content;
+          if (typeof content === 'string') {
+            const sugestao = JSON.parse(content);
+            return { success: true, sugestao };
+          }
+          
+          throw new Error('Resposta inválida da IA');
+        } catch (error) {
+          console.error('[ia.sugerirAcao] Erro:', error);
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Erro ao gerar sugestão com IA' });
+        }
+      }),
+  }),
+
   evidences: router({
     create: protectedProcedure
       .input(z.object({ 

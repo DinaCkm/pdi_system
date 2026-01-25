@@ -1,0 +1,50 @@
+{
+  "query": "SELECT p.id as pdi_id, p.colaboradorId, u.name as colaborador_nome FROM pdis p JOIN users u ON p.colaboradorId = u.id WHERE u.role = 'colaborador';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT p.id as pdi_id, p.colaboradorId, u.name as colaborador_nome FROM pdis p JOIN users u ON p.colaboradorId = u.id WHERE u.role = 'colaborador';",
+  "rows": [
+    {
+      "pdi_id": "540004",
+      "colaboradorId": "720001",
+      "colaborador_nome": "Usuarioteste1"
+    },
+    {
+      "pdi_id": "570001",
+      "colaboradorId": "720002",
+      "colaborador_nome": "usuarioteste2"
+    },
+    {
+      "pdi_id": "570002",
+      "colaboradorId": "780060",
+      "colaborador_nome": "Colaborador Teste Limite"
+    },
+    {
+      "pdi_id": "660002",
+      "colaboradorId": "840001",
+      "colaborador_nome": "Dinica Souza Makiyama"
+    },
+    {
+      "pdi_id": "750001",
+      "colaboradorId": "870001",
+      "colaborador_nome": "JOSE DA SILVA"
+    },
+    {
+      "pdi_id": "810007",
+      "colaboradorId": "900001",
+      "colaborador_nome": "MARIA DE SOUZA "
+    },
+    {
+      "pdi_id": "840001",
+      "colaboradorId": "960001",
+      "colaborador_nome": "Julia Silva"
+    },
+    {
+      "pdi_id": "870001",
+      "colaboradorId": "1050001",
+      "colaborador_nome": "Plern"
+    }
+  ],
+  "messages": [],
+  "stdout": "pdi_id\tcolaboradorId\tcolaborador_nome\n540004\t720001\tUsuarioteste1\n570001\t720002\tusuarioteste2\n570002\t780060\tColaborador Teste Limite\n660002\t840001\tDinica Souza Makiyama\n750001\t870001\tJOSE DA SILVA\n810007\t900001\tMARIA DE SOUZA \n840001\t960001\tJulia Silva\n870001\t1050001\tPlern\n",
+  "stderr": "",
+  "execution_time_ms": 344
+}

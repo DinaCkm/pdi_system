@@ -1,0 +1,26 @@
+{
+  "query": "SELECT 'adjustment_comments' as tabela, COUNT(*) as total FROM adjustment_comments UNION ALL SELECT 'adjustment_requests', COUNT(*) FROM adjustment_requests UNION ALL SELECT 'evidences', COUNT(*) FROM evidences UNION ALL SELECT 'actions', COUNT(*) FROM actions;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT 'adjustment_comments' as tabela, COUNT(*) as total FROM adjustment_comments UNION ALL SELECT 'adjustment_requests', COUNT(*) FROM adjustment_requests UNION ALL SELECT 'evidences', COUNT(*) FROM evidences UNION ALL SELECT 'actions', COUNT(*) FROM actions;",
+  "rows": [
+    {
+      "tabela": "adjustment_requests",
+      "total": "0"
+    },
+    {
+      "tabela": "actions",
+      "total": "0"
+    },
+    {
+      "tabela": "adjustment_comments",
+      "total": "0"
+    },
+    {
+      "tabela": "evidences",
+      "total": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "tabela\ttotal\nadjustment_requests\t0\nactions\t0\nadjustment_comments\t0\nevidences\t0\n",
+  "stderr": "",
+  "execution_time_ms": 361
+}
