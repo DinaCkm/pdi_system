@@ -1,12 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MessageSquare, Clock, User, FileText, Info, ArrowRight, Target, Calendar, FileEdit, Filter, X } from "lucide-react";
+import { MessageSquare, Clock, User, FileText, Info, ArrowRight, Target, Calendar, FileEdit } from "lucide-react";
 import { toast } from "sonner";
 
 // Função para obter o badge de status
@@ -27,32 +26,9 @@ function getStatusBadge(status: string) {
   }
 }
 
-// Função para obter o label do status
-function getStatusLabel(status: string) {
-  switch (status) {
-    case "pendente":
-      return "Aguardando Admin";
-    case "aguardando_lider":
-      return "Aguardando Líder";
-    case "aprovada":
-      return "Aprovada";
-    case "reprovada":
-      return "Reprovada";
-    case "mais_informacoes":
-      return "Mais Informações";
-    default:
-      return status;
-  }
-}
-
 export default function SolicitacoesEquipe() {
   const [selectedSolicitacao, setSelectedSolicitacao] = useState<number | null>(null);
   const [comentario, setComentario] = useState("");
-  
-  // Estados dos filtros
-  const [filtroEmpregado, setFiltroEmpregado] = useState<string>("todos");
-  const [filtroAcao, setFiltroAcao] = useState<string>("todos");
-  const [filtroStatus, setFiltroStatus] = useState<string>("todos");
 
   const { data: solicitacoes, isLoading, refetch } = trpc.adjustmentRequests.listByTeam.useQuery();
   const { data: comentarios, refetch: refetchComentarios } = trpc.adjustmentRequests.getComments.useQuery(
@@ -70,74 +46,6 @@ export default function SolicitacoesEquipe() {
       toast.error(error.message);
     },
   });
-
-  // Extrair listas únicas para os filtros
-  const empregadosUnicos = useMemo(() => {
-    if (!solicitacoes) return [];
-    const empregados = new Map<string, string>();
-    solicitacoes.forEach((s: any) => {
-      if (s.solicitanteId && s.solicitanteNome) {
-        empregados.set(String(s.solicitanteId), s.solicitanteNome);
-      }
-    });
-    return Array.from(empregados.entries()).map(([id, nome]) => ({ id, nome }));
-  }, [solicitacoes]);
-
-  const acoesUnicas = useMemo(() => {
-    if (!solicitacoes) return [];
-    const acoes = new Map<string, string>();
-    solicitacoes.forEach((s: any) => {
-      if (s.actionId && s.actionTitulo) {
-        acoes.set(String(s.actionId), s.actionTitulo);
-      }
-    });
-    return Array.from(acoes.entries()).map(([id, titulo]) => ({ id, titulo }));
-  }, [solicitacoes]);
-
-  const statusUnicos = useMemo(() => {
-    if (!solicitacoes) return [];
-    const statusSet = new Set<string>();
-    solicitacoes.forEach((s: any) => {
-      if (s.status) {
-        statusSet.add(s.status);
-      }
-    });
-    return Array.from(statusSet);
-  }, [solicitacoes]);
-
-  // Filtrar solicitações
-  const solicitacoesFiltradas = useMemo(() => {
-    if (!solicitacoes) return [];
-    
-    return solicitacoes.filter((s: any) => {
-      // Filtro por empregado
-      if (filtroEmpregado !== "todos" && String(s.solicitanteId) !== filtroEmpregado) {
-        return false;
-      }
-      
-      // Filtro por ação
-      if (filtroAcao !== "todos" && String(s.actionId) !== filtroAcao) {
-        return false;
-      }
-      
-      // Filtro por status
-      if (filtroStatus !== "todos" && s.status !== filtroStatus) {
-        return false;
-      }
-      
-      return true;
-    });
-  }, [solicitacoes, filtroEmpregado, filtroAcao, filtroStatus]);
-
-  // Limpar todos os filtros
-  const limparFiltros = () => {
-    setFiltroEmpregado("todos");
-    setFiltroAcao("todos");
-    setFiltroStatus("todos");
-  };
-
-  // Verificar se há filtros ativos
-  const temFiltrosAtivos = filtroEmpregado !== "todos" || filtroAcao !== "todos" || filtroStatus !== "todos";
 
   const handleAddComment = (solicitacaoId: number) => {
     if (!comentario.trim()) {
@@ -177,101 +85,15 @@ export default function SolicitacoesEquipe() {
         </AlertDescription>
       </Alert>
 
-      {/* Seção de Filtros */}
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Filtro por Empregado */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Empregado</label>
-              <Select value={filtroEmpregado} onValueChange={setFiltroEmpregado}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os empregados" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os empregados</SelectItem>
-                  {empregadosUnicos.map((emp) => (
-                    <SelectItem key={emp.id} value={emp.id}>
-                      {emp.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Filtro por Ação */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Ação</label>
-              <Select value={filtroAcao} onValueChange={setFiltroAcao}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas as ações" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todas as ações</SelectItem>
-                  {acoesUnicas.map((acao) => (
-                    <SelectItem key={acao.id} value={acao.id}>
-                      {acao.titulo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Filtro por Status */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Status</label>
-              <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os status</SelectItem>
-                  {statusUnicos.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {getStatusLabel(status)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Botão para limpar filtros */}
-          {temFiltrosAtivos && (
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Mostrando {solicitacoesFiltradas.length} de {solicitacoes?.length || 0} solicitações
-              </p>
-              <Button variant="outline" size="sm" onClick={limparFiltros}>
-                <X className="h-4 w-4 mr-2" />
-                Limpar Filtros
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {!solicitacoes || solicitacoes.length === 0 ? (
         <Alert>
           <AlertDescription>
             Não há solicitações de ajuste da sua equipe no momento.
           </AlertDescription>
         </Alert>
-      ) : solicitacoesFiltradas.length === 0 ? (
-        <Alert>
-          <AlertDescription>
-            Nenhuma solicitação encontrada com os filtros selecionados.
-          </AlertDescription>
-        </Alert>
       ) : (
         <div className="grid gap-6">
-          {solicitacoesFiltradas.map((solicitacao: any) => {
+          {solicitacoes.map((solicitacao) => {
             let camposAjustar: any = {};
             let dadosAntesAjuste: any = {};
             
@@ -461,11 +283,11 @@ export default function SolicitacoesEquipe() {
                     </div>
                   )}
 
-                  {/* Comentários do Líder */}
+                  {/* Comentários */}
                   <div>
                     <h4 className="font-medium mb-2 flex items-center gap-2">
                       <MessageSquare className="h-4 w-4" />
-                      Líder - Leia a solicitação de ajuste feita por seu liderado. Deixe aqui a sua concordância ou não concordância com esta mudança solicitada.
+                      Comentários
                     </h4>
                     
                     {selectedSolicitacao === solicitacao.id && comentarios && comentarios.length > 0 && (
