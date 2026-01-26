@@ -231,9 +231,12 @@ function DashboardLayoutContent({
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
               {!isCollapsed ? (
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold tracking-tight truncate">
-                    Navigation
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-medium text-gray-600 truncate">
+                    CKM Talents
+                  </span>
+                  <span className="font-semibold text-blue-600 tracking-tight truncate">
+                    Gestão de PDI
                   </span>
                 </div>
               ) : null}
