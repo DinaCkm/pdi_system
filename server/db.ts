@@ -1560,12 +1560,13 @@ export async function execute(query: any) {
   return db.execute(query);
 }
 
-// Função para buscar evidências por IDs de ações
+// Função para buscar evidências por IDs de ações (retorna a mais recente de cada ação)
 export async function getEvidencesByActionIds(actionIds: number[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db
+  // Buscar todas as evidências ordenadas por data (mais recente primeiro)
+  const allEvidences = await db
     .select({
       id: evidences.id,
       actionId: evidences.actionId,
@@ -1578,9 +1579,18 @@ export async function getEvidencesByActionIds(actionIds: number[]) {
       justificativaAdmin: evidences.justificativaAdmin,
     })
     .from(evidences)
-    .where(inArray(evidences.actionId, actionIds));
+    .where(inArray(evidences.actionId, actionIds))
+    .orderBy(desc(evidences.createdAt));
 
-  return result;
+  // Retornar apenas a evidência mais recente de cada ação
+  const latestByAction = new Map<number, typeof allEvidences[0]>();
+  for (const ev of allEvidences) {
+    if (!latestByAction.has(ev.actionId)) {
+      latestByAction.set(ev.actionId, ev);
+    }
+  }
+
+  return Array.from(latestByAction.values());
 }
 
 
@@ -1891,7 +1901,8 @@ export async function importUsers(users: Array<{
       // Buscar departamento
       let departamentoId: number | null = null;
       if (user.departamentoNome) {
-        departamentoId = departamentos.get(user.departamentoNome.toLowerCase()) || null;
+        const deptId = departamentos.get(user.departamentoNome.toLowerCase());
+        departamentoId = deptId !== undefined ? deptId as number : null;
         if (!departamentoId) {
           results.push({ success: false, email: user.email, error: `Departamento "${user.departamentoNome}" não encontrado` });
           continue;
@@ -1901,7 +1912,8 @@ export async function importUsers(users: Array<{
       // Buscar líder
       let leaderId: number | null = null;
       if (user.leaderEmail) {
-        leaderId = usersByEmail.get(user.leaderEmail.toLowerCase()) || null;
+        const ldrId = usersByEmail.get(user.leaderEmail.toLowerCase());
+        leaderId = ldrId !== undefined ? ldrId as number : null;
         if (!leaderId) {
           results.push({ success: false, email: user.email, error: `Líder com email "${user.leaderEmail}" não encontrado` });
           continue;

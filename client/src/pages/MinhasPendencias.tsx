@@ -430,7 +430,41 @@ export default function MinhasPendencias() {
                         );
                       }
                       
-                      // CASO 3: BOTÃO AZUL - SÓ MOSTRA SE NÃO FOR NENHUM DOS ACIMA
+                      // CASO 3: EVIDÊNCIA REJEITADA - MOSTRAR MOTIVO E PERMITIR REENVIO
+                      if (evidenciaDesta_Acao?.status === 'reprovada') {
+                        return (
+                          <div className="w-full space-y-3">
+                            {/* Card de Rejeição */}
+                            <div className="w-full py-3 px-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">
+                              <div className="flex items-center gap-2 font-semibold">
+                                <XCircle className="h-5 w-5 text-red-600" />
+                                <span>Evidência Rejeitada</span>
+                              </div>
+                              {evidenciaDesta_Acao.justificativaAdmin && (
+                                <div className="mt-2 text-sm bg-white/50 p-2 rounded border border-red-100">
+                                  <span className="font-medium">Motivo:</span> {evidenciaDesta_Acao.justificativaAdmin}
+                                </div>
+                              )}
+                              <div className="mt-2 text-xs text-red-600">
+                                Rejeitada em: {evidenciaDesta_Acao.evaluatedAt ? new Date(evidenciaDesta_Acao.evaluatedAt).toLocaleDateString('pt-BR') : 'Data não disponível'}
+                              </div>
+                            </div>
+                            {/* Botão para Reenviar */}
+                            <button
+                              onClick={() => {
+                                setSelectedAcaoEvidence(acao);
+                                setShowEvidenceDialog(true);
+                              }}
+                              className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                            >
+                              <Upload className="h-4 w-4" />
+                              Enviar Nova Evidência
+                            </button>
+                          </div>
+                        );
+                      }
+                      
+                      // CASO 4: BOTÃO AZUL - SÓ MOSTRA SE NÃO FOR NENHUM DOS ACIMA
                       return (
                         <button
                           onClick={() => {

@@ -2321,3 +2321,19 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Botão "Fazer Upload" em cada seção
 - [x] Tabela de preview com validação
 - [x] Botão "Confirmar Importação"
+
+
+## Bug Fix: Evidência Rejeitada (26/01/2026)
+- [ ] Mostrar motivo da rejeição quando evidência for rejeitada
+- [ ] Indicar claramente que a evidência foi rejeitada (status visual)
+- [ ] Corrigir status para "Evidência em Análise" ao enviar nova evidência após rejeição
+- [ ] Testar fluxo completo de rejeição e reenvio de evidência
+
+
+## Bug Fix: Evidência Rejeitada (Identificado nos Testes da Julia - 26/01/2026)
+- [x] Mostrar que a evidência foi rejeitada (card vermelho com ícone XCircle)
+- [x] Exibir o motivo da rejeição (justificativaAdmin)
+- [x] Mostrar data da rejeição (evaluatedAt)
+- [x] Permitir enviar nova evidência após rejeição (botão laranja "Enviar Nova Evidência")
+- [x] Atualizar status para "Evidência em Análise" ao reenviar (já funcionava)
+- [x] Retornar sempre a evidência mais recente de cada ação (ordenação por createdAt DESC)
