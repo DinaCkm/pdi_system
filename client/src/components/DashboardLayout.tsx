@@ -239,39 +239,40 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
-          {/* Informações do Usuário - Departamento, Nome, Líder */}
+          {/* Informações do Usuário - Card Reorganizado */}
           {!isCollapsed && user && (
-            <div className="px-3 py-3 border-b border-border/50 bg-gradient-to-r from-blue-50 to-indigo-50">
-              <div className="space-y-2">
+            <div className="mx-3 my-3 p-3 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-sm">
+              {/* Nome do Usuário - Destaque Principal */}
+              <div className="text-center mb-3">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white font-bold text-lg mb-2">
+                  {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                </div>
+                <h3 className="text-sm font-semibold text-gray-800 truncate">
+                  {user.name || "Usuário"}
+                </h3>
+                <span className="inline-block mt-1 px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded-full bg-blue-600 text-white">
+                  {user.role === "admin" ? "Administrador" : user.role === "lider" ? "Líder" : "Colaborador"}
+                </span>
+              </div>
+              
+              {/* Informações Secundárias */}
+              <div className="space-y-1.5 pt-2 border-t border-blue-100">
                 {/* Departamento */}
                 <div className="flex items-center gap-2">
-                  <Building2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                  <span className="text-xs font-semibold text-blue-800 truncate">
+                  <Building2 className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                  <span className="text-xs text-gray-600 truncate">
                     {user.departamentoNome || "Sem Departamento"}
                   </span>
                 </div>
-                {/* Nome do Usuário */}
-                <div className="flex items-center gap-2">
-                  <Users className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
-                  <span className="text-xs font-medium text-indigo-800 truncate">
-                    {user.name || "Usuário"}
-                  </span>
-                </div>
-                {/* Líder */}
+                {/* Líder - apenas para não-admins */}
                 {user.role !== "admin" && (
                   <div className="flex items-center gap-2">
-                    <Target className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                    <span className="text-xs text-emerald-700 truncate">
+                    <Users className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+                    <span className="text-xs text-gray-600 truncate">
                       Líder: {user.leaderName || "Não definido"}
                     </span>
                   </div>
                 )}
-                {/* Perfil */}
-                <div className="pt-1 border-t border-blue-200/50">
-                  <span className="text-[10px] uppercase tracking-wider font-bold text-blue-600">
-                    {user.role === "admin" ? "Administrador" : user.role === "lider" ? "Líder" : "Colaborador"}
-                  </span>
-                </div>
               </div>
             </div>
           )}

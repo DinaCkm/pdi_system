@@ -2241,3 +2241,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Atualizar função getUserById para buscar departamentoNome e leaderName
 - [x] Estilizar card com cores azul e índigo para combinar com o tema
 - [x] Testar com perfil de Colaborador - funcionando corretamente
+- [x] Redesenhar card com avatar circular, nome em destaque e badge de perfil
