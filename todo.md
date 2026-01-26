@@ -2197,3 +2197,21 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Sem campo de interação (apenas visualização)
 - [x] Adicionar rota /minhas-solicitacoes no App.tsx
 - [x] Adicionar link no menu do colaborador no DashboardLayout
+
+
+## Dashboard para Colaborador
+- [ ] Criar queries no backend para estatísticas do departamento
+- [ ] Criar queries no backend para estatísticas pessoais do colaborador
+- [ ] Mostrar número de empregados no departamento
+- [ ] Mostrar número de ações no departamento
+- [ ] Mostrar % de ações concluídas no departamento
+- [ ] Mostrar % de ações concluídas pelo colaborador
+- [ ] Mostrar Top 10 destaques (igual ao admin e líder)
+
+
+## Dashboard para Colaborador (CONCLUÍDO)
+- [x] Criar dashboard para colaborador com estatísticas do departamento
+- [x] Adicionar estatísticas pessoais (Minhas Ações, Concluídas, Minha Taxa, Minha Posição no Ranking)
+- [x] Mostrar Top 10 destaques em % de conclusão de ações
+- [x] Adicionar link do Dashboard no menu do colaborador
+- [x] Mostrar Funil de Execução do departamento

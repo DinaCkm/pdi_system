@@ -5,6 +5,7 @@ import { Medal } from "lucide-react";
 
 interface DashboardStatsProps {
   userRole?: string;
+  userId?: number;
   stats: {
     blocoA: {
       totalColaboradores: number;
@@ -39,6 +40,12 @@ interface DashboardStatsProps {
         medalha?: "ouro" | "prata" | "bronze";
       }>;
     };
+    blocoE?: {
+      minhasAcoesTotal: number;
+      minhasAcoesConcluidas: number;
+      minhaTaxaConclusao: number;
+      minhaPosicaoRanking: number;
+    };
   };
 }
 
@@ -58,6 +65,37 @@ export function DashboardStats({ stats, userRole }: DashboardStatsProps) {
 
   return (
     <div className="space-y-6">
+      {/* ============= BLOCO E: ESTATÍSTICAS PESSOAIS DO COLABORADOR ============= */}
+      {userRole === "colaborador" && stats.blocoE && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <CardHeader>
+            <CardTitle className="text-blue-800">Meu Desempenho</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                <p className="text-sm text-muted-foreground">Minhas Ações</p>
+                <p className="text-2xl font-bold text-blue-600">{stats.blocoE.minhasAcoesTotal}</p>
+              </div>
+              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                <p className="text-sm text-muted-foreground">Concluídas</p>
+                <p className="text-2xl font-bold text-green-600">{stats.blocoE.minhasAcoesConcluidas}</p>
+              </div>
+              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                <p className="text-sm text-muted-foreground">Minha Taxa</p>
+                <p className="text-2xl font-bold text-indigo-600">{stats.blocoE.minhaTaxaConclusao}%</p>
+              </div>
+              <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                <p className="text-sm text-muted-foreground">Minha Posição no Ranking</p>
+                <p className="text-2xl font-bold text-amber-600">
+                  {stats.blocoE.minhaPosicaoRanking > 0 ? `${stats.blocoE.minhaPosicaoRanking}º` : "-"}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ============= BLOCO A: KPIs GERAIS ============= */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>

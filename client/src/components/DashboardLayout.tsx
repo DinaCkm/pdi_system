@@ -59,6 +59,7 @@ const getMenuItems = (userRole: string) => {
     );
   } else if (userRole === "colaborador") {
     items.push(
+      { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
       { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
       { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
       { icon: History, label: "Minhas Solicitações", path: "/minhas-solicitacoes" },

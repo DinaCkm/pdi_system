@@ -58,6 +58,13 @@ export const dashboardRouter = router({
             medalha?: "ouro" | "prata" | "bronze";
           }>,
         },
+        // Bloco E: Estatísticas pessoais do colaborador
+        blocoE: {
+          minhasAcoesTotal: 0,
+          minhasAcoesConcluidas: 0,
+          minhaTaxaConclusao: 0,
+          minhaPosicaoRanking: 0,
+        },
       };
 
       try {
@@ -317,6 +324,45 @@ export const dashboardRouter = router({
         }
 
         stats.blocoD.top10Colaboradores = top10Final;
+
+        // ============= BLOCO E: ESTATÍSTICAS PESSOAIS DO COLABORADOR =============
+        if (user.role === "colaborador") {
+          // Buscar PDIs do colaborador logado
+          const meusPDIs = await db
+            .select({ id: pdis.id })
+            .from(pdis)
+            .where(eq(pdis.colaboradorId, user.id));
+          
+          const meusPDIIds = meusPDIs.map((p: { id: number }) => p.id);
+          
+          if (meusPDIIds.length > 0) {
+            // Contar minhas ações
+            const minhasAcoesResult = await db
+              .select({
+                total: count(),
+                concluidas: count(sql`CASE WHEN ${actions.status} = 'concluida' THEN 1 END`),
+              })
+              .from(actions)
+              .where(sql`${actions.pdiId} IN (${sql.join(meusPDIIds.map((id: number) => sql`${id}`), sql`, `)})`);
+            
+            stats.blocoE.minhasAcoesTotal = minhasAcoesResult[0]?.total || 0;
+            stats.blocoE.minhasAcoesConcluidas = minhasAcoesResult[0]?.concluidas || 0;
+            stats.blocoE.minhaTaxaConclusao = stats.blocoE.minhasAcoesTotal > 0
+              ? Math.round((stats.blocoE.minhasAcoesConcluidas / stats.blocoE.minhasAcoesTotal) * 100)
+              : 0;
+          }
+          
+          // Encontrar minha posição no ranking geral
+          const minhaEntrada = colaboradoresComTaxa.find(
+            (c: { colaboradorId: number }) => c.colaboradorId === user.id
+          );
+          if (minhaEntrada) {
+            const minhaPosicao = colaboradoresComTaxa.findIndex(
+              (c: { colaboradorId: number }) => c.colaboradorId === user.id
+            ) + 1;
+            stats.blocoE.minhaPosicaoRanking = minhaPosicao;
+          }
+        }
 
         return stats;
       } catch (error) {
