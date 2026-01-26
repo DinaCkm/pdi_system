@@ -1599,10 +1599,16 @@ export async function createBackup(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.execute(
-    sql`INSERT INTO backups (filename, fileUrl, fileKey, fileSize, totalRecords, status, createdBy, errorMessage) 
-        VALUES (${data.filename}, ${data.fileUrl}, ${data.fileKey}, ${data.fileSize}, ${data.totalRecords}, ${data.status}, ${data.createdBy}, ${data.errorMessage || null})`
-  );
+  // Escapar strings para evitar SQL injection
+  const escapeString = (str: string | null | undefined) => {
+    if (str === null || str === undefined) return 'NULL';
+    return `'${str.replace(/'/g, "''")}'`;
+  };
+
+  const query = `INSERT INTO backups (filename, fileUrl, fileKey, fileSize, totalRecords, status, createdBy, errorMessage) 
+        VALUES (${escapeString(data.filename)}, ${escapeString(data.fileUrl)}, ${escapeString(data.fileKey)}, ${data.fileSize}, ${data.totalRecords}, ${escapeString(data.status)}, ${data.createdBy}, ${escapeString(data.errorMessage || null)})`;
+
+  const result = await db.execute(sql.raw(query));
 
   return { insertId: Number((result as any)[0].insertId) };
 }
