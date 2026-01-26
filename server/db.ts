@@ -1582,3 +1582,116 @@ export async function getEvidencesByActionIds(actionIds: number[]) {
 
   return result;
 }
+
+
+// ============= FUNÇÕES DE BACKUP =============
+
+export async function createBackup(data: {
+  filename: string;
+  fileUrl: string;
+  fileKey: string;
+  fileSize: number;
+  totalRecords: number;
+  status: 'gerando' | 'concluido' | 'erro';
+  createdBy: number;
+  errorMessage?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.execute(
+    sql`INSERT INTO backups (filename, fileUrl, fileKey, fileSize, totalRecords, status, createdBy, errorMessage) 
+        VALUES (${data.filename}, ${data.fileUrl}, ${data.fileKey}, ${data.fileSize}, ${data.totalRecords}, ${data.status}, ${data.createdBy}, ${data.errorMessage || null})`
+  );
+
+  return { insertId: Number((result as any)[0].insertId) };
+}
+
+export async function updateBackupStatus(id: number, status: 'gerando' | 'concluido' | 'erro', errorMessage?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.execute(
+    sql`UPDATE backups SET status = ${status}, errorMessage = ${errorMessage || null} WHERE id = ${id}`
+  );
+}
+
+export async function markBackupDownloaded(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.execute(
+    sql`UPDATE backups SET downloadedAt = NOW() WHERE id = ${id}`
+  );
+}
+
+export async function getAllBackups() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.execute(
+    sql`SELECT b.*, u.name as createdByName 
+        FROM backups b 
+        LEFT JOIN users u ON b.createdBy = u.id 
+        ORDER BY b.createdAt DESC 
+        LIMIT 50`
+  );
+
+  return (result as any)[0];
+}
+
+export async function getBackupById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.execute(
+    sql`SELECT * FROM backups WHERE id = ${id}`
+  );
+
+  return (result as any)[0][0];
+}
+
+export async function generateBackupData() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Buscar todas as tabelas e seus dados
+  const tables = [
+    'users', 'departamentos', 'ciclos', 'pdis', 'actions', 
+    'competenciasBlocos', 'competenciasMacros', 'competenciasMicros',
+    'evidences', 'evidenceFiles', 'evidenceTexts', 'notifications',
+    'adjustmentRequests', 'adjustmentComments', 'acoesHistorico', 'pdi_validacoes'
+  ];
+
+  let sqlContent = `-- BACKUP DO SISTEMA PDI\n-- Gerado em: ${new Date().toISOString()}\n\n`;
+  let totalRecords = 0;
+
+  for (const tableName of tables) {
+    try {
+      const result = await db.execute(sql.raw(`SELECT * FROM ${tableName}`));
+      const rows = (result as any)[0];
+      
+      if (rows && rows.length > 0) {
+        sqlContent += `-- Tabela: ${tableName} (${rows.length} registros)\n`;
+        totalRecords += rows.length;
+
+        for (const row of rows) {
+          const columns = Object.keys(row).join(', ');
+          const values = Object.values(row).map(v => {
+            if (v === null) return 'NULL';
+            if (typeof v === 'number') return v;
+            if (v instanceof Date) return `'${v.toISOString().slice(0, 19).replace('T', ' ')}'`;
+            return `'${String(v).replace(/'/g, "''")}'`;
+          }).join(', ');
+          
+          sqlContent += `INSERT INTO ${tableName} (${columns}) VALUES (${values});\n`;
+        }
+        sqlContent += '\n';
+      }
+    } catch (error) {
+      console.log(`Tabela ${tableName} não encontrada ou erro:`, error);
+    }
+  }
+
+  return { sqlContent, totalRecords };
+}

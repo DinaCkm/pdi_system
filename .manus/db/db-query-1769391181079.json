@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS backups (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  filename VARCHAR(255) NOT NULL,\n  fileUrl TEXT NOT NULL,\n  fileKey VARCHAR(255) NOT NULL,\n  fileSize INT NOT NULL DEFAULT 0,\n  totalRecords INT NOT NULL DEFAULT 0,\n  status ENUM('gerando', 'concluido', 'erro') NOT NULL DEFAULT 'gerando',\n  downloadedAt TIMESTAMP NULL,\n  createdBy INT NOT NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n  errorMessage TEXT NULL\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute CREATE TABLE IF NOT EXISTS backups (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  filename VARCHAR(255) NOT NULL,\n  fileUrl TEXT NOT NULL,\n  fileKey VARCHAR(255) NOT NULL,\n  fileSize INT NOT NULL DEFAULT 0,\n  totalRecords INT NOT NULL DEFAULT 0,\n  status ENUM('gerando', 'concluido', 'erro') NOT NULL DEFAULT 'gerando',\n  downloadedAt TIMESTAMP NULL,\n  createdBy INT NOT NULL,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n  errorMessage TEXT NULL\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 87
+}

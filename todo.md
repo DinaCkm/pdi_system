@@ -2242,3 +2242,16 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Estilizar card com cores azul e índigo para combinar com o tema
 - [x] Testar com perfil de Colaborador - funcionando corretamente
 - [x] Redesenhar card com avatar circular, nome em destaque e badge de perfil
+
+
+## Sistema de Backup Automático do Banco de Dados (25 JAN 2026)
+- [x] Criar tabela backups no banco de dados para histórico
+- [x] Criar procedure para gerar backup SQL completo de todas as tabelas
+- [x] Implementar upload do backup para S3
+- [x] Adicionar seção de Backup na página de Relatórios do Admin
+- [x] Exibir histórico de backups com data, tamanho e status
+- [x] Implementar botão de download para cada backup
+- [x] Implementar botão "Gerar Novo Backup"
+- [x] Indicador de backups não baixados
+- [x] Dicas de segurança para o Admin
+- [ ] Testar geração e download de backup completo (aguardando teste do usuário)

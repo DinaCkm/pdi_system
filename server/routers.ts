@@ -505,6 +505,74 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
       
       return { success: true };
     }),
+  }),
+
+  // ROUTER DE BACKUP
+  backup: router({
+    list: adminProcedure.query(async () => {
+      return await db.getAllBackups();
+    }),
+    
+    generate: adminProcedure.mutation(async ({ ctx }) => {
+      const { storagePut } = await import('./storage');
+      
+      // Gerar nome do arquivo com timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `backup-pdi-${timestamp}.sql`;
+      const fileKey = `backups/${filename}`;
+      
+      try {
+        // Gerar dados do backup
+        const { sqlContent, totalRecords } = await db.generateBackupData();
+        
+        // Upload para S3
+        const { url } = await storagePut(fileKey, sqlContent, 'application/sql');
+        
+        // Salvar registro do backup
+        const result = await db.createBackup({
+          filename,
+          fileUrl: url,
+          fileKey,
+          fileSize: Buffer.byteLength(sqlContent, 'utf8'),
+          totalRecords,
+          status: 'concluido',
+          createdBy: ctx.user!.id
+        });
+        
+        return { 
+          success: true, 
+          backupId: result.insertId,
+          filename,
+          totalRecords,
+          fileSize: Buffer.byteLength(sqlContent, 'utf8'),
+          downloadUrl: url
+        };
+      } catch (error: any) {
+        // Registrar erro
+        await db.createBackup({
+          filename,
+          fileUrl: '',
+          fileKey,
+          fileSize: 0,
+          totalRecords: 0,
+          status: 'erro',
+          createdBy: ctx.user!.id,
+          errorMessage: error.message
+        });
+        
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Erro ao gerar backup: ${error.message}`
+        });
+      }
+    }),
+    
+    markDownloaded: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.markBackupDownloaded(input.id);
+        return { success: true };
+      }),
   })
 });
 
