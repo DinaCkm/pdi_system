@@ -857,20 +857,51 @@ export async function markNotificationAsRead(id: number) {
 
 // ============= FUNÇÕES ADICIONAIS PARA COMPETÊNCIAS =============
 
-export async function getTop3CompetenciasComGaps(pdiId: number) {
+export async function getTop3CompetenciasComGaps() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db
+  // Buscar todas as ações com suas competências macro
+  const todasAcoes = await db
+    .select({
+      macroId: actions.macroId,
+    })
+    .from(actions);
+
+  // Contar ações por competência macro
+  const contagemPorMacro: Record<number, number> = {};
+  for (const acao of todasAcoes) {
+    if (acao.macroId) {
+      contagemPorMacro[acao.macroId] = (contagemPorMacro[acao.macroId] || 0) + 1;
+    }
+  }
+
+  const totalAcoes = todasAcoes.length;
+
+  // Buscar nomes das competências macro
+  const macros = await db
     .select({
       id: competenciasMacros.id,
       nome: competenciasMacros.nome,
-      descricao: competenciasMacros.descricao,
     })
     .from(competenciasMacros)
-    .limit(3);
+    .where(eq(competenciasMacros.ativo, true));
 
-  return result;
+  // Montar resultado com contagem e percentual
+  const resultado = macros
+    .map(macro => ({
+      id: macro.id,
+      nome: macro.nome,
+      totalAcoes: contagemPorMacro[macro.id] || 0,
+      percentual: totalAcoes > 0 
+        ? Math.round(((contagemPorMacro[macro.id] || 0) / totalAcoes) * 100) 
+        : 0,
+    }))
+    .filter(item => item.totalAcoes > 0) // Apenas competências com ações
+    .sort((a, b) => b.totalAcoes - a.totalAcoes) // Ordenar por quantidade de ações (decrescente)
+    .slice(0, 3); // Top 3
+
+  return resultado;
 }
 
 // ============= FUNÇÕES PARA IMPORTAÇÃO =============

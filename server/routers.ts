@@ -75,6 +75,7 @@ export const appRouter = router({
   // MANTENDO COMPETÊNCIAS E CICLOS (SIMPLIFICADO PARA O TESTE)
   competencias: router({
     listAllMacros: publicProcedure.query(async () => await db.getAllMacros()),
+    getTop3CompetenciasComGaps: adminProcedure.query(async () => await db.getTop3CompetenciasComGaps()),
     create: adminProcedure.input(z.object({ nome: z.string(), descricao: z.string().optional() })).mutation(async ({ input }) => {
       await db.createMacro({ nome: input.nome, descricao: input.descricao || '' });
       return { success: true };

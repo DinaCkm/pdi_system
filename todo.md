@@ -2215,3 +2215,14 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Mostrar Top 10 destaques em % de conclusão de ações
 - [x] Adicionar link do Dashboard no menu do colaborador
 - [x] Mostrar Funil de Execução do departamento
+
+
+## Bug - Gráfico de Direcionamento Estratégico Vazio
+- [ ] Investigar por que o gráfico de Direcionamento Estratégico não mostra as competências priorizadas
+- [ ] Corrigir o problema identificado
+
+
+## Correção - Gráfico de Direcionamento Estratégico (Janeiro 2025)
+- [x] Investigar por que o gráfico de Direcionamento Estratégico não mostra as competências priorizadas
+- [x] Criar procedure getTop3CompetenciasComGaps que estava faltando no router de competências
+- [x] Corrigir função para calcular Top 3 competências com mais ações (em vez de apenas pegar as 3 primeiras)
