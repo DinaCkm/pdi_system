@@ -239,6 +239,43 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
+          {/* Informações do Usuário - Departamento, Nome, Líder */}
+          {!isCollapsed && user && (
+            <div className="px-3 py-3 border-b border-border/50 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="space-y-2">
+                {/* Departamento */}
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                  <span className="text-xs font-semibold text-blue-800 truncate">
+                    {user.departamentoNome || "Sem Departamento"}
+                  </span>
+                </div>
+                {/* Nome do Usuário */}
+                <div className="flex items-center gap-2">
+                  <Users className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                  <span className="text-xs font-medium text-indigo-800 truncate">
+                    {user.name || "Usuário"}
+                  </span>
+                </div>
+                {/* Líder */}
+                {user.role !== "admin" && (
+                  <div className="flex items-center gap-2">
+                    <Target className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                    <span className="text-xs text-emerald-700 truncate">
+                      Líder: {user.leaderName || "Não definido"}
+                    </span>
+                  </div>
+                )}
+                {/* Perfil */}
+                <div className="pt-1 border-t border-blue-200/50">
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-blue-600">
+                    {user.role === "admin" ? "Administrador" : user.role === "lider" ? "Líder" : "Colaborador"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
               {menuItems.map((item: any) => {

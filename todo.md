@@ -2226,3 +2226,18 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Investigar por que o gráfico de Direcionamento Estratégico não mostra as competências priorizadas
 - [x] Criar procedure getTop3CompetenciasComGaps que estava faltando no router de competências
 - [x] Corrigir função para calcular Top 3 competências com mais ações (em vez de apenas pegar as 3 primeiras)
+
+
+## Melhoria - Informações do Usuário no Menu Lateral
+- [ ] Adicionar Departamento, Nome e Líder no topo do menu lateral
+- [ ] Exibir em todas as páginas para fácil identificação do contexto
+
+## Fase 25: Informações do Usuário no Menu Lateral (CONCLUÍDO)
+- [x] Adicionar card de informações do usuário no topo do menu lateral
+- [x] Exibir nome do Departamento do usuário
+- [x] Exibir nome do Usuário logado
+- [x] Exibir nome do Líder do usuário (para Colaboradores e Líderes)
+- [x] Exibir perfil do usuário (Admin, Líder, Colaborador)
+- [x] Atualizar função getUserById para buscar departamentoNome e leaderName
+- [x] Estilizar card com cores azul e índigo para combinar com o tema
+- [x] Testar com perfil de Colaborador - funcionando corretamente

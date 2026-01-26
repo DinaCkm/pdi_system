@@ -504,7 +504,32 @@ export async function getUserById(id: number) {
   if (!db) throw new Error("Database not available");
 
   const [result] = await db.select().from(users).where(eq(users.id, id));
-  return result;
+  
+  if (!result) return null;
+  
+  // Buscar nome do departamento
+  let departamentoNome = null;
+  if (result.departamentoId) {
+    const [dept] = await db.select({ nome: departamentos.nome })
+      .from(departamentos)
+      .where(eq(departamentos.id, result.departamentoId));
+    departamentoNome = dept?.nome || null;
+  }
+  
+  // Buscar nome do líder
+  let leaderName = null;
+  if (result.leaderId) {
+    const [leader] = await db.select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, result.leaderId));
+    leaderName = leader?.name || null;
+  }
+  
+  return {
+    ...result,
+    departamentoNome,
+    leaderName
+  };
 }
 
 export async function getUserByCpf(cpf: string) {
