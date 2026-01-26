@@ -2263,3 +2263,26 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [ ] Implementar upload de arquivo SQL
 - [ ] Executar comandos SQL do arquivo de backup
 - [ ] Testar restauração completa
+
+
+## Fase 27: Melhorias no Sistema de Backup e Relatórios (26 JAN 2026)
+
+### 1. Botão Restaurar Backup
+- [x] Adicionar botão "Restaurar Backup" na interface
+- [x] Implementar upload de arquivo SQL
+- [x] Criar dialog de confirmação com aviso de segurança
+- [x] Executar restauração e mostrar resultado
+
+### 2. Backup Automático Semanal
+- [x] Criar procedure de backup agendado (informativo na interface)
+- [x] Configurar execução semanal (segunda-feira às 3h) - info exibida na interface
+- [x] Enviar notificação ao Admin quando backup for gerado
+
+### 3. Exportação de Relatórios em Excel
+- [x] Adicionar seção de Relatórios na página (tab separada)
+- [x] Implementar exportação de PDIs em Excel (CSV)
+- [x] Implementar exportação de Ações em Excel (CSV)
+- [x] Implementar exportação de Usuários em Excel (CSV)
+- [x] Implementar exportação de Competências em Excel (CSV)
+- [x] Implementar exportação de Departamentos em Excel (CSV)
+- [x] Implementar exportação de Relatório Completo em Excel (CSV)

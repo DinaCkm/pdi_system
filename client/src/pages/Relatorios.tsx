@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -14,10 +14,15 @@ import {
   Clock, 
   HardDrive,
   Calendar,
-  User,
   Loader2,
   Shield,
-  AlertTriangle
+  AlertTriangle,
+  Upload,
+  FileSpreadsheet,
+  Users,
+  Target,
+  ListTodo,
+  FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,10 +33,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 export default function Relatorios() {
   const { user } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [exportingReport, setExportingReport] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Verificar se é admin
   if (user?.role !== 'admin') {
@@ -77,19 +101,85 @@ export default function Relatorios() {
     }
   });
 
+  // Mutation para restaurar backup
+  const restoreBackup = trpc.backup.restore.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message);
+      } else {
+        toast.warning(data.message);
+      }
+      setIsRestoring(false);
+      setShowRestoreDialog(false);
+      setRestoreFile(null);
+    },
+    onError: (error) => {
+      toast.error(`Erro ao restaurar backup: ${error.message}`);
+      setIsRestoring(false);
+    }
+  });
+
+  // Mutation para exportar relatórios
+  const exportReport = trpc.backup.exportReport.useMutation({
+    onSuccess: (data) => {
+      // Criar blob e fazer download
+      const blob = new Blob([data.content], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Relatório exportado: ${data.filename}`);
+      setExportingReport(null);
+    },
+    onError: (error) => {
+      toast.error(`Erro ao exportar relatório: ${error.message}`);
+      setExportingReport(null);
+    }
+  });
+
   const handleGenerateBackup = () => {
     setIsGenerating(true);
     generateBackup.mutate();
   };
 
   const handleDownload = (backup: any) => {
-    // Abrir URL de download
     window.open(backup.fileUrl, '_blank');
-    
-    // Marcar como baixado se ainda não foi
     if (!backup.downloadedAt) {
       markDownloaded.mutate({ id: backup.id });
     }
+  };
+
+  const handleRestoreClick = () => {
+    setShowRestoreDialog(true);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.sql')) {
+        toast.error('Por favor, selecione um arquivo .sql');
+        return;
+      }
+      setRestoreFile(file);
+    }
+  };
+
+  const handleRestoreConfirm = async () => {
+    if (!restoreFile) return;
+    
+    setIsRestoring(true);
+    const content = await restoreFile.text();
+    restoreBackup.mutate({ sqlContent: content });
+  };
+
+  const handleExportReport = (type: string) => {
+    setExportingReport(type);
+    exportReport.mutate({ type });
   };
 
   const formatFileSize = (bytes: number) => {
@@ -121,7 +211,6 @@ export default function Relatorios() {
     }
   };
 
-  // Contar backups não baixados
   const notDownloadedCount = backups?.filter((b: any) => !b.downloadedAt && b.status === 'concluido').length || 0;
 
   return (
@@ -130,165 +219,473 @@ export default function Relatorios() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Relatórios e Backup</h1>
-            <p className="text-gray-500">Gerencie backups do banco de dados do sistema</p>
+            <p className="text-gray-500">Gerencie backups e exporte relatórios do sistema</p>
           </div>
         </div>
 
-        {/* Card de Alerta de Backups Não Baixados */}
-        {notDownloadedCount > 0 && (
-          <Card className="border-amber-300 bg-amber-50">
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
-                <div>
-                  <p className="font-medium text-amber-800">
-                    Você tem {notDownloadedCount} backup(s) não baixado(s)
-                  </p>
-                  <p className="text-sm text-amber-600">
-                    Recomendamos baixar e armazenar os backups em local seguro.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <Tabs defaultValue="backup" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="backup" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Backup do Sistema
+            </TabsTrigger>
+            <TabsTrigger value="relatorios" className="flex items-center gap-2">
+              <FileSpreadsheet className="h-4 w-4" />
+              Exportar Relatórios
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Card Principal de Backup */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Database className="h-6 w-6 text-blue-600" />
+          {/* Tab de Backup */}
+          <TabsContent value="backup" className="space-y-6">
+            {/* Card de Alerta de Backups Não Baixados */}
+            {notDownloadedCount > 0 && (
+              <Card className="border-amber-300 bg-amber-50">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="h-5 w-5 text-amber-600" />
+                    <div>
+                      <p className="font-medium text-amber-800">
+                        Você tem {notDownloadedCount} backup(s) não baixado(s)
+                      </p>
+                      <p className="text-sm text-amber-600">
+                        Recomendamos baixar e armazenar os backups em local seguro.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Card Principal de Backup */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Database className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <CardTitle>Backup do Banco de Dados</CardTitle>
+                      <CardDescription>
+                        Gere e restaure backups completos do sistema
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleRestoreClick}
+                      variant="outline"
+                      className="border-orange-300 text-orange-600 hover:bg-orange-50"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Restaurar Backup
+                    </Button>
+                    <Button 
+                      onClick={handleGenerateBackup} 
+                      disabled={isGenerating}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Gerando...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Gerar Backup Agora
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle>Backup do Banco de Dados</CardTitle>
-                  <CardDescription>
-                    Gere backups completos do sistema em formato SQL
-                  </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Dicas de Segurança */}
+                <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-start gap-3">
+                    <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-blue-800">Dicas de Segurança</h4>
+                      <ul className="text-sm text-blue-700 mt-1 space-y-1">
+                        <li>• Faça backup regularmente (recomendado: semanalmente)</li>
+                        <li>• Armazene os backups em local seguro (Google Drive, HD externo, etc.)</li>
+                        <li>• O arquivo SQL pode ser importado em qualquer MySQL/MariaDB</li>
+                        <li>• Mantenha pelo menos os últimos 3 backups</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <Button 
-                onClick={handleGenerateBackup} 
-                disabled={isGenerating}
-                className="bg-blue-600 hover:bg-blue-700"
+
+                {/* Info sobre Backup Automático */}
+                <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-start gap-3">
+                    <Clock className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-green-800">Backup Automático</h4>
+                      <p className="text-sm text-green-700 mt-1">
+                        O sistema gera backups automaticamente toda <strong>segunda-feira às 03:00</strong>.
+                        Você receberá uma notificação quando o backup estiver disponível para download.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tabela de Backups */}
+                <div className="border rounded-lg overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data/Hora</TableHead>
+                        <TableHead>Arquivo</TableHead>
+                        <TableHead>Registros</TableHead>
+                        <TableHead>Tamanho</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Baixado em</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8">
+                            <Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" />
+                            <p className="text-gray-500 mt-2">Carregando backups...</p>
+                          </TableCell>
+                        </TableRow>
+                      ) : backups && backups.length > 0 ? (
+                        backups.map((backup: any) => (
+                          <TableRow key={backup.id} className={!backup.downloadedAt && backup.status === 'concluido' ? 'bg-amber-50' : ''}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-gray-400" />
+                                {formatDate(backup.createdAt)}
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-mono text-sm max-w-[200px] truncate">{backup.filename}</TableCell>
+                            <TableCell>{backup.totalRecords?.toLocaleString() || 0}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <HardDrive className="h-4 w-4 text-gray-400" />
+                                {formatFileSize(backup.fileSize || 0)}
+                              </div>
+                            </TableCell>
+                            <TableCell>{getStatusBadge(backup.status)}</TableCell>
+                            <TableCell>
+                              {backup.downloadedAt ? (
+                                <span className="text-green-600 text-sm">
+                                  {formatDate(backup.downloadedAt)}
+                                </span>
+                              ) : (
+                                <span className="text-amber-600 text-sm font-medium">
+                                  Não baixado
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {backup.status === 'concluido' && backup.fileUrl && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDownload(backup)}
+                                  className="gap-1"
+                                >
+                                  <Download className="h-4 w-4" />
+                                  Baixar
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8">
+                            <Database className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                            <p className="text-gray-500">Nenhum backup encontrado</p>
+                            <p className="text-sm text-gray-400">Clique em "Gerar Backup Agora" para criar seu primeiro backup</p>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tab de Relatórios */}
+          <TabsContent value="relatorios" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <FileSpreadsheet className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div>
+                    <CardTitle>Exportar Relatórios</CardTitle>
+                    <CardDescription>
+                      Exporte dados do sistema em formato Excel (CSV)
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Relatório de Usuários */}
+                  <Card className="border-2 hover:border-blue-300 transition-colors">
+                    <CardContent className="pt-6">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="p-3 bg-blue-100 rounded-full mb-4">
+                          <Users className="h-8 w-8 text-blue-600" />
+                        </div>
+                        <h3 className="font-semibold text-lg mb-2">Usuários</h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                          Lista completa de colaboradores, líderes e administradores
+                        </p>
+                        <Button 
+                          onClick={() => handleExportReport('usuarios')}
+                          disabled={exportingReport === 'usuarios'}
+                          className="w-full"
+                          variant="outline"
+                        >
+                          {exportingReport === 'usuarios' ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4 mr-2" />
+                          )}
+                          Exportar Excel
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Relatório de PDIs */}
+                  <Card className="border-2 hover:border-indigo-300 transition-colors">
+                    <CardContent className="pt-6">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="p-3 bg-indigo-100 rounded-full mb-4">
+                          <Target className="h-8 w-8 text-indigo-600" />
+                        </div>
+                        <h3 className="font-semibold text-lg mb-2">PDIs</h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                          Todos os Planos de Desenvolvimento Individual
+                        </p>
+                        <Button 
+                          onClick={() => handleExportReport('pdis')}
+                          disabled={exportingReport === 'pdis'}
+                          className="w-full"
+                          variant="outline"
+                        >
+                          {exportingReport === 'pdis' ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4 mr-2" />
+                          )}
+                          Exportar Excel
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Relatório de Ações */}
+                  <Card className="border-2 hover:border-green-300 transition-colors">
+                    <CardContent className="pt-6">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="p-3 bg-green-100 rounded-full mb-4">
+                          <ListTodo className="h-8 w-8 text-green-600" />
+                        </div>
+                        <h3 className="font-semibold text-lg mb-2">Ações</h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                          Todas as ações de desenvolvimento cadastradas
+                        </p>
+                        <Button 
+                          onClick={() => handleExportReport('acoes')}
+                          disabled={exportingReport === 'acoes'}
+                          className="w-full"
+                          variant="outline"
+                        >
+                          {exportingReport === 'acoes' ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4 mr-2" />
+                          )}
+                          Exportar Excel
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Relatório de Competências */}
+                  <Card className="border-2 hover:border-purple-300 transition-colors">
+                    <CardContent className="pt-6">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="p-3 bg-purple-100 rounded-full mb-4">
+                          <FileText className="h-8 w-8 text-purple-600" />
+                        </div>
+                        <h3 className="font-semibold text-lg mb-2">Competências</h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                          Blocos, macros e microcompetências do sistema
+                        </p>
+                        <Button 
+                          onClick={() => handleExportReport('competencias')}
+                          disabled={exportingReport === 'competencias'}
+                          className="w-full"
+                          variant="outline"
+                        >
+                          {exportingReport === 'competencias' ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4 mr-2" />
+                          )}
+                          Exportar Excel
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Relatório de Departamentos */}
+                  <Card className="border-2 hover:border-orange-300 transition-colors">
+                    <CardContent className="pt-6">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="p-3 bg-orange-100 rounded-full mb-4">
+                          <Database className="h-8 w-8 text-orange-600" />
+                        </div>
+                        <h3 className="font-semibold text-lg mb-2">Departamentos</h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                          Lista de todos os departamentos cadastrados
+                        </p>
+                        <Button 
+                          onClick={() => handleExportReport('departamentos')}
+                          disabled={exportingReport === 'departamentos'}
+                          className="w-full"
+                          variant="outline"
+                        >
+                          {exportingReport === 'departamentos' ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4 mr-2" />
+                          )}
+                          Exportar Excel
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Relatório Completo */}
+                  <Card className="border-2 hover:border-red-300 transition-colors">
+                    <CardContent className="pt-6">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="p-3 bg-red-100 rounded-full mb-4">
+                          <FileSpreadsheet className="h-8 w-8 text-red-600" />
+                        </div>
+                        <h3 className="font-semibold text-lg mb-2">Relatório Completo</h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                          Todos os dados do sistema em um único arquivo
+                        </p>
+                        <Button 
+                          onClick={() => handleExportReport('completo')}
+                          disabled={exportingReport === 'completo'}
+                          className="w-full"
+                          variant="outline"
+                        >
+                          {exportingReport === 'completo' ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4 mr-2" />
+                          )}
+                          Exportar Excel
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Dialog de Restauração */}
+        <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-orange-600">
+                <AlertTriangle className="h-5 w-5" />
+                Restaurar Backup
+              </DialogTitle>
+              <DialogDescription>
+                <div className="space-y-3 mt-2">
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-800 font-medium text-sm">
+                      ⚠️ ATENÇÃO: Esta ação irá substituir TODOS os dados atuais do sistema!
+                    </p>
+                    <p className="text-red-600 text-xs mt-1">
+                      Certifique-se de ter um backup atual antes de prosseguir.
+                    </p>
+                  </div>
+                  <p className="text-gray-600 text-sm">
+                    Selecione um arquivo .sql de backup para restaurar os dados do sistema.
+                  </p>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <input
+                type="file"
+                accept=".sql"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 transition-colors"
               >
-                {isGenerating ? (
+                {restoreFile ? (
+                  <div className="flex items-center justify-center gap-2 text-green-600">
+                    <CheckCircle2 className="h-5 w-5" />
+                    <span className="font-medium">{restoreFile.name}</span>
+                  </div>
+                ) : (
+                  <div className="text-gray-500">
+                    <Upload className="h-8 w-8 mx-auto mb-2" />
+                    <p>Clique para selecionar o arquivo .sql</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowRestoreDialog(false);
+                  setRestoreFile(null);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleRestoreConfirm}
+                disabled={!restoreFile || isRestoring}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                {isRestoring ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Gerando...
+                    Restaurando...
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Gerar Backup Agora
+                    <Upload className="h-4 w-4 mr-2" />
+                    Restaurar Dados
                   </>
                 )}
               </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {/* Dicas de Segurança */}
-            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-start gap-3">
-                <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-blue-800">Dicas de Segurança</h4>
-                  <ul className="text-sm text-blue-700 mt-1 space-y-1">
-                    <li>• Faça backup regularmente (recomendado: semanalmente)</li>
-                    <li>• Armazene os backups em local seguro (Google Drive, HD externo, etc.)</li>
-                    <li>• O arquivo SQL pode ser importado em qualquer MySQL/MariaDB</li>
-                    <li>• Mantenha pelo menos os últimos 3 backups</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Tabela de Backups */}
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data/Hora</TableHead>
-                    <TableHead>Arquivo</TableHead>
-                    <TableHead>Registros</TableHead>
-                    <TableHead>Tamanho</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Baixado em</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" />
-                        <p className="text-gray-500 mt-2">Carregando backups...</p>
-                      </TableCell>
-                    </TableRow>
-                  ) : backups && backups.length > 0 ? (
-                    backups.map((backup: any) => (
-                      <TableRow key={backup.id} className={!backup.downloadedAt && backup.status === 'concluido' ? 'bg-amber-50' : ''}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-gray-400" />
-                            {formatDate(backup.createdAt)}
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">{backup.filename}</TableCell>
-                        <TableCell>{backup.totalRecords.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <HardDrive className="h-4 w-4 text-gray-400" />
-                            {formatFileSize(backup.fileSize)}
-                          </div>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(backup.status)}</TableCell>
-                        <TableCell>
-                          {backup.downloadedAt ? (
-                            <span className="text-green-600 text-sm">
-                              {formatDate(backup.downloadedAt)}
-                            </span>
-                          ) : (
-                            <span className="text-amber-600 text-sm font-medium">
-                              Não baixado
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {backup.status === 'concluido' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDownload(backup)}
-                              className="gap-1"
-                            >
-                              <Download className="h-4 w-4" />
-                              Baixar
-                            </Button>
-                          )}
-                          {backup.status === 'erro' && (
-                            <span className="text-red-500 text-sm" title={backup.errorMessage}>
-                              {backup.errorMessage?.substring(0, 30)}...
-                            </span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
-                        <Database className="h-12 w-12 mx-auto text-gray-300 mb-2" />
-                        <p className="text-gray-500">Nenhum backup encontrado</p>
-                        <p className="text-sm text-gray-400">Clique em "Gerar Backup Agora" para criar seu primeiro backup</p>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

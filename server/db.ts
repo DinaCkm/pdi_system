@@ -1758,3 +1758,97 @@ export async function restoreBackupFromSQL(sqlContent: string): Promise<{ succes
     errors
   };
 }
+
+
+// ============= FUNÇÕES DE EXPORTAÇÃO DE RELATÓRIOS =============
+
+export async function getAllUsersForExport() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.execute(
+    sql`SELECT u.id, u.name, u.email, u.cpf, u.cargo, u.role, u.ativo, u.createdAt,
+               d.nome as departamentoNome,
+               l.name as leaderName
+        FROM users u
+        LEFT JOIN departamentos d ON u.departamentoId = d.id
+        LEFT JOIN users l ON u.leaderId = l.id
+        ORDER BY u.name`
+  );
+
+  return (result as any)[0];
+}
+
+export async function getAllPdisForExport() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.execute(
+    sql`SELECT p.id, p.status, p.progresso, p.createdAt, p.updatedAt,
+               u.name as userName,
+               c.nome as cicloNome
+        FROM pdis p
+        LEFT JOIN users u ON p.userId = u.id
+        LEFT JOIN ciclos c ON p.cicloId = c.id
+        ORDER BY p.createdAt DESC`
+  );
+
+  return (result as any)[0];
+}
+
+export async function getAllAcoesForExport() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.execute(
+    sql`SELECT a.id, a.pdiId, a.titulo, a.tipo, a.status, a.dataInicio, a.dataFim, a.progresso,
+               u.name as userName
+        FROM actions a
+        LEFT JOIN pdis p ON a.pdiId = p.id
+        LEFT JOIN users u ON p.userId = u.id
+        ORDER BY a.createdAt DESC`
+  );
+
+  return (result as any)[0];
+}
+
+export async function getAllCompetenciasForExport() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const competencias: any[] = [];
+
+  // Blocos
+  const blocos = await db.execute(sql`SELECT id, nome, descricao, ativo FROM competenciasBlocos ORDER BY nome`);
+  for (const b of (blocos as any)[0]) {
+    competencias.push({ tipo: 'Bloco', ...b });
+  }
+
+  // Macros
+  const macros = await db.execute(sql`SELECT id, nome, descricao, ativo FROM competenciasMacros ORDER BY nome`);
+  for (const m of (macros as any)[0]) {
+    competencias.push({ tipo: 'Macro', ...m });
+  }
+
+  // Micros
+  const micros = await db.execute(sql`SELECT id, nome, descricao, ativo FROM competenciasMicros ORDER BY nome`);
+  for (const mi of (micros as any)[0]) {
+    competencias.push({ tipo: 'Micro', ...mi });
+  }
+
+  return competencias;
+}
+
+export async function getAllDepartamentosForExport() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.execute(
+    sql`SELECT d.id, d.nome, d.descricao, d.ativo,
+               (SELECT COUNT(*) FROM users WHERE departamentoId = d.id) as totalUsuarios
+        FROM departamentos d
+        ORDER BY d.nome`
+  );
+
+  return (result as any)[0];
+}

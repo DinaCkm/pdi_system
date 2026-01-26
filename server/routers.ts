@@ -591,6 +591,101 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           });
         }
       }),
+
+    exportReport: adminProcedure
+      .input(z.object({ type: z.string() }))
+      .mutation(async ({ input }) => {
+        const { type } = input;
+        const timestamp = new Date().toISOString().slice(0, 10);
+        let content = '';
+        let filename = '';
+
+        try {
+          switch (type) {
+            case 'usuarios': {
+              const users = await db.getAllUsersForExport();
+              content = 'ID,Nome,Email,CPF,Cargo,Departamento,Lider,Perfil,Ativo,Criado Em\n';
+              content += users.map((u: any) => 
+                `${u.id},"${u.name || ''}","${u.email || ''}","${u.cpf || ''}","${u.cargo || ''}","${u.departamentoNome || ''}","${u.leaderName || ''}","${u.role || ''}",${u.ativo ? 'Sim' : 'Não'},"${u.createdAt || ''}"`
+              ).join('\n');
+              filename = `usuarios-${timestamp}.csv`;
+              break;
+            }
+            case 'pdis': {
+              const pdis = await db.getAllPdisForExport();
+              content = 'ID,Colaborador,Ciclo,Status,Progresso,Criado Em,Atualizado Em\n';
+              content += pdis.map((p: any) => 
+                `${p.id},"${p.userName || ''}","${p.cicloNome || ''}","${p.status || ''}",${p.progresso || 0}%,"${p.createdAt || ''}","${p.updatedAt || ''}"`
+              ).join('\n');
+              filename = `pdis-${timestamp}.csv`;
+              break;
+            }
+            case 'acoes': {
+              const acoes = await db.getAllAcoesForExport();
+              content = 'ID,Colaborador,PDI,Titulo,Tipo,Status,Data Inicio,Data Fim,Progresso\n';
+              content += acoes.map((a: any) => 
+                `${a.id},"${a.userName || ''}",${a.pdiId || ''},"${a.titulo || ''}","${a.tipo || ''}","${a.status || ''}","${a.dataInicio || ''}","${a.dataFim || ''}",${a.progresso || 0}%`
+              ).join('\n');
+              filename = `acoes-${timestamp}.csv`;
+              break;
+            }
+            case 'competencias': {
+              const competencias = await db.getAllCompetenciasForExport();
+              content = 'Tipo,ID,Nome,Descricao,Ativo\n';
+              content += competencias.map((c: any) => 
+                `"${c.tipo || ''}",${c.id},"${c.nome || ''}","${(c.descricao || '').replace(/"/g, '""')}",${c.ativo ? 'Sim' : 'Não'}`
+              ).join('\n');
+              filename = `competencias-${timestamp}.csv`;
+              break;
+            }
+            case 'departamentos': {
+              const deps = await db.getAllDepartamentosForExport();
+              content = 'ID,Nome,Descricao,Ativo,Total Usuarios\n';
+              content += deps.map((d: any) => 
+                `${d.id},"${d.nome || ''}","${(d.descricao || '').replace(/"/g, '""')}",${d.ativo ? 'Sim' : 'Não'},${d.totalUsuarios || 0}`
+              ).join('\n');
+              filename = `departamentos-${timestamp}.csv`;
+              break;
+            }
+            case 'completo': {
+              // Exportar tudo em um único CSV com seções
+              const users = await db.getAllUsersForExport();
+              const pdis = await db.getAllPdisForExport();
+              const acoes = await db.getAllAcoesForExport();
+              
+              content = '=== USUARIOS ===\n';
+              content += 'ID,Nome,Email,CPF,Cargo,Departamento,Perfil\n';
+              content += users.map((u: any) => 
+                `${u.id},"${u.name || ''}","${u.email || ''}","${u.cpf || ''}","${u.cargo || ''}","${u.departamentoNome || ''}","${u.role || ''}"`
+              ).join('\n');
+              
+              content += '\n\n=== PDIS ===\n';
+              content += 'ID,Colaborador,Ciclo,Status,Progresso\n';
+              content += pdis.map((p: any) => 
+                `${p.id},"${p.userName || ''}","${p.cicloNome || ''}","${p.status || ''}",${p.progresso || 0}%`
+              ).join('\n');
+              
+              content += '\n\n=== ACOES ===\n';
+              content += 'ID,Colaborador,Titulo,Status,Progresso\n';
+              content += acoes.map((a: any) => 
+                `${a.id},"${a.userName || ''}","${a.titulo || ''}","${a.status || ''}",${a.progresso || 0}%`
+              ).join('\n');
+              
+              filename = `relatorio-completo-${timestamp}.csv`;
+              break;
+            }
+            default:
+              throw new Error('Tipo de relatório inválido');
+          }
+
+          return { content, filename };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao exportar relatório: ${error.message}`
+          });
+        }
+      }),
   })
 });
 
