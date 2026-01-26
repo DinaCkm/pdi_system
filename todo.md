@@ -2177,3 +2177,23 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar checkboxes no modal de solicitação para colaborador selecionar quais campos quer alterar (Título, Descrição, Prazo, Macro Competência)
 - [x] Atualizar exibição no Dashboard do Admin para mostrar campos selecionados como badges
 - [x] Manter compatibilidade com formato antigo de solicitações
+
+
+## Página de Histórico de Alterações para Colaborador
+- [ ] Criar página de histórico de alterações para o colaborador
+- [ ] Mostrar todas as solicitações de ajuste feitas pelo colaborador
+- [ ] Exibir status de cada solicitação (pendente, aprovada, reprovada)
+- [ ] Mostrar justificativa do admin quando reprovada
+- [ ] Mostrar data da solicitação e data da resposta
+- [ ] Adicionar filtros por status
+- [ ] Adicionar link no menu de navegação do colaborador
+
+
+## Página Minhas Solicitações para Colaborador (CONCLUÍDO)
+- [x] Criar página MinhasSolicitacoes.tsx com histórico de solicitações de ajuste
+- [x] Mostrar todas as solicitações feitas pelo colaborador com status e resultado
+- [x] Adicionar filtros por ação e status
+- [x] Mostrar justificativa do colaborador e resposta do administrador
+- [x] Sem campo de interação (apenas visualização)
+- [x] Adicionar rota /minhas-solicitacoes no App.tsx
+- [x] Adicionar link no menu do colaborador no DashboardLayout

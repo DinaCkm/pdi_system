@@ -28,6 +28,7 @@ import EvidenciasPendentes from "./pages/EvidenciasPendentes";
 import EvidenciasEquipe from "./pages/EvidenciasEquipe";
 // import MinhasAcoes from "./pages/MinhasAcoes"; // DESATUALIZADO
 import HistoricoAlteracoes from "./pages/HistoricoAlteracoes";
+import MinhasSolicitacoes from "./pages/MinhasSolicitacoes";
 import Auditoria from "./pages/Auditoria";
 import { Dashboard } from "./pages/Dashboard";
 import { AcoesNova } from "./pages/AcoesNova";
@@ -216,6 +217,12 @@ function Router() {
       <Route path={"/historico-alteracoes"}>
         <DashboardLayout>
           <HistoricoAlteracoes />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/minhas-solicitacoes"}>
+        <DashboardLayout>
+          <MinhasSolicitacoes />
         </DashboardLayout>
       </Route>
       
