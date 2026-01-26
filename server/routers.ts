@@ -505,6 +505,47 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
       
       return { success: true };
     }),
+    
+    // Contestar rejeição de evidência (colaborador)
+    contestar: protectedProcedure.input(z.object({
+      evidenceId: z.number(),
+      resposta: z.string().min(10, 'A contestação deve ter pelo menos 10 caracteres')
+    })).mutation(async ({ ctx, input }) => {
+      const ev = await db.getEvidenceById(input.evidenceId);
+      if (!ev) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Evidência não encontrada' });
+      }
+      
+      // Verificar se a evidência pertence ao usuário
+      if (ev.colaboradorId !== ctx.user?.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Você não tem permissão para contestar esta evidência' });
+      }
+      
+      // Verificar se a evidência foi reprovada
+      if (ev.status !== 'reprovada') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Apenas evidências reprovadas podem ser contestadas' });
+      }
+      
+      // Atualizar a evidência com a contestação
+      await db.execute(sql`
+        UPDATE evidences 
+        SET respostaColaborador = ${input.resposta}, 
+            dataResposta = ${new Date()}
+        WHERE id = ${input.evidenceId}
+      `);
+      
+      // Notificar o líder/admin sobre a contestação
+      const action = await db.getActionById(ev.actionId);
+      const colaborador = await db.getUserById(ev.colaboradorId);
+      if (action && colaborador) {
+        await notifyOwner({
+          title: '⚠️ Contestação de Evidência',
+          content: `${colaborador.name} contestou a rejeição da evidência para a ação "${action.titulo}". Contestação: ${input.resposta}`
+        });
+      }
+      
+      return { success: true };
+    }),
   }),
 
   // ROUTER DE BACKUP

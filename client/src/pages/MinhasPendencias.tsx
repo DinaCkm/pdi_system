@@ -28,6 +28,133 @@ function useMacroNames(macroIds: number[]) {
   }, [competencias]);
 }
 
+// Componente para exibir evidência rejeitada com opção de contestação
+function EvidenciaRejeitadaCard({ evidencia, acao, onReenviar }: { evidencia: any; acao: any; onReenviar: () => void }) {
+  const [showContestacao, setShowContestacao] = useState(false);
+  const [contestacao, setContestacao] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const utils = trpc.useUtils();
+  
+  // Mutation para salvar contestação
+  const contestarMutation = trpc.evidences.contestar.useMutation({
+    onSuccess: () => {
+      toast.success("Contestação enviada com sucesso!");
+      setShowContestacao(false);
+      setContestacao("");
+      utils.evidences.listByUser.invalidate();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erro ao enviar contestação");
+    }
+  });
+  
+  const handleContestar = async () => {
+    if (!contestacao.trim()) {
+      toast.error("Por favor, escreva sua contestação");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await contestarMutation.mutateAsync({
+        evidenceId: evidencia.id,
+        resposta: contestacao
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  return (
+    <div className="w-full space-y-3">
+      {/* Card de Rejeição */}
+      <div className="w-full py-3 px-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">
+        <div className="flex items-center gap-2 font-semibold">
+          <XCircle className="h-5 w-5 text-red-600" />
+          <span>Evidência Rejeitada</span>
+        </div>
+        {evidencia.justificativaAdmin && (
+          <div className="mt-2 text-sm bg-white/50 p-2 rounded border border-red-100">
+            <span className="font-medium">Motivo da Rejeição:</span> {evidencia.justificativaAdmin}
+          </div>
+        )}
+        <div className="mt-2 text-xs text-red-600">
+          Rejeitada em: {evidencia.evaluatedAt ? new Date(evidencia.evaluatedAt).toLocaleDateString('pt-BR') : 'Data não disponível'}
+        </div>
+        
+        {/* Mostrar contestação anterior se houver */}
+        {evidencia.respostaColaborador && (
+          <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded">
+            <div className="text-xs font-medium text-blue-700 mb-1">Sua Contestação Anterior:</div>
+            <div className="text-sm text-blue-800">{evidencia.respostaColaborador}</div>
+            {evidencia.dataResposta && (
+              <div className="text-xs text-blue-600 mt-1">
+                Enviada em: {new Date(evidencia.dataResposta).toLocaleDateString('pt-BR')}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* Campo de Contestação */}
+      {showContestacao ? (
+        <div className="w-full p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
+          <div className="flex items-center gap-2 text-amber-700 font-medium">
+            <MessageSquare className="h-4 w-4" />
+            <span>Contestar Rejeição</span>
+          </div>
+          <Textarea
+            placeholder="Explique por que você discorda da rejeição ou forneça informações adicionais..."
+            value={contestacao}
+            onChange={(e) => setContestacao(e.target.value)}
+            className="min-h-[100px] bg-white"
+          />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowContestacao(false)}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleContestar}
+              disabled={isSubmitting || !contestacao.trim()}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              {isSubmitting ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
+              ) : (
+                "Enviar Contestação"
+              )}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          {/* Botão para Contestar */}
+          <button
+            onClick={() => setShowContestacao(true)}
+            className="flex-1 py-3 px-4 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Contestar
+          </button>
+          {/* Botão para Reenviar */}
+          <button
+            onClick={onReenviar}
+            className="flex-1 py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Nova Evidência
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MinhasPendencias() {
   const authData = useAuth();
   const user = authData?.user;
@@ -430,37 +557,17 @@ export default function MinhasPendencias() {
                         );
                       }
                       
-                      // CASO 3: EVIDÊNCIA REJEITADA - MOSTRAR MOTIVO E PERMITIR REENVIO
+                      // CASO 3: EVIDÊNCIA REJEITADA - MOSTRAR MOTIVO E PERMITIR CONTESTAÇÃO/REENVIO
                       if (evidenciaDesta_Acao?.status === 'reprovada') {
                         return (
-                          <div className="w-full space-y-3">
-                            {/* Card de Rejeição */}
-                            <div className="w-full py-3 px-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">
-                              <div className="flex items-center gap-2 font-semibold">
-                                <XCircle className="h-5 w-5 text-red-600" />
-                                <span>Evidência Rejeitada</span>
-                              </div>
-                              {evidenciaDesta_Acao.justificativaAdmin && (
-                                <div className="mt-2 text-sm bg-white/50 p-2 rounded border border-red-100">
-                                  <span className="font-medium">Motivo:</span> {evidenciaDesta_Acao.justificativaAdmin}
-                                </div>
-                              )}
-                              <div className="mt-2 text-xs text-red-600">
-                                Rejeitada em: {evidenciaDesta_Acao.evaluatedAt ? new Date(evidenciaDesta_Acao.evaluatedAt).toLocaleDateString('pt-BR') : 'Data não disponível'}
-                              </div>
-                            </div>
-                            {/* Botão para Reenviar */}
-                            <button
-                              onClick={() => {
-                                setSelectedAcaoEvidence(acao);
-                                setShowEvidenceDialog(true);
-                              }}
-                              className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
-                            >
-                              <Upload className="h-4 w-4" />
-                              Enviar Nova Evidência
-                            </button>
-                          </div>
+                          <EvidenciaRejeitadaCard
+                            evidencia={evidenciaDesta_Acao}
+                            acao={acao}
+                            onReenviar={() => {
+                              setSelectedAcaoEvidence(acao);
+                              setShowEvidenceDialog(true);
+                            }}
+                          />
                         );
                       }
                       

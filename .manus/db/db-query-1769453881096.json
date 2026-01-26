@@ -1,0 +1,19 @@
+{
+  "query": "SHOW TABLES LIKE '%evid%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SHOW TABLES LIKE '%evid%';",
+  "rows": [
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT (%evid%)": "evidence_files"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT (%evid%)": "evidence_texts"
+    },
+    {
+      "Tables_in_Uksxtg83ZJDkZPJL3fCmwT (%evid%)": "evidences"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_Uksxtg83ZJDkZPJL3fCmwT (%evid%)\nevidence_files\nevidence_texts\nevidences\n",
+  "stderr": "",
+  "execution_time_ms": 62
+}

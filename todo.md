@@ -2337,3 +2337,21 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Permitir enviar nova evidência após rejeição (botão laranja "Enviar Nova Evidência")
 - [x] Atualizar status para "Evidência em Análise" ao reenviar (já funcionava)
 - [x] Retornar sempre a evidência mais recente de cada ação (ordenação por createdAt DESC)
+
+
+## Contestação de Evidência Rejeitada (26/01/2026)
+- [ ] Adicionar campo 'respostaColaborador' na tabela de evidências
+- [ ] Atualizar interface para mostrar campo de contestação antes de reenviar
+- [ ] Permitir colaborador escrever justificativa/contestação
+- [ ] Mostrar histórico de contestações para o líder/admin ao avaliar
+- [ ] Salvar data da contestação
+
+
+## Contestação de Evidência Rejeitada (26/01/2026)
+- [x] Adicionar campo respostaColaborador na tabela evidences
+- [x] Adicionar campo dataResposta na tabela evidences
+- [x] Criar procedure de contestação no backend (evidences.contestar)
+- [x] Adicionar componente EvidenciaRejeitadaCard na interface
+- [x] Mostrar botão "Contestar" ao lado de "Nova Evidência"
+- [x] Mostrar contestação anterior se houver
+- [x] Notificar líder/admin sobre contestação
