@@ -18,6 +18,7 @@ import PDIDetalhes from "./pages/PDIDetalhes";
 import Acoes from "./pages/Acoes";
 import MinhasPendencias from "./pages/MinhasPendencias";
 import Relatorios from "./pages/Relatorios";
+import Importacao from "./pages/Importacao";
 
 import PDIsEquipe from "./pages/PDIsEquipe";
 import MeuPDI from "./pages/MeuPDI";
@@ -187,6 +188,12 @@ function Router() {
       <Route path={"/relatorios"}>
         <DashboardLayout>
           <Relatorios />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/importacao"}>
+        <DashboardLayout>
+          <Importacao />
         </DashboardLayout>
       </Route>
       

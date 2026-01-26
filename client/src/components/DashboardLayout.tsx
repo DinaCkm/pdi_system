@@ -47,6 +47,7 @@ const getMenuItems = (userRole: string) => {
       { icon: ClipboardCheck, label: "Evidências Pendentes", path: "/evidencias-pendentes" },
       { icon: MessageSquarePlus, label: "Histórico de Alteração nas Ações", path: "/solicitacoes-admin" },
       { icon: BarChart, label: "Relatórios", path: "/relatorios" },
+      { icon: Upload, label: "Importação em Massa", path: "/importacao" },
     );
   } else if (userRole === "lider") {
     items.push(

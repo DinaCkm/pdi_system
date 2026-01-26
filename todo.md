@@ -2286,3 +2286,38 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Implementar exportação de Competências em Excel (CSV)
 - [x] Implementar exportação de Departamentos em Excel (CSV)
 - [x] Implementar exportação de Relatório Completo em Excel (CSV)
+
+
+## Fase 28: Página de Importação em Massa (26 JAN 2026)
+
+### 1. Importar Usuários e Hierarquia
+- [x] Criar modelo Excel/CSV para download
+- [x] Implementar procedure de importação de usuários
+- [x] Validar CPF duplicado (não permitir)
+- [x] Vincular automaticamente ao departamento e líder
+- [x] Preview dos dados antes de importar
+- [x] Mostrar erros detalhados por linha
+
+### 2. Importar Ações
+- [x] Criar modelo Excel/CSV para download
+- [x] Implementar procedure de importação de ações
+- [x] Vincular ação ao usuário pelo email
+- [x] Validar dados obrigatórios
+- [x] Preview dos dados antes de importar
+- [x] Mostrar erros detalhados por linha
+
+### 3. Importar PDIs
+- [x] Criar modelo Excel/CSV para download
+- [x] Implementar procedure de importação de PDIs
+- [x] Vincular PDI ao usuário pelo email
+- [x] Validar ciclo existente
+- [x] Preview dos dados antes de importar
+- [x] Mostrar erros detalhados por linha
+
+### 4. Interface
+- [x] Criar página Importação no menu Admin
+- [x] 3 seções separadas com abas
+- [x] Botão "Baixar Modelo" em cada seção
+- [x] Botão "Fazer Upload" em cada seção
+- [x] Tabela de preview com validação
+- [x] Botão "Confirmar Importação"

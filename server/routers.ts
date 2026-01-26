@@ -686,6 +686,99 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           });
         }
       }),
+  }),
+
+  // Router de Importação em Massa
+  import: router({
+    users: adminProcedure
+      .input(z.object({
+        users: z.array(z.object({
+          name: z.string(),
+          email: z.string().email(),
+          cpf: z.string(),
+          cargo: z.string().optional(),
+          departamentoNome: z.string().optional(),
+          leaderEmail: z.string().optional(),
+          role: z.enum(['admin', 'lider', 'colaborador'])
+        }))
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const results = await db.importUsers(input.users);
+          const successCount = results.filter(r => r.success).length;
+          const errorCount = results.filter(r => !r.success).length;
+          
+          return {
+            success: errorCount === 0,
+            message: `${successCount} usuários importados com sucesso. ${errorCount} erros.`,
+            results
+          };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao importar usuários: ${error.message}`
+          });
+        }
+      }),
+
+    acoes: adminProcedure
+      .input(z.object({
+        acoes: z.array(z.object({
+          userEmail: z.string().email(),
+          titulo: z.string(),
+          descricao: z.string().optional(),
+          tipo: z.string(),
+          status: z.string().optional(),
+          dataInicio: z.string().optional(),
+          dataFim: z.string().optional()
+        }))
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const results = await db.importAcoes(input.acoes);
+          const successCount = results.filter(r => r.success).length;
+          const errorCount = results.filter(r => !r.success).length;
+          
+          return {
+            success: errorCount === 0,
+            message: `${successCount} ações importadas com sucesso. ${errorCount} erros.`,
+            results
+          };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao importar ações: ${error.message}`
+          });
+        }
+      }),
+
+    pdis: adminProcedure
+      .input(z.object({
+        pdis: z.array(z.object({
+          userEmail: z.string().email(),
+          cicloNome: z.string(),
+          status: z.string().optional(),
+          observacoes: z.string().optional()
+        }))
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const results = await db.importPdis(input.pdis);
+          const successCount = results.filter(r => r.success).length;
+          const errorCount = results.filter(r => !r.success).length;
+          
+          return {
+            success: errorCount === 0,
+            message: `${successCount} PDIs importados com sucesso. ${errorCount} erros.`,
+            results
+          };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao importar PDIs: ${error.message}`
+          });
+        }
+      }),
   })
 });
 

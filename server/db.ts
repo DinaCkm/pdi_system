@@ -1852,3 +1852,200 @@ export async function getAllDepartamentosForExport() {
 
   return (result as any)[0];
 }
+
+
+// ============= FUNÇÕES DE IMPORTAÇÃO EM MASSA =============
+
+// Importar usuários em massa
+export async function importUsers(users: Array<{
+  name: string;
+  email: string;
+  cpf: string;
+  cargo?: string;
+  departamentoNome?: string;
+  leaderEmail?: string;
+  role: 'admin' | 'lider' | 'colaborador';
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const results: { success: boolean; email: string; error?: string }[] = [];
+  
+  // Primeiro, buscar todos os departamentos e criar um mapa
+  const depsResult = await db.execute(sql`SELECT id, nome FROM departamentos`);
+  const departamentos = new Map((depsResult as any)[0].map((d: any) => [d.nome.toLowerCase(), d.id]));
+  
+  // Buscar todos os usuários existentes para validar CPF e encontrar líderes
+  const usersResult = await db.execute(sql`SELECT id, email, cpf FROM users`);
+  const existingCpfs = new Set((usersResult as any)[0].map((u: any) => u.cpf));
+  const usersByEmail = new Map((usersResult as any)[0].map((u: any) => [u.email.toLowerCase(), u.id]));
+
+  for (const user of users) {
+    try {
+      // Validar CPF duplicado
+      if (existingCpfs.has(user.cpf)) {
+        results.push({ success: false, email: user.email, error: 'CPF já cadastrado no sistema' });
+        continue;
+      }
+
+      // Buscar departamento
+      let departamentoId: number | null = null;
+      if (user.departamentoNome) {
+        departamentoId = departamentos.get(user.departamentoNome.toLowerCase()) || null;
+        if (!departamentoId) {
+          results.push({ success: false, email: user.email, error: `Departamento "${user.departamentoNome}" não encontrado` });
+          continue;
+        }
+      }
+
+      // Buscar líder
+      let leaderId: number | null = null;
+      if (user.leaderEmail) {
+        leaderId = usersByEmail.get(user.leaderEmail.toLowerCase()) || null;
+        if (!leaderId) {
+          results.push({ success: false, email: user.email, error: `Líder com email "${user.leaderEmail}" não encontrado` });
+          continue;
+        }
+      }
+
+      // Inserir usuário
+      await db.execute(
+        sql`INSERT INTO users (name, email, cpf, cargo, departamentoId, leaderId, role, ativo, createdAt, updatedAt)
+            VALUES (${user.name}, ${user.email}, ${user.cpf}, ${user.cargo || null}, ${departamentoId}, ${leaderId}, ${user.role}, true, NOW(), NOW())`
+      );
+
+      // Adicionar ao mapa para que próximos usuários possam referenciar como líder
+      const newUserResult = await db.execute(sql`SELECT id FROM users WHERE email = ${user.email}`);
+      const newUserId = (newUserResult as any)[0][0]?.id;
+      if (newUserId) {
+        usersByEmail.set(user.email.toLowerCase(), newUserId);
+        existingCpfs.add(user.cpf);
+      }
+
+      results.push({ success: true, email: user.email });
+    } catch (error: any) {
+      results.push({ success: false, email: user.email, error: error.message });
+    }
+  }
+
+  return results;
+}
+
+// Importar ações em massa
+export async function importAcoes(acoes: Array<{
+  userEmail: string;
+  titulo: string;
+  descricao?: string;
+  tipo: string;
+  status?: string;
+  dataInicio?: string;
+  dataFim?: string;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const results: { success: boolean; userEmail: string; titulo: string; error?: string }[] = [];
+
+  // Buscar todos os usuários e seus PDIs ativos
+  const usersResult = await db.execute(sql`SELECT id, email FROM users`);
+  const usersByEmail = new Map((usersResult as any)[0].map((u: any) => [u.email.toLowerCase(), u.id]));
+
+  for (const acao of acoes) {
+    try {
+      // Buscar usuário
+      const userId = usersByEmail.get(acao.userEmail.toLowerCase());
+      if (!userId) {
+        results.push({ success: false, userEmail: acao.userEmail, titulo: acao.titulo, error: `Usuário com email "${acao.userEmail}" não encontrado` });
+        continue;
+      }
+
+      // Buscar PDI ativo do usuário
+      const pdiResult = await db.execute(
+        sql`SELECT id FROM pdis WHERE userId = ${userId} ORDER BY createdAt DESC LIMIT 1`
+      );
+      const pdiId = (pdiResult as any)[0][0]?.id;
+
+      if (!pdiId) {
+        results.push({ success: false, userEmail: acao.userEmail, titulo: acao.titulo, error: `Usuário não possui PDI cadastrado` });
+        continue;
+      }
+
+      // Inserir ação
+      await db.execute(
+        sql`INSERT INTO actions (pdiId, titulo, descricao, tipo, status, dataInicio, dataFim, progresso, createdAt, updatedAt)
+            VALUES (${pdiId}, ${acao.titulo}, ${acao.descricao || null}, ${acao.tipo}, ${acao.status || 'pendente'}, 
+                    ${acao.dataInicio || null}, ${acao.dataFim || null}, 0, NOW(), NOW())`
+      );
+
+      results.push({ success: true, userEmail: acao.userEmail, titulo: acao.titulo });
+    } catch (error: any) {
+      results.push({ success: false, userEmail: acao.userEmail, titulo: acao.titulo, error: error.message });
+    }
+  }
+
+  return results;
+}
+
+// Importar PDIs em massa
+export async function importPdis(pdis: Array<{
+  userEmail: string;
+  cicloNome: string;
+  status?: string;
+  observacoes?: string;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const results: { success: boolean; userEmail: string; error?: string }[] = [];
+
+  // Buscar usuários
+  const usersResult = await db.execute(sql`SELECT id, email FROM users`);
+  const usersByEmail = new Map((usersResult as any)[0].map((u: any) => [u.email.toLowerCase(), u.id]));
+
+  // Buscar ciclos
+  const ciclosResult = await db.execute(sql`SELECT id, nome FROM ciclos`);
+  const ciclosByNome = new Map((ciclosResult as any)[0].map((c: any) => [c.nome.toLowerCase(), c.id]));
+
+  for (const pdi of pdis) {
+    try {
+      // Buscar usuário
+      const userId = usersByEmail.get(pdi.userEmail.toLowerCase());
+      if (!userId) {
+        results.push({ success: false, userEmail: pdi.userEmail, error: `Usuário com email "${pdi.userEmail}" não encontrado` });
+        continue;
+      }
+
+      // Buscar ciclo
+      const cicloId = ciclosByNome.get(pdi.cicloNome.toLowerCase());
+      if (!cicloId) {
+        results.push({ success: false, userEmail: pdi.userEmail, error: `Ciclo "${pdi.cicloNome}" não encontrado` });
+        continue;
+      }
+
+      // Verificar se já existe PDI para este usuário e ciclo
+      const existingPdi = await db.execute(
+        sql`SELECT id FROM pdis WHERE userId = ${userId} AND cicloId = ${cicloId}`
+      );
+      
+      if ((existingPdi as any)[0].length > 0) {
+        // Atualizar PDI existente
+        await db.execute(
+          sql`UPDATE pdis SET status = ${pdi.status || 'rascunho'}, observacoes = ${pdi.observacoes || null}, updatedAt = NOW()
+              WHERE userId = ${userId} AND cicloId = ${cicloId}`
+        );
+        results.push({ success: true, userEmail: pdi.userEmail });
+      } else {
+        // Criar novo PDI
+        await db.execute(
+          sql`INSERT INTO pdis (userId, cicloId, status, observacoes, progresso, createdAt, updatedAt)
+              VALUES (${userId}, ${cicloId}, ${pdi.status || 'rascunho'}, ${pdi.observacoes || null}, 0, NOW(), NOW())`
+        );
+        results.push({ success: true, userEmail: pdi.userEmail });
+      }
+    } catch (error: any) {
+      results.push({ success: false, userEmail: pdi.userEmail, error: error.message });
+    }
+  }
+
+  return results;
+}
