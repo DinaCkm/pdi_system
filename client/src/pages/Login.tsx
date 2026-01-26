@@ -105,6 +105,13 @@ export default function Login() {
           </form>
         </CardContent>
       </Card>
+      
+      {/* Rodapé Fixo */}
+      <footer className="fixed bottom-0 left-0 right-0 h-10 bg-gray-100 border-t border-gray-200 flex items-center justify-center">
+        <p className="text-xs text-gray-500">
+          © {new Date().getFullYear()} CKM Talents - Todos os direitos reservados
+        </p>
+      </footer>
     </div>
   );
 }
