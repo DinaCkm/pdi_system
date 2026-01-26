@@ -573,6 +573,34 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         await db.markBackupDownloaded(input.id);
         return { success: true };
       }),
+
+    restore: adminProcedure
+      .input(z.object({ sqlContent: z.string() }))
+      .mutation(async ({ input }) => {
+        try {
+          const result = await db.restoreBackupFromSQL(input.sqlContent);
+          
+          if (result.success) {
+            return {
+              success: true,
+              message: `Backup restaurado com sucesso! ${result.executedStatements} registros restaurados.`,
+              executedStatements: result.executedStatements
+            };
+          } else {
+            return {
+              success: false,
+              message: `Restauração concluída com ${result.errors.length} erros. ${result.executedStatements} registros restaurados.`,
+              executedStatements: result.executedStatements,
+              errors: result.errors
+            };
+          }
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao restaurar backup: ${error.message}`
+          });
+        }
+      }),
   })
 });
 

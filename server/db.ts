@@ -1599,16 +1599,11 @@ export async function createBackup(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Escapar strings para evitar SQL injection
-  const escapeString = (str: string | null | undefined) => {
-    if (str === null || str === undefined) return 'NULL';
-    return `'${str.replace(/'/g, "''")}'`;
-  };
-
-  const query = `INSERT INTO backups (filename, fileUrl, fileKey, fileSize, totalRecords, status, createdBy, errorMessage) 
-        VALUES (${escapeString(data.filename)}, ${escapeString(data.fileUrl)}, ${escapeString(data.fileKey)}, ${data.fileSize}, ${data.totalRecords}, ${escapeString(data.status)}, ${data.createdBy}, ${escapeString(data.errorMessage || null)})`;
-
-  const result = await db.execute(sql.raw(query));
+  // Usar template literal do drizzle para prepared statement seguro
+  const result = await db.execute(
+    sql`INSERT INTO backups (filename, fileUrl, fileKey, fileSize, totalRecords, status, createdBy, errorMessage) 
+        VALUES (${data.filename}, ${data.fileUrl}, ${data.fileKey}, ${data.fileSize}, ${data.totalRecords}, ${data.status}, ${data.createdBy}, ${data.errorMessage || null})`
+  );
 
   return { insertId: Number((result as any)[0].insertId) };
 }
@@ -1700,4 +1695,65 @@ export async function generateBackupData() {
   }
 
   return { sqlContent, totalRecords };
+}
+
+
+// Função para restaurar backup a partir de conteúdo SQL
+export async function restoreBackupFromSQL(sqlContent: string): Promise<{ success: boolean; executedStatements: number; errors: string[] }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const errors: string[] = [];
+  let executedStatements = 0;
+
+  // Separar os comandos SQL (ignorando comentários e linhas vazias)
+  const statements = sqlContent
+    .split(';')
+    .map(s => s.trim())
+    .filter(s => s.length > 0 && !s.startsWith('--'));
+
+  // Tabelas na ordem correta para limpar (ordem inversa das dependências)
+  const tablesToClear = [
+    'evidenceTexts', 'evidenceFiles', 'evidences',
+    'acoesHistorico', 'adjustmentComments', 'adjustmentRequests',
+    'notifications', 'pdi_validacoes',
+    'actions', 'pdis', 'ciclos',
+    'competenciasMicros', 'competenciasMacros', 'competenciasBlocos',
+    'users', 'departamentos'
+  ];
+
+  // Primeiro, limpar as tabelas existentes (na ordem correta para evitar erros de FK)
+  console.log('Iniciando limpeza das tabelas...');
+  for (const table of tablesToClear) {
+    try {
+      await db.execute(sql.raw(`DELETE FROM ${table}`));
+      console.log(`Tabela ${table} limpa com sucesso`);
+    } catch (error: any) {
+      console.log(`Aviso ao limpar tabela ${table}:`, error.message);
+      // Continuar mesmo com erro (tabela pode não existir)
+    }
+  }
+
+  // Executar cada statement do backup
+  console.log(`Executando ${statements.length} comandos SQL...`);
+  for (const statement of statements) {
+    if (statement.toLowerCase().startsWith('insert')) {
+      try {
+        await db.execute(sql.raw(statement));
+        executedStatements++;
+      } catch (error: any) {
+        console.error(`Erro ao executar: ${statement.substring(0, 100)}...`);
+        console.error(error.message);
+        errors.push(`Erro: ${error.message} - SQL: ${statement.substring(0, 50)}...`);
+      }
+    }
+  }
+
+  console.log(`Restauração concluída: ${executedStatements} comandos executados, ${errors.length} erros`);
+
+  return {
+    success: errors.length === 0,
+    executedStatements,
+    errors
+  };
 }

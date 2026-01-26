@@ -2255,3 +2255,11 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Indicador de backups não baixados
 - [x] Dicas de segurança para o Admin
 - [ ] Testar geração e download de backup completo (aguardando teste do usuário)
+
+
+## Restauração de Backup (25 JAN 2026)
+- [ ] Criar procedure de restauração de backup no backend
+- [ ] Adicionar botão "Restaurar Backup" na página de Relatórios
+- [ ] Implementar upload de arquivo SQL
+- [ ] Executar comandos SQL do arquivo de backup
+- [ ] Testar restauração completa
