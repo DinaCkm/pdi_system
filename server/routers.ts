@@ -548,18 +548,8 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           downloadUrl: url
         };
       } catch (error: any) {
-        // Registrar erro
-        await db.createBackup({
-          filename,
-          fileUrl: '',
-          fileKey,
-          fileSize: 0,
-          totalRecords: 0,
-          status: 'erro',
-          createdBy: ctx.user!.id,
-          errorMessage: error.message
-        });
-        
+        // Apenas lançar o erro sem tentar registrar (evita loop de erros)
+        console.error('Erro ao gerar backup:', error);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: `Erro ao gerar backup: ${error.message}`

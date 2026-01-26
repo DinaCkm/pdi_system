@@ -1,0 +1,29 @@
+{
+  "query": "SHOW CREATE TABLE backups;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SHOW CREATE TABLE backups;",
+  "rows": [
+    {
+      "Table": "backups",
+      "Create Table": "CREATE TABLE `backups` ("
+    }
+  ],
+  "messages": [
+    "  `id` int(11) NOT NULL AUTO_INCREMENT,",
+    "  `nome` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,",
+    "  `tamanho` bigint(20) DEFAULT NULL,",
+    "  `fileUrl` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,",
+    "  `fileKey` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,",
+    "  `status` enum('gerando','concluido','erro') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'gerando',",
+    "  `tabelas` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,",
+    "  `totalRegistros` int(11) DEFAULT NULL,",
+    "  `geradoPor` int(11) NOT NULL,",
+    "  `downloadedAt` timestamp NULL DEFAULT NULL,",
+    "  `downloadedBy` int(11) DEFAULT NULL,",
+    "  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,",
+    "  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */",
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+  ],
+  "stdout": "Table\tCreate Table\nbackups\tCREATE TABLE `backups` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `nome` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `tamanho` bigint(20) DEFAULT NULL,\n  `fileUrl` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `fileKey` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `status` enum('gerando','concluido','erro') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'gerando',\n  `tabelas` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `totalRegistros` int(11) DEFAULT NULL,\n  `geradoPor` int(11) NOT NULL,\n  `downloadedAt` timestamp NULL DEFAULT NULL,\n  `downloadedBy` int(11) DEFAULT NULL,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci\n",
+  "stderr": "",
+  "execution_time_ms": 49
+}

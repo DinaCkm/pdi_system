@@ -1594,26 +1594,25 @@ export async function createBackup(data: {
   totalRecords: number;
   status: 'gerando' | 'concluido' | 'erro';
   createdBy: number;
-  errorMessage?: string;
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Usar template literal do drizzle para prepared statement seguro
+  // Usar os nomes corretos das colunas da tabela: nome, tamanho, totalRegistros, geradoPor
   const result = await db.execute(
-    sql`INSERT INTO backups (filename, fileUrl, fileKey, fileSize, totalRecords, status, createdBy, errorMessage) 
-        VALUES (${data.filename}, ${data.fileUrl}, ${data.fileKey}, ${data.fileSize}, ${data.totalRecords}, ${data.status}, ${data.createdBy}, ${data.errorMessage || null})`
+    sql`INSERT INTO backups (nome, fileUrl, fileKey, tamanho, totalRegistros, status, geradoPor) 
+        VALUES (${data.filename}, ${data.fileUrl}, ${data.fileKey}, ${data.fileSize}, ${data.totalRecords}, ${data.status}, ${data.createdBy})`
   );
 
   return { insertId: Number((result as any)[0].insertId) };
 }
 
-export async function updateBackupStatus(id: number, status: 'gerando' | 'concluido' | 'erro', errorMessage?: string) {
+export async function updateBackupStatus(id: number, status: 'gerando' | 'concluido' | 'erro') {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   await db.execute(
-    sql`UPDATE backups SET status = ${status}, errorMessage = ${errorMessage || null} WHERE id = ${id}`
+    sql`UPDATE backups SET status = ${status} WHERE id = ${id}`
   );
 }
 
@@ -1631,9 +1630,11 @@ export async function getAllBackups() {
   if (!db) throw new Error("Database not available");
 
   const result = await db.execute(
-    sql`SELECT b.*, u.name as createdByName 
+    sql`SELECT b.id, b.nome as filename, b.fileUrl, b.fileKey, b.tamanho as fileSize, 
+               b.totalRegistros as totalRecords, b.status, b.geradoPor as createdBy,
+               b.downloadedAt, b.createdAt, u.name as createdByName 
         FROM backups b 
-        LEFT JOIN users u ON b.createdBy = u.id 
+        LEFT JOIN users u ON b.geradoPor = u.id 
         ORDER BY b.createdAt DESC 
         LIMIT 50`
   );
