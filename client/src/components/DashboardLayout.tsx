@@ -375,14 +375,7 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="flex-1 max-w-full overflow-x-hidden pb-12">{children}</main>
-        
-        {/* Rodapé Fixo */}
-        <footer className="fixed bottom-0 left-0 right-0 h-10 bg-gray-100 border-t border-gray-200 flex items-center justify-center z-30">
-          <p className="text-xs text-gray-500">
-            © {new Date().getFullYear()} CKM Talents - Todos os direitos reservados
-          </p>
-        </footer>
+        <main className="flex-1 max-w-full overflow-x-hidden">{children}</main>
       </SidebarInset>
     </>
   );

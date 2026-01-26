@@ -1,0 +1,42 @@
+{
+  "query": "SELECT id, name, email, cpf, role, status FROM users WHERE role = 'admin';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, cpf, role, status FROM users WHERE role = 'admin';",
+  "rows": [
+    {
+      "id": "780040",
+      "name": "Admin Teste PDI",
+      "email": "admin.pdi1768678059213@test.com",
+      "cpf": "11178059213",
+      "role": "admin",
+      "status": "inativo"
+    },
+    {
+      "id": "780057",
+      "name": "Admin Teste PDI",
+      "email": "admin.pdi1768678108117@test.com",
+      "cpf": "11178108117",
+      "role": "admin",
+      "status": "inativo"
+    },
+    {
+      "id": "810001",
+      "name": "Admin Teste",
+      "email": "admin.teste@empresa.com",
+      "cpf": "11111111111",
+      "role": "admin",
+      "status": "ativo"
+    },
+    {
+      "id": "930001",
+      "name": "Admin Teste",
+      "email": "admin.teste@empresa.com",
+      "cpf": "111.222.333-44",
+      "role": "admin",
+      "status": "inativo"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tcpf\trole\tstatus\n780040\tAdmin Teste PDI\tadmin.pdi1768678059213@test.com\t11178059213\tadmin\tinativo\n780057\tAdmin Teste PDI\tadmin.pdi1768678108117@test.com\t11178108117\tadmin\tinativo\n810001\tAdmin Teste\tadmin.teste@empresa.com\t11111111111\tadmin\tativo\n930001\tAdmin Teste\tadmin.teste@empresa.com\t111.222.333-44\tadmin\tinativo\n",
+  "stderr": "",
+  "execution_time_ms": 63
+}

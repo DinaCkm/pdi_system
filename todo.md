@@ -2390,3 +2390,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Bug 3: Dashboard mostrando colaboradores de outras equipes - corrigido filtro para usar leaderId em vez de departamentoId
 - [x] Bug 4: Submissão de evidência não funcionando - estava funcionando corretamente
 - [x] Bug 5: Motivo de rejeição não exibido - corrigido para salvar e exibir justificativaAdmin na função reject
+
+
+## Bug de Login (26 JAN 2026) - Reportado pelo usuário
+- [ ] Sistema não está logando - erro "Você precisa estar logado" após fazer login
+
+- [x] Corrigir sobreposição do texto CKM Talents com o botão de sair no menu lateral
