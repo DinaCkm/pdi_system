@@ -327,10 +327,15 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         }
         return { success: true };
     }),
-    reject: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
+    reject: adminProcedure.input(z.object({ id: z.number(), justificativa: z.string().optional() })).mutation(async ({ ctx, input }) => {
         const ev = await db.getEvidenceById(input.id);
         if(ev) {
-            await db.updateEvidenceStatus(input.id, { status: 'reprovada', evaluatedBy: ctx.user!.id, evaluatedAt: new Date() });
+            await db.updateEvidenceStatus(input.id, { 
+                status: 'reprovada', 
+                evaluatedBy: ctx.user!.id, 
+                evaluatedAt: new Date(),
+                justificativaAdmin: input.justificativa || 'Evidência rejeitada pelo administrador'
+            });
             await db.updateAction(ev.actionId, { status: 'em_andamento' });
             
             // Notificar o proprietário sobre reprovação
@@ -338,7 +343,7 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
             if(action) {
                 await notifyOwner({
                     title: '❌ Evidência Reprovada',
-                    content: `A evidência para a ação "${action.titulo}" foi reprovada. Por favor, envie uma nova evidência com as correções necessárias.`
+                    content: `A evidência para a ação "${action.titulo}" foi reprovada. Motivo: ${input.justificativa || 'Não especificado'}`
                 });
             }
         }
@@ -645,9 +650,9 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           switch (type) {
             case 'usuarios': {
               const users = await db.getAllUsersForExport();
-              content = 'ID,Nome,Email,CPF,Cargo,Departamento,Lider,Perfil,Ativo,Criado Em\n';
+              content = 'ID,Nome,Email,CPF,Cargo,Departamento,Lider,Perfil,Status,Criado Em\n';
               content += users.map((u: any) => 
-                `${u.id},"${u.name || ''}","${u.email || ''}","${u.cpf || ''}","${u.cargo || ''}","${u.departamentoNome || ''}","${u.leaderName || ''}","${u.role || ''}",${u.ativo ? 'Sim' : 'Não'},"${u.createdAt || ''}"`
+                `${u.id},"${u.name || ''}","${u.email || ''}","${u.cpf || ''}","${u.cargo || ''}","${u.departamentoNome || ''}","${u.leaderName || ''}","${u.role || ''}","${u.status || ''}","${u.createdAt || ''}"`
               ).join('\n');
               filename = `usuarios-${timestamp}.csv`;
               break;

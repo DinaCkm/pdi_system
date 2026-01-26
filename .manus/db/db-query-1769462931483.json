@@ -1,0 +1,34 @@
+{
+  "query": "SELECT id, actionId, status, COALESCE(justificativaAdmin, 'NULO') as justificativa FROM evidences WHERE status = 'reprovada';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, actionId, status, COALESCE(justificativaAdmin, 'NULO') as justificativa FROM evidences WHERE status = 'reprovada';",
+  "rows": [
+    {
+      "id": "480001",
+      "actionId": "450002",
+      "status": "reprovada",
+      "justificativa": "NULO"
+    },
+    {
+      "id": "480004",
+      "actionId": "450002",
+      "status": "reprovada",
+      "justificativa": "NULO"
+    },
+    {
+      "id": "510001",
+      "actionId": "480001",
+      "status": "reprovada",
+      "justificativa": "NULO"
+    },
+    {
+      "id": "510002",
+      "actionId": "480002",
+      "status": "reprovada",
+      "justificativa": "NULO"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tstatus\tjustificativa\n480001\t450002\treprovada\tNULO\n480004\t450002\treprovada\tNULO\n510001\t480001\treprovada\tNULO\n510002\t480002\treprovada\tNULO\n",
+  "stderr": "",
+  "execution_time_ms": 288
+}

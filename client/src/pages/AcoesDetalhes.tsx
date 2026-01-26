@@ -123,6 +123,18 @@ export default function AcoesDetalhes() {
             
             <p style={{ fontSize: '15px', color: '#374151', marginBottom: '16px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>{ev.descricao}</p>
             
+            {/* Motivo da Rejeição - Exibido quando a evidência foi reprovada */}
+            {ev.status === 'reprovada' && ev.justificativaAdmin && (
+              <div style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#fef2f2', borderRadius: '8px', border: '1px solid #fecaca' }}>
+                <p style={{ fontSize: '13px', fontWeight: '700', color: '#991b1b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <XCircle size={16} /> Motivo da Rejeição:
+                </p>
+                <p style={{ fontSize: '14px', color: '#7f1d1d', lineHeight: '1.5' }}>
+                  {ev.justificativaAdmin}
+                </p>
+              </div>
+            )}
+            
             {ev.fileUrl && (
                <a href={ev.fileUrl} target="_blank" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#2563eb', fontSize: '14px', fontWeight: '500', textDecoration: 'none' }}>
                  <FileText size={16} /> Ver Anexo

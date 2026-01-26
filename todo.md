@@ -2355,3 +2355,38 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Mostrar botão "Contestar" ao lado de "Nova Evidência"
 - [x] Mostrar contestação anterior se houver
 - [x] Notificar líder/admin sobre contestação
+
+
+## Bugs Identificados nos Testes da Julia (26/01/2026)
+
+### 1. Envio de Evidência
+- [ ] Corrigir: Ao enviar primeira evidência, não registra corretamente
+- [ ] Corrigir: Botão "Registrar minha evidência" permanece após envio
+- [ ] Corrigir: Status não muda para "Evidência em Análise"
+- [ ] Corrigir: Motivo da rejeição não é exibido
+
+### 2. Exportação de Relatórios
+- [ ] Corrigir erro na exportação de Usuários
+- [ ] Corrigir erro na exportação de PDIs
+- [ ] Corrigir erro na exportação de Ações
+- [ ] Corrigir erro na exportação de Competências
+- [ ] Corrigir erro na exportação de Departamentos
+- [ ] Corrigir erro na exportação de Relatório Completo
+
+### 3. Importação em Massa
+- [ ] Corrigir erro na importação de Usuários
+- [ ] Corrigir erro na importação de Ações
+- [ ] Corrigir erro na importação de PDIs
+
+### 4. Dashboard mostrando colaboradores de outras equipes
+- [ ] Investigar casos: Marcelino Frigorfino e Olga Cleide
+- [ ] Verificar query de "Empregados Destaques em % de Conclusão de Ações"
+- [ ] Corrigir filtro para mostrar apenas equipe do líder
+
+
+## Correção de Bugs Críticos (26 JAN 2026) - Reportados pela Julia
+- [x] Bug 1: Exportação CSV não funcionando - campo 'ativo' não existe, corrigido para 'status'
+- [x] Bug 2: Importação em massa não funcionando - campo 'ativo' não existe, corrigido para 'status' e adicionado campo 'openId'
+- [x] Bug 3: Dashboard mostrando colaboradores de outras equipes - corrigido filtro para usar leaderId em vez de departamentoId
+- [x] Bug 4: Submissão de evidência não funcionando - estava funcionando corretamente
+- [x] Bug 5: Motivo de rejeição não exibido - corrigido para salvar e exibir justificativaAdmin na função reject

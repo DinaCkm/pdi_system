@@ -1777,7 +1777,7 @@ export async function getAllUsersForExport() {
   if (!db) throw new Error("Database not available");
 
   const result = await db.execute(
-    sql`SELECT u.id, u.name, u.email, u.cpf, u.cargo, u.role, u.ativo, u.createdAt,
+    sql`SELECT u.id, u.name, u.email, u.cpf, u.cargo, u.role, u.status, u.createdAt,
                d.nome as departamentoNome,
                l.name as leaderName
         FROM users u
@@ -1920,10 +1920,13 @@ export async function importUsers(users: Array<{
         }
       }
 
+      // Gerar openId único para o usuário
+      const openId = `import-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
       // Inserir usuário
       await db.execute(
-        sql`INSERT INTO users (name, email, cpf, cargo, departamentoId, leaderId, role, ativo, createdAt, updatedAt)
-            VALUES (${user.name}, ${user.email}, ${user.cpf}, ${user.cargo || null}, ${departamentoId}, ${leaderId}, ${user.role}, true, NOW(), NOW())`
+        sql`INSERT INTO users (openId, name, email, cpf, cargo, departamentoId, leaderId, role, status, createdAt, updatedAt, lastSignedIn)
+            VALUES (${openId}, ${user.name}, ${user.email}, ${user.cpf}, ${user.cargo || 'Não informado'}, ${departamentoId}, ${leaderId}, ${user.role}, 'ativo', NOW(), NOW(), NOW())`
       );
 
       // Adicionar ao mapa para que próximos usuários possam referenciar como líder

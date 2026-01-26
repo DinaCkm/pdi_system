@@ -1,0 +1,70 @@
+{
+  "query": "SELECT * FROM evidences WHERE status = 'reprovada' ORDER BY createdAt DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT * FROM evidences WHERE status = 'reprovada' ORDER BY createdAt DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "510002",
+      "actionId": "480002",
+      "colaboradorId": "1080002",
+      "status": "reprovada",
+      "justificativaAdmin": "NULL",
+      "createdAt": "2026-01-26 18:55:37",
+      "evaluatedAt": "2026-01-26 18:56:58",
+      "evaluatedBy": "150008",
+      "satisfactionScore": "NULL",
+      "descricao": "Fiz minha evidência.",
+      "arquivo": "NULL",
+      "respostaColaborador": "NULL",
+      "dataResposta": "NULL"
+    },
+    {
+      "id": "510001",
+      "actionId": "480001",
+      "colaboradorId": "1080002",
+      "status": "reprovada",
+      "justificativaAdmin": "NULL",
+      "createdAt": "2026-01-26 18:55:17",
+      "evaluatedAt": "2026-01-26 18:57:09",
+      "evaluatedBy": "150008",
+      "satisfactionScore": "NULL",
+      "descricao": "Fiz os pilares.",
+      "arquivo": "NULL",
+      "respostaColaborador": "NULL",
+      "dataResposta": "NULL"
+    },
+    {
+      "id": "480004",
+      "actionId": "450002",
+      "colaboradorId": "1080002",
+      "status": "reprovada",
+      "justificativaAdmin": "NULL",
+      "createdAt": "2026-01-26 15:21:10",
+      "evaluatedAt": "2026-01-26 15:22:57",
+      "evaluatedBy": "150008",
+      "satisfactionScore": "NULL",
+      "descricao": "aSASD",
+      "arquivo": "NULL",
+      "respostaColaborador": "NULL",
+      "dataResposta": "NULL"
+    },
+    {
+      "id": "480001",
+      "actionId": "450002",
+      "colaboradorId": "1080002",
+      "status": "reprovada",
+      "justificativaAdmin": "NULL",
+      "createdAt": "2026-01-26 15:14:31",
+      "evaluatedAt": "2026-01-26 15:18:58",
+      "evaluatedBy": "150008",
+      "satisfactionScore": "NULL",
+      "descricao": "Eu fiz, foi muito bom!",
+      "arquivo": "NULL",
+      "respostaColaborador": "NULL",
+      "dataResposta": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tcolaboradorId\tstatus\tjustificativaAdmin\tcreatedAt\tevaluatedAt\tevaluatedBy\tsatisfactionScore\tdescricao\tarquivo\trespostaColaborador\tdataResposta\n510002\t480002\t1080002\treprovada\tNULL\t2026-01-26 18:55:37\t2026-01-26 18:56:58\t150008\tNULL\tFiz minha evidência.\tNULL\tNULL\tNULL\n510001\t480001\t1080002\treprovada\tNULL\t2026-01-26 18:55:17\t2026-01-26 18:57:09\t150008\tNULL\tFiz os pilares.\tNULL\tNULL\tNULL\n480004\t450002\t1080002\treprovada\tNULL\t2026-01-26 15:21:10\t2026-01-26 15:22:57\t150008\tNULL\taSASD\tNULL\tNULL\tNULL\n480001\t450002\t1080002\treprovada\tNULL\t2026-01-26 15:14:31\t2026-01-26 15:18:58\t150008\tNULL\tEu fiz, foi muito bom!\tNULL\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}

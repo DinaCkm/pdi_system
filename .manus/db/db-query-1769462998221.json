@@ -1,0 +1,15 @@
+{
+  "query": "SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'evidences' AND COLUMN_NAME LIKE '%justificativa%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'evidences' AND COLUMN_NAME LIKE '%justificativa%';",
+  "rows": [
+    {
+      "COLUMN_NAME": "justificativaAdmin",
+      "DATA_TYPE": "text",
+      "IS_NULLABLE": "YES"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\tDATA_TYPE\tIS_NULLABLE\njustificativaAdmin\ttext\tYES\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

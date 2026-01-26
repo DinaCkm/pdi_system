@@ -1,0 +1,46 @@
+{
+  "query": "SELECT id, actionId, colaboradorId, status, justificativaAdmin, evaluatedAt, respostaColaborador FROM evidences WHERE status = 'reprovada';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, actionId, colaboradorId, status, justificativaAdmin, evaluatedAt, respostaColaborador FROM evidences WHERE status = 'reprovada';",
+  "rows": [
+    {
+      "id": "480001",
+      "actionId": "450002",
+      "colaboradorId": "1080002",
+      "status": "reprovada",
+      "justificativaAdmin": "NULL",
+      "evaluatedAt": "2026-01-26 15:18:58",
+      "respostaColaborador": "NULL"
+    },
+    {
+      "id": "480004",
+      "actionId": "450002",
+      "colaboradorId": "1080002",
+      "status": "reprovada",
+      "justificativaAdmin": "NULL",
+      "evaluatedAt": "2026-01-26 15:22:57",
+      "respostaColaborador": "NULL"
+    },
+    {
+      "id": "510001",
+      "actionId": "480001",
+      "colaboradorId": "1080002",
+      "status": "reprovada",
+      "justificativaAdmin": "NULL",
+      "evaluatedAt": "2026-01-26 18:57:09",
+      "respostaColaborador": "NULL"
+    },
+    {
+      "id": "510002",
+      "actionId": "480002",
+      "colaboradorId": "1080002",
+      "status": "reprovada",
+      "justificativaAdmin": "NULL",
+      "evaluatedAt": "2026-01-26 18:56:58",
+      "respostaColaborador": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tcolaboradorId\tstatus\tjustificativaAdmin\tevaluatedAt\trespostaColaborador\n480001\t450002\t1080002\treprovada\tNULL\t2026-01-26 15:18:58\tNULL\n480004\t450002\t1080002\treprovada\tNULL\t2026-01-26 15:22:57\tNULL\n510001\t480001\t1080002\treprovada\tNULL\t2026-01-26 18:57:09\tNULL\n510002\t480002\t1080002\treprovada\tNULL\t2026-01-26 18:56:58\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

@@ -68,20 +68,13 @@ export const dashboardRouter = router({
       };
 
       try {
-        // Determinar filtro de departamento baseado no role
+        // Determinar filtro baseado no role
         let departamentoFilter: number | null = null;
+        let leaderFilter: number | null = null; // Novo filtro para líderes
 
         if (user.role === "lider") {
-          // Líder vê apenas sua equipe
-          const departamentoLiderado = await db
-            .select()
-            .from(departamentos)
-            .where(eq(departamentos.leaderId, user.id))
-            .limit(1);
-
-          if (departamentoLiderado.length > 0) {
-            departamentoFilter = departamentoLiderado[0].id;
-          }
+          // Líder vê apenas sua equipe (colaboradores que têm ele como líder)
+          leaderFilter = user.id;
         } else if (user.role === "colaborador") {
           // Colaborador vê apenas sua equipe (seu departamento)
           const userData = await db
@@ -99,7 +92,21 @@ export const dashboardRouter = router({
         }
 
         // ============= BLOCO A: KPIs GERAIS =============
-        if (departamentoFilter) {
+        if (leaderFilter) {
+          // Líder: contar colaboradores que têm ele como líder
+          const colaboradoresResult = await db
+            .select({ count: count() })
+            .from(users)
+            .where(
+              and(
+                eq(users.leaderId, leaderFilter),
+                eq(users.status, "ativo")
+              )
+            );
+
+          stats.blocoA.totalColaboradores = colaboradoresResult[0]?.count || 0;
+          stats.blocoA.totalLideres = 1; // O próprio líder
+        } else if (departamentoFilter) {
           // Filtrado por departamento
           const colaboradoresResult = await db
             .select({ count: count() })
@@ -161,7 +168,9 @@ export const dashboardRouter = router({
           .leftJoin(pdis, eq(actions.pdiId, pdis.id))
           .leftJoin(users, eq(pdis.colaboradorId, users.id));
         
-        if (departamentoFilter) {
+        if (leaderFilter) {
+          acoesQuery = acoesQuery.where(eq(users.leaderId, leaderFilter));
+        } else if (departamentoFilter) {
           acoesQuery = acoesQuery.where(eq(users.departamentoId, departamentoFilter));
         }
         
@@ -183,7 +192,9 @@ export const dashboardRouter = router({
           .leftJoin(pdis, eq(actions.pdiId, pdis.id))
           .leftJoin(users, eq(pdis.colaboradorId, users.id));
 
-        if (departamentoFilter) {
+        if (leaderFilter) {
+          statusCountsQuery = statusCountsQuery.where(eq(users.leaderId, leaderFilter));
+        } else if (departamentoFilter) {
           statusCountsQuery = statusCountsQuery.where(
             eq(users.departamentoId, departamentoFilter)
           );
@@ -252,8 +263,9 @@ export const dashboardRouter = router({
         }
 
         // ============= BLOCO D: TOP 10 COLABORADORES =============
-        // Visão geral (todos os departamentos) - não filtra por departamento
-        const colaboradoresStats = await db
+        // Para líder: mostrar apenas colaboradores da sua equipe
+        // Para admin/colaborador: mostrar todos (ou filtrado por departamento)
+        let colaboradoresStatsQuery = db
           .select({
             colaboradorId: users.id,
             colaboradorNome: users.name,
@@ -264,14 +276,36 @@ export const dashboardRouter = router({
           })
           .from(users)
           .leftJoin(pdis, eq(pdis.colaboradorId, users.id))
-          .leftJoin(actions, eq(actions.pdiId, pdis.id))
-          .where(
+          .leftJoin(actions, eq(actions.pdiId, pdis.id));
+
+        if (leaderFilter) {
+          // Líder vê apenas seus colaboradores diretos
+          colaboradoresStatsQuery = colaboradoresStatsQuery.where(
+            and(
+              eq(users.leaderId, leaderFilter),
+              eq(users.status, "ativo")
+            )
+          );
+        } else if (departamentoFilter) {
+          // Filtrado por departamento
+          colaboradoresStatsQuery = colaboradoresStatsQuery.where(
+            and(
+              eq(users.departamentoId, departamentoFilter),
+              eq(users.role, "colaborador"),
+              eq(users.status, "ativo")
+            )
+          );
+        } else {
+          // Admin vendo todos
+          colaboradoresStatsQuery = colaboradoresStatsQuery.where(
             and(
               eq(users.role, "colaborador"),
               eq(users.status, "ativo")
             )
-          )
-          .groupBy(users.id, users.name);
+          );
+        }
+
+        const colaboradoresStats = await colaboradoresStatsQuery.groupBy(users.id, users.name);
 
         // Calcular taxa de conclusão e filtrar quem tem ações concluídas
         const colaboradoresComTaxa = colaboradoresStats
