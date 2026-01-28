@@ -179,7 +179,7 @@ export function Dashboard() {
           <DirecionamentoEstrategico />
           
           {/* Estatísticas Gerais do Dashboard */}
-          <DashboardStats stats={stats} userRole={user?.role} />
+          <DashboardStats stats={stats} userRole={user?.role} departamentoId={selectedDepartamento && selectedDepartamento !== 'todos' ? parseInt(selectedDepartamento) : undefined} />
         </>
       ) : null}
     </div>
