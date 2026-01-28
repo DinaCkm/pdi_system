@@ -2495,3 +2495,10 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Filtro por Departamento no Dashboard
 - [x] Adicionar filtro por departamento no gráfico de Status de Prazos das Ações - CONCLUÍDO
+
+## Perfil de Gerente
+- [x] Adicionar role 'gerente' no schema do banco de dados
+- [x] Atualizar rotas e permissões no backend para gerente
+- [x] Atualizar navegação e sidebar no frontend para gerente
+- [x] Gerente pode acessar: Dashboard, Histórico, PDIs, Ações, Relatório de Ações Vencidas
+- [x] Gerente NÃO pode acessar: Cadastro de usuários, Importação, Configurações, outros relatórios

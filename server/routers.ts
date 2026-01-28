@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 import { notifyOwner } from "./_core/notification";
-import { router, publicProcedure, protectedProcedure, adminProcedure, adminOrLeaderProcedure } from "./_core/customTrpc"; // <--- IMPORT CORRIGIDO
+import { router, publicProcedure, protectedProcedure, adminProcedure, adminOrLeaderProcedure, adminOrGerenteProcedure } from "./_core/customTrpc"; // <--- IMPORT CORRIGIDO
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
 import { authRouter } from "./authRouters"; // <--- CONECTANDO O NOVO LOGIN
@@ -26,7 +26,7 @@ export const appRouter = router({
 
   // MANTENDO A ESTRUTURA ORIGINAL DE DEPARTAMENTOS
   departamentos: router({
-    list: adminProcedure.query(async () => {
+    list: adminOrGerenteProcedure.query(async () => {
       return await db.getAllDepartamentos();
     }),
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {

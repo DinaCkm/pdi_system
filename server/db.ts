@@ -1050,7 +1050,7 @@ export async function getPDIsByCicloId(cicloId: number) {
 
 // ============= FUNÇÕES DE USUÁRIO FALTANDO =============
 
-export async function getUsersByRole(role: string) {
+export async function getUsersByRole(role: 'admin' | 'gerente' | 'lider' | 'colaborador') {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 

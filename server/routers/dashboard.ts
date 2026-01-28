@@ -86,8 +86,8 @@ export const dashboardRouter = router({
           if (userData.length > 0 && userData[0].departamentoId) {
             departamentoFilter = userData[0].departamentoId;
           }
-        } else if (user.role === "admin" && input.departamentoId) {
-          // Admin pode filtrar por departamento específico
+        } else if ((user.role === "admin" || user.role === "gerente") && input.departamentoId) {
+          // Admin ou Gerente pode filtrar por departamento específico
           departamentoFilter = input.departamentoId;
         }
 
@@ -132,8 +132,8 @@ export const dashboardRouter = router({
 
           stats.blocoA.totalColaboradores = colaboradoresResult[0]?.count || 0;
           stats.blocoA.totalLideres = lideresResult[0]?.count || 0;
-        } else if (user.role === "admin") {
-          // Admin vendo tudo - CONTAR LÍDERES E COLABORADORES SEPARADAMENTE
+        } else if (user.role === "admin" || user.role === "gerente") {
+          // Admin ou Gerente vendo tudo - CONTAR LÍDERES E COLABORADORES SEPARADAMENTE
           const colaboradoresResult = await db
             .select({ count: count() })
             .from(users)
@@ -227,8 +227,8 @@ export const dashboardRouter = router({
         }
 
         // ============= BLOCO C: TOP 5 DEPARTAMENTOS =============
-        // Só mostra para admin (para líder não faz sentido ver ranking de departamentos)
-        if (user.role === "admin") {
+        // Só mostra para admin ou gerente (para líder não faz sentido ver ranking de departamentos)
+        if (user.role === "admin" || user.role === "gerente") {
           const departamentosStats = await db
             .select({
               departamentoId: departamentos.id,

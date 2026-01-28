@@ -74,3 +74,25 @@ const isAdminOrLeader = t.middleware(({ ctx, next }) => {
 });
 
 export const adminOrLeaderProcedure = t.procedure.use(isAuthed).use(isAdminOrLeader);
+
+// Middleware: Admin ou Gerente (gerente tem acesso de visualização limitado)
+const isAdminOrGerente = t.middleware(({ ctx, next }) => {
+  const isAllowed = ctx.user?.role === 'admin' || ctx.user?.role === 'gerente';
+  if (!ctx.user || !isAllowed) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Acesso restrito." });
+  }
+  return next({ ctx: { user: ctx.user } });
+});
+
+export const adminOrGerenteProcedure = t.procedure.use(isAuthed).use(isAdminOrGerente);
+
+// Middleware: Gerente (acesso de visualização a Dashboard, PDIs, Ações, Histórico)
+const isGerente = t.middleware(({ ctx, next }) => {
+  const isAllowed = ctx.user?.role === 'gerente';
+  if (!ctx.user || !isAllowed) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Acesso restrito a gerentes." });
+  }
+  return next({ ctx: { user: ctx.user } });
+});
+
+export const gerenteProcedure = t.procedure.use(isAuthed).use(isGerente);
