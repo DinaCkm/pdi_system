@@ -1976,7 +1976,7 @@ export async function importAcoes(acoes: Array<{
 
       // Buscar PDI ativo do usuário
       const pdiResult = await db.execute(
-        sql`SELECT id FROM pdis WHERE userId = ${userId} ORDER BY createdAt DESC LIMIT 1`
+        sql`SELECT id FROM pdis WHERE colaboradorId = ${userId} ORDER BY createdAt DESC LIMIT 1`
       );
       const pdiId = (pdiResult as any)[0][0]?.id;
 
@@ -1985,11 +1985,16 @@ export async function importAcoes(acoes: Array<{
         continue;
       }
 
+      // Buscar uma macrocompetência padrão
+      const macroResult = await db.execute(
+        sql`SELECT id FROM competencias_macros WHERE ativo = 1 LIMIT 1`
+      );
+      const macroId = (macroResult as any)[0][0]?.id || 1;
+
       // Inserir ação
       await db.execute(
-        sql`INSERT INTO actions (pdiId, titulo, descricao, tipo, status, dataInicio, dataFim, progresso, createdAt, updatedAt)
-            VALUES (${pdiId}, ${acao.titulo}, ${acao.descricao || null}, ${acao.tipo}, ${acao.status || 'pendente'}, 
-                    ${acao.dataInicio || null}, ${acao.dataFim || null}, 0, NOW(), NOW())`
+        sql`INSERT INTO actions (pdiId, macroId, titulo, descricao, prazo, status, createdAt, updatedAt)
+            VALUES (${pdiId}, ${macroId}, ${acao.titulo}, ${acao.descricao || null}, ${acao.dataFim || new Date().toISOString().split('T')[0]}, ${acao.status || 'nao_iniciada'}, NOW(), NOW())`
       );
 
       results.push({ success: true, userEmail: acao.userEmail, titulo: acao.titulo });
@@ -2039,21 +2044,21 @@ export async function importPdis(pdis: Array<{
 
       // Verificar se já existe PDI para este usuário e ciclo
       const existingPdi = await db.execute(
-        sql`SELECT id FROM pdis WHERE userId = ${userId} AND cicloId = ${cicloId}`
+        sql`SELECT id FROM pdis WHERE colaboradorId = ${userId} AND cicloId = ${cicloId}`
       );
       
       if ((existingPdi as any)[0].length > 0) {
         // Atualizar PDI existente
         await db.execute(
-          sql`UPDATE pdis SET status = ${pdi.status || 'rascunho'}, observacoes = ${pdi.observacoes || null}, updatedAt = NOW()
-              WHERE userId = ${userId} AND cicloId = ${cicloId}`
+          sql`UPDATE pdis SET status = ${pdi.status || 'em_andamento'}, objetivoGeral = ${pdi.observacoes || null}, updatedAt = NOW()
+              WHERE colaboradorId = ${userId} AND cicloId = ${cicloId}`
         );
         results.push({ success: true, userEmail: pdi.userEmail });
       } else {
         // Criar novo PDI
         await db.execute(
-          sql`INSERT INTO pdis (userId, cicloId, status, observacoes, progresso, createdAt, updatedAt)
-              VALUES (${userId}, ${cicloId}, ${pdi.status || 'rascunho'}, ${pdi.observacoes || null}, 0, NOW(), NOW())`
+          sql`INSERT INTO pdis (colaboradorId, cicloId, titulo, status, objetivoGeral, createdAt, updatedAt, createdBy)
+              VALUES (${userId}, ${cicloId}, 'PDI Importado', ${pdi.status || 'em_andamento'}, ${pdi.observacoes || null}, NOW(), NOW(), ${userId})`
         );
         results.push({ success: true, userEmail: pdi.userEmail });
       }

@@ -2396,3 +2396,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [ ] Sistema não está logando - erro "Você precisa estar logado" após fazer login
 
 - [x] Corrigir sobreposição do texto CKM Talents com o botão de sair no menu lateral
+
+
+## Bug de Importação (27 JAN 2026) - Reportado pelo usuário
+- [x] Importação de Ações falha com erro "Failed query: SELECT id FROM pdis WHERE u..." - Corrigido: userId para colaboradorId
+- [x] Importação de PDIs falha com erro "Failed query: SELECT id FROM pdis WHERE u..." - Corrigido: userId para colaboradorId
