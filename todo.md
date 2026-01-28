@@ -2470,9 +2470,22 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Bugs Reportados pela Julia (28 Jan 2025)
 - [x] Erro ao exportar relatórios - RESOLVIDO: Criado relatório geral único com todos os dados em um CSV
-- [ ] Ações deletadas ainda aparecem na página de Ações do Admin
-- [ ] Upload de importação não reabre após erro
-- [ ] Adicionar nome do Líder e Ciclo na visualização de PDI do Admin
-- [ ] Corrigir coluna de Líder na listagem de PDIs (colaboradores aparecem como líderes de si mesmos)
-- [ ] Adicionar ID da ação no card
-- [ ] Explicar o que significa "Solicitação Aguardando Líder"
+- [x] Ações deletadas ainda aparecem na página de Ações do Admin - CORRIGIDO (filtro para excluir usuários inativos)
+- [x] Upload de importação não reabre após erro - CORRIGIDO (reset do estado no onError)
+- [x] Adicionar nome do Líder e Ciclo na visualização de PDI do Admin - CORRIGIDO (card do líder adicionado)
+- [x] Corrigir coluna de Líder na listagem de PDIs - CORRIGIDO (busca o líder real do colaborador)
+- [x] Adicionar ID da ação no card - CORRIGIDO (ID exibido no cabeçalho do card)
+- [x] Explicar o que significa "Solicitação Aguardando Líder" - DOCUMENTADO (ver abaixo)
+
+### Explicação: Solicitação Aguardando Líder
+
+**O que é:** Quando um colaborador solicita um ajuste de prazo para uma ação, essa solicitação fica com status "Aguardando Líder" até que o líder direto do colaborador aprove ou rejeite a solicitação.
+
+**Fluxo:**
+1. Colaborador solicita ajuste de prazo para uma ação
+2. Solicitação fica com status "Aguardando Líder"
+3. Líder visualiza a solicitação no painel de solicitações
+4. Líder aprova ou rejeita a solicitação
+5. Status muda para "Aprovada" ou "Rejeitada"
+
+**Onde aparece:** No painel de solicitações de ajuste, tanto para o colaborador (que pode acompanhar o status) quanto para o líder (que pode aprovar/rejeitar).

@@ -144,10 +144,11 @@ export async function getAllActions() {
         leaderId: users.leaderId
       })
       .from(actions)
-      .leftJoin(pdis, eq(actions.pdiId, pdis.id))
+      .innerJoin(pdis, eq(actions.pdiId, pdis.id))
       .leftJoin(competenciasMacros, eq(actions.macroId, competenciasMacros.id))
-      .leftJoin(users, eq(pdis.colaboradorId, users.id))
+      .innerJoin(users, eq(pdis.colaboradorId, users.id))
       .leftJoin(departamentos, eq(users.departamentoId, departamentos.id))
+      .where(eq(users.status, 'ativo'))
       .orderBy(desc(actions.createdAt));
 
     return result;
@@ -410,6 +411,9 @@ export async function getPDIById(id: number) {
   const [ciclo] = await db.select().from(ciclos).where(eq(ciclos.id, pdi.cicloId));
   const [dept] = user ? await db.select().from(departamentos).where(eq(departamentos.id, user.departamentoId)) : [null];
   
+  // Buscar líder do colaborador
+  const [lider] = user?.leaderId ? await db.select().from(users).where(eq(users.id, user.leaderId)) : [null];
+  
   // Buscar validação do líder
   const [validacao] = await db.select().from(pdiValidacoes).where(eq(pdiValidacoes.pdiId, pdi.id));
   
@@ -418,6 +422,7 @@ export async function getPDIById(id: number) {
     colaboradorNome: user?.name || "—",
     departamentoNome: dept?.nome || "—",
     cicloNome: ciclo?.nome || "—",
+    liderNome: lider?.name || "—",
     validadoEm: validacao?.aprovadoEm || null,
     validadoPor: validacao?.liderId || null,
     objetivoGeral: pdi.objetivoGeral || pdi.titulo,
@@ -438,6 +443,9 @@ export async function getAllPDIs() {
       const [user] = await db.select().from(users).where(eq(users.id, pdi.colaboradorId));
       const [ciclo] = await db.select().from(ciclos).where(eq(ciclos.id, pdi.cicloId));
       const [dept] = user ? await db.select().from(departamentos).where(eq(departamentos.id, user.departamentoId)) : [null];
+      
+      // Buscar líder do colaborador (não o próprio colaborador)
+      const [lider] = user?.leaderId ? await db.select().from(users).where(eq(users.id, user.leaderId)) : [null];
       
       // Buscar contagem real de ações da tabela actions
       const pdiActions = await db.select().from(actions).where(eq(actions.pdiId, pdi.id));
@@ -460,8 +468,8 @@ export async function getAllPDIs() {
         departamentoNome: dept?.nome || "—",
         cicloNome: ciclo?.nome || "—",
         ciclo: ciclo || null,
-        lider: user || null,
-        liderNome: user?.name || "—",
+        lider: lider || null,
+        liderNome: lider?.name || "—",
         departamentoId: user?.departamentoId || 0,
         totalAcoes: pdi.totalAcoes || 0,
         acoesConcluidasTotal: pdi.acoesConcluidasTotal || 0,

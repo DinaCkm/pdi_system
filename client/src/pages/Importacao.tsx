@@ -70,6 +70,10 @@ export default function Importacao() {
     },
     onError: (error) => {
       toast.error(`Erro: ${error.message}`);
+      // Resetar para permitir novo upload
+      setUsersData([]);
+      setUsersPreview(false);
+      if (usersFileRef.current) usersFileRef.current.value = '';
     }
   });
 
@@ -82,6 +86,10 @@ export default function Importacao() {
     },
     onError: (error) => {
       toast.error(`Erro: ${error.message}`);
+      // Resetar para permitir novo upload
+      setAcoesData([]);
+      setAcoesPreview(false);
+      if (acoesFileRef.current) acoesFileRef.current.value = '';
     }
   });
 
@@ -94,6 +102,10 @@ export default function Importacao() {
     },
     onError: (error) => {
       toast.error(`Erro: ${error.message}`);
+      // Resetar para permitir novo upload
+      setPdisData([]);
+      setPdisPreview(false);
+      if (pdisFileRef.current) pdisFileRef.current.value = '';
     }
   });
 

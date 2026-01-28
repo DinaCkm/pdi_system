@@ -1,0 +1,24 @@
+{
+  "query": "SELECT a.id, a.titulo, a.status, p.colaboradorId, u.name as colaborador_nome\nFROM actions a\nLEFT JOIN pdis p ON a.pdiId = p.id\nLEFT JOIN users u ON p.colaboradorId = u.id\nWHERE u.id IS NULL OR u.status = 'inativo';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT a.id, a.titulo, a.status, p.colaboradorId, u.name as colaborador_nome\nFROM actions a\nLEFT JOIN pdis p ON a.pdiId = p.id\nLEFT JOIN users u ON p.colaboradorId = u.id\nWHERE u.id IS NULL OR u.status = 'inativo';",
+  "rows": [
+    {
+      "id": "510002",
+      "titulo": "Ação Teste Modificada 1769463125357",
+      "status": "em_andamento",
+      "colaboradorId": "NULL",
+      "colaborador_nome": "NULL"
+    },
+    {
+      "id": "510005",
+      "titulo": "Ação Sem Histórico",
+      "status": "nao_iniciada",
+      "colaboradorId": "NULL",
+      "colaborador_nome": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitulo\tstatus\tcolaboradorId\tcolaborador_nome\n510002\tAção Teste Modificada 1769463125357\tem_andamento\tNULL\tNULL\n510005\tAção Sem Histórico\tnao_iniciada\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1517
+}

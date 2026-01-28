@@ -1,0 +1,22 @@
+{
+  "query": "SELECT status, COUNT(*) as total FROM actions GROUP BY status;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT status, COUNT(*) as total FROM actions GROUP BY status;",
+  "rows": [
+    {
+      "status": "em_andamento",
+      "total": "1"
+    },
+    {
+      "status": "nao_iniciada",
+      "total": "6"
+    },
+    {
+      "status": "concluida",
+      "total": "7"
+    }
+  ],
+  "messages": [],
+  "stdout": "status\ttotal\nem_andamento\t1\nnao_iniciada\t6\nconcluida\t7\n",
+  "stderr": "",
+  "execution_time_ms": 1563
+}

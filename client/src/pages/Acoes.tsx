@@ -286,6 +286,9 @@ export default function Acoes() {
                             Título da Ação:
                         </span>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontSize: "12px", fontWeight: "600", color: "#6b7280", backgroundColor: "#f3f4f6", padding: "2px 8px", borderRadius: "4px" }}>
+                              ID: {String(acao.id).padStart(5, '0')}
+                            </span>
                             <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#1f2937", margin: 0 }}>
                             {acao.titulo}
                             </h3>
