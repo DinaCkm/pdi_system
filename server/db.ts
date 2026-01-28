@@ -1809,6 +1809,44 @@ export async function restoreBackupFromSQL(sqlContent: string): Promise<{ succes
 
 // ============= FUNÇÕES DE EXPORTAÇÃO DE RELATÓRIOS =============
 
+// Relatório geral único com todos os dados do sistema
+export async function getRelatorioGeral() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.execute(
+    sql`SELECT 
+          u.id as usuario_id,
+          u.name as usuario_nome,
+          u.email as usuario_email,
+          u.cpf as usuario_cpf,
+          u.cargo as usuario_cargo,
+          u.role as usuario_perfil,
+          u.status as usuario_status,
+          d.nome as departamento_nome,
+          l.name as lider_nome,
+          p.id as pdi_id,
+          p.titulo as pdi_titulo,
+          p.status as pdi_status,
+          c.nome as ciclo_nome,
+          a.id as acao_id,
+          a.titulo as acao_titulo,
+          a.status as acao_status,
+          a.prazo as acao_prazo,
+          m.nome as competencia_macro
+        FROM users u
+        LEFT JOIN departamentos d ON u.departamentoId = d.id
+        LEFT JOIN users l ON u.leaderId = l.id
+        LEFT JOIN pdis p ON p.colaboradorId = u.id
+        LEFT JOIN ciclos c ON p.cicloId = c.id
+        LEFT JOIN actions a ON a.pdiId = p.id
+        LEFT JOIN competencias_macros m ON a.macroId = m.id
+        ORDER BY u.name, p.id, a.id`
+  );
+
+  return (result as any)[0];
+}
+
 export async function getAllUsersForExport() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -1831,11 +1869,11 @@ export async function getAllPdisForExport() {
   if (!db) throw new Error("Database not available");
 
   const result = await db.execute(
-    sql`SELECT p.id, p.status, p.progresso, p.createdAt, p.updatedAt,
+    sql`SELECT p.id, p.titulo, p.status, p.createdAt, p.updatedAt,
                u.name as userName,
                c.nome as cicloNome
         FROM pdis p
-        LEFT JOIN users u ON p.userId = u.id
+        LEFT JOIN users u ON p.colaboradorId = u.id
         LEFT JOIN ciclos c ON p.cicloId = c.id
         ORDER BY p.createdAt DESC`
   );
@@ -1848,11 +1886,13 @@ export async function getAllAcoesForExport() {
   if (!db) throw new Error("Database not available");
 
   const result = await db.execute(
-    sql`SELECT a.id, a.pdiId, a.titulo, a.tipo, a.status, a.dataInicio, a.dataFim, a.progresso,
-               u.name as userName
+    sql`SELECT a.id, a.pdiId, a.titulo, a.status, a.prazo, a.createdAt, a.updatedAt,
+               u.name as userName,
+               m.nome as macroNome
         FROM actions a
         LEFT JOIN pdis p ON a.pdiId = p.id
-        LEFT JOIN users u ON p.userId = u.id
+        LEFT JOIN users u ON p.colaboradorId = u.id
+        LEFT JOIN competencias_macros m ON a.macroId = m.id
         ORDER BY a.createdAt DESC`
   );
 
@@ -1865,22 +1905,10 @@ export async function getAllCompetenciasForExport() {
 
   const competencias: any[] = [];
 
-  // Blocos
-  const blocos = await db.execute(sql`SELECT id, nome, descricao, ativo FROM competenciasBlocos ORDER BY nome`);
-  for (const b of (blocos as any)[0]) {
-    competencias.push({ tipo: 'Bloco', ...b });
-  }
-
-  // Macros
-  const macros = await db.execute(sql`SELECT id, nome, descricao, ativo FROM competenciasMacros ORDER BY nome`);
+  // Macros (única tabela de competências existente)
+  const macros = await db.execute(sql`SELECT id, nome, descricao, ativo FROM competencias_macros ORDER BY nome`);
   for (const m of (macros as any)[0]) {
     competencias.push({ tipo: 'Macro', ...m });
-  }
-
-  // Micros
-  const micros = await db.execute(sql`SELECT id, nome, descricao, ativo FROM competenciasMicros ORDER BY nome`);
-  for (const mi of (micros as any)[0]) {
-    competencias.push({ tipo: 'Micro', ...mi });
   }
 
   return competencias;
@@ -1891,7 +1919,7 @@ export async function getAllDepartamentosForExport() {
   if (!db) throw new Error("Database not available");
 
   const result = await db.execute(
-    sql`SELECT d.id, d.nome, d.descricao, d.ativo,
+    sql`SELECT d.id, d.nome, d.descricao, d.status,
                (SELECT COUNT(*) FROM users WHERE departamentoId = d.id) as totalUsuarios
         FROM departamentos d
         ORDER BY d.nome`

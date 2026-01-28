@@ -2438,3 +2438,41 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Criar query de relatório de ações vencidas no servidor
 - [x] Criar página de relatório com filtros (departamento, colaborador, período)
 - [x] Implementar exportação em Excel/CSV
+
+
+## Bugs Reportados pela Julia (28 JAN 2025)
+- [ ] BUG CRÍTICO: Erro ao exportar relatório de PDI
+- [ ] BUG CRÍTICO: Erro ao exportar relatório de Ações
+- [ ] BUG CRÍTICO: Erro ao exportar relatório de Competências
+- [ ] BUG CRÍTICO: Erro ao exportar relatório de Departamentos
+- [ ] BUG CRÍTICO: Erro ao exportar relatório Completo
+- [ ] BUG: Ações deletadas ainda aparecem na página de Ações do Admin
+- [ ] BUG: Upload de importação não reabre após erro de validação
+- [ ] MELHORIA: Adicionar nome do Líder e Ciclo na visualização de PDI do Admin
+- [ ] MELHORIA: Corrigir coluna de Líder na listagem de PDIs (mostra líder errado)
+- [ ] MELHORIA: Adicionar ID da ação no card de ação
+- [ ] DOCUMENTAÇÃO: Explicar o que significa "Solicitação Aguardando Líder"
+
+
+## Bugs Reportados pela Julia (28 JAN 2025)
+- [ ] BUG CRÍTICO: Erro ao exportar relatório de PDI
+- [ ] BUG CRÍTICO: Erro ao exportar relatório de Ações
+- [ ] BUG CRÍTICO: Erro ao exportar relatório de Competências
+- [ ] BUG CRÍTICO: Erro ao exportar relatório de Departamentos
+- [ ] BUG CRÍTICO: Erro ao exportar relatório Completo
+- [ ] BUG: Ações deletadas ainda aparecem na página de Ações do Admin
+- [ ] BUG: Upload de importação não reabre após erro de validação
+- [ ] MELHORIA: Adicionar nome do Líder e Ciclo na visualização de PDI do Admin
+- [ ] MELHORIA: Corrigir coluna de Líder na listagem de PDIs (mostra líder errado)
+- [ ] MELHORIA: Adicionar ID da ação no card de ação
+- [ ] DOCUMENTAÇÃO: Explicar o que significa "Solicitação Aguardando Líder"
+
+
+## Bugs Reportados pela Julia (28 Jan 2025)
+- [x] Erro ao exportar relatórios - RESOLVIDO: Criado relatório geral único com todos os dados em um CSV
+- [ ] Ações deletadas ainda aparecem na página de Ações do Admin
+- [ ] Upload de importação não reabre após erro
+- [ ] Adicionar nome do Líder e Ciclo na visualização de PDI do Admin
+- [ ] Corrigir coluna de Líder na listagem de PDIs (colaboradores aparecem como líderes de si mesmos)
+- [ ] Adicionar ID da ação no card
+- [ ] Explicar o que significa "Solicitação Aguardando Líder"

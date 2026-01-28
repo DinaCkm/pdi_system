@@ -1,0 +1,66 @@
+{
+  "query": "SELECT COLUMN_NAME, DATA_TYPE FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'users' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT COLUMN_NAME, DATA_TYPE FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'users' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "openId",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "name",
+      "DATA_TYPE": "text"
+    },
+    {
+      "COLUMN_NAME": "email",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "loginMethod",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "role",
+      "DATA_TYPE": "enum"
+    },
+    {
+      "COLUMN_NAME": "createdAt",
+      "DATA_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "updatedAt",
+      "DATA_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "lastSignedIn",
+      "DATA_TYPE": "timestamp"
+    },
+    {
+      "COLUMN_NAME": "cpf",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "cargo",
+      "DATA_TYPE": "varchar"
+    },
+    {
+      "COLUMN_NAME": "leaderId",
+      "DATA_TYPE": "int"
+    },
+    {
+      "COLUMN_NAME": "status",
+      "DATA_TYPE": "enum"
+    },
+    {
+      "COLUMN_NAME": "departamentoId",
+      "DATA_TYPE": "int"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\tDATA_TYPE\nid\tint\nopenId\tvarchar\nname\ttext\nemail\tvarchar\nloginMethod\tvarchar\nrole\tenum\ncreatedAt\ttimestamp\nupdatedAt\ttimestamp\nlastSignedIn\ttimestamp\ncpf\tvarchar\ncargo\tvarchar\nleaderId\tint\nstatus\tenum\ndepartamentoId\tint\n",
+  "stderr": "",
+  "execution_time_ms": 1634
+}

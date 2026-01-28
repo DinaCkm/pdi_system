@@ -422,178 +422,44 @@ export default function Relatorios() {
                     <FileSpreadsheet className="h-6 w-6 text-green-600" />
                   </div>
                   <div>
-                    <CardTitle>Exportar Relatórios</CardTitle>
+                    <CardTitle>Exportar Relatório Geral</CardTitle>
                     <CardDescription>
-                      Exporte dados do sistema em formato Excel (CSV)
+                      Exporte todos os dados do sistema em formato Excel (CSV)
                     </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Relatório de Usuários */}
-                  <Card className="border-2 hover:border-blue-300 transition-colors">
+                <div className="max-w-xl mx-auto">
+                  <Card className="border-2 border-blue-200 bg-blue-50">
                     <CardContent className="pt-6">
                       <div className="flex flex-col items-center text-center">
-                        <div className="p-3 bg-blue-100 rounded-full mb-4">
-                          <Users className="h-8 w-8 text-blue-600" />
+                        <div className="p-4 bg-blue-100 rounded-full mb-4">
+                          <FileSpreadsheet className="h-12 w-12 text-blue-600" />
                         </div>
-                        <h3 className="font-semibold text-lg mb-2">Usuários</h3>
-                        <p className="text-sm text-gray-500 mb-4">
-                          Lista completa de colaboradores, líderes e administradores
+                        <h3 className="font-semibold text-xl mb-2">Relatório Geral Completo</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Exporta todos os dados do sistema em um único arquivo CSV com todas as colunas:
+                        </p>
+                        <div className="text-left text-xs text-gray-500 mb-4 bg-white p-3 rounded-lg w-full">
+                          <p className="font-medium text-gray-700 mb-1">Colunas incluídas:</p>
+                          <p>Usuário (ID, Nome, Email, CPF, Cargo, Perfil, Status) • Departamento • Líder • PDI (ID, Título, Status) • Ciclo • Ação (ID, Título, Status, Prazo) • Competência Macro</p>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-4">
+                          💡 Dica: Abra o arquivo no Excel e use filtros para visualizar os dados como preferir
                         </p>
                         <Button 
-                          onClick={() => handleExportReport('usuarios')}
-                          disabled={exportingReport === 'usuarios'}
+                          onClick={() => handleExportReport('geral')}
+                          disabled={exportingReport === 'geral'}
                           className="w-full"
-                          variant="outline"
+                          size="lg"
                         >
-                          {exportingReport === 'usuarios' ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          {exportingReport === 'geral' ? (
+                            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                           ) : (
-                            <Download className="h-4 w-4 mr-2" />
+                            <Download className="h-5 w-5 mr-2" />
                           )}
-                          Exportar Excel
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Relatório de PDIs */}
-                  <Card className="border-2 hover:border-indigo-300 transition-colors">
-                    <CardContent className="pt-6">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="p-3 bg-indigo-100 rounded-full mb-4">
-                          <Target className="h-8 w-8 text-indigo-600" />
-                        </div>
-                        <h3 className="font-semibold text-lg mb-2">PDIs</h3>
-                        <p className="text-sm text-gray-500 mb-4">
-                          Todos os Planos de Desenvolvimento Individual
-                        </p>
-                        <Button 
-                          onClick={() => handleExportReport('pdis')}
-                          disabled={exportingReport === 'pdis'}
-                          className="w-full"
-                          variant="outline"
-                        >
-                          {exportingReport === 'pdis' ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4 mr-2" />
-                          )}
-                          Exportar Excel
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Relatório de Ações */}
-                  <Card className="border-2 hover:border-green-300 transition-colors">
-                    <CardContent className="pt-6">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="p-3 bg-green-100 rounded-full mb-4">
-                          <ListTodo className="h-8 w-8 text-green-600" />
-                        </div>
-                        <h3 className="font-semibold text-lg mb-2">Ações</h3>
-                        <p className="text-sm text-gray-500 mb-4">
-                          Todas as ações de desenvolvimento cadastradas
-                        </p>
-                        <Button 
-                          onClick={() => handleExportReport('acoes')}
-                          disabled={exportingReport === 'acoes'}
-                          className="w-full"
-                          variant="outline"
-                        >
-                          {exportingReport === 'acoes' ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4 mr-2" />
-                          )}
-                          Exportar Excel
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Relatório de Competências */}
-                  <Card className="border-2 hover:border-purple-300 transition-colors">
-                    <CardContent className="pt-6">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="p-3 bg-purple-100 rounded-full mb-4">
-                          <FileText className="h-8 w-8 text-purple-600" />
-                        </div>
-                        <h3 className="font-semibold text-lg mb-2">Competências</h3>
-                        <p className="text-sm text-gray-500 mb-4">
-                          Blocos, macros e microcompetências do sistema
-                        </p>
-                        <Button 
-                          onClick={() => handleExportReport('competencias')}
-                          disabled={exportingReport === 'competencias'}
-                          className="w-full"
-                          variant="outline"
-                        >
-                          {exportingReport === 'competencias' ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4 mr-2" />
-                          )}
-                          Exportar Excel
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Relatório de Departamentos */}
-                  <Card className="border-2 hover:border-orange-300 transition-colors">
-                    <CardContent className="pt-6">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="p-3 bg-orange-100 rounded-full mb-4">
-                          <Database className="h-8 w-8 text-orange-600" />
-                        </div>
-                        <h3 className="font-semibold text-lg mb-2">Departamentos</h3>
-                        <p className="text-sm text-gray-500 mb-4">
-                          Lista de todos os departamentos cadastrados
-                        </p>
-                        <Button 
-                          onClick={() => handleExportReport('departamentos')}
-                          disabled={exportingReport === 'departamentos'}
-                          className="w-full"
-                          variant="outline"
-                        >
-                          {exportingReport === 'departamentos' ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4 mr-2" />
-                          )}
-                          Exportar Excel
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Relatório Completo */}
-                  <Card className="border-2 hover:border-red-300 transition-colors">
-                    <CardContent className="pt-6">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="p-3 bg-red-100 rounded-full mb-4">
-                          <FileSpreadsheet className="h-8 w-8 text-red-600" />
-                        </div>
-                        <h3 className="font-semibold text-lg mb-2">Relatório Completo</h3>
-                        <p className="text-sm text-gray-500 mb-4">
-                          Todos os dados do sistema em um único arquivo
-                        </p>
-                        <Button 
-                          onClick={() => handleExportReport('completo')}
-                          disabled={exportingReport === 'completo'}
-                          className="w-full"
-                          variant="outline"
-                        >
-                          {exportingReport === 'completo' ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Download className="h-4 w-4 mr-2" />
-                          )}
-                          Exportar Excel
+                          Baixar Relatório Geral (CSV)
                         </Button>
                       </div>
                     </CardContent>
