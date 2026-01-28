@@ -222,6 +222,12 @@ export default function MinhasPendencias() {
     { enabled: !!userId }
   );
   
+  // Buscar ações vencidas do usuário
+  const { data: minhasAcoesVencidas = [] } = trpc.prazos.minhasVencidas.useQuery(
+    undefined,
+    { enabled: !!userId }
+  );
+  
   // DEBUG: Verificar se as evidências estão sendo carregadas
   useEffect(() => {
     console.log('[MinhasPendencias] allUserEvidences:', allUserEvidences);
@@ -345,6 +351,32 @@ export default function MinhasPendencias() {
           Acompanhe o andamento das suas ações do PDI.
         </p>
       </div>
+
+      {/* Banner de Alerta - Ações Vencidas */}
+      {minhasAcoesVencidas.length > 0 && (
+        <Card className="mb-6 border-red-300 bg-red-50">
+          <CardContent className="pt-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-800">Atenção: Você tem {minhasAcoesVencidas.length} ação(s) com prazo vencido!</h3>
+                <p className="text-sm text-red-700 mt-1">Por favor, priorize a conclusão dessas ações ou solicite um ajuste de prazo ao seu líder.</p>
+                <div className="mt-3 space-y-2">
+                  {minhasAcoesVencidas.slice(0, 3).map((acao: any) => (
+                    <div key={acao.id} className="flex items-center justify-between p-2 bg-white rounded border border-red-200">
+                      <span className="text-sm font-medium text-red-800">{acao.titulo}</span>
+                      <span className="text-xs text-red-600 font-bold">{acao.diasVencido} dias atrasado</span>
+                    </div>
+                  ))}
+                  {minhasAcoesVencidas.length > 3 && (
+                    <p className="text-xs text-red-600">+ {minhasAcoesVencidas.length - 3} outras ações vencidas</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filtros e Busca */}
       <Card className="mb-6">

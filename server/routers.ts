@@ -828,6 +828,103 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
   }),
 
   // Router de Auditoria de Exclusões
+  // Router de Estatísticas de Prazo
+  prazos: router({
+    estatisticas: protectedProcedure
+      .input(z.object({
+        departamentoId: z.number().optional(),
+        leaderId: z.number().optional(),
+        colaboradorId: z.number().optional(),
+      }).optional())
+      .query(async ({ input, ctx }) => {
+        try {
+          // Se for colaborador, só pode ver suas próprias estatísticas
+          if (ctx.user.role === 'colaborador') {
+            return await db.getEstatisticasPrazo({ colaboradorId: ctx.user.id });
+          }
+          // Se for líder, pode ver da sua equipe
+          if (ctx.user.role === 'lider') {
+            return await db.getEstatisticasPrazo({ leaderId: ctx.user.id, ...input });
+          }
+          // Admin pode ver tudo
+          return await db.getEstatisticasPrazo(input);
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao buscar estatísticas de prazo: ${error.message}`
+          });
+        }
+      }),
+
+    vencidas: protectedProcedure
+      .input(z.object({
+        departamentoId: z.number().optional(),
+        leaderId: z.number().optional(),
+        colaboradorId: z.number().optional(),
+        limite: z.number().optional(),
+      }).optional())
+      .query(async ({ input, ctx }) => {
+        try {
+          // Se for colaborador, só pode ver suas próprias ações
+          if (ctx.user.role === 'colaborador') {
+            return await db.getAcoesVencidas({ colaboradorId: ctx.user.id, limite: input?.limite });
+          }
+          // Se for líder, pode ver da sua equipe
+          if (ctx.user.role === 'lider') {
+            return await db.getAcoesVencidas({ leaderId: ctx.user.id, ...input });
+          }
+          // Admin pode ver tudo
+          return await db.getAcoesVencidas(input);
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao buscar ações vencidas: ${error.message}`
+          });
+        }
+      }),
+
+    proximasVencer: protectedProcedure
+      .input(z.object({
+        departamentoId: z.number().optional(),
+        leaderId: z.number().optional(),
+        colaboradorId: z.number().optional(),
+        diasAntecedencia: z.number().optional(),
+        limite: z.number().optional(),
+      }).optional())
+      .query(async ({ input, ctx }) => {
+        try {
+          // Se for colaborador, só pode ver suas próprias ações
+          if (ctx.user.role === 'colaborador') {
+            return await db.getAcoesProximasVencer({ colaboradorId: ctx.user.id, ...input });
+          }
+          // Se for líder, pode ver da sua equipe
+          if (ctx.user.role === 'lider') {
+            return await db.getAcoesProximasVencer({ leaderId: ctx.user.id, ...input });
+          }
+          // Admin pode ver tudo
+          return await db.getAcoesProximasVencer(input);
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao buscar ações próximas do vencimento: ${error.message}`
+          });
+        }
+      }),
+
+    // Rota específica para o colaborador ver suas ações vencidas
+    minhasVencidas: protectedProcedure
+      .query(async ({ ctx }) => {
+        try {
+          return await db.getAcoesVencidas({ colaboradorId: ctx.user.id });
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao buscar suas ações vencidas: ${error.message}`
+          });
+        }
+      }),
+  }),
+
   auditoria: router({
     listar: adminProcedure
       .input(z.object({

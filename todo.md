@@ -2418,3 +2418,17 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [ ] Implementar funções de registro de auditoria ao excluir ações
 - [ ] Criar página de visualização de auditoria para admins
 - [ ] Adicionar rota e menu de navegação
+
+
+## Controle de Prazos de Ações (28 JAN 2026) - Solicitado pelo usuário
+- [ ] Criar queries de estatísticas de prazo no servidor
+- [ ] Adicionar gráfico de prazos no Dashboard Estratégico
+- [ ] Adicionar alertas de prazo na Central de Comando do Líder
+- [ ] Adicionar alertas e indicadores na página Minhas Ações do colaborador
+
+
+## Controle de Prazos de Ações (28 JAN 2026)
+- [x] Criar queries de estatísticas de prazo no servidor
+- [x] Adicionar gráfico de prazos no Dashboard Estratégico
+- [x] Adicionar alertas de prazo na Central de Comando do Líder
+- [x] Adicionar alertas e indicadores na página Minhas Ações

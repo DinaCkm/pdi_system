@@ -2240,3 +2240,185 @@ export async function getEstatisticasAuditoria() {
     throw error;
   }
 }
+
+
+// ============= FUNÇÕES DE ESTATÍSTICAS DE PRAZO =============
+
+export async function getEstatisticasPrazo(filtros?: {
+  departamentoId?: number;
+  leaderId?: number;
+  colaboradorId?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    let whereClause = "WHERE a.status != 'concluida'";
+    
+    if (filtros?.departamentoId) {
+      whereClause += ` AND u.departamentoId = ${filtros.departamentoId}`;
+    }
+    
+    if (filtros?.leaderId) {
+      whereClause += ` AND u.leaderId = ${filtros.leaderId}`;
+    }
+    
+    if (filtros?.colaboradorId) {
+      whereClause += ` AND p.colaboradorId = ${filtros.colaboradorId}`;
+    }
+
+    const [rows]: any = await db.execute(sql.raw(`
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN a.prazo < CURDATE() THEN 1 ELSE 0 END) as vencidas,
+        SUM(CASE WHEN a.prazo >= CURDATE() AND a.prazo <= DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as proximas,
+        SUM(CASE WHEN a.prazo > DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as noPrazo
+      FROM actions a
+      LEFT JOIN pdis p ON a.pdiId = p.id
+      LEFT JOIN users u ON p.colaboradorId = u.id
+      ${whereClause}
+    `));
+
+    const result = rows[0] || { total: 0, vencidas: 0, proximas: 0, noPrazo: 0 };
+    
+    return {
+      total: Number(result.total) || 0,
+      vencidas: Number(result.vencidas) || 0,
+      proximas: Number(result.proximas) || 0,
+      noPrazo: Number(result.noPrazo) || 0,
+    };
+  } catch (error) {
+    console.error('[getEstatisticasPrazo] Erro:', error);
+    throw error;
+  }
+}
+
+export async function getAcoesVencidas(filtros?: {
+  departamentoId?: number;
+  leaderId?: number;
+  colaboradorId?: number;
+  limite?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    let whereClause = "WHERE a.prazo < CURDATE() AND a.status != 'concluida'";
+    
+    if (filtros?.departamentoId) {
+      whereClause += ` AND u.departamentoId = ${filtros.departamentoId}`;
+    }
+    
+    if (filtros?.leaderId) {
+      whereClause += ` AND u.leaderId = ${filtros.leaderId}`;
+    }
+    
+    if (filtros?.colaboradorId) {
+      whereClause += ` AND p.colaboradorId = ${filtros.colaboradorId}`;
+    }
+
+    const limite = filtros?.limite || 50;
+
+    const [rows]: any = await db.execute(sql.raw(`
+      SELECT 
+        a.id,
+        a.titulo,
+        a.prazo,
+        a.status,
+        DATEDIFF(CURDATE(), a.prazo) as diasVencido,
+        u.name as colaboradorNome,
+        u.email as colaboradorEmail,
+        d.nome as departamentoNome,
+        cm.nome as macroNome
+      FROM actions a
+      LEFT JOIN pdis p ON a.pdiId = p.id
+      LEFT JOIN users u ON p.colaboradorId = u.id
+      LEFT JOIN departamentos d ON u.departamentoId = d.id
+      LEFT JOIN competencias_macros cm ON a.macroId = cm.id
+      ${whereClause}
+      ORDER BY a.prazo ASC
+      LIMIT ${limite}
+    `));
+
+    return (rows || []).map((row: any) => ({
+      id: row.id,
+      titulo: row.titulo,
+      prazo: row.prazo,
+      status: row.status,
+      diasVencido: Number(row.diasVencido) || 0,
+      colaboradorNome: row.colaboradorNome,
+      colaboradorEmail: row.colaboradorEmail,
+      departamentoNome: row.departamentoNome,
+      macroNome: row.macroNome,
+    }));
+  } catch (error) {
+    console.error('[getAcoesVencidas] Erro:', error);
+    throw error;
+  }
+}
+
+export async function getAcoesProximasVencer(filtros?: {
+  departamentoId?: number;
+  leaderId?: number;
+  colaboradorId?: number;
+  diasAntecedencia?: number;
+  limite?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const dias = filtros?.diasAntecedencia || 7;
+    let whereClause = `WHERE a.prazo >= CURDATE() AND a.prazo <= DATE_ADD(CURDATE(), INTERVAL ${dias} DAY) AND a.status != 'concluida'`;
+    
+    if (filtros?.departamentoId) {
+      whereClause += ` AND u.departamentoId = ${filtros.departamentoId}`;
+    }
+    
+    if (filtros?.leaderId) {
+      whereClause += ` AND u.leaderId = ${filtros.leaderId}`;
+    }
+    
+    if (filtros?.colaboradorId) {
+      whereClause += ` AND p.colaboradorId = ${filtros.colaboradorId}`;
+    }
+
+    const limite = filtros?.limite || 50;
+
+    const [rows]: any = await db.execute(sql.raw(`
+      SELECT 
+        a.id,
+        a.titulo,
+        a.prazo,
+        a.status,
+        DATEDIFF(a.prazo, CURDATE()) as diasRestantes,
+        u.name as colaboradorNome,
+        u.email as colaboradorEmail,
+        d.nome as departamentoNome,
+        cm.nome as macroNome
+      FROM actions a
+      LEFT JOIN pdis p ON a.pdiId = p.id
+      LEFT JOIN users u ON p.colaboradorId = u.id
+      LEFT JOIN departamentos d ON u.departamentoId = d.id
+      LEFT JOIN competencias_macros cm ON a.macroId = cm.id
+      ${whereClause}
+      ORDER BY a.prazo ASC
+      LIMIT ${limite}
+    `));
+
+    return (rows || []).map((row: any) => ({
+      id: row.id,
+      titulo: row.titulo,
+      prazo: row.prazo,
+      status: row.status,
+      diasRestantes: Number(row.diasRestantes) || 0,
+      colaboradorNome: row.colaboradorNome,
+      colaboradorEmail: row.colaboradorEmail,
+      departamentoNome: row.departamentoNome,
+      macroNome: row.macroNome,
+    }));
+  } catch (error) {
+    console.error('[getAcoesProximasVencer] Erro:', error);
+    throw error;
+  }
+}

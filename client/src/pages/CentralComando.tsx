@@ -6,12 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, AlertTriangle, Zap, Users, Building2 } from "lucide-react";
+import { ChevronDown, ChevronRight, AlertTriangle, Zap, Users, Building2, Clock } from "lucide-react";
 import { useState, useMemo } from "react";
 
 export default function CentralComando() {
   const { data: users = [] } = trpc.users.list.useQuery();
   const { data: departamentos = [] } = trpc.departamentos.list.useQuery();
+  
+  // Query para ações vencidas da equipe
+  const { data: estatisticasPrazo } = trpc.prazos.estatisticas.useQuery();
+  const { data: acoesVencidas = [] } = trpc.prazos.vencidas.useQuery({ limite: 10 });
   const updateUserMutation = trpc.users.update.useMutation({
     onSuccess: () => {
       toast.success("Líder atualizado com sucesso!");
@@ -147,6 +151,38 @@ export default function CentralComando() {
           Visualize e edite a estrutura organizacional em tempo real
         </p>
       </div>
+
+      {/* ALERTA DE AÇÕES VENCIDAS */}
+      {acoesVencidas.length > 0 && (
+        <Card style={{ padding: "16px", marginBottom: "24px", borderLeft: "4px solid #f59e0b", backgroundColor: "#fffbeb" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px", color: "#d97706", fontWeight: "700" }}>
+            <Clock size={20} /> Ações com Prazo Vencido ({estatisticasPrazo?.vencidas || acoesVencidas.length})
+          </div>
+          <div style={{ display: "grid", gap: "8px" }}>
+            {acoesVencidas.slice(0, 5).map((acao: any) => (
+              <div key={acao.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", backgroundColor: "white", borderRadius: "6px", border: "1px solid #fcd34d" }}>
+                <div>
+                  <span style={{ fontSize: "14px", fontWeight: "600", color: "#92400e" }}>{acao.titulo}</span>
+                  <p style={{ fontSize: "12px", color: "#78716c", margin: "4px 0 0 0" }}>
+                    {acao.colaboradorNome} - {acao.departamentoNome}
+                  </p>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <span style={{ fontSize: "14px", fontWeight: "700", color: "#dc2626" }}>{acao.diasVencido} dias atrasado</span>
+                  <p style={{ fontSize: "11px", color: "#78716c", margin: "2px 0 0 0" }}>
+                    Prazo: {new Date(acao.prazo).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          {acoesVencidas.length > 5 && (
+            <p style={{ fontSize: "12px", color: "#92400e", marginTop: "12px", textAlign: "center" }}>
+              + {acoesVencidas.length - 5} outras ações vencidas
+            </p>
+          )}
+        </Card>
+      )}
 
       {/* DIAGNÓSTICO DE ERROS */}
       {errors.length > 0 && (
