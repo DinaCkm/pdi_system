@@ -41,6 +41,7 @@ import SolicitacoesEquipe from "./pages/SolicitacoesEquipe";
 import SolicitacoesAdmin from "./pages/SolicitacoesAdmin";
 import CentralComando from "./pages/CentralComando";
 import AdminDashboard from "./pages/AdminDashboard";
+import RelatorioAcoesVencidas from "./pages/RelatorioAcoesVencidas";
 
 function Router() {
   return (
@@ -243,6 +244,12 @@ function Router() {
       <Route path={"/auditoria-exclusoes"}>
         <DashboardLayout>
           <AuditoriaExclusoes />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/relatorio-acoes-vencidas"}>
+        <DashboardLayout>
+          <RelatorioAcoesVencidas />
         </DashboardLayout>
       </Route>
       

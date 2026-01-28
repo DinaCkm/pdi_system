@@ -923,6 +923,25 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           });
         }
       }),
+
+    // Relatório completo de ações vencidas (apenas admin)
+    relatorio: adminProcedure
+      .input(z.object({
+        departamentoId: z.number().optional(),
+        colaboradorId: z.number().optional(),
+        dataInicio: z.string().optional(),
+        dataFim: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        try {
+          return await db.getRelatorioAcoesVencidas(input);
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao gerar relatório de ações vencidas: ${error.message}`
+          });
+        }
+      }),
   }),
 
   auditoria: router({

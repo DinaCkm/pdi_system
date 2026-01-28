@@ -2432,3 +2432,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar gráfico de prazos no Dashboard Estratégico
 - [x] Adicionar alertas de prazo na Central de Comando do Líder
 - [x] Adicionar alertas e indicadores na página Minhas Ações
+
+
+## Relatório de Ações Vencidas (28 JAN 2026)
+- [x] Criar query de relatório de ações vencidas no servidor
+- [x] Criar página de relatório com filtros (departamento, colaborador, período)
+- [x] Implementar exportação em Excel/CSV

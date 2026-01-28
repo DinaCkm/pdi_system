@@ -2422,3 +2422,141 @@ export async function getAcoesProximasVencer(filtros?: {
     throw error;
   }
 }
+
+
+// ============= RELATÓRIO DE AÇÕES VENCIDAS =============
+
+export async function getRelatorioAcoesVencidas(filtros?: {
+  departamentoId?: number;
+  colaboradorId?: number;
+  dataInicio?: string;
+  dataFim?: string;
+  agruparPor?: 'departamento' | 'colaborador';
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    let whereClause = "WHERE a.prazo < CURDATE() AND a.status != 'concluida'";
+    
+    if (filtros?.departamentoId) {
+      whereClause += ` AND u.departamentoId = ${filtros.departamentoId}`;
+    }
+    
+    if (filtros?.colaboradorId) {
+      whereClause += ` AND p.colaboradorId = ${filtros.colaboradorId}`;
+    }
+
+    if (filtros?.dataInicio) {
+      whereClause += ` AND a.prazo >= '${filtros.dataInicio}'`;
+    }
+
+    if (filtros?.dataFim) {
+      whereClause += ` AND a.prazo <= '${filtros.dataFim}'`;
+    }
+
+    // Query detalhada de ações vencidas
+    const [rows]: any = await db.execute(sql.raw(`
+      SELECT 
+        a.id,
+        a.titulo,
+        a.descricao,
+        a.prazo,
+        a.status,
+        DATEDIFF(CURDATE(), a.prazo) as diasVencido,
+        u.id as colaboradorId,
+        u.nome as colaboradorNome,
+        u.email as colaboradorEmail,
+        d.id as departamentoId,
+        d.nome as departamentoNome,
+        cm.nome as macroNome,
+        l.nome as liderNome
+      FROM actions a
+      INNER JOIN pdis p ON a.pdiId = p.id
+      INNER JOIN users u ON p.colaboradorId = u.id
+      LEFT JOIN departamentos d ON u.departamentoId = d.id
+      LEFT JOIN competencias_macros cm ON a.macroId = cm.id
+      LEFT JOIN users l ON u.leaderId = l.id
+      ${whereClause}
+      ORDER BY d.nome ASC, u.nome ASC, a.prazo ASC
+    `));
+
+    // Query de resumo por departamento
+    const [resumoDepartamento]: any = await db.execute(sql.raw(`
+      SELECT 
+        d.id as departamentoId,
+        d.nome as departamentoNome,
+        COUNT(a.id) as totalVencidas,
+        COUNT(DISTINCT p.colaboradorId) as colaboradoresAfetados,
+        AVG(DATEDIFF(CURDATE(), a.prazo)) as mediadiasVencido
+      FROM actions a
+      INNER JOIN pdis p ON a.pdiId = p.id
+      INNER JOIN users u ON p.colaboradorId = u.id
+      LEFT JOIN departamentos d ON u.departamentoId = d.id
+      ${whereClause}
+      GROUP BY d.id, d.nome
+      ORDER BY totalVencidas DESC
+    `));
+
+    // Query de resumo por colaborador
+    const [resumoColaborador]: any = await db.execute(sql.raw(`
+      SELECT 
+        u.id as colaboradorId,
+        u.nome as colaboradorNome,
+        u.email as colaboradorEmail,
+        d.nome as departamentoNome,
+        l.nome as liderNome,
+        COUNT(a.id) as totalVencidas,
+        MIN(a.prazo) as prazoMaisAntigo,
+        MAX(DATEDIFF(CURDATE(), a.prazo)) as maiorAtraso
+      FROM actions a
+      INNER JOIN pdis p ON a.pdiId = p.id
+      INNER JOIN users u ON p.colaboradorId = u.id
+      LEFT JOIN departamentos d ON u.departamentoId = d.id
+      LEFT JOIN users l ON u.leaderId = l.id
+      ${whereClause}
+      GROUP BY u.id, u.nome, u.email, d.nome, l.nome
+      ORDER BY totalVencidas DESC
+    `));
+
+    return {
+      acoes: (rows || []).map((row: any) => ({
+        id: row.id,
+        titulo: row.titulo,
+        descricao: row.descricao,
+        prazo: row.prazo,
+        status: row.status,
+        diasVencido: Number(row.diasVencido) || 0,
+        colaboradorId: row.colaboradorId,
+        colaboradorNome: row.colaboradorNome,
+        colaboradorEmail: row.colaboradorEmail,
+        departamentoId: row.departamentoId,
+        departamentoNome: row.departamentoNome || 'Sem Departamento',
+        macroNome: row.macroNome,
+        liderNome: row.liderNome,
+      })),
+      resumoPorDepartamento: (resumoDepartamento || []).map((row: any) => ({
+        departamentoId: row.departamentoId,
+        departamentoNome: row.departamentoNome || 'Sem Departamento',
+        totalVencidas: Number(row.totalVencidas) || 0,
+        colaboradoresAfetados: Number(row.colaboradoresAfetados) || 0,
+        mediaDiasVencido: Math.round(Number(row.mediadiasVencido) || 0),
+      })),
+      resumoPorColaborador: (resumoColaborador || []).map((row: any) => ({
+        colaboradorId: row.colaboradorId,
+        colaboradorNome: row.colaboradorNome,
+        colaboradorEmail: row.colaboradorEmail,
+        departamentoNome: row.departamentoNome || 'Sem Departamento',
+        liderNome: row.liderNome,
+        totalVencidas: Number(row.totalVencidas) || 0,
+        prazoMaisAntigo: row.prazoMaisAntigo,
+        maiorAtraso: Number(row.maiorAtraso) || 0,
+      })),
+      totalGeral: rows?.length || 0,
+      dataGeracao: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error('[getRelatorioAcoesVencidas] Erro:', error);
+    throw error;
+  }
+}
