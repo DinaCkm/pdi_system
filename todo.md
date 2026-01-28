@@ -2492,3 +2492,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Logo CKM Talents
 - [x] Adicionar logo da CKM Talents ao sistema - CONCLUÍDO (login + sidebar)
+
+## Filtro por Departamento no Dashboard
+- [x] Adicionar filtro por departamento no gráfico de Status de Prazos das Ações - CONCLUÍDO

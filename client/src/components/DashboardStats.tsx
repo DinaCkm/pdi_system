@@ -1,8 +1,9 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { Medal, AlertTriangle, Clock, CheckCircle } from "lucide-react";
+import { Medal, AlertTriangle, Clock, CheckCircle, Building2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface DashboardStatsProps {
   userRole?: string;
@@ -51,9 +52,22 @@ interface DashboardStatsProps {
 }
 
 export function DashboardStats({ stats, userRole }: DashboardStatsProps) {
-  // Query para estatísticas de prazo
-  const { data: estatisticasPrazo } = trpc.prazos.estatisticas.useQuery();
-  const { data: acoesVencidas } = trpc.prazos.vencidas.useQuery({ limite: 5 });
+  // Estado para filtro de departamento
+  const [departamentoFiltro, setDepartamentoFiltro] = useState<number | undefined>(undefined);
+  
+  // Query para lista de departamentos (apenas admin)
+  const { data: departamentos = [] } = trpc.departamentos.list.useQuery(undefined, {
+    enabled: userRole === 'admin'
+  });
+  
+  // Query para estatísticas de prazo com filtro de departamento
+  const { data: estatisticasPrazo } = trpc.prazos.estatisticas.useQuery(
+    departamentoFiltro ? { departamentoId: departamentoFiltro } : undefined
+  );
+  const { data: acoesVencidas } = trpc.prazos.vencidas.useQuery({ 
+    limite: 5,
+    departamentoId: departamentoFiltro 
+  });
 
   // Dados para o gráfico de prazos
   const prazosData = estatisticasPrazo ? [
@@ -173,10 +187,33 @@ export function DashboardStats({ stats, userRole }: DashboardStatsProps) {
       {/* ============= BLOCO PRAZOS: STATUS DE PRAZOS DAS AÇÕES ============= */}
       <Card className="border-orange-200">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-orange-500" />
-            Status de Prazos das Ações
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-500" />
+              Status de Prazos das Ações
+            </CardTitle>
+            {userRole === 'admin' && departamentos.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <Select
+                  value={departamentoFiltro?.toString() || "todos"}
+                  onValueChange={(value) => setDepartamentoFiltro(value === "todos" ? undefined : parseInt(value))}
+                >
+                  <SelectTrigger className="w-[200px] h-8">
+                    <SelectValue placeholder="Todos os departamentos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os departamentos</SelectItem>
+                    {departamentos.map((dept: any) => (
+                      <SelectItem key={dept.id} value={dept.id.toString()}>
+                        {dept.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
