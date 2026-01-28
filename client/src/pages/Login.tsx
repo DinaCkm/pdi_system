@@ -77,8 +77,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mb-2">
-            <span className="text-lg font-semibold text-gray-700">CKM Talents</span>
+          <div className="mb-4 flex justify-center">
+            <img src="/logo-ckm.png" alt="CKM Talents" className="h-16 w-auto" />
           </div>
           <CardTitle className="text-2xl font-bold text-blue-600">Gestão de PDI</CardTitle>
           <CardDescription>Entre com seu e-mail e CPF</CardDescription>

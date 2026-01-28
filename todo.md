@@ -2489,3 +2489,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 5. Status muda para "Aprovada" ou "Rejeitada"
 
 **Onde aparece:** No painel de solicitações de ajuste, tanto para o colaborador (que pode acompanhar o status) quanto para o líder (que pode aprovar/rejeitar).
+
+## Logo CKM Talents
+- [x] Adicionar logo da CKM Talents ao sistema - CONCLUÍDO (login + sidebar)

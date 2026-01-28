@@ -223,7 +223,7 @@ function DashboardLayoutContent({
           className="border-r-0"
           disableTransition={isResizing}
         >
-          <SidebarHeader className="h-16 justify-center">
+          <SidebarHeader className="h-20 justify-center">
             <div className="flex items-center gap-3 px-2 transition-all w-full">
               <button
                 onClick={toggleSidebar}
@@ -233,15 +233,17 @@ function DashboardLayoutContent({
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
               {!isCollapsed ? (
-                <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-medium text-gray-600 truncate">
-                    CKM Talents
-                  </span>
-                  <span className="font-semibold text-blue-600 tracking-tight truncate">
-                    Gestão de PDI
-                  </span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <img src="/logo-ckm.png" alt="CKM Talents" className="h-10 w-auto" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-semibold text-blue-600 tracking-tight truncate">
+                      Gestão de PDI
+                    </span>
+                  </div>
                 </div>
-              ) : null}
+              ) : (
+                <img src="/logo-ckm.png" alt="CKM Talents" className="h-8 w-auto" />
+              )}
             </div>
           </SidebarHeader>
 
