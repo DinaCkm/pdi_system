@@ -304,13 +304,36 @@ export async function deleteAction(id: number) {
   if (!db) throw new Error("Database not available");
 
   try {
-    // Deletar em cascata: evidências, ajustes, histórico, depois a ação
+    // 1. Buscar todas as evidências da ação para deletar arquivos e textos
+    const evidenciasAcao = await db.select({ id: evidences.id }).from(evidences).where(eq(evidences.actionId, id));
+    const evidenceIds = evidenciasAcao.map(e => e.id);
+    
+    // 2. Deletar arquivos e textos das evidências
+    if (evidenceIds.length > 0) {
+      for (const evId of evidenceIds) {
+        await db.execute(sql`DELETE FROM evidence_files WHERE evidenceId = ${evId}`);
+        await db.execute(sql`DELETE FROM evidence_texts WHERE evidenceId = ${evId}`);
+      }
+    }
+    
+    // 3. Buscar todas as solicitações de ajuste para deletar comentários
+    const solicitacoesAcao = await db.select({ id: adjustmentRequests.id }).from(adjustmentRequests).where(eq(adjustmentRequests.actionId, id));
+    const solicitacaoIds = solicitacoesAcao.map(s => s.id);
+    
+    // 4. Deletar comentários das solicitações de ajuste
+    if (solicitacaoIds.length > 0) {
+      for (const solId of solicitacaoIds) {
+        await db.delete(adjustmentComments).where(eq(adjustmentComments.adjustmentRequestId, solId));
+      }
+    }
+    
+    // 5. Deletar em cascata: evidências, ajustes, histórico, depois a ação
     await db.delete(evidences).where(eq(evidences.actionId, id));
     await db.delete(adjustmentRequests).where(eq(adjustmentRequests.actionId, id));
     await db.delete(acoesHistorico).where(eq(acoesHistorico.actionId, id));
     await db.delete(actions).where(eq(actions.id, id));
     
-    console.log('[deleteAction] Ação deletada com cascata:', id);
+    console.log('[deleteAction] Ação deletada com cascata completa:', id);
   } catch (error) {
     console.error('[deleteAction] Erro ao deletar ação:', error);
     throw error;

@@ -1,0 +1,90 @@
+{
+  "query": "SELECT e.id as evidencia_id, e.actionId, e.status, e.descricao, a.id as action_exists, a.titulo as action_titulo\nFROM evidences e \nLEFT JOIN actions a ON e.actionId = a.id \nORDER BY e.id DESC\nLIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT e.id as evidencia_id, e.actionId, e.status, e.descricao, a.id as action_exists, a.titulo as action_titulo\nFROM evidences e \nLEFT JOIN actions a ON e.actionId = a.id \nORDER BY e.id DESC\nLIMIT 10;",
+  "rows": [
+    {
+      "evidencia_id": "570003",
+      "actionId": "540001",
+      "status": "aprovada",
+      "descricao": "Mas eu fiz, ta aqui, recebe.",
+      "action_exists": "540001",
+      "action_titulo": "Curso Online: Fundamentos de Compliance e Ética Empresarial"
+    },
+    {
+      "evidencia_id": "570002",
+      "actionId": "540001",
+      "status": "reprovada",
+      "descricao": "Eu fiz assim assado.",
+      "action_exists": "540001",
+      "action_titulo": "Curso Online: Fundamentos de Compliance e Ética Empresarial"
+    },
+    {
+      "evidencia_id": "570001",
+      "actionId": "480001",
+      "status": "aprovada",
+      "descricao": "Agora eu fiz, me diz se tá bom.",
+      "action_exists": "480001",
+      "action_titulo": "Leitura e Aplicação dos 6 Pilares da Autoestima"
+    },
+    {
+      "evidencia_id": "540010",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com texto",
+      "action_exists": "NULL",
+      "action_titulo": "NULL"
+    },
+    {
+      "evidencia_id": "540009",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com arquivo",
+      "action_exists": "NULL",
+      "action_titulo": "NULL"
+    },
+    {
+      "evidencia_id": "540008",
+      "actionId": "1",
+      "status": "aprovada",
+      "descricao": "Teste de evidência",
+      "action_exists": "NULL",
+      "action_titulo": "NULL"
+    },
+    {
+      "evidencia_id": "540004",
+      "actionId": "480002",
+      "status": "aprovada",
+      "descricao": "NULL",
+      "action_exists": "480002",
+      "action_titulo": "Workshop Prático: Feedback Construtivo e Gestão de Conflitos"
+    },
+    {
+      "evidencia_id": "540001",
+      "actionId": "480002",
+      "status": "aprovada",
+      "descricao": "Participei do workshop de Feedback Construtivo e Gestão de Conflitos na plataforma LinkedIn Learning. Completei o curso de 8 horas e apliquei as técnicas aprendidas em 3 situações reais no trabalho.",
+      "action_exists": "480002",
+      "action_titulo": "Workshop Prático: Feedback Construtivo e Gestão de Conflitos"
+    },
+    {
+      "evidencia_id": "510002",
+      "actionId": "480002",
+      "status": "reprovada",
+      "descricao": "Fiz minha evidência.",
+      "action_exists": "480002",
+      "action_titulo": "Workshop Prático: Feedback Construtivo e Gestão de Conflitos"
+    },
+    {
+      "evidencia_id": "510001",
+      "actionId": "480001",
+      "status": "reprovada",
+      "descricao": "Fiz os pilares.",
+      "action_exists": "480001",
+      "action_titulo": "Leitura e Aplicação dos 6 Pilares da Autoestima"
+    }
+  ],
+  "messages": [],
+  "stdout": "evidencia_id\tactionId\tstatus\tdescricao\taction_exists\taction_titulo\n570003\t540001\taprovada\tMas eu fiz, ta aqui, recebe.\t540001\tCurso Online: Fundamentos de Compliance e Ética Empresarial\n570002\t540001\treprovada\tEu fiz assim assado.\t540001\tCurso Online: Fundamentos de Compliance e Ética Empresarial\n570001\t480001\taprovada\tAgora eu fiz, me diz se tá bom.\t480001\tLeitura e Aplicação dos 6 Pilares da Autoestima\n540010\t1\treprovada\tTeste com texto\tNULL\tNULL\n540009\t1\treprovada\tTeste com arquivo\tNULL\tNULL\n540008\t1\taprovada\tTeste de evidência\tNULL\tNULL\n540004\t480002\taprovada\tNULL\t480002\tWorkshop Prático: Feedback Construtivo e Gestão de Conflitos\n540001\t480002\taprovada\tParticipei do workshop de Feedback Construtivo e Gestão de Conflitos na plataforma LinkedIn Learning. Completei o curso de 8 horas e apliquei as técnicas aprendidas em 3 situações reais no trabalho.\t480002\tWorkshop Prático: Feedback Construtivo e Gestão de Conflitos\n510002\t480002\treprovada\tFiz minha evidência.\t480002\tWorkshop Prático: Feedback Construtivo e Gestão de Conflitos\n510001\t480001\treprovada\tFiz os pilares.\t480001\tLeitura e Aplicação dos 6 Pilares da Autoestima\n",
+  "stderr": "",
+  "execution_time_ms": 1512
+}

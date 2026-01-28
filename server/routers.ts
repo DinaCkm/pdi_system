@@ -314,11 +314,11 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         const ev = await db.getEvidenceById(input.id);
         if(ev) {
             await db.updateEvidenceStatus(input.id, { status: 'aprovada', evaluatedBy: ctx.user!.id, evaluatedAt: new Date() });
-            await db.updateAction(ev.actionId, { status: 'concluida' });
             
-            // Notificar o proprietário sobre aprovação
+            // Verificar se a ação existe antes de atualizar
             const action = await db.getActionById(ev.actionId);
             if(action) {
+                await db.updateAction(ev.actionId, { status: 'concluida' });
                 await notifyOwner({
                     title: '✅ Evidência Aprovada',
                     content: `A evidência para a ação "${action.titulo}" foi aprovada pelo administrador.`
@@ -336,11 +336,11 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
                 evaluatedAt: new Date(),
                 justificativaAdmin: input.justificativa || 'Evidência rejeitada pelo administrador'
             });
-            await db.updateAction(ev.actionId, { status: 'em_andamento' });
             
-            // Notificar o proprietário sobre reprovação
+            // Verificar se a ação existe antes de atualizar
             const action = await db.getActionById(ev.actionId);
             if(action) {
+                await db.updateAction(ev.actionId, { status: 'em_andamento' });
                 await notifyOwner({
                     title: '❌ Evidência Reprovada',
                     content: `A evidência para a ação "${action.titulo}" foi reprovada. Motivo: ${input.justificativa || 'Não especificado'}`
@@ -459,11 +459,11 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         evaluatedBy: ctx.user!.id, 
         evaluatedAt: new Date() 
       });
-      await db.updateAction(ev.actionId, { status: 'concluida' });
       
-      // Notificar o proprietário sobre aprovação
+      // Verificar se a ação existe antes de atualizar
       const action = await db.getActionById(ev.actionId);
       if (action) {
+        await db.updateAction(ev.actionId, { status: 'concluida' });
         await notifyOwner({
           title: '✅ Evidência Aprovada pelo Líder',
           content: `A evidência para a ação "${action.titulo}" foi aprovada.`
@@ -497,11 +497,11 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         evaluatedAt: new Date(),
         justificativaAdmin: input.justificativa
       });
-      await db.updateAction(ev.actionId, { status: 'em_andamento' });
       
-      // Notificar o proprietário sobre reprovação
+      // Verificar se a ação existe antes de atualizar
       const action = await db.getActionById(ev.actionId);
       if (action) {
+        await db.updateAction(ev.actionId, { status: 'em_andamento' });
         await notifyOwner({
           title: '❌ Evidência Reprovada',
           content: `A evidência para a ação "${action.titulo}" foi reprovada. Justificativa: ${input.justificativa}`

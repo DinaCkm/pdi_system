@@ -2401,3 +2401,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Bug de Importação (27 JAN 2026) - Reportado pelo usuário
 - [x] Importação de Ações falha com erro "Failed query: SELECT id FROM pdis WHERE u..." - Corrigido: userId para colaboradorId
 - [x] Importação de PDIs falha com erro "Failed query: SELECT id FROM pdis WHERE u..." - Corrigido: userId para colaboradorId
+
+
+### Bug de Avaliação de Evidências (28 JAN 2026) - Reportado pelo usuário
+- [x] Evidência mostra "Ação desconhecida" e ao aprovar/rejeitar aparece "Ação não encontrada" - Corrigido: verifica se ação existe antes de atualizar
+- [x] Implementar exclusão em cascata: ao deletar ação, deletar evidências, solicitações de ajuste e histórico
