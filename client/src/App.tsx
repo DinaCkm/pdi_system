@@ -31,6 +31,7 @@ import EvidenciasEquipe from "./pages/EvidenciasEquipe";
 import HistoricoAlteracoes from "./pages/HistoricoAlteracoes";
 import MinhasSolicitacoes from "./pages/MinhasSolicitacoes";
 import Auditoria from "./pages/Auditoria";
+import AuditoriaExclusoes from "./pages/AuditoriaExclusoes";
 import { Dashboard } from "./pages/Dashboard";
 import { AcoesNova } from "./pages/AcoesNova";
 import AcoesEditar from "./pages/AcoesEditar";
@@ -236,6 +237,12 @@ function Router() {
       <Route path={"/auditoria"}>
         <DashboardLayout>
           <Auditoria />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/auditoria-exclusoes"}>
+        <DashboardLayout>
+          <AuditoriaExclusoes />
         </DashboardLayout>
       </Route>
       

@@ -188,6 +188,18 @@ export const users = mysqlTable("users", {
 	index("users_openId_unique").on(table.openId),
 ]);
 
+export const deletionAuditLog = mysqlTable("deletion_audit_log", {
+	id: int().autoincrement().notNull(),
+	entidadeTipo: mysqlEnum(['acao','pdi','usuario','evidencia','solicitacao']).notNull(),
+	entidadeId: int().notNull(),
+	entidadeNome: varchar({ length: 255 }).notNull(),
+	dadosExcluidos: text().notNull(),
+	excluidoPor: int().notNull(),
+	excluidoPorNome: varchar({ length: 255 }).notNull(),
+	motivoExclusao: text(),
+	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+});
+
 export const pdiValidacoes = mysqlTable("pdi_validacoes", {
 	id: int().autoincrement().notNull(),
 	pdiId: int().notNull().references(() => pdis.id, { onDelete: "cascade" }),

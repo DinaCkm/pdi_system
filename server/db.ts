@@ -1,6 +1,6 @@
 import { eq, and, isNull, not, inArray, desc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, adjustmentComments, departamentos, ciclos, evidences, evidenceFiles, evidenceTexts, notifications, pdiValidacoes } from "../drizzle/schema";
+import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, adjustmentComments, departamentos, ciclos, evidences, evidenceFiles, evidenceTexts, notifications, pdiValidacoes, deletionAuditLog } from "../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./_core/env";
 
@@ -299,11 +299,25 @@ export async function updateAction(
   await db.update(actions).set(normalizedData as any).where(eq(actions.id, id));
 }
 
-export async function deleteAction(id: number) {
+export async function deleteAction(id: number, excluidoPor?: number, excluidoPorNome?: string, motivoExclusao?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
+    // 0. Buscar dados da ação antes de excluir para auditoria
+    const [acaoData] = await db.select().from(actions).where(eq(actions.id, id));
+    if (acaoData && excluidoPor && excluidoPorNome) {
+      await registrarExclusao({
+        entidadeTipo: 'acao',
+        entidadeId: id,
+        entidadeNome: acaoData.titulo,
+        dadosExcluidos: acaoData,
+        excluidoPor,
+        excluidoPorNome,
+        motivoExclusao,
+      });
+    }
+    
     // 1. Buscar todas as evidências da ação para deletar arquivos e textos
     const evidenciasAcao = await db.select({ id: evidences.id }).from(evidences).where(eq(evidences.actionId, id));
     const evidenceIds = evidenciasAcao.map(e => e.id);
@@ -2091,4 +2105,138 @@ export async function importPdis(pdis: Array<{
   }
 
   return results;
+}
+
+
+// ============= FUNÇÕES DE AUDITORIA DE EXCLUSÕES =============
+
+export async function registrarExclusao(data: {
+  entidadeTipo: 'acao' | 'pdi' | 'usuario' | 'evidencia' | 'solicitacao';
+  entidadeId: number;
+  entidadeNome: string;
+  dadosExcluidos: object;
+  excluidoPor: number;
+  excluidoPorNome: string;
+  motivoExclusao?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    await db.insert(deletionAuditLog).values({
+      entidadeTipo: data.entidadeTipo,
+      entidadeId: data.entidadeId,
+      entidadeNome: data.entidadeNome,
+      dadosExcluidos: JSON.stringify(data.dadosExcluidos),
+      excluidoPor: data.excluidoPor,
+      excluidoPorNome: data.excluidoPorNome,
+      motivoExclusao: data.motivoExclusao || null,
+    });
+    console.log('[registrarExclusao] Exclusão registrada:', data.entidadeTipo, data.entidadeId);
+  } catch (error) {
+    console.error('[registrarExclusao] Erro ao registrar exclusão:', error);
+    // Não lançar erro para não interromper a exclusão principal
+  }
+}
+
+export async function getAuditoriasExclusao(filtros?: {
+  entidadeTipo?: 'acao' | 'pdi' | 'usuario' | 'evidencia' | 'solicitacao';
+  dataInicio?: string;
+  dataFim?: string;
+  excluidoPor?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    let query = `
+      SELECT 
+        id,
+        entidadeTipo,
+        entidadeId,
+        entidadeNome,
+        dadosExcluidos,
+        excluidoPor,
+        excluidoPorNome,
+        motivoExclusao,
+        createdAt
+      FROM deletion_audit_log
+      WHERE 1=1
+    `;
+    
+    const params: any[] = [];
+    
+    if (filtros?.entidadeTipo) {
+      query += ` AND entidadeTipo = ?`;
+      params.push(filtros.entidadeTipo);
+    }
+    
+    if (filtros?.dataInicio) {
+      query += ` AND createdAt >= ?`;
+      params.push(filtros.dataInicio);
+    }
+    
+    if (filtros?.dataFim) {
+      query += ` AND createdAt <= ?`;
+      params.push(filtros.dataFim);
+    }
+    
+    if (filtros?.excluidoPor) {
+      query += ` AND excluidoPor = ?`;
+      params.push(filtros.excluidoPor);
+    }
+    
+    query += ` ORDER BY createdAt DESC`;
+    
+    const [rows]: any = await db.execute(sql.raw(query));
+    
+    return (rows || []).map((row: any) => ({
+      id: row.id,
+      entidadeTipo: row.entidadeTipo,
+      entidadeId: row.entidadeId,
+      entidadeNome: row.entidadeNome,
+      dadosExcluidos: typeof row.dadosExcluidos === 'string' ? JSON.parse(row.dadosExcluidos) : row.dadosExcluidos,
+      excluidoPor: row.excluidoPor,
+      excluidoPorNome: row.excluidoPorNome,
+      motivoExclusao: row.motivoExclusao,
+      createdAt: row.createdAt,
+    }));
+  } catch (error) {
+    console.error('[getAuditoriasExclusao] Erro:', error);
+    throw error;
+  }
+}
+
+export async function getEstatisticasAuditoria() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const [rows]: any = await db.execute(sql`
+      SELECT 
+        entidadeTipo,
+        COUNT(*) as total
+      FROM deletion_audit_log
+      GROUP BY entidadeTipo
+    `);
+    
+    const estatisticas: Record<string, number> = {
+      acao: 0,
+      pdi: 0,
+      usuario: 0,
+      evidencia: 0,
+      solicitacao: 0,
+      total: 0,
+    };
+    
+    (rows || []).forEach((row: any) => {
+      estatisticas[row.entidadeTipo] = Number(row.total);
+      estatisticas.total += Number(row.total);
+    });
+    
+    return estatisticas;
+  } catch (error) {
+    console.error('[getEstatisticasAuditoria] Erro:', error);
+    throw error;
+  }
 }

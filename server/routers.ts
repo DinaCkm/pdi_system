@@ -825,6 +825,39 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           });
         }
       }),
+  }),
+
+  // Router de Auditoria de Exclusões
+  auditoria: router({
+    listar: adminProcedure
+      .input(z.object({
+        entidadeTipo: z.enum(['acao', 'pdi', 'usuario', 'evidencia', 'solicitacao']).optional(),
+        dataInicio: z.string().optional(),
+        dataFim: z.string().optional(),
+        excluidoPor: z.number().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        try {
+          return await db.getAuditoriasExclusao(input);
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao buscar auditoria: ${error.message}`
+          });
+        }
+      }),
+
+    estatisticas: adminProcedure
+      .query(async () => {
+        try {
+          return await db.getEstatisticasAuditoria();
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao buscar estatísticas: ${error.message}`
+          });
+        }
+      }),
   })
 });
 

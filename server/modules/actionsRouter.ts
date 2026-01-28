@@ -135,15 +135,20 @@ export const actionsRouter = router({
 
   // Deletar ação
   delete: protectedProcedure
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.number(), motivoExclusao: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       if (ctx.user.role !== 'admin') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas admin' });
       }
       
-      await db.deleteAction(input.id);
+      await db.deleteAction(
+        input.id,
+        ctx.user.id,
+        ctx.user.name || 'Admin',
+        input.motivoExclusao
+      );
       
-      console.log('[actions.delete] Ação deletada:', input.id);
+      console.log('[actions.delete] Ação deletada com auditoria:', input.id);
       return { success: true };
     }),
 

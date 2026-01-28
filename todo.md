@@ -2406,3 +2406,15 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ### Bug de Avaliação de Evidências (28 JAN 2026) - Reportado pelo usuário
 - [x] Evidência mostra "Ação desconhecida" e ao aprovar/rejeitar aparece "Ação não encontrada" - Corrigido: verifica se ação existe antes de atualizar
 - [x] Implementar exclusão em cascata: ao deletar ação, deletar evidências, solicitações de ajuste e histórico
+
+
+## Relatório de Auditoria (28 JAN 2026)
+- [x] Criar tabela de auditoria no banco de dados
+- [x] Implementar funções de registro de auditoria
+- [x] Criar página de visualização de auditoria
+
+## Relatório de Auditoria (28 JAN 2026) - Solicitado pelo usuário
+- [ ] Criar tabela de auditoria no banco de dados
+- [ ] Implementar funções de registro de auditoria ao excluir ações
+- [ ] Criar página de visualização de auditoria para admins
+- [ ] Adicionar rota e menu de navegação
