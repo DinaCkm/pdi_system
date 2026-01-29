@@ -51,7 +51,7 @@ export const appRouter = router({
   users: router({
     list: adminProcedure.query(async () => await db.getAllUsers()),
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => await db.getUserById(input.id)),
-    create: adminProcedure.input(z.object({ name: z.string(), email: z.string().email(), cpf: z.string(), role: z.enum(["admin", "gerente", "lider", "colaborador"]), cargo: z.string(), departamentoId: z.number().optional() })).mutation(async ({ input }) => {
+    create: adminProcedure.input(z.object({ name: z.string(), email: z.string().email(), cpf: z.string(), role: z.enum(["admin", "gerente", "lider", "colaborador"]), cargo: z.string(), departamentoId: z.number().nullable().optional() })).mutation(async ({ input }) => {
       const cpf = input.cpf.replace(/\D/g, "");
       await db.createUser({ ...input, cpf, openId: `local_${cpf}`, status: "ativo" });
       return { success: true };
@@ -61,7 +61,7 @@ export const appRouter = router({
        const users = await db.getAllUsers();
        return users.find((u: { cpf?: string | null }) => u.cpf?.replace(/\D/g, "") === input.cpf.replace(/\D/g, "")) || null;
     }),
-    update: adminProcedure.input(z.object({ id: z.number(), leaderId: z.number().nullable().optional(), role: z.enum(["admin", "gerente", "lider", "colaborador"]).optional(), name: z.string().optional(), email: z.string().optional(), cargo: z.string().optional(), departamentoId: z.number().optional(), status: z.string().optional() })).mutation(async ({ input }) => {
+    update: adminProcedure.input(z.object({ id: z.number(), leaderId: z.number().nullable().optional(), role: z.enum(["admin", "gerente", "lider", "colaborador"]).optional(), name: z.string().optional(), email: z.string().optional(), cargo: z.string().optional(), departamentoId: z.number().nullable().optional(), status: z.string().optional() })).mutation(async ({ input }) => {
       const { id, ...data } = input;
       await db.updateUser(id, data);
       return { success: true };
@@ -765,7 +765,7 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
   prazos: router({
     estatisticas: protectedProcedure
       .input(z.object({
-        departamentoId: z.number().optional(),
+        departamentoId: z.number().nullable().optional(),
         leaderId: z.number().optional(),
         colaboradorId: z.number().optional(),
       }).optional())
@@ -791,7 +791,7 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
 
     vencidas: protectedProcedure
       .input(z.object({
-        departamentoId: z.number().optional(),
+        departamentoId: z.number().nullable().optional(),
         leaderId: z.number().optional(),
         colaboradorId: z.number().optional(),
         limite: z.number().optional(),
@@ -818,7 +818,7 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
 
     proximasVencer: protectedProcedure
       .input(z.object({
-        departamentoId: z.number().optional(),
+        departamentoId: z.number().nullable().optional(),
         leaderId: z.number().optional(),
         colaboradorId: z.number().optional(),
         diasAntecedencia: z.number().optional(),
@@ -860,7 +860,7 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
     // Relatório completo de ações vencidas (apenas admin)
     relatorio: adminProcedure
       .input(z.object({
-        departamentoId: z.number().optional(),
+        departamentoId: z.number().nullable().optional(),
         colaboradorId: z.number().optional(),
         dataInicio: z.string().optional(),
         dataFim: z.string().optional(),

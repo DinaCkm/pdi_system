@@ -611,7 +611,7 @@ export async function createUser(data: {
   role: string;
   cargo: string;
   leaderId?: number;
-  departamentoId?: number;
+  departamentoId?: number | null;
   status: string;
 }) {
   const db = await getDb();
@@ -642,7 +642,7 @@ export async function updateUser(
     role: string;
     cargo: string;
     leaderId: number | null;
-    departamentoId: number;
+    departamentoId: number | null;
     status: string;
   }>
 ) {
@@ -2281,7 +2281,7 @@ export async function getEstatisticasAuditoria() {
 // ============= FUNÇÕES DE ESTATÍSTICAS DE PRAZO =============
 
 export async function getEstatisticasPrazo(filtros?: {
-  departamentoId?: number;
+  departamentoId?: number | null;
   leaderId?: number;
   colaboradorId?: number;
 }) {
@@ -2330,7 +2330,7 @@ export async function getEstatisticasPrazo(filtros?: {
 }
 
 export async function getAcoesVencidas(filtros?: {
-  departamentoId?: number;
+  departamentoId?: number | null;
   leaderId?: number;
   colaboradorId?: number;
   limite?: number;
@@ -2394,7 +2394,7 @@ export async function getAcoesVencidas(filtros?: {
 }
 
 export async function getAcoesProximasVencer(filtros?: {
-  departamentoId?: number;
+  departamentoId?: number | null;
   leaderId?: number;
   colaboradorId?: number;
   diasAntecedencia?: number;
@@ -2463,7 +2463,7 @@ export async function getAcoesProximasVencer(filtros?: {
 // ============= RELATÓRIO DE AÇÕES VENCIDAS =============
 
 export async function getRelatorioAcoesVencidas(filtros?: {
-  departamentoId?: number;
+  departamentoId?: number | null;
   colaboradorId?: number;
   dataInicio?: string;
   dataFim?: string;
