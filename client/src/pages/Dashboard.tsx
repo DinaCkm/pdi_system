@@ -13,9 +13,9 @@ export function Dashboard() {
   const { user } = useAuth();
   const [selectedDepartamento, setSelectedDepartamento] = useState<string>("");
   
-  // Carregar departamentos para filtro (apenas Admin)
+  // Carregar departamentos para filtro (Admin e Gerente)
   const { data: departamentos } = trpc.departamentos.list.useQuery(undefined, {
-    enabled: user?.role === "admin",
+    enabled: user?.role === "admin" || user?.role === "gerente",
   });
 
   // Carregar estatísticas do dashboard
@@ -24,7 +24,7 @@ export function Dashboard() {
       departamentoId: selectedDepartamento ? parseInt(selectedDepartamento) : undefined,
     },
     {
-      enabled: user?.role === "admin" || !selectedDepartamento, // Colaborador/Líder não podem filtrar
+      enabled: user?.role === "admin" || user?.role === "gerente" || !selectedDepartamento, // Colaborador/Líder não podem filtrar
     }
   );
 
@@ -115,8 +115,8 @@ export function Dashboard() {
         </Button>
       </div>
 
-      {/* Filtro de Departamento (apenas Admin) */}
-      {user?.role === "admin" && departamentos && departamentos.length > 0 && (
+      {/* Filtro de Departamento (Admin e Gerente) */}
+      {(user?.role === "admin" || user?.role === "gerente") && departamentos && departamentos.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Filtrar por Departamento</CardTitle>

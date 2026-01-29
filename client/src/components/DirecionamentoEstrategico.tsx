@@ -6,11 +6,11 @@ import { useAuth } from "@/_core/hooks/useAuth";
 export function DirecionamentoEstrategico() {
   const { user } = useAuth();
   const { data: top3, isLoading } = trpc.competencias.getTop3CompetenciasComGaps.useQuery(undefined, {
-    enabled: user?.role === "admin",
+    enabled: user?.role === "admin" || user?.role === "gerente",
   });
 
-  // Renderizar apenas se for admin
-  if (user?.role !== "admin") {
+  // Renderizar apenas se for admin ou gerente
+  if (user?.role !== "admin" && user?.role !== "gerente") {
     return null;
   }
 

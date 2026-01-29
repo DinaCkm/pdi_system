@@ -266,8 +266,8 @@ export function DashboardStats({ stats, userRole, departamentoId }: DashboardSta
       </Card>
 
       {/* ============= BLOCO C: TOP 5 DEPARTAMENTOS ============= */}
-      {/* Só mostra para admin */}
-      {userRole === "admin" && (
+      {/* Mostra para admin e gerente */}
+      {(userRole === "admin" || userRole === "gerente") && (
         <Card>
           <CardHeader>
             <CardTitle>Top 5 Departamentos (Taxa de Conclusão)</CardTitle>

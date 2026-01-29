@@ -61,10 +61,9 @@ const getMenuItems = (userRole: string) => {
       { icon: MessageSquarePlus, label: "Solicitações de Ajuste", path: "/solicitacoes-equipe" },
     );
   } else if (userRole === "gerente") {
-    // Gerente tem acesso limitado: Dashboard, PDIs, Ações, Histórico, Relatório de Vencidas
+    // Gerente tem acesso igual ao Admin: Dashboard completo com filtros, Ações, Histórico, Relatório de Vencidas
     items.push(
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-      { icon: FileText, label: "PDIs", path: "/pdis" },
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
       { icon: History, label: "Histórico de Alterações", path: "/solicitacoes-admin" },
       { icon: AlertTriangle, label: "Relatório de Ações Vencidas", path: "/relatorio-acoes-vencidas" },

@@ -2521,3 +2521,11 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Permitir acesso do gerente ao dashboard com todos os dados
 - [x] Esconder botões de editar/deletar ações para gerente
 - [ ] Testar todas as páginas do gerente com dados reais (aguardando teste manual)
+
+## Ajustes no Perfil Gerente (29 JAN 2025 - Parte 2)
+- [x] Remover página de PDIs do menu do Gerente
+- [x] Configurar Dashboard do Gerente igual ao Administrador (com filtros)
+- [x] Adicionar filtro de departamento para Gerente
+- [x] Habilitar Direcionamento Estratégico para Gerente
+- [x] Habilitar Top 5 Departamentos para Gerente
+- [ ] Testar visualização do Dashboard do Gerente
