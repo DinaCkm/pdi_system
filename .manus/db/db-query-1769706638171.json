@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, name, email, cpf, role FROM users WHERE role = 'gerente' LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, cpf, role FROM users WHERE role = 'gerente' LIMIT 1;",
+  "rows": [
+    {
+      "id": "1230001",
+      "name": "Gerente Teste",
+      "email": "gerenteteste1@empresa.com",
+      "cpf": "00000000099",
+      "role": "gerente"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tcpf\trole\n1230001\tGerente Teste\tgerenteteste1@empresa.com\t00000000099\tgerente\n",
+  "stderr": "",
+  "execution_time_ms": 1567
+}

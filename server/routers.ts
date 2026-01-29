@@ -49,7 +49,7 @@ export const appRouter = router({
 
   // MANTENDO USUÁRIOS
   users: router({
-    list: adminProcedure.query(async () => await db.getAllUsers()),
+    list: adminOrGerenteProcedure.query(async () => await db.getAllUsers()),
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => await db.getUserById(input.id)),
     create: adminProcedure.input(z.object({ name: z.string(), email: z.string().email(), cpf: z.string(), role: z.enum(["admin", "gerente", "lider", "colaborador"]), cargo: z.string(), departamentoId: z.number().nullable().optional() })).mutation(async ({ input }) => {
       const cpf = input.cpf.replace(/\D/g, "");
@@ -95,7 +95,7 @@ export const appRouter = router({
   }),
 
   pdis: router({
-    list: adminProcedure.query(async () => await db.getAllPDIs()),
+    list: adminOrGerenteProcedure.query(async () => await db.getAllPDIs()),
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => await db.getPDIById(input.id)),
     myPDIs: protectedProcedure.query(async ({ ctx }) => {
       const allPDIs = await db.getAllPDIs();
@@ -779,8 +779,12 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           if (ctx.user.role === 'lider') {
             return await db.getEstatisticasPrazo({ leaderId: ctx.user.id, ...input });
           }
-          // Admin pode ver tudo
-          return await db.getEstatisticasPrazo(input);
+          // Admin e Gerente podem ver tudo
+          if (ctx.user.role === 'admin' || ctx.user.role === 'gerente') {
+            return await db.getEstatisticasPrazo(input);
+          }
+          // Fallback para outros roles
+          return await db.getEstatisticasPrazo({ colaboradorId: ctx.user.id });
         } catch (error: any) {
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -806,8 +810,12 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           if (ctx.user.role === 'lider') {
             return await db.getAcoesVencidas({ leaderId: ctx.user.id, ...input });
           }
-          // Admin pode ver tudo
-          return await db.getAcoesVencidas(input);
+          // Admin e Gerente podem ver tudo
+          if (ctx.user.role === 'admin' || ctx.user.role === 'gerente') {
+            return await db.getAcoesVencidas(input);
+          }
+          // Fallback para outros roles
+          return await db.getAcoesVencidas({ colaboradorId: ctx.user.id, limite: input?.limite });
         } catch (error: any) {
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
@@ -857,8 +865,8 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         }
       }),
 
-    // Relatório completo de ações vencidas (apenas admin)
-    relatorio: adminProcedure
+    // Relatório completo de ações vencidas (admin e gerente)
+    relatorio: adminOrGerenteProcedure
       .input(z.object({
         departamentoId: z.number().nullable().optional(),
         colaboradorId: z.number().optional(),

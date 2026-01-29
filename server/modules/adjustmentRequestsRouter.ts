@@ -100,15 +100,15 @@ export const adjustmentRequestsRouter = router({
     return await db.getAdjustmentRequestsByLeader(user.id);
   }),
 
-  // Listar TODAS as solicitações de ajuste (para admin)
+  // Listar TODAS as solicitações de ajuste (para admin e gerente)
   listAll: protectedProcedure.query(async ({ ctx }) => {
     const user = ctx.user!;
 
-    // Apenas admin pode ver todas as solicitações
-    if (user.role !== "admin") {
+    // Admin e Gerente podem ver todas as solicitações
+    if (user.role !== "admin" && user.role !== "gerente") {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "Apenas administradores podem listar todas as solicitações",
+        message: "Apenas administradores e gerentes podem listar todas as solicitações",
       });
     }
 

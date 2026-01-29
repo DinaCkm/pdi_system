@@ -268,7 +268,7 @@ function DashboardLayoutContent({
                   {user.name || "Usuário"}
                 </h3>
                 <span className="inline-block mt-1 px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded-full bg-blue-600 text-white">
-                  {user.role === "admin" ? "Administrador" : user.role === "lider" ? "Líder" : "Colaborador"}
+                  {user.role === "admin" ? "Administrador" : user.role === "lider" ? "Líder" : user.role === "gerente" ? "Gerente" : "Colaborador"}
                 </span>
               </div>
               
@@ -281,8 +281,8 @@ function DashboardLayoutContent({
                     {user.departamentoNome || "Sem Departamento"}
                   </span>
                 </div>
-                {/* Líder - apenas para não-admins */}
-                {user.role !== "admin" && (
+                {/* Líder - apenas para colaboradores e líderes */}
+                {user.role !== "admin" && user.role !== "gerente" && (
                   <div className="flex items-center gap-2">
                     <Users className="h-3.5 w-3.5 text-orange-500 shrink-0" />
                     <span className="text-xs text-gray-600 truncate">

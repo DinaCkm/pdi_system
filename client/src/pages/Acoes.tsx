@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, Edit, Trash2, Eye, History, Building, Target, Calendar, Filter, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { HistoryModal } from "@/components/HistoryModal";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 // Hook para buscar nomes de competências
 function useMacroNames(macroIds: number[]) {
@@ -24,8 +25,12 @@ function useMacroNames(macroIds: number[]) {
 
 export default function Acoes() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [historyActionId, setHistoryActionId] = useState<number | null>(null);
+  
+  // Gerente tem acesso somente leitura
+  const isReadOnly = user?.role === 'gerente';
 
   // --- ESTADOS DOS FILTROS ---
   const [filtroDepartamento, setFiltroDepartamento] = useState("");
@@ -162,12 +167,14 @@ export default function Acoes() {
             Total: {acoes.length} | Exibindo: {filteredAcoes.length}
           </p>
         </div>
-        <Button
-          onClick={() => navigate("/acoes/nova")}
-          style={{ backgroundColor: "#2563eb", color: "white", display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px" }}
-        >
-          <Plus size={20} /> Nova Ação
-        </Button>
+        {!isReadOnly && (
+          <Button
+            onClick={() => navigate("/acoes/nova")}
+            style={{ backgroundColor: "#2563eb", color: "white", display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px" }}
+          >
+            <Plus size={20} /> Nova Ação
+          </Button>
+        )}
       </div>
 
       {/* --- FILTROS --- */}
@@ -384,14 +391,16 @@ export default function Acoes() {
                         <Eye size={16} className="mr-2" /> Visualizar
                       </Button>
 
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => navigate(`/acoes/editar/${acao.id}`)} 
-                        style={{ flex: 1, backgroundColor: "white" }}
-                      >
-                        <Edit size={16} className="mr-2" /> Editar
-                      </Button>
+                      {!isReadOnly && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => navigate(`/acoes/editar/${acao.id}`)} 
+                          style={{ flex: 1, backgroundColor: "white" }}
+                        >
+                          <Edit size={16} className="mr-2" /> Editar
+                        </Button>
+                      )}
 
                       <Button 
                         variant="ghost" 
@@ -404,15 +413,17 @@ export default function Acoes() {
                         <History size={16} />
                       </Button>
 
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleDelete(acao.id)} 
-                        disabled={deleteMutation.isPending} 
-                        style={{ color: "#ef4444" }}
-                      >
-                        <Trash2 size={16} />
-                      </Button>
+                      {!isReadOnly && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleDelete(acao.id)} 
+                          disabled={deleteMutation.isPending} 
+                          style={{ color: "#ef4444" }}
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

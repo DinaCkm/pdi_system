@@ -24,10 +24,10 @@ export const actionsRouter = router({
       return allActions.filter((a: any) => a.pdiId === pdiId);
     }
     
-    if (user.role === "admin") {
-      // Admin vê todas as ações
+    if (user.role === "admin" || user.role === "gerente") {
+      // Admin e Gerente vêem todas as ações
       const allActions = await db.getAllActions();
-      console.log("[actions.list] Admin vendo todas as ações:", allActions.length);
+      console.log("[actions.list] Admin/Gerente vendo todas as ações:", allActions.length);
       return allActions;
     } else {
       // Colaborador vê apenas suas próprias ações

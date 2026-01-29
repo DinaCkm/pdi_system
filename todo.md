@@ -2505,3 +2505,19 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Bug - Erro ao salvar perfil Gerente
 - [ ] Corrigir erro "Unexpected token '<', is not valid JSON" ao salvar perfil de gerente
+
+## Bugs do Perfil Gerente
+- [ ] Corrigir exibição do perfil na sidebar (mostra COLABORADOR em vez de GERENTE)
+- [ ] Corrigir acesso às páginas PDIs, Ações, Histórico e Relatório (estão em branco)
+- [ ] Adicionar filtro por departamento no Dashboard do Gerente
+
+## Correção do Perfil Gerente (29 JAN 2025)
+- [x] Corrigir badge na sidebar para exibir "GERENTE" em vez de "COLABORADOR"
+- [x] Esconder botão "Nova Ação" para usuários com role gerente
+- [x] Permitir acesso do gerente à lista de PDIs (pdis.list)
+- [x] Permitir acesso do gerente à lista de ações (actions.list)
+- [x] Permitir acesso do gerente ao histórico de alterações (adjustmentRequests.listAll)
+- [x] Permitir acesso do gerente ao relatório de ações vencidas (prazos.relatorio)
+- [x] Permitir acesso do gerente ao dashboard com todos os dados
+- [x] Esconder botões de editar/deletar ações para gerente
+- [ ] Testar todas as páginas do gerente com dados reais (aguardando teste manual)
