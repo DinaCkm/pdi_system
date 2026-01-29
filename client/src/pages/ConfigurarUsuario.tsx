@@ -140,13 +140,15 @@ export default function ConfigurarUsuario() {
     selectedDepartamento === selectedDepartamentoColaborador;
 
   // REGRAS 5 E 6: Validação de Obrigatoriedade de Vínculos
+  // Admin e Gerente não precisam de departamento/líder
   const perfilOperacional = selectedRole === "colaborador" || selectedRole === "lider";
   
   const faltaDepartamento = selectedRole === "colaborador" && !selectedDepartamento;
   const faltaDepartamentoColaborador = selectedRole === "lider" && !selectedDepartamentoColaborador;
   const faltaLider = (selectedRole === "colaborador" && !selectedLeader) || (selectedRole === "lider" && !selectedLeaderColaborador);
   
-  const camposIncompletos = faltaDepartamento || faltaDepartamentoColaborador || faltaLider;
+  // Gerente e Admin não precisam de vínculos
+  const camposIncompletos = (selectedRole === "admin" || selectedRole === "gerente") ? false : (faltaDepartamento || faltaDepartamentoColaborador || faltaLider);
   const botaoDesabilitado = updateMutation.isPending || temConflitoDepartamento || camposIncompletos;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -199,9 +201,9 @@ export default function ConfigurarUsuario() {
       const finalDepartamentoId = selectedRole === "lider" ? selectedDepartamentoColaborador : selectedDepartamento;
       const finalLeaderId = selectedRole === "lider" ? selectedLeaderColaborador : selectedLeader;
 
-      // Para admins, limpar vínculos antigos
-      const departamentoParaSalvar = selectedRole === "admin" ? null : finalDepartamentoId;
-      const liderParaSalvar = selectedRole === "admin" ? null : finalLeaderId;
+      // Para admins e gerentes, limpar vínculos antigos
+      const departamentoParaSalvar = (selectedRole === "admin" || selectedRole === "gerente") ? null : finalDepartamentoId;
+      const liderParaSalvar = (selectedRole === "admin" || selectedRole === "gerente") ? null : finalLeaderId;
 
       // Se o usuário está sendo promovido a Líder, atualizar o departamento para vinculá-lo
       if (selectedRole === "lider" && selectedDepartamento) {

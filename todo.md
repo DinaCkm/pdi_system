@@ -2502,3 +2502,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Atualizar navegação e sidebar no frontend para gerente
 - [x] Gerente pode acessar: Dashboard, Histórico, PDIs, Ações, Relatório de Ações Vencidas
 - [x] Gerente NÃO pode acessar: Cadastro de usuários, Importação, Configurações, outros relatórios
+
+## Bug - Erro ao salvar perfil Gerente
+- [ ] Corrigir erro "Unexpected token '<', is not valid JSON" ao salvar perfil de gerente
