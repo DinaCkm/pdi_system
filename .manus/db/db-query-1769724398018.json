@@ -1,0 +1,90 @@
+{
+  "query": "SELECT id, nome FROM departamentos ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, nome FROM departamentos ORDER BY id;",
+  "rows": [
+    {
+      "id": "630001",
+      "nome": "AUD-UNIDADE DE AUDITORIA INTERNA"
+    },
+    {
+      "id": "630002",
+      "nome": "CDE-ASSESSORIA"
+    },
+    {
+      "id": "630003",
+      "nome": "UAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE"
+    },
+    {
+      "id": "630004",
+      "nome": "UAS-UNIDADE DE ADMINISTRAÇÃO E FINANÇAS"
+    },
+    {
+      "id": "630005",
+      "nome": "UGE-UNIDADE DE GESTÃO ESTRATÉGICA"
+    },
+    {
+      "id": "630006",
+      "nome": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTROLE E CONTABILIDADE"
+    },
+    {
+      "id": "630007",
+      "nome": "UGP-UNIDADE DE GESTÃO DE PESSOAS"
+    },
+    {
+      "id": "630008",
+      "nome": "UMC-UNIDADE DE MARKETING E COMUNICAÇÃO"
+    },
+    {
+      "id": "630009",
+      "nome": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+    },
+    {
+      "id": "630010",
+      "nome": "URI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL"
+    },
+    {
+      "id": "630011",
+      "nome": "UTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS"
+    },
+    {
+      "id": "630012",
+      "nome": "DIREX_UNIDADE DIRETORIA EXECUTIVA"
+    },
+    {
+      "id": "630013",
+      "nome": "RBP-REGIONAL BICO DO PAPAGAIO"
+    },
+    {
+      "id": "630014",
+      "nome": "RME-REGIONAL METROPOLITANA"
+    },
+    {
+      "id": "630015",
+      "nome": "RMN-REGIONAL MÉDIO NORTE COLINAS"
+    },
+    {
+      "id": "630016",
+      "nome": "RNO-REGIONAL NORTE"
+    },
+    {
+      "id": "630017",
+      "nome": "RPJ-REGIONAL PORTAL DO JALAPÃO"
+    },
+    {
+      "id": "630018",
+      "nome": "RSG-REGIONAL SERRAS GERAIS"
+    },
+    {
+      "id": "630019",
+      "nome": "RSU-REGIONAL SUL"
+    },
+    {
+      "id": "630020",
+      "nome": "RVA-REGIONAL VALE DO ARAGUAIA"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnome\n630001\tAUD-UNIDADE DE AUDITORIA INTERNA\n630002\tCDE-ASSESSORIA\n630003\tUAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE\n630004\tUAS-UNIDADE DE ADMINISTRAÇÃO E FINANÇAS\n630005\tUGE-UNIDADE DE GESTÃO ESTRATÉGICA\n630006\tUGOC-UNIDADE DE GESTÃO ORÇ. CONTROLE E CONTABILIDADE\n630007\tUGP-UNIDADE DE GESTÃO DE PESSOAS\n630008\tUMC-UNIDADE DE MARKETING E COMUNICAÇÃO\n630009\tURC - UNIDADE DE RELACIONAMENTO COM O CLIENTE\n630010\tURI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL\n630011\tUTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS\n630012\tDIREX_UNIDADE DIRETORIA EXECUTIVA\n630013\tRBP-REGIONAL BICO DO PAPAGAIO\n630014\tRME-REGIONAL METROPOLITANA\n630015\tRMN-REGIONAL MÉDIO NORTE COLINAS\n630016\tRNO-REGIONAL NORTE\n630017\tRPJ-REGIONAL PORTAL DO JALAPÃO\n630018\tRSG-REGIONAL SERRAS GERAIS\n630019\tRSU-REGIONAL SUL\n630020\tRVA-REGIONAL VALE DO ARAGUAIA\n",
+  "stderr": "",
+  "execution_time_ms": 492
+}

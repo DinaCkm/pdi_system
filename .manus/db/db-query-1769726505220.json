@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO users (openId, name, email, cpf, cargo, role, departamentoId, leaderId, status) VALUES ('colab-03421363137', 'ELLEN CASSIA CARVALHO CUSTODIO', 'ellen.custodio@to.sebrae.com.br', '03421363137', 'ASSISTENTE II', 'colaborador', (SELECT id FROM departamentos WHERE nome LIKE 'UTIC%' LIMIT 1), (SELECT id FROM users WHERE name = 'LEONARDO CAMPELO LEITE GUEDES' LIMIT 1), 'ativo');\nINSERT INTO users (openId, name, email, cpf, cargo, role, departamentoId, leaderId, status) VALUES ('colab-00702288179', 'ANA PAULA ALVES DE LIMA ROCHA', 'anapaula.lima@to.sebrae.com.br', '00702288179', 'ANALISTA TÉCNICO II', 'colaborador', (SELECT id FROM departamentos WHERE nome LIKE 'UTIC%' LIMIT 1), (SELECT id FROM users WHERE name = 'LEONARDO CAMPELO LEITE GUEDES' LIMIT 1), 'ativo');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute INSERT INTO users (openId, name, email, cpf, cargo, role, departamentoId, leaderId, status) VALUES ('colab-03421363137', 'ELLEN CASSIA CARVALHO CUSTODIO', 'ellen.custodio@to.sebrae.com.br', '03421363137', 'ASSISTENTE II', 'colaborador', (SELECT id FROM departamentos WHERE nome LIKE 'UTIC%' LIMIT 1), (SELECT id FROM users WHERE name = 'LEONARDO CAMPELO LEITE GUEDES' LIMIT 1), 'ativo');\nINSERT INTO users (openId, name, email, cpf, cargo, role, departamentoId, leaderId, status) VALUES ('colab-00702288179', 'ANA PAULA ALVES DE LIMA ROCHA', 'anapaula.lima@to.sebrae.com.br', '00702288179', 'ANALISTA TÉCNICO II', 'colaborador', (SELECT id FROM departamentos WHERE nome LIKE 'UTIC%' LIMIT 1), (SELECT id FROM users WHERE name = 'LEONARDO CAMPELO LEITE GUEDES' LIMIT 1), 'ativo');",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 77
+}

@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, name, email, role, cpf FROM users WHERE role = 'admin';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, role, cpf FROM users WHERE role = 'admin';",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Julia",
+      "email": "relacionamento@ckmtalents.net",
+      "role": "admin",
+      "cpf": "00000000000"
+    },
+    {
+      "id": "780040",
+      "name": "Admin Teste PDI",
+      "email": "admin.pdi1768678059213@test.com",
+      "role": "admin",
+      "cpf": "11178059213"
+    },
+    {
+      "id": "780057",
+      "name": "Admin Teste PDI",
+      "email": "admin.pdi1768678108117@test.com",
+      "role": "admin",
+      "cpf": "11178108117"
+    },
+    {
+      "id": "810001",
+      "name": "Admin Teste",
+      "email": "admin.teste@empresa.com",
+      "role": "admin",
+      "cpf": "11111111111"
+    },
+    {
+      "id": "930001",
+      "name": "Admin Teste",
+      "email": "admin.teste@empresa.com",
+      "role": "admin",
+      "cpf": "111.222.333-44"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\tcpf\n1\tJulia\trelacionamento@ckmtalents.net\tadmin\t00000000000\n780040\tAdmin Teste PDI\tadmin.pdi1768678059213@test.com\tadmin\t11178059213\n780057\tAdmin Teste PDI\tadmin.pdi1768678108117@test.com\tadmin\t11178108117\n810001\tAdmin Teste\tadmin.teste@empresa.com\tadmin\t11111111111\n930001\tAdmin Teste\tadmin.teste@empresa.com\tadmin\t111.222.333-44\n",
+  "stderr": "",
+  "execution_time_ms": 182
+}

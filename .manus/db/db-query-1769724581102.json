@@ -1,0 +1,40 @@
+{
+  "query": "SELECT u.name, u.role, d.nome as departamento, l.name as lider \nFROM users u \nLEFT JOIN departamentos d ON u.departamentoId = d.id \nLEFT JOIN users l ON u.leaderId = l.id \nWHERE u.role = 'gerente' \nORDER BY u.name \nLIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT u.name, u.role, d.nome as departamento, l.name as lider \nFROM users u \nLEFT JOIN departamentos d ON u.departamentoId = d.id \nLEFT JOIN users l ON u.leaderId = l.id \nWHERE u.role = 'gerente' \nORDER BY u.name \nLIMIT 5;",
+  "rows": [
+    {
+      "name": "ALDENI BATISTA TORRES",
+      "role": "gerente",
+      "departamento": "RMN-REGIONAL MÉDIO NORTE COLINAS",
+      "lider": "Julia"
+    },
+    {
+      "name": "AMAGGELDO BARBOSA",
+      "role": "gerente",
+      "departamento": "RME-REGIONAL METROPOLITANA",
+      "lider": "Julia"
+    },
+    {
+      "name": "ANA PAULA CUNHA SOARES",
+      "role": "gerente",
+      "departamento": "UAS-UNIDADE DE ADMINISTRAÇÃO E FINANÇAS",
+      "lider": "Julia"
+    },
+    {
+      "name": "ANDREIA RODRIGUES FACUNDES",
+      "role": "gerente",
+      "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTROLE E CONTABILIDADE",
+      "lider": "Julia"
+    },
+    {
+      "name": "ANTONIO LOUÇA CURCINO",
+      "role": "gerente",
+      "departamento": "RSG-REGIONAL SERRAS GERAIS",
+      "lider": "Julia"
+    }
+  ],
+  "messages": [],
+  "stdout": "name\trole\tdepartamento\tlider\nALDENI BATISTA TORRES\tgerente\tRMN-REGIONAL MÉDIO NORTE COLINAS\tJulia\nAMAGGELDO BARBOSA\tgerente\tRME-REGIONAL METROPOLITANA\tJulia\nANA PAULA CUNHA SOARES\tgerente\tUAS-UNIDADE DE ADMINISTRAÇÃO E FINANÇAS\tJulia\nANDREIA RODRIGUES FACUNDES\tgerente\tUGOC-UNIDADE DE GESTÃO ORÇ. CONTROLE E CONTABILIDADE\tJulia\nANTONIO LOUÇA CURCINO\tgerente\tRSG-REGIONAL SERRAS GERAIS\tJulia\n",
+  "stderr": "",
+  "execution_time_ms": 50
+}

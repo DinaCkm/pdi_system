@@ -1,0 +1,181 @@
+{
+  "query": "SELECT u.id, u.name, u.email, u.cpf, u.cargo, u.role, d.nome as departamento \nFROM users u \nLEFT JOIN departamentos d ON u.departamentoId = d.id \nWHERE u.role = 'gerente' \nORDER BY u.name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT u.id, u.name, u.email, u.cpf, u.cargo, u.role, d.nome as departamento \nFROM users u \nLEFT JOIN departamentos d ON u.departamentoId = d.id \nWHERE u.role = 'gerente' \nORDER BY u.name;",
+  "rows": [
+    {
+      "id": "1260003",
+      "name": "ALDENI BATISTA TORRES",
+      "email": "aldeni.torres@to.sebrae.com.br",
+      "cpf": "00658585142",
+      "cargo": "GERENTE REGIONAL",
+      "role": "gerente",
+      "departamento": "RMN-REGIONAL MÉDIO NORTE COLINAS"
+    },
+    {
+      "id": "1260002",
+      "name": "AMAGGELDO BARBOSA",
+      "email": "amaggeldo@to.sebrae.com.br",
+      "cpf": "76727025134",
+      "cargo": "GERENTE REGIONAL",
+      "role": "gerente",
+      "departamento": "RME-REGIONAL METROPOLITANA"
+    },
+    {
+      "id": "1260010",
+      "name": "ANA PAULA CUNHA SOARES",
+      "email": "paula.soares@to.sebrae.com.br",
+      "cpf": "82760233391",
+      "cargo": "GERENTE DE UNIDADE",
+      "role": "gerente",
+      "departamento": "UAS-UNIDADE DE ADMINISTRAÇÃO E FINANÇAS"
+    },
+    {
+      "id": "1260014",
+      "name": "ANDREIA RODRIGUES FACUNDES",
+      "email": "andreia.facundes@to.sebrae.com.br",
+      "cpf": "90944267149",
+      "cargo": "GERENTE DE UNIDADE",
+      "role": "gerente",
+      "departamento": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTROLE E CONTABILIDADE"
+    },
+    {
+      "id": "1260006",
+      "name": "ANTONIO LOUÇA CURCINO",
+      "email": "antonio.curcino@to.sebrae.com.br",
+      "cpf": "97641227104",
+      "cargo": "GERENTE REGIONAL",
+      "role": "gerente",
+      "departamento": "RSG-REGIONAL SERRAS GERAIS"
+    },
+    {
+      "id": "1260009",
+      "name": "BRUNO MARTINS VIEIRA",
+      "email": "bruno.vieira@to.sebrae.com.br",
+      "cpf": "06668878610",
+      "cargo": "GERENTE DE UNIDADE",
+      "role": "gerente",
+      "departamento": "UAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE"
+    },
+    {
+      "id": "1260001",
+      "name": "EDVALDO PEREIRA LIMA JÚNIOR",
+      "email": "edvaldopljr86@gmail.com",
+      "cpf": "01547689102",
+      "cargo": "GERENTE REGIONAL",
+      "role": "gerente",
+      "departamento": "RBP-REGIONAL BICO DO PAPAGAIO"
+    },
+    {
+      "id": "1260012",
+      "name": "ELIWANIA DOS SANTOS SILVA",
+      "email": "eliwania.santos@to.sebrae.com.br",
+      "cpf": "01206149361",
+      "cargo": "GERENTE DE UNIDADE",
+      "role": "gerente",
+      "departamento": "AUD-UNIDADE DE AUDITORIA INTERNA"
+    },
+    {
+      "id": "1260017",
+      "name": "GABRIELA TOMASI",
+      "email": "gabriela@to.sebrae.com.br",
+      "cpf": "00792361113",
+      "cargo": "GERENTE DE UNIDADE",
+      "role": "gerente",
+      "departamento": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE"
+    },
+    {
+      "id": "1260018",
+      "name": "GILZANE PEREIRA AMARAL",
+      "email": "gilzane.pereira@to.sebrae.com.br",
+      "cpf": "81183500106",
+      "cargo": "GERENTE DE UNIDADE",
+      "role": "gerente",
+      "departamento": "URI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL"
+    },
+    {
+      "id": "1260011",
+      "name": "JACKELINE DE SOUZA LIMA",
+      "email": "jackeline.lima@to.sebrae.com.br",
+      "cpf": "02224365144",
+      "cargo": "GERENTE DE UNIDADE",
+      "role": "gerente",
+      "departamento": "CDE-ASSESSORIA"
+    },
+    {
+      "id": "1260019",
+      "name": "LEONARDO CAMPELO LEITE GUEDES",
+      "email": "leonardo.campelo@to.sebrae.com.br",
+      "cpf": "88020673253",
+      "cargo": "GERENTE DE UNIDADE",
+      "role": "gerente",
+      "departamento": "UTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS"
+    },
+    {
+      "id": "1260004",
+      "name": "MARCUS VINICIUS VIEIRA QUEIROZ",
+      "email": "marcus.queiroz@to.sebrae.com.br",
+      "cpf": "01479169170",
+      "cargo": "GERENTE REGIONAL",
+      "role": "gerente",
+      "departamento": "RNO-REGIONAL NORTE"
+    },
+    {
+      "id": "1260005",
+      "name": "MILLENA PEREIRA LIMA RODRIGUES",
+      "email": "millena.rodrigues@to.sebrae.com.br",
+      "cpf": "84781971172",
+      "cargo": "GERENTE REGIONAL",
+      "role": "gerente",
+      "departamento": "RPJ-REGIONAL PORTAL DO JALAPÃO"
+    },
+    {
+      "id": "1260016",
+      "name": "NEMIAS GOMES",
+      "email": "nemias.gomes@to.sebrae.com.br",
+      "cpf": "38906210159",
+      "cargo": "GERENTE DE UNIDADE",
+      "role": "gerente",
+      "departamento": "UMC-UNIDADE DE MARKETING E COMUNICAÇÃO"
+    },
+    {
+      "id": "1260007",
+      "name": "PAULA DOS REIS COELHO ALENCAR SOUSA",
+      "email": "paula.alencar@to.sebrae.com.br",
+      "cpf": "02242849166",
+      "cargo": "GERENTE REGIONAL",
+      "role": "gerente",
+      "departamento": "RSU-REGIONAL SUL"
+    },
+    {
+      "id": "1260013",
+      "name": "PEDRO JUNIOR DA ROCHA SILVA",
+      "email": "pedro.junior@to.sebrae.com.br",
+      "cpf": "00706433181",
+      "cargo": "GERENTE DE UNIDADE",
+      "role": "gerente",
+      "departamento": "UGE-UNIDADE DE GESTÃO ESTRATÉGICA"
+    },
+    {
+      "id": "1260008",
+      "name": "RENATA MOURA ALVES SIMAS",
+      "email": "renata.alves@to.sebrae.com.br",
+      "cpf": "01056384123",
+      "cargo": "GERENTE REGIONAL",
+      "role": "gerente",
+      "departamento": "RVA-REGIONAL VALE DO ARAGUAIA"
+    },
+    {
+      "id": "1260015",
+      "name": "VERA LUCIA TEODORO BRAGA",
+      "email": "vera.braga@to.sebrae.com.br",
+      "cpf": "48483389134",
+      "cargo": "GERENTE DE UNIDADE",
+      "role": "gerente",
+      "departamento": "UGP-UNIDADE DE GESTÃO DE PESSOAS"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tcpf\tcargo\trole\tdepartamento\n1260003\tALDENI BATISTA TORRES\taldeni.torres@to.sebrae.com.br\t00658585142\tGERENTE REGIONAL\tgerente\tRMN-REGIONAL MÉDIO NORTE COLINAS\n1260002\tAMAGGELDO BARBOSA\tamaggeldo@to.sebrae.com.br\t76727025134\tGERENTE REGIONAL\tgerente\tRME-REGIONAL METROPOLITANA\n1260010\tANA PAULA CUNHA SOARES\tpaula.soares@to.sebrae.com.br\t82760233391\tGERENTE DE UNIDADE\tgerente\tUAS-UNIDADE DE ADMINISTRAÇÃO E FINANÇAS\n1260014\tANDREIA RODRIGUES FACUNDES\tandreia.facundes@to.sebrae.com.br\t90944267149\tGERENTE DE UNIDADE\tgerente\tUGOC-UNIDADE DE GESTÃO ORÇ. CONTROLE E CONTABILIDADE\n1260006\tANTONIO LOUÇA CURCINO\tantonio.curcino@to.sebrae.com.br\t97641227104\tGERENTE REGIONAL\tgerente\tRSG-REGIONAL SERRAS GERAIS\n1260009\tBRUNO MARTINS VIEIRA\tbruno.vieira@to.sebrae.com.br\t06668878610\tGERENTE DE UNIDADE\tgerente\tUAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE\n1260001\tEDVALDO PEREIRA LIMA JÚNIOR\tedvaldopljr86@gmail.com\t01547689102\tGERENTE REGIONAL\tgerente\tRBP-REGIONAL BICO DO PAPAGAIO\n1260012\tELIWANIA DOS SANTOS SILVA\teliwania.santos@to.sebrae.com.br\t01206149361\tGERENTE DE UNIDADE\tgerente\tAUD-UNIDADE DE AUDITORIA INTERNA\n1260017\tGABRIELA TOMASI\tgabriela@to.sebrae.com.br\t00792361113\tGERENTE DE UNIDADE\tgerente\tURC - UNIDADE DE RELACIONAMENTO COM O CLIENTE\n1260018\tGILZANE PEREIRA AMARAL\tgilzane.pereira@to.sebrae.com.br\t81183500106\tGERENTE DE UNIDADE\tgerente\tURI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL\n1260011\tJACKELINE DE SOUZA LIMA\tjackeline.lima@to.sebrae.com.br\t02224365144\tGERENTE DE UNIDADE\tgerente\tCDE-ASSESSORIA\n1260019\tLEONARDO CAMPELO LEITE GUEDES\tleonardo.campelo@to.sebrae.com.br\t88020673253\tGERENTE DE UNIDADE\tgerente\tUTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS\n1260004\tMARCUS VINICIUS VIEIRA QUEIROZ\tmarcus.queiroz@to.sebrae.com.br\t01479169170\tGERENTE REGIONAL\tgerente\tRNO-REGIONAL NORTE\n1260005\tMILLENA PEREIRA LIMA RODRIGUES\tmillena.rodrigues@to.sebrae.com.br\t84781971172\tGERENTE REGIONAL\tgerente\tRPJ-REGIONAL PORTAL DO JALAPÃO\n1260016\tNEMIAS GOMES\tnemias.gomes@to.sebrae.com.br\t38906210159\tGERENTE DE UNIDADE\tgerente\tUMC-UNIDADE DE MARKETING E COMUNICAÇÃO\n1260007\tPAULA DOS REIS COELHO ALENCAR SOUSA\tpaula.alencar@to.sebrae.com.br\t02242849166\tGERENTE REGIONAL\tgerente\tRSU-REGIONAL SUL\n1260013\tPEDRO JUNIOR DA ROCHA SILVA\tpedro.junior@to.sebrae.com.br\t00706433181\tGERENTE DE UNIDADE\tgerente\tUGE-UNIDADE DE GESTÃO ESTRATÉGICA\n1260008\tRENATA MOURA ALVES SIMAS\trenata.alves@to.sebrae.com.br\t01056384123\tGERENTE REGIONAL\tgerente\tRVA-REGIONAL VALE DO ARAGUAIA\n1260015\tVERA LUCIA TEODORO BRAGA\tvera.braga@to.sebrae.com.br\t48483389134\tGERENTE DE UNIDADE\tgerente\tUGP-UNIDADE DE GESTÃO DE PESSOAS\n",
+  "stderr": "",
+  "execution_time_ms": 65
+}

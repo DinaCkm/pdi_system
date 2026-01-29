@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE users SET leaderId = (SELECT id FROM users WHERE email = 'relacionamento@ckmtalents.net') WHERE role = 'gerente';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute UPDATE users SET leaderId = (SELECT id FROM users WHERE email = 'relacionamento@ckmtalents.net') WHERE role = 'gerente';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 58
+}

@@ -1,0 +1,18 @@
+{
+  "query": "SELECT 'admin' as tipo, id FROM users WHERE email = 'relacionamento@ckmtalents.net' UNION ALL SELECT 'depto' as tipo, id FROM departamentos WHERE nome = 'SEBRAE TO';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT 'admin' as tipo, id FROM users WHERE email = 'relacionamento@ckmtalents.net' UNION ALL SELECT 'depto' as tipo, id FROM departamentos WHERE nome = 'SEBRAE TO';",
+  "rows": [
+    {
+      "tipo": "admin",
+      "id": "1"
+    },
+    {
+      "tipo": "depto",
+      "id": "660001"
+    }
+  ],
+  "messages": [],
+  "stdout": "tipo\tid\nadmin\t1\ndepto\t660001\n",
+  "stderr": "",
+  "execution_time_ms": 52
+}

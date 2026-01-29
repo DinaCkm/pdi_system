@@ -1,0 +1,220 @@
+{
+  "query": "SELECT id, name, email, role FROM users ORDER BY role, name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, role FROM users ORDER BY role, name;",
+  "rows": [
+    {
+      "id": "810001",
+      "name": "Admin Teste",
+      "email": "admin.teste@empresa.com",
+      "role": "admin"
+    },
+    {
+      "id": "930001",
+      "name": "Admin Teste",
+      "email": "admin.teste@empresa.com",
+      "role": "admin"
+    },
+    {
+      "id": "780040",
+      "name": "Admin Teste PDI",
+      "email": "admin.pdi1768678059213@test.com",
+      "role": "admin"
+    },
+    {
+      "id": "780057",
+      "name": "Admin Teste PDI",
+      "email": "admin.pdi1768678108117@test.com",
+      "role": "admin"
+    },
+    {
+      "id": "1",
+      "name": "Julia",
+      "email": "relacionamento@ckmtalents.net",
+      "role": "admin"
+    },
+    {
+      "id": "1230001",
+      "name": "Gerente Teste",
+      "email": "gerenteteste1@empresa.com",
+      "role": "gerente"
+    },
+    {
+      "id": "1080003",
+      "name": "Líder Administrador",
+      "email": "lideradministrador@empresa.com",
+      "role": "lider"
+    },
+    {
+      "id": "780050",
+      "name": "Líder Test Actions",
+      "email": "leader-actions-1768678061030@test.com",
+      "role": "lider"
+    },
+    {
+      "id": "780041",
+      "name": "Líder Teste PDI",
+      "email": "lider.pdi1768678059213@test.com",
+      "role": "lider"
+    },
+    {
+      "id": "780058",
+      "name": "Líder Teste PDI",
+      "email": "lider.pdi1768678108117@test.com",
+      "role": "lider"
+    },
+    {
+      "id": "720003",
+      "name": "liderteste1",
+      "email": "liderteste1@teste.com",
+      "role": "lider"
+    },
+    {
+      "id": "1080001",
+      "name": "Marcelino Frigorfino",
+      "email": "Marcelino@empresa.com",
+      "role": "lider"
+    },
+    {
+      "id": "840002",
+      "name": "mariza da silva",
+      "email": "financeiro@makiyama.com.br",
+      "role": "lider"
+    },
+    {
+      "id": "780049",
+      "name": "Colaborador Pending",
+      "email": "colaborador-pending-1768678060743@test.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "780062",
+      "name": "Colaborador Pending",
+      "email": "colaborador-pending-1768678109349@test.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "780048",
+      "name": "Colaborador Stats",
+      "email": "colaborador-stats-1768678060684@test.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "780061",
+      "name": "Colaborador Stats",
+      "email": "colaborador-stats-1768678109309@test.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "780047",
+      "name": "Colaborador Teste Limite",
+      "email": "colaborador-limite-1768678060391@test.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "780060",
+      "name": "Colaborador Teste Limite",
+      "email": "colaborador-limite-1768678109045@test.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "780059",
+      "name": "Colaborador Teste PDI",
+      "email": "colab.pdi1768678108117@test.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "780043",
+      "name": "Colaborador Teste PDI",
+      "email": "colab.pdi1768678059213@test.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "840001",
+      "name": "Dinica Souza Makiyama",
+      "email": "dina@ckmtalents.net",
+      "role": "colaborador"
+    },
+    {
+      "id": "1200001",
+      "name": "João Silva",
+      "email": "joao@empresa.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "870001",
+      "name": "JOSE DA SILVA",
+      "email": "josedasilva@empresa.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "960001",
+      "name": "Julia Silva",
+      "email": "julia@ckmtalents.net",
+      "role": "colaborador"
+    },
+    {
+      "id": "900001",
+      "name": "MARIA DE SOUZA ",
+      "email": "mariadesouza@empregado.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "1200002",
+      "name": "Maria Santos",
+      "email": "maria@empresa.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "1080002",
+      "name": "Olga Cleide",
+      "email": "Olgacleide@empresa.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "1050001",
+      "name": "Plern",
+      "email": "plern@empresa.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "780052",
+      "name": "Teste Auth",
+      "email": "teste.auth@test.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "1140001",
+      "name": "Teste Import 1",
+      "email": "teste.import1@empresa.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "780051",
+      "name": "User Test Actions",
+      "email": "user-actions-1768678061040@test.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "1110001",
+      "name": "Usuário Teste Deletar",
+      "email": "Deletar@empresa.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "720001",
+      "name": "Usuarioteste1",
+      "email": "usuarioteste1@teste.com",
+      "role": "colaborador"
+    },
+    {
+      "id": "720002",
+      "name": "usuarioteste2",
+      "email": "usuarioteste2@teste.com",
+      "role": "colaborador"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\n810001\tAdmin Teste\tadmin.teste@empresa.com\tadmin\n930001\tAdmin Teste\tadmin.teste@empresa.com\tadmin\n780040\tAdmin Teste PDI\tadmin.pdi1768678059213@test.com\tadmin\n780057\tAdmin Teste PDI\tadmin.pdi1768678108117@test.com\tadmin\n1\tJulia\trelacionamento@ckmtalents.net\tadmin\n1230001\tGerente Teste\tgerenteteste1@empresa.com\tgerente\n1080003\tLíder Administrador\tlideradministrador@empresa.com\tlider\n780050\tLíder Test Actions\tleader-actions-1768678061030@test.com\tlider\n780041\tLíder Teste PDI\tlider.pdi1768678059213@test.com\tlider\n780058\tLíder Teste PDI\tlider.pdi1768678108117@test.com\tlider\n720003\tliderteste1\tliderteste1@teste.com\tlider\n1080001\tMarcelino Frigorfino\tMarcelino@empresa.com\tlider\n840002\tmariza da silva\tfinanceiro@makiyama.com.br\tlider\n780049\tColaborador Pending\tcolaborador-pending-1768678060743@test.com\tcolaborador\n780062\tColaborador Pending\tcolaborador-pending-1768678109349@test.com\tcolaborador\n780048\tColaborador Stats\tcolaborador-stats-1768678060684@test.com\tcolaborador\n780061\tColaborador Stats\tcolaborador-stats-1768678109309@test.com\tcolaborador\n780047\tColaborador Teste Limite\tcolaborador-limite-1768678060391@test.com\tcolaborador\n780060\tColaborador Teste Limite\tcolaborador-limite-1768678109045@test.com\tcolaborador\n780059\tColaborador Teste PDI\tcolab.pdi1768678108117@test.com\tcolaborador\n780043\tColaborador Teste PDI\tcolab.pdi1768678059213@test.com\tcolaborador\n840001\tDinica Souza Makiyama\tdina@ckmtalents.net\tcolaborador\n1200001\tJoão Silva\tjoao@empresa.com\tcolaborador\n870001\tJOSE DA SILVA\tjosedasilva@empresa.com\tcolaborador\n960001\tJulia Silva\tjulia@ckmtalents.net\tcolaborador\n900001\tMARIA DE SOUZA \tmariadesouza@empregado.com\tcolaborador\n1200002\tMaria Santos\tmaria@empresa.com\tcolaborador\n1080002\tOlga Cleide\tOlgacleide@empresa.com\tcolaborador\n1050001\tPlern\tplern@empresa.com\tcolaborador\n780052\tTeste Auth\tteste.auth@test.com\tcolaborador\n1140001\tTeste Import 1\tteste.import1@empresa.com\tcolaborador\n780051\tUser Test Actions\tuser-actions-1768678061040@test.com\tcolaborador\n1110001\tUsuário Teste Deletar\tDeletar@empresa.com\tcolaborador\n720001\tUsuarioteste1\tusuarioteste1@teste.com\tcolaborador\n720002\tusuarioteste2\tusuarioteste2@teste.com\tcolaborador\n",
+  "stderr": "",
+  "execution_time_ms": 1030
+}

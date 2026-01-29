@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id FROM users WHERE email = 'relacionamento@ckmtalents.net';\nSELECT id FROM departamentos WHERE nome = 'SEBRAE TO';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id FROM users WHERE email = 'relacionamento@ckmtalents.net';\nSELECT id FROM departamentos WHERE nome = 'SEBRAE TO';",
+  "rows": [
+    {
+      "id": "1"
+    },
+    {
+      "id": "id"
+    },
+    {
+      "id": "660001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\n1\nid\n660001\n",
+  "stderr": "",
+  "execution_time_ms": 152
+}

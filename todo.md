@@ -2545,3 +2545,20 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Limpeza de Código (29 JAN 2025)
 - [x] Remover arquivo ComponentShowcase.tsx não utilizado (1.437 linhas)
+
+## Preparação para Produção (29 JAN 2025)
+- [ ] Limpar usuários de teste do banco (manter apenas admin)
+- [ ] Cadastrar 20 departamentos reais
+- [ ] Importar líderes/gerentes
+- [ ] Importar colaboradores
+- [ ] Salvar checkpoint final para produção
+
+## Importação de Dados para Produção (29 JAN 2025) - CONCLUÍDO
+- [x] Limpar usuários de teste do banco
+- [x] Manter apenas o administrador (relacionamento@ckmtalents.net)
+- [x] Cadastrar departamentos reais (22 departamentos)
+- [x] Criar departamento SEBRAE TO
+- [x] Criar departamento SECRETARIA DIREX
+- [x] Importar líderes/gerentes (19 gerentes)
+- [x] Importar colaboradores (112 colaboradores)
+- [x] Total: 132 usuários cadastrados no sistema
