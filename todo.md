@@ -2534,3 +2534,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Corrigir erro "Invalid input: expected string, received Date" no campo prazo
 - [x] Converter prazo para string antes de enviar ao backend
 - [x] Adicionar macroId ao input da procedure update
+
+## Atualização para Publicação (29 JAN 2025)
+- [x] Forçar novo checkpoint para habilitar botão Publish
