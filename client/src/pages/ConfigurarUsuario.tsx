@@ -368,7 +368,7 @@ export default function ConfigurarUsuario() {
                   <div>
                     <p className="font-medium">Gerente</p>
                     <p className="text-sm text-muted-foreground">
-                      Visualiza Dashboard, PDIs, Ações e Relatórios (somente leitura)
+                      Visualiza Dashboard, PDIs, Ações e Relatórios (acesso de leitura)
                     </p>
                   </div>
                 </label>
