@@ -120,6 +120,7 @@ export const actionsRouter = router({
       descricao: z.string().optional(),
       status: z.string().optional(),
       prazo: z.string().optional(),
+      macroId: z.number().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       if (ctx.user.role !== 'admin' && ctx.user.role !== 'lider') {

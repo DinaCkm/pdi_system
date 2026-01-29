@@ -1,0 +1,108 @@
+{
+  "query": "SELECT a.id, a.titulo, a.prazo, a.status, CURDATE() as hoje\nFROM actions a\nORDER BY a.prazo ASC\nLIMIT 30;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT a.id, a.titulo, a.prazo, a.status, CURDATE() as hoje\nFROM actions a\nORDER BY a.prazo ASC\nLIMIT 30;",
+  "rows": [
+    {
+      "id": "480001",
+      "titulo": "Leitura e Aplicação dos 6 Pilares da Autoestima",
+      "prazo": "2026-01-12",
+      "status": "concluida",
+      "hoje": "2026-01-29"
+    },
+    {
+      "id": "420002",
+      "titulo": "Projeto Prático: Análise de Tendências de Mercado e Indicadores",
+      "prazo": "2026-01-29",
+      "status": "nao_iniciada",
+      "hoje": "2026-01-29"
+    },
+    {
+      "id": "420003",
+      "titulo": "Implementação de Painel de Controle de Projetos (Dashboard)",
+      "prazo": "2026-01-30",
+      "status": "concluida",
+      "hoje": "2026-01-29"
+    },
+    {
+      "id": "450004",
+      "titulo": "Projeto Prático: 'Gerenciando a Mudança Inesperada'",
+      "prazo": "2026-01-30",
+      "status": "concluida",
+      "hoje": "2026-01-29"
+    },
+    {
+      "id": "420006",
+      "titulo": "Projeto de Análise de Tendências e Cenários Futuros (Horizonte 5 Anos)",
+      "prazo": "2026-01-30",
+      "status": "nao_iniciada",
+      "hoje": "2026-01-29"
+    },
+    {
+      "id": "420004",
+      "titulo": "Implementação de Projeto 'Sprint de Performance' com Equipe",
+      "prazo": "2026-01-31",
+      "status": "nao_iniciada",
+      "hoje": "2026-01-29"
+    },
+    {
+      "id": "480002",
+      "titulo": "Workshop Prático: Feedback Construtivo e Gestão de Conflitos",
+      "prazo": "2026-01-31",
+      "status": "concluida",
+      "hoje": "2026-01-29"
+    },
+    {
+      "id": "540001",
+      "titulo": "Curso Online: Fundamentos de Compliance e Ética Empresarial",
+      "prazo": "2026-01-31",
+      "status": "concluida",
+      "hoje": "2026-01-29"
+    },
+    {
+      "id": "450002",
+      "titulo": "Implementação da Matriz de Priorização (Eisenhower ou MoSCoW)",
+      "prazo": "2026-01-31",
+      "status": "concluida",
+      "hoje": "2026-01-29"
+    },
+    {
+      "id": "450001",
+      "titulo": "Implementação de Estratégias de Negociação Ganha-Ganha (Harvard)",
+      "prazo": "2026-02-28",
+      "status": "concluida",
+      "hoje": "2026-01-29"
+    },
+    {
+      "id": "510002",
+      "titulo": "Ação Teste Modificada 1769463125357",
+      "prazo": "2026-03-15",
+      "status": "em_andamento",
+      "hoje": "2026-01-29"
+    },
+    {
+      "id": "510005",
+      "titulo": "Ação Sem Histórico",
+      "prazo": "2026-03-31",
+      "status": "nao_iniciada",
+      "hoje": "2026-01-29"
+    },
+    {
+      "id": "420005",
+      "titulo": "Implementação do Hábito de Foco Diário (Técnica Pomodoro)",
+      "prazo": "2026-05-01",
+      "status": "nao_iniciada",
+      "hoje": "2026-01-29"
+    },
+    {
+      "id": "420007",
+      "titulo": "Projeto Piloto de Marketing Interno Interáreas",
+      "prazo": "2026-05-20",
+      "status": "nao_iniciada",
+      "hoje": "2026-01-29"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitulo\tprazo\tstatus\thoje\n480001\tLeitura e Aplicação dos 6 Pilares da Autoestima\t2026-01-12\tconcluida\t2026-01-29\n420002\tProjeto Prático: Análise de Tendências de Mercado e Indicadores\t2026-01-29\tnao_iniciada\t2026-01-29\n420003\tImplementação de Painel de Controle de Projetos (Dashboard)\t2026-01-30\tconcluida\t2026-01-29\n450004\tProjeto Prático: 'Gerenciando a Mudança Inesperada'\t2026-01-30\tconcluida\t2026-01-29\n420006\tProjeto de Análise de Tendências e Cenários Futuros (Horizonte 5 Anos)\t2026-01-30\tnao_iniciada\t2026-01-29\n420004\tImplementação de Projeto 'Sprint de Performance' com Equipe\t2026-01-31\tnao_iniciada\t2026-01-29\n480002\tWorkshop Prático: Feedback Construtivo e Gestão de Conflitos\t2026-01-31\tconcluida\t2026-01-29\n540001\tCurso Online: Fundamentos de Compliance e Ética Empresarial\t2026-01-31\tconcluida\t2026-01-29\n450002\tImplementação da Matriz de Priorização (Eisenhower ou MoSCoW)\t2026-01-31\tconcluida\t2026-01-29\n450001\tImplementação de Estratégias de Negociação Ganha-Ganha (Harvard)\t2026-02-28\tconcluida\t2026-01-29\n510002\tAção Teste Modificada 1769463125357\t2026-03-15\tem_andamento\t2026-01-29\n510005\tAção Sem Histórico\t2026-03-31\tnao_iniciada\t2026-01-29\n420005\tImplementação do Hábito de Foco Diário (Técnica Pomodoro)\t2026-05-01\tnao_iniciada\t2026-01-29\n420007\tProjeto Piloto de Marketing Interno Interáreas\t2026-05-20\tnao_iniciada\t2026-01-29\n",
+  "stderr": "",
+  "execution_time_ms": 1520
+}

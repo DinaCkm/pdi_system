@@ -2529,3 +2529,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Habilitar Direcionamento Estratégico para Gerente
 - [x] Habilitar Top 5 Departamentos para Gerente
 - [ ] Testar visualização do Dashboard do Gerente
+
+## Bug Crítico: Erro ao Editar Ação (29 JAN 2025)
+- [x] Corrigir erro "Invalid input: expected string, received Date" no campo prazo
+- [x] Converter prazo para string antes de enviar ao backend
+- [x] Adicionar macroId ao input da procedure update

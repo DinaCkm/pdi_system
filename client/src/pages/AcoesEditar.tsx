@@ -89,7 +89,7 @@ export default function AcoesEditar() {
       id: acaoId,
       titulo: formData.titulo,
       descricao: formData.descricao,
-      prazo: new Date(formData.prazo),
+      prazo: formData.prazo, // Enviar como string no formato YYYY-MM-DD
       status: formData.status,
       macroId: formData.macroId ? parseInt(formData.macroId) : undefined,
     });
