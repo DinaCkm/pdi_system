@@ -1,0 +1,19 @@
+{
+  "query": "SELECT a.id, a.titulo, a.prazo, a.status, CURDATE() as hoje, \n       DATEDIFF(CURDATE(), a.prazo) as dias_vencido,\n       a.prazo < CURDATE() as esta_vencida\nFROM actions a\nWHERE a.id = 420007 OR a.titulo LIKE '%Marketing Interno%'\nORDER BY a.prazo;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT a.id, a.titulo, a.prazo, a.status, CURDATE() as hoje, \n       DATEDIFF(CURDATE(), a.prazo) as dias_vencido,\n       a.prazo < CURDATE() as esta_vencida\nFROM actions a\nWHERE a.id = 420007 OR a.titulo LIKE '%Marketing Interno%'\nORDER BY a.prazo;",
+  "rows": [
+    {
+      "id": "420007",
+      "titulo": "Projeto Piloto de Marketing Interno Interáreas",
+      "prazo": "2026-01-13",
+      "status": "nao_iniciada",
+      "hoje": "2026-01-29",
+      "dias_vencido": "16",
+      "esta_vencida": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitulo\tprazo\tstatus\thoje\tdias_vencido\testa_vencida\n420007\tProjeto Piloto de Marketing Interno Interáreas\t2026-01-13\tnao_iniciada\t2026-01-29\t16\t1\n",
+  "stderr": "",
+  "execution_time_ms": 439
+}

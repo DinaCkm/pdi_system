@@ -2537,3 +2537,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Atualização para Publicação (29 JAN 2025)
 - [x] Forçar novo checkpoint para habilitar botão Publish
+
+## Bug: Ações Vencidas Não Aparecem no Relatório (29 JAN 2025)
+- [x] Investigar por que ações com prazo vencido não aparecem no relatório
+- [x] Verificar a query de ações vencidas no backend
+- [x] Corrigir a lógica de filtro de ações vencidas (u.nome -> u.name, l.nome -> l.name)

@@ -2501,12 +2501,12 @@ export async function getRelatorioAcoesVencidas(filtros?: {
         a.status,
         DATEDIFF(CURDATE(), a.prazo) as diasVencido,
         u.id as colaboradorId,
-        u.nome as colaboradorNome,
+        u.name as colaboradorNome,
         u.email as colaboradorEmail,
         d.id as departamentoId,
         d.nome as departamentoNome,
         cm.nome as macroNome,
-        l.nome as liderNome
+        l.name as liderNome
       FROM actions a
       INNER JOIN pdis p ON a.pdiId = p.id
       INNER JOIN users u ON p.colaboradorId = u.id
@@ -2514,7 +2514,7 @@ export async function getRelatorioAcoesVencidas(filtros?: {
       LEFT JOIN competencias_macros cm ON a.macroId = cm.id
       LEFT JOIN users l ON u.leaderId = l.id
       ${whereClause}
-      ORDER BY d.nome ASC, u.nome ASC, a.prazo ASC
+      ORDER BY d.nome ASC, u.name ASC, a.prazo ASC
     `));
 
     // Query de resumo por departamento
@@ -2538,10 +2538,10 @@ export async function getRelatorioAcoesVencidas(filtros?: {
     const [resumoColaborador]: any = await db.execute(sql.raw(`
       SELECT 
         u.id as colaboradorId,
-        u.nome as colaboradorNome,
+        u.name as colaboradorNome,
         u.email as colaboradorEmail,
         d.nome as departamentoNome,
-        l.nome as liderNome,
+        l.name as liderNome,
         COUNT(a.id) as totalVencidas,
         MIN(a.prazo) as prazoMaisAntigo,
         MAX(DATEDIFF(CURDATE(), a.prazo)) as maiorAtraso
@@ -2551,7 +2551,7 @@ export async function getRelatorioAcoesVencidas(filtros?: {
       LEFT JOIN departamentos d ON u.departamentoId = d.id
       LEFT JOIN users l ON u.leaderId = l.id
       ${whereClause}
-      GROUP BY u.id, u.nome, u.email, d.nome, l.nome
+      GROUP BY u.id, u.name, u.email, d.nome, l.name
       ORDER BY totalVencidas DESC
     `));
 
