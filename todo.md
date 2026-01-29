@@ -2542,3 +2542,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Investigar por que ações com prazo vencido não aparecem no relatório
 - [x] Verificar a query de ações vencidas no backend
 - [x] Corrigir a lógica de filtro de ações vencidas (u.nome -> u.name, l.nome -> l.name)
+
+## Limpeza de Código (29 JAN 2025)
+- [x] Remover arquivo ComponentShowcase.tsx não utilizado (1.437 linhas)
