@@ -14,7 +14,7 @@ export default function ConfigurarUsuario() {
   const [, navigate] = useLocation();
   const userId = params?.id ? parseInt(params.id) : null;
 
-  const [selectedRole, setSelectedRole] = useState<"colaborador" | "lider" | "admin">("colaborador");
+  const [selectedRole, setSelectedRole] = useState<"colaborador" | "lider" | "gerente" | "admin">("colaborador");
   const [selectedDepartamento, setSelectedDepartamento] = useState<number | undefined>(undefined);
   const [selectedLeader, setSelectedLeader] = useState<number | undefined>(undefined);
   const [selectedDepartamentoColaborador, setSelectedDepartamentoColaborador] = useState<number | undefined>(undefined);
@@ -345,6 +345,30 @@ export default function ConfigurarUsuario() {
                     <p className="font-medium">Líder</p>
                     <p className="text-sm text-muted-foreground">
                       Gerencia sua equipe e aprova ações
+                    </p>
+                  </div>
+                </label>
+
+                {/* Gerente */}
+                <label
+                  className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    selectedRole === "gerente"
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value="gerente"
+                    checked={selectedRole === "gerente"}
+                    onChange={(e) => setSelectedRole(e.target.value as any)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <p className="font-medium">Gerente</p>
+                    <p className="text-sm text-muted-foreground">
+                      Visualiza Dashboard, PDIs, Ações e Relatórios (somente leitura)
                     </p>
                   </div>
                 </label>

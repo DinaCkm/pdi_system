@@ -1947,7 +1947,7 @@ export async function importUsers(users: Array<{
   cargo?: string;
   departamentoNome?: string;
   leaderEmail?: string;
-  role: 'admin' | 'lider' | 'colaborador';
+  role: 'admin' | 'gerente' | 'lider' | 'colaborador';
 }>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
