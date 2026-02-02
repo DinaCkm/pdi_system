@@ -703,10 +703,15 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
     acoes: adminProcedure
       .input(z.object({
         acoes: z.array(z.object({
-          userEmail: z.string().email(),
+          cpf: z.string().optional(),
+          userEmail: z.string().email().optional(),
+          cicloNome: z.string().optional(),
+          macroNome: z.string().optional(),
+          microcompetencia: z.string().optional(),
           titulo: z.string(),
           descricao: z.string().optional(),
-          tipo: z.string(),
+          prazo: z.string().optional(),
+          tipo: z.string().optional(),
           status: z.string().optional(),
           dataInicio: z.string().optional(),
           dataFim: z.string().optional()

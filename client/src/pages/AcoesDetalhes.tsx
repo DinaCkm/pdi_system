@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
-import { Loader2, CheckCircle, XCircle, FileText, Upload, Send, Mail, ArrowLeft, User, Calendar, AlignLeft } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, FileText, Upload, Send, Mail, ArrowLeft, User, Calendar, AlignLeft, Target, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AcoesDetalhes() {
@@ -16,6 +16,10 @@ export default function AcoesDetalhes() {
   // Buscas extras
   const { data: pdi } = trpc.pdis.getById.useQuery({ id: acao?.pdiId || 0 }, { enabled: !!acao?.pdiId });
   const { data: colaborador } = trpc.users.getById.useQuery({ id: pdi?.colaboradorId || 0 }, { enabled: !!pdi?.colaboradorId });
+  
+  // Buscar a competência macro
+  const { data: macros = [] } = trpc.competencias.listAllMacros.useQuery();
+  const macroCompetencia = macros.find((m: any) => m.id === acao?.macroId);
   
   // Busca o usuário logado para comparar
   const { data: currentUser } = trpc.auth.me.useQuery();
@@ -43,8 +47,13 @@ export default function AcoesDetalhes() {
 
   const handleRecusar = (evidenceId: number) => {
     if (!colaborador?.email) return toast.error("Sem e-mail cadastrado.");
-    reprovarMutation.mutate({ evidenceId });
-    window.location.href = `mailto:${colaborador.email}?subject=Ajuste Ação ${actionId}&body=Necessário ajuste na evidência...`;
+    const justificativa = prompt("Informe o motivo da reprovação (mínimo 10 caracteres):");
+    if (!justificativa || justificativa.length < 10) {
+      toast.error("Justificativa deve ter pelo menos 10 caracteres");
+      return;
+    }
+    reprovarMutation.mutate({ evidenceId, justificativa });
+    window.location.href = `mailto:${colaborador.email}?subject=Ajuste Ação ${actionId}&body=${encodeURIComponent(justificativa)}`;
   };
 
   if (loadingAcao || !acao) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-600" /></div>;
@@ -69,14 +78,14 @@ export default function AcoesDetalhes() {
         <ArrowLeft size={18} /> Voltar para Lista
       </button>
 
-      {/* --- ÁREA DE DETALHES DA AÇÃO (O QUE VOCÊ QUERIA VER) --- */}
+      {/* --- ÁREA DE DETALHES DA AÇÃO --- */}
       <div style={{ backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', overflow: 'hidden', marginBottom: '32px' }}>
         
         {/* Cabeçalho do Card */}
         <div style={{ padding: '24px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
           <div>
             <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#111827', margin: '0 0 8px 0', lineHeight: '1.2' }}>{acao.titulo}</h1>
-            <div style={{ display: 'flex', gap: '16px', color: '#6b7280', fontSize: '14px' }}>
+            <div style={{ display: 'flex', gap: '16px', color: '#6b7280', fontSize: '14px', flexWrap: 'wrap' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><User size={14}/> {colaborador?.name || '...'}</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={14}/> {acao.prazo ? new Date(acao.prazo).toLocaleDateString('pt-BR') : '--'}</span>
             </div>
@@ -91,7 +100,52 @@ export default function AcoesDetalhes() {
           </span>
         </div>
 
-        {/* DESCRIÇÃO COMPLETA (AQUI ESTÁ O QUE FALTAVA NO CARD) */}
+        {/* INFORMAÇÕES DA COMPETÊNCIA */}
+        <div style={{ padding: '24px', backgroundColor: '#f9fafb', borderBottom: '1px solid #f3f4f6' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+            
+            {/* Competência Macro */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+              <div style={{ padding: '10px', backgroundColor: '#dbeafe', borderRadius: '8px' }}>
+                <Target size={20} style={{ color: '#2563eb' }} />
+              </div>
+              <div>
+                <p style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', marginBottom: '4px' }}>Competência Macro</p>
+                <p style={{ fontSize: '15px', fontWeight: '600', color: '#111827' }}>
+                  {macroCompetencia?.nome || 'Não definida'}
+                </p>
+              </div>
+            </div>
+
+            {/* Microcompetência */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+              <div style={{ padding: '10px', backgroundColor: '#dcfce7', borderRadius: '8px' }}>
+                <BookOpen size={20} style={{ color: '#16a34a' }} />
+              </div>
+              <div>
+                <p style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', marginBottom: '4px' }}>Microcompetência</p>
+                <p style={{ fontSize: '15px', fontWeight: '600', color: '#111827' }}>
+                  {acao.microcompetencia || 'Não definida'}
+                </p>
+              </div>
+            </div>
+
+            {/* Data de Conclusão */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+              <div style={{ padding: '10px', backgroundColor: '#fef3c7', borderRadius: '8px' }}>
+                <Calendar size={20} style={{ color: '#d97706' }} />
+              </div>
+              <div>
+                <p style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', marginBottom: '4px' }}>Prazo de Conclusão</p>
+                <p style={{ fontSize: '15px', fontWeight: '600', color: '#111827' }}>
+                  {acao.prazo ? new Date(acao.prazo).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Não definido'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* DESCRIÇÃO COMPLETA */}
         <div style={{ padding: '32px', backgroundColor: '#fff' }}>
           <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#374151', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase' }}>
             <AlignLeft size={16} /> Descrição Detalhada

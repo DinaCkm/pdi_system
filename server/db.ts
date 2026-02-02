@@ -959,7 +959,7 @@ export async function getTop3CompetenciasComGaps() {
 
   // Montar resultado com contagem e percentual
   const resultado = macros
-    .map(macro => ({
+    .map((macro: { id: number; nome: string }) => ({
       id: macro.id,
       nome: macro.nome,
       totalAcoes: contagemPorMacro[macro.id] || 0,
@@ -967,8 +967,8 @@ export async function getTop3CompetenciasComGaps() {
         ? Math.round(((contagemPorMacro[macro.id] || 0) / totalAcoes) * 100) 
         : 0,
     }))
-    .filter(item => item.totalAcoes > 0) // Apenas competências com ações
-    .sort((a, b) => b.totalAcoes - a.totalAcoes) // Ordenar por quantidade de ações (decrescente)
+    .filter((item: { id: number; nome: string; totalAcoes: number; percentual: number }) => item.totalAcoes > 0) // Apenas competências com ações
+    .sort((a: { totalAcoes: number }, b: { totalAcoes: number }) => b.totalAcoes - a.totalAcoes) // Ordenar por quantidade de ações (decrescente)
     .slice(0, 3); // Top 3
 
   return resultado;
@@ -2021,10 +2021,15 @@ export async function importUsers(users: Array<{
 
 // Importar ações em massa
 export async function importAcoes(acoes: Array<{
-  userEmail: string;
+  cpf?: string;
+  userEmail?: string;
+  cicloNome?: string;
+  macroNome?: string;
+  microcompetencia?: string;
   titulo: string;
   descricao?: string;
-  tipo: string;
+  prazo?: string;
+  tipo?: string;
   status?: string;
   dataInicio?: string;
   dataFim?: string;
@@ -2032,47 +2037,106 @@ export async function importAcoes(acoes: Array<{
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const results: { success: boolean; userEmail: string; titulo: string; error?: string }[] = [];
+  const results: { success: boolean; identificador: string; titulo: string; error?: string }[] = [];
 
-  // Buscar todos os usuários e seus PDIs ativos
-  const usersResult = await db.execute(sql`SELECT id, email FROM users`);
-  const usersByEmail = new Map((usersResult as any)[0].map((u: any) => [u.email.toLowerCase(), u.id]));
+  // Buscar todos os usuários por email e CPF
+  const usersResult = await db.execute(sql`SELECT id, email, cpf FROM users`);
+  const usersByEmail = new Map((usersResult as any)[0].map((u: any) => [u.email?.toLowerCase(), u.id]));
+  const usersByCpf = new Map((usersResult as any)[0].map((u: any) => [u.cpf?.replace(/\D/g, ''), u.id]));
+
+  // Buscar todas as competências macro
+  const macrosResult = await db.execute(sql`SELECT id, nome FROM competencias_macros WHERE ativo = 1`);
+  const macrosByNome = new Map((macrosResult as any)[0].map((m: any) => [m.nome?.toLowerCase().trim(), m.id]));
+
+  // Buscar todos os ciclos
+  const ciclosResult = await db.execute(sql`SELECT id, nome FROM ciclos WHERE ativo = 1`);
+  const ciclosByNome = new Map((ciclosResult as any)[0].map((c: any) => [c.nome?.toLowerCase().trim(), c.id]));
 
   for (const acao of acoes) {
+    const identificador = acao.cpf || acao.userEmail || 'desconhecido';
     try {
-      // Buscar usuário
-      const userId = usersByEmail.get(acao.userEmail.toLowerCase());
+      // Buscar usuário por CPF ou email
+      let userId: number | undefined;
+      if (acao.cpf) {
+        const cpfLimpo = acao.cpf.replace(/\D/g, '');
+        userId = usersByCpf.get(cpfLimpo) as number | undefined;
+      }
+      if (!userId && acao.userEmail) {
+        userId = usersByEmail.get(acao.userEmail.toLowerCase()) as number | undefined;
+      }
+      
       if (!userId) {
-        results.push({ success: false, userEmail: acao.userEmail, titulo: acao.titulo, error: `Usuário com email "${acao.userEmail}" não encontrado` });
+        results.push({ success: false, identificador, titulo: acao.titulo, error: `Usuário não encontrado (CPF: ${acao.cpf || 'N/A'}, Email: ${acao.userEmail || 'N/A'})` });
         continue;
       }
 
-      // Buscar PDI ativo do usuário
-      const pdiResult = await db.execute(
-        sql`SELECT id FROM pdis WHERE colaboradorId = ${userId} ORDER BY createdAt DESC LIMIT 1`
-      );
-      const pdiId = (pdiResult as any)[0][0]?.id;
+      // Buscar ciclo pelo nome (se fornecido)
+      let cicloId: number | undefined;
+      if (acao.cicloNome) {
+        cicloId = ciclosByNome.get(acao.cicloNome.toLowerCase().trim()) as number | undefined;
+      }
+
+      // Buscar PDI do usuário (pelo ciclo se fornecido, senão o mais recente)
+      let pdiId: number | undefined;
+      if (cicloId) {
+        const pdiResult = await db.execute(
+          sql`SELECT id FROM pdis WHERE colaboradorId = ${userId} AND cicloId = ${cicloId} LIMIT 1`
+        );
+        pdiId = (pdiResult as any)[0][0]?.id;
+      }
+      if (!pdiId) {
+        const pdiResult = await db.execute(
+          sql`SELECT id FROM pdis WHERE colaboradorId = ${userId} ORDER BY createdAt DESC LIMIT 1`
+        );
+        pdiId = (pdiResult as any)[0][0]?.id;
+      }
 
       if (!pdiId) {
-        results.push({ success: false, userEmail: acao.userEmail, titulo: acao.titulo, error: `Usuário não possui PDI cadastrado` });
+        results.push({ success: false, identificador, titulo: acao.titulo, error: `Usuário não possui PDI cadastrado` });
         continue;
       }
 
-      // Buscar uma macrocompetência padrão
-      const macroResult = await db.execute(
-        sql`SELECT id FROM competencias_macros WHERE ativo = 1 LIMIT 1`
-      );
-      const macroId = (macroResult as any)[0][0]?.id || 1;
+      // Buscar macrocompetência pelo nome (se fornecido) ou usar padrão
+      let macroId: number | undefined;
+      if (acao.macroNome) {
+        macroId = macrosByNome.get(acao.macroNome.toLowerCase().trim()) as number | undefined;
+        if (!macroId) {
+          results.push({ success: false, identificador, titulo: acao.titulo, error: `Competência Macro "${acao.macroNome}" não encontrada no sistema` });
+          continue;
+        }
+      } else {
+        // Usar primeira macro disponível como padrão
+        const macroResult = await db.execute(
+          sql`SELECT id FROM competencias_macros WHERE ativo = 1 LIMIT 1`
+        );
+        macroId = (macroResult as any)[0][0]?.id || 1;
+      }
 
-      // Inserir ação
+      // Converter prazo para formato de data
+      let prazoDate: string | null = null;
+      if (acao.prazo) {
+        // Tentar converter dd/mm/yyyy para yyyy-mm-dd
+        const partes = acao.prazo.split('/');
+        if (partes.length === 3) {
+          prazoDate = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+        } else {
+          prazoDate = acao.prazo;
+        }
+      } else if (acao.dataFim) {
+        prazoDate = acao.dataFim;
+      } else {
+        prazoDate = new Date().toISOString().split('T')[0];
+      }
+
+      // Inserir ação com todos os campos
       await db.execute(
-        sql`INSERT INTO actions (pdiId, macroId, titulo, descricao, prazo, status, createdAt, updatedAt)
-            VALUES (${pdiId}, ${macroId}, ${acao.titulo}, ${acao.descricao || null}, ${acao.dataFim || new Date().toISOString().split('T')[0]}, ${acao.status || 'nao_iniciada'}, NOW(), NOW())`
+        sql`INSERT INTO actions (pdiId, macroId, microcompetencia, titulo, descricao, prazo, status, createdAt, updatedAt)
+            VALUES (${pdiId}, ${macroId}, ${acao.microcompetencia || null}, ${acao.titulo}, ${acao.descricao || null}, ${prazoDate}, ${acao.status || 'nao_iniciada'}, NOW(), NOW())`
       );
 
-      results.push({ success: true, userEmail: acao.userEmail, titulo: acao.titulo });
+      results.push({ success: true, identificador, titulo: acao.titulo });
     } catch (error: any) {
-      results.push({ success: false, userEmail: acao.userEmail, titulo: acao.titulo, error: error.message });
+      results.push({ success: false, identificador, titulo: acao.titulo, error: error.message });
     }
   }
 

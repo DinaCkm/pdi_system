@@ -2562,3 +2562,11 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Importar líderes/gerentes (19 gerentes)
 - [x] Importar colaboradores (112 colaboradores)
 - [x] Total: 132 usuários cadastrados no sistema
+
+## Correção Template de Importação de Ações (02 FEV 2026)
+- [x] Atualizar template CSV para incluir campo Competência Macro (macroNome)
+- [x] Verificar função de importação no backend para processar macroNome
+- [x] Garantir que visualização de ações exiba todos os campos: Macro, Micro, Prazo
+- [x] Testar importação com novo template
+- [x] Salvar checkpoint
+
