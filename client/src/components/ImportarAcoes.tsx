@@ -61,6 +61,7 @@ export function ImportarAcoes() {
   const importarMutation = trpc.import.acoes.useMutation();
 
   // Função para parsear CSV com suporte a campos entre aspas
+  // Usa ponto e vírgula (;) como separador padrão do Excel em português
   const parseCSVLine = (line: string): string[] => {
     const result: string[] = [];
     let current = '';
@@ -71,7 +72,7 @@ export function ImportarAcoes() {
       
       if (char === '"') {
         inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
+      } else if (char === ';' && !inQuotes) {
         result.push(current.trim());
         current = '';
       } else {
@@ -272,7 +273,7 @@ export function ImportarAcoes() {
                 <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-2" />
                 <p className="text-sm font-medium mb-2">Selecione um arquivo CSV</p>
                 <p className="text-xs text-muted-foreground mb-4">
-                  Formato: cpf, cicloNome, macroNome, microcompetencia, titulo, descricao, prazo
+                  Formato: cpf;cicloNome;macroNome;microcompetencia;titulo;descricao;prazo (separado por ponto e vírgula)
                 </p>
                 <input
                   ref={fileInputRef}

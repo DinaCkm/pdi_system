@@ -2577,3 +2577,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Atualizar componente de importação no frontend
 - [x] Testar importação com novo template
 - [x] Salvar checkpoint
+
+## Correção Separador CSV (02 FEV 2026)
+- [x] Alterar template CSV para usar ponto e vírgula (;) como separador
+- [x] Atualizar função de parse no frontend para aceitar ponto e vírgula
+- [x] Salvar checkpoint
