@@ -2582,3 +2582,14 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Alterar template CSV para usar ponto e vírgula (;) como separador
 - [x] Atualizar função de parse no frontend para aceitar ponto e vírgula
 - [x] Salvar checkpoint
+
+## Correção Página ImportarAcoes.tsx (02 FEV 2026)
+- [ ] Atualizar campos do CSV para: cpf, cicloNome, macroNome, microcompetencia, titulo, descricao, prazo
+- [ ] Alterar separador de vírgula para ponto e vírgula
+- [ ] Atualizar template de download
+- [ ] Salvar checkpoint
+
+## Correção Filtro de Busca por Nome - Gestão de Usuários (02 FEV 2026)
+- [x] Identificar problema no filtro de busca por nome (campo de busca estava sendo comprimido)
+- [x] Corrigir o filtro para funcionar corretamente (adicionado min-w-[250px] e w-full)
+- [ ] Testar e salvar checkpoint
