@@ -2621,3 +2621,25 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Corrigir função de leitura CSV para suportar codificação Windows-1252/Latin1
 - [ ] Testar importação com caracteres acentuados
 - [ ] Salvar checkpoint
+
+## Validação Prévia na Importação de Ações (02 FEV 2026)
+- [ ] Criar endpoint de validação prévia no backend
+- [ ] Atualizar frontend para validar ao fazer upload
+- [ ] Mostrar erros no preview com identificação clara da linha
+- [ ] Impedir importação se houver erros ou permitir importar apenas válidas
+- [ ] Salvar checkpoint
+
+
+## Pré-validação de Importação de Ações (CRÍTICO)
+- [x] Criar endpoint de pré-validação no backend (validar sem importar)
+- [x] Implementar validação de CPF (usuário existe?)
+- [x] Implementar validação de Ciclo (ciclo existe?)
+- [x] Implementar validação de Competência Macro (macro existe?)
+- [x] Implementar validação de formato de data (DD/MM/YYYY)
+- [x] Atualizar frontend para chamar pré-validação após upload
+- [x] Mostrar erros na tabela de preview com número da linha
+- [x] Indicar visualmente linhas válidas (verde) e inválidas (vermelho)
+- [x] Mostrar motivo específico do erro em cada linha
+- [x] Desabilitar botão "Confirmar" se houver erros
+- [x] Lote inteiro rejeitado se houver erros (não permite importação parcial)
+- [ ] Testar fluxo completo de pré-validação

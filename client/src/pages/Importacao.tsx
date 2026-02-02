@@ -22,6 +22,7 @@ type UserRow = {
 };
 
 type AcaoRow = {
+  linha: number;
   cpf: string;
   cicloNome: string;
   macroNome: string;
@@ -29,6 +30,14 @@ type AcaoRow = {
   titulo: string;
   descricao?: string;
   prazo: string;
+};
+
+type AcaoValidacao = {
+  linha: number;
+  valido: boolean;
+  cpf: string;
+  titulo: string;
+  erro?: string;
 };
 
 type PdiRow = {
@@ -50,6 +59,8 @@ export default function Importacao() {
   // Estados para Ações
   const [acoesData, setAcoesData] = useState<AcaoRow[]>([]);
   const [acoesPreview, setAcoesPreview] = useState(false);
+  const [acoesValidacao, setAcoesValidacao] = useState<AcaoValidacao[]>([]);
+  const [acoesValidando, setAcoesValidando] = useState(false);
   const acoesFileRef = useRef<HTMLInputElement>(null);
   
   // Estados para PDIs
@@ -70,10 +81,26 @@ export default function Importacao() {
     },
     onError: (error) => {
       toast.error(`Erro: ${error.message}`);
-      // Resetar para permitir novo upload
       setUsersData([]);
       setUsersPreview(false);
       if (usersFileRef.current) usersFileRef.current.value = '';
+    }
+  });
+
+  const validarAcoesMutation = trpc.import.validarAcoes.useMutation({
+    onSuccess: (data) => {
+      setAcoesValidacao(data.results);
+      setAcoesValidando(false);
+      const erros = data.results.filter((r: AcaoValidacao) => !r.valido);
+      if (erros.length > 0) {
+        toast.error(`${erros.length} linha(s) com erro. Corrija o arquivo e faça novo upload.`);
+      } else {
+        toast.success('Todas as linhas estão válidas! Pode confirmar a importação.');
+      }
+    },
+    onError: (error) => {
+      toast.error(`Erro ao validar: ${error.message}`);
+      setAcoesValidando(false);
     }
   });
 
@@ -83,12 +110,13 @@ export default function Importacao() {
       setImportResult({ show: true, type: 'acoes', results: data.results });
       setAcoesData([]);
       setAcoesPreview(false);
+      setAcoesValidacao([]);
     },
     onError: (error) => {
       toast.error(`Erro: ${error.message}`);
-      // Resetar para permitir novo upload
       setAcoesData([]);
       setAcoesPreview(false);
+      setAcoesValidacao([]);
       if (acoesFileRef.current) acoesFileRef.current.value = '';
     }
   });
@@ -102,7 +130,6 @@ export default function Importacao() {
     },
     onError: (error) => {
       toast.error(`Erro: ${error.message}`);
-      // Resetar para permitir novo upload
       setPdisData([]);
       setPdisPreview(false);
       if (pdisFileRef.current) pdisFileRef.current.value = '';
@@ -298,6 +325,7 @@ export default function Importacao() {
         if (row.length < 5) continue;
 
         data.push({
+          linha: i + 1, // +1 porque linha 1 é cabeçalho no Excel
           cpf: row[header.indexOf('cpf')]?.replace(/\D/g, '') || '',
           cicloNome: row[header.indexOf('ciclonome')] || '',
           macroNome: row[header.indexOf('macronome')] || '',
@@ -315,9 +343,23 @@ export default function Importacao() {
 
       setAcoesData(data);
       setAcoesPreview(true);
-      toast.success(`${data.length} registros carregados para preview`);
+      setAcoesValidacao([]);
+      toast.info(`${data.length} registros carregados. Validando...`);
+      
+      // Chamar validação automática
+      setAcoesValidando(true);
+      const acoesParaValidar = data.map((acao) => ({
+        linha: acao.linha,
+        cpf: acao.cpf,
+        cicloNome: acao.cicloNome,
+        macroNome: acao.macroNome,
+        microcompetencia: acao.microcompetencia,
+        titulo: acao.titulo,
+        descricao: acao.descricao,
+        prazo: acao.prazo
+      }));
+      validarAcoesMutation.mutate({ acoes: acoesParaValidar });
     };
-    // Tentar ler como UTF-8 primeiro, se falhar tentar Windows-1252
     reader.readAsText(file, 'windows-1252');
     e.target.value = '';
   };
@@ -365,6 +407,16 @@ export default function Importacao() {
     e.target.value = '';
   };
 
+  // Função para obter validação de uma linha específica
+  const getValidacaoLinha = (linha: number): AcaoValidacao | undefined => {
+    return acoesValidacao.find(v => v.linha === linha);
+  };
+
+  // Verificar se há erros na validação
+  const temErrosValidacao = acoesValidacao.some(v => !v.valido);
+  const totalErros = acoesValidacao.filter(v => !v.valido).length;
+  const totalValidos = acoesValidacao.filter(v => v.valido).length;
+
   return (
     <div className="space-y-6">
       <div>
@@ -379,8 +431,8 @@ export default function Importacao() {
           1. Baixe o modelo CSV correspondente<br />
           2. Preencha os dados seguindo o formato do modelo<br />
           3. Faça o upload do arquivo preenchido<br />
-          4. Revise os dados no preview antes de confirmar<br />
-          5. CPFs duplicados e emails inválidos serão rejeitados
+          4. Revise os dados no preview - linhas com erro serão destacadas<br />
+          5. <strong>Todas as linhas devem estar válidas para confirmar a importação</strong>
         </AlertDescription>
       </Alert>
 
@@ -551,49 +603,122 @@ export default function Importacao() {
 
               {acoesPreview && acoesData.length > 0 && (
                 <div className="space-y-4">
+                  {/* Resumo da validação */}
+                  {acoesValidacao.length > 0 && (
+                    <div className={`p-4 rounded-lg ${temErrosValidacao ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
+                      <div className="flex items-center gap-4">
+                        {acoesValidando ? (
+                          <div className="flex items-center gap-2 text-blue-600">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span className="font-medium">Validando...</span>
+                          </div>
+                        ) : temErrosValidacao ? (
+                          <>
+                            <div className="flex items-center gap-2 text-red-600">
+                              <XCircle className="h-5 w-5" />
+                              <span className="font-medium">{totalErros} linha(s) com erro</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-green-600">
+                              <CheckCircle className="h-5 w-5" />
+                              <span className="font-medium">{totalValidos} linha(s) válida(s)</span>
+                            </div>
+                            <span className="text-red-700 text-sm ml-auto">
+                              Corrija os erros no arquivo e faça novo upload
+                            </span>
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-2 text-green-600">
+                            <CheckCircle className="h-5 w-5" />
+                            <span className="font-medium">Todas as {totalValidos} linhas estão válidas!</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">Preview ({acoesData.length} registros)</h3>
                     <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => { setAcoesData([]); setAcoesPreview(false); }}>
+                      <Button variant="outline" onClick={() => { setAcoesData([]); setAcoesPreview(false); setAcoesValidacao([]); }}>
                         Cancelar
                       </Button>
                       <Button 
-                        onClick={() => importAcoesMutation.mutate({ acoes: acoesData })}
-                        disabled={importAcoesMutation.isPending}
+                        onClick={() => importAcoesMutation.mutate({ acoes: acoesData.map(a => ({
+                          cpf: a.cpf,
+                          cicloNome: a.cicloNome,
+                          macroNome: a.macroNome,
+                          microcompetencia: a.microcompetencia,
+                          titulo: a.titulo,
+                          descricao: a.descricao,
+                          prazo: a.prazo
+                        })) })}
+                        disabled={importAcoesMutation.isPending || acoesValidando || temErrosValidacao || acoesValidacao.length === 0}
+                        title={temErrosValidacao ? 'Corrija todos os erros antes de importar' : ''}
                       >
                         {importAcoesMutation.isPending ? (
                           <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Importando...</>
+                        ) : acoesValidando ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Validando...</>
                         ) : (
                           <><CheckCircle className="h-4 w-4 mr-2" /> Confirmar Importação</>
                         )}
                       </Button>
                     </div>
                   </div>
-                  <div className="border rounded-lg overflow-auto max-h-[400px]">
+                  
+                  <div className="border rounded-lg overflow-auto max-h-[500px]">
                     <Table>
                       <TableHeader>
-                        <TableRow>
+                        <TableRow className="bg-gray-100">
+                          <TableHead className="w-[60px]">Linha</TableHead>
+                          <TableHead className="w-[80px]">Status</TableHead>
                           <TableHead>CPF</TableHead>
                           <TableHead>Ciclo</TableHead>
                           <TableHead>Macro</TableHead>
                           <TableHead>Micro</TableHead>
                           <TableHead>Título</TableHead>
-                          <TableHead>Descrição</TableHead>
                           <TableHead>Prazo</TableHead>
+                          <TableHead className="min-w-[200px]">Erro</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {acoesData.map((acao, idx) => (
-                          <TableRow key={idx}>
-                            <TableCell>{acao.cpf}</TableCell>
-                            <TableCell>{acao.cicloNome}</TableCell>
-                            <TableCell className="max-w-[150px] truncate">{acao.macroNome}</TableCell>
-                            <TableCell className="max-w-[150px] truncate">{acao.microcompetencia || '-'}</TableCell>
-                            <TableCell>{acao.titulo}</TableCell>
-                            <TableCell className="max-w-[200px] truncate">{acao.descricao || '-'}</TableCell>
-                            <TableCell>{acao.prazo}</TableCell>
-                          </TableRow>
-                        ))}
+                        {acoesData.map((acao) => {
+                          const validacao = getValidacaoLinha(acao.linha);
+                          const temErro = validacao && !validacao.valido;
+                          
+                          return (
+                            <TableRow 
+                              key={acao.linha} 
+                              className={temErro ? 'bg-red-50 hover:bg-red-100' : validacao?.valido ? 'bg-green-50 hover:bg-green-100' : ''}
+                            >
+                              <TableCell className="font-mono text-sm font-bold">
+                                {acao.linha}
+                              </TableCell>
+                              <TableCell>
+                                {acoesValidando ? (
+                                  <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                                ) : validacao ? (
+                                  validacao.valido ? (
+                                    <CheckCircle className="h-5 w-5 text-green-600" />
+                                  ) : (
+                                    <XCircle className="h-5 w-5 text-red-600" />
+                                  )
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="font-mono text-sm">{acao.cpf}</TableCell>
+                              <TableCell>{acao.cicloNome}</TableCell>
+                              <TableCell className="max-w-[150px] truncate" title={acao.macroNome}>{acao.macroNome}</TableCell>
+                              <TableCell className="max-w-[120px] truncate" title={acao.microcompetencia}>{acao.microcompetencia || '-'}</TableCell>
+                              <TableCell className="max-w-[150px] truncate" title={acao.titulo}>{acao.titulo}</TableCell>
+                              <TableCell>{acao.prazo}</TableCell>
+                              <TableCell className="text-red-600 text-sm">
+                                {temErro && validacao?.erro}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
@@ -735,7 +860,7 @@ export default function Importacao() {
                   <TableBody>
                     {importResult.results.filter(r => !r.success).map((result, idx) => (
                       <TableRow key={idx}>
-                        <TableCell>{result.email || result.userEmail || result.titulo}</TableCell>
+                        <TableCell>{result.email || result.userEmail || result.titulo || result.identificador}</TableCell>
                         <TableCell>
                           <Badge variant="destructive">Erro</Badge>
                         </TableCell>

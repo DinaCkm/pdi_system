@@ -2143,6 +2143,119 @@ export async function importAcoes(acoes: Array<{
   return results;
 }
 
+// Validar ações antes de importar (não insere no banco, apenas valida)
+export async function validarAcoes(acoes: Array<{
+  linha: number;
+  cpf?: string;
+  userEmail?: string;
+  cicloNome?: string;
+  macroNome?: string;
+  microcompetencia?: string;
+  titulo: string;
+  descricao?: string;
+  prazo?: string;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const results: { linha: number; valido: boolean; cpf: string; titulo: string; erro?: string }[] = [];
+
+  // Buscar todos os usuários por email e CPF
+  const usersResult = await db.execute(sql`SELECT id, email, cpf, name FROM users`);
+  const usersByEmail = new Map((usersResult as any)[0].map((u: any) => [u.email?.toLowerCase(), { id: u.id, name: u.name }]));
+  const usersByCpf = new Map((usersResult as any)[0].map((u: any) => [u.cpf?.replace(/\D/g, ''), { id: u.id, name: u.name }]));
+
+  // Buscar todas as competências macro
+  const macrosResult = await db.execute(sql`SELECT id, nome FROM competencias_macros WHERE ativo = 1`);
+  const macrosByNome = new Map((macrosResult as any)[0].map((m: any) => [m.nome?.toLowerCase().trim(), m.id]));
+
+  // Buscar todos os ciclos
+  const ciclosResult = await db.execute(sql`SELECT id, nome FROM ciclos`);
+  const ciclosByNome = new Map((ciclosResult as any)[0].map((c: any) => [c.nome?.toLowerCase().trim(), c.id]));
+
+  for (const acao of acoes) {
+    const identificador = acao.cpf || acao.userEmail || 'desconhecido';
+    const erros: string[] = [];
+
+    // Validar usuário por CPF ou email
+    let userId: number | undefined;
+    let userName: string | undefined;
+    if (acao.cpf) {
+      const cpfLimpo = acao.cpf.replace(/\D/g, '');
+      const user = usersByCpf.get(cpfLimpo) as { id: number; name: string } | undefined;
+      userId = user?.id;
+      userName = user?.name;
+    }
+    if (!userId && acao.userEmail) {
+      const user = usersByEmail.get(acao.userEmail.toLowerCase()) as { id: number; name: string } | undefined;
+      userId = user?.id;
+      userName = user?.name;
+    }
+    
+    if (!userId) {
+      erros.push(`Usuário não encontrado (CPF: ${acao.cpf || 'N/A'})`);
+    }
+
+    // Validar ciclo
+    let cicloId: number | undefined;
+    if (acao.cicloNome) {
+      cicloId = ciclosByNome.get(acao.cicloNome.toLowerCase().trim()) as number | undefined;
+      if (!cicloId) {
+        erros.push(`Ciclo "${acao.cicloNome}" não encontrado`);
+      }
+    } else {
+      erros.push('Ciclo não informado');
+    }
+
+    // Validar PDI do usuário (se usuário foi encontrado)
+    if (userId && cicloId) {
+      const pdiResult = await db.execute(
+        sql`SELECT id FROM pdis WHERE colaboradorId = ${userId} AND cicloId = ${cicloId} LIMIT 1`
+      );
+      const pdiId = (pdiResult as any)[0][0]?.id;
+      if (!pdiId) {
+        erros.push(`Usuário não possui PDI no ciclo ${acao.cicloNome}`);
+      }
+    }
+
+    // Validar competência macro
+    if (acao.macroNome) {
+      const macroId = macrosByNome.get(acao.macroNome.toLowerCase().trim()) as number | undefined;
+      if (!macroId) {
+        erros.push(`Competência Macro "${acao.macroNome}" não encontrada`);
+      }
+    } else {
+      erros.push('Competência Macro não informada');
+    }
+
+    // Validar título
+    if (!acao.titulo || acao.titulo.trim() === '') {
+      erros.push('Título da ação não informado');
+    }
+
+    // Validar prazo
+    if (!acao.prazo || acao.prazo.trim() === '') {
+      erros.push('Prazo não informado');
+    } else {
+      // Validar formato da data
+      const partes = acao.prazo.split('/');
+      if (partes.length !== 3) {
+        erros.push('Prazo em formato inválido (use DD/MM/YYYY)');
+      }
+    }
+
+    results.push({
+      linha: acao.linha,
+      valido: erros.length === 0,
+      cpf: identificador,
+      titulo: acao.titulo || '(sem título)',
+      erro: erros.length > 0 ? erros.join('; ') : undefined
+    });
+  }
+
+  return results;
+}
+
 // Importar PDIs em massa
 export async function importPdis(pdis: Array<{
   userEmail: string;

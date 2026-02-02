@@ -700,6 +700,39 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         }
       }),
 
+    // Validar ações antes de importar (não insere no banco)
+    validarAcoes: adminProcedure
+      .input(z.object({
+        acoes: z.array(z.object({
+          linha: z.number(),
+          cpf: z.string().optional(),
+          cicloNome: z.string().optional(),
+          macroNome: z.string().optional(),
+          microcompetencia: z.string().optional(),
+          titulo: z.string(),
+          descricao: z.string().optional(),
+          prazo: z.string().optional()
+        }))
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const results = await db.validarAcoes(input.acoes);
+          const validCount = results.filter(r => r.valido).length;
+          const errorCount = results.filter(r => !r.valido).length;
+          
+          return {
+            success: errorCount === 0,
+            message: `${validCount} ações válidas. ${errorCount} com erros.`,
+            results
+          };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao validar ações: ${error.message}`
+          });
+        }
+      }),
+
     acoes: adminProcedure
       .input(z.object({
         acoes: z.array(z.object({
