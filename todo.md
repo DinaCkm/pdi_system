@@ -2592,4 +2592,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Correção Filtro de Busca por Nome - Gestão de Usuários (02 FEV 2026)
 - [x] Identificar problema no filtro de busca por nome (campo de busca estava sendo comprimido)
 - [x] Corrigir o filtro para funcionar corretamente (adicionado min-w-[250px] e w-full)
-- [ ] Testar e salvar checkpoint
+- [x] Testar e salvar checkpoint
+
+## Correção Importação de Ações - Erro SQL (02 FEV 2026)
+- [x] Identificar erro: tabela ciclos não tem coluna 'ativo'
+- [x] Corrigir query removendo WHERE ativo = 1
+- [ ] Testar importação novamente

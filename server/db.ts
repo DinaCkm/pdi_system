@@ -2049,7 +2049,7 @@ export async function importAcoes(acoes: Array<{
   const macrosByNome = new Map((macrosResult as any)[0].map((m: any) => [m.nome?.toLowerCase().trim(), m.id]));
 
   // Buscar todos os ciclos
-  const ciclosResult = await db.execute(sql`SELECT id, nome FROM ciclos WHERE ativo = 1`);
+  const ciclosResult = await db.execute(sql`SELECT id, nome FROM ciclos`);
   const ciclosByNome = new Map((ciclosResult as any)[0].map((c: any) => [c.nome?.toLowerCase().trim(), c.id]));
 
   for (const acao of acoes) {

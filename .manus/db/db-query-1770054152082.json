@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, nome FROM ciclos LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, nome FROM ciclos LIMIT 5;",
+  "rows": [
+    {
+      "id": "4",
+      "nome": "2026/2"
+    },
+    {
+      "id": "30001",
+      "nome": "2026/1"
+    },
+    {
+      "id": "30002",
+      "nome": "2026/2"
+    },
+    {
+      "id": "30003",
+      "nome": "2027/1"
+    },
+    {
+      "id": "30004",
+      "nome": "2027/2"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnome\n4\t2026/2\n30001\t2026/1\n30002\t2026/2\n30003\t2027/1\n30004\t2027/2\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}
