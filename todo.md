@@ -2606,3 +2606,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Atualizar schema do endpoint no backend
 - [ ] Testar importação
 - [ ] Salvar checkpoint
+
+## Excluir Página Duplicada de Upload de Ações (02 FEV 2026)
+- [x] Localizar rota e item de menu da página duplicada
+- [x] Remover do menu/rotas (App.tsx e DashboardLayout.tsx)
+- [x] Remover arquivos ImportarAcoes.tsx (pages e components)
+- [x] Salvar checkpoint

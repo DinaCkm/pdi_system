@@ -24,7 +24,6 @@ import PDIsEquipe from "./pages/PDIsEquipe";
 import MeuPDI from "./pages/MeuPDI";
 import ImportarUsuarios from "./pages/ImportarUsuarios";
 import ImportarCompetencias from "./pages/ImportarCompetencias";
-import ImportarAcoes from "./pages/ImportarAcoes";
 import EvidenciasPendentes from "./pages/EvidenciasPendentes";
 import EvidenciasEquipe from "./pages/EvidenciasEquipe";
 // import MinhasAcoes from "./pages/MinhasAcoes"; // DESATUALIZADO
@@ -167,12 +166,6 @@ function Router() {
             <AcoesEditar key={params.id} />
           </DashboardLayout>
         )}
-      </Route>
-      
-      <Route path={"/importar-acoes"}>
-        <DashboardLayout>
-          <ImportarAcoes />
-        </DashboardLayout>
       </Route>
       
       <Route path={"/minhas-pendencias"}>

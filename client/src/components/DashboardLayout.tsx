@@ -43,7 +43,6 @@ const getMenuItems = (userRole: string) => {
       // Ciclos removido - gerenciado automaticamente pelo sistema
       { icon: FileText, label: "PDIs", path: "/pdis" },
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
-      { icon: Upload, label: "Importar Ações", path: "/importar-acoes" },
       { icon: ClipboardCheck, label: "Evidências Pendentes", path: "/evidencias-pendentes" },
       { icon: MessageSquarePlus, label: "Histórico de Alteração nas Ações", path: "/solicitacoes-admin" },
       { icon: BarChart, label: "Relatórios", path: "/relatorios" },
