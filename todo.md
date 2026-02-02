@@ -2612,3 +2612,7 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Remover do menu/rotas (App.tsx e DashboardLayout.tsx)
 - [x] Remover arquivos ImportarAcoes.tsx (pages e components)
 - [x] Salvar checkpoint
+
+## Adicionar Coluna Descrição no Preview de Importação (02 FEV 2026)
+- [x] Adicionar coluna Descrição na tabela de preview de ações
+- [x] Salvar checkpoint

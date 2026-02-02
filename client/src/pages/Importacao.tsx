@@ -577,6 +577,7 @@ export default function Importacao() {
                           <TableHead>Macro</TableHead>
                           <TableHead>Micro</TableHead>
                           <TableHead>Título</TableHead>
+                          <TableHead>Descrição</TableHead>
                           <TableHead>Prazo</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -588,6 +589,7 @@ export default function Importacao() {
                             <TableCell className="max-w-[150px] truncate">{acao.macroNome}</TableCell>
                             <TableCell className="max-w-[150px] truncate">{acao.microcompetencia || '-'}</TableCell>
                             <TableCell>{acao.titulo}</TableCell>
+                            <TableCell className="max-w-[200px] truncate">{acao.descricao || '-'}</TableCell>
                             <TableCell>{acao.prazo}</TableCell>
                           </TableRow>
                         ))}
