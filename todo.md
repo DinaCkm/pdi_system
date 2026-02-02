@@ -2570,3 +2570,10 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Testar importação com novo template
 - [x] Salvar checkpoint
 
+
+## Ajuste Template e Upload de Ações (02 FEV 2026)
+- [x] Atualizar template CSV com todos os campos do formulário de ações
+- [x] Ajustar função de importação no backend para processar novo formato
+- [x] Atualizar componente de importação no frontend
+- [x] Testar importação com novo template
+- [x] Salvar checkpoint
