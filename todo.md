@@ -2598,3 +2598,11 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Identificar erro: tabela ciclos não tem coluna 'ativo'
 - [x] Corrigir query removendo WHERE ativo = 1
 - [ ] Testar importação novamente
+
+## Atualizar Importação em Massa - Campos Coerentes com Formulário (02 FEV 2026)
+- [x] Localizar página de Importação em Massa
+- [x] Atualizar template CSV para usar: cpf, cicloNome, macroNome, microcompetencia, titulo, descricao, prazo
+- [x] Atualizar função de importação no frontend (parseCSV com ponto e vírgula)
+- [x] Atualizar schema do endpoint no backend
+- [ ] Testar importação
+- [ ] Salvar checkpoint

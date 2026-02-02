@@ -22,13 +22,13 @@ type UserRow = {
 };
 
 type AcaoRow = {
-  userEmail: string;
+  cpf: string;
+  cicloNome: string;
+  macroNome: string;
+  microcompetencia?: string;
   titulo: string;
   descricao?: string;
-  tipo: string;
-  status?: string;
-  dataInicio?: string;
-  dataFim?: string;
+  prazo: string;
 };
 
 type PdiRow = {
@@ -141,9 +141,9 @@ export default function Importacao() {
         filename = 'modelo_usuarios.csv';
         break;
       case 'acoes':
-        content = 'email_usuario,titulo,descricao,tipo,status,data_inicio,data_fim\n';
-        content += 'joao@empresa.com,Curso de Excel,Fazer curso online,curso,pendente,2026-02-01,2026-03-01\n';
-        content += 'joao@empresa.com,Mentoria,Participar de mentoria,mentoria,em_andamento,2026-01-15,2026-06-15\n';
+        content = 'cpf;cicloNome;macroNome;microcompetencia;titulo;descricao;prazo\n';
+        content += '12345678901;2026/1;COMPORTAMENTAL-Comunicação;Comunicação Assertiva;Curso de Comunicação;Realizar curso online de comunicação empresarial;30/06/2026\n';
+        content += '12345678902;2026/1;TÉCNICA-Excel;Excel Avançado;Treinamento Excel;Fazer treinamento de Excel avançado;31/08/2026\n';
         filename = 'modelo_acoes.csv';
         break;
       case 'pdis':
@@ -245,7 +245,7 @@ export default function Importacao() {
     e.target.value = '';
   };
 
-  // Handler para upload de ações
+  // Handler para upload de ações - usa ponto e vírgula como separador
   const handleAcoesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -253,28 +253,58 @@ export default function Importacao() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
-      const rows = parseCSV(text);
+      const lines = text.split('\n').filter(line => line.trim());
       
-      if (rows.length < 2) {
+      if (lines.length < 2) {
         toast.error('Arquivo vazio ou sem dados');
         return;
       }
 
-      const header = rows[0].map(h => h.toLowerCase().trim());
+      // Parse com ponto e vírgula
+      const parseCSVLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ';' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result;
+      };
+
+      const header = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+      
+      // Validar cabeçalho
+      const requiredHeaders = ['cpf', 'ciclonome', 'macronome', 'titulo', 'prazo'];
+      const missingHeaders = requiredHeaders.filter(h => !header.includes(h));
+      if (missingHeaders.length > 0) {
+        toast.error(`Cabeçalho inválido. Campos obrigatórios faltando: ${missingHeaders.join(', ')}. Esperado: cpf;cicloNome;macroNome;microcompetencia;titulo;descricao;prazo`);
+        return;
+      }
+
       const data: AcaoRow[] = [];
 
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (row.length < 2) continue;
+      for (let i = 1; i < lines.length; i++) {
+        const row = parseCSVLine(lines[i]);
+        if (row.length < 5) continue;
 
         data.push({
-          userEmail: row[header.indexOf('email_usuario')] || '',
+          cpf: row[header.indexOf('cpf')]?.replace(/\D/g, '') || '',
+          cicloNome: row[header.indexOf('ciclonome')] || '',
+          macroNome: row[header.indexOf('macronome')] || '',
+          microcompetencia: row[header.indexOf('microcompetencia')] || undefined,
           titulo: row[header.indexOf('titulo')] || '',
           descricao: row[header.indexOf('descricao')] || undefined,
-          tipo: row[header.indexOf('tipo')] || 'outro',
-          status: row[header.indexOf('status')] || 'pendente',
-          dataInicio: row[header.indexOf('data_inicio')] || undefined,
-          dataFim: row[header.indexOf('data_fim')] || undefined
+          prazo: row[header.indexOf('prazo')] || ''
         });
       }
 
@@ -503,15 +533,15 @@ export default function Importacao() {
               </div>
 
               <div className="bg-gray-50 p-4 rounded-lg text-sm">
-                <p className="font-medium mb-2">Colunas do arquivo:</p>
+                <p className="font-medium mb-2">Colunas do arquivo (separadas por ponto e vírgula):</p>
                 <ul className="list-disc list-inside space-y-1 text-gray-600">
-                  <li><strong>email_usuario</strong> - Email do usuário dono da ação (obrigatório)</li>
-                  <li><strong>titulo</strong> - Título da ação (obrigatório)</li>
-                  <li><strong>descricao</strong> - Descrição detalhada (opcional)</li>
-                  <li><strong>tipo</strong> - curso, mentoria, projeto, leitura, outro (obrigatório)</li>
-                  <li><strong>status</strong> - pendente, em_andamento, concluida (opcional)</li>
-                  <li><strong>data_inicio</strong> - Data de início YYYY-MM-DD (opcional)</li>
-                  <li><strong>data_fim</strong> - Data de término YYYY-MM-DD (opcional)</li>
+                  <li><strong>cpf</strong> - CPF do colaborador (obrigatório)</li>
+                  <li><strong>cicloNome</strong> - Nome do ciclo, ex: 2026/1 (obrigatório)</li>
+                  <li><strong>macroNome</strong> - Nome da Competência Macro (obrigatório)</li>
+                  <li><strong>microcompetencia</strong> - Competência Específica/texto livre (opcional)</li>
+                  <li><strong>titulo</strong> - O que será feito (obrigatório)</li>
+                  <li><strong>descricao</strong> - Detalhes da ação (opcional)</li>
+                  <li><strong>prazo</strong> - Prazo de conclusão DD/MM/YYYY (obrigatório)</li>
                 </ul>
                 <p className="mt-2 text-yellow-700 bg-yellow-50 p-2 rounded">
                   ⚠️ O usuário deve ter um PDI cadastrado para receber ações
@@ -542,23 +572,23 @@ export default function Importacao() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Email Usuário</TableHead>
+                          <TableHead>CPF</TableHead>
+                          <TableHead>Ciclo</TableHead>
+                          <TableHead>Macro</TableHead>
+                          <TableHead>Micro</TableHead>
                           <TableHead>Título</TableHead>
-                          <TableHead>Tipo</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Início</TableHead>
-                          <TableHead>Fim</TableHead>
+                          <TableHead>Prazo</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {acoesData.map((acao, idx) => (
                           <TableRow key={idx}>
-                            <TableCell>{acao.userEmail}</TableCell>
+                            <TableCell>{acao.cpf}</TableCell>
+                            <TableCell>{acao.cicloNome}</TableCell>
+                            <TableCell className="max-w-[150px] truncate">{acao.macroNome}</TableCell>
+                            <TableCell className="max-w-[150px] truncate">{acao.microcompetencia || '-'}</TableCell>
                             <TableCell>{acao.titulo}</TableCell>
-                            <TableCell>{acao.tipo}</TableCell>
-                            <TableCell>{acao.status || 'pendente'}</TableCell>
-                            <TableCell>{acao.dataInicio || '-'}</TableCell>
-                            <TableCell>{acao.dataFim || '-'}</TableCell>
+                            <TableCell>{acao.prazo}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
