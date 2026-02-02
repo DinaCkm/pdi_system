@@ -317,7 +317,8 @@ export default function Importacao() {
       setAcoesPreview(true);
       toast.success(`${data.length} registros carregados para preview`);
     };
-    reader.readAsText(file);
+    // Tentar ler como UTF-8 primeiro, se falhar tentar Windows-1252
+    reader.readAsText(file, 'windows-1252');
     e.target.value = '';
   };
 

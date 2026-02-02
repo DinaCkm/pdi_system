@@ -2616,3 +2616,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Adicionar Coluna Descrição no Preview de Importação (02 FEV 2026)
 - [x] Adicionar coluna Descrição na tabela de preview de ações
 - [x] Salvar checkpoint
+
+## Correção Encoding CSV - Caracteres Especiais (02 FEV 2026)
+- [x] Corrigir função de leitura CSV para suportar codificação Windows-1252/Latin1
+- [ ] Testar importação com caracteres acentuados
+- [ ] Salvar checkpoint
