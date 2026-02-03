@@ -1,0 +1,14 @@
+{
+  "query": "SELECT COUNT(*) as total_acoes, COUNT(DISTINCT pdiId) as total_pdis FROM actions;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT COUNT(*) as total_acoes, COUNT(DISTINCT pdiId) as total_pdis FROM actions;",
+  "rows": [
+    {
+      "total_acoes": "377",
+      "total_pdis": "84"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_acoes\ttotal_pdis\n377\t84\n",
+  "stderr": "",
+  "execution_time_ms": 87
+}

@@ -2643,3 +2643,13 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Desabilitar botão "Confirmar" se houver erros
 - [x] Lote inteiro rejeitado se houver erros (não permite importação parcial)
 - [ ] Testar fluxo completo de pré-validação
+
+
+## Correção: Usuários inativos não devem aparecer nas listagens
+- [x] Adicionar filtro status='ativo' em getSubordinates()
+- [x] Adicionar filtro status='ativo' em getPendingEvidencesByLeader()
+- [x] Adicionar filtro status='ativo' em getAdjustmentRequestsByLeader()
+- [x] Adicionar filtro status='ativo' em getEstatisticasPrazo()
+- [x] Adicionar filtro status='ativo' em getAcoesVencidas()
+- [x] Adicionar filtro status='ativo' em getAcoesProximasVencer()
+- [ ] Testar que Ana Paula não aparece mais na área do líder

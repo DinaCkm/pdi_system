@@ -1,0 +1,20 @@
+{
+  "query": "SELECT id, name, cpf FROM users WHERE cpf IN ('58571478134', '49954237372');",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, cpf FROM users WHERE cpf IN ('58571478134', '49954237372');",
+  "rows": [
+    {
+      "id": "1290012",
+      "name": "WALBENIA LEMOS DA SILVA TORRES",
+      "cpf": "49954237372"
+    },
+    {
+      "id": "1290078",
+      "name": "JUAREZ QUIRINO DE OLIVEIRA",
+      "cpf": "58571478134"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tcpf\n1290012\tWALBENIA LEMOS DA SILVA TORRES\t49954237372\n1290078\tJUAREZ QUIRINO DE OLIVEIRA\t58571478134\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

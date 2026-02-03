@@ -1,0 +1,54 @@
+{
+  "query": "SELECT id, nome FROM ciclos ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, nome FROM ciclos ORDER BY id;",
+  "rows": [
+    {
+      "id": "4",
+      "nome": "2026/2"
+    },
+    {
+      "id": "30001",
+      "nome": "2026/1"
+    },
+    {
+      "id": "30002",
+      "nome": "2026/2"
+    },
+    {
+      "id": "30003",
+      "nome": "2027/1"
+    },
+    {
+      "id": "30004",
+      "nome": "2027/2"
+    },
+    {
+      "id": "30005",
+      "nome": "2028/1"
+    },
+    {
+      "id": "30006",
+      "nome": "2028/2"
+    },
+    {
+      "id": "30007",
+      "nome": "2029/1"
+    },
+    {
+      "id": "30008",
+      "nome": "2029/2"
+    },
+    {
+      "id": "30009",
+      "nome": "2030/1"
+    },
+    {
+      "id": "30010",
+      "nome": "2030/2"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnome\n4\t2026/2\n30001\t2026/1\n30002\t2026/2\n30003\t2027/1\n30004\t2027/2\n30005\t2028/1\n30006\t2028/2\n30007\t2029/1\n30008\t2029/2\n30009\t2030/1\n30010\t2030/2\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

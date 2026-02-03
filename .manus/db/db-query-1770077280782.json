@@ -1,0 +1,186 @@
+{
+  "query": "SELECT id, nome FROM competencias_macros WHERE ativo = 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, nome FROM competencias_macros WHERE ativo = 1;",
+  "rows": [
+    {
+      "id": "210001",
+      "nome": "COMPORTAMENTAL-Relacionamento Interpessoal"
+    },
+    {
+      "id": "210002",
+      "nome": "COMPORTAMENTAL-Comunicação"
+    },
+    {
+      "id": "210003",
+      "nome": "COMPORTAMENTAL-Atendimento e Relacionamento com o Cliente"
+    },
+    {
+      "id": "210004",
+      "nome": "COMPORTAMENTAL-Ética, Integridade e Responsabilidade"
+    },
+    {
+      "id": "210005",
+      "nome": "COMPORTAMENTAL-Inteligência Emocional e Autoconhecimento"
+    },
+    {
+      "id": "210006",
+      "nome": "COMPORTAMENTAL - Adaptabilidade, Flexibilidade e Resiliência"
+    },
+    {
+      "id": "210007",
+      "nome": "COMPORTAMENTAL-Protagonismo, Autogestão e Responsabilidade Profissional"
+    },
+    {
+      "id": "210008",
+      "nome": "COMPORTAMENTAL-Presença Executiva e Postura Profissional"
+    },
+    {
+      "id": "210009",
+      "nome": "COMPORTAMENTAL-Gestão do Tempo, Organização e Disciplina"
+    },
+    {
+      "id": "210010",
+      "nome": "COMPORTAMENTAL-Liderança e Gestão de Pessoas"
+    },
+    {
+      "id": "210011",
+      "nome": "COMPORTAMENTAL-Gestão de Equipes e Clima Organizacional"
+    },
+    {
+      "id": "210012",
+      "nome": "COMPORTAMENTAL-Desenvolvimento de Pessoas, Carreira e Sucessão"
+    },
+    {
+      "id": "210013",
+      "nome": "COMPORTAMENTAL-Tomada de Decisão e Julgamento Técnico"
+    },
+    {
+      "id": "210014",
+      "nome": "COMPORTAMENTAL-Planejamento, Foco e Resultados"
+    },
+    {
+      "id": "210015",
+      "nome": "COMPORTAMENTAL-Estratégia, Visão Sistêmica e Indicadores"
+    },
+    {
+      "id": "210016",
+      "nome": "COMPORTAMENTAL-Gestão de Projetos e Processos"
+    },
+    {
+      "id": "210017",
+      "nome": "COMPORTAMENTAL-Resolução de Problemas e Melhoria Contínua"
+    },
+    {
+      "id": "210018",
+      "nome": "COMPORTAMENTAL-Governança, Controles Internos e Compliance"
+    },
+    {
+      "id": "210019",
+      "nome": "COMPORTAMENTAL-Integração Organizacional e Trabalho Interáreas"
+    },
+    {
+      "id": "210020",
+      "nome": "TÉCNICA-Gestão Administrativa e Processos de Apoio"
+    },
+    {
+      "id": "210021",
+      "nome": "TÉCNICA-Gestão Documental e Memória Institucional"
+    },
+    {
+      "id": "210022",
+      "nome": "TÉCNICA-Gestão Patrimonial e Controle de Bens"
+    },
+    {
+      "id": "210023",
+      "nome": "TÉCNICA-Compras, Licitações, Facilities e Gestão Contratual"
+    },
+    {
+      "id": "210024",
+      "nome": "TÉCNICA-Contratação de Obras e Serviços de Engenharia"
+    },
+    {
+      "id": "210025",
+      "nome": "TÉCNICA-Ouvidoria e Relacionamento Institucional"
+    },
+    {
+      "id": "210026",
+      "nome": "TÉCNICA-Finanças, Orçamento e Contabilidade Pública"
+    },
+    {
+      "id": "210027",
+      "nome": "TÉCNICA-Gestão Orçamentária e Financeira"
+    },
+    {
+      "id": "210028",
+      "nome": "TÉCNICA-Tributária"
+    },
+    {
+      "id": "210029",
+      "nome": "TÉCNICA-Legislação, Normas e Conformidade Jurídica"
+    },
+    {
+      "id": "210030",
+      "nome": "TÉCNICA-Auditoria Interna e Prestação de Contas"
+    },
+    {
+      "id": "210031",
+      "nome": "TÉCNICA-Políticas Públicas e Desenvolvimento Territorial"
+    },
+    {
+      "id": "210032",
+      "nome": "TÉCNICA-Vendas, Negociação e Soluções Comerciais"
+    },
+    {
+      "id": "210033",
+      "nome": "TÉCNICA-Marketing Institucional e Inteligência de Mercado"
+    },
+    {
+      "id": "210034",
+      "nome": "TÉCNICA-Conhecimentos Práticos e Acadêmicos em Marketing"
+    },
+    {
+      "id": "210035",
+      "nome": "TÉCNICA-Tecnologia, Dados e Transformação Digital"
+    },
+    {
+      "id": "210036",
+      "nome": "TÉCNICA-Governança de Dados, Informação e Uso de Sistemas Corporativos"
+    },
+    {
+      "id": "210037",
+      "nome": "TÉCNICA-Desenvolvimento e Utilização de Ferramentas de Apoio à Gestão"
+    },
+    {
+      "id": "210038",
+      "nome": "COMPORTAMENTAL-Inovação, Criatividade e Visão de Futuro"
+    },
+    {
+      "id": "210039",
+      "nome": "TÉCNICA-Processos Técnicos da Área / Função"
+    },
+    {
+      "id": "210040",
+      "nome": "TÉCNICA-Normativos Técnicos e Regulamentações da Área"
+    },
+    {
+      "id": "210041",
+      "nome": "TÉCNICA-Metodologias e Procedimentos Técnicos da Função"
+    },
+    {
+      "id": "210042",
+      "nome": "TÉCNICA-Sistemas e Tecnologias Especializadas da Área"
+    },
+    {
+      "id": "210043",
+      "nome": "TÉCNICA-Análise Técnica, Pareceres e Tomada de Decisão Técnica"
+    },
+    {
+      "id": "210044",
+      "nome": "TÉCNICA-Execução Técnica, Qualidade e Conformidade da Entrega"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnome\n210001\tCOMPORTAMENTAL-Relacionamento Interpessoal\n210002\tCOMPORTAMENTAL-Comunicação\n210003\tCOMPORTAMENTAL-Atendimento e Relacionamento com o Cliente\n210004\tCOMPORTAMENTAL-Ética, Integridade e Responsabilidade\n210005\tCOMPORTAMENTAL-Inteligência Emocional e Autoconhecimento\n210006\tCOMPORTAMENTAL - Adaptabilidade, Flexibilidade e Resiliência\n210007\tCOMPORTAMENTAL-Protagonismo, Autogestão e Responsabilidade Profissional\n210008\tCOMPORTAMENTAL-Presença Executiva e Postura Profissional\n210009\tCOMPORTAMENTAL-Gestão do Tempo, Organização e Disciplina\n210010\tCOMPORTAMENTAL-Liderança e Gestão de Pessoas\n210011\tCOMPORTAMENTAL-Gestão de Equipes e Clima Organizacional\n210012\tCOMPORTAMENTAL-Desenvolvimento de Pessoas, Carreira e Sucessão\n210013\tCOMPORTAMENTAL-Tomada de Decisão e Julgamento Técnico\n210014\tCOMPORTAMENTAL-Planejamento, Foco e Resultados\n210015\tCOMPORTAMENTAL-Estratégia, Visão Sistêmica e Indicadores\n210016\tCOMPORTAMENTAL-Gestão de Projetos e Processos\n210017\tCOMPORTAMENTAL-Resolução de Problemas e Melhoria Contínua\n210018\tCOMPORTAMENTAL-Governança, Controles Internos e Compliance\n210019\tCOMPORTAMENTAL-Integração Organizacional e Trabalho Interáreas\n210020\tTÉCNICA-Gestão Administrativa e Processos de Apoio\n210021\tTÉCNICA-Gestão Documental e Memória Institucional\n210022\tTÉCNICA-Gestão Patrimonial e Controle de Bens\n210023\tTÉCNICA-Compras, Licitações, Facilities e Gestão Contratual\n210024\tTÉCNICA-Contratação de Obras e Serviços de Engenharia\n210025\tTÉCNICA-Ouvidoria e Relacionamento Institucional\n210026\tTÉCNICA-Finanças, Orçamento e Contabilidade Pública\n210027\tTÉCNICA-Gestão Orçamentária e Financeira\n210028\tTÉCNICA-Tributária\n210029\tTÉCNICA-Legislação, Normas e Conformidade Jurídica\n210030\tTÉCNICA-Auditoria Interna e Prestação de Contas\n210031\tTÉCNICA-Políticas Públicas e Desenvolvimento Territorial\n210032\tTÉCNICA-Vendas, Negociação e Soluções Comerciais\n210033\tTÉCNICA-Marketing Institucional e Inteligência de Mercado\n210034\tTÉCNICA-Conhecimentos Práticos e Acadêmicos em Marketing\n210035\tTÉCNICA-Tecnologia, Dados e Transformação Digital\n210036\tTÉCNICA-Governança de Dados, Informação e Uso de Sistemas Corporativos\n210037\tTÉCNICA-Desenvolvimento e Utilização de Ferramentas de Apoio à Gestão\n210038\tCOMPORTAMENTAL-Inovação, Criatividade e Visão de Futuro\n210039\tTÉCNICA-Processos Técnicos da Área / Função\n210040\tTÉCNICA-Normativos Técnicos e Regulamentações da Área\n210041\tTÉCNICA-Metodologias e Procedimentos Técnicos da Função\n210042\tTÉCNICA-Sistemas e Tecnologias Especializadas da Área\n210043\tTÉCNICA-Análise Técnica, Pareceres e Tomada de Decisão Técnica\n210044\tTÉCNICA-Execução Técnica, Qualidade e Conformidade da Entrega\n",
+  "stderr": "",
+  "execution_time_ms": 79
+}

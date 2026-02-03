@@ -1,0 +1,8 @@
+{
+  "query": "SELECT id, name, email, cpf, status, liderId FROM users WHERE name LIKE '%ANA PAULA ALVES DE LIMA ROCHA%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, cpf, status, liderId FROM users WHERE name LIKE '%ANA PAULA ALVES DE LIMA ROCHA%';",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'liderid' in 'field list'"
+  ]
+}

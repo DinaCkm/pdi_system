@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO pdis (colaboradorId, cicloId, status, createdAt, updatedAt) VALUES (1290012, 30001, 'em_andamento', NOW(), NOW()), (1290078, 30001, 'em_andamento', NOW(), NOW());",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute INSERT INTO pdis (colaboradorId, cicloId, status, createdAt, updatedAt) VALUES (1290012, 30001, 'em_andamento', NOW(), NOW()), (1290078, 30001, 'em_andamento', NOW(), NOW());",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1364 (HY000) at line 1: Field 'titulo' doesn't have a default value"
+  ]
+}

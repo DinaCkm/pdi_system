@@ -1,0 +1,22 @@
+{
+  "query": "SELECT cpf, name FROM users WHERE cpf LIKE '%3305626193%' OR cpf LIKE '%3313815162%' OR cpf LIKE '%888269102%' LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT cpf, name FROM users WHERE cpf LIKE '%3305626193%' OR cpf LIKE '%3313815162%' OR cpf LIKE '%888269102%' LIMIT 10;",
+  "rows": [
+    {
+      "cpf": "03305626193",
+      "name": "ALORRAN DE FREITAS BARBOSA"
+    },
+    {
+      "cpf": "00888269102",
+      "name": "ANDRE SILVA GOMES"
+    },
+    {
+      "cpf": "03313815162",
+      "name": "ANA CASSIA DE OLIVEIRA COSTA"
+    }
+  ],
+  "messages": [],
+  "stdout": "cpf\tname\n03305626193\tALORRAN DE FREITAS BARBOSA\n00888269102\tANDRE SILVA GOMES\n03313815162\tANA CASSIA DE OLIVEIRA COSTA\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}

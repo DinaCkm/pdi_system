@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, name, email, cpf, status FROM users WHERE name LIKE '%ANA PAULA ALVES DE LIMA ROCHA%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, cpf, status FROM users WHERE name LIKE '%ANA PAULA ALVES DE LIMA ROCHA%';",
+  "rows": [
+    {
+      "id": "1290112",
+      "name": "ANA PAULA ALVES DE LIMA ROCHA",
+      "email": "anapaula.lima@to.sebrae.com.br",
+      "cpf": "03176310100",
+      "status": "inativo"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tcpf\tstatus\n1290112\tANA PAULA ALVES DE LIMA ROCHA\tanapaula.lima@to.sebrae.com.br\t03176310100\tinativo\n",
+  "stderr": "",
+  "execution_time_ms": 61
+}

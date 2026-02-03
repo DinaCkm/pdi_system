@@ -730,7 +730,7 @@ export async function getSubordinates(leaderId: number) {
   const result = await db
     .select()
     .from(users)
-    .where(eq(users.leaderId, leaderId))
+    .where(and(eq(users.leaderId, leaderId), eq(users.status, 'ativo')))
     .orderBy(users.name);
 
   return result;
@@ -1439,6 +1439,7 @@ export async function getPendingEvidencesByLeader(leaderId: number) {
     LEFT JOIN departamentos d ON u.departamentoId = d.id
     WHERE e.status IN ('aguardando_avaliacao', 'aguardando_analise', 'pending', 'pendente')
       AND u.leaderId = ${leaderId}
+      AND u.status = 'ativo'
     ORDER BY e.createdAt DESC
   `);
 
@@ -1561,6 +1562,7 @@ export async function getAdjustmentRequestsByLeader(leaderId: number) {
     LEFT JOIN departamentos d ON u.departamentoId = d.id
     LEFT JOIN competencias_macros cm ON a.macroId = cm.id
     WHERE u.leaderId = ${leaderId}
+      AND u.status = 'ativo'
     ORDER BY ar.createdAt DESC
   `);
 
@@ -2466,7 +2468,7 @@ export async function getEstatisticasPrazo(filtros?: {
   if (!db) throw new Error("Database not available");
 
   try {
-    let whereClause = "WHERE a.status != 'concluida'";
+    let whereClause = "WHERE a.status != 'concluida' AND u.status = 'ativo'";
     
     if (filtros?.departamentoId) {
       whereClause += ` AND u.departamentoId = ${filtros.departamentoId}`;
@@ -2516,7 +2518,7 @@ export async function getAcoesVencidas(filtros?: {
   if (!db) throw new Error("Database not available");
 
   try {
-    let whereClause = "WHERE a.prazo < CURDATE() AND a.status != 'concluida'";
+    let whereClause = "WHERE a.prazo < CURDATE() AND a.status != 'concluida' AND u.status = 'ativo'";
     
     if (filtros?.departamentoId) {
       whereClause += ` AND u.departamentoId = ${filtros.departamentoId}`;
@@ -2582,7 +2584,7 @@ export async function getAcoesProximasVencer(filtros?: {
 
   try {
     const dias = filtros?.diasAntecedencia || 7;
-    let whereClause = `WHERE a.prazo >= CURDATE() AND a.prazo <= DATE_ADD(CURDATE(), INTERVAL ${dias} DAY) AND a.status != 'concluida'`;
+    let whereClause = `WHERE a.prazo >= CURDATE() AND a.prazo <= DATE_ADD(CURDATE(), INTERVAL ${dias} DAY) AND a.status != 'concluida' AND u.status = 'ativo'`;
     
     if (filtros?.departamentoId) {
       whereClause += ` AND u.departamentoId = ${filtros.departamentoId}`;
@@ -2650,7 +2652,7 @@ export async function getRelatorioAcoesVencidas(filtros?: {
   if (!db) throw new Error("Database not available");
 
   try {
-    let whereClause = "WHERE a.prazo < CURDATE() AND a.status != 'concluida'";
+    let whereClause = "WHERE a.prazo < CURDATE() AND a.status != 'concluida' AND u.status = 'ativo'";
     
     if (filtros?.departamentoId) {
       whereClause += ` AND u.departamentoId = ${filtros.departamentoId}`;

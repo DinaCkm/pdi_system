@@ -1,0 +1,90 @@
+{
+  "query": "SELECT cpf, name FROM users WHERE cpf IS NOT NULL LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT cpf, name FROM users WHERE cpf IS NOT NULL LIMIT 20;",
+  "rows": [
+    {
+      "cpf": "00000000000",
+      "name": "Equipe CKM Talents"
+    },
+    {
+      "cpf": "01547689102",
+      "name": "EDVALDO PEREIRA LIMA JÚNIOR"
+    },
+    {
+      "cpf": "76727025134",
+      "name": "AMAGGELDO BARBOSA"
+    },
+    {
+      "cpf": "00658585142",
+      "name": "ALDENI BATISTA TORRES"
+    },
+    {
+      "cpf": "01479169170",
+      "name": "MARCUS VINICIUS VIEIRA QUEIROZ"
+    },
+    {
+      "cpf": "84781971172",
+      "name": "MILLENA PEREIRA LIMA RODRIGUES"
+    },
+    {
+      "cpf": "97641227104",
+      "name": "ANTONIO LOUÇA CURCINO"
+    },
+    {
+      "cpf": "02242849166",
+      "name": "PAULA DOS REIS COELHO ALENCAR SOUSA"
+    },
+    {
+      "cpf": "01056384123",
+      "name": "RENATA MOURA ALVES SIMAS"
+    },
+    {
+      "cpf": "06668878610",
+      "name": "BRUNO MARTINS VIEIRA"
+    },
+    {
+      "cpf": "82760233391",
+      "name": "ANA PAULA CUNHA SOARES"
+    },
+    {
+      "cpf": "02224365144",
+      "name": "JACKELINE DE SOUZA LIMA"
+    },
+    {
+      "cpf": "01206149361",
+      "name": "ELIWANIA DOS SANTOS SILVA"
+    },
+    {
+      "cpf": "00706433181",
+      "name": "PEDRO JUNIOR DA ROCHA SILVA"
+    },
+    {
+      "cpf": "90944267149",
+      "name": "ANDREIA RODRIGUES FACUNDES"
+    },
+    {
+      "cpf": "48483389134",
+      "name": "VERA LUCIA TEODORO BRAGA"
+    },
+    {
+      "cpf": "38906210159",
+      "name": "NEMIAS GOMES"
+    },
+    {
+      "cpf": "00792361113",
+      "name": "GABRIELA TOMASI"
+    },
+    {
+      "cpf": "81183500106",
+      "name": "GILZANE PEREIRA AMARAL"
+    },
+    {
+      "cpf": "88020673253",
+      "name": "LEONARDO CAMPELO LEITE GUEDES"
+    }
+  ],
+  "messages": [],
+  "stdout": "cpf\tname\n00000000000\tEquipe CKM Talents\n01547689102\tEDVALDO PEREIRA LIMA JÚNIOR\n76727025134\tAMAGGELDO BARBOSA\n00658585142\tALDENI BATISTA TORRES\n01479169170\tMARCUS VINICIUS VIEIRA QUEIROZ\n84781971172\tMILLENA PEREIRA LIMA RODRIGUES\n97641227104\tANTONIO LOUÇA CURCINO\n02242849166\tPAULA DOS REIS COELHO ALENCAR SOUSA\n01056384123\tRENATA MOURA ALVES SIMAS\n06668878610\tBRUNO MARTINS VIEIRA\n82760233391\tANA PAULA CUNHA SOARES\n02224365144\tJACKELINE DE SOUZA LIMA\n01206149361\tELIWANIA DOS SANTOS SILVA\n00706433181\tPEDRO JUNIOR DA ROCHA SILVA\n90944267149\tANDREIA RODRIGUES FACUNDES\n48483389134\tVERA LUCIA TEODORO BRAGA\n38906210159\tNEMIAS GOMES\n00792361113\tGABRIELA TOMASI\n81183500106\tGILZANE PEREIRA AMARAL\n88020673253\tLEONARDO CAMPELO LEITE GUEDES\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

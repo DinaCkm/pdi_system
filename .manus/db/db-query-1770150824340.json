@@ -1,0 +1,142 @@
+{
+  "query": "SELECT nome FROM competencias_macros ORDER BY nome;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT nome FROM competencias_macros ORDER BY nome;",
+  "rows": [
+    {
+      "nome": "COMPORTAMENTAL - Adaptabilidade, Flexibilidade e Resiliência"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Atendimento e Relacionamento com o Cliente"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Comunicação"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Desenvolvimento de Pessoas, Carreira e Sucessão"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Estratégia, Visão Sistêmica e Indicadores"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Ética, Integridade e Responsabilidade"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Gestão de Equipes e Clima Organizacional"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Gestão de Projetos e Processos"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Gestão do Tempo, Organização e Disciplina"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Governança, Controles Internos e Compliance"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Inovação, Criatividade e Visão de Futuro"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Integração Organizacional e Trabalho Interáreas"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Inteligência Emocional e Autoconhecimento"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Liderança e Gestão de Pessoas"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Planejamento, Foco e Resultados"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Presença Executiva e Postura Profissional"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Protagonismo, Autogestão e Responsabilidade Profissional"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Relacionamento Interpessoal"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Resolução de Problemas e Melhoria Contínua"
+    },
+    {
+      "nome": "COMPORTAMENTAL-Tomada de Decisão e Julgamento Técnico"
+    },
+    {
+      "nome": "TÉCNICA-Análise Técnica, Pareceres e Tomada de Decisão Técnica"
+    },
+    {
+      "nome": "TÉCNICA-Auditoria Interna e Prestação de Contas"
+    },
+    {
+      "nome": "TÉCNICA-Compras, Licitações, Facilities e Gestão Contratual"
+    },
+    {
+      "nome": "TÉCNICA-Conhecimentos Práticos e Acadêmicos em Marketing"
+    },
+    {
+      "nome": "TÉCNICA-Contratação de Obras e Serviços de Engenharia"
+    },
+    {
+      "nome": "TÉCNICA-Desenvolvimento e Utilização de Ferramentas de Apoio à Gestão"
+    },
+    {
+      "nome": "TÉCNICA-Execução Técnica, Qualidade e Conformidade da Entrega"
+    },
+    {
+      "nome": "TÉCNICA-Finanças, Orçamento e Contabilidade Pública"
+    },
+    {
+      "nome": "TÉCNICA-Gestão Administrativa e Processos de Apoio"
+    },
+    {
+      "nome": "TÉCNICA-Gestão Documental e Memória Institucional"
+    },
+    {
+      "nome": "TÉCNICA-Gestão Orçamentária e Financeira"
+    },
+    {
+      "nome": "TÉCNICA-Gestão Patrimonial e Controle de Bens"
+    },
+    {
+      "nome": "TÉCNICA-Governança de Dados, Informação e Uso de Sistemas Corporativos"
+    },
+    {
+      "nome": "TÉCNICA-Legislação, Normas e Conformidade Jurídica"
+    },
+    {
+      "nome": "TÉCNICA-Marketing Institucional e Inteligência de Mercado"
+    },
+    {
+      "nome": "TÉCNICA-Metodologias e Procedimentos Técnicos da Função"
+    },
+    {
+      "nome": "TÉCNICA-Normativos Técnicos e Regulamentações da Área"
+    },
+    {
+      "nome": "TÉCNICA-Ouvidoria e Relacionamento Institucional"
+    },
+    {
+      "nome": "TÉCNICA-Políticas Públicas e Desenvolvimento Territorial"
+    },
+    {
+      "nome": "TÉCNICA-Processos Técnicos da Área / Função"
+    },
+    {
+      "nome": "TÉCNICA-Sistemas e Tecnologias Especializadas da Área"
+    },
+    {
+      "nome": "TÉCNICA-Tecnologia, Dados e Transformação Digital"
+    },
+    {
+      "nome": "TÉCNICA-Tributária"
+    },
+    {
+      "nome": "TÉCNICA-Vendas, Negociação e Soluções Comerciais"
+    }
+  ],
+  "messages": [],
+  "stdout": "nome\nCOMPORTAMENTAL - Adaptabilidade, Flexibilidade e Resiliência\nCOMPORTAMENTAL-Atendimento e Relacionamento com o Cliente\nCOMPORTAMENTAL-Comunicação\nCOMPORTAMENTAL-Desenvolvimento de Pessoas, Carreira e Sucessão\nCOMPORTAMENTAL-Estratégia, Visão Sistêmica e Indicadores\nCOMPORTAMENTAL-Ética, Integridade e Responsabilidade\nCOMPORTAMENTAL-Gestão de Equipes e Clima Organizacional\nCOMPORTAMENTAL-Gestão de Projetos e Processos\nCOMPORTAMENTAL-Gestão do Tempo, Organização e Disciplina\nCOMPORTAMENTAL-Governança, Controles Internos e Compliance\nCOMPORTAMENTAL-Inovação, Criatividade e Visão de Futuro\nCOMPORTAMENTAL-Integração Organizacional e Trabalho Interáreas\nCOMPORTAMENTAL-Inteligência Emocional e Autoconhecimento\nCOMPORTAMENTAL-Liderança e Gestão de Pessoas\nCOMPORTAMENTAL-Planejamento, Foco e Resultados\nCOMPORTAMENTAL-Presença Executiva e Postura Profissional\nCOMPORTAMENTAL-Protagonismo, Autogestão e Responsabilidade Profissional\nCOMPORTAMENTAL-Relacionamento Interpessoal\nCOMPORTAMENTAL-Resolução de Problemas e Melhoria Contínua\nCOMPORTAMENTAL-Tomada de Decisão e Julgamento Técnico\nTÉCNICA-Análise Técnica, Pareceres e Tomada de Decisão Técnica\nTÉCNICA-Auditoria Interna e Prestação de Contas\nTÉCNICA-Compras, Licitações, Facilities e Gestão Contratual\nTÉCNICA-Conhecimentos Práticos e Acadêmicos em Marketing\nTÉCNICA-Contratação de Obras e Serviços de Engenharia\nTÉCNICA-Desenvolvimento e Utilização de Ferramentas de Apoio à Gestão\nTÉCNICA-Execução Técnica, Qualidade e Conformidade da Entrega\nTÉCNICA-Finanças, Orçamento e Contabilidade Pública\nTÉCNICA-Gestão Administrativa e Processos de Apoio\nTÉCNICA-Gestão Documental e Memória Institucional\nTÉCNICA-Gestão Orçamentária e Financeira\nTÉCNICA-Gestão Patrimonial e Controle de Bens\nTÉCNICA-Governança de Dados, Informação e Uso de Sistemas Corporativos\nTÉCNICA-Legislação, Normas e Conformidade Jurídica\nTÉCNICA-Marketing Institucional e Inteligência de Mercado\nTÉCNICA-Metodologias e Procedimentos Técnicos da Função\nTÉCNICA-Normativos Técnicos e Regulamentações da Área\nTÉCNICA-Ouvidoria e Relacionamento Institucional\nTÉCNICA-Políticas Públicas e Desenvolvimento Territorial\nTÉCNICA-Processos Técnicos da Área / Função\nTÉCNICA-Sistemas e Tecnologias Especializadas da Área\nTÉCNICA-Tecnologia, Dados e Transformação Digital\nTÉCNICA-Tributária\nTÉCNICA-Vendas, Negociação e Soluções Comerciais\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}

@@ -1,0 +1,76 @@
+{
+  "query": "SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE();",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT table_name FROM information_schema.tables WHERE table_schema = DATABASE();",
+  "rows": [
+    {
+      "table_name": "__drizzle_migrations"
+    },
+    {
+      "table_name": "users"
+    },
+    {
+      "table_name": "departamentos"
+    },
+    {
+      "table_name": "adjustment_comments"
+    },
+    {
+      "table_name": "pdis"
+    },
+    {
+      "table_name": "evidence_files"
+    },
+    {
+      "table_name": "evidence_texts"
+    },
+    {
+      "table_name": "evidences"
+    },
+    {
+      "table_name": "notifications"
+    },
+    {
+      "table_name": "user_department_roles"
+    },
+    {
+      "table_name": "blocos"
+    },
+    {
+      "table_name": "macros"
+    },
+    {
+      "table_name": "micros"
+    },
+    {
+      "table_name": "acoes_historico"
+    },
+    {
+      "table_name": "actions"
+    },
+    {
+      "table_name": "adjustment_requests"
+    },
+    {
+      "table_name": "audit_log"
+    },
+    {
+      "table_name": "ciclos"
+    },
+    {
+      "table_name": "competencias_macros"
+    },
+    {
+      "table_name": "pdi_validacoes"
+    },
+    {
+      "table_name": "backups"
+    },
+    {
+      "table_name": "deletion_audit_log"
+    }
+  ],
+  "messages": [],
+  "stdout": "table_name\n__drizzle_migrations\nusers\ndepartamentos\nadjustment_comments\npdis\nevidence_files\nevidence_texts\nevidences\nnotifications\nuser_department_roles\nblocos\nmacros\nmicros\nacoes_historico\nactions\nadjustment_requests\naudit_log\nciclos\ncompetencias_macros\npdi_validacoes\nbackups\ndeletion_audit_log\n",
+  "stderr": "",
+  "execution_time_ms": 80
+}

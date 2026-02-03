@@ -1,0 +1,17 @@
+{
+  "query": "SELECT u.id, u.name, u.cpf, p.id as pdi_id, c.nome as ciclo FROM users u LEFT JOIN pdis p ON p.colaboradorId = u.id LEFT JOIN ciclos c ON p.cicloId = c.id WHERE u.name LIKE '%LEONARDO%' OR u.cpf = '88020673253';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT u.id, u.name, u.cpf, p.id as pdi_id, c.nome as ciclo FROM users u LEFT JOIN pdis p ON p.colaboradorId = u.id LEFT JOIN ciclos c ON p.cicloId = c.id WHERE u.name LIKE '%LEONARDO%' OR u.cpf = '88020673253';",
+  "rows": [
+    {
+      "id": "1260019",
+      "name": "LEONARDO CAMPELO LEITE GUEDES",
+      "cpf": "88020673253",
+      "pdi_id": "1020100",
+      "ciclo": "2026/1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tcpf\tpdi_id\tciclo\n1260019\tLEONARDO CAMPELO LEITE GUEDES\t88020673253\t1020100\t2026/1\n",
+  "stderr": "",
+  "execution_time_ms": 61
+}

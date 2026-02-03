@@ -1,0 +1,26 @@
+{
+  "query": "SHOW CREATE TABLE pdis;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SHOW CREATE TABLE pdis;",
+  "rows": [
+    {
+      "Table": "pdis",
+      "Create Table": "CREATE TABLE `pdis` ("
+    }
+  ],
+  "messages": [
+    "  `id` int(11) NOT NULL AUTO_INCREMENT,",
+    "  `colaboradorId` int(11) NOT NULL,",
+    "  `cicloId` int(11) NOT NULL,",
+    "  `titulo` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,",
+    "  `objetivoGeral` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,",
+    "  `status` enum('em_andamento','concluido','cancelado') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'em_andamento',",
+    "  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,",
+    "  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,",
+    "  `createdBy` int(11) NOT NULL,",
+    "  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */",
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1080001"
+  ],
+  "stdout": "Table\tCreate Table\npdis\tCREATE TABLE `pdis` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `colaboradorId` int(11) NOT NULL,\n  `cicloId` int(11) NOT NULL,\n  `titulo` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `objetivoGeral` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `status` enum('em_andamento','concluido','cancelado') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'em_andamento',\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  `createdBy` int(11) NOT NULL,\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1080001\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}
