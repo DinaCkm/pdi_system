@@ -450,7 +450,9 @@ export async function getAllPDIs() {
       // Buscar contagem real de ações da tabela actions
       const pdiActions = await db.select().from(actions).where(eq(actions.pdiId, pdi.id));
       const actionCount = pdiActions.length;
-      const completedCount = pdiActions.filter(a => a.status === 'concluida').length;
+      const completedCount = pdiActions.filter((a: any) => a.status === 'concluida').length;
+      const inProgressCount = pdiActions.filter((a: any) => a.status === 'em_andamento' || a.status === 'aguardando_avaliacao').length;
+      const pendingCount = pdiActions.filter((a: any) => a.status === 'nao_iniciada' || a.status === 'atrasada').length;
       const progressPercentage = actionCount > 0 ? Math.round((completedCount / actionCount) * 100) : 0;
       
       // Buscar validação do líder na tabela pdi_validacoes
@@ -476,6 +478,8 @@ export async function getAllPDIs() {
         // Campos calculados em tempo real
         actionCount,
         completedCount,
+        inProgressCount,
+        pendingCount,
         progressPercentage,
         // Campo de validação do líder
         validadoEm: validacao?.aprovadoEm || null,
