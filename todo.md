@@ -2684,3 +2684,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Investigar por que o modal mostra 0 ações quando o card mostra 2 total
 - [x] Verificar se as ações estão vinculadas corretamente ao PDI no banco
 - [x] Corrigir lógica de contagem no modal de detalhes - adicionado inProgressCount e pendingCount
+
+
+## Melhoria: Campo de Busca para Seleção de Colaborador (04 FEV 2026)
+- [x] Implementar campo de busca com filtro em tempo real para colaboradores
+- [x] Permitir digitar nome para filtrar lista de colaboradores
+- [x] Aplicar no formulário de Nova Ação

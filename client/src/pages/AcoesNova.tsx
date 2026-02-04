@@ -23,10 +23,32 @@ export function AcoesNova() {
   const [macroSearchTerm, setMacroSearchTerm] = useState('');
   const [macroDropdownOpen, setMacroDropdownOpen] = useState(false);
   const macroDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Estado para busca de PDI/colaborador
+  const [pdiSearchTerm, setPdiSearchTerm] = useState('');
+  const [pdiDropdownOpen, setPdiDropdownOpen] = useState(false);
+  const pdiDropdownRef = useRef<HTMLDivElement>(null);
 
   // Buscando dados
   const { data: pdis = [], isLoading: loadingPdis } = trpc.pdis.list.useQuery();
   const { data: macros = [], isLoading: loadingMacros } = trpc.competencias.listAllMacros.useQuery();
+  
+  // Filtrar PDIs baseado na busca
+  const filteredPdis = useMemo(() => {
+    if (!pdiSearchTerm.trim()) return pdis;
+    const term = pdiSearchTerm.toLowerCase();
+    return pdis.filter((pdi: any) => 
+      pdi.colaboradorNome?.toLowerCase().includes(term) ||
+      pdi.titulo?.toLowerCase().includes(term)
+    );
+  }, [pdis, pdiSearchTerm]);
+  
+  // Obter nome do PDI/colaborador selecionado
+  const selectedPdiInfo = useMemo(() => {
+    if (!formData.pdiId) return null;
+    const pdi = pdis.find((p: any) => String(p.pdiId) === formData.pdiId);
+    return pdi ? { nome: pdi.colaboradorNome, titulo: pdi.titulo } : null;
+  }, [formData.pdiId, pdis]);
   
   // Filtrar macros baseado na busca
   const filteredMacros = useMemo(() => {
@@ -44,11 +66,14 @@ export function AcoesNova() {
     return macro ? macro.nome : '';
   }, [formData.macroId, macros]);
   
-  // Fechar dropdown ao clicar fora
+  // Fechar dropdowns ao clicar fora
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (macroDropdownRef.current && !macroDropdownRef.current.contains(event.target as Node)) {
         setMacroDropdownOpen(false);
+      }
+      if (pdiDropdownRef.current && !pdiDropdownRef.current.contains(event.target as Node)) {
+        setPdiDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -100,6 +125,13 @@ export function AcoesNova() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setErrors(prev => ({ ...prev, [name]: '', submit: '' }));
+  };
+  
+  const handleSelectPdi = (pdiId: string) => {
+    setFormData(prev => ({ ...prev, pdiId }));
+    setPdiSearchTerm('');
+    setPdiDropdownOpen(false);
+    setErrors(prev => ({ ...prev, pdiId: '', submit: '' }));
   };
   
   const handleSelectMacro = (macroId: string, macroNome: string) => {
@@ -188,27 +220,184 @@ export function AcoesNova() {
 
         <form onSubmit={handleSubmit} style={{ backgroundColor: 'white', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           
-          {/* 1. SELEÇÃO DE PDI */}
+          {/* 1. SELEÇÃO DE PDI COM BUSCA */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label htmlFor="pdiId" style={{ fontWeight: 'bold', color: '#2563eb' }}>1. Vincular ao PDI de quem? *</label>
-            {loadingPdis ? (
-              <span style={{ fontSize: '14px', color: '#666' }}>Carregando lista de colaboradores...</span>
-            ) : (
-              <select
-                id="pdiId"
-                name="pdiId"
-                value={formData.pdiId}
-                onChange={handleChange}
-                style={{ width: '100%', padding: '10px', border: errors.pdiId ? '2px solid red' : '1px solid #ccc', borderRadius: '4px', fontSize: '15px' }}
+            <label style={{ fontWeight: 'bold', color: '#2563eb' }}>1. Vincular ao PDI de quem? *</label>
+            <div ref={pdiDropdownRef} style={{ position: 'relative' }}>
+              {/* Campo de seleção/busca */}
+              <div
+                onClick={() => setPdiDropdownOpen(!pdiDropdownOpen)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: errors.pdiId ? '2px solid red' : pdiDropdownOpen ? '2px solid #2563eb' : '1px solid #ccc',
+                  borderRadius: '4px',
+                  backgroundColor: 'white',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  minHeight: '42px'
+                }}
               >
-                <option value="">-- Clique para selecionar --</option>
-                {pdis.map((pdi: any) => (
-                  <option key={pdi.pdiId} value={pdi.pdiId}>
-                    {pdi.colaboradorNome} - {pdi.titulo}
-                  </option>
-                ))}
-              </select>
-            )}
+                {formData.pdiId && selectedPdiInfo ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                    <Check size={16} style={{ color: '#22c55e', flexShrink: 0 }} />
+                    <span style={{ fontSize: '14px', color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {selectedPdiInfo.nome} - {selectedPdiInfo.titulo}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFormData(prev => ({ ...prev, pdiId: '' }));
+                      }}
+                      style={{ 
+                        marginLeft: 'auto', 
+                        background: 'none', 
+                        border: 'none', 
+                        cursor: 'pointer', 
+                        padding: '2px',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <X size={16} style={{ color: '#9ca3af' }} />
+                    </button>
+                  </div>
+                ) : (
+                  <span style={{ color: '#9ca3af', fontSize: '14px' }}>Clique para buscar colaborador...</span>
+                )}
+                <ChevronDown size={18} style={{ color: '#6b7280', flexShrink: 0, transform: pdiDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              </div>
+              
+              {/* Dropdown com busca */}
+              {pdiDropdownOpen && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  marginTop: '4px',
+                  backgroundColor: 'white',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                  zIndex: 50,
+                  maxHeight: '350px',
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}>
+                  {/* Campo de busca */}
+                  <div style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>
+                    <div style={{ position: 'relative' }}>
+                      <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                      <input
+                        type="text"
+                        placeholder="Digite o nome do colaborador..."
+                        value={pdiSearchTerm}
+                        onChange={(e) => setPdiSearchTerm(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        autoFocus
+                        style={{
+                          width: '100%',
+                          padding: '10px 10px 10px 38px',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          outline: 'none'
+                        }}
+                      />
+                      {pdiSearchTerm && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPdiSearchTerm('');
+                          }}
+                          style={{
+                            position: 'absolute',
+                            right: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '2px'
+                          }}
+                        >
+                          <X size={16} style={{ color: '#9ca3af' }} />
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
+                      {filteredPdis.length} colaborador(es) encontrado(s)
+                    </div>
+                  </div>
+                  
+                  {/* Lista de opções */}
+                  <div style={{ overflowY: 'auto', maxHeight: '250px' }}>
+                    {loadingPdis ? (
+                      <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
+                        <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', margin: '0 auto' }} />
+                        <span style={{ marginTop: '8px', display: 'block' }}>Carregando...</span>
+                      </div>
+                    ) : filteredPdis.length === 0 ? (
+                      <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
+                        Nenhum colaborador encontrado para "{pdiSearchTerm}"
+                      </div>
+                    ) : (
+                      filteredPdis.map((pdi: any) => (
+                        <div
+                          key={pdi.pdiId}
+                          onClick={() => handleSelectPdi(String(pdi.pdiId))}
+                          style={{
+                            padding: '12px 16px',
+                            cursor: 'pointer',
+                            backgroundColor: formData.pdiId === String(pdi.pdiId) ? '#eff6ff' : 'white',
+                            borderLeft: formData.pdiId === String(pdi.pdiId) ? '3px solid #2563eb' : '3px solid transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            transition: 'background-color 0.15s'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (formData.pdiId !== String(pdi.pdiId)) {
+                              e.currentTarget.style.backgroundColor = '#f9fafb';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (formData.pdiId !== String(pdi.pdiId)) {
+                              e.currentTarget.style.backgroundColor = 'white';
+                            }
+                          }}
+                        >
+                          {formData.pdiId === String(pdi.pdiId) && (
+                            <Check size={16} style={{ color: '#2563eb', flexShrink: 0 }} />
+                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ 
+                              fontSize: '14px', 
+                              color: formData.pdiId === String(pdi.pdiId) ? '#2563eb' : '#374151',
+                              fontWeight: formData.pdiId === String(pdi.pdiId) ? '600' : '500'
+                            }}>
+                              {pdi.colaboradorNome}
+                            </span>
+                            <span style={{ 
+                              fontSize: '12px', 
+                              color: '#6b7280'
+                            }}>
+                              {pdi.titulo}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             {errors.pdiId && <span style={{ color: 'red', fontSize: '12px' }}>{errors.pdiId}</span>}
           </div>
 
@@ -552,14 +741,6 @@ export function AcoesNova() {
           </div>
         </form>
       </div>
-
-      {/* CSS para animação de spin */}
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }
