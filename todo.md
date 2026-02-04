@@ -2671,3 +2671,10 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Correções de Dados e Filtros (04 FEV 2026)
 - [x] Usuários inativos não aparecem mais nas listagens do líder
 - [x] Status do PDI atualiza automaticamente para "Concluído" quando progresso = 100%
+
+
+## Persistência de Filtros no Painel de Ações (04 FEV 2026)
+- [x] Implementar persistência de filtros via Query Params na URL
+- [x] Filtros a persistir: Departamento, Colaborador, PDI Origem, Busca Rápida
+- [x] Manter filtros ao navegar para Visualizar/Editar e voltar
+- [x] Testar navegação com botão voltar do navegador

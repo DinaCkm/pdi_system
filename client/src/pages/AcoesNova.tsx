@@ -541,7 +541,10 @@ export function AcoesNova() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/acoes')}
+              onClick={() => {
+                const returnUrl = sessionStorage.getItem('acoes_return_url') || '/acoes';
+                navigate(returnUrl);
+              }}
               style={{ flex: 1, padding: '12px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer' }}
             >
               Cancelar

@@ -73,8 +73,11 @@ export default function AcoesDetalhes() {
   return (
     <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto', fontFamily: 'sans-serif', backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
       
-      {/* Botão Voltar */}
-      <button onClick={() => setLocation('/acoes')} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280', fontWeight: '500' }}>
+      {/* Botão Voltar - Usa URL salva com filtros */}
+      <button onClick={() => {
+        const returnUrl = sessionStorage.getItem('acoes_return_url') || '/acoes';
+        setLocation(returnUrl);
+      }} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px', border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280', fontWeight: '500' }}>
         <ArrowLeft size={18} /> Voltar para Lista
       </button>
 

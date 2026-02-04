@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT u.id, u.nome, u.email, u.cpf, u.role, u.status\nFROM users u\nWHERE u.nome LIKE '%Nemias%' OR u.nome LIKE '%nemias%' OR u.nome LIKE '%NEMIAS%';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute \nSELECT u.id, u.nome, u.email, u.cpf, u.role, u.status\nFROM users u\nWHERE u.nome LIKE '%Nemias%' OR u.nome LIKE '%nemias%' OR u.nome LIKE '%NEMIAS%';\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'u.nome' in 'where clause'"
+  ]
+}

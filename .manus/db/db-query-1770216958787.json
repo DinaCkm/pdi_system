@@ -1,0 +1,26 @@
+{
+  "query": "SELECT * FROM users WHERE name LIKE '%Nemias%' OR name LIKE '%nemias%' OR name LIKE '%NEMIAS%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT * FROM users WHERE name LIKE '%Nemias%' OR name LIKE '%nemias%' OR name LIKE '%NEMIAS%';",
+  "rows": [
+    {
+      "id": "1260016",
+      "openId": "nemias-38906210159",
+      "name": "NEMIAS GOMES",
+      "email": "nemias.gomes@to.sebrae.com.br",
+      "loginMethod": "NULL",
+      "role": "lider",
+      "createdAt": "2026-01-29 22:07:25",
+      "updatedAt": "2026-02-03 21:36:35",
+      "lastSignedIn": "2026-01-29 22:07:25",
+      "cpf": "38906210159",
+      "cargo": "GERENTE DE UNIDADE",
+      "leaderId": "1410001",
+      "status": "ativo",
+      "departamentoId": "660001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\tloginMethod\trole\tcreatedAt\tupdatedAt\tlastSignedIn\tcpf\tcargo\tleaderId\tstatus\tdepartamentoId\n1260016\tnemias-38906210159\tNEMIAS GOMES\tnemias.gomes@to.sebrae.com.br\tNULL\tlider\t2026-01-29 22:07:25\t2026-02-03 21:36:35\t2026-01-29 22:07:25\t38906210159\tGERENTE DE UNIDADE\t1410001\tativo\t660001\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

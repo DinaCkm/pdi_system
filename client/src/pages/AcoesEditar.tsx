@@ -30,7 +30,9 @@ export default function AcoesEditar() {
     onSuccess: () => {
       // Invalidar a lista para recarregar
       utils.actions.list.invalidate();
-      setTimeout(() => navigate('/acoes'), 300);
+      // Voltar para a lista com filtros preservados
+      const returnUrl = sessionStorage.getItem('acoes_return_url') || '/acoes';
+      setTimeout(() => navigate(returnUrl), 300);
     },
     onError: (error) => {
       setErrors({ submit: error.message });
@@ -272,7 +274,10 @@ export default function AcoesEditar() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/acoes')}
+              onClick={() => {
+                const returnUrl = sessionStorage.getItem('acoes_return_url') || '/acoes';
+                navigate(returnUrl);
+              }}
               style={{ 
                 flex: 1, 
                 padding: '10px 16px', 

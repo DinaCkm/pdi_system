@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Plus, Edit, Trash2, Eye, History, Building, Target, Calendar, Filter, X } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { HistoryModal } from "@/components/HistoryModal";
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -24,7 +24,8 @@ function useMacroNames(macroIds: number[]) {
 }
 
 export default function Acoes() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
+  const searchString = useSearch();
   const { user } = useAuth();
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [historyActionId, setHistoryActionId] = useState<number | null>(null);
@@ -32,12 +33,74 @@ export default function Acoes() {
   // Gerente tem acesso somente leitura
   const isReadOnly = user?.role === 'gerente';
 
-  // --- ESTADOS DOS FILTROS ---
-  const [filtroDepartamento, setFiltroDepartamento] = useState("");
-  const [filtroColaborador, setFiltroColaborador] = useState("");
-  const [filtroPDI, setFiltroPDI] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filtroSemVinculo, setFiltroSemVinculo] = useState(false);
+  // --- FUNÇÃO PARA LER QUERY PARAMS ---
+  const getQueryParams = useCallback(() => {
+    const params = new URLSearchParams(searchString);
+    return {
+      departamento: params.get('departamento') || '',
+      colaborador: params.get('colaborador') || '',
+      pdi: params.get('pdi') || '',
+      busca: params.get('busca') || '',
+      semVinculo: params.get('semVinculo') === 'true',
+    };
+  }, [searchString]);
+
+  // --- ESTADOS DOS FILTROS (inicializados a partir da URL) ---
+  const initialParams = getQueryParams();
+  const [filtroDepartamento, setFiltroDepartamento] = useState(initialParams.departamento);
+  const [filtroColaborador, setFiltroColaborador] = useState(initialParams.colaborador);
+  const [filtroPDI, setFiltroPDI] = useState(initialParams.pdi);
+  const [searchTerm, setSearchTerm] = useState(initialParams.busca);
+  const [filtroSemVinculo, setFiltroSemVinculo] = useState(initialParams.semVinculo);
+
+  // --- FUNÇÃO PARA ATUALIZAR URL COM FILTROS ---
+  const updateUrlWithFilters = useCallback((filters: {
+    departamento: string;
+    colaborador: string;
+    pdi: string;
+    busca: string;
+    semVinculo: boolean;
+  }) => {
+    const params = new URLSearchParams();
+    
+    if (filters.departamento) params.set('departamento', filters.departamento);
+    if (filters.colaborador) params.set('colaborador', filters.colaborador);
+    if (filters.pdi) params.set('pdi', filters.pdi);
+    if (filters.busca) params.set('busca', filters.busca);
+    if (filters.semVinculo) params.set('semVinculo', 'true');
+    
+    const queryString = params.toString();
+    const newUrl = queryString ? `/acoes?${queryString}` : '/acoes';
+    
+    // Usar replace para não criar entrada no histórico a cada digitação
+    window.history.replaceState(null, '', newUrl);
+  }, []);
+
+  // --- SINCRONIZAR FILTROS COM URL ---
+  useEffect(() => {
+    updateUrlWithFilters({
+      departamento: filtroDepartamento,
+      colaborador: filtroColaborador,
+      pdi: filtroPDI,
+      busca: searchTerm,
+      semVinculo: filtroSemVinculo,
+    });
+  }, [filtroDepartamento, filtroColaborador, filtroPDI, searchTerm, filtroSemVinculo, updateUrlWithFilters]);
+
+  // --- RESTAURAR FILTROS DA URL AO VOLTAR (popstate) ---
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      setFiltroDepartamento(params.get('departamento') || '');
+      setFiltroColaborador(params.get('colaborador') || '');
+      setFiltroPDI(params.get('pdi') || '');
+      setSearchTerm(params.get('busca') || '');
+      setFiltroSemVinculo(params.get('semVinculo') === 'true');
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // 1. BUSCA TURBO (LIMIT 1000)
   const { data: acoes = [], isLoading, refetch } = trpc.actions.list.useQuery({ limit: 1000 });
@@ -154,6 +217,23 @@ export default function Acoes() {
     setFiltroSemVinculo(false);
   };
 
+  // --- NAVEGAÇÃO COM FILTROS PRESERVADOS ---
+  const buildReturnUrl = () => {
+    const params = new URLSearchParams();
+    if (filtroDepartamento) params.set('departamento', filtroDepartamento);
+    if (filtroColaborador) params.set('colaborador', filtroColaborador);
+    if (filtroPDI) params.set('pdi', filtroPDI);
+    if (searchTerm) params.set('busca', searchTerm);
+    if (filtroSemVinculo) params.set('semVinculo', 'true');
+    return params.toString() ? `/acoes?${params.toString()}` : '/acoes';
+  };
+
+  const navigateToAction = (path: string) => {
+    // Salvar URL de retorno no sessionStorage
+    sessionStorage.setItem('acoes_return_url', buildReturnUrl());
+    navigate(path);
+  };
+
   return (
     <div style={{ padding: "24px", maxWidth: "1280px", margin: "0 auto", backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
       
@@ -169,7 +249,7 @@ export default function Acoes() {
         </div>
         {!isReadOnly && (
           <Button
-            onClick={() => navigate("/acoes/nova")}
+            onClick={() => navigateToAction("/acoes/nova")}
             style={{ backgroundColor: "#2563eb", color: "white", display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px" }}
           >
             <Plus size={20} /> Nova Ação
@@ -260,7 +340,7 @@ export default function Acoes() {
 
       {/* LISTAGEM */}
       {isLoading ? (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "60px", color: "#6b7280" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px", color: "#6b7280" }}>
           <Loader2 size={40} className="animate-spin text-blue-600" />
           <p style={{ marginTop: "10px" }}>Carregando dados...</p>
         </div>
@@ -385,7 +465,7 @@ export default function Acoes() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => navigate(`/acoes/${acao.id}`)}
+                        onClick={() => navigateToAction(`/acoes/${acao.id}`)}
                         style={{ flex: 1, backgroundColor: "white" }}
                       >
                         <Eye size={16} className="mr-2" /> Visualizar
@@ -395,7 +475,7 @@ export default function Acoes() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          onClick={() => navigate(`/acoes/editar/${acao.id}`)} 
+                          onClick={() => navigateToAction(`/acoes/editar/${acao.id}`)} 
                           style={{ flex: 1, backgroundColor: "white" }}
                         >
                           <Edit size={16} className="mr-2" /> Editar
