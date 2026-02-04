@@ -1,4 +1,4 @@
-import { router, protectedProcedure } from "../_core/customTrpc";
+import { router, protectedProcedure, adminProcedure } from "../_core/customTrpc";
 import { z } from "zod";
 import { eq, and, sql, desc, count } from "drizzle-orm";
 import { pdis, actions, users, departamentos } from "../../drizzle/schema";
@@ -404,4 +404,13 @@ export const dashboardRouter = router({
         return stats;
       }
     }),
+
+  /**
+   * Obter análise de liderança
+   * Retorna ranking de líderes com métricas de engajamento pessoal e da equipe
+   */
+  getLeadershipAnalysis: adminProcedure.query(async () => {
+    const { getLeadershipAnalysis } = await import("../db");
+    return await getLeadershipAnalysis();
+  }),
 });

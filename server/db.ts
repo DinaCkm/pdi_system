@@ -2779,3 +2779,272 @@ export async function getRelatorioAcoesVencidas(filtros?: {
     throw error;
   }
 }
+
+
+// ============= FUNÇÕES DE ANÁLISE DE LIDERANÇA =============
+
+export async function getLeadershipAnalysis() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Buscar todos os líderes ativos (usuários que têm subordinados)
+    const [lideres]: any = await db.execute(sql`
+      SELECT DISTINCT 
+        l.id as liderId,
+        l.name as liderNome,
+        l.email as liderEmail,
+        d.id as departamentoId,
+        d.nome as departamentoNome
+      FROM users l
+      INNER JOIN users subordinado ON subordinado.leaderId = l.id
+      LEFT JOIN departamentos d ON l.departamentoId = d.id
+      WHERE l.status = 'ativo'
+      ORDER BY l.name
+    `);
+
+    const resultado = await Promise.all(
+      (lideres || []).map(async (lider: any) => {
+        // Buscar PDI do líder (como colaborador)
+        const [pdiLider]: any = await db.execute(sql`
+          SELECT p.id as pdiId
+          FROM pdis p
+          WHERE p.colaboradorId = ${lider.liderId}
+          AND p.status != 'cancelado'
+          ORDER BY p.createdAt DESC
+          LIMIT 1
+        `);
+
+        // Buscar ações do líder (suas próprias ações)
+        let acoesLider: any[] = [];
+        let liderCompletedCount = 0;
+        let liderTotalCount = 0;
+        
+        if (pdiLider && pdiLider.length > 0) {
+          const [acoes]: any = await db.execute(sql`
+            SELECT a.id, a.status, a.macroId
+            FROM actions a
+            WHERE a.pdiId = ${pdiLider[0].pdiId}
+          `);
+          acoesLider = acoes || [];
+          liderTotalCount = acoesLider.length;
+          liderCompletedCount = acoesLider.filter((a: any) => a.status === 'concluida').length;
+        }
+
+        // Buscar subordinados ativos do líder
+        const [subordinados]: any = await db.execute(sql`
+          SELECT u.id, u.name, u.email
+          FROM users u
+          WHERE u.leaderId = ${lider.liderId}
+          AND u.status = 'ativo'
+        `);
+
+        // Buscar ações de toda a equipe
+        const [acoesEquipe]: any = await db.execute(sql`
+          SELECT 
+            a.id, 
+            a.status, 
+            a.macroId,
+            p.colaboradorId
+          FROM actions a
+          INNER JOIN pdis p ON a.pdiId = p.id
+          INNER JOIN users u ON p.colaboradorId = u.id
+          WHERE u.leaderId = ${lider.liderId}
+          AND u.status = 'ativo'
+          AND p.status != 'cancelado'
+        `);
+
+        const equipeTotalCount = (acoesEquipe || []).length;
+        const equipeCompletedCount = (acoesEquipe || []).filter((a: any) => a.status === 'concluida').length;
+
+        // Calcular taxa de conclusão
+        const liderTaxaConclusao = liderTotalCount > 0 
+          ? Math.round((liderCompletedCount / liderTotalCount) * 100) 
+          : 0;
+        const equipeTaxaConclusao = equipeTotalCount > 0 
+          ? Math.round((equipeCompletedCount / equipeTotalCount) * 100) 
+          : 0;
+
+        // Buscar competências focais do líder
+        const competenciasLider: Record<number, number> = {};
+        for (const acao of acoesLider) {
+          if (acao.macroId) {
+            competenciasLider[acao.macroId] = (competenciasLider[acao.macroId] || 0) + 1;
+          }
+        }
+
+        // Buscar competências focais da equipe
+        const competenciasEquipe: Record<number, number> = {};
+        const competenciasEquipeConcluidas: Record<number, number> = {};
+        for (const acao of (acoesEquipe || [])) {
+          if (acao.macroId) {
+            competenciasEquipe[acao.macroId] = (competenciasEquipe[acao.macroId] || 0) + 1;
+            if (acao.status === 'concluida') {
+              competenciasEquipeConcluidas[acao.macroId] = (competenciasEquipeConcluidas[acao.macroId] || 0) + 1;
+            }
+          }
+        }
+
+        // Buscar nomes das competências
+        const macroIds = Array.from(new Set([...Object.keys(competenciasLider), ...Object.keys(competenciasEquipe)])).map(Number);
+        let macrosMap: Record<number, string> = {};
+        
+        if (macroIds.length > 0) {
+          const macros = await db
+            .select({ id: competenciasMacros.id, nome: competenciasMacros.nome })
+            .from(competenciasMacros)
+            .where(inArray(competenciasMacros.id, macroIds));
+          
+          macrosMap = macros.reduce((acc: Record<number, string>, m: any) => {
+            acc[m.id] = m.nome;
+            return acc;
+          }, {});
+        }
+
+        // Formatar competências do líder
+        const competenciasLiderFormatadas = Object.entries(competenciasLider)
+          .map(([macroId, count]) => ({
+            macroId: Number(macroId),
+            nome: macrosMap[Number(macroId)] || 'Desconhecida',
+            quantidade: count as number,
+          }))
+          .sort((a, b) => b.quantidade - a.quantidade)
+          .slice(0, 5);
+
+        // Formatar competências da equipe com taxa de conclusão
+        const competenciasEquipeFormatadas = Object.entries(competenciasEquipe)
+          .map(([macroId, count]) => {
+            const concluidas = competenciasEquipeConcluidas[Number(macroId)] || 0;
+            return {
+              macroId: Number(macroId),
+              nome: macrosMap[Number(macroId)] || 'Desconhecida',
+              quantidade: count as number,
+              concluidas,
+              taxaConclusao: Math.round((concluidas / (count as number)) * 100),
+            };
+          })
+          .sort((a, b) => b.quantidade - a.quantidade)
+          .slice(0, 5);
+
+        // Buscar detalhes dos colaboradores da equipe
+        const colaboradoresDetalhes = await Promise.all(
+          (subordinados || []).map(async (sub: any) => {
+            const [pdiSub]: any = await db.execute(sql`
+              SELECT p.id as pdiId
+              FROM pdis p
+              WHERE p.colaboradorId = ${sub.id}
+              AND p.status != 'cancelado'
+              ORDER BY p.createdAt DESC
+              LIMIT 1
+            `);
+
+            let subTotal = 0;
+            let subConcluidas = 0;
+
+            if (pdiSub && pdiSub.length > 0) {
+              const [acoesSub]: any = await db.execute(sql`
+                SELECT status FROM actions WHERE pdiId = ${pdiSub[0].pdiId}
+              `);
+              subTotal = (acoesSub || []).length;
+              subConcluidas = (acoesSub || []).filter((a: any) => a.status === 'concluida').length;
+            }
+
+            return {
+              id: sub.id,
+              nome: sub.name,
+              email: sub.email,
+              totalAcoes: subTotal,
+              acoesConcluidas: subConcluidas,
+              taxaConclusao: subTotal > 0 ? Math.round((subConcluidas / subTotal) * 100) : 0,
+            };
+          })
+        );
+
+        // Gerar insights automáticos
+        const insights: Array<{ tipo: string; mensagem: string }> = [];
+
+        // Insight: Competência com menor taxa de conclusão na equipe
+        const compMenorTaxa = competenciasEquipeFormatadas
+          .filter(c => c.quantidade >= 3)
+          .sort((a, b) => a.taxaConclusao - b.taxaConclusao)[0];
+        
+        if (compMenorTaxa && compMenorTaxa.taxaConclusao < 50) {
+          insights.push({
+            tipo: 'atencao',
+            mensagem: `A competência "${compMenorTaxa.nome}" possui ${compMenorTaxa.quantidade} ações na equipe com apenas ${compMenorTaxa.taxaConclusao}% de conclusão. Considere um treinamento coletivo ou mentoria focada.`,
+          });
+        }
+
+        // Insight: Competência com maior taxa de conclusão
+        const compMaiorTaxa = competenciasEquipeFormatadas
+          .filter(c => c.quantidade >= 2)
+          .sort((a, b) => b.taxaConclusao - a.taxaConclusao)[0];
+        
+        if (compMaiorTaxa && compMaiorTaxa.taxaConclusao >= 70) {
+          insights.push({
+            tipo: 'destaque',
+            mensagem: `Ponto forte: "${compMaiorTaxa.nome}" tem ${compMaiorTaxa.taxaConclusao}% de conclusão na equipe.`,
+          });
+        }
+
+        // Insight: Alinhamento líder/equipe
+        const competenciasComuns = competenciasLiderFormatadas.filter(cl => 
+          competenciasEquipeFormatadas.some(ce => ce.macroId === cl.macroId)
+        );
+        
+        if (competenciasComuns.length > 0) {
+          insights.push({
+            tipo: 'alinhamento',
+            mensagem: `Líder e equipe compartilham foco em: ${competenciasComuns.map(c => c.nome).join(', ')}.`,
+          });
+        }
+
+        // Insight: Líder com baixa conclusão, equipe alta
+        if (liderTaxaConclusao < 50 && equipeTaxaConclusao > 70) {
+          insights.push({
+            tipo: 'oportunidade',
+            mensagem: `A equipe está engajada (${equipeTaxaConclusao}%) mas o líder tem baixa conclusão pessoal (${liderTaxaConclusao}%). Verificar priorização.`,
+          });
+        }
+
+        // Insight: Líder com alta conclusão, equipe baixa
+        if (liderTaxaConclusao > 70 && equipeTaxaConclusao < 50) {
+          insights.push({
+            tipo: 'atencao',
+            mensagem: `O líder executa bem (${liderTaxaConclusao}%) mas a equipe precisa de mais acompanhamento (${equipeTaxaConclusao}%).`,
+          });
+        }
+
+        return {
+          liderId: lider.liderId,
+          liderNome: lider.liderNome,
+          liderEmail: lider.liderEmail,
+          departamentoId: lider.departamentoId,
+          departamentoNome: lider.departamentoNome || 'Sem Departamento',
+          // Métricas do líder
+          liderTotalAcoes: liderTotalCount,
+          liderAcoesConcluidas: liderCompletedCount,
+          liderTaxaConclusao,
+          // Métricas da equipe
+          equipeTotalColaboradores: (subordinados || []).length,
+          equipeTotalAcoes: equipeTotalCount,
+          equipeAcoesConcluidas: equipeCompletedCount,
+          equipeTaxaConclusao,
+          // Competências
+          competenciasLider: competenciasLiderFormatadas,
+          competenciasEquipe: competenciasEquipeFormatadas,
+          // Colaboradores
+          colaboradores: colaboradoresDetalhes.sort((a, b) => b.taxaConclusao - a.taxaConclusao),
+          // Insights
+          insights,
+        };
+      })
+    );
+
+    // Ordenar por taxa de conclusão da equipe (decrescente)
+    return resultado.sort((a: any, b: any) => b.equipeTaxaConclusao - a.equipeTaxaConclusao);
+  } catch (error) {
+    console.error('[getLeadershipAnalysis] Erro:', error);
+    throw error;
+  }
+}

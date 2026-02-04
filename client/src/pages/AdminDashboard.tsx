@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter } from "lucide-react";
+import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter, TrendingUp, ArrowRight } from "lucide-react";
+import { Link } from "wouter";
 
 export default function AdminDashboard() {
   const [selectedEvidence, setSelectedEvidence] = useState<any>(null);
@@ -246,6 +247,31 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Card de Análise de Liderança */}
+      <Link href="/analise-lideranca">
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-emerald-200 bg-gradient-to-r from-emerald-50 to-blue-50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <TrendingUp className="h-6 w-6 text-emerald-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Análise de Liderança</CardTitle>
+                  <CardDescription>Ranking de engajamento: Líder vs Equipe</CardDescription>
+                </div>
+              </div>
+              <ArrowRight className="h-5 w-5 text-emerald-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600">
+              Compare o desempenho pessoal dos líderes com suas equipes, visualize competências focais e receba insights automáticos.
+            </p>
+          </CardContent>
+        </Card>
+      </Link>
 
       <Tabs defaultValue="evidences" className="w-full">
         <TabsList className="grid w-full grid-cols-2">

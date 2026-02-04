@@ -41,6 +41,7 @@ import SolicitacoesAdmin from "./pages/SolicitacoesAdmin";
 import CentralComando from "./pages/CentralComando";
 import AdminDashboard from "./pages/AdminDashboard";
 import RelatorioAcoesVencidas from "./pages/RelatorioAcoesVencidas";
+import AnaliseLideranca from "./pages/AnaliseLideranca";
 
 function Router() {
   return (
@@ -249,6 +250,12 @@ function Router() {
       <Route path={"/admin-dashboard"}>
         <DashboardLayout>
           <AdminDashboard />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/analise-lideranca"}>
+        <DashboardLayout>
+          <AnaliseLideranca />
         </DashboardLayout>
       </Route>
       

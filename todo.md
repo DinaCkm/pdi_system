@@ -2690,3 +2690,12 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Implementar campo de busca com filtro em tempo real para colaboradores
 - [x] Permitir digitar nome para filtrar lista de colaboradores
 - [x] Aplicar no formulário de Nova Ação
+
+
+## Página de Análise de Liderança (04 FEV 2026)
+- [x] Criar endpoint no backend para buscar dados de líderes, equipes e competências
+- [x] Criar página /analise-lideranca com ranking de barras duplas (Líder vs Equipe)
+- [x] Implementar expansão com detalhes: competências focais do líder e da equipe
+- [x] Adicionar insights automáticos baseados em regras
+- [x] Incluir card resumido no Dashboard do Administrador
+- [x] Adicionar rota no menu lateral do Administrador
