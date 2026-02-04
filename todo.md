@@ -2653,3 +2653,21 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar filtro status='ativo' em getAcoesVencidas()
 - [x] Adicionar filtro status='ativo' em getAcoesProximasVencer()
 - [ ] Testar que Ana Paula não aparece mais na área do líder
+
+
+## Melhoria: Busca de competências no formulário de criação de ação
+- [ ] Identificar formulário de criação de ação
+- [ ] Implementar campo de busca/filtro para competências (Combobox com busca)
+- [ ] Testar funcionalidade de busca
+
+
+## Melhorias de UX - Formulário de Ações (04 FEV 2026)
+- [x] Adicionar campo de busca/filtro para competências no formulário de Nova Ação
+- [x] Implementar dropdown com busca em tempo real
+- [x] Adicionar contador de resultados encontrados
+- [x] Adicionar indicador visual de competência selecionada
+- [x] Adicionar botão para limpar seleção
+
+## Correções de Dados e Filtros (04 FEV 2026)
+- [x] Usuários inativos não aparecem mais nas listagens do líder
+- [x] Status do PDI atualiza automaticamente para "Concluído" quando progresso = 100%
