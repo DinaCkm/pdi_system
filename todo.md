@@ -2763,3 +2763,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Análise de Liderança - Validação de PDIs
 - [x] Adicionar informação de quantos PDIs o líder validou dos seus liderados
 - [x] Adicionar informação de quantos PDIs ainda faltam validar
+
+
+## Bug: Análise de Liderança não aparece para GERENTE
+- [x] Investigar por que o perfil GERENTE não visualiza líderes na página de Análise de Liderança
+- [x] Corrigir a query/permissões para permitir visualização pelo GERENTE (alterado de adminProcedure para adminOrGerenteProcedure)
