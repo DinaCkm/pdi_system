@@ -2737,3 +2737,10 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Atualizar HistoryModal.tsx para usar formatDateDisplay()
 - [x] Corrigir campo de competência não preenchido ao editar ação
 - [ ] CONHECIDO: Diferença de 1 dia no formulário de edição (admin) devido a timezone - não crítico, visualização do colaborador está correta
+
+
+## Menu Colapsável do Admin (CONCLUÍDO)
+- [x] Implementar seções Estratégico e Operacional como botões accordion
+- [x] Adicionar ícones de seta (ChevronDown/ChevronRight) para indicar estado
+- [x] Permitir colapsar/expandir cada seção independentemente
+- [x] Manter funcionalidade quando sidebar está colapsada
