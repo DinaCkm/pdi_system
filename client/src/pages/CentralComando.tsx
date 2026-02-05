@@ -1,5 +1,6 @@
 'use client';
 import { trpc } from "@/lib/trpc";
+import { formatDateDisplay } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -170,7 +171,7 @@ export default function CentralComando() {
                 <div style={{ textAlign: "right" }}>
                   <span style={{ fontSize: "14px", fontWeight: "700", color: "#dc2626" }}>{acao.diasVencido} dias atrasado</span>
                   <p style={{ fontSize: "11px", color: "#78716c", margin: "2px 0 0 0" }}>
-                    Prazo: {new Date(acao.prazo).toLocaleDateString('pt-BR')}
+                    Prazo: {formatDateDisplay(acao.prazo)}
                   </p>
                 </div>
               </div>

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Medal, AlertTriangle, Clock, CheckCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { formatDateDisplay } from "@/lib/dateUtils";
 
 interface DashboardStatsProps {
   userRole?: string;
@@ -255,7 +256,7 @@ export function DashboardStats({ stats, userRole, departamentoId }: DashboardSta
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-red-600 font-medium">{acao.diasVencido} dias atrasado</p>
-                      <p className="text-xs text-muted-foreground">Prazo: {new Date(acao.prazo).toLocaleDateString('pt-BR')}</p>
+                      <p className="text-xs text-muted-foreground">Prazo: {formatDateDisplay(acao.prazo)}</p>
                     </div>
                   </div>
                 ))}

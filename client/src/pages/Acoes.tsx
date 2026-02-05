@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Plus, Edit, Trash2, Eye, History, Building, Target, Calendar, Filter, X } from "lucide-react";
+import { formatDateDisplay } from "@/lib/dateUtils";
 import { useLocation, useSearch } from "wouter";
 import { HistoryModal } from "@/components/HistoryModal";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -358,7 +359,7 @@ export default function Acoes() {
             const nomeDepartamento = getDeptName(acao);
             const tituloPdi = getPdiTitle(acao);
             const competencia = acao.microcompetencia || acao.macro?.nome || acao.macroNome || (acao.macroId ? macroNames[acao.macroId] || `Competência ${acao.macroId}` : "Geral");
-            const dataFormatada = acao.prazo ? new Date(acao.prazo).toLocaleDateString('pt-BR') : "--/--/----";
+            const dataFormatada = formatDateDisplay(acao.prazo);
 
             return (
               <Card key={acao.id} style={{ border: "1px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>

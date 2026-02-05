@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { formatDateDisplay } from "@/lib/dateUtils";
 import { trpc } from "@/lib/trpc";
 import { Loader2 } from "lucide-react";
 
@@ -26,7 +27,7 @@ export function HistoryModal({ isOpen, actionId, onClose }: HistoryModalProps) {
     // Só tenta formatar se for prazo
     try {
       if (valor.includes('/')) return valor; // Já formatado
-      return new Date(valor).toLocaleDateString('pt-BR');
+      return formatDateDisplay(valor);
     } catch {
       return valor; // Se der erro, mostra o texto original
     }

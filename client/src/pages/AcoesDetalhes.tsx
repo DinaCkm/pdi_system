@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
+import { formatDateDisplay } from '@/lib/dateUtils';
 import { Loader2, CheckCircle, XCircle, FileText, Upload, Send, Mail, ArrowLeft, User, Calendar, AlignLeft, Target, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -90,7 +91,7 @@ export default function AcoesDetalhes() {
             <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#111827', margin: '0 0 8px 0', lineHeight: '1.2' }}>{acao.titulo}</h1>
             <div style={{ display: 'flex', gap: '16px', color: '#6b7280', fontSize: '14px', flexWrap: 'wrap' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><User size={14}/> {colaborador?.name || '...'}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={14}/> {acao.prazo ? new Date(acao.prazo).toLocaleDateString('pt-BR') : '--'}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={14}/> {formatDateDisplay(acao.prazo)}</span>
             </div>
           </div>
           
@@ -141,7 +142,7 @@ export default function AcoesDetalhes() {
               <div>
                 <p style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', marginBottom: '4px' }}>Prazo de Conclusão</p>
                 <p style={{ fontSize: '15px', fontWeight: '600', color: '#111827' }}>
-                  {acao.prazo ? new Date(acao.prazo).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Não definido'}
+                  {formatDateDisplay(acao.prazo) || 'Não definido'}
                 </p>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
+import { formatDateForInput, formatDateDisplay } from '@/lib/dateUtils';
 
 export default function AcoesEditar() {
   const [, navigate] = useLocation();
@@ -39,28 +40,21 @@ export default function AcoesEditar() {
     },
   });
 
-  // Carregar dados da ação
+  // Carregar dados da ação - ÚNICO useEffect para evitar duplicação
   useEffect(() => {
     if (acao) {
+      console.log('Carregando dados da ação:', {
+        prazoOriginal: acao.prazo,
+        prazoFormatado: formatDateForInput(acao.prazo),
+        macroId: acao.macroId
+      });
+      
       setFormData({
         titulo: acao.titulo || '',
         descricao: acao.descricao || '',
-        prazo: acao.prazo ? new Date(acao.prazo).toISOString().split('T')[0] : '',
+        prazo: formatDateForInput(acao.prazo),
         status: acao.status || '',
         macroId: acao.macroId?.toString() || '',
-      });
-    }
-  }, [acao]);
-
-  // ESTE CÓDIGO FORÇA A ATUALIZAÇÃO DOS CAMPOS:
-  useEffect(() => {
-    if (acao) {
-      setFormData({
-        titulo: acao.titulo,
-        descricao: acao.descricao || "",
-        prazo: acao.prazo ? new Date(acao.prazo).toISOString().split('T')[0] : "",
-        competenciaId: acao.macroId?.toString() || "",
-        status: acao.status
       });
     }
   }, [acao]);
@@ -103,12 +97,8 @@ export default function AcoesEditar() {
     
     // Se for um campo de data (prazo), tenta formatar como data
     if (campo === 'prazo' || campo === 'Prazo') {
-      try {
-        const date = new Date(valor);
-        if (!isNaN(date.getTime())) {
-          return date.toLocaleDateString('pt-BR');
-        }
-      } catch {}
+      const formatted = formatDateDisplay(valor);
+      if (formatted !== '--/--/----') return formatted;
     }
     
     // Para outros campos, retorna o valor como esta

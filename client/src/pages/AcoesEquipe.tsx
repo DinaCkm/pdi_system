@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { formatDateDisplay } from "@/lib/dateUtils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -212,7 +213,7 @@ export default function AcoesEquipe() {
                       {acao.prazo && (
                         <span className="flex items-center gap-1 text-muted-foreground">
                           <Calendar size={14} />
-                          {new Date(acao.prazo).toLocaleDateString('pt-BR')}
+                          {formatDateDisplay(acao.prazo)}
                         </span>
                       )}
                       <Badge className={`border ${statusBadge.className}`}>

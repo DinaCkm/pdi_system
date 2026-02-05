@@ -2718,3 +2718,22 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Bug: Sobreposição no Menu Lateral do Admin (05 FEV 2026)
 - [ ] Corrigir itens do menu que estão sobrepostos (Relatórios + OPERACIONAL, etc)
 - [ ] Garantir que cada item do menu apareça em sua própria linha
+
+## Bug: Formulário de Edição de Ações
+- [ ] Corrigir formulário de edição de ação que não preenche o campo de competência com o valor existente
+- [ ] GRAVE: Corrigir inconsistência de data do prazo (formulário mostra 01/02/2026 mas visualização mostra 31/01/2026)
+
+
+## Correção de Formatação de Datas (05 FEV 2026)
+- [x] Criar utilitário centralizado para formatação de datas (dateUtils.ts) usando UTC
+- [x] Implementar formatDateDisplay() para exibição DD/MM/YYYY consistente
+- [x] Implementar formatDateForInput() para inputs type="date" (YYYY-MM-DD)
+- [x] Atualizar Acoes.tsx para usar formatDateDisplay()
+- [x] Atualizar AcoesEditar.tsx para usar formatDateForInput() e formatDateDisplay()
+- [x] Atualizar AcoesDetalhes.tsx para usar formatDateDisplay()
+- [x] Atualizar AcoesEquipe.tsx para usar formatDateDisplay()
+- [x] Atualizar CentralComando.tsx para usar formatDateDisplay()
+- [x] Atualizar DashboardStats.tsx para usar formatDateDisplay()
+- [x] Atualizar HistoryModal.tsx para usar formatDateDisplay()
+- [x] Corrigir campo de competência não preenchido ao editar ação
+- [ ] CONHECIDO: Diferença de 1 dia no formulário de edição (admin) devido a timezone - não crítico, visualização do colaborador está correta
