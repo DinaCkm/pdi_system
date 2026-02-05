@@ -2699,3 +2699,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar insights automáticos baseados em regras
 - [x] Incluir card resumido no Dashboard do Administrador
 - [x] Adicionar rota no menu lateral do Administrador
+
+
+## Reorganização do Menu Lateral do Admin (05 FEV 2026)
+- [x] Dividir menu em seções: Operacional e Estratégico
+- [x] Mover Análise de Liderança para logo após o Dashboard
+- [x] Organizar itens de forma intuitiva por categoria

@@ -30,26 +30,29 @@ import { trpc } from "@/lib/trpc";
 import { PendencyBadge } from "./PendencyBadge";
 
 const getMenuItems = (userRole: string) => {
-  const items = [];
+  const items: Array<{ icon: any; label: string; path: string; section?: string }> = [];
   
   if (userRole === "admin") {
+    // Seção Estratégico
     items.push(
-      { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-      { icon: Building2, label: "Central de Comando", path: "/central-comando" },
-      { icon: ClipboardCheck, label: "Admin Dashboard", path: "/admin-dashboard" },
-      { icon: Users, label: "Usuários", path: "/usuarios" },
-      { icon: Building2, label: "Departamentos", path: "/departamentos" },
-      { icon: Target, label: "Competências", path: "/competencias" },
-      // Ciclos removido - gerenciado automaticamente pelo sistema
-      { icon: FileText, label: "PDIs", path: "/pdis" },
-      { icon: CheckSquare, label: "Ações", path: "/acoes" },
-      { icon: ClipboardCheck, label: "Evidências Pendentes", path: "/evidencias-pendentes" },
-      { icon: MessageSquarePlus, label: "Histórico de Alteração nas Ações", path: "/solicitacoes-admin" },
-      { icon: BarChart, label: "Relatórios", path: "/relatorios" },
-      { icon: Upload, label: "Importação em Massa", path: "/importacao" },
-      { icon: Trash2, label: "Auditoria de Exclusões", path: "/auditoria-exclusoes" },
-      { icon: AlertTriangle, label: "Relatório de Ações Vencidas", path: "/relatorio-acoes-vencidas" },
-      { icon: TrendingUp, label: "Análise de Liderança", path: "/analise-lideranca" },
+      { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", section: "estrategico" },
+      { icon: TrendingUp, label: "Análise de Liderança", path: "/analise-lideranca", section: "estrategico" },
+      { icon: BarChart, label: "Relatórios", path: "/relatorios", section: "estrategico" },
+      { icon: AlertTriangle, label: "Relatório de Ações Vencidas", path: "/relatorio-acoes-vencidas", section: "estrategico" },
+    );
+    // Seção Operacional
+    items.push(
+      { icon: Building2, label: "Central de Comando", path: "/central-comando", section: "operacional" },
+      { icon: ClipboardCheck, label: "Admin Dashboard", path: "/admin-dashboard", section: "operacional" },
+      { icon: Users, label: "Usuários", path: "/usuarios", section: "operacional" },
+      { icon: Building2, label: "Departamentos", path: "/departamentos", section: "operacional" },
+      { icon: Target, label: "Competências", path: "/competencias", section: "operacional" },
+      { icon: FileText, label: "PDIs", path: "/pdis", section: "operacional" },
+      { icon: CheckSquare, label: "Ações", path: "/acoes", section: "operacional" },
+      { icon: ClipboardCheck, label: "Evidências Pendentes", path: "/evidencias-pendentes", section: "operacional" },
+      { icon: MessageSquarePlus, label: "Histórico de Alteração nas Ações", path: "/solicitacoes-admin", section: "operacional" },
+      { icon: Upload, label: "Importação em Massa", path: "/importacao", section: "operacional" },
+      { icon: Trash2, label: "Auditoria de Exclusões", path: "/auditoria-exclusoes", section: "operacional" },
     );
   } else if (userRole === "lider") {
     items.push(
@@ -294,37 +297,112 @@ function DashboardLayoutContent({
           )}
 
           <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
-              {menuItems.map((item: any) => {
-                const isActive = location === item.path;
-                let badgeCount = 0;
+            {/* Seção Estratégico - Apenas para Admin */}
+            {user?.role === "admin" && (
+              <>
+                {!isCollapsed && (
+                  <div className="px-4 py-2 mt-2">
+                    <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Estratégico</span>
+                  </div>
+                )}
+                <SidebarMenu className="px-2 py-1">
+                  {menuItems.filter((item: any) => item.section === "estrategico").map((item: any) => {
+                    const isActive = location === item.path;
+                    return (
+                      <SidebarMenuItem key={item.path}>
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          onClick={() => setLocation(item.path)}
+                          tooltip={item.label}
+                          className={`h-10 transition-all font-normal relative`}
+                        >
+                          <item.icon
+                            className={`h-4 w-4 ${isActive ? "text-emerald-600" : "text-emerald-500"}`}
+                          />
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
                 
-                // Usar getUnreadCounts para badges específicos por role
-                if (item.path === "/evidencias-pendentes" && user?.role === "admin") {
-                  badgeCount = unreadCounts?.evidenciasPendentes || 0;
-                }
-                return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
-                      className={`h-10 transition-all font-normal relative`}
-                    >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
-                      <span>{item.label}</span>
-                      {badgeCount > 0 && (
-                        <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full animate-pulse">
-                          {badgeCount}
-                        </span>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
+                {/* Separador */}
+                {!isCollapsed && (
+                  <div className="mx-4 my-2 border-t border-gray-200"></div>
+                )}
+                
+                {/* Seção Operacional */}
+                {!isCollapsed && (
+                  <div className="px-4 py-2">
+                    <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Operacional</span>
+                  </div>
+                )}
+                <SidebarMenu className="px-2 py-1">
+                  {menuItems.filter((item: any) => item.section === "operacional").map((item: any) => {
+                    const isActive = location === item.path;
+                    let badgeCount = 0;
+                    
+                    if (item.path === "/evidencias-pendentes" && user?.role === "admin") {
+                      badgeCount = unreadCounts?.evidenciasPendentes || 0;
+                    }
+                    return (
+                      <SidebarMenuItem key={item.path}>
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          onClick={() => setLocation(item.path)}
+                          tooltip={item.label}
+                          className={`h-10 transition-all font-normal relative`}
+                        >
+                          <item.icon
+                            className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                          />
+                          <span>{item.label}</span>
+                          {badgeCount > 0 && (
+                            <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full animate-pulse">
+                              {badgeCount}
+                            </span>
+                          )}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </>
+            )}
+            
+            {/* Menu normal para outros roles */}
+            {user?.role !== "admin" && (
+              <SidebarMenu className="px-2 py-1">
+                {menuItems.map((item: any) => {
+                  const isActive = location === item.path;
+                  let badgeCount = 0;
+                  
+                  if (item.path === "/evidencias-pendentes" && user?.role === "admin") {
+                    badgeCount = unreadCounts?.evidenciasPendentes || 0;
+                  }
+                  return (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        onClick={() => setLocation(item.path)}
+                        tooltip={item.label}
+                        className={`h-10 transition-all font-normal relative`}
+                      >
+                        <item.icon
+                          className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                        />
+                        <span>{item.label}</span>
+                        {badgeCount > 0 && (
+                          <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full animate-pulse">
+                            {badgeCount}
+                          </span>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            )}
           </SidebarContent>
 
           <SidebarFooter className="p-3">
