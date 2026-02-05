@@ -300,105 +300,39 @@ function DashboardLayoutContent({
             </div>
           )}
 
-          <SidebarContent className="gap-0">
-            {/* Seções Colapsáveis - Apenas para Admin */}
+          <SidebarContent className="gap-0 overflow-y-auto">
+            {/* Menu simples para Admin - lista direta sem separação */}
             {user?.role === "admin" && (
-              <div className="flex flex-col">
-                {/* Botão Estratégico */}
-                <button
-                  onClick={() => setEstrategicoOpen(!estrategicoOpen)}
-                  className={`flex items-center justify-between w-full px-4 py-3 text-left hover:bg-emerald-50 transition-colors ${!isCollapsed ? '' : 'justify-center'}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-emerald-600" />
-                    {!isCollapsed && (
-                      <span className="text-sm font-semibold text-emerald-700 uppercase tracking-wider">Estratégico</span>
-                    )}
-                  </div>
-                  {!isCollapsed && (
-                    estrategicoOpen ? <ChevronDown className="h-4 w-4 text-emerald-600" /> : <ChevronRight className="h-4 w-4 text-emerald-600" />
-                  )}
-                </button>
-                
-                {/* Itens Estratégico - Colapsável */}
-                {(estrategicoOpen || isCollapsed) && (
-                  <SidebarMenu className="px-2">
-                    {menuItems.filter((item: any) => item.section === "estrategico").map((item: any) => {
-                      const isActive = location === item.path;
-                      return (
-                        <SidebarMenuItem key={item.path}>
-                          <SidebarMenuButton
-                            isActive={isActive}
-                            onClick={() => setLocation(item.path)}
-                            tooltip={item.label}
-                            className="h-9 transition-all font-normal"
-                          >
-                            <item.icon
-                              className={`h-4 w-4 ${isActive ? "text-emerald-600" : "text-emerald-500"}`}
-                            />
-                            <span className="text-sm">{item.label}</span>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      );
-                    })}
-                  </SidebarMenu>
-                )}
-                
-                {/* Separador */}
-                {!isCollapsed && (
-                  <div className="mx-4 my-2 border-t border-gray-200"></div>
-                )}
-                
-                {/* Botão Operacional */}
-                <button
-                  onClick={() => setOperacionalOpen(!operacionalOpen)}
-                  className={`flex items-center justify-between w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors ${!isCollapsed ? '' : 'justify-center'}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-blue-600" />
-                    {!isCollapsed && (
-                      <span className="text-sm font-semibold text-blue-700 uppercase tracking-wider">Operacional</span>
-                    )}
-                  </div>
-                  {!isCollapsed && (
-                    operacionalOpen ? <ChevronDown className="h-4 w-4 text-blue-600" /> : <ChevronRight className="h-4 w-4 text-blue-600" />
-                  )}
-                </button>
-                
-                {/* Itens Operacional - Colapsável */}
-                {(operacionalOpen || isCollapsed) && (
-                  <SidebarMenu className="px-2">
-                    {menuItems.filter((item: any) => item.section === "operacional").map((item: any) => {
-                      const isActive = location === item.path;
-                      let badgeCount = 0;
-                      
-                      if (item.path === "/evidencias-pendentes" && user?.role === "admin") {
-                        badgeCount = unreadCounts?.evidenciasPendentes || 0;
-                      }
-                      return (
-                        <SidebarMenuItem key={item.path}>
-                          <SidebarMenuButton
-                            isActive={isActive}
-                            onClick={() => setLocation(item.path)}
-                            tooltip={item.label}
-                            className="h-9 transition-all font-normal"
-                          >
-                            <item.icon
-                              className={`h-4 w-4 ${isActive ? "text-blue-600" : "text-blue-500"}`}
-                            />
-                            <span className="text-sm">{item.label}</span>
-                            {badgeCount > 0 && (
-                              <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full animate-pulse">
-                                {badgeCount}
-                              </span>
-                            )}
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      );
-                    })}
-                  </SidebarMenu>
-                )}
-              </div>
+              <SidebarMenu className="px-2 py-1">
+                {menuItems.map((item: any) => {
+                  const isActive = location === item.path;
+                  let badgeCount = 0;
+                  
+                  if (item.path === "/evidencias-pendentes") {
+                    badgeCount = unreadCounts?.evidenciasPendentes || 0;
+                  }
+                  return (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton
+                        isActive={isActive}
+                        onClick={() => setLocation(item.path)}
+                        tooltip={item.label}
+                        className="h-9 transition-all font-normal"
+                      >
+                        <item.icon
+                          className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                        />
+                        <span className="text-sm">{item.label}</span>
+                        {badgeCount > 0 && (
+                          <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full animate-pulse">
+                            {badgeCount}
+                          </span>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
             )}
             
             {/* Menu normal para outros roles */}

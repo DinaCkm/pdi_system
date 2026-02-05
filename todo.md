@@ -2744,3 +2744,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar ícones de seta (ChevronDown/ChevronRight) para indicar estado
 - [x] Permitir colapsar/expandir cada seção independentemente
 - [x] Manter funcionalidade quando sidebar está colapsada
+
+
+## Bug: Sobreposição do título OPERACIONAL no menu
+- [x] Corrigir sobreposição do título OPERACIONAL sobre o item "Relatório de Ações Vencidas"
+- [x] Simplificado: menu agora é lista direta sem seções colapsáveis
