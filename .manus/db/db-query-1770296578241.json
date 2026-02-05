@@ -1,0 +1,150 @@
+{
+  "query": "SELECT \n  d.id as departamentoId, \n  d.nome as departamentoNome, \n  d.leaderId,\n  u.name as liderNome,\n  u.departamentoId as liderDepartamentoId\nFROM departamentos d\nLEFT JOIN users u ON d.leaderId = u.id\nWHERE d.leaderId IS NOT NULL\nLIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT \n  d.id as departamentoId, \n  d.nome as departamentoNome, \n  d.leaderId,\n  u.name as liderNome,\n  u.departamentoId as liderDepartamentoId\nFROM departamentos d\nLEFT JOIN users u ON d.leaderId = u.id\nWHERE d.leaderId IS NOT NULL\nLIMIT 20;",
+  "rows": [
+    {
+      "departamentoId": "630013",
+      "departamentoNome": "RBP-REGIONAL BICO DO PAPAGAIO",
+      "leaderId": "1260001",
+      "liderNome": "EDVALDO PEREIRA LIMA JÚNIOR",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630014",
+      "departamentoNome": "RME-REGIONAL METROPOLITANA",
+      "leaderId": "1260002",
+      "liderNome": "AMAGGELDO BARBOSA",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630015",
+      "departamentoNome": "RMN-REGIONAL MÉDIO NORTE COLINAS",
+      "leaderId": "1260003",
+      "liderNome": "ALDENI BATISTA TORRES",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630016",
+      "departamentoNome": "RNO-REGIONAL NORTE",
+      "leaderId": "1260004",
+      "liderNome": "MARCUS VINICIUS VIEIRA QUEIROZ",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630017",
+      "departamentoNome": "RPJ-REGIONAL PORTAL DO JALAPÃO",
+      "leaderId": "1260005",
+      "liderNome": "MILLENA PEREIRA LIMA RODRIGUES",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630018",
+      "departamentoNome": "RSG-REGIONAL SERRAS GERAIS",
+      "leaderId": "1260006",
+      "liderNome": "ANTONIO LOUÇA CURCINO",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630019",
+      "departamentoNome": "RSU-REGIONAL SUL",
+      "leaderId": "1260007",
+      "liderNome": "PAULA DOS REIS COELHO ALENCAR SOUSA",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630020",
+      "departamentoNome": "RVA-REGIONAL VALE DO ARAGUAIA",
+      "leaderId": "1260008",
+      "liderNome": "RENATA MOURA ALVES SIMAS",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630003",
+      "departamentoNome": "UAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE",
+      "leaderId": "1260009",
+      "liderNome": "BRUNO MARTINS VIEIRA",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630004",
+      "departamentoNome": "UAS-UNIDADE DE ADMINISTRAÇÃO E FINANÇAS",
+      "leaderId": "1260010",
+      "liderNome": "ANA PAULA CUNHA SOARES",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630002",
+      "departamentoNome": "CDE-ASSESSORIA",
+      "leaderId": "1260011",
+      "liderNome": "JACKELINE DE SOUZA LIMA",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630001",
+      "departamentoNome": "AUD-UNIDADE DE AUDITORIA INTERNA",
+      "leaderId": "1260012",
+      "liderNome": "ELIWANIA DOS SANTOS SILVA",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630005",
+      "departamentoNome": "UGE-UNIDADE DE GESTÃO ESTRATÉGICA",
+      "leaderId": "1260013",
+      "liderNome": "PEDRO JUNIOR DA ROCHA SILVA",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630006",
+      "departamentoNome": "UGOC-UNIDADE DE GESTÃO ORÇ. CONTROLE E CONTABILIDADE",
+      "leaderId": "1260014",
+      "liderNome": "ANDREIA RODRIGUES FACUNDES",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630007",
+      "departamentoNome": "UGP-UNIDADE DE GESTÃO DE PESSOAS",
+      "leaderId": "1260015",
+      "liderNome": "VERA LUCIA TEODORO BRAGA",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630008",
+      "departamentoNome": "UMC-UNIDADE DE MARKETING E COMUNICAÇÃO",
+      "leaderId": "1260016",
+      "liderNome": "NEMIAS GOMES",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630009",
+      "departamentoNome": "URC - UNIDADE DE RELACIONAMENTO COM O CLIENTE",
+      "leaderId": "1260017",
+      "liderNome": "GABRIELA TOMASI",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630010",
+      "departamentoNome": "URI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL",
+      "leaderId": "1260018",
+      "liderNome": "GILZANE PEREIRA AMARAL",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630011",
+      "departamentoNome": "UTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS",
+      "leaderId": "1260019",
+      "liderNome": "LEONARDO CAMPELO LEITE GUEDES",
+      "liderDepartamentoId": "660001"
+    },
+    {
+      "departamentoId": "630012",
+      "departamentoNome": "DIREX_UNIDADE DIRETORIA EXECUTIVA",
+      "leaderId": "1290067",
+      "liderNome": "HIDE SENNA DE SOUSA SOARES",
+      "liderDepartamentoId": "660001"
+    }
+  ],
+  "messages": [],
+  "stdout": "departamentoId\tdepartamentoNome\tleaderId\tliderNome\tliderDepartamentoId\n630013\tRBP-REGIONAL BICO DO PAPAGAIO\t1260001\tEDVALDO PEREIRA LIMA JÚNIOR\t660001\n630014\tRME-REGIONAL METROPOLITANA\t1260002\tAMAGGELDO BARBOSA\t660001\n630015\tRMN-REGIONAL MÉDIO NORTE COLINAS\t1260003\tALDENI BATISTA TORRES\t660001\n630016\tRNO-REGIONAL NORTE\t1260004\tMARCUS VINICIUS VIEIRA QUEIROZ\t660001\n630017\tRPJ-REGIONAL PORTAL DO JALAPÃO\t1260005\tMILLENA PEREIRA LIMA RODRIGUES\t660001\n630018\tRSG-REGIONAL SERRAS GERAIS\t1260006\tANTONIO LOUÇA CURCINO\t660001\n630019\tRSU-REGIONAL SUL\t1260007\tPAULA DOS REIS COELHO ALENCAR SOUSA\t660001\n630020\tRVA-REGIONAL VALE DO ARAGUAIA\t1260008\tRENATA MOURA ALVES SIMAS\t660001\n630003\tUAC-UNIDADE DE ARTICULAÇÃO E COMPETITIVIDADE\t1260009\tBRUNO MARTINS VIEIRA\t660001\n630004\tUAS-UNIDADE DE ADMINISTRAÇÃO E FINANÇAS\t1260010\tANA PAULA CUNHA SOARES\t660001\n630002\tCDE-ASSESSORIA\t1260011\tJACKELINE DE SOUZA LIMA\t660001\n630001\tAUD-UNIDADE DE AUDITORIA INTERNA\t1260012\tELIWANIA DOS SANTOS SILVA\t660001\n630005\tUGE-UNIDADE DE GESTÃO ESTRATÉGICA\t1260013\tPEDRO JUNIOR DA ROCHA SILVA\t660001\n630006\tUGOC-UNIDADE DE GESTÃO ORÇ. CONTROLE E CONTABILIDADE\t1260014\tANDREIA RODRIGUES FACUNDES\t660001\n630007\tUGP-UNIDADE DE GESTÃO DE PESSOAS\t1260015\tVERA LUCIA TEODORO BRAGA\t660001\n630008\tUMC-UNIDADE DE MARKETING E COMUNICAÇÃO\t1260016\tNEMIAS GOMES\t660001\n630009\tURC - UNIDADE DE RELACIONAMENTO COM O CLIENTE\t1260017\tGABRIELA TOMASI\t660001\n630010\tURI-UNIDADE DE RELACIONAMENTO INSTITUCIONAL\t1260018\tGILZANE PEREIRA AMARAL\t660001\n630011\tUTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS\t1260019\tLEONARDO CAMPELO LEITE GUEDES\t660001\n630012\tDIREX_UNIDADE DIRETORIA EXECUTIVA\t1290067\tHIDE SENNA DE SOUSA SOARES\t660001\n",
+  "stderr": "",
+  "execution_time_ms": 510
+}

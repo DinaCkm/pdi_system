@@ -2789,16 +2789,20 @@ export async function getLeadershipAnalysis() {
 
   try {
     // Buscar todos os líderes ativos (usuários que têm subordinados)
+    // Busca o departamento que o líder GERENCIA (via leaderId) em vez do departamento ao qual pertence
     const [lideres]: any = await db.execute(sql`
       SELECT DISTINCT 
         l.id as liderId,
         l.name as liderNome,
         l.email as liderEmail,
-        d.id as departamentoId,
-        d.nome as departamentoNome
+        dg.id as departamentoGerenciadoId,
+        dg.nome as departamentoGerenciadoNome,
+        dp.id as departamentoId,
+        dp.nome as departamentoNome
       FROM users l
       INNER JOIN users subordinado ON subordinado.leaderId = l.id
-      LEFT JOIN departamentos d ON l.departamentoId = d.id
+      LEFT JOIN departamentos dg ON dg.leaderId = l.id
+      LEFT JOIN departamentos dp ON l.departamentoId = dp.id
       WHERE l.status = 'ativo'
       ORDER BY l.name
     `);
@@ -3019,8 +3023,9 @@ export async function getLeadershipAnalysis() {
           liderId: lider.liderId,
           liderNome: lider.liderNome,
           liderEmail: lider.liderEmail,
-          departamentoId: lider.departamentoId,
-          departamentoNome: lider.departamentoNome || 'Sem Departamento',
+          // Usar o departamento GERENCIADO para filtro (via leaderId)
+          departamentoId: lider.departamentoGerenciadoId || lider.departamentoId,
+          departamentoNome: lider.departamentoGerenciadoNome || lider.departamentoNome || 'Sem Departamento',
           // Métricas do líder
           liderTotalAcoes: liderTotalCount,
           liderAcoesConcluidas: liderCompletedCount,

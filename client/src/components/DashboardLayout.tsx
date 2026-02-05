@@ -299,22 +299,22 @@ function DashboardLayoutContent({
           <SidebarContent className="gap-0">
             {/* Seção Estratégico - Apenas para Admin */}
             {user?.role === "admin" && (
-              <>
+              <div className="flex flex-col w-full">
                 {!isCollapsed && (
-                  <div className="px-4 py-2 mt-2">
+                  <div className="block w-full px-4 py-2 mt-2">
                     <span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Estratégico</span>
                   </div>
                 )}
-                <SidebarMenu className="px-2 py-1">
+                <SidebarMenu className="px-2 py-1 w-full">
                   {menuItems.filter((item: any) => item.section === "estrategico").map((item: any) => {
                     const isActive = location === item.path;
                     return (
-                      <SidebarMenuItem key={item.path}>
+                      <SidebarMenuItem key={item.path} className="w-full">
                         <SidebarMenuButton
                           isActive={isActive}
                           onClick={() => setLocation(item.path)}
                           tooltip={item.label}
-                          className={`h-10 transition-all font-normal relative`}
+                          className={`h-10 transition-all font-normal relative w-full`}
                         >
                           <item.icon
                             className={`h-4 w-4 ${isActive ? "text-emerald-600" : "text-emerald-500"}`}
@@ -328,16 +328,16 @@ function DashboardLayoutContent({
                 
                 {/* Separador */}
                 {!isCollapsed && (
-                  <div className="mx-4 my-2 border-t border-gray-200"></div>
+                  <div className="block w-full mx-4 my-2 border-t border-gray-200"></div>
                 )}
                 
                 {/* Seção Operacional */}
                 {!isCollapsed && (
-                  <div className="px-4 py-2">
+                  <div className="block w-full px-4 py-2">
                     <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Operacional</span>
                   </div>
                 )}
-                <SidebarMenu className="px-2 py-1">
+                <SidebarMenu className="px-2 py-1 w-full">
                   {menuItems.filter((item: any) => item.section === "operacional").map((item: any) => {
                     const isActive = location === item.path;
                     let badgeCount = 0;
@@ -367,7 +367,7 @@ function DashboardLayoutContent({
                     );
                   })}
                 </SidebarMenu>
-              </>
+              </div>
             )}
             
             {/* Menu normal para outros roles */}

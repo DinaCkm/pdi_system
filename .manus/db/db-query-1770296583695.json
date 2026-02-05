@@ -1,0 +1,17 @@
+{
+  "query": "SELECT \n  d.id as departamentoId, \n  d.nome as departamentoNome, \n  d.leaderId,\n  u.name as liderNome,\n  u.departamentoId as liderDepartamentoId\nFROM departamentos d\nLEFT JOIN users u ON d.leaderId = u.id\nWHERE d.nome LIKE '%UMC%' OR d.nome LIKE '%MARKETING%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT \n  d.id as departamentoId, \n  d.nome as departamentoNome, \n  d.leaderId,\n  u.name as liderNome,\n  u.departamentoId as liderDepartamentoId\nFROM departamentos d\nLEFT JOIN users u ON d.leaderId = u.id\nWHERE d.nome LIKE '%UMC%' OR d.nome LIKE '%MARKETING%';",
+  "rows": [
+    {
+      "departamentoId": "630008",
+      "departamentoNome": "UMC-UNIDADE DE MARKETING E COMUNICAÇÃO",
+      "leaderId": "1260016",
+      "liderNome": "NEMIAS GOMES",
+      "liderDepartamentoId": "660001"
+    }
+  ],
+  "messages": [],
+  "stdout": "departamentoId\tdepartamentoNome\tleaderId\tliderNome\tliderDepartamentoId\n630008\tUMC-UNIDADE DE MARKETING E COMUNICAÇÃO\t1260016\tNEMIAS GOMES\t660001\n",
+  "stderr": "",
+  "execution_time_ms": 54
+}

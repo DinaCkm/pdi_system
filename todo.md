@@ -127,6 +127,8 @@
 ## Bugs a Corrigir
 - [x] Corrigir erro 404 ao acessar sistema publicado
 - [x] Verificar roteamento e redirecionamentos
+- [x] Corrigir sobreposição de itens no menu lateral do Admin (seções Estratégico/Operacional)
+- [x] Corrigir filtro por departamento na Análise de Liderança (usar departamento gerenciado via leaderId em vez do departamento pessoal)
 
 ## Bugs Reportados
 - [x] Página de setup não está aparecendo no primeiro acesso (resolvido: precisa publicar)
@@ -2705,3 +2707,14 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Dividir menu em seções: Operacional e Estratégico
 - [x] Mover Análise de Liderança para logo após o Dashboard
 - [x] Organizar itens de forma intuitiva por categoria
+
+
+## Bug: Filtro por Departamento na Análise de Liderança (05 FEV 2026)
+- [ ] Investigar por que o filtro por departamento não retorna líderes
+- [ ] Corrigir a lógica de filtragem no backend ou frontend
+- [ ] Testar com diferentes departamentos
+
+
+## Bug: Sobreposição no Menu Lateral do Admin (05 FEV 2026)
+- [ ] Corrigir itens do menu que estão sobrepostos (Relatórios + OPERACIONAL, etc)
+- [ ] Garantir que cada item do menu apareça em sua própria linha
