@@ -2749,3 +2749,12 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Bug: Sobreposição do título OPERACIONAL no menu
 - [x] Corrigir sobreposição do título OPERACIONAL sobre o item "Relatório de Ações Vencidas"
 - [x] Simplificado: menu agora é lista direta sem seções colapsáveis
+
+
+## Análise de Liderança - Remover Filtro
+- [ ] Remover filtro por departamento da página de Análise de Liderança
+- [ ] Manter apenas a listagem em ordem de ranking
+
+
+## Análise de Liderança - Instrução Visual
+- [x] Adicionar instrução para o usuário clicar nos cards para ver detalhes e insights

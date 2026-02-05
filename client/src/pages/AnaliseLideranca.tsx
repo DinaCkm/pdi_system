@@ -5,13 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+// Select removido - filtro por departamento desativado
 import {
   Collapsible,
   CollapsibleContent,
@@ -309,20 +303,15 @@ function LeaderCard({ leader, isExpanded, onToggle }: {
 
 export default function AnaliseLideranca() {
   const [expandedLeader, setExpandedLeader] = useState<number | null>(null);
-  const [departamentoFilter, setDepartamentoFilter] = useState<string>("all");
   
   const { data: leadershipData, isLoading } = trpc.dashboard.getLeadershipAnalysis.useQuery();
-  const { data: departamentos } = trpc.departamentos.list.useQuery();
   
-  // Filtrar por departamento
-  const filteredData = leadershipData?.filter((leader: LeaderData) => {
-    if (departamentoFilter === "all") return true;
-    return leader.departamentoId === Number(departamentoFilter);
-  }) || [];
+  // Usar dados diretamente sem filtro - já vem ordenado por ranking do backend
+  const rankingData = leadershipData || [];
   
   // Calcular média geral
-  const mediaGeral = filteredData.length > 0
-    ? Math.round(filteredData.reduce((sum: number, l: LeaderData) => sum + l.equipeTaxaConclusao, 0) / filteredData.length)
+  const mediaGeral = rankingData.length > 0
+    ? Math.round(rankingData.reduce((sum: number, l: LeaderData) => sum + l.equipeTaxaConclusao, 0) / rankingData.length)
     : 0;
   
   return (
@@ -345,43 +334,35 @@ export default function AnaliseLideranca() {
             </p>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Média Geral das Equipes</p>
-              <p className="text-2xl font-bold text-emerald-600">{mediaGeral}%</p>
-            </div>
-            
-            <Select value={departamentoFilter} onValueChange={setDepartamentoFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filtrar por departamento" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Departamentos</SelectItem>
-                {departamentos?.map((dept: { id: number; nome: string }) => (
-                  <SelectItem key={dept.id} value={String(dept.id)}>
-                    {dept.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">Média Geral das Equipes</p>
+            <p className="text-2xl font-bold text-emerald-600">{mediaGeral}%</p>
           </div>
         </div>
         
         {/* Legenda */}
         <Card>
           <CardContent className="py-4">
-            <div className="flex items-center justify-center gap-8">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-blue-500" />
-                <span className="text-sm">Taxa de Conclusão do Líder (pessoal)</span>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-center gap-8">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-blue-500" />
+                  <span className="text-sm">Taxa de Conclusão do Líder (pessoal)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-emerald-500" />
+                  <span className="text-sm">Taxa de Conclusão da Equipe</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-gray-300" />
+                  <span className="text-sm">Linha de meta: 70%</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-emerald-500" />
-                <span className="text-sm">Taxa de Conclusão da Equipe</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-gray-300" />
-                <span className="text-sm">Linha de meta: 70%</span>
+              
+              {/* Instrução para o usuário */}
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground bg-blue-50 rounded-lg py-2 px-4 border border-blue-200">
+                <ChevronRight className="h-4 w-4 text-blue-500" />
+                <span><strong>Dica:</strong> Clique em um líder para ver detalhes das competências focais, lista de colaboradores e insights automáticos.</span>
               </div>
             </div>
           </CardContent>
@@ -403,9 +384,9 @@ export default function AnaliseLideranca() {
               </Card>
             ))}
           </div>
-        ) : filteredData.length > 0 ? (
+        ) : rankingData.length > 0 ? (
           <div>
-            {filteredData.map((leader: LeaderData, index: number) => (
+            {rankingData.map((leader: LeaderData, index: number) => (
               <div key={leader.liderId} className="relative">
                 {/* Indicador de posição */}
                 <div className="absolute -left-8 top-6 flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-xs font-bold">
