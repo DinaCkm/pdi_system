@@ -2843,6 +2843,24 @@ export async function getLeadershipAnalysis() {
           AND u.status = 'ativo'
         `);
 
+        // Contar PDIs dos subordinados e quantos foram validados pelo líder
+        const [pdisSubordinados]: any = await db.execute(sql`
+          SELECT 
+            p.id as pdiId,
+            p.colaboradorId,
+            CASE WHEN pv.id IS NOT NULL THEN 1 ELSE 0 END as validado
+          FROM pdis p
+          INNER JOIN users u ON p.colaboradorId = u.id
+          LEFT JOIN pdi_validacoes pv ON pv.pdiId = p.id AND pv.liderId = ${lider.liderId}
+          WHERE u.leaderId = ${lider.liderId}
+          AND u.status = 'ativo'
+          AND p.status != 'cancelado'
+        `);
+
+        const totalPdisSubordinados = (pdisSubordinados || []).length;
+        const pdisValidados = (pdisSubordinados || []).filter((p: any) => p.validado === 1).length;
+        const pdisPendentesValidacao = totalPdisSubordinados - pdisValidados;
+
         // Buscar ações de toda a equipe
         const [acoesEquipe]: any = await db.execute(sql`
           SELECT 
@@ -3035,6 +3053,10 @@ export async function getLeadershipAnalysis() {
           equipeTotalAcoes: equipeTotalCount,
           equipeAcoesConcluidas: equipeCompletedCount,
           equipeTaxaConclusao,
+          // Validação de PDIs
+          totalPdisSubordinados,
+          pdisValidados,
+          pdisPendentesValidacao,
           // Competências
           competenciasLider: competenciasLiderFormatadas,
           competenciasEquipe: competenciasEquipeFormatadas,

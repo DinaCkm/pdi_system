@@ -38,6 +38,9 @@ interface LeaderData {
   equipeTotalAcoes: number;
   equipeAcoesConcluidas: number;
   equipeTaxaConclusao: number;
+  totalPdisSubordinados: number;
+  pdisValidados: number;
+  pdisPendentesValidacao: number;
   competenciasLider: Array<{
     macroId: number;
     nome: string;
@@ -162,6 +165,22 @@ function LeaderCard({ leader, isExpanded, onToggle }: {
                 <span className="text-xs w-12 text-right">{leader.equipeAcoesConcluidas}/{leader.equipeTotalAcoes}</span>
               </div>
             </div>
+            
+            {/* Validação de PDIs */}
+            {leader.totalPdisSubordinados > 0 && (
+              <div className="mt-3 flex items-center gap-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                  <span className="text-green-700 font-medium">{leader.pdisValidados} PDIs validados</span>
+                </div>
+                {leader.pdisPendentesValidacao > 0 && (
+                  <div className="flex items-center gap-1">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                    <span className="text-amber-700 font-medium">{leader.pdisPendentesValidacao} PDIs pendentes de validação</span>
+                  </div>
+                )}
+              </div>
+            )}
           </CardHeader>
         </CollapsibleTrigger>
         

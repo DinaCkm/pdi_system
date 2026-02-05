@@ -2752,9 +2752,14 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 
 ## Análise de Liderança - Remover Filtro
-- [ ] Remover filtro por departamento da página de Análise de Liderança
-- [ ] Manter apenas a listagem em ordem de ranking
+- [x] Remover filtro por departamento da página de Análise de Liderança
+- [x] Manter apenas a listagem em ordem de ranking
 
 
 ## Análise de Liderança - Instrução Visual
 - [x] Adicionar instrução para o usuário clicar nos cards para ver detalhes e insights
+
+
+## Análise de Liderança - Validação de PDIs
+- [x] Adicionar informação de quantos PDIs o líder validou dos seus liderados
+- [x] Adicionar informação de quantos PDIs ainda faltam validar
