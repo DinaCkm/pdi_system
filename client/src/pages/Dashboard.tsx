@@ -6,7 +6,8 @@ import { DirecionamentoEstrategico } from "@/components/DirecionamentoEstrategic
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectContentNoPortal } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, TrendingUp, ArrowRight } from "lucide-react";
+import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function Dashboard() {
@@ -177,6 +178,37 @@ export function Dashboard() {
         <>
           {/* Widget Exclusivo de Admin: Direcionamento Estratégico */}
           <DirecionamentoEstrategico />
+          
+          {/* Card de Análise de Liderança - Apenas para Admin e Gerente */}
+          {(user?.role === "admin" || user?.role === "gerente") && (
+            <Link href="/analise-lideranca">
+              <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 border-emerald-200 bg-gradient-to-r from-emerald-50 to-blue-50 hover:from-emerald-100 hover:to-blue-100">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-emerald-100 rounded-xl">
+                        <TrendingUp className="h-7 w-7 text-emerald-600" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl text-emerald-800">Análise de Liderança</CardTitle>
+                        <p className="text-sm text-emerald-600 mt-1">Ranking de engajamento: Líder vs Equipe</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-emerald-600">
+                      <span className="text-sm font-medium">Ver análise completa</span>
+                      <ArrowRight className="h-5 w-5" />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-sm text-gray-600">
+                    Compare o desempenho individual de cada líder com a taxa de conclusão da sua equipe. 
+                    Visualize competências focais e receba insights automáticos para tomada de decisão.
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
           
           {/* Estatísticas Gerais do Dashboard */}
           <DashboardStats stats={stats} userRole={user?.role} departamentoId={selectedDepartamento && selectedDepartamento !== 'todos' ? parseInt(selectedDepartamento) : undefined} />
