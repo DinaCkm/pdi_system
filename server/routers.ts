@@ -1040,9 +1040,9 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           // Gerente (RH) vê todas
           return await db.listSolicitacoesAcoes(input?.statusGeral ? { statusGeral: input.statusGeral } : undefined);
         } else if (role === 'lider') {
-          // Líder vê solicitações dos seus subordinados
+          // Líder vê solicitações dos seus subordinados + as suas próprias (papel duplo)
           const todas = await db.listSolicitacoesAcoes(input?.statusGeral ? { statusGeral: input.statusGeral } : undefined);
-          return todas.filter((s: any) => s.solicitanteLiderId === userId);
+          return todas.filter((s: any) => s.solicitanteLiderId === userId || s.solicitanteId === userId);
         } else {
           // Colaborador vê apenas as suas
           return await db.listSolicitacoesAcoes({ solicitanteId: userId, ...(input?.statusGeral ? { statusGeral: input.statusGeral } : {}) });

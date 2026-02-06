@@ -2797,3 +2797,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar rota e navegação no menu lateral para todos os papéis
 - [x] Escrever testes vitest para o fluxo de solicitação (7/7 passando)
 - [x] Remover card 'Análise de Liderança' do Dashboard do Admin (deve aparecer apenas no Dashboard Geral)
+
+## Líder Papel Duplo - Solicitar Ações para Próprio PDI
+- [x] Ajustar backend para permitir Líder criar solicitações como colaborador
+- [x] Ajustar frontend para Líder ver duas seções (Minhas Solicitações + Solicitações da Equipe)
+- [x] Atualizar testes vitest para cobrir fluxo do Líder como solicitante

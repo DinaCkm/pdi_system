@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { 
   FileText, Plus, Clock, CheckCircle2, XCircle, AlertTriangle, 
   Search, ChevronDown, X, Check, Send, Eye, MessageSquare,
-  Loader2, Filter, ChevronRight
+  Loader2, Filter, ChevronRight, User, Users
 } from 'lucide-react';
 
 // ============= STATUS HELPERS =============
@@ -495,18 +495,21 @@ function DecisaoRHForm({ solicitacao, onSuccess }: { solicitacao: any; onSuccess
 }
 
 // ============= CARD DE SOLICITAÇÃO =============
-function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh }: { 
+function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnRequest }: { 
   solicitacao: any; 
   userRole: string; 
   userId: number;
   onRefresh: () => void;
+  isOwnRequest?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const StatusIcon = statusIcons[solicitacao.statusGeral] || Clock;
 
-  const isColaboradorView = userRole === 'colaborador';
+  // Se é um Líder vendo sua própria solicitação, ele vê como colaborador (sem detalhes internos)
+  const isColaboradorView = userRole === 'colaborador' || (userRole === 'lider' && isOwnRequest);
   const canEmitirParecer = userRole === 'admin' && solicitacao.statusGeral === 'aguardando_ckm';
-  const canDecidirGestor = (userRole === 'lider' || userRole === 'admin') && solicitacao.statusGeral === 'aguardando_gestor';
+  // Líder pode decidir como gestor APENAS para solicitações da equipe (não as suas próprias)
+  const canDecidirGestor = (userRole === 'lider' || userRole === 'admin') && solicitacao.statusGeral === 'aguardando_gestor' && !isOwnRequest;
   const canDecidirRH = (userRole === 'gerente' || userRole === 'admin') && solicitacao.statusGeral === 'aguardando_rh';
 
   return (
@@ -523,6 +526,12 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh }: {
                 <StatusIcon className="h-3 w-3" />
                 {statusLabels[solicitacao.statusGeral]}
               </span>
+              {isOwnRequest && userRole === 'lider' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">
+                  <User className="h-3 w-3" />
+                  Minha Solicitação
+                </span>
+              )}
             </div>
             <h3 className="text-base font-bold text-gray-800 truncate">{solicitacao.titulo}</h3>
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-xs text-gray-500">
@@ -555,16 +564,16 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh }: {
           {/* Instâncias de Aprovação */}
           <div className="mt-4 space-y-3">
             {/* 1. Parecer CKM */}
-            {solicitacao.parecerCkmTipo && (
-              <div className={`rounded-lg p-3 border ${solicitacao.parecerCkmTipo === 'com_aderencia' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+            {solicitacao.ckmParecerTipo && (
+              <div className={`rounded-lg p-3 border ${solicitacao.ckmParecerTipo === 'com_aderencia' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-bold uppercase tracking-wider text-gray-500">1. Parecer CKM</span>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${solicitacao.parecerCkmTipo === 'com_aderencia' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                    {solicitacao.parecerCkmTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${solicitacao.ckmParecerTipo === 'com_aderencia' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                    {solicitacao.ckmParecerTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
                   </span>
                 </div>
-                {!isColaboradorView && <p className="text-sm text-gray-700 whitespace-pre-wrap">{solicitacao.parecerCkmTexto}</p>}
-                {!isColaboradorView && <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.parecerCkmPorNome} em {formatDate(solicitacao.parecerCkmEm)}</p>}
+                {!isColaboradorView && <p className="text-sm text-gray-700 whitespace-pre-wrap">{solicitacao.ckmParecerTexto}</p>}
+                {!isColaboradorView && <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.ckmNome} em {formatDate(solicitacao.ckmParecerEm)}</p>}
               </div>
             )}
 
@@ -618,14 +627,36 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh }: {
 export default function SolicitacoesAcoes() {
   const { user } = useAuth();
   const userRole = user?.role || 'colaborador';
+  const userId = user?.id || 0;
   const [showForm, setShowForm] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [busca, setBusca] = useState('');
+  // Para o Líder: controlar qual aba está ativa
+  const [abaLider, setAbaLider] = useState<'equipe' | 'minhas'>('equipe');
 
   const { data: solicitacoes = [], isLoading, refetch } = trpc.solicitacoesAcoes.listar.useQuery();
 
+  // Separar solicitações do Líder: próprias vs da equipe
+  const minhasSolicitacoes = useMemo(() => {
+    if (userRole !== 'lider') return [];
+    return solicitacoes.filter((s: any) => s.solicitanteId === userId);
+  }, [solicitacoes, userRole, userId]);
+
+  const solicitacoesEquipe = useMemo(() => {
+    if (userRole !== 'lider') return solicitacoes;
+    return solicitacoes.filter((s: any) => s.solicitanteId !== userId);
+  }, [solicitacoes, userRole, userId]);
+
+  // Determinar quais solicitações mostrar baseado na aba ativa
+  const solicitacoesAtivas = useMemo(() => {
+    if (userRole === 'lider') {
+      return abaLider === 'minhas' ? minhasSolicitacoes : solicitacoesEquipe;
+    }
+    return solicitacoes;
+  }, [userRole, abaLider, minhasSolicitacoes, solicitacoesEquipe, solicitacoes]);
+
   const filteredSolicitacoes = useMemo(() => {
-    let result = solicitacoes;
+    let result = solicitacoesAtivas;
     if (filtroStatus !== 'todos') {
       result = result.filter((s: any) => s.statusGeral === filtroStatus);
     }
@@ -638,19 +669,32 @@ export default function SolicitacoesAcoes() {
       );
     }
     return result;
-  }, [solicitacoes, filtroStatus, busca]);
+  }, [solicitacoesAtivas, filtroStatus, busca]);
 
   const contadores = useMemo(() => {
-    const c: Record<string, number> = { todos: solicitacoes.length };
-    solicitacoes.forEach((s: any) => {
+    const c: Record<string, number> = { todos: solicitacoesAtivas.length };
+    solicitacoesAtivas.forEach((s: any) => {
       c[s.statusGeral] = (c[s.statusGeral] || 0) + 1;
     });
     return c;
-  }, [solicitacoes]);
+  }, [solicitacoesAtivas]);
 
-  const pageTitle = userRole === 'colaborador' ? 'Solicitar Ação' : 'Ações Solicitadas por Empregados';
+  // Contadores globais para badges nas abas do Líder
+  const contadoresGlobais = useMemo(() => {
+    const equipePendentes = solicitacoesEquipe.filter((s: any) => s.statusGeral === 'aguardando_gestor').length;
+    return { equipePendentes, minhasTotal: minhasSolicitacoes.length };
+  }, [solicitacoesEquipe, minhasSolicitacoes]);
+
+  const canCreateSolicitacao = userRole === 'colaborador' || userRole === 'lider';
+
+  const pageTitle = userRole === 'colaborador' 
+    ? 'Solicitar Ação' 
+    : 'Ações Solicitadas por Empregados';
+  
   const pageDescription = userRole === 'colaborador'
     ? 'Solicite novas ações para seu PDI. Sua solicitação passará por análise técnica e aprovação.'
+    : userRole === 'lider'
+    ? 'Gerencie as solicitações de ações da sua equipe e crie suas próprias solicitações.'
     : 'Gerencie as solicitações de ações dos empregados. Analise, aprove ou reprove conforme o fluxo de aprovação.';
 
   return (
@@ -663,7 +707,8 @@ export default function SolicitacoesAcoes() {
           </h1>
           <p className="text-sm text-gray-500 mt-1">{pageDescription}</p>
         </div>
-        {userRole === 'colaborador' && !showForm && (
+        {/* Botão Nova Solicitação: visível para Colaborador e Líder (na aba "Minhas") */}
+        {canCreateSolicitacao && !showForm && (userRole === 'colaborador' || abaLider === 'minhas') && (
           <button
             onClick={() => setShowForm(true)}
             className="bg-blue-600 text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-blue-700 flex items-center gap-2 shrink-0"
@@ -674,10 +719,54 @@ export default function SolicitacoesAcoes() {
         )}
       </div>
 
-      {showForm && userRole === 'colaborador' && (
+      {/* Abas do Líder: Equipe / Minhas Solicitações */}
+      {userRole === 'lider' && (
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => { setAbaLider('equipe'); setFiltroStatus('todos'); setBusca(''); }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              abaLider === 'equipe'
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <Users className="h-4 w-4" />
+            Solicitações da Equipe
+            {contadoresGlobais.equipePendentes > 0 && (
+              <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                abaLider === 'equipe' ? 'bg-white text-blue-600' : 'bg-orange-500 text-white'
+              }`}>
+                {contadoresGlobais.equipePendentes}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => { setAbaLider('minhas'); setFiltroStatus('todos'); setBusca(''); }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+              abaLider === 'minhas'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <User className="h-4 w-4" />
+            Minhas Solicitações
+            {contadoresGlobais.minhasTotal > 0 && (
+              <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                abaLider === 'minhas' ? 'bg-white text-purple-600' : 'bg-purple-500 text-white'
+              }`}>
+                {contadoresGlobais.minhasTotal}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Formulário de Nova Solicitação */}
+      {showForm && canCreateSolicitacao && (
         <FormularioSolicitacao onClose={() => setShowForm(false)} onSuccess={() => refetch()} />
       )}
 
+      {/* Filtros */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="flex items-center gap-2 flex-1">
@@ -709,7 +798,8 @@ export default function SolicitacoesAcoes() {
         </div>
       </div>
 
-      {userRole !== 'colaborador' && (
+      {/* Cards de resumo - visível para admin, gerente e líder (aba equipe) */}
+      {(userRole === 'admin' || userRole === 'gerente' || (userRole === 'lider' && abaLider === 'equipe')) && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
             <div className="text-2xl font-bold text-yellow-700">{contadores.aguardando_ckm || 0}</div>
@@ -739,7 +829,9 @@ export default function SolicitacoesAcoes() {
           <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 font-medium">Nenhuma solicitação encontrada</p>
           <p className="text-sm text-gray-400 mt-1">
-            {userRole === 'colaborador' ? 'Clique em "Nova Solicitação" para solicitar uma ação.' : 'Não há solicitações pendentes no momento.'}
+            {(userRole === 'colaborador' || (userRole === 'lider' && abaLider === 'minhas'))
+              ? 'Clique em "Nova Solicitação" para solicitar uma ação.'
+              : 'Não há solicitações pendentes no momento.'}
           </p>
         </div>
       ) : (
@@ -749,8 +841,9 @@ export default function SolicitacoesAcoes() {
               key={s.id}
               solicitacao={s}
               userRole={userRole}
-              userId={user?.id || 0}
+              userId={userId}
               onRefresh={() => refetch()}
+              isOwnRequest={s.solicitanteId === userId}
             />
           ))}
         </div>
