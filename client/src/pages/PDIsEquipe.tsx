@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectContentNoPortal } from "@/components/ui/select";
-import { Eye, Target, User, Calendar, CheckCircle2, Search, Filter, List, TrendingUp, CheckCircle, Users, BarChart3, Award, Clock } from "lucide-react";
+import { Eye, Target, User, Calendar, CheckCircle2, Search, Filter, List, TrendingUp, CheckCircle, Users, BarChart3, Award, Clock, FileText, FileDown } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -493,6 +493,41 @@ export default function PDIsEquipe() {
                   {getStatusBadge(selectedPDI.status)}
                 </div>
               </div>
+
+              {/* Relatório de Análise do Colaborador */}
+              {selectedPDI.relatorioAnalise && (
+                <div>
+                  <label className="text-sm font-medium flex items-center gap-1">
+                    <FileText className="h-4 w-4 text-amber-600" />
+                    Relatório de Análise do Colaborador
+                  </label>
+                  <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mt-1 max-h-[200px] overflow-y-auto">
+                    <p className="text-sm whitespace-pre-wrap">{selectedPDI.relatorioAnalise}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Arquivo Anexado do Relatório */}
+              {selectedPDI.relatorioArquivoUrl && (
+                <div>
+                  <label className="text-sm font-medium flex items-center gap-1">
+                    <FileDown className="h-4 w-4 text-green-600" />
+                    Arquivo do Relatório
+                  </label>
+                  <div className="flex items-center gap-3 p-3 mt-1 bg-green-50 border border-green-200 rounded-md">
+                    <FileDown className="w-5 h-5 text-green-600 shrink-0" />
+                    <span className="text-sm font-medium text-green-800 truncate flex-1">{selectedPDI.relatorioArquivoNome || "Arquivo"}</span>
+                    <a
+                      href={selectedPDI.relatorioArquivoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                    >
+                      Baixar
+                    </a>
+                  </div>
+                </div>
+              )}
 
               {/* Progresso de Ações */}
               <div>

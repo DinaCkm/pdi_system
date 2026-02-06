@@ -2781,3 +2781,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Exibir link de download do arquivo anexado (quando houver)
 - [x] Garantir que apenas Admin pode editar o relatório
 - [x] Escrever testes vitest (6/6 passando)
+- [x] Atualizar título dos PDIs de 'DESENVOLVIMENTO TÉCNICO E COMPORTAMENTAL 2026' para 'PDI - 2025/2026 - AÇÕES REMANESCENTES DE 2025 E PROGRAMADAS PARA 2026'
+- [x] Criar PDI para todos os empregados no ciclo 01/2026 com título 'PDI - 01/2026 - BASE: CERTIFICAÇÃO' (162 PDIs criados)
+- [x] Exibir Relatório de Análise no modal de detalhes do PDI (visível para Colaborador e Líder)
