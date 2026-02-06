@@ -2802,3 +2802,29 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Ajustar backend para permitir Líder criar solicitações como colaborador
 - [x] Ajustar frontend para Líder ver duas seções (Minhas Solicitações + Solicitações da Equipe)
 - [x] Atualizar testes vitest para cobrir fluxo do Líder como solicitante
+
+## Filtros Avançados - Solicitações da Equipe (Líder)
+- [x] Implementar filtro por status com chips visuais clicáveis
+- [x] Implementar filtro por período (data de solicitação)
+- [x] Implementar ordenação por data, status ou solicitante
+- [x] Implementar filtro por departamento do solicitante
+- [x] Aplicar filtros avançados também para Admin e Gerente
+- [x] Escrever testes vitest para validar lógica de filtros
+
+## Badge de Pendências no Menu Lateral
+- [x] Criar procedure backend para contar solicitações pendentes por papel
+- [x] Adicionar badge numérico no item "Ações Solicitadas por Empregados" do menu lateral
+- [x] Badge mostra contagem diferente por papel (CKM: aguardando_ckm, Gestor: aguardando_gestor, RH: aguardando_rh)
+- [x] Escrever testes vitest para a procedure de contagem
+
+## Bug Fix - Líder não vê formulário de solicitar ação
+- [x] Diagnosticar e corrigir: Líder não consegue ver o campo/formulário para solicitar inclusão de uma ação
+
+## Separação do Menu do Líder - Solicitações de Ações
+- [x] Separar item único "Ações Solicitadas por Empregados" em dois itens no menu do Líder
+- [x] Criar item "Solicitações da Equipe" no menu (para aprovar/reprovar)
+- [x] Criar item "Minhas Solicitações de Ação" no menu (para criar e acompanhar)
+- [x] Criar rota /minhas-solicitacoes-acoes para as solicitações pessoais do Líder
+- [x] Adaptar página SolicitacoesAcoes para funcionar com rota (sem abas internas)
+- [x] Manter funcionalidade existente para Admin, Gerente e Colaborador
+- [x] Adicionar mensagem orientativa na aba "Minhas Solicitações de Ação" do Líder explicando que ele só cria ações para si, não para liderados

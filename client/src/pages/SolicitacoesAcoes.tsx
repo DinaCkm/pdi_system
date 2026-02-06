@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { toast } from 'sonner';
+import { useSearch } from 'wouter';
 import { 
   FileText, Plus, Clock, CheckCircle2, XCircle, AlertTriangle, 
   Search, ChevronDown, X, Check, Send, Eye, MessageSquare,
@@ -631,8 +632,28 @@ export default function SolicitacoesAcoes() {
   const [showForm, setShowForm] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [busca, setBusca] = useState('');
-  // Para o Líder: controlar qual aba está ativa
-  const [abaLider, setAbaLider] = useState<'equipe' | 'minhas'>('equipe');
+  const [ordenacao, setOrdenacao] = useState<'recentes' | 'antigas'>('recentes');
+  const [filtroPeriodo, setFiltroPeriodo] = useState<'todos' | 'hoje' | 'semana' | 'mes' | 'trimestre'>('todos');
+  const [showFiltrosAvancados, setShowFiltrosAvancados] = useState(false);
+  // Para o Líder: controlar qual aba está ativa, lendo do query param
+  const searchString = useSearch();
+  const queryParams = useMemo(() => new URLSearchParams(searchString), [searchString]);
+  const abaFromUrl = queryParams.get('aba');
+  const [abaLider, setAbaLider] = useState<'equipe' | 'minhas'>(
+    abaFromUrl === 'minhas' ? 'minhas' : 'equipe'
+  );
+
+  // Sincronizar aba com query param quando muda (ex: clique no menu lateral)
+  useEffect(() => {
+    const handleAbaChange = () => {
+      const params = new URLSearchParams(window.location.search);
+      const aba = params.get('aba');
+      if (aba === 'minhas') setAbaLider('minhas');
+      else if (aba === 'equipe') setAbaLider('equipe');
+    };
+    window.addEventListener('popstate', handleAbaChange);
+    return () => window.removeEventListener('popstate', handleAbaChange);
+  }, []);
 
   const { data: solicitacoes = [], isLoading, refetch } = trpc.solicitacoesAcoes.listar.useQuery();
 
@@ -668,8 +689,39 @@ export default function SolicitacoesAcoes() {
         s.solicitanteDepartamento?.toLowerCase().includes(term)
       );
     }
+    // Filtro por período
+    if (filtroPeriodo !== 'todos') {
+      const agora = new Date();
+      let dataLimite: Date;
+      switch (filtroPeriodo) {
+        case 'hoje':
+          dataLimite = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+          break;
+        case 'semana':
+          dataLimite = new Date(agora.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'mes':
+          dataLimite = new Date(agora.getFullYear(), agora.getMonth() - 1, agora.getDate());
+          break;
+        case 'trimestre':
+          dataLimite = new Date(agora.getFullYear(), agora.getMonth() - 3, agora.getDate());
+          break;
+        default:
+          dataLimite = new Date(0);
+      }
+      result = result.filter((s: any) => {
+        const dataCriacao = s.createdAt ? new Date(s.createdAt) : null;
+        return dataCriacao && dataCriacao >= dataLimite;
+      });
+    }
+    // Ordenação por data
+    result = [...result].sort((a: any, b: any) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return ordenacao === 'recentes' ? dateB - dateA : dateA - dateB;
+    });
     return result;
-  }, [solicitacoesAtivas, filtroStatus, busca]);
+  }, [solicitacoesAtivas, filtroStatus, busca, filtroPeriodo, ordenacao]);
 
   const contadores = useMemo(() => {
     const c: Record<string, number> = { todos: solicitacoesAtivas.length };
@@ -689,12 +741,16 @@ export default function SolicitacoesAcoes() {
 
   const pageTitle = userRole === 'colaborador' 
     ? 'Solicitar Ação' 
+    : userRole === 'lider'
+    ? (abaLider === 'minhas' ? 'Minhas Solicitações de Ação' : 'Solicitações da Equipe')
     : 'Ações Solicitadas por Empregados';
   
   const pageDescription = userRole === 'colaborador'
     ? 'Solicite novas ações para seu PDI. Sua solicitação passará por análise técnica e aprovação.'
     : userRole === 'lider'
-    ? 'Gerencie as solicitações de ações da sua equipe e crie suas próprias solicitações.'
+    ? (abaLider === 'minhas' 
+      ? 'Solicite novas ações para o seu próprio PDI.'
+      : 'Gerencie as solicitações de ações da sua equipe.')
     : 'Gerencie as solicitações de ações dos empregados. Analise, aprove ou reprove conforme o fluxo de aprovação.';
 
   return (
@@ -719,45 +775,22 @@ export default function SolicitacoesAcoes() {
         )}
       </div>
 
-      {/* Abas do Líder: Equipe / Minhas Solicitações */}
-      {userRole === 'lider' && (
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => { setAbaLider('equipe'); setFiltroStatus('todos'); setBusca(''); }}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-              abaLider === 'equipe'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            <Users className="h-4 w-4" />
-            Solicitações da Equipe
-            {contadoresGlobais.equipePendentes > 0 && (
-              <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold ${
-                abaLider === 'equipe' ? 'bg-white text-blue-600' : 'bg-orange-500 text-white'
-              }`}>
-                {contadoresGlobais.equipePendentes}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => { setAbaLider('minhas'); setFiltroStatus('todos'); setBusca(''); }}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-              abaLider === 'minhas'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            <User className="h-4 w-4" />
-            Minhas Solicitações
-            {contadoresGlobais.minhasTotal > 0 && (
-              <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold ${
-                abaLider === 'minhas' ? 'bg-white text-purple-600' : 'bg-purple-500 text-white'
-              }`}>
-                {contadoresGlobais.minhasTotal}
-              </span>
-            )}
-          </button>
+
+
+      {/* Mensagem orientativa para o Líder na aba Minhas Solicitações */}
+      {userRole === 'lider' && abaLider === 'minhas' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+          <div className="flex gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800">
+              <p className="font-semibold mb-1">Atenção — Este painel é para as suas ações pessoais</p>
+              <p>
+                Neste espaço você cria as ações que deseja <strong>para você</strong> e que foram acordadas pelo seu líder ou RH. 
+                <strong>Nunca</strong> crie ações para os seus liderados aqui. Caso deseje criar uma ação para um liderado seu, 
+                converse com ele e solicite que ele inclua a ação no próprio painel de inclusão de ações.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -768,33 +801,90 @@ export default function SolicitacoesAcoes() {
 
       {/* Filtros */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="flex items-center gap-2 flex-1">
-            <Search className="h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar por título, solicitante ou departamento..."
-              className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-blue-400"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-400" />
-            <select
-              value={filtroStatus}
-              onChange={(e) => setFiltroStatus(e.target.value)}
-              className="text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-blue-400"
+        <div className="flex flex-col gap-3">
+          {/* Linha 1: Busca + Status + Botão filtros avançados */}
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex items-center gap-2 flex-1">
+              <Search className="h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar por título, solicitante ou departamento..."
+                className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-blue-400"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-400" />
+              <select
+                value={filtroStatus}
+                onChange={(e) => setFiltroStatus(e.target.value)}
+                className="text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-blue-400"
+              >
+                <option value="todos">Todos ({contadores.todos || 0})</option>
+                <option value="aguardando_ckm">Aguardando CKM ({contadores.aguardando_ckm || 0})</option>
+                <option value="aguardando_gestor">Aguardando Gestor ({contadores.aguardando_gestor || 0})</option>
+                <option value="aguardando_rh">Aguardando RH ({contadores.aguardando_rh || 0})</option>
+                <option value="aprovada">Aprovadas ({contadores.aprovada || 0})</option>
+                <option value="vetada_gestor">Vetadas Gestor ({contadores.vetada_gestor || 0})</option>
+                <option value="vetada_rh">Vetadas RH ({contadores.vetada_rh || 0})</option>
+              </select>
+            </div>
+            <button
+              onClick={() => setShowFiltrosAvancados(!showFiltrosAvancados)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all border ${
+                showFiltrosAvancados || filtroPeriodo !== 'todos' || ordenacao !== 'recentes'
+                  ? 'bg-blue-50 border-blue-300 text-blue-700'
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}
             >
-              <option value="todos">Todos ({contadores.todos || 0})</option>
-              <option value="aguardando_ckm">Aguardando CKM ({contadores.aguardando_ckm || 0})</option>
-              <option value="aguardando_gestor">Aguardando Gestor ({contadores.aguardando_gestor || 0})</option>
-              <option value="aguardando_rh">Aguardando RH ({contadores.aguardando_rh || 0})</option>
-              <option value="aprovada">Aprovadas ({contadores.aprovada || 0})</option>
-              <option value="vetada_gestor">Vetadas Gestor ({contadores.vetada_gestor || 0})</option>
-              <option value="vetada_rh">Vetadas RH ({contadores.vetada_rh || 0})</option>
-            </select>
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showFiltrosAvancados ? 'rotate-180' : ''}`} />
+              Filtros
+              {(filtroPeriodo !== 'todos' || ordenacao !== 'recentes') && (
+                <span className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-blue-600"></span>
+              )}
+            </button>
           </div>
+
+          {/* Linha 2: Filtros avançados (colapsável) */}
+          {showFiltrosAvancados && (
+            <div className="flex flex-col md:flex-row gap-3 pt-3 border-t border-gray-100">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-gray-400" />
+                <select
+                  value={filtroPeriodo}
+                  onChange={(e) => setFiltroPeriodo(e.target.value as any)}
+                  className="text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-blue-400"
+                >
+                  <option value="todos">Todo período</option>
+                  <option value="hoje">Hoje</option>
+                  <option value="semana">Últimos 7 dias</option>
+                  <option value="mes">Últimos 30 dias</option>
+                  <option value="trimestre">Últimos 3 meses</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+                <select
+                  value={ordenacao}
+                  onChange={(e) => setOrdenacao(e.target.value as any)}
+                  className="text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-blue-400"
+                >
+                  <option value="recentes">Mais recentes primeiro</option>
+                  <option value="antigas">Mais antigas primeiro</option>
+                </select>
+              </div>
+              {(filtroPeriodo !== 'todos' || ordenacao !== 'recentes') && (
+                <button
+                  onClick={() => { setFiltroPeriodo('todos'); setOrdenacao('recentes'); }}
+                  className="flex items-center gap-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Limpar filtros
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

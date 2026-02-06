@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2, CheckSquare, MessageSquarePlus, Upload, ClipboardCheck, History, Trash2, AlertTriangle, TrendingUp, ChevronDown, ChevronRight } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2, CheckSquare, MessageSquarePlus, Upload, ClipboardCheck, History, Trash2, AlertTriangle, TrendingUp, ChevronDown, ChevronRight, User, Send } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -66,7 +66,8 @@ const getMenuItems = (userRole: string) => {
       { icon: Target, label: "PDIs da Equipe", path: "/pdis-equipe" },
       { icon: CheckSquare, label: "Ações da Equipe", path: "/acoes-equipe" },
       { icon: MessageSquarePlus, label: "Solicitações de Ajuste", path: "/solicitacoes-equipe" },
-      { icon: FileText, label: "Ações Solicitadas por Empregados", path: "/solicitacoes-acoes" },
+      { icon: Users, label: "Solicitações da Equipe", path: "/solicitacoes-acoes?aba=equipe" },
+      { icon: Send, label: "Minhas Solicitações de Ação", path: "/solicitacoes-acoes?aba=minhas" },
     );
   } else if (userRole === "gerente") {
     // Gerente tem acesso igual ao Admin: Dashboard completo com filtros, Ações, Histórico, Relatório de Vencidas
@@ -174,7 +175,13 @@ function DashboardLayoutContent({
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const menuItems = getMenuItems(user?.role || "colaborador");
-  const activeMenuItem = menuItems.find((item: any) => item.path === location);
+  const activeMenuItem = menuItems.find((item: any) => {
+    // Para itens com query params, comparar o pathname base + query
+    if (item.path.includes('?')) {
+      return (location + window.location.search) === item.path;
+    }
+    return item.path === location;
+  });
   const isMobile = useIsMobile();
   
   // Estados para seções colapsáveis do menu Admin
@@ -346,17 +353,36 @@ function DashboardLayoutContent({
             {user?.role !== "admin" && (
               <SidebarMenu className="px-2 py-1">
                 {menuItems.map((item: any) => {
-                  const isActive = location === item.path;
+                  // Para itens com query params, comparar pathname + search
+                  const isActive = item.path.includes('?')
+                    ? (location + window.location.search) === item.path
+                    : location === item.path;
                   let badgeCount = 0;
                   
                   if (item.path === "/evidencias-pendentes" && user?.role === "admin") {
                     badgeCount = unreadCounts?.evidenciasPendentes || 0;
                   }
+                  // Badge para solicitações da equipe pendentes (Líder, CKM, Admin)
+                  if (item.path === "/solicitacoes-acoes?aba=equipe" || item.path === "/solicitacoes-acoes") {
+                    badgeCount = unreadCounts?.solicitacoesEquipePendentes || 0;
+                  }
                   return (
                     <SidebarMenuItem key={item.path}>
                       <SidebarMenuButton
                         isActive={isActive}
-                        onClick={() => setLocation(item.path)}
+                        onClick={() => {
+                          if (item.path.includes('?')) {
+                            // Para itens com query params, usar window.location para navegar
+                            const [pathname, search] = item.path.split('?');
+                            setLocation(pathname);
+                            // Atualizar query params via history API
+                            window.history.replaceState(null, '', item.path);
+                            // Disparar evento para que a página detecte a mudança
+                            window.dispatchEvent(new Event('popstate'));
+                          } else {
+                            setLocation(item.path);
+                          }
+                        }}
                         tooltip={item.label}
                         className={`h-10 transition-all font-normal relative`}
                       >

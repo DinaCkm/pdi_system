@@ -1,7 +1,7 @@
 import { router, protectedProcedure } from "../_core/customTrpc";
 import { z } from "zod";
-import { eq, and, sql } from "drizzle-orm";
-import { pdis, actions, users, departamentos, adjustmentRequests, notifications } from "../../drizzle/schema";
+import { eq, and, sql, or, inArray } from "drizzle-orm";
+import { pdis, actions, users, departamentos, adjustmentRequests, notifications, solicitacoesAcoes } from "../../drizzle/schema";
 import { getDb } from "../db";
 
 /**
@@ -201,6 +201,7 @@ export const notificationsRouter = router({
         evidenciasPendentes: 0,
         ajustesPendentes: 0,
         mensagensNaoLidas: 0,
+        solicitacoesEquipePendentes: 0,
         total: 0,
       };
 
@@ -223,6 +224,51 @@ export const notificationsRouter = router({
             .where(eq(adjustmentRequests.status, "aguardando_lider"));
 
           counts.ajustesPendentes = Number(ajustesResult[0]?.count) || 0;
+
+          // Líder: Contar solicitações de ações da equipe aguardando gestor
+          try {
+            const solicitacoesResult = await db
+              .select({ count: sql<number>`count(*)` })
+              .from(solicitacoesAcoes)
+              .where(
+                and(
+                  eq(solicitacoesAcoes.gestorId, user.id),
+                  eq(solicitacoesAcoes.statusGeral, 'aguardando_gestor')
+                )
+              );
+
+            counts.solicitacoesEquipePendentes = Number(solicitacoesResult[0]?.count) || 0;
+          } catch (e) {
+            counts.solicitacoesEquipePendentes = 0;
+          }
+        }
+
+        // CKM: Contar solicitações aguardando análise CKM
+        if (user.role === "ckm") {
+          try {
+            const solicitacoesCkmResult = await db
+              .select({ count: sql<number>`count(*)` })
+              .from(solicitacoesAcoes)
+              .where(eq(solicitacoesAcoes.statusGeral, 'aguardando_ckm'));
+
+            counts.solicitacoesEquipePendentes = Number(solicitacoesCkmResult[0]?.count) || 0;
+          } catch (e) {
+            counts.solicitacoesEquipePendentes = 0;
+          }
+        }
+
+        // RH (Admin): Contar solicitações aguardando RH
+        if (user.role === "admin") {
+          try {
+            const solicitacoesRhResult = await db
+              .select({ count: sql<number>`count(*)` })
+              .from(solicitacoesAcoes)
+              .where(eq(solicitacoesAcoes.statusGeral, 'aguardando_rh'));
+
+            counts.solicitacoesEquipePendentes = Number(solicitacoesRhResult[0]?.count) || 0;
+          } catch (e) {
+            counts.solicitacoesEquipePendentes = 0;
+          }
         }
 
         // Colaborador: Contar mensagens não lidas
@@ -248,7 +294,8 @@ export const notificationsRouter = router({
         counts.total = 
           counts.evidenciasPendentes + 
           counts.ajustesPendentes + 
-          counts.mensagensNaoLidas;
+          counts.mensagensNaoLidas +
+          counts.solicitacoesEquipePendentes;
 
         return counts;
       } catch (error) {
