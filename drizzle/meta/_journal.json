@@ -29,6 +29,13 @@
       "when": 1769628109915,
       "tag": "0003_fluffy_tusk",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1770398161784,
+      "tag": "0004_magenta_excalibur",
+      "breakpoints": true
     }
   ]
 }

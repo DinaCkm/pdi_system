@@ -2769,3 +2769,15 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Investigar por que o perfil GERENTE não visualiza líderes na página de Análise de Liderança
 - [x] Corrigir a query/permissões para permitir visualização pelo GERENTE (alterado de adminProcedure para adminOrGerenteProcedure)
 - [x] Adicionar Total de Ações no card de Status de Prazos das Ações no Dashboard
+
+## Relatório de Análise do Colaborador no PDI
+- [x] Adicionar campos relatorioAnalise e relatorioArquivoUrl/relatorioArquivoNome no schema (tabela pdis)
+- [x] Migrar banco de dados com os novos campos
+- [x] Atualizar backend (db.ts e routers.ts) para suportar criação/edição com relatório
+- [x] Implementar endpoint de upload de arquivo do relatório
+- [x] Atualizar formulário de criação de PDI (campo texto Markdown + upload opcional)
+- [x] Atualizar formulário de edição de PDI com os mesmos campos
+- [x] Exibir relatório de análise no card de detalhes do PDI (renderizado em Markdown)
+- [x] Exibir link de download do arquivo anexado (quando houver)
+- [x] Garantir que apenas Admin pode editar o relatório
+- [x] Escrever testes vitest (6/6 passando)

@@ -142,7 +142,7 @@ export const appRouter = router({
       
       return { success: true };
     }),
-    create: protectedProcedure.input(z.object({ colaboradorId: z.number(), cicloId: z.number(), titulo: z.string(), objetivoGeral: z.string().optional() })).mutation(async ({ input, ctx }) => {
+    create: protectedProcedure.input(z.object({ colaboradorId: z.number(), cicloId: z.number(), titulo: z.string(), objetivoGeral: z.string().optional(), relatorioAnalise: z.string().optional() })).mutation(async ({ input, ctx }) => {
       const pdiId = await db.createPDI({
         ...input,
         createdBy: Number(ctx.user.id),
@@ -157,6 +157,10 @@ export const appRouter = router({
       id: z.number(), 
       titulo: z.string().optional(), 
       objetivoGeral: z.string().optional(),
+      relatorioAnalise: z.string().optional().nullable(),
+      relatorioArquivoUrl: z.string().optional().nullable(),
+      relatorioArquivoNome: z.string().optional().nullable(),
+      relatorioArquivoKey: z.string().optional().nullable(),
       cicloId: z.number().optional(),
       status: z.string().optional()
     })).mutation(async ({ input }) => {
@@ -164,6 +168,40 @@ export const appRouter = router({
       await db.updatePDI(id, data);
       return { success: true };
     }),
+    // Upload de arquivo do relatório de análise
+    uploadRelatorioArquivo: adminProcedure
+      .input(z.object({
+        pdiId: z.number(),
+        fileName: z.string(),
+        fileType: z.string(),
+        fileBase64: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { storagePut } = await import("./storage");
+        const buffer = Buffer.from(input.fileBase64, "base64");
+        const randomSuffix = Math.random().toString(36).substring(2, 10);
+        const fileKey = `pdi-relatorios/${input.pdiId}/${randomSuffix}-${input.fileName}`;
+        const { url } = await storagePut(fileKey, buffer, input.fileType);
+        
+        await db.updatePDI(input.pdiId, {
+          relatorioArquivoUrl: url,
+          relatorioArquivoNome: input.fileName,
+          relatorioArquivoKey: fileKey,
+        });
+        
+        return { success: true, url, fileName: input.fileName };
+      }),
+    // Remover arquivo do relatório de análise
+    removeRelatorioArquivo: adminProcedure
+      .input(z.object({ pdiId: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.updatePDI(input.pdiId, {
+          relatorioArquivoUrl: null as any,
+          relatorioArquivoNome: null as any,
+          relatorioArquivoKey: null as any,
+        });
+        return { success: true };
+      }),
   }),
 
   // ============= EVIDÊNCIAS (JÁ ATUALIZADO ANTERIORMENTE) =============

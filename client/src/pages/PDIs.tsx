@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { DataTablePDIs } from "@/components/DataTablePDIs";
-import { Plus, Loader2, Search } from "lucide-react";
+import { Plus, Loader2, Search, FileText, Upload, X, FileDown } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -21,6 +21,9 @@ export default function PDIs() {
   
   // Estado para busca de colaborador (Filtro)
   const [userSearchTerm, setUserSearchTerm] = useState("");
+  
+  // Estado para relatório de análise
+  const [relatorioAnalise, setRelatorioAnalise] = useState("");
 
   // 1. CARREGAMENTO TURBO (LIMIT 1000)
   // Isso resolve o problema de usuários sumindo da lista
@@ -98,6 +101,7 @@ export default function PDIs() {
     setSelectedCiclo("");
     setTitulo("");
     setObjetivoGeral("");
+    setRelatorioAnalise("");
     setUserSearchTerm(""); // Limpa a busca também
     setIsCreatingBulk(false);
   };
@@ -122,6 +126,7 @@ export default function PDIs() {
       cicloId: Number(selectedCiclo),
       titulo,
       objetivoGeral: objetivoGeral || undefined,
+      relatorioAnalise: relatorioAnalise || undefined,
     });
   };
 
@@ -302,6 +307,26 @@ export default function PDIs() {
                     className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none resize-none"
                   />
                 </div>
+
+                {/* Campo Relatório de Análise */}
+                {!isCreatingBulk && (
+                  <div>
+                    <label className="text-sm font-bold text-gray-700 block mb-1">
+                      <FileText className="w-4 h-4 inline mr-1" />
+                      Relatório de Análise do Colaborador (Opcional)
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Insira o relatório/análise que originou este PDI. Suporta formatação Markdown (negrito, tabelas, listas).
+                    </p>
+                    <textarea
+                      placeholder={"Ex:\n**Avaliação de Desempenho 2025**\n\nO colaborador apresentou...\n\n| Competência | Nota |\n|---|---|\n| Liderança | 3.5 |"}
+                      value={relatorioAnalise}
+                      onChange={(e) => setRelatorioAnalise(e.target.value)}
+                      rows={6}
+                      className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none resize-y overflow-auto"
+                    />
+                  </div>
+                )}
 
                 {/* Botões de Ação */}
                 <div className="flex gap-3 pt-4">

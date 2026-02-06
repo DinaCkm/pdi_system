@@ -496,6 +496,7 @@ export async function createPDI(data: {
   cicloId: number;
   titulo: string;
   objetivoGeral?: string;
+  relatorioAnalise?: string;
   createdBy: number;
 }) {
   const db = await getDb();
@@ -506,6 +507,7 @@ export async function createPDI(data: {
     cicloId: data.cicloId,
     titulo: data.titulo,
     objetivoGeral: data.objetivoGeral || "",
+    relatorioAnalise: data.relatorioAnalise || null,
     status: "em_andamento",
     createdBy: data.createdBy,
     createdAt: new Date(),
@@ -517,7 +519,7 @@ export async function createPDI(data: {
 
 export async function updatePDI(
   id: number,
-  data: Partial<{ titulo: string; descricao: string; status: string }>
+  data: Partial<{ titulo: string; descricao: string; status: string; relatorioAnalise: string | null; relatorioArquivoUrl: string | null; relatorioArquivoNome: string | null; relatorioArquivoKey: string | null }>
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

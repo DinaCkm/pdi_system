@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
-import { ArrowLeft, User, Calendar, Building, Target, CheckCircle2, Clock, FileText, Edit2, Loader2 } from "lucide-react";
+import { ArrowLeft, User, Calendar, Building, Target, CheckCircle2, Clock, FileText, Edit2, Loader2, Upload, X, FileDown, Save } from "lucide-react";
+import { Streamdown } from "streamdown";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -12,6 +13,13 @@ export default function PDIDetalhes() {
   const { user } = useAuth();
   
   const pdiId = parseInt(id || "0");
+  
+  // Estados para edição do relatório
+  const [isEditingRelatorio, setIsEditingRelatorio] = useState(false);
+  const [relatorioTexto, setRelatorioTexto] = useState("");
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  
+  const utils = trpc.useUtils();
   
   // Buscar dados do PDI
   const { data: pdi, isLoading: isLoadingPDI, error: pdiError } = trpc.pdis.getById.useQuery(
@@ -24,6 +32,72 @@ export default function PDIDetalhes() {
     { pdiId },
     { enabled: pdiId > 0 }
   );
+  
+  // Mutations para relatório
+  const updatePDIMutation = trpc.pdis.update.useMutation({
+    onSuccess: () => {
+      toast.success("Relatório de análise salvo com sucesso!");
+      setIsEditingRelatorio(false);
+      utils.pdis.getById.invalidate({ id: pdiId });
+    },
+    onError: (err: any) => toast.error(err.message || "Erro ao salvar relatório"),
+  });
+  
+  const uploadArquivoMutation = trpc.pdis.uploadRelatorioArquivo.useMutation({
+    onSuccess: () => {
+      toast.success("Arquivo do relatório enviado com sucesso!");
+      setIsUploadingFile(false);
+      utils.pdis.getById.invalidate({ id: pdiId });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erro ao enviar arquivo");
+      setIsUploadingFile(false);
+    },
+  });
+  
+  const removeArquivoMutation = trpc.pdis.removeRelatorioArquivo.useMutation({
+    onSuccess: () => {
+      toast.success("Arquivo removido com sucesso!");
+      utils.pdis.getById.invalidate({ id: pdiId });
+    },
+    onError: (err: any) => toast.error(err.message || "Erro ao remover arquivo"),
+  });
+  
+  const handleSaveRelatorio = () => {
+    updatePDIMutation.mutate({
+      id: pdiId,
+      relatorioAnalise: relatorioTexto || null,
+    });
+  };
+  
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Limitar a 10MB
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo muito grande. Máximo: 10MB");
+      return;
+    }
+    
+    setIsUploadingFile(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(",")[1];
+      uploadArquivoMutation.mutate({
+        pdiId,
+        fileName: file.name,
+        fileType: file.type,
+        fileBase64: base64,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  const handleStartEditRelatorio = () => {
+    setRelatorioTexto(pdi?.relatorioAnalise || "");
+    setIsEditingRelatorio(true);
+  };
 
   // Função para obter cor do status
   const getStatusColor = (status: string) => {
@@ -213,6 +287,129 @@ export default function PDIDetalhes() {
           <p className="text-gray-700 whitespace-pre-wrap">{pdi.objetivoGeral}</p>
         </div>
       )}
+
+      {/* Relatório de Análise do Colaborador */}
+      <div className="bg-white rounded-lg border shadow-sm">
+        <div className="p-4 border-b flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-amber-600" />
+            Relatório de Análise do Colaborador
+          </h2>
+          {user?.role === "admin" && !isEditingRelatorio && (
+            <button
+              onClick={handleStartEditRelatorio}
+              className="flex items-center gap-1 px-3 py-1.5 text-sm bg-amber-50 text-amber-700 border border-amber-200 rounded-md hover:bg-amber-100 transition-colors"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+              {pdi.relatorioAnalise ? "Editar" : "Adicionar"}
+            </button>
+          )}
+        </div>
+        
+        <div className="p-4">
+          {isEditingRelatorio ? (
+            <div className="space-y-3">
+              <p className="text-xs text-gray-500">
+                Insira o relatório/análise que originou este PDI. Suporta formatação Markdown (negrito com **, tabelas com |, listas com -).
+              </p>
+              <textarea
+                value={relatorioTexto}
+                onChange={(e) => setRelatorioTexto(e.target.value)}
+                rows={10}
+                placeholder={"Ex:\n**Avaliação de Desempenho 2025**\n\nO colaborador apresentou...\n\n| Competência | Nota |\n|---|---|\n| Liderança | 3.5 |"}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 outline-none resize-y overflow-auto font-mono text-sm"
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setIsEditingRelatorio(false)}
+                  className="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveRelatorio}
+                  disabled={updatePDIMutation.isPending}
+                  className="flex items-center gap-2 px-4 py-2 text-sm bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50"
+                >
+                  {updatePDIMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  Salvar Relatório
+                </button>
+              </div>
+            </div>
+          ) : pdi.relatorioAnalise ? (
+            <div className="prose prose-sm max-w-none text-gray-700 overflow-auto max-h-[400px]">
+              <Streamdown>{pdi.relatorioAnalise}</Streamdown>
+            </div>
+          ) : (
+            <p className="text-gray-400 italic text-sm">
+              Nenhum relatório de análise adicionado a este PDI.
+              {user?.role === "admin" && " Clique em \"Adicionar\" para inserir."}
+            </p>
+          )}
+        </div>
+        
+        {/* Seção de Arquivo Anexado */}
+        <div className="px-4 pb-4 border-t pt-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium text-gray-700 flex items-center gap-1">
+              <FileDown className="w-4 h-4" />
+              Arquivo Anexado (Opcional)
+            </p>
+          </div>
+          
+          {pdi.relatorioArquivoUrl ? (
+            <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-md">
+              <FileDown className="w-5 h-5 text-green-600 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-green-800 truncate">{pdi.relatorioArquivoNome || "Arquivo"}</p>
+              </div>
+              <a
+                href={pdi.relatorioArquivoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                Baixar
+              </a>
+              {user?.role === "admin" && (
+                <button
+                  onClick={() => removeArquivoMutation.mutate({ pdiId })}
+                  disabled={removeArquivoMutation.isPending}
+                  className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                  title="Remover arquivo"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <div>
+              {user?.role === "admin" ? (
+                <label className="flex items-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-md cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition-colors">
+                  <Upload className="w-5 h-5 text-gray-400" />
+                  <span className="text-sm text-gray-500">
+                    {isUploadingFile ? "Enviando..." : "Clique para anexar PDF, DOC ou imagem (máx. 10MB)"}
+                  </span>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    disabled={isUploadingFile}
+                  />
+                  {isUploadingFile && <Loader2 className="w-4 h-4 animate-spin text-amber-600" />}
+                </label>
+              ) : (
+                <p className="text-sm text-gray-400 italic">Nenhum arquivo anexado.</p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Progresso */}
       <div className="bg-white rounded-lg border p-4 shadow-sm">
