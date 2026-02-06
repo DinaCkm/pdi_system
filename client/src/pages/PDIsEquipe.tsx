@@ -555,9 +555,20 @@ export default function PDIsEquipe() {
                 </div>
               </div>
 
-              {/* Botão para ver ações */}
-              <div className="pt-4">
+              {/* Botões de ação */}
+              <div className="pt-4 space-y-2">
                 <Button
+                  className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setLocation(`/pdis/${selectedPDI?.pdiId || selectedPDI?.id}`);
+                  }}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Ver Detalhes Completos
+                </Button>
+                <Button
+                  variant="outline"
                   className="w-full"
                   onClick={() => {
                     setShowViewModal(false);

@@ -467,6 +467,7 @@ export async function getAllPDIs() {
         colaboradorId: pdi.colaboradorId,
         usuarioId: pdi.colaboradorId,
         colaboradorNome: user?.name || "—",
+        colaborador: user ? { name: user.name, email: user.email } : null,
         departamentoNome: dept?.nome || "—",
         cicloNome: ciclo?.nome || "—",
         ciclo: ciclo || null,
@@ -484,6 +485,11 @@ export async function getAllPDIs() {
         // Campo de validação do líder
         validadoEm: validacao?.aprovadoEm || null,
         validadoPor: validacao?.liderId || null,
+        // Relatório de Análise
+        relatorioAnalise: pdi.relatorioAnalise || null,
+        relatorioArquivoUrl: pdi.relatorioArquivoUrl || null,
+        relatorioArquivoNome: pdi.relatorioArquivoNome || null,
+        objetivoGeral: pdi.objetivoGeral || null,
       };
     })
   );

@@ -183,7 +183,15 @@ export default function PDIDetalhes() {
       {/* Header com botão voltar */}
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate("/pdis")}
+          onClick={() => {
+            if (user?.role === "admin" || user?.role === "gerente") {
+              navigate("/pdis");
+            } else if (user?.role === "lider") {
+              navigate("/pdis-equipe");
+            } else {
+              navigate("/meu-pdi");
+            }
+          }}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />

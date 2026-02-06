@@ -340,12 +340,22 @@ export default function MeuPDI() {
 
               <div className="flex gap-2 pt-4">
                 <Button
-                  variant="outline"
-                  onClick={() => setShowViewModal(false)}
-                  className="w-full"
-                >
-                  Fechar
-                </Button>
+                   onClick={() => {
+                     setShowViewModal(false);
+                     setLocation(`/pdis/${selectedPDI?.pdiId || selectedPDI?.id}`);
+                   }}
+                   className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                 >
+                   <Eye className="w-4 h-4 mr-2" />
+                   Ver Detalhes Completos
+                 </Button>
+                 <Button
+                   variant="outline"
+                   onClick={() => setShowViewModal(false)}
+                   className="w-full"
+                 >
+                   Fechar
+                 </Button>
               </div>
             </div>
           </DialogContent>

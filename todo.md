@@ -2784,3 +2784,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Atualizar título dos PDIs de 'DESENVOLVIMENTO TÉCNICO E COMPORTAMENTAL 2026' para 'PDI - 2025/2026 - AÇÕES REMANESCENTES DE 2025 E PROGRAMADAS PARA 2026'
 - [x] Criar PDI para todos os empregados no ciclo 01/2026 com título 'PDI - 01/2026 - BASE: CERTIFICAÇÃO' (162 PDIs criados)
 - [x] Exibir Relatório de Análise no modal de detalhes do PDI (visível para Colaborador e Líder)
+- [x] Adicionar Relatório de Análise do Colaborador na visão de detalhes do Admin na listagem geral de PDIs (já existia em PDIDetalhes.tsx, corrigido backend para retornar campos)
+- [x] Garantir que backend retorna relatorioAnalise/relatorioArquivoUrl nas queries myPDIs e teamPDIs
+- [x] Adaptar PDIDetalhes.tsx para acesso somente leitura por Colaborador e Líder
+- [x] Adicionar botão 'Ver Detalhes Completos' nos modais de MeuPDI e PDIsEquipe
+- [x] Ajustar rotas e permissões para Colaborador/Líder acessarem /pdis/:id (já usava protectedProcedure)
