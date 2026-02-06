@@ -143,6 +143,7 @@ export function DashboardStats({ stats, userRole, departamentoId }: DashboardSta
             <div className="text-3xl font-bold">{stats.blocoA.taxaEngajamento}%</div>
           </CardContent>
         </Card>
+
       </div>
 
       {/* ============= BLOCO B: FUNIL DE EXECUÇÃO ============= */}
@@ -236,6 +237,16 @@ export function DashboardStats({ stats, userRole, departamentoId }: DashboardSta
                   <span className="font-medium text-green-700">No Prazo</span>
                 </div>
                 <span className="text-2xl font-bold text-green-600">{estatisticasPrazo?.noPrazo || 0}</span>
+              </div>
+              {/* Total de Ações */}
+              <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg mt-2">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-blue-500" />
+                  <span className="font-medium text-blue-700">Total de Ações</span>
+                </div>
+                <span className="text-2xl font-bold text-blue-600">
+                  {(estatisticasPrazo?.vencidas || 0) + (estatisticasPrazo?.proximas || 0) + (estatisticasPrazo?.noPrazo || 0)}
+                </span>
               </div>
             </div>
           </div>

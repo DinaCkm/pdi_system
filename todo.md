@@ -2768,3 +2768,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Bug: Análise de Liderança não aparece para GERENTE
 - [x] Investigar por que o perfil GERENTE não visualiza líderes na página de Análise de Liderança
 - [x] Corrigir a query/permissões para permitir visualização pelo GERENTE (alterado de adminProcedure para adminOrGerenteProcedure)
+- [x] Adicionar Total de Ações no card de Status de Prazos das Ações no Dashboard
