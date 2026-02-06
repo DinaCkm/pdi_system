@@ -2796,3 +2796,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Implementar frontend: página única adaptativa por papel (Colaborador, Admin/CKM, Líder/Gestor, Gerente/RH)
 - [x] Adicionar rota e navegação no menu lateral para todos os papéis
 - [x] Escrever testes vitest para o fluxo de solicitação (7/7 passando)
+- [x] Remover card 'Análise de Liderança' do Dashboard do Admin (deve aparecer apenas no Dashboard Geral)
