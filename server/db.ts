@@ -1,6 +1,6 @@
 import { eq, and, isNull, not, inArray, desc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, adjustmentComments, departamentos, ciclos, evidences, evidenceFiles, evidenceTexts, notifications, pdiValidacoes, deletionAuditLog } from "../drizzle/schema";
+import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, adjustmentComments, departamentos, ciclos, evidences, evidenceFiles, evidenceTexts, notifications, pdiValidacoes, deletionAuditLog, solicitacoesAcoes, userDepartmentRoles } from "../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./_core/env";
 
@@ -3082,4 +3082,235 @@ export async function getLeadershipAnalysis() {
     console.error('[getLeadershipAnalysis] Erro:', error);
     throw error;
   }
+}
+
+
+// ============= FUNÇÕES DE SOLICITAÇÕES DE AÇÕES =============
+
+export async function createSolicitacaoAcao(data: {
+  pdiId: number;
+  macroId: number;
+  microcompetencia?: string | null;
+  titulo: string;
+  descricao?: string;
+  prazo: Date;
+  solicitanteId: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(solicitacoesAcoes).values({
+    pdiId: data.pdiId,
+    macroId: data.macroId,
+    microcompetencia: data.microcompetencia || null,
+    titulo: data.titulo,
+    descricao: data.descricao || "",
+    prazo: data.prazo,
+    solicitanteId: data.solicitanteId,
+    statusGeral: "aguardando_ckm",
+  });
+
+  return result[0]?.insertId || 0;
+}
+
+export async function listSolicitacoesAcoes(filtros?: {
+  solicitanteId?: number;
+  statusGeral?: string;
+  gestorId?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const conditions: any[] = [];
+
+  if (filtros?.solicitanteId) {
+    conditions.push(eq(solicitacoesAcoes.solicitanteId, filtros.solicitanteId));
+  }
+  if (filtros?.statusGeral) {
+    conditions.push(eq(solicitacoesAcoes.statusGeral, filtros.statusGeral as any));
+  }
+
+  const result = await db
+    .select({
+      id: solicitacoesAcoes.id,
+      pdiId: solicitacoesAcoes.pdiId,
+      macroId: solicitacoesAcoes.macroId,
+      microcompetencia: solicitacoesAcoes.microcompetencia,
+      titulo: solicitacoesAcoes.titulo,
+      descricao: solicitacoesAcoes.descricao,
+      prazo: solicitacoesAcoes.prazo,
+      solicitanteId: solicitacoesAcoes.solicitanteId,
+      statusGeral: solicitacoesAcoes.statusGeral,
+      ckmParecerTipo: solicitacoesAcoes.ckmParecerTipo,
+      ckmParecerTexto: solicitacoesAcoes.ckmParecerTexto,
+      ckmParecerPor: solicitacoesAcoes.ckmParecerPor,
+      ckmParecerEm: solicitacoesAcoes.ckmParecerEm,
+      gestorDecisao: solicitacoesAcoes.gestorDecisao,
+      gestorJustificativa: solicitacoesAcoes.gestorJustificativa,
+      gestorId: solicitacoesAcoes.gestorId,
+      gestorDecisaoEm: solicitacoesAcoes.gestorDecisaoEm,
+      rhDecisao: solicitacoesAcoes.rhDecisao,
+      rhJustificativa: solicitacoesAcoes.rhJustificativa,
+      rhId: solicitacoesAcoes.rhId,
+      rhDecisaoEm: solicitacoesAcoes.rhDecisaoEm,
+      acaoIncluidaId: solicitacoesAcoes.acaoIncluidaId,
+      createdAt: solicitacoesAcoes.createdAt,
+      updatedAt: solicitacoesAcoes.updatedAt,
+      // Joins
+      solicitanteNome: users.name,
+      solicitanteEmail: users.email,
+      pdiTitulo: pdis.titulo,
+      macroNome: competenciasMacros.nome,
+    })
+    .from(solicitacoesAcoes)
+    .leftJoin(users, eq(solicitacoesAcoes.solicitanteId, users.id))
+    .leftJoin(pdis, eq(solicitacoesAcoes.pdiId, pdis.id))
+    .leftJoin(competenciasMacros, eq(solicitacoesAcoes.macroId, competenciasMacros.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(solicitacoesAcoes.createdAt));
+
+  // Buscar nomes dos avaliadores
+  const solicitacoesComNomes = await Promise.all(
+    result.map(async (s: any) => {
+      let ckmNome = null;
+      let gestorNome = null;
+      let rhNome = null;
+      let solicitanteDepartamento = null;
+      let solicitanteLiderId = null;
+
+      if (s.ckmParecerPor) {
+        const [u] = await db.select({ name: users.name }).from(users).where(eq(users.id, s.ckmParecerPor));
+        ckmNome = u?.name;
+      }
+      if (s.gestorId) {
+        const [u] = await db.select({ name: users.name }).from(users).where(eq(users.id, s.gestorId));
+        gestorNome = u?.name;
+      }
+      if (s.rhId) {
+        const [u] = await db.select({ name: users.name }).from(users).where(eq(users.id, s.rhId));
+        rhNome = u?.name;
+      }
+
+      // Buscar departamento e líder do solicitante
+      if (s.solicitanteId) {
+        const [solicitante] = await db
+          .select({ departamentoId: users.departamentoId, leaderId: users.leaderId })
+          .from(users)
+          .where(eq(users.id, s.solicitanteId));
+        if (solicitante) {
+          solicitanteLiderId = solicitante.leaderId;
+          if (solicitante.departamentoId) {
+            const [dept] = await db.select({ nome: departamentos.nome }).from(departamentos).where(eq(departamentos.id, solicitante.departamentoId));
+            solicitanteDepartamento = dept?.nome;
+          }
+        }
+      }
+
+      return {
+        ...s,
+        ckmNome,
+        gestorNome,
+        rhNome,
+        solicitanteDepartamento,
+        solicitanteLiderId,
+      };
+    })
+  );
+
+  return solicitacoesComNomes;
+}
+
+export async function getSolicitacaoById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [result] = await db
+    .select()
+    .from(solicitacoesAcoes)
+    .where(eq(solicitacoesAcoes.id, id));
+
+  return result || null;
+}
+
+export async function emitirParecerCKM(id: number, data: {
+  parecerTipo: 'com_aderencia' | 'sem_aderencia';
+  parecerTexto: string;
+  adminId: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(solicitacoesAcoes).set({
+    ckmParecerTipo: data.parecerTipo,
+    ckmParecerTexto: data.parecerTexto,
+    ckmParecerPor: data.adminId,
+    ckmParecerEm: new Date(),
+    statusGeral: "aguardando_gestor",
+  }).where(eq(solicitacoesAcoes.id, id));
+}
+
+export async function decisaoGestor(id: number, data: {
+  decisao: 'aprovado' | 'reprovado';
+  justificativa: string;
+  gestorId: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const novoStatus = data.decisao === 'aprovado' ? 'aguardando_rh' : 'vetada_gestor';
+
+  await db.update(solicitacoesAcoes).set({
+    gestorDecisao: data.decisao,
+    gestorJustificativa: data.justificativa,
+    gestorId: data.gestorId,
+    gestorDecisaoEm: new Date(),
+    statusGeral: novoStatus,
+  }).where(eq(solicitacoesAcoes.id, id));
+}
+
+export async function decisaoRH(id: number, data: {
+  decisao: 'aprovado' | 'reprovado';
+  justificativa: string;
+  rhId: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  if (data.decisao === 'reprovado') {
+    await db.update(solicitacoesAcoes).set({
+      rhDecisao: data.decisao,
+      rhJustificativa: data.justificativa,
+      rhId: data.rhId,
+      rhDecisaoEm: new Date(),
+      statusGeral: "vetada_rh",
+    }).where(eq(solicitacoesAcoes.id, id));
+    return null;
+  }
+
+  // RH aprovou - incluir ação no PDI automaticamente
+  const solicitacao = await getSolicitacaoById(id);
+  if (!solicitacao) throw new Error("Solicitação não encontrada");
+
+  // Criar a ação no PDI
+  const acaoId = await createAction({
+    pdiId: solicitacao.pdiId,
+    macroId: solicitacao.macroId,
+    microcompetencia: solicitacao.microcompetencia,
+    titulo: solicitacao.titulo,
+    descricao: solicitacao.descricao || undefined,
+    prazo: new Date(solicitacao.prazo),
+    status: "nao_iniciada",
+  });
+
+  // Atualizar solicitação
+  await db.update(solicitacoesAcoes).set({
+    rhDecisao: data.decisao,
+    rhJustificativa: data.justificativa,
+    rhId: data.rhId,
+    rhDecisaoEm: new Date(),
+    statusGeral: "aprovada",
+    acaoIncluidaId: acaoId,
+  }).where(eq(solicitacoesAcoes.id, id));
+
+  return acaoId;
 }

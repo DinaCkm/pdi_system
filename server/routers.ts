@@ -986,7 +986,208 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           });
         }
       }),
-  })
+  }),
+
+  // ============= SOLICITAÇÕES DE AÇÕES POR EMPREGADOS =============
+  solicitacoesAcoes: router({
+    // Criar solicitação (Colaborador)
+    criar: protectedProcedure
+      .input(z.object({
+        pdiId: z.number(),
+        macroId: z.number(),
+        microcompetencia: z.string().optional().nullable(),
+        titulo: z.string().min(1, "Título é obrigatório"),
+        descricao: z.string().optional(),
+        prazo: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await db.createSolicitacaoAcao({
+          ...input,
+          prazo: new Date(input.prazo),
+          solicitanteId: ctx.user.id,
+        });
+
+        // Notificar admins (CKM) sobre nova solicitação
+        try {
+          const admins = await db.getUsersByRole('admin');
+          for (const admin of admins) {
+            await db.createNotification({
+              destinatarioId: admin.id,
+              tipo: 'solicitacao_acao_nova',
+              titulo: 'Nova Solicitação de Ação',
+              mensagem: `${ctx.user.name} solicitou a inclusão de uma nova ação: "${input.titulo}". Aguardando seu parecer técnico.`,
+              referenciaId: id,
+            });
+          }
+        } catch (e) { console.error('Erro ao notificar admins:', e); }
+
+        return { id, success: true };
+      }),
+
+    // Listar solicitações (adaptativo por papel)
+    listar: protectedProcedure
+      .input(z.object({
+        statusGeral: z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        const userId = ctx.user.id;
+
+        if (role === 'admin') {
+          // Admin (CKM) vê todas
+          return await db.listSolicitacoesAcoes(input?.statusGeral ? { statusGeral: input.statusGeral } : undefined);
+        } else if (role === 'gerente') {
+          // Gerente (RH) vê todas
+          return await db.listSolicitacoesAcoes(input?.statusGeral ? { statusGeral: input.statusGeral } : undefined);
+        } else if (role === 'lider') {
+          // Líder vê solicitações dos seus subordinados
+          const todas = await db.listSolicitacoesAcoes(input?.statusGeral ? { statusGeral: input.statusGeral } : undefined);
+          return todas.filter((s: any) => s.solicitanteLiderId === userId);
+        } else {
+          // Colaborador vê apenas as suas
+          return await db.listSolicitacoesAcoes({ solicitanteId: userId, ...(input?.statusGeral ? { statusGeral: input.statusGeral } : {}) });
+        }
+      }),
+
+    // Emitir parecer CKM (Admin)
+    emitirParecerCKM: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        parecerTipo: z.enum(['com_aderencia', 'sem_aderencia']),
+        parecerTexto: z.string().min(1, "Parecer é obrigatório"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const solicitacao = await db.getSolicitacaoById(input.id);
+        if (!solicitacao) throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
+        if (solicitacao.statusGeral !== 'aguardando_ckm') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação não está aguardando parecer CKM' });
+        }
+
+        await db.emitirParecerCKM(input.id, {
+          parecerTipo: input.parecerTipo,
+          parecerTexto: input.parecerTexto,
+          adminId: ctx.user.id,
+        });
+
+        // Notificar o líder/gestor do solicitante
+        try {
+          const solicitante = await db.getUserById(solicitacao.solicitanteId);
+          if (solicitante?.leaderId) {
+            await db.createNotification({
+              destinatarioId: solicitante.leaderId,
+              tipo: 'solicitacao_acao_aguardando_gestor',
+              titulo: 'Solicitação de Ação Aguardando sua Decisão',
+              mensagem: `A solicitação de ação "${solicitacao.titulo}" de ${solicitante.name} recebeu parecer da CKM e aguarda sua decisão.`,
+              referenciaId: input.id,
+            });
+          }
+        } catch (e) { console.error('Erro ao notificar gestor:', e); }
+
+        return { success: true };
+      }),
+
+    // Decisão do Gestor (Líder)
+    decisaoGestor: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        decisao: z.enum(['aprovado', 'reprovado']),
+        justificativa: z.string().min(1, "Justificativa é obrigatória"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'lider' && ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas gestores podem tomar esta decisão' });
+        }
+
+        const solicitacao = await db.getSolicitacaoById(input.id);
+        if (!solicitacao) throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
+        if (solicitacao.statusGeral !== 'aguardando_gestor') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação não está aguardando decisão do gestor' });
+        }
+
+        await db.decisaoGestor(input.id, {
+          decisao: input.decisao,
+          justificativa: input.justificativa,
+          gestorId: ctx.user.id,
+        });
+
+        if (input.decisao === 'aprovado') {
+          // Notificar gerentes (RH)
+          try {
+            const gerentes = await db.getUsersByRole('gerente');
+            for (const gerente of gerentes) {
+              await db.createNotification({
+                destinatarioId: gerente.id,
+                tipo: 'solicitacao_acao_aguardando_rh',
+                titulo: 'Solicitação de Ação Aguardando sua Decisão',
+                mensagem: `A solicitação de ação "${solicitacao.titulo}" foi aprovada pelo gestor e aguarda sua decisão final.`,
+                referenciaId: input.id,
+              });
+            }
+          } catch (e) { console.error('Erro ao notificar RH:', e); }
+        } else {
+          // Notificar colaborador que foi vetada
+          try {
+            await db.createNotification({
+              destinatarioId: solicitacao.solicitanteId,
+              tipo: 'solicitacao_acao_vetada',
+              titulo: 'Solicitação de Ação Não Aprovada',
+              mensagem: `Sua solicitação de ação "${solicitacao.titulo}" não foi aprovada. Solicite feedback ao seu gestor sobre a motivação da decisão.`,
+              referenciaId: input.id,
+            });
+          } catch (e) { console.error('Erro ao notificar colaborador:', e); }
+        }
+
+        return { success: true };
+      }),
+
+    // Decisão do RH (Gerente) - inclui ação no PDI se aprovada
+    decisaoRH: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        decisao: z.enum(['aprovado', 'reprovado']),
+        justificativa: z.string().min(1, "Justificativa é obrigatória"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'gerente' && ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas o RH pode tomar esta decisão' });
+        }
+
+        const solicitacao = await db.getSolicitacaoById(input.id);
+        if (!solicitacao) throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
+        if (solicitacao.statusGeral !== 'aguardando_rh') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação não está aguardando decisão do RH' });
+        }
+
+        const acaoId = await db.decisaoRH(input.id, {
+          decisao: input.decisao,
+          justificativa: input.justificativa,
+          rhId: ctx.user.id,
+        });
+
+        // Notificar colaborador
+        try {
+          if (input.decisao === 'aprovado') {
+            await db.createNotification({
+              destinatarioId: solicitacao.solicitanteId,
+              tipo: 'solicitacao_acao_aprovada',
+              titulo: 'Solicitação de Ação Aprovada e Incluída no PDI',
+              mensagem: `Sua solicitação de ação "${solicitacao.titulo}" foi aprovada e incluída no seu PDI!`,
+              referenciaId: input.id,
+            });
+          } else {
+            await db.createNotification({
+              destinatarioId: solicitacao.solicitanteId,
+              tipo: 'solicitacao_acao_vetada',
+              titulo: 'Solicitação de Ação Não Aprovada',
+              mensagem: `Sua solicitação de ação "${solicitacao.titulo}" não foi aprovada. Solicite feedback ao seu gestor sobre a motivação da decisão.`,
+              referenciaId: input.id,
+            });
+          }
+        } catch (e) { console.error('Erro ao notificar colaborador:', e); }
+
+        return { success: true, acaoId };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

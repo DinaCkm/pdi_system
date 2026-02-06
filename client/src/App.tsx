@@ -41,7 +41,8 @@ import SolicitacoesAdmin from "./pages/SolicitacoesAdmin";
 import CentralComando from "./pages/CentralComando";
 import AdminDashboard from "./pages/AdminDashboard";
 import RelatorioAcoesVencidas from "./pages/RelatorioAcoesVencidas";
-import AnaliseLideranca from "./pages/AnaliseLideranca";
+import AnaliseLideranca from './pages/AnaliseLideranca';
+import SolicitacoesAcoes from './pages/SolicitacoesAcoes';
 
 function Router() {
   return (
@@ -256,6 +257,12 @@ function Router() {
       <Route path={"/analise-lideranca"}>
         <DashboardLayout>
           <AnaliseLideranca />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/solicitacoes-acoes"}>
+        <DashboardLayout>
+          <SolicitacoesAcoes />
         </DashboardLayout>
       </Route>
       

@@ -54,6 +54,10 @@ const getMenuItems = (userRole: string) => {
       { icon: Upload, label: "Importação em Massa", path: "/importacao", section: "operacional" },
       { icon: Trash2, label: "Auditoria de Exclusões", path: "/auditoria-exclusoes", section: "operacional" },
     );
+    // Seção Solicitações
+    items.push(
+      { icon: MessageSquarePlus, label: "Ações Solicitadas por Empregados", path: "/solicitacoes-acoes", section: "solicitacoes" },
+    );
   } else if (userRole === "lider") {
     items.push(
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
@@ -62,6 +66,7 @@ const getMenuItems = (userRole: string) => {
       { icon: Target, label: "PDIs da Equipe", path: "/pdis-equipe" },
       { icon: CheckSquare, label: "Ações da Equipe", path: "/acoes-equipe" },
       { icon: MessageSquarePlus, label: "Solicitações de Ajuste", path: "/solicitacoes-equipe" },
+      { icon: FileText, label: "Ações Solicitadas por Empregados", path: "/solicitacoes-acoes" },
     );
   } else if (userRole === "gerente") {
     // Gerente tem acesso igual ao Admin: Dashboard completo com filtros, Ações, Histórico, Relatório de Vencidas
@@ -70,6 +75,7 @@ const getMenuItems = (userRole: string) => {
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
       { icon: History, label: "Histórico de Alterações", path: "/solicitacoes-admin" },
       { icon: AlertTriangle, label: "Relatório de Ações Vencidas", path: "/relatorio-acoes-vencidas" },
+      { icon: FileText, label: "Ações Solicitadas por Empregados", path: "/solicitacoes-acoes" },
     );
   } else if (userRole === "colaborador") {
     items.push(
@@ -77,6 +83,7 @@ const getMenuItems = (userRole: string) => {
       { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
       { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
       { icon: History, label: "Minhas Solicitações", path: "/minhas-solicitacoes" },
+      { icon: FileText, label: "Solicitar Ação", path: "/solicitacoes-acoes" },
     );
   }
   

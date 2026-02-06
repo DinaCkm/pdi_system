@@ -2789,3 +2789,10 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adaptar PDIDetalhes.tsx para acesso somente leitura por Colaborador e Líder
 - [x] Adicionar botão 'Ver Detalhes Completos' nos modais de MeuPDI e PDIsEquipe
 - [x] Ajustar rotas e permissões para Colaborador/Líder acessarem /pdis/:id (já usava protectedProcedure)
+
+## Módulo: Ações Solicitadas por Empregados
+- [x] Criar tabela solicitacoes_acoes no banco de dados e migrar
+- [x] Implementar backend: procedures (criar, listar, emitir parecer CKM, aprovar/reprovar gestor, aprovar/reprovar RH, incluir no PDI)
+- [x] Implementar frontend: página única adaptativa por papel (Colaborador, Admin/CKM, Líder/Gestor, Gerente/RH)
+- [x] Adicionar rota e navegação no menu lateral para todos os papéis
+- [x] Escrever testes vitest para o fluxo de solicitação (7/7 passando)

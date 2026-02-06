@@ -213,5 +213,40 @@ export const pdiValidacoes = mysqlTable("pdi_validacoes", {
 	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 });
 
+export const solicitacoesAcoes = mysqlTable("solicitacoes_acoes", {
+	id: int().autoincrement().notNull(),
+	// Dados da ação (mesmos campos de actions)
+	pdiId: int().notNull(),
+	macroId: int().notNull(),
+	microcompetencia: varchar({ length: 255 }),
+	titulo: varchar({ length: 255 }).notNull(),
+	descricao: text(),
+	prazo: date("prazo").notNull(),
+	// Quem solicitou
+	solicitanteId: int().notNull(),
+	// Fluxo de aprovação
+	statusGeral: mysqlEnum(['aguardando_ckm','aguardando_gestor','aguardando_rh','aprovada','vetada_gestor','vetada_rh']).default('aguardando_ckm').notNull(),
+	// Etapa 1: Parecer CKM (Admin)
+	ckmParecerTipo: mysqlEnum(['com_aderencia','sem_aderencia']),
+	ckmParecerTexto: text(),
+	ckmParecerPor: int(),
+	ckmParecerEm: timestamp({ mode: 'string' }),
+	// Etapa 2: Decisão do Gestor (Líder)
+	gestorDecisao: mysqlEnum(['aprovado','reprovado']),
+	gestorJustificativa: text(),
+	gestorId: int(),
+	gestorDecisaoEm: timestamp({ mode: 'string' }),
+	// Etapa 3: Decisão do RH (Gerente)
+	rhDecisao: mysqlEnum(['aprovado','reprovado']),
+	rhJustificativa: text(),
+	rhId: int(),
+	rhDecisaoEm: timestamp({ mode: 'string' }),
+	// Ação criada (quando incluída no PDI)
+	acaoIncluidaId: int(),
+	// Timestamps
+	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
+
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;

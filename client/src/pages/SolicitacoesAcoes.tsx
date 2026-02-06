@@ -1,0 +1,764 @@
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { trpc } from '@/lib/trpc';
+import { useAuth } from '@/_core/hooks/useAuth';
+import { toast } from 'sonner';
+import { 
+  FileText, Plus, Clock, CheckCircle2, XCircle, AlertTriangle, 
+  Search, ChevronDown, X, Check, Send, Eye, MessageSquare,
+  Loader2, Filter, ChevronRight
+} from 'lucide-react';
+
+// ============= STATUS HELPERS =============
+const statusLabels: Record<string, string> = {
+  aguardando_ckm: 'Aguardando Análise CKM',
+  aguardando_gestor: 'Aguardando Decisão do Gestor',
+  aguardando_rh: 'Aguardando Decisão do RH',
+  aprovada: 'Aprovada e Incluída no PDI',
+  vetada_gestor: 'Vetada pelo Gestor',
+  vetada_rh: 'Vetada pelo RH',
+};
+
+const statusColors: Record<string, string> = {
+  aguardando_ckm: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+  aguardando_gestor: 'bg-orange-100 text-orange-800 border-orange-300',
+  aguardando_rh: 'bg-blue-100 text-blue-800 border-blue-300',
+  aprovada: 'bg-green-100 text-green-800 border-green-300',
+  vetada_gestor: 'bg-red-100 text-red-800 border-red-300',
+  vetada_rh: 'bg-red-100 text-red-800 border-red-300',
+};
+
+const statusIcons: Record<string, any> = {
+  aguardando_ckm: Clock,
+  aguardando_gestor: Clock,
+  aguardando_rh: Clock,
+  aprovada: CheckCircle2,
+  vetada_gestor: XCircle,
+  vetada_rh: XCircle,
+};
+
+function formatDate(d: any) {
+  if (!d) return '-';
+  const date = new Date(d);
+  return date.toLocaleDateString('pt-BR');
+}
+
+// ============= FORMULÁRIO DE NOVA SOLICITAÇÃO =============
+function FormularioSolicitacao({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [formData, setFormData] = useState({
+    pdiId: '',
+    macroId: '',
+    microcompetencia: '',
+    titulo: '',
+    descricao: '',
+    prazo: '',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Dropdowns
+  const [pdiSearchTerm, setPdiSearchTerm] = useState('');
+  const [pdiDropdownOpen, setPdiDropdownOpen] = useState(false);
+  const pdiDropdownRef = useRef<HTMLDivElement>(null);
+  const [macroSearchTerm, setMacroSearchTerm] = useState('');
+  const [macroDropdownOpen, setMacroDropdownOpen] = useState(false);
+  const macroDropdownRef = useRef<HTMLDivElement>(null);
+
+  const { data: meusPdis = [] } = trpc.pdis.myPDIs.useQuery();
+  const { data: macros = [] } = trpc.competencias.listAllMacros.useQuery();
+  
+  const criarMutation = trpc.solicitacoesAcoes.criar.useMutation({
+    onSuccess: () => {
+      toast.success('Solicitação enviada com sucesso! Aguarde a análise.');
+      onSuccess();
+      onClose();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const filteredPdis = useMemo(() => {
+    if (!pdiSearchTerm.trim()) return meusPdis;
+    const term = pdiSearchTerm.toLowerCase();
+    return meusPdis.filter((pdi: any) =>
+      pdi.titulo?.toLowerCase().includes(term)
+    );
+  }, [meusPdis, pdiSearchTerm]);
+
+  const filteredMacros = useMemo(() => {
+    if (!macroSearchTerm.trim()) return macros;
+    const term = macroSearchTerm.toLowerCase();
+    return macros.filter((m: any) => m.nome.toLowerCase().includes(term));
+  }, [macros, macroSearchTerm]);
+
+  const selectedPdiInfo = useMemo(() => {
+    if (!formData.pdiId) return null;
+    return meusPdis.find((p: any) => String(p.id) === formData.pdiId);
+  }, [formData.pdiId, meusPdis]);
+
+  const selectedMacroName = useMemo(() => {
+    if (!formData.macroId) return '';
+    const m = macros.find((m: any) => String(m.id) === formData.macroId);
+    return m ? m.nome : '';
+  }, [formData.macroId, macros]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (pdiDropdownRef.current && !pdiDropdownRef.current.contains(event.target as Node)) setPdiDropdownOpen(false);
+      if (macroDropdownRef.current && !macroDropdownRef.current.contains(event.target as Node)) setMacroDropdownOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  function validate() {
+    const e: Record<string, string> = {};
+    if (!formData.pdiId) e.pdiId = 'Selecione o PDI';
+    if (!formData.macroId) e.macroId = 'Selecione a competência';
+    if (!formData.titulo.trim()) e.titulo = 'Título é obrigatório';
+    if (!formData.prazo) e.prazo = 'Prazo é obrigatório';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  function handleSubmit(ev: React.FormEvent) {
+    ev.preventDefault();
+    if (!validate()) return;
+    criarMutation.mutate({
+      pdiId: Number(formData.pdiId),
+      macroId: Number(formData.macroId),
+      microcompetencia: formData.microcompetencia || undefined,
+      titulo: formData.titulo,
+      descricao: formData.descricao || undefined,
+      prazo: formData.prazo,
+    });
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-blue-200 shadow-lg p-6 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+          <Plus className="h-5 w-5 text-blue-600" />
+          Nova Solicitação de Ação
+        </h3>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      <p className="text-sm text-gray-500 mb-4">
+        Preencha os campos abaixo com os mesmos dados de uma ação. Sua solicitação passará por análise da CKM, aprovação do seu Gestor e decisão final do RH.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* PDI */}
+        <div ref={pdiDropdownRef} className="relative">
+          <label className="block text-sm font-semibold text-gray-700 mb-1">PDI de Destino *</label>
+          <div
+            className={`w-full border rounded-lg px-3 py-2.5 cursor-pointer flex items-center justify-between ${errors.pdiId ? 'border-red-400' : 'border-gray-300'}`}
+            onClick={() => setPdiDropdownOpen(!pdiDropdownOpen)}
+          >
+            <span className={selectedPdiInfo ? 'text-gray-800' : 'text-gray-400'}>
+              {selectedPdiInfo ? selectedPdiInfo.titulo : 'Selecione o PDI...'}
+            </span>
+            <ChevronDown className="h-4 w-4 text-gray-400" />
+          </div>
+          {pdiDropdownOpen && (
+            <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-auto">
+              <div className="p-2 border-b sticky top-0 bg-white">
+                <div className="flex items-center gap-2 px-2 py-1 border rounded-md">
+                  <Search className="h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={pdiSearchTerm}
+                    onChange={(e) => setPdiSearchTerm(e.target.value)}
+                    placeholder="Buscar PDI..."
+                    className="w-full text-sm outline-none"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              {filteredPdis.map((pdi: any) => (
+                <div
+                  key={pdi.id}
+                  className={`px-3 py-2 cursor-pointer hover:bg-blue-50 flex items-center justify-between ${String(pdi.id) === formData.pdiId ? 'bg-blue-50' : ''}`}
+                  onClick={() => {
+                    setFormData({ ...formData, pdiId: String(pdi.id) });
+                    setPdiDropdownOpen(false);
+                    setPdiSearchTerm('');
+                  }}
+                >
+                  <div>
+                    <div className="text-sm font-medium">{pdi.titulo}</div>
+                    <div className="text-xs text-gray-500">Ciclo: {pdi.cicloNome || '-'}</div>
+                  </div>
+                  {String(pdi.id) === formData.pdiId && <Check className="h-4 w-4 text-blue-600" />}
+                </div>
+              ))}
+              {filteredPdis.length === 0 && <div className="px-3 py-2 text-sm text-gray-400">Nenhum PDI encontrado</div>}
+            </div>
+          )}
+          {errors.pdiId && <p className="text-xs text-red-500 mt-1">{errors.pdiId}</p>}
+        </div>
+
+        {/* Competência Macro */}
+        <div ref={macroDropdownRef} className="relative">
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Competência (Macro) *</label>
+          <div
+            className={`w-full border rounded-lg px-3 py-2.5 cursor-pointer flex items-center justify-between ${errors.macroId ? 'border-red-400' : 'border-gray-300'}`}
+            onClick={() => setMacroDropdownOpen(!macroDropdownOpen)}
+          >
+            <span className={selectedMacroName ? 'text-gray-800' : 'text-gray-400'}>
+              {selectedMacroName || 'Selecione a competência...'}
+            </span>
+            <ChevronDown className="h-4 w-4 text-gray-400" />
+          </div>
+          {macroDropdownOpen && (
+            <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-auto">
+              <div className="p-2 border-b sticky top-0 bg-white">
+                <div className="flex items-center gap-2 px-2 py-1 border rounded-md">
+                  <Search className="h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={macroSearchTerm}
+                    onChange={(e) => setMacroSearchTerm(e.target.value)}
+                    placeholder="Buscar competência..."
+                    className="w-full text-sm outline-none"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              {filteredMacros.map((m: any) => (
+                <div
+                  key={m.id}
+                  className={`px-3 py-2 cursor-pointer hover:bg-blue-50 flex items-center justify-between ${String(m.id) === formData.macroId ? 'bg-blue-50' : ''}`}
+                  onClick={() => {
+                    setFormData({ ...formData, macroId: String(m.id) });
+                    setMacroDropdownOpen(false);
+                    setMacroSearchTerm('');
+                  }}
+                >
+                  <span className="text-sm">{m.nome}</span>
+                  {String(m.id) === formData.macroId && <Check className="h-4 w-4 text-blue-600" />}
+                </div>
+              ))}
+              {filteredMacros.length === 0 && <div className="px-3 py-2 text-sm text-gray-400">Nenhuma competência encontrada</div>}
+            </div>
+          )}
+          {errors.macroId && <p className="text-xs text-red-500 mt-1">{errors.macroId}</p>}
+        </div>
+
+        {/* Microcompetência */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Foco / Microcompetência</label>
+          <input
+            type="text"
+            value={formData.microcompetencia}
+            onChange={(e) => setFormData({ ...formData, microcompetencia: e.target.value })}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm"
+            placeholder="Ex: Comunicação assertiva em reuniões"
+          />
+        </div>
+
+        {/* Título */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Título da Ação *</label>
+          <input
+            type="text"
+            value={formData.titulo}
+            onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+            className={`w-full border rounded-lg px-3 py-2.5 text-sm ${errors.titulo ? 'border-red-400' : 'border-gray-300'}`}
+            placeholder="Ex: Participar do curso de Liderança Situacional"
+          />
+          {errors.titulo && <p className="text-xs text-red-500 mt-1">{errors.titulo}</p>}
+        </div>
+
+        {/* Descrição */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Descrição</label>
+          <textarea
+            value={formData.descricao}
+            onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[100px] overflow-auto"
+            placeholder="Descreva o que fazer, como fazer e como comprovar..."
+          />
+        </div>
+
+        {/* Prazo */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Prazo *</label>
+          <input
+            type="date"
+            value={formData.prazo}
+            onChange={(e) => setFormData({ ...formData, prazo: e.target.value })}
+            className={`w-full border rounded-lg px-3 py-2.5 text-sm ${errors.prazo ? 'border-red-400' : 'border-gray-300'}`}
+          />
+          {errors.prazo && <p className="text-xs text-red-500 mt-1">{errors.prazo}</p>}
+        </div>
+
+        {/* Botões */}
+        <div className="flex gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={criarMutation.isPending}
+            className="flex-1 bg-blue-600 text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {criarMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            Enviar Solicitação
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// ============= CARD DE PARECER CKM =============
+function ParecerCKMForm({ solicitacao, onSuccess }: { solicitacao: any; onSuccess: () => void }) {
+  const [parecerTipo, setParecerTipo] = useState<'com_aderencia' | 'sem_aderencia' | ''>('');
+  const [parecerTexto, setParecerTexto] = useState('');
+
+  const mutation = trpc.solicitacoesAcoes.emitirParecerCKM.useMutation({
+    onSuccess: () => {
+      toast.success('Parecer emitido com sucesso!');
+      onSuccess();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  return (
+    <div className="border-t border-yellow-200 pt-4 mt-4">
+      <h4 className="text-sm font-bold text-yellow-800 mb-3 flex items-center gap-2">
+        <MessageSquare className="h-4 w-4" />
+        Emitir Parecer Técnico (CKM)
+      </h4>
+      <div className="space-y-3">
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => setParecerTipo('com_aderencia')}
+            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+              parecerTipo === 'com_aderencia'
+                ? 'bg-green-100 border-green-400 text-green-800'
+                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <CheckCircle2 className="h-4 w-4 inline mr-1" />
+            Com Aderência
+          </button>
+          <button
+            type="button"
+            onClick={() => setParecerTipo('sem_aderencia')}
+            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+              parecerTipo === 'sem_aderencia'
+                ? 'bg-red-100 border-red-400 text-red-800'
+                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <XCircle className="h-4 w-4 inline mr-1" />
+            Sem Aderência
+          </button>
+        </div>
+        <textarea
+          value={parecerTexto}
+          onChange={(e) => setParecerTexto(e.target.value)}
+          placeholder="Justifique seu parecer técnico..."
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[80px] overflow-auto"
+        />
+        <button
+          onClick={() => {
+            if (!parecerTipo) return toast.error('Selecione o tipo de parecer');
+            if (!parecerTexto.trim()) return toast.error('Justificativa é obrigatória');
+            mutation.mutate({ id: solicitacao.id, parecerTipo, parecerTexto });
+          }}
+          disabled={mutation.isPending}
+          className="w-full bg-yellow-600 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-yellow-700 disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          Emitir Parecer
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ============= CARD DE DECISÃO DO GESTOR =============
+function DecisaoGestorForm({ solicitacao, onSuccess }: { solicitacao: any; onSuccess: () => void }) {
+  const [justificativa, setJustificativa] = useState('');
+
+  const mutation = trpc.solicitacoesAcoes.decisaoGestor.useMutation({
+    onSuccess: () => {
+      toast.success('Decisão registrada com sucesso!');
+      onSuccess();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  function handleDecisao(decisao: 'aprovado' | 'reprovado') {
+    if (!justificativa.trim()) return toast.error('Justificativa é obrigatória');
+    mutation.mutate({ id: solicitacao.id, decisao, justificativa });
+  }
+
+  return (
+    <div className="border-t border-orange-200 pt-4 mt-4">
+      <h4 className="text-sm font-bold text-orange-800 mb-3 flex items-center gap-2">
+        <AlertTriangle className="h-4 w-4" />
+        Decisão do Gestor
+      </h4>
+      <div className="space-y-3">
+        <textarea
+          value={justificativa}
+          onChange={(e) => setJustificativa(e.target.value)}
+          placeholder="Justifique sua decisão..."
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[80px] overflow-auto"
+        />
+        <div className="flex gap-3">
+          <button
+            onClick={() => handleDecisao('aprovado')}
+            disabled={mutation.isPending}
+            className="flex-1 bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            Aprovar
+          </button>
+          <button
+            onClick={() => handleDecisao('reprovado')}
+            disabled={mutation.isPending}
+            className="flex-1 bg-red-600 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+            Reprovar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============= CARD DE DECISÃO DO RH =============
+function DecisaoRHForm({ solicitacao, onSuccess }: { solicitacao: any; onSuccess: () => void }) {
+  const [justificativa, setJustificativa] = useState('');
+
+  const mutation = trpc.solicitacoesAcoes.decisaoRH.useMutation({
+    onSuccess: (data) => {
+      if (data.acaoId) {
+        toast.success('Ação aprovada e incluída no PDI com sucesso!');
+      } else {
+        toast.success('Decisão registrada.');
+      }
+      onSuccess();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  function handleDecisao(decisao: 'aprovado' | 'reprovado') {
+    if (!justificativa.trim()) return toast.error('Justificativa é obrigatória');
+    mutation.mutate({ id: solicitacao.id, decisao, justificativa });
+  }
+
+  return (
+    <div className="border-t border-blue-200 pt-4 mt-4">
+      <h4 className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
+        <FileText className="h-4 w-4" />
+        Decisão Final do RH
+      </h4>
+      <div className="space-y-3">
+        <textarea
+          value={justificativa}
+          onChange={(e) => setJustificativa(e.target.value)}
+          placeholder="Justifique sua decisão..."
+          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[80px] overflow-auto"
+        />
+        <div className="flex gap-3">
+          <button
+            onClick={() => handleDecisao('aprovado')}
+            disabled={mutation.isPending}
+            className="flex-1 bg-green-600 text-white rounded-lg px-4 py-2.5 text-sm font-bold hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            Aprovar e Incluir no PDI
+          </button>
+          <button
+            onClick={() => handleDecisao('reprovado')}
+            disabled={mutation.isPending}
+            className="flex-1 bg-red-600 text-white rounded-lg px-4 py-2.5 text-sm font-bold hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+            Vetar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============= CARD DE SOLICITAÇÃO =============
+function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh }: { 
+  solicitacao: any; 
+  userRole: string; 
+  userId: number;
+  onRefresh: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const StatusIcon = statusIcons[solicitacao.statusGeral] || Clock;
+
+  const isColaboradorView = userRole === 'colaborador';
+  const canEmitirParecer = userRole === 'admin' && solicitacao.statusGeral === 'aguardando_ckm';
+  const canDecidirGestor = (userRole === 'lider' || userRole === 'admin') && solicitacao.statusGeral === 'aguardando_gestor';
+  const canDecidirRH = (userRole === 'gerente' || userRole === 'admin') && solicitacao.statusGeral === 'aguardando_rh';
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+      {/* Header */}
+      <div 
+        className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusColors[solicitacao.statusGeral]}`}>
+                <StatusIcon className="h-3 w-3" />
+                {statusLabels[solicitacao.statusGeral]}
+              </span>
+            </div>
+            <h3 className="text-base font-bold text-gray-800 truncate">{solicitacao.titulo}</h3>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-xs text-gray-500">
+              <span>Solicitante: <strong className="text-gray-700">{solicitacao.solicitanteNome}</strong></span>
+              {solicitacao.solicitanteDepartamento && (
+                <span>Depto: <strong className="text-gray-700">{solicitacao.solicitanteDepartamento}</strong></span>
+              )}
+              <span>PDI: <strong className="text-gray-700">{solicitacao.pdiTitulo}</strong></span>
+              <span>Prazo: <strong className="text-gray-700">{formatDate(solicitacao.prazo)}</strong></span>
+              <span>Solicitado em: <strong className="text-gray-700">{formatDate(solicitacao.createdAt)}</strong></span>
+            </div>
+          </div>
+          <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform shrink-0 ${expanded ? 'rotate-90' : ''}`} />
+        </div>
+      </div>
+
+      {/* Conteúdo Expandido */}
+      {expanded && (
+        <div className="px-4 pb-4 border-t border-gray-100">
+          {/* Dados da Ação */}
+          <div className="mt-4 bg-gray-50 rounded-lg p-4">
+            <h4 className="text-sm font-bold text-gray-700 mb-2">Dados da Ação Solicitada</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div><span className="text-gray-500">Competência:</span> <strong>{solicitacao.macroNome || '-'}</strong></div>
+              <div><span className="text-gray-500">Foco:</span> <strong>{solicitacao.microcompetencia || '-'}</strong></div>
+              <div className="md:col-span-2"><span className="text-gray-500">Descrição:</span> <p className="mt-1 text-gray-700 whitespace-pre-wrap">{solicitacao.descricao || 'Sem descrição'}</p></div>
+            </div>
+          </div>
+
+          {/* Instâncias de Aprovação */}
+          <div className="mt-4 space-y-3">
+            {/* 1. Parecer CKM */}
+            {solicitacao.parecerCkmTipo && (
+              <div className={`rounded-lg p-3 border ${solicitacao.parecerCkmTipo === 'com_aderencia' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">1. Parecer CKM</span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${solicitacao.parecerCkmTipo === 'com_aderencia' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                    {solicitacao.parecerCkmTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
+                  </span>
+                </div>
+                {!isColaboradorView && <p className="text-sm text-gray-700 whitespace-pre-wrap">{solicitacao.parecerCkmTexto}</p>}
+                {!isColaboradorView && <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.parecerCkmPorNome} em {formatDate(solicitacao.parecerCkmEm)}</p>}
+              </div>
+            )}
+
+            {/* 2. Decisão Gestor */}
+            {solicitacao.gestorDecisao && (
+              <div className={`rounded-lg p-3 border ${solicitacao.gestorDecisao === 'aprovado' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">2. Decisão do Gestor</span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${solicitacao.gestorDecisao === 'aprovado' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                    {solicitacao.gestorDecisao === 'aprovado' ? 'Aprovado' : 'Reprovado'}
+                  </span>
+                </div>
+                {!isColaboradorView && <p className="text-sm text-gray-700 whitespace-pre-wrap">{solicitacao.gestorJustificativa}</p>}
+                {!isColaboradorView && <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.gestorNome} em {formatDate(solicitacao.gestorDecisaoEm)}</p>}
+              </div>
+            )}
+
+            {/* 3. Decisão RH */}
+            {solicitacao.rhDecisao && (
+              <div className={`rounded-lg p-3 border ${solicitacao.rhDecisao === 'aprovado' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">3. Decisão do RH</span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${solicitacao.rhDecisao === 'aprovado' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                    {solicitacao.rhDecisao === 'aprovado' ? 'Aprovado e Incluído no PDI' : 'Vetado'}
+                  </span>
+                </div>
+                {!isColaboradorView && <p className="text-sm text-gray-700 whitespace-pre-wrap">{solicitacao.rhJustificativa}</p>}
+                {!isColaboradorView && <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.rhNome} em {formatDate(solicitacao.rhDecisaoEm)}</p>}
+              </div>
+            )}
+          </div>
+
+          {/* Mensagem para Colaborador quando vetada */}
+          {isColaboradorView && (solicitacao.statusGeral === 'vetada_gestor' || solicitacao.statusGeral === 'vetada_rh') && (
+            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-sm text-amber-800 font-medium">Solicite feedback ao seu gestor sobre a motivação da decisão.</p>
+            </div>
+          )}
+
+          {/* Formulários de Ação */}
+          {canEmitirParecer && <ParecerCKMForm solicitacao={solicitacao} onSuccess={onRefresh} />}
+          {canDecidirGestor && <DecisaoGestorForm solicitacao={solicitacao} onSuccess={onRefresh} />}
+          {canDecidirRH && <DecisaoRHForm solicitacao={solicitacao} onSuccess={onRefresh} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============= PÁGINA PRINCIPAL =============
+export default function SolicitacoesAcoes() {
+  const { user } = useAuth();
+  const userRole = user?.role || 'colaborador';
+  const [showForm, setShowForm] = useState(false);
+  const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [busca, setBusca] = useState('');
+
+  const { data: solicitacoes = [], isLoading, refetch } = trpc.solicitacoesAcoes.listar.useQuery();
+
+  const filteredSolicitacoes = useMemo(() => {
+    let result = solicitacoes;
+    if (filtroStatus !== 'todos') {
+      result = result.filter((s: any) => s.statusGeral === filtroStatus);
+    }
+    if (busca.trim()) {
+      const term = busca.toLowerCase();
+      result = result.filter((s: any) =>
+        s.titulo?.toLowerCase().includes(term) ||
+        s.solicitanteNome?.toLowerCase().includes(term) ||
+        s.solicitanteDepartamento?.toLowerCase().includes(term)
+      );
+    }
+    return result;
+  }, [solicitacoes, filtroStatus, busca]);
+
+  const contadores = useMemo(() => {
+    const c: Record<string, number> = { todos: solicitacoes.length };
+    solicitacoes.forEach((s: any) => {
+      c[s.statusGeral] = (c[s.statusGeral] || 0) + 1;
+    });
+    return c;
+  }, [solicitacoes]);
+
+  const pageTitle = userRole === 'colaborador' ? 'Solicitar Ação' : 'Ações Solicitadas por Empregados';
+  const pageDescription = userRole === 'colaborador'
+    ? 'Solicite novas ações para seu PDI. Sua solicitação passará por análise técnica e aprovação.'
+    : 'Gerencie as solicitações de ações dos empregados. Analise, aprove ou reprove conforme o fluxo de aprovação.';
+
+  return (
+    <div className="p-4 md:p-6 max-w-5xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <FileText className="h-6 w-6 text-blue-600" />
+            {pageTitle}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">{pageDescription}</p>
+        </div>
+        {userRole === 'colaborador' && !showForm && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="bg-blue-600 text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-blue-700 flex items-center gap-2 shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+            Nova Solicitação
+          </button>
+        )}
+      </div>
+
+      {showForm && userRole === 'colaborador' && (
+        <FormularioSolicitacao onClose={() => setShowForm(false)} onSuccess={() => refetch()} />
+      )}
+
+      <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex items-center gap-2 flex-1">
+            <Search className="h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por título, solicitante ou departamento..."
+              className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-blue-400"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-gray-400" />
+            <select
+              value={filtroStatus}
+              onChange={(e) => setFiltroStatus(e.target.value)}
+              className="text-sm border border-gray-300 rounded-lg px-3 py-2 outline-none focus:border-blue-400"
+            >
+              <option value="todos">Todos ({contadores.todos || 0})</option>
+              <option value="aguardando_ckm">Aguardando CKM ({contadores.aguardando_ckm || 0})</option>
+              <option value="aguardando_gestor">Aguardando Gestor ({contadores.aguardando_gestor || 0})</option>
+              <option value="aguardando_rh">Aguardando RH ({contadores.aguardando_rh || 0})</option>
+              <option value="aprovada">Aprovadas ({contadores.aprovada || 0})</option>
+              <option value="vetada_gestor">Vetadas Gestor ({contadores.vetada_gestor || 0})</option>
+              <option value="vetada_rh">Vetadas RH ({contadores.vetada_rh || 0})</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {userRole !== 'colaborador' && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-yellow-700">{contadores.aguardando_ckm || 0}</div>
+            <div className="text-xs text-yellow-600">Aguardando CKM</div>
+          </div>
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-orange-700">{contadores.aguardando_gestor || 0}</div>
+            <div className="text-xs text-orange-600">Aguardando Gestor</div>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-blue-700">{contadores.aguardando_rh || 0}</div>
+            <div className="text-xs text-blue-600">Aguardando RH</div>
+          </div>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+            <div className="text-2xl font-bold text-green-700">{contadores.aprovada || 0}</div>
+            <div className="text-xs text-green-600">Incluídas no PDI</div>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      ) : filteredSolicitacoes.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+          <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium">Nenhuma solicitação encontrada</p>
+          <p className="text-sm text-gray-400 mt-1">
+            {userRole === 'colaborador' ? 'Clique em "Nova Solicitação" para solicitar uma ação.' : 'Não há solicitações pendentes no momento.'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredSolicitacoes.map((s: any) => (
+            <SolicitacaoCard
+              key={s.id}
+              solicitacao={s}
+              userRole={userRole}
+              userId={user?.id || 0}
+              onRefresh={() => refetch()}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 text-center text-sm text-gray-400">
+        Total: {filteredSolicitacoes.length} solicitação(ões)
+      </div>
+    </div>
+  );
+}
