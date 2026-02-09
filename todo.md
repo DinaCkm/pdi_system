@@ -2828,3 +2828,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adaptar página SolicitacoesAcoes para funcionar com rota (sem abas internas)
 - [x] Manter funcionalidade existente para Admin, Gerente e Colaborador
 - [x] Adicionar mensagem orientativa na aba "Minhas Solicitações de Ação" do Líder explicando que ele só cria ações para si, não para liderados
+
+## Bug Fix - Direcionamento Estratégico do Gerente
+- [x] Diagnosticar e corrigir: Dashboard do Gerente mostra "Nenhuma ação em desenvolvimento" no Direcionamento Estratégico em vez dos dados reais
