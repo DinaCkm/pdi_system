@@ -69,11 +69,11 @@ export function DashboardStats({ stats, userRole, departamentoId }: DashboardSta
     { name: "No Prazo", value: estatisticasPrazo.noPrazo, color: "#10b981" },
   ].filter((item) => item.value > 0) : [];
 
-  // Dados para o gráfico de rosca (Funil de Execução)
+  // Dados para o gráfico de rosca (Funil de Execução) - usar valores absolutos para fatias proporcionais
   const funnelData = [
-    { name: "Pendente", value: stats.blocoB.percentualPendente, color: "#ef4444" },
-    { name: "Em Andamento", value: stats.blocoB.percentualEmAndamento, color: "#f59e0b" },
-    { name: "Concluída", value: stats.blocoB.percentualConcluida, color: "#10b981" },
+    { name: "Pendente", value: stats.blocoB.pendente, pct: stats.blocoB.percentualPendente, color: "#ef4444" },
+    { name: "Em Andamento", value: stats.blocoB.emAndamento, pct: stats.blocoB.percentualEmAndamento, color: "#f59e0b" },
+    { name: "Concluída", value: stats.blocoB.concluida, pct: stats.blocoB.percentualConcluida, color: "#10b981" },
   ].filter((item) => item.value > 0);
 
   // Dados para o gráfico de barras (Top 5 Departamentos)
@@ -163,13 +163,13 @@ export function DashboardStats({ stats, userRole, departamentoId }: DashboardSta
                   outerRadius={100}
                   paddingAngle={2}
                   dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}%`}
+                  label={({ name, pct, value }: any) => `${name}: ${pct}% (${value})`}
                 >
                   {funnelData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => `${value}%`} />
+                <Tooltip formatter={(value: number, name: string, props: any) => [`${props.payload.pct}% (${value} ações)`, name]} />
               </PieChart>
             </ResponsiveContainer>
           ) : (

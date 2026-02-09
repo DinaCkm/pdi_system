@@ -206,23 +206,23 @@ export const dashboardRouter = router({
 
         statusCounts.forEach((item: { status: string | null; count: number }) => {
           if (item.status === "nao_iniciada" || item.status === "pendente") {
-            stats.blocoB.pendente = item.count;
+            stats.blocoB.pendente += item.count;
           } else if (item.status === "em_andamento") {
-            stats.blocoB.emAndamento = item.count;
+            stats.blocoB.emAndamento += item.count;
           } else if (item.status === "concluida") {
-            stats.blocoB.concluida = item.count;
+            stats.blocoB.concluida += item.count;
           }
         });
 
         if (totalAcoes > 0) {
-          stats.blocoB.percentualPendente = Math.round(
-            (stats.blocoB.pendente / totalAcoes) * 100
+          stats.blocoB.percentualPendente = parseFloat(
+            ((stats.blocoB.pendente / totalAcoes) * 100).toFixed(3)
           );
-          stats.blocoB.percentualEmAndamento = Math.round(
-            (stats.blocoB.emAndamento / totalAcoes) * 100
+          stats.blocoB.percentualEmAndamento = parseFloat(
+            ((stats.blocoB.emAndamento / totalAcoes) * 100).toFixed(3)
           );
-          stats.blocoB.percentualConcluida = Math.round(
-            (stats.blocoB.concluida / totalAcoes) * 100
+          stats.blocoB.percentualConcluida = parseFloat(
+            ((stats.blocoB.concluida / totalAcoes) * 100).toFixed(3)
           );
         }
 

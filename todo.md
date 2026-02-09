@@ -2831,3 +2831,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Bug Fix - Direcionamento Estratégico do Gerente
 - [x] Diagnosticar e corrigir: Dashboard do Gerente mostra "Nenhuma ação em desenvolvimento" no Direcionamento Estratégico em vez dos dados reais
+
+## Bug Fix - Funil de Execução mostra 100% Pendente
+- [x] Diagnosticar e corrigir: Funil de Execução mostra 100% Pendente mesmo havendo ações concluídas (ELIENILSON tem 1 de 11 concluídas)
