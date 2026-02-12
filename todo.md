@@ -2867,3 +2867,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Balão de ajuda na tela PDIs da Equipe explicando que PDIs sem ações ou anexos não são exibidos
 - [x] Bug: Página de detalhes do PDI não carrega as ações de desenvolvimento
 - [x] Alterar backup do banco para gerar Excel (.xlsx) em vez de SQL
+- [x] Backup CSV agora busca TODAS as tabelas do banco automaticamente

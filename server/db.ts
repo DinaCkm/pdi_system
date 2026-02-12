@@ -1726,14 +1726,10 @@ export async function generateBackupData() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Buscar todas as tabelas e seus dados
-  const tables = [
-    'users', 'departamentos', 'ciclos', 'pdis', 'actions', 
-    'competencias_macros',
-    'evidences', 'evidence_files', 'evidence_texts', 'notifications',
-    'adjustment_requests', 'adjustment_comments', 'acoes_historico', 'pdi_validacoes',
-    'backups', 'normas_regras', 'solicitacoes_acoes'
-  ];
+  // Buscar TODAS as tabelas do banco automaticamente
+  const [tableRows] = await db.execute(sql.raw('SHOW TABLES'));
+  const tables = (tableRows as any[]).map((row: any) => Object.values(row)[0] as string)
+    .filter((name: string) => name !== '__drizzle_migrations'); // Excluir tabela interna de migrações
 
   let csvContent = '';
   let totalRecords = 0;
