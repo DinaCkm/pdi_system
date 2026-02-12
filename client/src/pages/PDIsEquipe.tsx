@@ -108,6 +108,10 @@ export default function PDIsEquipe() {
     if (!pdis) return [];
     
     return pdis.filter((pdi: any) => {
+      // Esconder PDIs sem ações cadastradas (evita confusão do líder)
+      const hasActions = (pdi.actionCount || 0) > 0;
+      if (!hasActions) return false;
+
       // Filtro de busca (título ou nome do colaborador)
       const matchesSearch = 
         searchTerm === "" ||
