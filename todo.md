@@ -2862,4 +2862,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Reativar normas inativadas por engano no banco de dados
 - [x] Mover Normas e Regras para ser o primeiro item do menu em todos os perfis
 - [x] Bug: Não é possível alterar o CPF de um usuário
-- [x] Esconder PDIs sem ações da tela PDIs da Equipe do líder
+- [x] Esconder PDIs sem ações E sem relatório/laudo da tela PDIs da Equipe do líder
