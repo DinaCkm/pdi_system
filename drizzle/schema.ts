@@ -187,6 +187,7 @@ export const users = mysqlTable("users", {
 	leaderId: int(),
 	status: mysqlEnum(['ativo','inativo']).default('ativo').notNull(),
 	departamentoId: int(),
+	viuNormasVersao: int().default(0).notNull(),
 },
 (table) => [
 	index("users_openId_unique").on(table.openId),

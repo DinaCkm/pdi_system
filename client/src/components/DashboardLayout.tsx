@@ -28,11 +28,17 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 import { trpc } from "@/lib/trpc";
 import { PendencyBadge } from "./PendencyBadge";
+import { ModalPrimeiroAcesso } from "./ModalPrimeiroAcesso";
 
 const getMenuItems = (userRole: string) => {
   const items: Array<{ icon: any; label: string; path: string; section?: string }> = [];
   
   if (userRole === "admin") {
+    // Normas e Regras - primeiro item
+    items.push(
+      { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras", section: "normas" },
+      { icon: BookOpen, label: "Gerenciar Normas e Regras", path: "/admin-normas-regras", section: "normas" },
+    );
     // Seção Estratégico
     items.push(
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", section: "estrategico" },
@@ -58,12 +64,9 @@ const getMenuItems = (userRole: string) => {
     items.push(
       { icon: MessageSquarePlus, label: "Ações Solicitadas por Empregados", path: "/solicitacoes-acoes", section: "solicitacoes" },
     );
-    // Seção Normas e Regras
-    items.push(
-      { icon: BookOpen, label: "Gerenciar Normas e Regras", path: "/admin-normas-regras", section: "operacional" },
-    );
   } else if (userRole === "lider") {
     items.push(
+      { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
       { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
       { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
@@ -72,26 +75,25 @@ const getMenuItems = (userRole: string) => {
       { icon: MessageSquarePlus, label: "Solicitações de Ajuste", path: "/solicitacoes-equipe" },
       { icon: Users, label: "Solicitações da Equipe", path: "/solicitacoes-acoes?aba=equipe" },
       { icon: Send, label: "Minhas Solicitações de Ação", path: "/solicitacoes-acoes?aba=minhas" },
-      { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
     );
   } else if (userRole === "gerente") {
     // Gerente tem acesso igual ao Admin: Dashboard completo com filtros, Ações, Histórico, Relatório de Vencidas
     items.push(
+      { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
       { icon: History, label: "Histórico de Alterações", path: "/solicitacoes-admin" },
       { icon: AlertTriangle, label: "Relatório de Ações Vencidas", path: "/relatorio-acoes-vencidas" },
       { icon: FileText, label: "Ações Solicitadas por Empregados", path: "/solicitacoes-acoes" },
-      { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
     );
   } else if (userRole === "colaborador") {
     items.push(
+      { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
       { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
       { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
       { icon: History, label: "Minhas Solicitações", path: "/minhas-solicitacoes" },
       { icon: FileText, label: "Solicitar Ação", path: "/solicitacoes-acoes" },
-      { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
     );
   }
   
@@ -472,6 +474,7 @@ function DashboardLayoutContent({
         )}
         <main className="flex-1 max-w-full overflow-x-hidden">{children}</main>
       </SidebarInset>
+      <ModalPrimeiroAcesso />
     </>
   );
 }

@@ -108,9 +108,10 @@ export default function AdminNormasRegras() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [toggleConfirm, setToggleConfirm] = useState<{ id: number; titulo: string; ativo: boolean } | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const { data: normas, isLoading } = trpc.normasRegras.list.useQuery();
+  const { data: normas, isLoading } = trpc.normasRegras.list.useQuery({ apenasAtivas: false });
 
   const createMutation = trpc.normasRegras.create.useMutation({
     onSuccess: () => {
@@ -227,7 +228,21 @@ export default function AdminNormasRegras() {
   }
 
   function handleToggleAtivo(norma: any) {
-    toggleMutation.mutate({ id: norma.id, ativo: !norma.ativo });
+    setToggleConfirm({ id: norma.id, titulo: norma.titulo, ativo: norma.ativo });
+  }
+
+  function confirmToggleAtivo() {
+    if (toggleConfirm) {
+      toggleMutation.mutate(
+        { id: toggleConfirm.id, ativo: !toggleConfirm.ativo },
+        {
+          onSuccess: () => {
+            toast.success(toggleConfirm.ativo ? "Norma desativada" : "Norma reativada");
+            setToggleConfirm(null);
+          },
+        }
+      );
+    }
   }
 
   const sortedNormas = [...(normas || [])].sort((a: any, b: any) => a.ordem - b.ordem);
@@ -515,6 +530,39 @@ export default function AdminNormasRegras() {
                   : editingId
                   ? "Atualizar"
                   : "Criar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog de confirmação de ativar/desativar */}
+        <Dialog open={toggleConfirm !== null} onOpenChange={() => setToggleConfirm(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {toggleConfirm?.ativo ? "Desativar Norma" : "Reativar Norma"}
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-gray-600">
+              {toggleConfirm?.ativo
+                ? <>Tem certeza que deseja <strong className="text-red-600">desativar</strong> a norma <strong>"{toggleConfirm?.titulo}"</strong>? Ela ficará invisível para todos os usuários.</>
+                : <>Deseja <strong className="text-green-600">reativar</strong> a norma <strong>"{toggleConfirm?.titulo}"</strong>? Ela voltará a ser visível para todos os usuários.</>}
+            </p>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setToggleConfirm(null)}>
+                Cancelar
+              </Button>
+              <Button
+                variant={toggleConfirm?.ativo ? "destructive" : "default"}
+                onClick={confirmToggleAtivo}
+                disabled={toggleMutation.isPending}
+                className={!toggleConfirm?.ativo ? "bg-green-600 hover:bg-green-700" : ""}
+              >
+                {toggleMutation.isPending
+                  ? "Processando..."
+                  : toggleConfirm?.ativo
+                  ? "Sim, Desativar"
+                  : "Sim, Reativar"}
               </Button>
             </DialogFooter>
           </DialogContent>

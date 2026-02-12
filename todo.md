@@ -2850,3 +2850,14 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [ ] Atualizar painel admin com upload de imagem nos cards
 - [ ] Atualizar página pública para exibir imagens nos cards
 - [ ] Corrigir erros de build (imports DashboardLayout e AuthContext)
+
+## Modal de Primeiro Acesso
+- [ ] Adicionar campo 'viuNormas' na tabela de usuários para controlar se já viu as normas
+- [ ] Criar procedure backend para marcar que o usuário viu as normas
+- [ ] Criar componente modal de boas-vindas com link para Normas e Regras
+- [ ] Integrar modal no DashboardLayout para aparecer no primeiro acesso
+- [ ] Permitir que admin "reset" o flag para forçar todos a verem novamente (quando regras atualizarem)
+- [x] Bug: Imagens dos cards de Normas e Regras não aparecem para os empregados na página pública
+- [x] Bug: Botão olhinho no admin de Normas inativa norma sem confirmação - adicionar confirmação
+- [x] Reativar normas inativadas por engano no banco de dados
+- [x] Mover Normas e Regras para ser o primeiro item do menu em todos os perfis

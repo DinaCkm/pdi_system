@@ -3340,6 +3340,7 @@ export async function createNormaRegra(data: {
   subtitulo?: string;
   conteudo: string;
   icone?: string;
+  imagemUrl?: string;
   categoria?: string;
   ordem?: number;
 }) {
@@ -3351,6 +3352,7 @@ export async function createNormaRegra(data: {
     subtitulo: data.subtitulo || null,
     conteudo: data.conteudo,
     icone: data.icone || 'BookOpen',
+    imagemUrl: data.imagemUrl || null,
     categoria: data.categoria || 'geral',
     ordem: data.ordem || 0,
   });
@@ -3363,6 +3365,7 @@ export async function updateNormaRegra(id: number, data: {
   subtitulo?: string;
   conteudo?: string;
   icone?: string;
+  imagemUrl?: string | null;
   categoria?: string;
   ordem?: number;
   ativo?: boolean;

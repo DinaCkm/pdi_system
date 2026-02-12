@@ -1250,6 +1250,49 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
       .mutation(async ({ input }) => {
         return await db.deleteNormaRegra(input.id);
       }),
+
+    // Versão atual das normas (incrementada pelo admin quando atualiza regras)
+    versaoAtual: protectedProcedure
+      .query(async () => {
+        // Busca a maior versão de norma ativa, ou retorna 1 como padrão
+        const normas = await db.listNormasRegras(true);
+        return { versao: normas.length > 0 ? 1 : 0 };
+      }),
+
+    // Verificar se o usuário já viu as normas da versão atual
+    verificarVisualizacao: protectedProcedure
+      .query(async ({ ctx }) => {
+        const { eq } = await import('drizzle-orm');
+        const { users } = await import('../drizzle/schema');
+        const database = await db.getDb();
+        const [user] = await database.select({ viuNormasVersao: users.viuNormasVersao })
+          .from(users)
+          .where(eq(users.id, ctx.user.id));
+        return { viuNormasVersao: user?.viuNormasVersao ?? 0 };
+      }),
+
+    // Marcar que o usuário viu as normas
+    marcarComoVisto: protectedProcedure
+      .input(z.object({ versao: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const { eq } = await import('drizzle-orm');
+        const { users } = await import('../drizzle/schema');
+        const database = await db.getDb();
+        await database.update(users)
+          .set({ viuNormasVersao: input.versao })
+          .where(eq(users.id, ctx.user.id));
+        return { success: true };
+      }),
+
+    // Admin: resetar flag de todos os usuários (forçar todos a verem novamente)
+    resetarVisualizacoes: adminProcedure
+      .mutation(async () => {
+        const { users } = await import('../drizzle/schema');
+        const database = await db.getDb();
+        await database.update(users)
+          .set({ viuNormasVersao: 0 });
+        return { success: true };
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;
