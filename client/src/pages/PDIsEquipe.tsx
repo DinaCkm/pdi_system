@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectContentNoPortal } from "@/components/ui/select";
-import { Eye, Target, User, Calendar, CheckCircle2, Search, Filter, List, TrendingUp, CheckCircle, Users, BarChart3, Award, Clock, FileText, FileDown } from "lucide-react";
+import { Eye, Target, User, Calendar, CheckCircle2, Search, Filter, List, TrendingUp, CheckCircle, Users, BarChart3, Award, Clock, FileText, FileDown, Info } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -155,8 +155,12 @@ export default function PDIsEquipe() {
             PDIs da Equipe
           </h1>
           <p className="text-muted-foreground mt-1">
-            Visualize e acompanhe os Planos de Desenvolvimento Individual dos seus subordinados
-          </p>
+          Visualize e acompanhe os Planos de Desenvolvimento Individual dos seus subordinados
+        </p>
+        <div className="mt-3 flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+          <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <span>PDIs que ainda não possuem ações cadastradas ou relatórios/laudos anexados não são exibidos nesta lista.</span>
+        </div>
           {pdis && pdis.length > 0 && pdis[0]?.departamentoNome && (
             <div className="mt-3 inline-block">
               <div className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-100 to-orange-100 border-l-4 border-blue-600">
