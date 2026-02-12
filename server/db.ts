@@ -1726,8 +1726,6 @@ export async function generateBackupData() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const XLSX = await import('xlsx');
-
   // Buscar todas as tabelas e seus dados
   const tables = [
     'users', 'departamentos', 'ciclos', 'pdis', 'actions', 
@@ -1737,7 +1735,7 @@ export async function generateBackupData() {
     'backups', 'normas_regras', 'solicitacoes_acoes'
   ];
 
-  const wb = XLSX.utils.book_new();
+  let csvContent = '';
   let totalRecords = 0;
 
   for (const tableName of tables) {
@@ -1748,33 +1746,37 @@ export async function generateBackupData() {
       if (rows && rows.length > 0) {
         totalRecords += rows.length;
 
-        // Converter datas para formato legível
-        const formattedRows = rows.map((row: any) => {
-          const newRow: any = {};
-          for (const [key, value] of Object.entries(row)) {
-            if (value instanceof Date) {
-              newRow[key] = value.toISOString().slice(0, 19).replace('T', ' ');
-            } else {
-              newRow[key] = value;
-            }
-          }
-          return newRow;
-        });
+        // Separador de tabela
+        csvContent += `\n=== ${tableName.toUpperCase()} (${rows.length} registros) ===\n`;
 
-        const ws = XLSX.utils.json_to_sheet(formattedRows);
-        // Nome da aba limitado a 31 caracteres (limite do Excel)
-        const sheetName = tableName.substring(0, 31);
-        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        // Cabeçalhos
+        const headers = Object.keys(rows[0]);
+        csvContent += headers.map(h => `"${h}"`).join(',') + '\n';
+
+        // Dados
+        for (const row of rows) {
+          const values = headers.map(h => {
+            let val = (row as any)[h];
+            if (val === null || val === undefined) return '""';
+            if (val instanceof Date) {
+              val = val.toISOString().slice(0, 19).replace('T', ' ');
+            }
+            // Escapar aspas duplas e envolver em aspas
+            return `"${String(val).replace(/"/g, '""')}"`;
+          });
+          csvContent += values.join(',') + '\n';
+        }
       }
     } catch (error) {
       console.log(`Tabela ${tableName} não encontrada ou erro:`, error);
     }
   }
 
-  // Gerar buffer do Excel
-  const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  // Adicionar BOM para Excel reconhecer UTF-8
+  const bom = '\uFEFF';
+  const csvBuffer = Buffer.from(bom + csvContent, 'utf-8');
 
-  return { excelBuffer, totalRecords };
+  return { csvBuffer, totalRecords };
 }
 
 
