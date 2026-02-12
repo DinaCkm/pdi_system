@@ -28,7 +28,7 @@ export default function PDIDetalhes() {
   );
   
   // Buscar ações do PDI
-  const { data: acoes = [], isLoading: isLoadingAcoes } = trpc.actions.listByPDI.useQuery(
+  const { data: acoes = [], isLoading: isLoadingAcoes } = trpc.actions.list.useQuery(
     { pdiId },
     { enabled: pdiId > 0 }
   );
