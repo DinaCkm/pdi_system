@@ -70,7 +70,11 @@ export default function MeuPDI() {
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {pdis.map((pdi: any) => (
+          {pdis.filter((pdi: any) => {
+            const hasActions = (pdi.actionCount || 0) > 0;
+            const hasRelatorio = !!(pdi.relatorioAnalise || pdi.relatorioArquivoUrl);
+            return hasActions || hasRelatorio;
+          }).map((pdi: any) => (
             <Card key={pdi.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
