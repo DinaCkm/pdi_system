@@ -1726,7 +1726,7 @@ export async function generateBackupData() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const XLSX = require('xlsx');
+  const XLSX = await import('xlsx');
 
   // Buscar todas as tabelas e seus dados
   const tables = [
