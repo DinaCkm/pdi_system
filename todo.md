@@ -2861,3 +2861,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Bug: Botão olhinho no admin de Normas inativa norma sem confirmação - adicionar confirmação
 - [x] Reativar normas inativadas por engano no banco de dados
 - [x] Mover Normas e Regras para ser o primeiro item do menu em todos os perfis
+- [x] Bug: Não é possível alterar o CPF de um usuário

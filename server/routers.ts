@@ -61,8 +61,12 @@ export const appRouter = router({
        const users = await db.getAllUsers();
        return users.find((u: { cpf?: string | null }) => u.cpf?.replace(/\D/g, "") === input.cpf.replace(/\D/g, "")) || null;
     }),
-    update: adminProcedure.input(z.object({ id: z.number(), leaderId: z.number().nullable().optional(), role: z.enum(["admin", "gerente", "lider", "colaborador"]).optional(), name: z.string().optional(), email: z.string().optional(), cargo: z.string().optional(), departamentoId: z.number().nullable().optional(), status: z.string().optional() })).mutation(async ({ input }) => {
+    update: adminProcedure.input(z.object({ id: z.number(), leaderId: z.number().nullable().optional(), role: z.enum(["admin", "gerente", "lider", "colaborador"]).optional(), name: z.string().optional(), email: z.string().optional(), cpf: z.string().optional(), cargo: z.string().optional(), departamentoId: z.number().nullable().optional(), status: z.string().optional() })).mutation(async ({ input }) => {
       const { id, ...data } = input;
+      // Limpar CPF se fornecido (remover formatação)
+      if (data.cpf) {
+        data.cpf = data.cpf.replace(/\D/g, "");
+      }
       await db.updateUser(id, data);
       return { success: true };
     }),
