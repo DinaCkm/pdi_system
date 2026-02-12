@@ -248,5 +248,19 @@ export const solicitacoesAcoes = mysqlTable("solicitacoes_acoes", {
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
+export const normasRegras = mysqlTable("normas_regras", {
+	id: int().autoincrement().notNull(),
+	titulo: varchar({ length: 255 }).notNull(),
+	subtitulo: varchar({ length: 500 }),
+	conteudo: text().notNull(),
+	icone: varchar({ length: 50 }).default('BookOpen'),
+	imagemUrl: varchar({ length: 1000 }),
+	categoria: varchar({ length: 100 }).default('geral'),
+	ordem: int().default(0).notNull(),
+	ativo: boolean().default(true).notNull(),
+	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
+
 export type InsertUser = typeof users.$inferInsert;
 export type SelectUser = typeof users.$inferSelect;

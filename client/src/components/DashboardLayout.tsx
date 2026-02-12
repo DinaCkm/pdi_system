@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2, CheckSquare, MessageSquarePlus, Upload, ClipboardCheck, History, Trash2, AlertTriangle, TrendingUp, ChevronDown, ChevronRight, User, Send } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2, CheckSquare, MessageSquarePlus, Upload, ClipboardCheck, History, Trash2, AlertTriangle, TrendingUp, ChevronDown, ChevronRight, User, Send, BookOpen } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -58,6 +58,10 @@ const getMenuItems = (userRole: string) => {
     items.push(
       { icon: MessageSquarePlus, label: "Ações Solicitadas por Empregados", path: "/solicitacoes-acoes", section: "solicitacoes" },
     );
+    // Seção Normas e Regras
+    items.push(
+      { icon: BookOpen, label: "Gerenciar Normas e Regras", path: "/admin-normas-regras", section: "operacional" },
+    );
   } else if (userRole === "lider") {
     items.push(
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
@@ -68,6 +72,7 @@ const getMenuItems = (userRole: string) => {
       { icon: MessageSquarePlus, label: "Solicitações de Ajuste", path: "/solicitacoes-equipe" },
       { icon: Users, label: "Solicitações da Equipe", path: "/solicitacoes-acoes?aba=equipe" },
       { icon: Send, label: "Minhas Solicitações de Ação", path: "/solicitacoes-acoes?aba=minhas" },
+      { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
     );
   } else if (userRole === "gerente") {
     // Gerente tem acesso igual ao Admin: Dashboard completo com filtros, Ações, Histórico, Relatório de Vencidas
@@ -77,6 +82,7 @@ const getMenuItems = (userRole: string) => {
       { icon: History, label: "Histórico de Alterações", path: "/solicitacoes-admin" },
       { icon: AlertTriangle, label: "Relatório de Ações Vencidas", path: "/relatorio-acoes-vencidas" },
       { icon: FileText, label: "Ações Solicitadas por Empregados", path: "/solicitacoes-acoes" },
+      { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
     );
   } else if (userRole === "colaborador") {
     items.push(
@@ -85,6 +91,7 @@ const getMenuItems = (userRole: string) => {
       { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
       { icon: History, label: "Minhas Solicitações", path: "/minhas-solicitacoes" },
       { icon: FileText, label: "Solicitar Ação", path: "/solicitacoes-acoes" },
+      { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
     );
   }
   

@@ -1187,7 +1187,69 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
 
         return { success: true, acaoId };
       }),
+   }),
+
+  // ============= NORMAS E REGRAS =============
+  normasRegras: router({
+    // Listagem pública (todos os perfis autenticados)
+    list: protectedProcedure
+      .input(z.object({ apenasAtivas: z.boolean().optional().default(true) }).optional())
+      .query(async ({ input }) => {
+        return await db.listNormasRegras(input?.apenasAtivas ?? true);
+      }),
+
+    // CRUD - apenas admin
+    create: adminProcedure
+      .input(z.object({
+        titulo: z.string().min(1),
+        subtitulo: z.string().optional(),
+        conteudo: z.string().min(1),
+        icone: z.string().optional(),
+        imagemUrl: z.string().optional(),
+        categoria: z.string().optional(),
+        ordem: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return await db.createNormaRegra(input);
+      }),
+
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        titulo: z.string().optional(),
+        subtitulo: z.string().optional(),
+        conteudo: z.string().optional(),
+        icone: z.string().optional(),
+        imagemUrl: z.string().nullable().optional(),
+        categoria: z.string().optional(),
+        ordem: z.number().optional(),
+        ativo: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return await db.updateNormaRegra(id, data);
+      }),
+
+    uploadImagem: adminProcedure
+      .input(z.object({
+        fileName: z.string(),
+        fileType: z.string(),
+        fileBase64: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { storagePut } = await import('./storage');
+        const buffer = Buffer.from(input.fileBase64, 'base64');
+        const randomSuffix = Math.random().toString(36).substring(2, 10);
+        const fileKey = `normas-regras/${randomSuffix}-${input.fileName}`;
+        const { url } = await storagePut(fileKey, buffer, input.fileType);
+        return { success: true, url };
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        return await db.deleteNormaRegra(input.id);
+      }),
   }),
 });
-
 export type AppRouter = typeof appRouter;

@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, titulo FROM solicitacoes_acoes WHERE titulo LIKE '%xxx%' OR titulo LIKE '%XXXX%' OR titulo LIKE '%teste%' OR microcompetencia LIKE '%teste%'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, titulo FROM solicitacoes_acoes WHERE titulo LIKE '%xxx%' OR titulo LIKE '%XXXX%' OR titulo LIKE '%teste%' OR microcompetencia LIKE '%teste%'",
+  "rows": [
+    {
+      "id": "8",
+      "titulo": "xxx"
+    },
+    {
+      "id": "16",
+      "titulo": "xxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "id": "17",
+      "titulo": "xxxxxxxxxxxxx"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitulo\n8\txxx\n16\txxxxxxxxxxxxxxxxxxxx\n17\txxxxxxxxxxxxx\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}

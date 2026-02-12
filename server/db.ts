@@ -1,6 +1,6 @@
 import { eq, and, isNull, not, inArray, desc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, adjustmentComments, departamentos, ciclos, evidences, evidenceFiles, evidenceTexts, notifications, pdiValidacoes, deletionAuditLog, solicitacoesAcoes, userDepartmentRoles } from "../drizzle/schema";
+import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, adjustmentComments, departamentos, ciclos, evidences, evidenceFiles, evidenceTexts, notifications, pdiValidacoes, deletionAuditLog, solicitacoesAcoes, userDepartmentRoles, normasRegras } from "../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./_core/env";
 
@@ -3313,4 +3313,71 @@ export async function decisaoRH(id: number, data: {
   }).where(eq(solicitacoesAcoes.id, id));
 
   return acaoId;
+}
+
+
+// ============= NORMAS E REGRAS =============
+
+import { asc } from "drizzle-orm";
+
+export async function listNormasRegras(apenasAtivas = true) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+  
+  const conditions = apenasAtivas ? eq(normasRegras.ativo, true) : undefined;
+  
+  const result = await db
+    .select()
+    .from(normasRegras)
+    .where(conditions)
+    .orderBy(asc(normasRegras.ordem), asc(normasRegras.id));
+  
+  return result;
+}
+
+export async function createNormaRegra(data: {
+  titulo: string;
+  subtitulo?: string;
+  conteudo: string;
+  icone?: string;
+  categoria?: string;
+  ordem?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+  
+  const result = await db.insert(normasRegras).values({
+    titulo: data.titulo,
+    subtitulo: data.subtitulo || null,
+    conteudo: data.conteudo,
+    icone: data.icone || 'BookOpen',
+    categoria: data.categoria || 'geral',
+    ordem: data.ordem || 0,
+  });
+  
+  return { id: result[0].insertId };
+}
+
+export async function updateNormaRegra(id: number, data: {
+  titulo?: string;
+  subtitulo?: string;
+  conteudo?: string;
+  icone?: string;
+  categoria?: string;
+  ordem?: number;
+  ativo?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+  
+  await db.update(normasRegras).set(data).where(eq(normasRegras.id, id));
+  return { success: true };
+}
+
+export async function deleteNormaRegra(id: number) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+  
+  await db.delete(normasRegras).where(eq(normasRegras.id, id));
+  return { success: true };
 }

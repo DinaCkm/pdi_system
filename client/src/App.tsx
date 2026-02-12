@@ -43,6 +43,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import RelatorioAcoesVencidas from "./pages/RelatorioAcoesVencidas";
 import AnaliseLideranca from './pages/AnaliseLideranca';
 import SolicitacoesAcoes from './pages/SolicitacoesAcoes';
+import NormasRegras from './pages/NormasRegras';
+import AdminNormasRegras from './pages/AdminNormasRegras';
 
 function Router() {
   return (
@@ -263,6 +265,18 @@ function Router() {
       <Route path={"/solicitacoes-acoes"}>
         <DashboardLayout>
           <SolicitacoesAcoes />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/normas-regras"}>
+        <DashboardLayout>
+          <NormasRegras />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/admin-normas-regras"}>
+        <DashboardLayout>
+          <AdminNormasRegras />
         </DashboardLayout>
       </Route>
       

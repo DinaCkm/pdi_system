@@ -2834,3 +2834,19 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Bug Fix - Funil de Execução mostra 100% Pendente
 - [x] Diagnosticar e corrigir: Funil de Execução mostra 100% Pendente mesmo havendo ações concluídas (ELIENILSON tem 1 de 11 concluídas)
+
+## Página de Normas e Regras do PDI
+- [x] Criar tabela normas_regras no schema com campos: id, titulo, subtitulo, conteudo, icone, ordem, ativo, categoria, createdAt
+- [x] Criar procedures backend CRUD (admin) + listagem pública
+- [x] Criar página frontend com cards visuais estilo apresentação (fundo laranja, cards brancos)
+- [x] Criar painel admin para gerenciar cards de normas
+- [x] Adicionar item "Normas e Regras" no menu lateral para todos os perfis
+- [x] Inserir dados iniciais dos 6 cards da apresentação do Ciclo 2026
+- [x] Escrever testes vitest
+
+## Upload de Imagens nos Cards de Normas
+- [ ] Adicionar campo imagemUrl ao schema normas_regras e migrar banco
+- [ ] Criar endpoint de upload de imagem no backend (S3)
+- [ ] Atualizar painel admin com upload de imagem nos cards
+- [ ] Atualizar página pública para exibir imagens nos cards
+- [ ] Corrigir erros de build (imports DashboardLayout e AuthContext)
