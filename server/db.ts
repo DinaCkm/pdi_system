@@ -1726,15 +1726,18 @@ export async function generateBackupData() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  const XLSX = require('xlsx');
+
   // Buscar todas as tabelas e seus dados
   const tables = [
     'users', 'departamentos', 'ciclos', 'pdis', 'actions', 
-    'competenciasBlocos', 'competenciasMacros', 'competenciasMicros',
-    'evidences', 'evidenceFiles', 'evidenceTexts', 'notifications',
-    'adjustmentRequests', 'adjustmentComments', 'acoesHistorico', 'pdi_validacoes'
+    'competencias_macros',
+    'evidences', 'evidence_files', 'evidence_texts', 'notifications',
+    'adjustment_requests', 'adjustment_comments', 'acoes_historico', 'pdi_validacoes',
+    'backups', 'normas_regras', 'solicitacoes_acoes'
   ];
 
-  let sqlContent = `-- BACKUP DO SISTEMA PDI\n-- Gerado em: ${new Date().toISOString()}\n\n`;
+  const wb = XLSX.utils.book_new();
   let totalRecords = 0;
 
   for (const tableName of tables) {
@@ -1743,28 +1746,35 @@ export async function generateBackupData() {
       const rows = (result as any)[0];
       
       if (rows && rows.length > 0) {
-        sqlContent += `-- Tabela: ${tableName} (${rows.length} registros)\n`;
         totalRecords += rows.length;
 
-        for (const row of rows) {
-          const columns = Object.keys(row).join(', ');
-          const values = Object.values(row).map(v => {
-            if (v === null) return 'NULL';
-            if (typeof v === 'number') return v;
-            if (v instanceof Date) return `'${v.toISOString().slice(0, 19).replace('T', ' ')}'`;
-            return `'${String(v).replace(/'/g, "''")}'`;
-          }).join(', ');
-          
-          sqlContent += `INSERT INTO ${tableName} (${columns}) VALUES (${values});\n`;
-        }
-        sqlContent += '\n';
+        // Converter datas para formato legível
+        const formattedRows = rows.map((row: any) => {
+          const newRow: any = {};
+          for (const [key, value] of Object.entries(row)) {
+            if (value instanceof Date) {
+              newRow[key] = value.toISOString().slice(0, 19).replace('T', ' ');
+            } else {
+              newRow[key] = value;
+            }
+          }
+          return newRow;
+        });
+
+        const ws = XLSX.utils.json_to_sheet(formattedRows);
+        // Nome da aba limitado a 31 caracteres (limite do Excel)
+        const sheetName = tableName.substring(0, 31);
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
       }
     } catch (error) {
       console.log(`Tabela ${tableName} não encontrada ou erro:`, error);
     }
   }
 
-  return { sqlContent, totalRecords };
+  // Gerar buffer do Excel
+  const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+  return { excelBuffer, totalRecords };
 }
 
 

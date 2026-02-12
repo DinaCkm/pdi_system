@@ -606,22 +606,22 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
       
       // Gerar nome do arquivo com timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `backup-pdi-${timestamp}.sql`;
+      const filename = `backup-pdi-${timestamp}.xlsx`;
       const fileKey = `backups/${filename}`;
       
       try {
-        // Gerar dados do backup
-        const { sqlContent, totalRecords } = await db.generateBackupData();
+        // Gerar dados do backup em formato Excel
+        const { excelBuffer, totalRecords } = await db.generateBackupData();
         
         // Upload para S3
-        const { url } = await storagePut(fileKey, sqlContent, 'application/sql');
+        const { url } = await storagePut(fileKey, excelBuffer, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         
         // Salvar registro do backup
         const result = await db.createBackup({
           filename,
           fileUrl: url,
           fileKey,
-          fileSize: Buffer.byteLength(sqlContent, 'utf8'),
+          fileSize: excelBuffer.length,
           totalRecords,
           status: 'concluido',
           createdBy: ctx.user!.id
@@ -632,7 +632,7 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           backupId: result.insertId,
           filename,
           totalRecords,
-          fileSize: Buffer.byteLength(sqlContent, 'utf8'),
+          fileSize: excelBuffer.length,
           downloadUrl: url
         };
       } catch (error: any) {
