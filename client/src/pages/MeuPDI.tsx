@@ -3,12 +3,14 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Target, Calendar, CheckCircle2, List, User, UserCheck, TrendingUp, Upload, FileText, FileDown } from "lucide-react";
+import { Eye, Target, Calendar, CheckCircle2, List, User, UserCheck, TrendingUp, Upload, FileText, FileDown, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLocation } from "wouter";
 import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 export default function MeuPDI() {
+  const { user } = useAuth();
   const { data: pdis, isLoading } = trpc.pdis.myPDIs.useQuery();
   const { data: ciclos } = trpc.ciclos.list.useQuery();
   const [selectedPDI, setSelectedPDI] = useState<any>(null);
@@ -57,6 +59,22 @@ export default function MeuPDI() {
           Visualize e acompanhe seu Plano de Desenvolvimento Individual
         </p>
       </div>
+
+      {/* Botão Solicitar Nova Ação - visível para líder e colaborador */}
+      {(user?.role === 'lider' || user?.role === 'colaborador') && (
+        <div className="mb-6">
+          <Button
+            onClick={() => setLocation(user?.role === 'lider' ? '/solicitacoes-acoes?aba=minhas' : '/solicitacoes-acoes')}
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-md"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Solicitar Nova Ação
+          </Button>
+          <p className="text-xs text-muted-foreground mt-1">
+            Solicite a inclusão de uma nova ação no seu PDI. A solicitação passará por análise e aprovação.
+          </p>
+        </div>
+      )}
 
       {!pdis || pdis.length === 0 ? (
         <Card>

@@ -1,0 +1,31 @@
+{
+  "query": "SELECT id, name, email, cpf, role FROM users WHERE role = 'lider' AND status = 'ativo' LIMIT 3",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, cpf, role FROM users WHERE role = 'lider' AND status = 'ativo' LIMIT 3",
+  "rows": [
+    {
+      "id": "1260001",
+      "name": "EDVALDO PEREIRA LIMA JÚNIOR",
+      "email": "edvaldopljr86@gmail.com",
+      "cpf": "01547689102",
+      "role": "lider"
+    },
+    {
+      "id": "1260002",
+      "name": "AMAGGELDO BARBOSA",
+      "email": "amaggeldo@to.sebrae.com.br",
+      "cpf": "76727025134",
+      "role": "lider"
+    },
+    {
+      "id": "1260003",
+      "name": "ALDENI BATISTA TORRES",
+      "email": "aldeni.torres@to.sebrae.com.br",
+      "cpf": "00658585142",
+      "role": "lider"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\tcpf\trole\n1260001\tEDVALDO PEREIRA LIMA JÚNIOR\tedvaldopljr86@gmail.com\t01547689102\tlider\n1260002\tAMAGGELDO BARBOSA\tamaggeldo@to.sebrae.com.br\t76727025134\tlider\n1260003\tALDENI BATISTA TORRES\taldeni.torres@to.sebrae.com.br\t00658585142\tlider\n",
+  "stderr": "",
+  "execution_time_ms": 83
+}

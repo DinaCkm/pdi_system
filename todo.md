@@ -2868,3 +2868,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Bug: Página de detalhes do PDI não carrega as ações de desenvolvimento
 - [x] Alterar backup do banco para gerar Excel (.xlsx) em vez de SQL
 - [x] Backup CSV agora busca TODAS as tabelas do banco automaticamente
+- [x] Botão 'Solicitar Nova Ação' na página 'Meu PDI' para o líder (papel duplo: líder + colaborador)
