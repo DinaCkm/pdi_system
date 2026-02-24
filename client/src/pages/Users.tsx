@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Loader2, Search, ChevronLeft, ChevronRight, Settings } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Search, ChevronLeft, ChevronRight, Settings, UserCheck, UserX } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
@@ -17,7 +17,7 @@ export default function Users() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; userId?: number }>({ open: false });
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; userId?: number; currentStatus?: string }>({ open: false });
   const [editingUser, setEditingUser] = useState<number | null>(null);
   const [filterDepartamento, setFilterDepartamento] = useState<number | undefined>(undefined);
   const [filterStatus, setFilterStatus] = useState<"" | "ativo" | "inativo">("");
@@ -88,16 +88,24 @@ export default function Users() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleToggleStatus = async () => {
     if (!confirmDialog.userId) return;
+    const isAtivando = confirmDialog.currentStatus === 'inativo';
     
     try {
-      await deleteMutation.mutateAsync({ id: confirmDialog.userId });
-      toast.success("Usuário inativado com sucesso!");
+      if (isAtivando) {
+        // Reativar: atualizar status para 'ativo'
+        await updateMutation.mutateAsync({ id: confirmDialog.userId, status: 'ativo' });
+        toast.success("Usuário reativado com sucesso!");
+      } else {
+        // Inativar: usar delete que já faz status='inativo'
+        await deleteMutation.mutateAsync({ id: confirmDialog.userId });
+        toast.success("Usuário inativado com sucesso!");
+      }
       setConfirmDialog({ open: false });
       refetch();
     } catch (error: any) {
-      toast.error(error.message || "Erro ao inativar usuário");
+      toast.error(error.message || (isAtivando ? "Erro ao reativar usuário" : "Erro ao inativar usuário"));
     }
   };
 
@@ -297,10 +305,14 @@ export default function Users() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setConfirmDialog({ open: true, userId: user.id })}
-                            title="Inativar"
+                            onClick={() => setConfirmDialog({ open: true, userId: user.id, currentStatus: user.status })}
+                            title={user.status === 'inativo' ? 'Reativar' : 'Inativar'}
                           >
-                            <Trash2 className="h-4 w-4 text-red-600" />
+                            {user.status === 'inativo' ? (
+                              <UserCheck className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <UserX className="h-4 w-4 text-red-600" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>
@@ -473,19 +485,26 @@ export default function Users() {
         </form>
       </ModalCustomizado>
 
-      {/* Modal de Confirmação de Exclusão */}
+      {/* Modal de Confirmação de Ativar/Inativar */}
       <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ open })}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Inativação</AlertDialogTitle>
+            <AlertDialogTitle>
+              {confirmDialog.currentStatus === 'inativo' ? 'Confirmar Reativação' : 'Confirmar Inativação'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja inativar este usuário? Ele poderá ser reativado dentro de 6 meses.
+              {confirmDialog.currentStatus === 'inativo'
+                ? 'Tem certeza que deseja reativar este usuário? Ele voltará a ter acesso ao sistema e seus dados serão restaurados.'
+                : 'Tem certeza que deseja inativar este usuário? Ele poderá ser reativado dentro de 6 meses.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Inativar
+            <AlertDialogAction
+              onClick={handleToggleStatus}
+              className={confirmDialog.currentStatus === 'inativo' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+            >
+              {confirmDialog.currentStatus === 'inativo' ? 'Reativar' : 'Inativar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

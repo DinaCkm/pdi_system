@@ -1,0 +1,30 @@
+{
+  "query": "SELECT u.id, u.name, u.email, u.role, u.departamentoId, u.leaderId, u.status, l.name as liderNome FROM users u LEFT JOIN users l ON u.leaderId = l.id WHERE u.name LIKE '%RAFAEL%' OR u.name LIKE '%Rafael%'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT u.id, u.name, u.email, u.role, u.departamentoId, u.leaderId, u.status, l.name as liderNome FROM users u LEFT JOIN users l ON u.leaderId = l.id WHERE u.name LIKE '%RAFAEL%' OR u.name LIKE '%Rafael%'",
+  "rows": [
+    {
+      "id": "1290024",
+      "name": "RAFAEL COELHO LIMA",
+      "email": "rafael.lima@to.sebrae.com.br",
+      "role": "colaborador",
+      "departamentoId": "630016",
+      "leaderId": "1260004",
+      "status": "ativo",
+      "liderNome": "MARCUS VINICIUS VIEIRA QUEIROZ"
+    },
+    {
+      "id": "1410008",
+      "name": "RAFAEL CAMELO AYRES",
+      "email": "rafael.ayres@to.sebrae.com.br",
+      "role": "colaborador",
+      "departamentoId": "630017",
+      "leaderId": "1260005",
+      "status": "inativo",
+      "liderNome": "MILLENA PEREIRA LIMA RODRIGUES"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\tdepartamentoId\tleaderId\tstatus\tliderNome\n1290024\tRAFAEL COELHO LIMA\trafael.lima@to.sebrae.com.br\tcolaborador\t630016\t1260004\tativo\tMARCUS VINICIUS VIEIRA QUEIROZ\n1410008\tRAFAEL CAMELO AYRES\trafael.ayres@to.sebrae.com.br\tcolaborador\t630017\t1260005\tinativo\tMILLENA PEREIRA LIMA RODRIGUES\n",
+  "stderr": "",
+  "execution_time_ms": 93
+}
