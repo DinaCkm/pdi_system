@@ -2873,3 +2873,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Notificações por E-mail - Fluxo de Solicitação de Nova Ação
 - [x] Notificação ao Líder quando Administrador (CKM) dá parecer na solicitação de nova ação
 - [x] Notificação ao Gerente quando Líder dá parecer na solicitação de nova ação
+- [x] Notificação por e-mail ao Colaborador quando Gerente aprova a ação e ela é incluída no PDI

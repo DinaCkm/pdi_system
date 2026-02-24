@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente } from './_core/email';
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador } from './_core/email';
 
 // Mock do fetch para não enviar emails reais durante os testes
 const mockFetch = vi.fn();
@@ -159,6 +159,100 @@ describe('Notificações por Email - Solicitação de Nova Ação', () => {
       expect(body.body).toContain('NÃO RESPONDA ESTE EMAIL');
       expect(body.body).toContain('FLUXO É VIA SISTEMA EVOLUIR CKM');
       expect(body.body).toContain('Evoluir CKM');
+    });
+  });
+
+  describe('sendEmailAcaoAprovadaParaColaborador', () => {
+    it('deve montar o email corretamente quando ação é APROVADA e incluída no PDI', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true });
+
+      await sendEmailAcaoAprovadaParaColaborador({
+        colaboradorEmail: 'maria@teste.com',
+        colaboradorName: 'Maria Santos',
+        tituloAcao: 'Curso de Liderança',
+        pdiTitulo: 'PDI 2026 - Maria Santos',
+        departamento: 'TI',
+      });
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      const [, options] = mockFetch.mock.calls[0];
+      const body = JSON.parse(options.body);
+
+      expect(body.to).toBe('maria@teste.com');
+      expect(body.subject).toContain('PARABÉNS');
+      expect(body.subject).toContain('Aprovada');
+      expect(body.subject).toContain('Curso de Liderança');
+      expect(body.body).toContain('Maria Santos');
+      expect(body.body).toContain('APROVADA');
+      expect(body.body).toContain('Curso de Liderança');
+      expect(body.body).toContain('PDI 2026 - Maria Santos');
+      expect(body.body).toContain('TI');
+      expect(body.body).toContain('NÃO RESPONDA ESTE EMAIL');
+      expect(body.body).toContain('FLUXO É VIA SISTEMA EVOLUIR CKM');
+    });
+
+    it('deve funcionar sem PDI titulo e departamento', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true });
+
+      await sendEmailAcaoAprovadaParaColaborador({
+        colaboradorEmail: 'joao@teste.com',
+        colaboradorName: 'João Silva',
+        tituloAcao: 'Curso de Excel',
+      });
+
+      const [, options] = mockFetch.mock.calls[0];
+      const body = JSON.parse(options.body);
+
+      expect(body.body).toContain('João Silva');
+      expect(body.body).toContain('Curso de Excel');
+      expect(body.body).not.toContain('PDI:');
+      expect(body.body).not.toContain('Departamento:');
+    });
+  });
+
+  describe('sendEmailAcaoReprovadaParaColaborador', () => {
+    it('deve montar o email corretamente quando ação é REPROVADA', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true });
+
+      await sendEmailAcaoReprovadaParaColaborador({
+        colaboradorEmail: 'maria@teste.com',
+        colaboradorName: 'Maria Santos',
+        tituloAcao: 'Curso Vetado',
+        departamento: 'RH',
+      });
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      const [, options] = mockFetch.mock.calls[0];
+      const body = JSON.parse(options.body);
+
+      expect(body.to).toBe('maria@teste.com');
+      expect(body.subject).toContain('INFORMATIVO');
+      expect(body.subject).toContain('Não Foi Aprovada');
+      expect(body.subject).toContain('Curso Vetado');
+      expect(body.body).toContain('Maria Santos');
+      expect(body.body).toContain('NÃO foi aprovada');
+      expect(body.body).toContain('Curso Vetado');
+      expect(body.body).toContain('RH');
+      expect(body.body).toContain('NÃO RESPONDA ESTE EMAIL');
+      expect(body.body).toContain('FLUXO É VIA SISTEMA EVOLUIR CKM');
+    });
+
+    it('deve conter orientação para buscar feedback do gestor', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true });
+
+      await sendEmailAcaoReprovadaParaColaborador({
+        colaboradorEmail: 'joao@teste.com',
+        colaboradorName: 'João',
+        tituloAcao: 'Curso X',
+      });
+
+      const [, options] = mockFetch.mock.calls[0];
+      const body = JSON.parse(options.body);
+
+      expect(body.body).toContain('feedback');
+      expect(body.body).toContain('gestor');
     });
   });
 });

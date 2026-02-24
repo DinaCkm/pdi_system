@@ -176,3 +176,71 @@ ${ASSINATURA}
     body,
   });
 }
+
+/**
+ * Envia email para o Colaborador quando o Gerente aprova a ação e ela é incluída no PDI.
+ */
+export async function sendEmailAcaoAprovadaParaColaborador(params: {
+  colaboradorEmail: string;
+  colaboradorName: string;
+  tituloAcao: string;
+  pdiTitulo?: string;
+  departamento?: string;
+}): Promise<boolean> {
+  const { colaboradorEmail, colaboradorName, tituloAcao, pdiTitulo, departamento } = params;
+
+  const pdiText = pdiTitulo ? `\n- PDI: ${pdiTitulo}` : '';
+  const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
+
+  const body = `
+Prezado(a) ${colaboradorName},
+
+Temos o prazer de informar que sua solicitação de inclusão de nova ação foi APROVADA e já foi incluída automaticamente no seu PDI!
+
+DETALHES DA AÇÃO APROVADA:
+- Título da Ação: ${tituloAcao}${pdiText}${deptText}
+
+Acesse o sistema Evoluir CKM para visualizar a ação no seu PDI e iniciar o desenvolvimento.
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return sendEmail({
+    to: colaboradorEmail,
+    subject: `PARABÉNS - Sua Solicitação de Ação foi Aprovada e Incluída no PDI — ${tituloAcao}`,
+    body,
+  });
+}
+
+/**
+ * Envia email para o Colaborador quando o Gerente reprova a ação.
+ */
+export async function sendEmailAcaoReprovadaParaColaborador(params: {
+  colaboradorEmail: string;
+  colaboradorName: string;
+  tituloAcao: string;
+  departamento?: string;
+}): Promise<boolean> {
+  const { colaboradorEmail, colaboradorName, tituloAcao, departamento } = params;
+
+  const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
+
+  const body = `
+Prezado(a) ${colaboradorName},
+
+Informamos que sua solicitação de inclusão de nova ação NÃO foi aprovada na etapa final de análise.
+
+DETALHES DA SOLICITAÇÃO:
+- Título da Ação: ${tituloAcao}${deptText}
+
+Solicite feedback ao seu gestor sobre a motivação da decisão.
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return sendEmail({
+    to: colaboradorEmail,
+    subject: `INFORMATIVO - Sua Solicitação de Ação Não Foi Aprovada — ${tituloAcao}`,
+    body,
+  });
+}

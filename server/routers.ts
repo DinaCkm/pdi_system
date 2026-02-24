@@ -11,7 +11,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { invokeLLM } from "./_core/llm";
-import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente } from "./_core/email";
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador } from "./_core/email";
 
 // Mantendo os roteadores que já existiam
 import { systemRouter } from "./_core/systemRouter";
@@ -1202,9 +1202,11 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           rhId: ctx.user.id,
         });
 
-        // Notificar colaborador
+        // Notificar colaborador (in-app + email)
         try {
+          const solicitante = await db.getUserById(solicitacao.solicitanteId);
           if (input.decisao === 'aprovado') {
+            // Notificação in-app
             await db.createNotification({
               destinatarioId: solicitacao.solicitanteId,
               tipo: 'solicitacao_acao_aprovada',
@@ -1212,7 +1214,19 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
               mensagem: `Sua solicitação de ação "${solicitacao.titulo}" foi aprovada e incluída no seu PDI!`,
               referenciaId: input.id,
             });
+
+            // Enviar email para o colaborador
+            if (solicitante?.email) {
+              await sendEmailAcaoAprovadaParaColaborador({
+                colaboradorEmail: solicitante.email,
+                colaboradorName: solicitante.name,
+                tituloAcao: solicitacao.titulo,
+                departamento: (solicitante as any).departamentoNome || undefined,
+              });
+              console.log(`[Email] Email enviado para colaborador ${solicitante.name} (${solicitante.email}) - ação aprovada e incluída no PDI`);
+            }
           } else {
+            // Notificação in-app
             await db.createNotification({
               destinatarioId: solicitacao.solicitanteId,
               tipo: 'solicitacao_acao_vetada',
@@ -1220,6 +1234,17 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
               mensagem: `Sua solicitação de ação "${solicitacao.titulo}" não foi aprovada. Solicite feedback ao seu gestor sobre a motivação da decisão.`,
               referenciaId: input.id,
             });
+
+            // Enviar email para o colaborador
+            if (solicitante?.email) {
+              await sendEmailAcaoReprovadaParaColaborador({
+                colaboradorEmail: solicitante.email,
+                colaboradorName: solicitante.name,
+                tituloAcao: solicitacao.titulo,
+                departamento: (solicitante as any).departamentoNome || undefined,
+              });
+              console.log(`[Email] Email enviado para colaborador ${solicitante.name} (${solicitante.email}) - ação não aprovada`);
+            }
           }
         } catch (e) { console.error('Erro ao notificar colaborador:', e); }
 
