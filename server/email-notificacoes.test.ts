@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador } from './_core/email';
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailAjusteSolicitadoParaLider, sendEmailAjusteValidadoParaAdmin, sendEmailAjusteAprovadoParaColaborador, sendEmailAjusteReprovadoParaColaborador } from './_core/email';
 
 // Mock do fetch para não enviar emails reais durante os testes
 const mockFetch = vi.fn();
@@ -253,6 +253,133 @@ describe('Notificações por Email - Solicitação de Nova Ação', () => {
 
       expect(body.body).toContain('feedback');
       expect(body.body).toContain('gestor');
+    });
+  });
+});
+
+describe('Notificações por Email - Solicitação de Ajuste', () => {
+
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  describe('sendEmailAjusteSolicitadoParaLider', () => {
+    it('deve montar o email corretamente para o líder quando colaborador solicita ajuste', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true });
+
+      await sendEmailAjusteSolicitadoParaLider({
+        liderEmail: 'lider@teste.com',
+        liderName: 'João Líder',
+        colaboradorName: 'Maria Santos',
+        tituloAcao: 'Curso de Liderança',
+        tipoAjuste: 'alteracao_prazo',
+        justificativa: 'Preciso de mais tempo para concluir.',
+        departamento: 'TI',
+      });
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const [, options] = mockFetch.mock.calls[0];
+      const body = JSON.parse(options.body);
+
+      expect(body.to).toBe('lider@teste.com');
+      expect(body.subject).toContain('Solicitação de Ajuste Aguardando sua Validação');
+      expect(body.subject).toContain('Maria Santos');
+      expect(body.body).toContain('João Líder');
+      expect(body.body).toContain('Maria Santos');
+      expect(body.body).toContain('Curso de Liderança');
+      expect(body.body).toContain('Alteração de Prazo');
+      expect(body.body).toContain('Preciso de mais tempo para concluir.');
+      expect(body.body).toContain('TI');
+      expect(body.body).toContain('NÃO RESPONDA ESTE EMAIL');
+      expect(body.body).toContain('FLUXO É VIA SISTEMA EVOLUIR CKM');
+    });
+  });
+
+  describe('sendEmailAjusteValidadoParaAdmin', () => {
+    it('deve montar o email corretamente para o admin quando líder valida o ajuste', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true });
+
+      await sendEmailAjusteValidadoParaAdmin({
+        adminEmail: 'admin@teste.com',
+        adminName: 'Admin CKM',
+        liderName: 'João Líder',
+        colaboradorName: 'Maria Santos',
+        tituloAcao: 'Curso de Liderança',
+        tipoAjuste: 'alteracao_descricao',
+        justificativa: 'Quero alterar a descrição.',
+        feedbackLider: 'Concordo com a alteração.',
+        departamento: 'RH',
+      });
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const [, options] = mockFetch.mock.calls[0];
+      const body = JSON.parse(options.body);
+
+      expect(body.to).toBe('admin@teste.com');
+      expect(body.subject).toContain('Ajuste Autorizado pelo Líder');
+      expect(body.subject).toContain('Maria Santos');
+      expect(body.body).toContain('Admin CKM');
+      expect(body.body).toContain('João Líder');
+      expect(body.body).toContain('AUTORIZOU');
+      expect(body.body).toContain('Alteração de Descrição');
+      expect(body.body).toContain('Concordo com a alteração.');
+      expect(body.body).toContain('RH');
+      expect(body.body).toContain('NÃO RESPONDA ESTE EMAIL');
+    });
+  });
+
+  describe('sendEmailAjusteAprovadoParaColaborador', () => {
+    it('deve montar o email corretamente quando ajuste é APROVADO', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true });
+
+      await sendEmailAjusteAprovadoParaColaborador({
+        colaboradorEmail: 'maria@teste.com',
+        colaboradorName: 'Maria Santos',
+        tituloAcao: 'Curso de Liderança',
+        tipoAjuste: 'alteracao_prazo',
+        departamento: 'TI',
+      });
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const [, options] = mockFetch.mock.calls[0];
+      const body = JSON.parse(options.body);
+
+      expect(body.to).toBe('maria@teste.com');
+      expect(body.subject).toContain('APROVADO');
+      expect(body.subject).toContain('Ajuste');
+      expect(body.body).toContain('Maria Santos');
+      expect(body.body).toContain('APROVADA');
+      expect(body.body).toContain('Curso de Liderança');
+      expect(body.body).toContain('Alteração de Prazo');
+      expect(body.body).toContain('NÃO RESPONDA ESTE EMAIL');
+    });
+  });
+
+  describe('sendEmailAjusteReprovadoParaColaborador', () => {
+    it('deve montar o email corretamente quando ajuste é REPROVADO', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true });
+
+      await sendEmailAjusteReprovadoParaColaborador({
+        colaboradorEmail: 'maria@teste.com',
+        colaboradorName: 'Maria Santos',
+        tituloAcao: 'Curso de Liderança',
+        tipoAjuste: 'cancelamento',
+        justificativa: 'Não é possível cancelar neste momento.',
+        departamento: 'TI',
+      });
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const [, options] = mockFetch.mock.calls[0];
+      const body = JSON.parse(options.body);
+
+      expect(body.to).toBe('maria@teste.com');
+      expect(body.subject).toContain('INFORMATIVO');
+      expect(body.subject).toContain('Não Foi Aprovada');
+      expect(body.body).toContain('Maria Santos');
+      expect(body.body).toContain('NÃO foi aprovada');
+      expect(body.body).toContain('Cancelamento da Ação');
+      expect(body.body).toContain('Não é possível cancelar neste momento.');
+      expect(body.body).toContain('NÃO RESPONDA ESTE EMAIL');
     });
   });
 });

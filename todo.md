@@ -2884,3 +2884,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Bloco 1: Card Solicitação de Ajuste - adicionar depto + líder, data da solicitação, contador de tempo, botão notificação
 - [x] Bloco 2: Card Evidência - adicionar depto + líder, data da solicitação, contador de tempo
 - [x] Bloco 3: Filtro "Aguardando CKM" nas Solicitações de Ajuste
+- [x] Email automático ao Líder quando colaborador solicita ajuste na ação
+- [x] Email automático ao Admin (CKM) quando Líder valida o ajuste
+- [x] Email automático ao Colaborador quando CKM aprova/reprova o ajuste

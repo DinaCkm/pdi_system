@@ -244,3 +244,185 @@ ${ASSINATURA}
     body,
   });
 }
+
+
+/**
+ * FLUXO DE SOLICITAÇÃO DE AJUSTE - E-MAILS
+ */
+
+/**
+ * Etapa 1: Envia email para o Líder quando o Colaborador solicita ajuste na ação.
+ * O líder deve acessar o sistema e validar o ajuste.
+ */
+export async function sendEmailAjusteSolicitadoParaLider(params: {
+  liderEmail: string;
+  liderName: string;
+  colaboradorName: string;
+  tituloAcao: string;
+  tipoAjuste: string;
+  justificativa: string;
+  departamento?: string;
+}): Promise<boolean> {
+  const { liderEmail, liderName, colaboradorName, tituloAcao, tipoAjuste, justificativa, departamento } = params;
+
+  const tipoText = tipoAjuste
+    .replace('alteracao_descricao', 'Alteração de Descrição')
+    .replace('alteracao_prazo', 'Alteração de Prazo')
+    .replace('alteracao_competencia', 'Alteração de Competência')
+    .replace('cancelamento', 'Cancelamento da Ação');
+  const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
+
+  const body = `
+Prezado(a) ${liderName},
+
+Informamos que seu liderado ${colaboradorName} solicitou um AJUSTE em uma ação do PDI. É necessário que você acesse o sistema e registre se está de acordo ou não com a alteração solicitada.
+
+DETALHES DA SOLICITAÇÃO DE AJUSTE:
+- Colaborador: ${colaboradorName}${deptText}
+- Ação: ${tituloAcao}
+- Tipo de Ajuste: ${tipoText}
+- Justificativa do Colaborador: ${justificativa}
+
+Acesse o sistema Evoluir CKM para avaliar e registrar seu parecer sobre esta solicitação de ajuste.
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return sendEmail({
+    to: liderEmail,
+    subject: `AÇÃO NECESSÁRIA - Solicitação de Ajuste Aguardando sua Validação — ${colaboradorName}`,
+    body,
+  });
+}
+
+/**
+ * Etapa 2: Envia email para o Admin (CKM) quando o Líder valida o ajuste.
+ * A CKM deve acessar o sistema e realizar ou reprovar o ajuste.
+ */
+export async function sendEmailAjusteValidadoParaAdmin(params: {
+  adminEmail: string;
+  adminName: string;
+  liderName: string;
+  colaboradorName: string;
+  tituloAcao: string;
+  tipoAjuste: string;
+  justificativa: string;
+  feedbackLider: string;
+  departamento?: string;
+}): Promise<boolean> {
+  const { adminEmail, adminName, liderName, colaboradorName, tituloAcao, tipoAjuste, justificativa, feedbackLider, departamento } = params;
+
+  const tipoText = tipoAjuste
+    .replace('alteracao_descricao', 'Alteração de Descrição')
+    .replace('alteracao_prazo', 'Alteração de Prazo')
+    .replace('alteracao_competencia', 'Alteração de Competência')
+    .replace('cancelamento', 'Cancelamento da Ação');
+  const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
+
+  const body = `
+Prezado(a) ${adminName},
+
+Informamos que o líder ${liderName} AUTORIZOU a solicitação de ajuste do colaborador ${colaboradorName}. Agora é necessário que você acesse o sistema e realize o ajuste ou reprove a solicitação.
+
+DETALHES DA SOLICITAÇÃO DE AJUSTE:
+- Colaborador: ${colaboradorName}${deptText}
+- Líder: ${liderName}
+- Ação: ${tituloAcao}
+- Tipo de Ajuste: ${tipoText}
+- Justificativa do Colaborador: ${justificativa}
+- Parecer do Líder: DE ACORDO
+- Feedback do Líder: ${feedbackLider}
+
+Acesse o sistema Evoluir CKM para realizar o ajuste solicitado.
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return sendEmail({
+    to: adminEmail,
+    subject: `AÇÃO NECESSÁRIA - Ajuste Autorizado pelo Líder Aguardando Execução — ${colaboradorName}`,
+    body,
+  });
+}
+
+/**
+ * Etapa 3: Envia email para o Colaborador quando a CKM aprova o ajuste.
+ */
+export async function sendEmailAjusteAprovadoParaColaborador(params: {
+  colaboradorEmail: string;
+  colaboradorName: string;
+  tituloAcao: string;
+  tipoAjuste: string;
+  departamento?: string;
+}): Promise<boolean> {
+  const { colaboradorEmail, colaboradorName, tituloAcao, tipoAjuste, departamento } = params;
+
+  const tipoText = tipoAjuste
+    .replace('alteracao_descricao', 'Alteração de Descrição')
+    .replace('alteracao_prazo', 'Alteração de Prazo')
+    .replace('alteracao_competencia', 'Alteração de Competência')
+    .replace('cancelamento', 'Cancelamento da Ação');
+  const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
+
+  const body = `
+Prezado(a) ${colaboradorName},
+
+Informamos que sua solicitação de ajuste na ação do PDI foi APROVADA e as alterações já foram aplicadas!
+
+DETALHES DO AJUSTE APROVADO:
+- Ação: ${tituloAcao}${deptText}
+- Tipo de Ajuste: ${tipoText}
+
+Acesse o sistema Evoluir CKM para visualizar as alterações aplicadas na sua ação.
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return sendEmail({
+    to: colaboradorEmail,
+    subject: `APROVADO - Sua Solicitação de Ajuste foi Realizada — ${tituloAcao}`,
+    body,
+  });
+}
+
+/**
+ * Etapa 3 (alternativa): Envia email para o Colaborador quando a CKM reprova o ajuste.
+ */
+export async function sendEmailAjusteReprovadoParaColaborador(params: {
+  colaboradorEmail: string;
+  colaboradorName: string;
+  tituloAcao: string;
+  tipoAjuste: string;
+  justificativa?: string;
+  departamento?: string;
+}): Promise<boolean> {
+  const { colaboradorEmail, colaboradorName, tituloAcao, tipoAjuste, justificativa, departamento } = params;
+
+  const tipoText = tipoAjuste
+    .replace('alteracao_descricao', 'Alteração de Descrição')
+    .replace('alteracao_prazo', 'Alteração de Prazo')
+    .replace('alteracao_competencia', 'Alteração de Competência')
+    .replace('cancelamento', 'Cancelamento da Ação');
+  const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
+  const justText = justificativa ? `\n- Justificativa: ${justificativa}` : '';
+
+  const body = `
+Prezado(a) ${colaboradorName},
+
+Informamos que sua solicitação de ajuste na ação do PDI NÃO foi aprovada.
+
+DETALHES DA SOLICITAÇÃO:
+- Ação: ${tituloAcao}${deptText}
+- Tipo de Ajuste: ${tipoText}${justText}
+
+Solicite feedback ao seu gestor sobre a motivação da decisão.
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return sendEmail({
+    to: colaboradorEmail,
+    subject: `INFORMATIVO - Sua Solicitação de Ajuste Não Foi Aprovada — ${tituloAcao}`,
+    body,
+  });
+}

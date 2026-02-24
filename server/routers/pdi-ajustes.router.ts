@@ -4,6 +4,12 @@ import { eq, and } from "drizzle-orm";
 import { adjustmentRequests, actions, pdis, users, departamentos, ciclos } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
+import {
+  sendEmailAjusteSolicitadoParaLider,
+  sendEmailAjusteValidadoParaAdmin,
+  sendEmailAjusteAprovadoParaColaborador,
+  sendEmailAjusteReprovadoParaColaborador,
+} from "../_core/email";
 
 /**
  * REGRA CRÍTICA #10 REFINADA: Fluxo de Solicitação de Ajuste com Precedência do Líder
@@ -162,6 +168,52 @@ export const pdiAjustesRouter = router({
         status: statusInicial,
       });
 
+      // NOTIFICAÇÃO POR EMAIL - Etapa 1: Notificar o Líder quando colaborador solicita ajuste
+      if (statusInicial === "aguardando_lider") {
+        try {
+          // Buscar o colaborador dono do PDI
+          const colaboradorDono = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, pdi[0].colaboradorId))
+            .limit(1);
+
+          if (colaboradorDono.length && colaboradorDono[0].leaderId) {
+            // Buscar o líder
+            const lider = await db
+              .select()
+              .from(users)
+              .where(eq(users.id, colaboradorDono[0].leaderId))
+              .limit(1);
+
+            if (lider.length && lider[0].email) {
+              // Buscar departamento
+              let deptNome = '';
+              if (colaboradorDono[0].departamentoId) {
+                const dept = await db
+                  .select()
+                  .from(departamentos)
+                  .where(eq(departamentos.id, colaboradorDono[0].departamentoId))
+                  .limit(1);
+                if (dept.length) deptNome = dept[0].nome;
+              }
+
+              await sendEmailAjusteSolicitadoParaLider({
+                liderEmail: lider[0].email,
+                liderName: lider[0].name,
+                colaboradorName: colaboradorDono[0].name,
+                tituloAcao: acao[0].descricao || 'Ação do PDI',
+                tipoAjuste: input.tipoSolicitacao,
+                justificativa: input.descricaoSolicitacao,
+                departamento: deptNome || undefined,
+              });
+            }
+          }
+        } catch (emailError) {
+          console.warn('[Email] Erro ao enviar email de ajuste para líder:', emailError);
+        }
+      }
+
       const mensagem =
         statusInicial === "pendente"
           ? "Solicitação enviada para o administrador (ação ainda não foi validada pelo líder)"
@@ -283,6 +335,47 @@ export const pdiAjustesRouter = router({
           status: novoStatus,
         })
         .where(eq(adjustmentRequests.id, input.solicitacaoId));
+
+      // NOTIFICAÇÃO POR EMAIL - Etapa 2: Notificar Admin (CKM) quando Líder valida o ajuste
+      if (input.autoriza) {
+        try {
+          // Buscar todos os admins
+          const admins = await db
+            .select()
+            .from(users)
+            .where(eq(users.role, 'admin'));
+
+          // Buscar departamento do colaborador
+          let deptNome = '';
+          if (colaborador[0].departamentoId) {
+            const dept = await db
+              .select()
+              .from(departamentos)
+              .where(eq(departamentos.id, colaborador[0].departamentoId))
+              .limit(1);
+            if (dept.length) deptNome = dept[0].nome;
+          }
+
+          // Enviar email para cada admin
+          for (const admin of admins) {
+            if (admin.email) {
+              await sendEmailAjusteValidadoParaAdmin({
+                adminEmail: admin.email,
+                adminName: admin.name,
+                liderName: user.name,
+                colaboradorName: colaborador[0].name,
+                tituloAcao: acao[0].descricao || 'Ação do PDI',
+                tipoAjuste: solicitacao[0].tipoSolicitacao,
+                justificativa: solicitacao[0].descricaoSolicitacao,
+                feedbackLider: input.feedback_lider,
+                departamento: deptNome || undefined,
+              });
+            }
+          }
+        } catch (emailError) {
+          console.warn('[Email] Erro ao enviar email de ajuste validado para admin:', emailError);
+        }
+      }
 
       return {
         id: input.solicitacaoId,
@@ -406,6 +499,50 @@ export const pdiAjustesRouter = router({
           respondidoAt: new Date(),
         })
         .where(eq(adjustmentRequests.id, input.solicitacaoId));
+
+      // NOTIFICAÇÃO POR EMAIL - Etapa 3: Notificar Colaborador quando CKM aprova/reprova o ajuste
+      try {
+        // Buscar o solicitante (colaborador)
+        const solicitante = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, solicitacao[0].solicitanteId))
+          .limit(1);
+
+        if (solicitante.length && solicitante[0].email) {
+          // Buscar departamento
+          let deptNome = '';
+          if (solicitante[0].departamentoId) {
+            const dept = await db
+              .select()
+              .from(departamentos)
+              .where(eq(departamentos.id, solicitante[0].departamentoId))
+              .limit(1);
+            if (dept.length) deptNome = dept[0].nome;
+          }
+
+          if (input.aprovada) {
+            await sendEmailAjusteAprovadoParaColaborador({
+              colaboradorEmail: solicitante[0].email,
+              colaboradorName: solicitante[0].name,
+              tituloAcao: acao[0].descricao || 'Ação do PDI',
+              tipoAjuste: solicitacao[0].tipoSolicitacao,
+              departamento: deptNome || undefined,
+            });
+          } else {
+            await sendEmailAjusteReprovadoParaColaborador({
+              colaboradorEmail: solicitante[0].email,
+              colaboradorName: solicitante[0].name,
+              tituloAcao: acao[0].descricao || 'Ação do PDI',
+              tipoAjuste: solicitacao[0].tipoSolicitacao,
+              justificativa: input.justificativa || undefined,
+              departamento: deptNome || undefined,
+            });
+          }
+        }
+      } catch (emailError) {
+        console.warn('[Email] Erro ao enviar email de resultado do ajuste para colaborador:', emailError);
+      }
 
       return {
         id: input.solicitacaoId,
