@@ -2879,5 +2879,5 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] BUG: Filtros por Status nas Solicitações de Ajuste - solicitações sem parecer do líder não aparecem em "Aguardando Líder"
 - [x] BUG: Avaliar Solicitação de Ajuste - Editar Ação e Salvar Alterações não reflete na ação real (menu Ações)
 - [x] BUG: Filtros por Status nas Solicitações de Ajuste - solicitações sem parecer do líder não aparecem em "Aguardando Líder"
-- [ ] BUG: Dashboard do líder Millena mostra 5 colaboradores mas PDIs da equipe só mostra 4 (Rafael não aparece)
+- [x] BUG: Dashboard do líder Millena mostra 5 colaboradores mas PDIs da equipe só mostra 4 (Rafael não aparece) - RESOLVIDO: Rafael está inativo, comportamento correto. Corrigido botão para permitir reativar usuários inativos.
 - [x] BUG: Botão de ativar/inativar usuário sempre mostra "Inativar" mesmo para usuários inativos (não permite reativar)
