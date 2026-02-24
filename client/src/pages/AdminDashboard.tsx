@@ -34,12 +34,20 @@ export default function AdminDashboard() {
     ? allAdjustments 
     : statusFilter === "com_parecer"
     ? allAdjustments.filter((adj: any) => adj.comentariosLider && adj.comentariosLider.length > 0)
+    : statusFilter === "aguardando_lider"
+    ? allAdjustments.filter((adj: any) => 
+        (adj.status === 'aguardando_lider') || 
+        (adj.status === 'pendente' && (!adj.comentariosLider || adj.comentariosLider.length === 0))
+      )
     : allAdjustments.filter((adj: any) => adj.status === statusFilter);
   
   // Contar por status
   const countByStatus = {
     pendente: allAdjustments.filter((adj: any) => adj.status === 'pendente').length,
-    aguardando_lider: allAdjustments.filter((adj: any) => adj.status === 'aguardando_lider').length,
+    aguardando_lider: allAdjustments.filter((adj: any) => 
+      (adj.status === 'aguardando_lider') || 
+      (adj.status === 'pendente' && (!adj.comentariosLider || adj.comentariosLider.length === 0))
+    ).length,
     aprovada: allAdjustments.filter((adj: any) => adj.status === 'aprovada').length,
     reprovada: allAdjustments.filter((adj: any) => adj.status === 'reprovada').length,
     comParecerLider: allAdjustments.filter((adj: any) => adj.comentariosLider && adj.comentariosLider.length > 0).length,
@@ -75,6 +83,16 @@ export default function AdminDashboard() {
       setRejectionReason("");
     },
     onError: (error) => toast.error(error.message || "Erro ao rejeitar"),
+  });
+
+  // Mutation para atualizar a ação real no banco
+  const updateActionMutation = trpc.actions.update.useMutation({
+    onSuccess: () => {
+      toast.success("✅ Alterações salvas na ação com sucesso!");
+      utils.adjustmentRequests.listPending.invalidate();
+      setShowEditActionModal(false);
+    },
+    onError: (error) => toast.error(error.message || "Erro ao salvar alterações na ação"),
   });
 
   const approveAdjustmentMutation = trpc.adjustmentRequests.approve.useMutation({
@@ -132,22 +150,41 @@ export default function AdminDashboard() {
 
   const handleOpenEditAction = () => {
     if (!selectedAdjustment?.acao) return;
+    // Formatar prazo para input date (YYYY-MM-DD)
+    let prazoFormatado = selectedAdjustment.acao.prazo || '';
+    if (prazoFormatado) {
+      try {
+        const d = new Date(prazoFormatado);
+        if (!isNaN(d.getTime())) {
+          prazoFormatado = d.toISOString().split('T')[0];
+        }
+      } catch {}
+    }
     setEditingActionData({
       id: selectedAdjustment.acao.id,
       titulo: selectedAdjustment.acao.titulo,
       descricao: selectedAdjustment.acao.descricao,
-      prazo: selectedAdjustment.acao.prazo,
-      macroCompetencia: selectedAdjustment.acao.macroCompetencia,
+      prazo: prazoFormatado,
+      macroId: selectedAdjustment.acao.macroId,
     });
     setShowEditActionModal(true);
   };
 
   const handleSaveActionEdits = async () => {
+    if (!editingActionData?.id) {
+      toast.error("Erro: ID da ação não encontrado");
+      return;
+    }
     try {
-      toast.success("Alterações salvas!");
-      setShowEditActionModal(false);
+      const updatePayload: any = { id: editingActionData.id };
+      if (editingActionData.titulo) updatePayload.titulo = editingActionData.titulo;
+      if (editingActionData.descricao) updatePayload.descricao = editingActionData.descricao;
+      if (editingActionData.prazo) updatePayload.prazo = editingActionData.prazo;
+      if (editingActionData.macroId) updatePayload.macroId = editingActionData.macroId;
+      
+      updateActionMutation.mutate(updatePayload);
     } catch (error: any) {
-      toast.error("Erro ao salvar alterações");
+      toast.error("Erro ao salvar alterações: " + (error.message || "Erro desconhecido"));
     }
   };
   
@@ -700,14 +737,14 @@ export default function AdminDashboard() {
               </div>
 
               <div>
-                <label className="text-sm font-semibold">Macro Competência:</label>
+                <label className="text-sm font-semibold">Macro Competência (ID):</label>
                 <input
-                  type="text"
-                  value={editingActionData.macroCompetencia || ""}
+                  type="number"
+                  value={editingActionData.macroId || ""}
                   onChange={(e) =>
                     setEditingActionData({
                       ...editingActionData,
-                      macroCompetencia: e.target.value,
+                      macroId: e.target.value ? Number(e.target.value) : undefined,
                     })
                   }
                   className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
@@ -727,7 +764,7 @@ export default function AdminDashboard() {
               onClick={handleSaveActionEdits}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              Salvar Alterações
+              {updateActionMutation.isPending ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </DialogFooter>
         </DialogContent>

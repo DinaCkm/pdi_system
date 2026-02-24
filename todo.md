@@ -2875,3 +2875,7 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Notificação ao Gerente quando Líder dá parecer na solicitação de nova ação
 - [x] Notificação por e-mail ao Colaborador quando Gerente aprova a ação e ela é incluída no PDI
 - [x] Botão admin "Reenviar Notificações Pendentes" para disparar e-mails retroativos aos líderes (solicitações aguardando_gestor)
+- [x] BUG: Avaliar Solicitação de Ajuste - Editar Ação e Salvar Alterações não reflete na ação real (menu Ações)
+- [x] BUG: Filtros por Status nas Solicitações de Ajuste - solicitações sem parecer do líder não aparecem em "Aguardando Líder"
+- [x] BUG: Avaliar Solicitação de Ajuste - Editar Ação e Salvar Alterações não reflete na ação real (menu Ações)
+- [x] BUG: Filtros por Status nas Solicitações de Ajuste - solicitações sem parecer do líder não aparecem em "Aguardando Líder"

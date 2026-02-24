@@ -1,0 +1,110 @@
+{
+  "query": "SELECT id, status, createdAt FROM adjustment_requests ORDER BY createdAt DESC LIMIT 20",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, status, createdAt FROM adjustment_requests ORDER BY createdAt DESC LIMIT 20",
+  "rows": [
+    {
+      "id": "390005",
+      "status": "aprovada",
+      "createdAt": "2026-02-19 20:28:28"
+    },
+    {
+      "id": "390004",
+      "status": "pendente",
+      "createdAt": "2026-02-19 20:22:58"
+    },
+    {
+      "id": "390003",
+      "status": "pendente",
+      "createdAt": "2026-02-19 20:19:16"
+    },
+    {
+      "id": "390002",
+      "status": "pendente",
+      "createdAt": "2026-02-19 20:13:33"
+    },
+    {
+      "id": "390001",
+      "status": "pendente",
+      "createdAt": "2026-02-19 19:45:35"
+    },
+    {
+      "id": "360011",
+      "status": "pendente",
+      "createdAt": "2026-02-19 14:55:17"
+    },
+    {
+      "id": "360010",
+      "status": "pendente",
+      "createdAt": "2026-02-19 14:50:14"
+    },
+    {
+      "id": "360009",
+      "status": "pendente",
+      "createdAt": "2026-02-19 14:29:18"
+    },
+    {
+      "id": "360008",
+      "status": "pendente",
+      "createdAt": "2026-02-19 14:21:05"
+    },
+    {
+      "id": "360007",
+      "status": "pendente",
+      "createdAt": "2026-02-19 14:16:08"
+    },
+    {
+      "id": "360006",
+      "status": "pendente",
+      "createdAt": "2026-02-19 13:58:55"
+    },
+    {
+      "id": "360005",
+      "status": "pendente",
+      "createdAt": "2026-02-19 13:50:42"
+    },
+    {
+      "id": "360004",
+      "status": "pendente",
+      "createdAt": "2026-02-19 13:06:37"
+    },
+    {
+      "id": "360002",
+      "status": "pendente",
+      "createdAt": "2026-02-19 13:03:43"
+    },
+    {
+      "id": "360001",
+      "status": "pendente",
+      "createdAt": "2026-02-19 12:59:41"
+    },
+    {
+      "id": "330010",
+      "status": "aprovada",
+      "createdAt": "2026-02-13 19:51:40"
+    },
+    {
+      "id": "330009",
+      "status": "aprovada",
+      "createdAt": "2026-02-13 19:51:19"
+    },
+    {
+      "id": "330008",
+      "status": "aprovada",
+      "createdAt": "2026-02-13 19:34:46"
+    },
+    {
+      "id": "330007",
+      "status": "aprovada",
+      "createdAt": "2026-02-13 19:34:28"
+    },
+    {
+      "id": "330006",
+      "status": "aprovada",
+      "createdAt": "2026-02-13 19:34:07"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tstatus\tcreatedAt\n390005\taprovada\t2026-02-19 20:28:28\n390004\tpendente\t2026-02-19 20:22:58\n390003\tpendente\t2026-02-19 20:19:16\n390002\tpendente\t2026-02-19 20:13:33\n390001\tpendente\t2026-02-19 19:45:35\n360011\tpendente\t2026-02-19 14:55:17\n360010\tpendente\t2026-02-19 14:50:14\n360009\tpendente\t2026-02-19 14:29:18\n360008\tpendente\t2026-02-19 14:21:05\n360007\tpendente\t2026-02-19 14:16:08\n360006\tpendente\t2026-02-19 13:58:55\n360005\tpendente\t2026-02-19 13:50:42\n360004\tpendente\t2026-02-19 13:06:37\n360002\tpendente\t2026-02-19 13:03:43\n360001\tpendente\t2026-02-19 12:59:41\n330010\taprovada\t2026-02-13 19:51:40\n330009\taprovada\t2026-02-13 19:51:19\n330008\taprovada\t2026-02-13 19:34:46\n330007\taprovada\t2026-02-13 19:34:28\n330006\taprovada\t2026-02-13 19:34:07\n",
+  "stderr": "",
+  "execution_time_ms": 78
+}
