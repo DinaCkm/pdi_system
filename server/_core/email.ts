@@ -51,6 +51,14 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
   }
 }
 
+const AVISO_NAO_RESPONDA = `
+⚠️ NÃO RESPONDA ESTE EMAIL - O FLUXO É VIA SISTEMA EVOLUIR CKM ⚠️`;
+
+const ASSINATURA = `
+---
+Sistema de Gestão de PDI — CKM Talents
+Evoluir CKM`;
+
 /**
  * Envia email para o líder informando sobre solicitação de alteração
  */
@@ -75,16 +83,96 @@ Segue a alteração solicitada:
 ${justificativa}
 
 Campos a alterar: ${camposText}
-
-Não é necessário responder a este email.
-
----
-Sistema de Gestão de PDI
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
   `.trim();
 
   return sendEmail({
     to: leaderEmail,
     subject: "PARA A SUA CIÊNCIA - ALTERAÇÃO NO PDI",
+    body,
+  });
+}
+
+/**
+ * Envia email para o Líder quando o Administrador (CKM) emite parecer na solicitação de nova ação.
+ * O líder deve acessar o sistema e dar seu parecer.
+ */
+export async function sendEmailParecerCKMParaLider(params: {
+  liderEmail: string;
+  liderName: string;
+  colaboradorName: string;
+  tituloAcao: string;
+  parecerTipo: string;
+  parecerTexto: string;
+  departamento?: string;
+}): Promise<boolean> {
+  const { liderEmail, liderName, colaboradorName, tituloAcao, parecerTipo, parecerTexto, departamento } = params;
+
+  const tipoParecer = parecerTipo === 'com_aderencia' ? 'COM ADERÊNCIA' : 'SEM ADERÊNCIA';
+  const deptText = departamento ? `\nDepartamento: ${departamento}` : '';
+
+  const body = `
+Prezado(a) ${liderName},
+
+Informamos que a CKM Talents analisou a solicitação de inclusão de nova ação no PDI do seu liderado e emitiu seu parecer técnico. Agora é necessário que você acesse o sistema e registre sua decisão (aprovar ou reprovar).
+
+DETALHES DA SOLICITAÇÃO:
+- Colaborador: ${colaboradorName}${deptText}
+- Título da Ação: ${tituloAcao}
+- Parecer CKM: ${tipoParecer}
+- Observação CKM: ${parecerTexto}
+
+Acesse o sistema Evoluir CKM para avaliar e registrar seu parecer sobre esta solicitação.
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return sendEmail({
+    to: liderEmail,
+    subject: `AÇÃO NECESSÁRIA - Solicitação de Ação Aguardando seu Parecer — ${colaboradorName}`,
+    body,
+  });
+}
+
+/**
+ * Envia email para o Gerente quando o Líder dá seu parecer na solicitação de nova ação.
+ * O gerente deve acessar o sistema e dar a aprovação final.
+ */
+export async function sendEmailParecerLiderParaGerente(params: {
+  gerenteEmail: string;
+  gerenteName: string;
+  liderName: string;
+  colaboradorName: string;
+  tituloAcao: string;
+  decisaoLider: string;
+  justificativaLider: string;
+  departamento?: string;
+}): Promise<boolean> {
+  const { gerenteEmail, gerenteName, liderName, colaboradorName, tituloAcao, decisaoLider, justificativaLider, departamento } = params;
+
+  const decisaoText = decisaoLider === 'aprovado' ? 'APROVADA' : 'REPROVADA';
+  const deptText = departamento ? `\nDepartamento: ${departamento}` : '';
+
+  const body = `
+Prezado(a) ${gerenteName},
+
+Informamos que o líder ${liderName} registrou seu parecer sobre a solicitação de inclusão de nova ação no PDI. Agora é necessário que você acesse o sistema e registre sua decisão final.
+
+DETALHES DA SOLICITAÇÃO:
+- Colaborador: ${colaboradorName}${deptText}
+- Título da Ação: ${tituloAcao}
+- Decisão do Líder: ${decisaoText}
+- Justificativa do Líder: ${justificativaLider}
+
+Acesse o sistema Evoluir CKM para avaliar e registrar sua decisão final sobre esta solicitação.
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return sendEmail({
+    to: gerenteEmail,
+    subject: `AÇÃO NECESSÁRIA - Solicitação de Ação Aguardando sua Decisão Final — ${colaboradorName}`,
     body,
   });
 }

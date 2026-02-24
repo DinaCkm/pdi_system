@@ -2869,3 +2869,7 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Alterar backup do banco para gerar Excel (.xlsx) em vez de SQL
 - [x] Backup CSV agora busca TODAS as tabelas do banco automaticamente
 - [x] Botão 'Solicitar Nova Ação' na página 'Meu PDI' para o líder (papel duplo: líder + colaborador)
+
+## Notificações por E-mail - Fluxo de Solicitação de Nova Ação
+- [x] Notificação ao Líder quando Administrador (CKM) dá parecer na solicitação de nova ação
+- [x] Notificação ao Gerente quando Líder dá parecer na solicitação de nova ação

@@ -11,6 +11,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { invokeLLM } from "./_core/llm";
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente } from "./_core/email";
 
 // Mantendo os roteadores que já existiam
 import { systemRouter } from "./_core/systemRouter";
@@ -1073,10 +1074,11 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           adminId: ctx.user.id,
         });
 
-        // Notificar o líder/gestor do solicitante
+        // Notificar o líder/gestor do solicitante (in-app + email)
         try {
           const solicitante = await db.getUserById(solicitacao.solicitanteId);
           if (solicitante?.leaderId) {
+            // Notificação in-app
             await db.createNotification({
               destinatarioId: solicitante.leaderId,
               tipo: 'solicitacao_acao_aguardando_gestor',
@@ -1084,6 +1086,21 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
               mensagem: `A solicitação de ação "${solicitacao.titulo}" de ${solicitante.name} recebeu parecer da CKM e aguarda sua decisão.`,
               referenciaId: input.id,
             });
+
+            // Enviar email para o líder
+            const lider = await db.getUserById(solicitante.leaderId);
+            if (lider?.email) {
+              await sendEmailParecerCKMParaLider({
+                liderEmail: lider.email,
+                liderName: lider.name,
+                colaboradorName: solicitante.name,
+                tituloAcao: solicitacao.titulo,
+                parecerTipo: input.parecerTipo,
+                parecerTexto: input.parecerTexto,
+                departamento: (solicitante as any).departamentoNome || undefined,
+              });
+              console.log(`[Email] Email enviado para líder ${lider.name} (${lider.email}) sobre parecer CKM da solicitação ${input.id}`);
+            }
           }
         } catch (e) { console.error('Erro ao notificar gestor:', e); }
 
@@ -1115,10 +1132,12 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         });
 
         if (input.decisao === 'aprovado') {
-          // Notificar gerentes (RH)
+          // Notificar gerentes (RH) - in-app + email
           try {
             const gerentes = await db.getUsersByRole('gerente');
+            const solicitante = await db.getUserById(solicitacao.solicitanteId);
             for (const gerente of gerentes) {
+              // Notificação in-app
               await db.createNotification({
                 destinatarioId: gerente.id,
                 tipo: 'solicitacao_acao_aguardando_rh',
@@ -1126,6 +1145,21 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
                 mensagem: `A solicitação de ação "${solicitacao.titulo}" foi aprovada pelo gestor e aguarda sua decisão final.`,
                 referenciaId: input.id,
               });
+
+              // Enviar email para o gerente
+              if (gerente.email) {
+                await sendEmailParecerLiderParaGerente({
+                  gerenteEmail: gerente.email,
+                  gerenteName: gerente.name,
+                  liderName: ctx.user.name,
+                  colaboradorName: solicitante?.name || 'Colaborador',
+                  tituloAcao: solicitacao.titulo,
+                  decisaoLider: input.decisao,
+                  justificativaLider: input.justificativa,
+                  departamento: (solicitante as any)?.departamentoNome || undefined,
+                });
+                console.log(`[Email] Email enviado para gerente ${gerente.name} (${gerente.email}) sobre parecer do líder na solicitação ${input.id}`);
+              }
             }
           } catch (e) { console.error('Erro ao notificar RH:', e); }
         } else {
