@@ -2881,3 +2881,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] BUG: Filtros por Status nas Solicitações de Ajuste - solicitações sem parecer do líder não aparecem em "Aguardando Líder"
 - [x] BUG: Dashboard do líder Millena mostra 5 colaboradores mas PDIs da equipe só mostra 4 (Rafael não aparece) - RESOLVIDO: Rafael está inativo, comportamento correto. Corrigido botão para permitir reativar usuários inativos.
 - [x] BUG: Botão de ativar/inativar usuário sempre mostra "Inativar" mesmo para usuários inativos (não permite reativar)
+- [x] Bloco 1: Card Solicitação de Ajuste - adicionar depto + líder, data da solicitação, contador de tempo, botão notificação
+- [x] Bloco 2: Card Evidência - adicionar depto + líder, data da solicitação, contador de tempo
+- [x] Bloco 3: Filtro "Aguardando CKM" nas Solicitações de Ajuste

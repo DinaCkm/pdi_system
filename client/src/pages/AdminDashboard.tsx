@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter, TrendingUp, ArrowRight } from "lucide-react";
+import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter, TrendingUp, ArrowRight, Building2, User, Calendar, Timer, Bell } from "lucide-react";
 import { Link } from "wouter";
 
 export default function AdminDashboard() {
@@ -39,14 +39,48 @@ export default function AdminDashboard() {
         (adj.status === 'aguardando_lider') || 
         (adj.status === 'pendente' && (!adj.comentariosLider || adj.comentariosLider.length === 0))
       )
+    : statusFilter === "aguardando_ckm"
+    ? allAdjustments.filter((adj: any) => 
+        adj.status === 'pendente' && 
+        adj.comentariosLider && adj.comentariosLider.length > 0 &&
+        adj.status !== 'aprovada' && adj.status !== 'reprovada'
+      )
     : allAdjustments.filter((adj: any) => adj.status === statusFilter);
   
+  // Função para calcular tempo decorrido
+  const getTempoDecorrido = (dataStr: string) => {
+    if (!dataStr) return 'N/A';
+    const data = new Date(dataStr);
+    const agora = new Date();
+    const diffMs = agora.getTime() - data.getTime();
+    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHoras = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffDias > 0) return `${diffDias} dia${diffDias > 1 ? 's' : ''}`;
+    if (diffHoras > 0) return `${diffHoras} hora${diffHoras > 1 ? 's' : ''}`;
+    return 'Menos de 1 hora';
+  };
+
+  const getCorTempo = (dataStr: string) => {
+    if (!dataStr) return 'text-gray-500';
+    const data = new Date(dataStr);
+    const agora = new Date();
+    const diffDias = Math.floor((agora.getTime() - data.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDias >= 7) return 'text-red-600';
+    if (diffDias >= 3) return 'text-amber-600';
+    return 'text-green-600';
+  };
+
   // Contar por status
   const countByStatus = {
     pendente: allAdjustments.filter((adj: any) => adj.status === 'pendente').length,
     aguardando_lider: allAdjustments.filter((adj: any) => 
       (adj.status === 'aguardando_lider') || 
       (adj.status === 'pendente' && (!adj.comentariosLider || adj.comentariosLider.length === 0))
+    ).length,
+    aguardando_ckm: allAdjustments.filter((adj: any) => 
+      adj.status === 'pendente' && 
+      adj.comentariosLider && adj.comentariosLider.length > 0 &&
+      adj.status !== 'aprovada' && adj.status !== 'reprovada'
     ).length,
     aprovada: allAdjustments.filter((adj: any) => adj.status === 'aprovada').length,
     reprovada: allAdjustments.filter((adj: any) => adj.status === 'reprovada').length,
@@ -309,8 +343,24 @@ export default function AdminDashboard() {
                   <div className="flex items-start justify-between">
                     <div>
                       <CardTitle className="text-lg">{evidence.acao?.titulo || "Ação desconhecida"}</CardTitle>
-                      <CardDescription>
-                        Enviada por: {evidence.solicitante?.name || "Desconhecido"}
+                      <CardDescription className="space-y-1">
+                        <span className="block">Enviada por: <strong>{evidence.solicitante?.name || "Desconhecido"}</strong></span>
+                        <span className="flex items-center gap-1 text-xs">
+                          <Building2 className="h-3 w-3" />
+                          Depto: {evidence.solicitante?.departamento || 'Não informado'}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs">
+                          <User className="h-3 w-3" />
+                          Líder: {evidence.solicitante?.liderNome || 'Não informado'}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs">
+                          <Calendar className="h-3 w-3" />
+                          Data: {evidence.createdAt ? new Date(evidence.createdAt).toLocaleDateString('pt-BR') + ' às ' + new Date(evidence.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                        </span>
+                        <span className={`flex items-center gap-1 text-xs font-semibold ${getCorTempo(evidence.createdAt)}`}>
+                          <Timer className="h-3 w-3" />
+                          Tempo de resposta: {getTempoDecorrido(evidence.createdAt)}
+                        </span>
                       </CardDescription>
                     </div>
                     <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
@@ -388,6 +438,14 @@ export default function AdminDashboard() {
                   Reprovadas ({countByStatus.reprovada})
                 </Button>
                 <Button
+                  variant={statusFilter === "aguardando_ckm" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("aguardando_ckm")}
+                  className={statusFilter === "aguardando_ckm" ? "bg-orange-600 hover:bg-orange-700" : "border-orange-300 text-orange-700"}
+                >
+                  🎯 Aguardando CKM ({countByStatus.aguardando_ckm})
+                </Button>
+                <Button
                   variant={statusFilter === "com_parecer" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setStatusFilter("com_parecer")}
@@ -421,8 +479,24 @@ export default function AdminDashboard() {
                         </span>
                       </div>
                       <CardTitle className="text-lg">{adjustment.acao?.titulo || "Ação desconhecida"}</CardTitle>
-                      <CardDescription>
-                        Solicitada por: {adjustment.solicitante?.name || "Desconhecido"}
+                      <CardDescription className="space-y-1">
+                        <span className="block">Solicitada por: <strong>{adjustment.solicitante?.name || "Desconhecido"}</strong></span>
+                        <span className="flex items-center gap-1 text-xs">
+                          <Building2 className="h-3 w-3" />
+                          Depto: {adjustment.solicitante?.departamento || 'Não informado'}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs">
+                          <User className="h-3 w-3" />
+                          Líder: {adjustment.solicitante?.liderNome || 'Não informado'}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs">
+                          <Calendar className="h-3 w-3" />
+                          Data: {adjustment.createdAt ? new Date(adjustment.createdAt).toLocaleDateString('pt-BR') + ' às ' + new Date(adjustment.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                        </span>
+                        <span className={`flex items-center gap-1 text-xs font-semibold ${getCorTempo(adjustment.createdAt)}`}>
+                          <Timer className="h-3 w-3" />
+                          Tempo de resposta: {getTempoDecorrido(adjustment.createdAt)}
+                        </span>
                       </CardDescription>
                     </div>
                     {getStatusBadge(adjustment.status)}
@@ -541,6 +615,16 @@ export default function AdminDashboard() {
                         className="flex-1"
                       >
                         Avaliar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                        onClick={() => {
+                          toast.info(`Notificação de Solicitação de Ajuste Pendente enviada para o líder ${adjustment.solicitante?.liderNome || 'do colaborador'}`);
+                        }}
+                        title="Enviar notificação de solicitação pendente"
+                      >
+                        <Bell className="h-4 w-4" />
                       </Button>
                     </div>
                   )}

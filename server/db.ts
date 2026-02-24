@@ -1100,10 +1100,16 @@ export async function getPendingEvidences() {
       e.*, 
       u.name as colaboradorNome,
       u.email as colaboradorEmail,
-      a.titulo as actionNome
+      u.departamentoId as userDeptoId,
+      u.leaderId as userLeaderId,
+      a.titulo as actionNome,
+      d.nome as deptoNome,
+      ldr.name as leaderName
     FROM evidences e
     LEFT JOIN users u ON e.colaboradorId = u.id
     LEFT JOIN actions a ON e.actionId = a.id
+    LEFT JOIN departamentos d ON u.departamentoId = d.id
+    LEFT JOIN users ldr ON u.leaderId = ldr.id
     WHERE e.status IN ('aguardando_avaliacao', 'aguardando_analise', 'pending', 'pendente')
     ORDER BY e.createdAt DESC
   `);
@@ -1111,7 +1117,12 @@ export async function getPendingEvidences() {
   // Mapeamos os nomes do SQL para o que o Frontend espera
   return rows.map((ev: any) => ({
     ...ev,
-    solicitante: { name: ev.colaboradorNome, email: ev.colaboradorEmail },
+    solicitante: { 
+      name: ev.colaboradorNome, 
+      email: ev.colaboradorEmail,
+      departamento: ev.deptoNome || 'Não informado',
+      liderNome: ev.leaderName || 'Não informado',
+    },
     acao: { titulo: ev.actionNome }
   }));
 }
@@ -1239,10 +1250,16 @@ export async function getPendingAdjustmentRequests() {
         a.macroId as action_macro_id,
         a.microcompetencia as action_micro,
         u.name as user_name,
-        u.email as user_email
+        u.email as user_email,
+        u.departamentoId as user_depto_id,
+        u.leaderId as user_leader_id,
+        d.nome as depto_nome,
+        ldr.name as leader_name
       FROM adjustment_requests ar
       LEFT JOIN actions a ON ar.actionId = a.id
       LEFT JOIN users u ON ar.solicitanteId = u.id
+      LEFT JOIN departamentos d ON u.departamentoId = d.id
+      LEFT JOIN users ldr ON u.leaderId = ldr.id
       ORDER BY ar.createdAt DESC
     `);
 
@@ -1293,6 +1310,8 @@ export async function getPendingAdjustmentRequests() {
         solicitante: {
           name: row.user_name,
           email: row.user_email,
+          departamento: row.depto_nome || 'Não informado',
+          liderNome: row.leader_name || 'Não informado',
         },
         comentariosLider: (commentsRows || []).map((c: any) => ({
           id: c.id,
