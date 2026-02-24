@@ -2874,3 +2874,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Notificação ao Líder quando Administrador (CKM) dá parecer na solicitação de nova ação
 - [x] Notificação ao Gerente quando Líder dá parecer na solicitação de nova ação
 - [x] Notificação por e-mail ao Colaborador quando Gerente aprova a ação e ela é incluída no PDI
+- [x] Botão admin "Reenviar Notificações Pendentes" para disparar e-mails retroativos aos líderes (solicitações aguardando_gestor)

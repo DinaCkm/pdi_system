@@ -1,0 +1,27 @@
+{
+  "query": "SELECT * FROM users LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT * FROM users LIMIT 1;",
+  "rows": [
+    {
+      "id": "1",
+      "openId": "julia-admin-001",
+      "name": "Equipe CKM Talents",
+      "email": "relacionamento@ckmtalents.net",
+      "loginMethod": "NULL",
+      "role": "admin",
+      "createdAt": "2026-01-26 23:10:58",
+      "updatedAt": "2026-02-23 22:08:13",
+      "lastSignedIn": "2026-01-26 23:10:58",
+      "cpf": "00000000050",
+      "cargo": "Administradora",
+      "leaderId": "NULL",
+      "status": "ativo",
+      "departamentoId": "NULL",
+      "viuNormasVersao": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\tloginMethod\trole\tcreatedAt\tupdatedAt\tlastSignedIn\tcpf\tcargo\tleaderId\tstatus\tdepartamentoId\tviuNormasVersao\n1\tjulia-admin-001\tEquipe CKM Talents\trelacionamento@ckmtalents.net\tNULL\tadmin\t2026-01-26 23:10:58\t2026-02-23 22:08:13\t2026-01-26 23:10:58\t00000000050\tAdministradora\tNULL\tativo\tNULL\t1\n",
+  "stderr": "",
+  "execution_time_ms": 56
+}

@@ -1,0 +1,20 @@
+{
+  "query": "SELECT * FROM solicitacoes_acoes LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT * FROM solicitacoes_acoes LIMIT 1;",
+  "rows": [],
+  "messages": [
+    "30001\t1170155\t210010\tNULL\tParticipar da Empretec\tBoa tarde.",
+    "Gostaria de Solicitar, por gentileza, a inclusão do Empretec no meu Plano de Desenvolvimento Individual (PDI), considerando a relevância do programa para o fortalecimento das minhas competências empreendedoras e para o aprimoramento das entregas na minha atuação profissional.",
+    "Fico à disposição para qualquer informação adicional.",
+    "Atenciosamente,",
+    "Thamara Ferreira- Analista RBP",
+    "\t2026-06-10\t1410004\taguardando_gestor\tsem_aderencia\tNão aprovada neste momento, pois a colaboradora ainda possui ações pendentes oriundas de 2025 (inclusive aquelas oficialmente prorrogadas para 2026, mas originalmente vinculadas ao ciclo 2025).",
+    "Conforme as diretrizes do PDI – Evoluir 2026, a existência de qualquer ação remanescente de 2025 bloqueia automaticamente a inclusão de novas ações ou eventos para 2026.",
+    "Dessa forma, antes de qualquer nova solicitação, é obrigatória a conclusão integral do plano “PDI - 2025/2026 - AÇÕES REMANESCENTES DE 2025 E PROGRAMADAS PARA 2026”.",
+    "Após a finalização e devida validação dessas ações, a demanda poderá ser reavaliada tecnicamente pela CKM quanto à prioridade, aderência estratégica e alinhamento às competências previstas para o ciclo vigente.",
+    "Em caso de dúvidas, orienta-se consultar as Normas e Regras do Programa, bem como verificar eventuais pendências no menu PDI/Ações.\t1\t2026-02-23 19:44:56\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-11 23:28:25\t2026-02-23 19:44:55"
+  ],
+  "stdout": "id\tpdiId\tmacroId\tmicrocompetencia\ttitulo\tdescricao\tprazo\tsolicitanteId\tstatusGeral\tckmParecerTipo\tckmParecerTexto\tckmParecerPor\tckmParecerEm\tgestorDecisao\tgestorJustificativa\tgestorId\tgestorDecisaoEm\trhDecisao\trhJustificativa\trhId\trhDecisaoEm\tacaoIncluidaId\tcreatedAt\tupdatedAt\n30001\t1170155\t210010\tNULL\tParticipar da Empretec\tBoa tarde.\n\nGostaria de Solicitar, por gentileza, a inclusão do Empretec no meu Plano de Desenvolvimento Individual (PDI), considerando a relevância do programa para o fortalecimento das minhas competências empreendedoras e para o aprimoramento das entregas na minha atuação profissional.\n\nFico à disposição para qualquer informação adicional.\n\nAtenciosamente,\nThamara Ferreira- Analista RBP\n\t2026-06-10\t1410004\taguardando_gestor\tsem_aderencia\tNão aprovada neste momento, pois a colaboradora ainda possui ações pendentes oriundas de 2025 (inclusive aquelas oficialmente prorrogadas para 2026, mas originalmente vinculadas ao ciclo 2025).\n\nConforme as diretrizes do PDI – Evoluir 2026, a existência de qualquer ação remanescente de 2025 bloqueia automaticamente a inclusão de novas ações ou eventos para 2026.\n\nDessa forma, antes de qualquer nova solicitação, é obrigatória a conclusão integral do plano “PDI - 2025/2026 - AÇÕES REMANESCENTES DE 2025 E PROGRAMADAS PARA 2026”.\n\nApós a finalização e devida validação dessas ações, a demanda poderá ser reavaliada tecnicamente pela CKM quanto à prioridade, aderência estratégica e alinhamento às competências previstas para o ciclo vigente.\n\nEm caso de dúvidas, orienta-se consultar as Normas e Regras do Programa, bem como verificar eventuais pendências no menu PDI/Ações.\t1\t2026-02-23 19:44:56\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\tNULL\t2026-02-11 23:28:25\t2026-02-23 19:44:55\n",
+  "stderr": "",
+  "execution_time_ms": 60
+}

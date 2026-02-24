@@ -1250,6 +1250,59 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
 
         return { success: true, acaoId };
       }),
+
+    // Reenviar notificações pendentes (Admin)
+    reenviarNotificacoesPendentes: adminProcedure
+      .mutation(async () => {
+        // Buscar todas as solicitações aguardando_gestor
+        const solicitacoes = await db.listSolicitacoesAcoes({ statusGeral: 'aguardando_gestor' });
+
+        if (solicitacoes.length === 0) {
+          return { success: true, enviados: 0, falhas: 0, total: 0, detalhes: [] };
+        }
+
+        let enviados = 0;
+        let falhas = 0;
+        const detalhes: Array<{ id: number; titulo: string; colaborador: string; lider: string; status: string }> = [];
+
+        for (const sol of solicitacoes) {
+          try {
+            const solicitante = await db.getUserById(sol.solicitanteId);
+            if (!solicitante?.leaderId) {
+              detalhes.push({ id: sol.id, titulo: sol.titulo, colaborador: solicitante?.name || 'N/A', lider: 'SEM LÍDER', status: 'falha' });
+              falhas++;
+              continue;
+            }
+
+            const lider = await db.getUserById(solicitante.leaderId);
+            if (!lider?.email) {
+              detalhes.push({ id: sol.id, titulo: sol.titulo, colaborador: solicitante.name, lider: lider?.name || 'SEM EMAIL', status: 'falha' });
+              falhas++;
+              continue;
+            }
+
+            await sendEmailParecerCKMParaLider({
+              liderEmail: lider.email,
+              liderName: lider.name,
+              colaboradorName: solicitante.name,
+              tituloAcao: sol.titulo,
+              parecerTipo: sol.ckmParecerTipo || 'sem_aderencia',
+              parecerTexto: sol.ckmParecerTexto || '',
+              departamento: (solicitante as any).departamentoNome || undefined,
+            });
+
+            detalhes.push({ id: sol.id, titulo: sol.titulo, colaborador: solicitante.name, lider: `${lider.name} (${lider.email})`, status: 'enviado' });
+            enviados++;
+            console.log(`[Email Retroativo] Email enviado para líder ${lider.name} (${lider.email}) - solicitação #${sol.id}`);
+          } catch (e) {
+            console.error(`[Email Retroativo] Erro ao enviar email para solicitação #${sol.id}:`, e);
+            detalhes.push({ id: sol.id, titulo: sol.titulo, colaborador: 'Erro', lider: 'Erro', status: 'erro' });
+            falhas++;
+          }
+        }
+
+        return { success: true, enviados, falhas, total: solicitacoes.length, detalhes };
+      }),
    }),
 
   // ============= NORMAS E REGRAS =============

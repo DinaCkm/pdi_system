@@ -6,7 +6,7 @@ import { useSearch } from 'wouter';
 import { 
   FileText, Plus, Clock, CheckCircle2, XCircle, AlertTriangle, 
   Search, ChevronDown, X, Check, Send, Eye, MessageSquare,
-  Loader2, Filter, ChevronRight, User, Users
+  Loader2, Filter, ChevronRight, User, Users, Mail
 } from 'lucide-react';
 
 // ============= STATUS HELPERS =============
@@ -41,6 +41,122 @@ function formatDate(d: any) {
   if (!d) return '-';
   const date = new Date(d);
   return date.toLocaleDateString('pt-BR');
+}
+
+// ============= BOTÃO REENVIAR NOTIFICAÇÕES PENDENTES =============
+function BotaoReenviarNotificacoes() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [showResultado, setShowResultado] = useState(false);
+  const [resultado, setResultado] = useState<any>(null);
+  const mutation = trpc.solicitacoesAcoes.reenviarNotificacoesPendentes.useMutation();
+
+  const handleReenviar = async () => {
+    if (!confirm('Deseja reenviar os e-mails de notificação para os líderes de todas as solicitações pendentes (aguardando parecer do gestor)?')) return;
+    setIsLoading(true);
+    try {
+      const res = await mutation.mutateAsync();
+      setResultado(res);
+      setShowResultado(true);
+      if (res.enviados > 0) {
+        toast.success(`${res.enviados} e-mail(s) enviado(s) com sucesso!`);
+      }
+      if (res.falhas > 0) {
+        toast.warning(`${res.falhas} e-mail(s) falharam.`);
+      }
+      if (res.total === 0) {
+        toast.info('Nenhuma solicitação pendente encontrada.');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao reenviar notificações');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        onClick={handleReenviar}
+        disabled={isLoading}
+        className="bg-amber-500 text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-amber-600 flex items-center gap-2 shrink-0 disabled:opacity-50"
+        title="Reenviar e-mails de notificação para líderes com solicitações pendentes"
+      >
+        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+        {isLoading ? 'Enviando...' : 'Reenviar Notificações'}
+      </button>
+
+      {/* Modal de Resultado */}
+      {showResultado && resultado && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-800">Resultado do Envio</h3>
+                <button onClick={() => setShowResultado(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="bg-blue-50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-blue-700">{resultado.total}</p>
+                  <p className="text-xs text-blue-600">Total</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-green-700">{resultado.enviados}</p>
+                  <p className="text-xs text-green-600">Enviados</p>
+                </div>
+                <div className="bg-red-50 rounded-lg p-3 text-center">
+                  <p className="text-2xl font-bold text-red-700">{resultado.falhas}</p>
+                  <p className="text-xs text-red-600">Falhas</p>
+                </div>
+              </div>
+
+              {resultado.detalhes?.length > 0 && (
+                <div className="border rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left px-3 py-2 font-medium text-gray-600">Colaborador</th>
+                        <th className="text-left px-3 py-2 font-medium text-gray-600">Líder</th>
+                        <th className="text-center px-3 py-2 font-medium text-gray-600">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {resultado.detalhes.map((d: any, i: number) => (
+                        <tr key={i} className="hover:bg-gray-50">
+                          <td className="px-3 py-2 text-gray-700">{d.colaborador}</td>
+                          <td className="px-3 py-2 text-gray-700 text-xs">{d.lider}</td>
+                          <td className="px-3 py-2 text-center">
+                            {d.status === 'enviado' ? (
+                              <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
+                                <Check className="h-3 w-3" /> Enviado
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-red-600 text-xs font-medium">
+                                <XCircle className="h-3 w-3" /> Falha
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowResultado(false)}
+                className="mt-4 w-full bg-gray-100 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-200"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
 
 // ============= FORMULÁRIO DE NOVA SOLICITAÇÃO =============
@@ -763,16 +879,20 @@ export default function SolicitacoesAcoes() {
           </h1>
           <p className="text-sm text-gray-500 mt-1">{pageDescription}</p>
         </div>
-        {/* Botão Nova Solicitação: visível para Colaborador e Líder (na aba "Minhas") */}
-        {canCreateSolicitacao && !showForm && (userRole === 'colaborador' || abaLider === 'minhas') && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-blue-600 text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-blue-700 flex items-center gap-2 shrink-0"
-          >
-            <Plus className="h-4 w-4" />
-            Nova Solicitação
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Botão Nova Solicitação: visível para Colaborador e Líder (na aba "Minhas") */}
+          {canCreateSolicitacao && !showForm && (userRole === 'colaborador' || abaLider === 'minhas') && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-blue-600 text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-blue-700 flex items-center gap-2 shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+              Nova Solicitação
+            </button>
+          )}
+          {/* Botão Reenviar Notificações: visível apenas para Admin */}
+          {userRole === 'admin' && <BotaoReenviarNotificacoes />}
+        </div>
       </div>
 
 

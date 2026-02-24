@@ -1,0 +1,13 @@
+{
+  "query": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ', ') AS cols FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'solicitacoes_acoes' AND TABLE_SCHEMA = DATABASE();",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ', ') AS cols FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'solicitacoes_acoes' AND TABLE_SCHEMA = DATABASE();",
+  "rows": [
+    {
+      "cols": "id, pdiId, macroId, microcompetencia, titulo, descricao, prazo, solicitanteId, statusGeral, ckmParecerTipo, ckmParecerTexto, ckmParecerPor, ckmParecerEm, gestorDecisao, gestorJustificativa, gestorId, gestorDecisaoEm, rhDecisao, rhJustificativa, rhId, rhDecisaoEm, acaoIncluidaId, createdAt, updatedAt"
+    }
+  ],
+  "messages": [],
+  "stdout": "cols\nid, pdiId, macroId, microcompetencia, titulo, descricao, prazo, solicitanteId, statusGeral, ckmParecerTipo, ckmParecerTexto, ckmParecerPor, ckmParecerEm, gestorDecisao, gestorJustificativa, gestorId, gestorDecisaoEm, rhDecisao, rhJustificativa, rhId, rhDecisaoEm, acaoIncluidaId, createdAt, updatedAt\n",
+  "stderr": "",
+  "execution_time_ms": 65
+}

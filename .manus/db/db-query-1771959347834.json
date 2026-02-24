@@ -1,0 +1,13 @@
+{
+  "query": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ', ') AS cols FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' AND TABLE_SCHEMA = DATABASE();",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ', ') AS cols FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'users' AND TABLE_SCHEMA = DATABASE();",
+  "rows": [
+    {
+      "cols": "id, openId, name, email, loginMethod, role, createdAt, updatedAt, lastSignedIn, cpf, cargo, leaderId, status, departamentoId, viuNormasVersao"
+    }
+  ],
+  "messages": [],
+  "stdout": "cols\nid, openId, name, email, loginMethod, role, createdAt, updatedAt, lastSignedIn, cpf, cargo, leaderId, status, departamentoId, viuNormasVersao\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}
