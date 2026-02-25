@@ -2887,3 +2887,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Email automático ao Líder quando colaborador solicita ajuste na ação
 - [x] Email automático ao Admin (CKM) quando Líder valida o ajuste
 - [x] Email automático ao Colaborador quando CKM aprova/reprova o ajuste
+- [x] Adicionar coluna Descrição da Ação no relatório geral CSV

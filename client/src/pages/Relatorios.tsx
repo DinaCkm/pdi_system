@@ -443,7 +443,7 @@ export default function Relatorios() {
                         </p>
                         <div className="text-left text-xs text-gray-500 mb-4 bg-white p-3 rounded-lg w-full">
                           <p className="font-medium text-gray-700 mb-1">Colunas incluídas:</p>
-                          <p>Usuário (ID, Nome, Email, CPF, Cargo, Perfil, Status) • Departamento • Líder • PDI (ID, Título, Status) • Ciclo • Ação (ID, Título, Status, Prazo) • Competência Macro</p>
+                          <p>Usuário (ID, Nome, Email, CPF, Cargo, Perfil, Status) • Departamento • Líder • PDI (ID, Título, Status) • Ciclo • Ação (ID, Título, Descrição, Status, Prazo) • Competência Macro</p>
                         </div>
                         <p className="text-xs text-gray-500 mb-4">
                           💡 Dica: Abra o arquivo no Excel e use filtros para visualizar os dados como preferir

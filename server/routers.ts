@@ -691,11 +691,11 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           const dados = await db.getRelatorioGeral();
           
           // Cabeçalho do CSV
-          let content = 'Usuario_ID,Usuario_Nome,Usuario_Email,Usuario_CPF,Usuario_Cargo,Usuario_Perfil,Usuario_Status,Departamento,Lider,PDI_ID,PDI_Titulo,PDI_Status,Ciclo,Acao_ID,Acao_Titulo,Acao_Status,Acao_Prazo,Competencia_Macro\n';
+          let content = 'Usuario_ID,Usuario_Nome,Usuario_Email,Usuario_CPF,Usuario_Cargo,Usuario_Perfil,Usuario_Status,Departamento,Lider,PDI_ID,PDI_Titulo,PDI_Status,Ciclo,Acao_ID,Acao_Titulo,Acao_Descricao,Acao_Status,Acao_Prazo,Competencia_Macro\n';
           
           // Dados
           content += dados.map((row: any) => 
-            `${row.usuario_id || ''},"${row.usuario_nome || ''}","${row.usuario_email || ''}","${row.usuario_cpf || ''}","${row.usuario_cargo || ''}","${row.usuario_perfil || ''}","${row.usuario_status || ''}","${row.departamento_nome || ''}","${row.lider_nome || ''}",${row.pdi_id || ''},"${row.pdi_titulo || ''}","${row.pdi_status || ''}","${row.ciclo_nome || ''}",${row.acao_id || ''},"${row.acao_titulo || ''}","${row.acao_status || ''}","${row.acao_prazo || ''}","${row.competencia_macro || ''}"`
+            `${row.usuario_id || ''},"${row.usuario_nome || ''}","${row.usuario_email || ''}","${row.usuario_cpf || ''}","${row.usuario_cargo || ''}","${row.usuario_perfil || ''}","${row.usuario_status || ''}","${row.departamento_nome || ''}","${row.lider_nome || ''}",${row.pdi_id || ''},"${row.pdi_titulo || ''}","${row.pdi_status || ''}","${row.ciclo_nome || ''}",${row.acao_id || ''},"${row.acao_titulo || ''}","${(row.acao_descricao || '').replace(/"/g, '""').replace(/\n/g, ' ')}","${row.acao_status || ''}","${row.acao_prazo || ''}","${row.competencia_macro || ''}"`
           ).join('\n');
           
           const filename = `relatorio-geral-${timestamp}.csv`;

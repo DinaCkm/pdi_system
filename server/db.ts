@@ -1880,6 +1880,7 @@ export async function getRelatorioGeral() {
           c.nome as ciclo_nome,
           a.id as acao_id,
           a.titulo as acao_titulo,
+          a.descricao as acao_descricao,
           a.status as acao_status,
           a.prazo as acao_prazo,
           m.nome as competencia_macro
