@@ -455,8 +455,43 @@ function ParecerCKMForm({ solicitacao, onSuccess }: { solicitacao: any; onSucces
     <div className="border-t border-yellow-200 pt-4 mt-4">
       <h4 className="text-sm font-bold text-yellow-800 mb-3 flex items-center gap-2">
         <MessageSquare className="h-4 w-4" />
-        Emitir Parecer Técnico (CKM)
+        {solicitacao.liderRevisaoSolicitada ? 'Revisão Solicitada pelo Líder — Novo Parecer Técnico (CKM)' : 'Emitir Parecer Técnico (CKM)'}
       </h4>
+
+      {/* Exibir parecer original e motivo da revisão quando volta do Líder */}
+      {solicitacao.liderRevisaoSolicitada && solicitacao.historicoRodadas && (() => {
+        try {
+          const historico = JSON.parse(solicitacao.historicoRodadas);
+          const ultimaRodada = historico[historico.length - 1];
+          if (!ultimaRodada) return null;
+          return (
+            <div className="space-y-3 mb-4">
+              {/* Motivo da revisão do Líder */}
+              <div className="bg-orange-50 border border-orange-300 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle className="h-4 w-4 text-orange-600" />
+                  <span className="text-xs font-bold text-orange-700 uppercase tracking-wider">Motivo da Revisão (Líder)</span>
+                </div>
+                <p className="text-sm text-orange-800 whitespace-pre-wrap">{ultimaRodada.motivoDevolucao || solicitacao.liderMotivoRevisao}</p>
+              </div>
+              {/* Parecer original do CKM */}
+              {ultimaRodada.ckm?.parecerTipo && (
+                <div className={`rounded-lg p-3 border ${ultimaRodada.ckm.parecerTipo === 'com_aderencia' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Seu Parecer Anterior (Rodada 1)</span>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${ultimaRodada.ckm.parecerTipo === 'com_aderencia' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                      {ultimaRodada.ckm.parecerTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{ultimaRodada.ckm.parecerTexto}</p>
+                  {ultimaRodada.ckm.em && <p className="text-xs text-gray-400 mt-1">Emitido em: {new Date(ultimaRodada.ckm.em).toLocaleDateString('pt-BR')} às {new Date(ultimaRodada.ckm.em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>}
+                </div>
+              )}
+            </div>
+          );
+        } catch { return null; }
+      })()}
+
       <div className="space-y-3">
         <div className="flex gap-3">
           <button

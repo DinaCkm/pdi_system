@@ -3364,12 +3364,34 @@ export async function solicitarRevisaoLider(id: number, data: {
     throw new Error("O líder já solicitou revisão nesta solicitação. Não é possível solicitar novamente.");
   }
 
+  // Salvar snapshot da rodada atual no histórico antes de limpar
+  const historicoAtual = solicitacao.historicoRodadas ? JSON.parse(solicitacao.historicoRodadas as string) : [];
+  const rodadaSnapshot = {
+    rodada: 1,
+    ckm: {
+      parecerTipo: solicitacao.ckmParecerTipo,
+      parecerTexto: solicitacao.ckmParecerTexto,
+      porId: solicitacao.ckmParecerPor,
+      em: solicitacao.ckmParecerEm,
+    },
+    gestor: {
+      decisao: 'solicitar_revisao',
+      justificativa: data.motivoRevisao,
+      id: data.gestorId,
+      em: new Date().toISOString(),
+    },
+    motivoDevolucao: data.motivoRevisao,
+    devolvidoPor: 'lider',
+  };
+  historicoAtual.push(rodadaSnapshot);
+
   // Volta para aguardando_ckm, marca que líder já solicitou revisão
   // Limpa o parecer do CKM para que ele faça um novo
   await db.update(solicitacoesAcoes).set({
     statusGeral: "aguardando_ckm",
     liderRevisaoSolicitada: true,
     liderMotivoRevisao: data.motivoRevisao,
+    historicoRodadas: JSON.stringify(historicoAtual),
     // Limpar parecer CKM para nova análise
     ckmParecerTipo: null,
     ckmParecerTexto: null,
