@@ -467,3 +467,41 @@ ${ASSINATURA}
     body,
   });
 }
+
+export async function sendEmailRevisaoLiderParaCKM(params: {
+  adminEmail: string;
+  adminName: string | null;
+  liderName: string | null;
+  colaboradorName: string | null;
+  tituloAcao: string;
+  motivoRevisao: string;
+  departamento?: string;
+}) {
+  const { adminEmail, adminName, liderName, colaboradorName, tituloAcao, motivoRevisao, departamento } = params;
+
+  const body = `
+Prezado(a) ${adminName || 'Administrador'},
+
+O Líder ${liderName || '(Gestor)'} solicitou um ESCLARECIMENTO sobre o parecer técnico da solicitação de inclusão de ação no PDI.
+
+📋 DETALHES DA SOLICITAÇÃO:
+• Ação: ${tituloAcao}
+• Colaborador: ${colaboradorName || 'N/A'}${departamento ? `\n• Departamento: ${departamento}` : ''}
+
+📝 MOTIVO DO ESCLARECIMENTO:
+${motivoRevisao}
+
+⚠️ AÇÃO NECESSÁRIA:
+É necessário complementar/atualizar o parecer técnico para esta solicitação.
+Acesse o sistema para reanalisar e emitir seu parecer atualizado.
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return sendEmail({
+    to: adminEmail,
+    subject: `ESCLARECIMENTO SOLICITADO PELO LÍDER — ${tituloAcao}`,
+    body,
+  });
+}

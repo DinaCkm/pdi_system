@@ -3184,6 +3184,8 @@ export async function listSolicitacoesAcoes(filtros?: {
       acaoIncluidaId: solicitacoesAcoes.acaoIncluidaId,
       rodadaAtual: solicitacoesAcoes.rodadaAtual,
       historicoRodadas: solicitacoesAcoes.historicoRodadas,
+      liderRevisaoSolicitada: solicitacoesAcoes.liderRevisaoSolicitada,
+      liderMotivoRevisao: solicitacoesAcoes.liderMotivoRevisao,
       createdAt: solicitacoesAcoes.createdAt,
       updatedAt: solicitacoesAcoes.updatedAt,
       // Joins
@@ -3345,6 +3347,57 @@ export async function decisaoRH(id: number, data: {
   return acaoId;
 }
 
+
+// ============= SOLICITAR REVISÃO (LÍDER) =============
+
+export async function solicitarRevisaoLider(id: number, data: {
+  motivoRevisao: string;
+  gestorId: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const solicitacao = await getSolicitacaoById(id);
+  if (!solicitacao) throw new Error("Solicitação não encontrada");
+
+  if (solicitacao.liderRevisaoSolicitada) {
+    throw new Error("O líder já solicitou revisão nesta solicitação. Não é possível solicitar novamente.");
+  }
+
+  // Volta para aguardando_ckm, marca que líder já solicitou revisão
+  // Limpa o parecer do CKM para que ele faça um novo
+  await db.update(solicitacoesAcoes).set({
+    statusGeral: "aguardando_ckm",
+    liderRevisaoSolicitada: true,
+    liderMotivoRevisao: data.motivoRevisao,
+    // Limpar parecer CKM para nova análise
+    ckmParecerTipo: null,
+    ckmParecerTexto: null,
+    ckmParecerPor: null,
+    ckmParecerEm: null,
+    // Limpar decisão do gestor
+    gestorDecisao: null,
+    gestorJustificativa: null,
+    gestorId: null,
+    gestorDecisaoEm: null,
+  }).where(eq(solicitacoesAcoes.id, id));
+}
+
+export async function encerrarSolicitacaoLider(id: number, data: {
+  justificativa: string;
+  gestorId: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(solicitacoesAcoes).set({
+    gestorDecisao: "encerrada",
+    gestorJustificativa: data.justificativa,
+    gestorId: data.gestorId,
+    gestorDecisaoEm: new Date(),
+    statusGeral: "encerrada_lider",
+  }).where(eq(solicitacoesAcoes.id, id));
+}
 
 // ============= SOLICITAR REVISÃO (RH) =============
 

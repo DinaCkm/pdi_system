@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE solicitacoes_acoes ADD COLUMN lider_revisao_solicitada BOOLEAN NOT NULL DEFAULT false; ALTER TABLE solicitacoes_acoes ADD COLUMN lider_motivo_revisao TEXT; ALTER TABLE solicitacoes_acoes MODIFY COLUMN gestor_decisao ENUM('aprovado','reprovado','encerrada'); ALTER TABLE solicitacoes_acoes MODIFY COLUMN status_geral ENUM('aguardando_ckm','aguardando_gestor','aguardando_rh','aprovada','vetada_gestor','vetada_rh','em_revisao','encerrada_lider') NOT NULL DEFAULT 'aguardando_ckm';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute ALTER TABLE solicitacoes_acoes ADD COLUMN lider_revisao_solicitada BOOLEAN NOT NULL DEFAULT false; ALTER TABLE solicitacoes_acoes ADD COLUMN lider_motivo_revisao TEXT; ALTER TABLE solicitacoes_acoes MODIFY COLUMN gestor_decisao ENUM('aprovado','reprovado','encerrada'); ALTER TABLE solicitacoes_acoes MODIFY COLUMN status_geral ENUM('aguardando_ckm','aguardando_gestor','aguardando_rh','aprovada','vetada_gestor','vetada_rh','em_revisao','encerrada_lider') NOT NULL DEFAULT 'aguardando_ckm';",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'gestor_decisao' in 'solicitacoes_acoes'"
+  ]
+}

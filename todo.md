@@ -2902,3 +2902,15 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Exibir histórico de rodadas anteriores no SolicitacaoCard (accordion)
 - [x] Adicionar novos status labels e cores para em_revisao
 - [x] Escrever testes unitários para fluxo de revisão
+
+## Revisão do Líder nas Solicitações de Ação
+- [x] Adicionar coluna liderRevisaoSolicitada (boolean) na tabela solicitacoes_acoes
+- [x] Adicionar coluna liderMotivoRevisao (text) na tabela solicitacoes_acoes
+- [x] Criar função solicitarRevisaoLider no db.ts (volta para aguardando_ckm)
+- [x] Alterar procedure decisaoGestor para aceitar solicitar_revisao
+- [x] Alterar procedure decisaoGestor para Encerrar Solicitação na 2a passagem
+- [x] Adicionar email de notificação ao CKM quando Líder solicita revisão
+- [x] Frontend: opções De Acordo / Solicito Revisão na 1a passagem do Líder
+- [x] Frontend: opções De Acordo / Encerrar Solicitação na 2a passagem do Líder
+- [x] Frontend: aviso visual quando revisão já foi solicitada pelo Líder
+- [x] Escrever testes unitários para revisão do Líder

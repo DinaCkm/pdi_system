@@ -18,6 +18,7 @@ const statusLabels: Record<string, string> = {
   vetada_gestor: 'Vetada pelo Gestor',
   vetada_rh: 'Vetada pelo RH',
   em_revisao: 'Em Revisão',
+  encerrada_lider: 'Encerrada pelo Líder',
 };
 
 const statusColors: Record<string, string> = {
@@ -28,6 +29,7 @@ const statusColors: Record<string, string> = {
   vetada_gestor: 'bg-red-100 text-red-800 border-red-300',
   vetada_rh: 'bg-red-100 text-red-800 border-red-300',
   em_revisao: 'bg-purple-100 text-purple-800 border-purple-300',
+  encerrada_lider: 'bg-gray-100 text-gray-800 border-gray-300',
 };
 
 const statusIcons: Record<string, any> = {
@@ -38,6 +40,7 @@ const statusIcons: Record<string, any> = {
   vetada_gestor: XCircle,
   vetada_rh: XCircle,
   em_revisao: RotateCcw,
+  encerrada_lider: XCircle,
 };
 
 function formatDate(d: any) {
@@ -507,26 +510,60 @@ function ParecerCKMForm({ solicitacao, onSuccess }: { solicitacao: any; onSucces
 // ============= CARD DE DECISÃO DO GESTOR =============
 function DecisaoGestorForm({ solicitacao, onSuccess }: { solicitacao: any; onSuccess: () => void }) {
   const [justificativa, setJustificativa] = useState('');
+  const [motivoRevisao, setMotivoRevisao] = useState('');
+  const [showRevisaoForm, setShowRevisaoForm] = useState(false);
+
+  const liderJaSolicitouRevisao = !!solicitacao.liderRevisaoSolicitada;
 
   const mutation = trpc.solicitacoesAcoes.decisaoGestor.useMutation({
     onSuccess: () => {
       toast.success('Decisão registrada com sucesso!');
       onSuccess();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
-  function handleDecisao(decisao: 'aprovado' | 'reprovado') {
+  function handleDeAcordo() {
     if (!justificativa.trim()) return toast.error('Justificativa é obrigatória');
-    mutation.mutate({ id: solicitacao.id, decisao, justificativa });
+    mutation.mutate({ id: solicitacao.id, decisao: 'aprovado', justificativa });
+  }
+
+  function handleSolicitarRevisao() {
+    if (!justificativa.trim()) return toast.error('Justificativa é obrigatória');
+    if (!motivoRevisao.trim()) return toast.error('O motivo do esclarecimento é obrigatório');
+    if (!confirm('Confirma a solicitação de esclarecimento? O processo voltará para o CKM/Admin reanalisar.')) return;
+    mutation.mutate({ id: solicitacao.id, decisao: 'solicitar_revisao', justificativa, motivoRevisao });
+  }
+
+  function handleEncerrar() {
+    if (!justificativa.trim()) return toast.error('Justificativa é obrigatória');
+    if (!confirm('Confirma o encerramento desta solicitação? Esta ação não poderá ser desfeita. O colaborador poderá abrir uma nova solicitação.')) return;
+    mutation.mutate({ id: solicitacao.id, decisao: 'encerrada', justificativa });
   }
 
   return (
     <div className="border-t border-orange-200 pt-4 mt-4">
       <h4 className="text-sm font-bold text-orange-800 mb-3 flex items-center gap-2">
         <AlertTriangle className="h-4 w-4" />
-        Decisão do Gestor
+        Decisão do Líder
       </h4>
+
+      {/* Aviso quando já solicitou revisão antes (2a passagem) */}
+      {liderJaSolicitouRevisao && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 mb-3">
+          <div className="flex items-start gap-2">
+            <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Revisão já foi solicitada anteriormente</p>
+              <p className="text-xs text-amber-700 mt-1">Você já solicitou esclarecimento ao CKM nesta solicitação. Agora você pode escolher <strong>De Acordo</strong> ou <strong>Encerrar Solicitação</strong>. Caso necessário, encerre e oriente o colaborador a abrir uma nova solicitação.</p>
+              {solicitacao.liderMotivoRevisao && (
+                <p className="text-xs text-amber-600 mt-1 italic">Motivo anterior: "{solicitacao.liderMotivoRevisao}"</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-3">
         <textarea
           value={justificativa}
@@ -534,23 +571,69 @@ function DecisaoGestorForm({ solicitacao, onSuccess }: { solicitacao: any; onSuc
           placeholder="Justifique sua decisão..."
           className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[80px] overflow-auto"
         />
+
+        {/* Formulário de solicitação de esclarecimento (só na 1a passagem) */}
+        {!liderJaSolicitouRevisao && showRevisaoForm && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+            <label className="text-xs font-semibold text-orange-700 block mb-1">Motivo do Esclarecimento *</label>
+            <textarea
+              value={motivoRevisao}
+              onChange={(e) => setMotivoRevisao(e.target.value)}
+              placeholder="Descreva o que precisa ser esclarecido pelo CKM..."
+              className="w-full border border-orange-300 rounded-lg px-3 py-2 text-sm min-h-[60px] overflow-auto"
+            />
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={handleSolicitarRevisao}
+                disabled={mutation.isPending}
+                className="flex-1 bg-orange-600 text-white rounded-lg px-3 py-2 text-sm font-semibold hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                Confirmar Solicitação de Esclarecimento
+              </button>
+              <button
+                onClick={() => { setShowRevisaoForm(false); setMotivoRevisao(''); }}
+                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-3">
           <button
-            onClick={() => handleDecisao('aprovado')}
+            onClick={handleDeAcordo}
             disabled={mutation.isPending}
             className="flex-1 bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-            Aprovar
+            De Acordo
           </button>
-          <button
-            onClick={() => handleDecisao('reprovado')}
-            disabled={mutation.isPending}
-            className="flex-1 bg-red-600 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-            Reprovar
-          </button>
+
+          {/* Solicitar Esclarecimento - só na 1a passagem */}
+          {!liderJaSolicitouRevisao && !showRevisaoForm && (
+            <button
+              onClick={() => setShowRevisaoForm(true)}
+              disabled={mutation.isPending}
+              className="flex-1 bg-orange-500 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-orange-600 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Solicito Revisão
+            </button>
+          )}
+
+          {/* Encerrar Solicitação - só na 2a passagem */}
+          {liderJaSolicitouRevisao && (
+            <button
+              onClick={handleEncerrar}
+              disabled={mutation.isPending}
+              className="flex-1 bg-red-600 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+              Encerrar Solicitação
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -871,11 +954,11 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
 
             {/* 2. Decisão Gestor */}
             {solicitacao.gestorDecisao && (
-              <div className={`rounded-lg p-3 border ${solicitacao.gestorDecisao === 'aprovado' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+              <div className={`rounded-lg p-3 border ${solicitacao.gestorDecisao === 'aprovado' ? 'bg-green-50 border-green-200' : solicitacao.gestorDecisao === 'encerrada' ? 'bg-gray-50 border-gray-200' : 'bg-red-50 border-red-200'}`}>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">2. Decisão do Gestor {solicitacao.rodadaAtual >= 2 ? `(Rodada ${solicitacao.rodadaAtual})` : ''}</span>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${solicitacao.gestorDecisao === 'aprovado' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                    {solicitacao.gestorDecisao === 'aprovado' ? 'Aprovado' : 'Reprovado'}
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">2. Decisão do Líder {solicitacao.rodadaAtual >= 2 ? `(Rodada ${solicitacao.rodadaAtual})` : ''}</span>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${solicitacao.gestorDecisao === 'aprovado' ? 'bg-green-200 text-green-800' : solicitacao.gestorDecisao === 'encerrada' ? 'bg-gray-200 text-gray-800' : 'bg-red-200 text-red-800'}`}>
+                    {solicitacao.gestorDecisao === 'aprovado' ? 'De Acordo' : solicitacao.gestorDecisao === 'encerrada' ? 'Encerrada' : 'Reprovado'}
                   </span>
                 </div>
                 {!isColaboradorView && <p className="text-sm text-gray-700 whitespace-pre-wrap">{solicitacao.gestorJustificativa}</p>}
@@ -1124,6 +1207,7 @@ export default function SolicitacoesAcoes() {
                 <option value="vetada_gestor">Vetadas Gestor ({contadores.vetada_gestor || 0})</option>
                 <option value="vetada_rh">Vetadas RH ({contadores.vetada_rh || 0})</option>
                 <option value="em_revisao">Em Revisão ({contadores.em_revisao || 0})</option>
+                <option value="encerrada_lider">Encerrada pelo Líder ({contadores.encerrada_lider || 0})</option>
               </select>
             </div>
             <button

@@ -1,0 +1,46 @@
+{
+  "query": "SELECT e.id, e.actionId, e.colaboradorId, e.status, e.createdAt, SUBSTRING(e.descricao, 1, 80) AS descricao, a.titulo AS acao_titulo, a.pdiId, u.name AS colaborador_nome, u.email AS colaborador_email FROM evidences e LEFT JOIN actions a ON e.actionId = a.id LEFT JOIN users u ON e.colaboradorId = u.id WHERE e.status = 'aguardando_avaliacao';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT e.id, e.actionId, e.colaboradorId, e.status, e.createdAt, SUBSTRING(e.descricao, 1, 80) AS descricao, a.titulo AS acao_titulo, a.pdiId, u.name AS colaborador_nome, u.email AS colaborador_email FROM evidences e LEFT JOIN actions a ON e.actionId = a.id LEFT JOIN users u ON e.colaboradorId = u.id WHERE e.status = 'aguardando_avaliacao';",
+  "rows": [
+    {
+      "id": "990010",
+      "actionId": "1",
+      "colaboradorId": "1",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-02-26 11:45:59",
+      "descricao": "Teste com texto",
+      "acao_titulo": "NULL",
+      "pdiId": "NULL",
+      "colaborador_nome": "Equipe CKM Talents",
+      "colaborador_email": "relacionamento@ckmtalents.net"
+    },
+    {
+      "id": "990009",
+      "actionId": "1",
+      "colaboradorId": "1",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-02-26 11:45:59",
+      "descricao": "Teste com arquivo",
+      "acao_titulo": "NULL",
+      "pdiId": "NULL",
+      "colaborador_nome": "Equipe CKM Talents",
+      "colaborador_email": "relacionamento@ckmtalents.net"
+    },
+    {
+      "id": "990008",
+      "actionId": "1",
+      "colaboradorId": "1",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-02-26 11:45:59",
+      "descricao": "Teste de evidência",
+      "acao_titulo": "NULL",
+      "pdiId": "NULL",
+      "colaborador_nome": "Equipe CKM Talents",
+      "colaborador_email": "relacionamento@ckmtalents.net"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tcolaboradorId\tstatus\tcreatedAt\tdescricao\tacao_titulo\tpdiId\tcolaborador_nome\tcolaborador_email\n990010\t1\t1\taguardando_avaliacao\t2026-02-26 11:45:59\tTeste com texto\tNULL\tNULL\tEquipe CKM Talents\trelacionamento@ckmtalents.net\n990009\t1\t1\taguardando_avaliacao\t2026-02-26 11:45:59\tTeste com arquivo\tNULL\tNULL\tEquipe CKM Talents\trelacionamento@ckmtalents.net\n990008\t1\t1\taguardando_avaliacao\t2026-02-26 11:45:59\tTeste de evidência\tNULL\tNULL\tEquipe CKM Talents\trelacionamento@ckmtalents.net\n",
+  "stderr": "",
+  "execution_time_ms": 66
+}

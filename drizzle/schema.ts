@@ -226,7 +226,7 @@ export const solicitacoesAcoes = mysqlTable("solicitacoes_acoes", {
 	// Quem solicitou
 	solicitanteId: int().notNull(),
 	// Fluxo de aprovação
-	statusGeral: mysqlEnum(['aguardando_ckm','aguardando_gestor','aguardando_rh','aprovada','vetada_gestor','vetada_rh','em_revisao']).default('aguardando_ckm').notNull(),
+	statusGeral: mysqlEnum(['aguardando_ckm','aguardando_gestor','aguardando_rh','aprovada','vetada_gestor','vetada_rh','em_revisao','encerrada_lider']).default('aguardando_ckm').notNull(),
 	// Controle de rodadas de revisão
 	rodadaAtual: int().default(1).notNull(),
 	historicoRodadas: text(),
@@ -235,8 +235,11 @@ export const solicitacoesAcoes = mysqlTable("solicitacoes_acoes", {
 	ckmParecerTexto: text(),
 	ckmParecerPor: int(),
 	ckmParecerEm: timestamp({ mode: 'string' }),
+	// Controle de revisão do Líder
+	liderRevisaoSolicitada: boolean().default(false).notNull(),
+	liderMotivoRevisao: text(),
 	// Etapa 2: Decisão do Gestor (Líder)
-	gestorDecisao: mysqlEnum(['aprovado','reprovado']),
+	gestorDecisao: mysqlEnum(['aprovado','reprovado','encerrada']),
 	gestorJustificativa: text(),
 	gestorId: int(),
 	gestorDecisaoEm: timestamp({ mode: 'string' }),

@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE solicitacoes_acoes CHANGE COLUMN lider_revisao_solicitada liderRevisaoSolicitada BOOLEAN NOT NULL DEFAULT false; ALTER TABLE solicitacoes_acoes CHANGE COLUMN lider_motivo_revisao liderMotivoRevisao TEXT; ALTER TABLE solicitacoes_acoes MODIFY COLUMN gestorDecisao ENUM('aprovado','reprovado','encerrada'); ALTER TABLE solicitacoes_acoes MODIFY COLUMN statusGeral ENUM('aguardando_ckm','aguardando_gestor','aguardando_rh','aprovada','vetada_gestor','vetada_rh','em_revisao','encerrada_lider') NOT NULL DEFAULT 'aguardando_ckm';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute ALTER TABLE solicitacoes_acoes CHANGE COLUMN lider_revisao_solicitada liderRevisaoSolicitada BOOLEAN NOT NULL DEFAULT false; ALTER TABLE solicitacoes_acoes CHANGE COLUMN lider_motivo_revisao liderMotivoRevisao TEXT; ALTER TABLE solicitacoes_acoes MODIFY COLUMN gestorDecisao ENUM('aprovado','reprovado','encerrada'); ALTER TABLE solicitacoes_acoes MODIFY COLUMN statusGeral ENUM('aguardando_ckm','aguardando_gestor','aguardando_rh','aprovada','vetada_gestor','vetada_rh','em_revisao','encerrada_lider') NOT NULL DEFAULT 'aguardando_ckm';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 855
+}

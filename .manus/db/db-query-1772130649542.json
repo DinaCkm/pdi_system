@@ -1,0 +1,34 @@
+{
+  "query": "SELECT e.id, e.actionId, e.colaboradorId, e.status, e.createdAt, SUBSTRING(e.descricao, 1, 100) AS descricao_resumo FROM evidences e WHERE e.status = 'aguardando_avaliacao' ORDER BY e.id DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT e.id, e.actionId, e.colaboradorId, e.status, e.createdAt, SUBSTRING(e.descricao, 1, 100) AS descricao_resumo FROM evidences e WHERE e.status = 'aguardando_avaliacao' ORDER BY e.id DESC;",
+  "rows": [
+    {
+      "id": "990010",
+      "actionId": "1",
+      "colaboradorId": "1",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-02-26 11:45:59",
+      "descricao_resumo": "Teste com texto"
+    },
+    {
+      "id": "990009",
+      "actionId": "1",
+      "colaboradorId": "1",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-02-26 11:45:59",
+      "descricao_resumo": "Teste com arquivo"
+    },
+    {
+      "id": "990008",
+      "actionId": "1",
+      "colaboradorId": "1",
+      "status": "aguardando_avaliacao",
+      "createdAt": "2026-02-26 11:45:59",
+      "descricao_resumo": "Teste de evidência"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tcolaboradorId\tstatus\tcreatedAt\tdescricao_resumo\n990010\t1\t1\taguardando_avaliacao\t2026-02-26 11:45:59\tTeste com texto\n990009\t1\t1\taguardando_avaliacao\t2026-02-26 11:45:59\tTeste com arquivo\n990008\t1\t1\taguardando_avaliacao\t2026-02-26 11:45:59\tTeste de evidência\n",
+  "stderr": "",
+  "execution_time_ms": 61
+}

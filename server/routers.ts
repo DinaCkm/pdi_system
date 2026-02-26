@@ -11,7 +11,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { invokeLLM } from "./_core/llm";
-import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM } from "./_core/email";
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM } from "./_core/email";
 
 // Mantendo os roteadores que já existiam
 import { systemRouter } from "./_core/systemRouter";
@@ -1111,8 +1111,9 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
     decisaoGestor: protectedProcedure
       .input(z.object({
         id: z.number(),
-        decisao: z.enum(['aprovado', 'reprovado']),
+        decisao: z.enum(['aprovado', 'solicitar_revisao', 'encerrada']),
         justificativa: z.string().min(1, "Justificativa é obrigatória"),
+        motivoRevisao: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         if (ctx.user.role !== 'lider' && ctx.user.role !== 'admin') {
@@ -1125,55 +1126,111 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação não está aguardando decisão do gestor' });
         }
 
+        // === SOLICITAR REVISÃO (LÍDER) ===
+        if (input.decisao === 'solicitar_revisao') {
+          if (!input.motivoRevisao?.trim()) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'O motivo da revisão é obrigatório' });
+          }
+          if (solicitacao.liderRevisaoSolicitada) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Você já solicitou revisão nesta solicitação. Escolha De Acordo ou Encerrar Solicitação.' });
+          }
+
+          await db.solicitarRevisaoLider(input.id, {
+            motivoRevisao: input.motivoRevisao,
+            gestorId: ctx.user.id,
+          });
+
+          // Notificar admins (CKM) - in-app + email
+          try {
+            const admins = await db.getUsersByRole('admin');
+            const solicitante = await db.getUserById(solicitacao.solicitanteId);
+            for (const admin of admins) {
+              await db.createNotification({
+                destinatarioId: admin.id,
+                tipo: 'solicitacao_acao_revisao_lider',
+                titulo: 'Esclarecimento Solicitado pelo Líder',
+                mensagem: `O líder ${ctx.user.name} solicitou esclarecimento sobre a solicitação de ação "${solicitacao.titulo}". Motivo: ${input.motivoRevisao}`,
+                referenciaId: input.id,
+              });
+
+              if (admin.email) {
+                await sendEmailRevisaoLiderParaCKM({
+                  adminEmail: admin.email,
+                  adminName: admin.name,
+                  liderName: ctx.user.name,
+                  colaboradorName: solicitante?.name || 'Colaborador',
+                  tituloAcao: solicitacao.titulo,
+                  motivoRevisao: input.motivoRevisao,
+                  departamento: (solicitante as any)?.departamentoNome || undefined,
+                });
+                console.log(`[Email] Email enviado para admin ${admin.name} (${admin.email}) sobre esclarecimento solicitado pelo líder na solicitação ${input.id}`);
+              }
+            }
+          } catch (e) { console.error('Erro ao notificar CKM sobre revisão do líder:', e); }
+
+          return { success: true };
+        }
+
+        // === ENCERRAR SOLICITAÇÃO (LÍDER - 2a passagem) ===
+        if (input.decisao === 'encerrada') {
+          if (!solicitacao.liderRevisaoSolicitada) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Encerrar solicitação só é possível após uma revisão já ter sido solicitada.' });
+          }
+
+          await db.encerrarSolicitacaoLider(input.id, {
+            justificativa: input.justificativa,
+            gestorId: ctx.user.id,
+          });
+
+          // Notificar colaborador que foi encerrada
+          try {
+            await db.createNotification({
+              destinatarioId: solicitacao.solicitanteId,
+              tipo: 'solicitacao_acao_encerrada',
+              titulo: 'Solicitação de Ação Encerrada',
+              mensagem: `Sua solicitação de ação "${solicitacao.titulo}" foi encerrada pelo líder após revisão.`,
+              referenciaId: input.id,
+            });
+          } catch (e) { console.error('Erro ao notificar colaborador:', e); }
+
+          return { success: true };
+        }
+
+        // === DE ACORDO (aprovado) ===
         await db.decisaoGestor(input.id, {
           decisao: input.decisao,
           justificativa: input.justificativa,
           gestorId: ctx.user.id,
         });
 
-        if (input.decisao === 'aprovado') {
-          // Notificar gerentes (RH) - in-app + email
-          try {
-            const gerentes = await db.getUsersByRole('gerente');
-            const solicitante = await db.getUserById(solicitacao.solicitanteId);
-            for (const gerente of gerentes) {
-              // Notificação in-app
-              await db.createNotification({
-                destinatarioId: gerente.id,
-                tipo: 'solicitacao_acao_aguardando_rh',
-                titulo: 'Solicitação de Ação Aguardando sua Decisão',
-                mensagem: `A solicitação de ação "${solicitacao.titulo}" foi aprovada pelo gestor e aguarda sua decisão final.`,
-                referenciaId: input.id,
-              });
-
-              // Enviar email para o gerente
-              if (gerente.email) {
-                await sendEmailParecerLiderParaGerente({
-                  gerenteEmail: gerente.email,
-                  gerenteName: gerente.name,
-                  liderName: ctx.user.name,
-                  colaboradorName: solicitante?.name || 'Colaborador',
-                  tituloAcao: solicitacao.titulo,
-                  decisaoLider: input.decisao,
-                  justificativaLider: input.justificativa,
-                  departamento: (solicitante as any)?.departamentoNome || undefined,
-                });
-                console.log(`[Email] Email enviado para gerente ${gerente.name} (${gerente.email}) sobre parecer do líder na solicitação ${input.id}`);
-              }
-            }
-          } catch (e) { console.error('Erro ao notificar RH:', e); }
-        } else {
-          // Notificar colaborador que foi vetada
-          try {
+        // Notificar gerentes (RH) - in-app + email
+        try {
+          const gerentes = await db.getUsersByRole('gerente');
+          const solicitante = await db.getUserById(solicitacao.solicitanteId);
+          for (const gerente of gerentes) {
             await db.createNotification({
-              destinatarioId: solicitacao.solicitanteId,
-              tipo: 'solicitacao_acao_vetada',
-              titulo: 'Solicitação de Ação Não Aprovada',
-              mensagem: `Sua solicitação de ação "${solicitacao.titulo}" não foi aprovada. Solicite feedback ao seu gestor sobre a motivação da decisão.`,
+              destinatarioId: gerente.id,
+              tipo: 'solicitacao_acao_aguardando_rh',
+              titulo: 'Solicitação de Ação Aguardando sua Decisão',
+              mensagem: `A solicitação de ação "${solicitacao.titulo}" foi aprovada pelo gestor e aguarda sua decisão final.`,
               referenciaId: input.id,
             });
-          } catch (e) { console.error('Erro ao notificar colaborador:', e); }
-        }
+
+            if (gerente.email) {
+              await sendEmailParecerLiderParaGerente({
+                gerenteEmail: gerente.email,
+                gerenteName: gerente.name,
+                liderName: ctx.user.name,
+                colaboradorName: solicitante?.name || 'Colaborador',
+                tituloAcao: solicitacao.titulo,
+                decisaoLider: input.decisao,
+                justificativaLider: input.justificativa,
+                departamento: (solicitante as any)?.departamentoNome || undefined,
+              });
+              console.log(`[Email] Email enviado para gerente ${gerente.name} (${gerente.email}) sobre parecer do líder na solicitação ${input.id}`);
+            }
+          }
+        } catch (e) { console.error('Erro ao notificar RH:', e); }
 
         return { success: true };
       }),

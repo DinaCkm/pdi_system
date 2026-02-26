@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) AS total FROM evidences WHERE status = 'aguardando_avaliacao';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT COUNT(*) AS total FROM evidences WHERE status = 'aguardando_avaliacao';",
+  "rows": [
+    {
+      "total": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n0\n",
+  "stderr": "",
+  "execution_time_ms": 53
+}
