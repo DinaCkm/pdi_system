@@ -2917,3 +2917,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Bug Fix - Visualização Competências Focais no DASC
 - [x] Corrigir nomes truncados das competências focais (COMPORTAME...) no dashboard de performance do líder
+
+## Simplificação do Formulário de Revisão do Líder
+- [x] Remover campo extra "Motivo do Esclarecimento" do DecisaoGestorForm
+- [x] Usar campo de parecer existente como justificativa para revisão
+- [x] Exibir popup/toast quando Líder clicar Solicito Revisão com campo vazio ou curto
+- [x] Ajustar backend para usar parecer como motivo da revisão (já compatível - motivoRevisao é optional)

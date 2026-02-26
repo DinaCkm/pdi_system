@@ -510,8 +510,6 @@ function ParecerCKMForm({ solicitacao, onSuccess }: { solicitacao: any; onSucces
 // ============= CARD DE DECISÃO DO GESTOR =============
 function DecisaoGestorForm({ solicitacao, onSuccess }: { solicitacao: any; onSuccess: () => void }) {
   const [justificativa, setJustificativa] = useState('');
-  const [motivoRevisao, setMotivoRevisao] = useState('');
-  const [showRevisaoForm, setShowRevisaoForm] = useState(false);
 
   const liderJaSolicitouRevisao = !!solicitacao.liderRevisaoSolicitada;
 
@@ -529,10 +527,12 @@ function DecisaoGestorForm({ solicitacao, onSuccess }: { solicitacao: any; onSuc
   }
 
   function handleSolicitarRevisao() {
-    if (!justificativa.trim()) return toast.error('Justificativa é obrigatória');
-    if (!motivoRevisao.trim()) return toast.error('O motivo do esclarecimento é obrigatório');
-    if (!confirm('Confirma a solicitação de esclarecimento? O processo voltará para o CKM/Admin reanalisar.')) return;
-    mutation.mutate({ id: solicitacao.id, decisao: 'solicitar_revisao', justificativa, motivoRevisao });
+    if (!justificativa.trim() || justificativa.trim().length < 10) {
+      toast.error('Para solicitar revisão, preencha o campo acima com a justificativa (mínimo 10 caracteres) explicando o motivo da revisão.');
+      return;
+    }
+    if (!confirm('Confirma a solicitação de esclarecimento? O texto do campo acima será enviado como justificativa e o processo voltará para o CKM/Admin reanalisar.')) return;
+    mutation.mutate({ id: solicitacao.id, decisao: 'solicitar_revisao', justificativa, motivoRevisao: justificativa });
   }
 
   function handleEncerrar() {
@@ -568,38 +568,9 @@ function DecisaoGestorForm({ solicitacao, onSuccess }: { solicitacao: any; onSuc
         <textarea
           value={justificativa}
           onChange={(e) => setJustificativa(e.target.value)}
-          placeholder="Justifique sua decisão..."
+          placeholder={liderJaSolicitouRevisao ? "Justifique sua decisão..." : "Justifique sua decisão... (caso solicite revisão, este campo será usado como justificativa)"}
           className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[80px] overflow-auto"
         />
-
-        {/* Formulário de solicitação de esclarecimento (só na 1a passagem) */}
-        {!liderJaSolicitouRevisao && showRevisaoForm && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-            <label className="text-xs font-semibold text-orange-700 block mb-1">Motivo do Esclarecimento *</label>
-            <textarea
-              value={motivoRevisao}
-              onChange={(e) => setMotivoRevisao(e.target.value)}
-              placeholder="Descreva o que precisa ser esclarecido pelo CKM..."
-              className="w-full border border-orange-300 rounded-lg px-3 py-2 text-sm min-h-[60px] overflow-auto"
-            />
-            <div className="flex gap-2 mt-2">
-              <button
-                onClick={handleSolicitarRevisao}
-                disabled={mutation.isPending}
-                className="flex-1 bg-orange-600 text-white rounded-lg px-3 py-2 text-sm font-semibold hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-                Confirmar Solicitação de Esclarecimento
-              </button>
-              <button
-                onClick={() => { setShowRevisaoForm(false); setMotivoRevisao(''); }}
-                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        )}
 
         <div className="flex gap-3">
           <button
@@ -611,14 +582,14 @@ function DecisaoGestorForm({ solicitacao, onSuccess }: { solicitacao: any; onSuc
             De Acordo
           </button>
 
-          {/* Solicitar Esclarecimento - só na 1a passagem */}
-          {!liderJaSolicitouRevisao && !showRevisaoForm && (
+          {/* Solicitar Revisão - só na 1a passagem */}
+          {!liderJaSolicitouRevisao && (
             <button
-              onClick={() => setShowRevisaoForm(true)}
+              onClick={handleSolicitarRevisao}
               disabled={mutation.isPending}
               className="flex-1 bg-orange-500 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-orange-600 disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              <RotateCcw className="h-4 w-4" />
+              {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
               Solicito Revisão
             </button>
           )}
