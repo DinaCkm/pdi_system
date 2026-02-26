@@ -2914,3 +2914,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Frontend: opções De Acordo / Encerrar Solicitação na 2a passagem do Líder
 - [x] Frontend: aviso visual quando revisão já foi solicitada pelo Líder
 - [x] Escrever testes unitários para revisão do Líder
+
+## Bug Fix - Visualização Competências Focais no DASC
+- [x] Corrigir nomes truncados das competências focais (COMPORTAME...) no dashboard de performance do líder

@@ -201,9 +201,11 @@ function LeaderCard({ leader, isExpanded, onToggle }: {
                     {leader.competenciasLider.length > 0 ? (
                       <ul className="space-y-2">
                         {leader.competenciasLider.map((comp, idx) => (
-                          <li key={comp.macroId} className="flex items-center justify-between text-sm">
-                            <span className="truncate flex-1">{idx + 1}. {comp.nome}</span>
-                            <Badge variant="secondary" className="ml-2">{comp.quantidade}</Badge>
+                          <li key={comp.macroId} className="text-sm">
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="leading-tight break-words" style={{ wordBreak: 'break-word' }}>{idx + 1}. {comp.nome}</span>
+                              <Badge variant="secondary" className="ml-1 shrink-0">{comp.quantidade}</Badge>
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -219,11 +221,11 @@ function LeaderCard({ leader, isExpanded, onToggle }: {
                       <ul className="space-y-2">
                         {leader.competenciasEquipe.map((comp, idx) => (
                           <li key={comp.macroId} className="text-sm">
-                            <div className="flex items-center justify-between">
-                              <span className="truncate flex-1">{idx + 1}. {comp.nome}</span>
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="leading-tight break-words" style={{ wordBreak: 'break-word' }}>{idx + 1}. {comp.nome}</span>
                               <Badge 
                                 variant="secondary" 
-                                className={comp.taxaConclusao >= 70 ? "bg-green-100 text-green-700" : comp.taxaConclusao < 50 ? "bg-red-100 text-red-700" : ""}
+                                className={`shrink-0 ${comp.taxaConclusao >= 70 ? "bg-green-100 text-green-700" : comp.taxaConclusao < 50 ? "bg-red-100 text-red-700" : ""}`}
                               >
                                 {comp.taxaConclusao}%
                               </Badge>
