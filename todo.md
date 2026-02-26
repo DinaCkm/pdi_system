@@ -2925,3 +2925,5 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Ajustar backend para usar parecer como motivo da revisão (já compatível - motivoRevisao é optional)
 
 - [x] Trocar título "Decisão do Líder" por "Parecer do Líder" com texto orientativo sobre Solicito Revisão
+
+- [x] Implementar contador de caracteres no campo de justificativa do Líder (DecisaoGestorForm)

@@ -570,12 +570,23 @@ function DecisaoGestorForm({ solicitacao, onSuccess }: { solicitacao: any; onSuc
       )}
 
       <div className="space-y-3">
-        <textarea
-          value={justificativa}
-          onChange={(e) => setJustificativa(e.target.value)}
-          placeholder={liderJaSolicitouRevisao ? "Justifique sua decisão..." : "Justifique sua decisão... (caso solicite revisão, este campo será usado como justificativa)"}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[80px] overflow-auto"
-        />
+        <div className="relative">
+          <textarea
+            value={justificativa}
+            onChange={(e) => { if (e.target.value.length <= 500) setJustificativa(e.target.value); }}
+            placeholder={liderJaSolicitouRevisao ? "Justifique sua decisão..." : "Justifique sua decisão... (caso solicite revisão, este campo será usado como justificativa)"}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[80px] overflow-auto"
+            maxLength={500}
+          />
+          <div className="flex justify-between items-center mt-1 px-1">
+            <span className={`text-xs ${justificativa.length < 10 ? 'text-red-500' : 'text-gray-400'}`}>
+              {justificativa.length < 10 ? `Mínimo 10 caracteres (faltam ${10 - justificativa.length})` : ''}
+            </span>
+            <span className={`text-xs ${justificativa.length >= 450 ? 'text-orange-500' : 'text-gray-400'}`}>
+              {justificativa.length}/500
+            </span>
+          </div>
+        </div>
 
         <div className="flex gap-3">
           <button
