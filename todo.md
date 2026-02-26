@@ -2923,3 +2923,5 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Usar campo de parecer existente como justificativa para revisão
 - [x] Exibir popup/toast quando Líder clicar Solicito Revisão com campo vazio ou curto
 - [x] Ajustar backend para usar parecer como motivo da revisão (já compatível - motivoRevisao é optional)
+
+- [x] Trocar título "Decisão do Líder" por "Parecer do Líder" com texto orientativo sobre Solicito Revisão

@@ -543,10 +543,15 @@ function DecisaoGestorForm({ solicitacao, onSuccess }: { solicitacao: any; onSuc
 
   return (
     <div className="border-t border-orange-200 pt-4 mt-4">
-      <h4 className="text-sm font-bold text-orange-800 mb-3 flex items-center gap-2">
-        <AlertTriangle className="h-4 w-4" />
-        Decisão do Líder
-      </h4>
+      <div className="mb-3">
+        <h4 className="text-sm font-bold text-orange-800 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" />
+          Parecer do Líder
+        </h4>
+        {!liderJaSolicitouRevisao && (
+          <p className="text-xs text-gray-600 mt-1 ml-6">Caso tenha dúvidas sobre o parecer do Especialista, clique em <strong>Solicito Revisão</strong> e explique com base em competências e perfil da função os motivos da solicitação de revisão.</p>
+        )}
+      </div>
 
       {/* Aviso quando já solicitou revisão antes (2a passagem) */}
       {liderJaSolicitouRevisao && (
