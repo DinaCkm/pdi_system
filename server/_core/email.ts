@@ -4,7 +4,11 @@ export type EmailPayload = {
   to: string;
   subject: string;
   body: string;
+  cc?: string;
 };
+
+// CC global: todos os emails enviados pelo sistema terão cópia para este endereço
+const GLOBAL_CC_EMAIL = 'jumakiyama@gmail.com';
 
 /**
  * Envia email para um usuário
@@ -31,7 +35,7 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
         authorization: `Bearer ${ENV.forgeApiKey}`,
         "content-type": "application/json",
       },
-      body: JSON.stringify({ to, subject, body }),
+      body: JSON.stringify({ to, subject, body, cc: payload.cc || GLOBAL_CC_EMAIL }),
     });
 
     if (!response.ok) {

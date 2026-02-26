@@ -631,4 +631,87 @@ export const pdiAjustesRouter = router({
 
       return solicitacao[0];
     }),
+
+  /**
+   * Reenviar notificação de solicitação de ajuste pendente para o líder
+   * Usado pelo Admin quando quer lembrar o líder de avaliar
+   */
+  reenviarNotificacaoLider: protectedProcedure
+    .input(z.object({ adjustmentId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const user = ctx.user;
+      if (user.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas administradores podem reenviar notificações' });
+      }
+
+      const db = await getDb();
+
+      // Buscar a solicitação
+      const solicitacao = await db
+        .select()
+        .from(adjustmentRequests)
+        .where(eq(adjustmentRequests.id, input.adjustmentId))
+        .limit(1);
+
+      if (!solicitacao.length) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
+      }
+
+      // Buscar a ação
+      const acao = await db
+        .select()
+        .from(actions)
+        .where(eq(actions.id, solicitacao[0].actionId))
+        .limit(1);
+
+      if (!acao.length) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
+      }
+
+      // Buscar o colaborador solicitante
+      const colaborador = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, solicitacao[0].solicitanteId))
+        .limit(1);
+
+      if (!colaborador.length || !colaborador[0].leaderId) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Colaborador sem líder vinculado' });
+      }
+
+      // Buscar o líder
+      const lider = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, colaborador[0].leaderId))
+        .limit(1);
+
+      if (!lider.length || !lider[0].email) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Líder não encontrado ou sem email' });
+      }
+
+      // Buscar departamento
+      let deptNome = '';
+      if (colaborador[0].departamentoId) {
+        const dept = await db
+          .select()
+          .from(departamentos)
+          .where(eq(departamentos.id, colaborador[0].departamentoId))
+          .limit(1);
+        if (dept.length) deptNome = dept[0].nome;
+      }
+
+      // Enviar email ao líder
+      await sendEmailAjusteSolicitadoParaLider({
+        liderEmail: lider[0].email,
+        liderName: lider[0].name,
+        colaboradorName: colaborador[0].name,
+        tituloAcao: acao[0].descricao || 'Ação do PDI',
+        tipoAjuste: solicitacao[0].tipoSolicitacao,
+        justificativa: solicitacao[0].descricaoSolicitacao || '',
+        departamento: deptNome || undefined,
+      });
+
+      return { success: true, liderNome: lider[0].name, liderEmail: lider[0].email };
+    }),
 });

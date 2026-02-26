@@ -2931,3 +2931,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Exibir parecer original do CKM quando solicitação volta para revisão pelo Líder (CKM precisa ver o que havia dado como parecer)
 
 - [x] Mover "Minhas Solicitações de Ação" para logo abaixo de "Minhas Ações" no menu do Líder
+
+- [x] Bug: Notificação de Solicitação de Ajuste Pendente não está sendo enviada ao líder (apenas toast aparece no admin)
+
+## Correção Notificação Ajuste + CC Global
+- [x] Corrigir botão do sino no AdminDashboard para enviar email real ao líder
+- [x] Adicionar CC para jumakiyama@gmail.com em todos os envios de email do sistema

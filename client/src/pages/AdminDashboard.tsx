@@ -10,6 +10,33 @@ import { toast } from "sonner";
 import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter, TrendingUp, ArrowRight, Building2, User, Calendar, Timer, Bell } from "lucide-react";
 import { Link } from "wouter";
 
+function ReenviarNotificacaoButton({ adjustmentId, liderNome }: { adjustmentId: number; liderNome: string }) {
+  const reenviar = trpc.pdiAjustes.reenviarNotificacaoLider.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Email reenviado com sucesso para o líder ${data.liderNome} (${data.liderEmail})`);
+    },
+    onError: (err) => {
+      toast.error(err?.message || 'Erro ao reenviar notificação ao líder');
+    },
+  });
+
+  return (
+    <Button
+      variant="outline"
+      className="border-amber-300 text-amber-700 hover:bg-amber-50"
+      onClick={() => reenviar.mutate({ adjustmentId })}
+      disabled={reenviar.isPending}
+      title="Reenviar email de notificação ao líder"
+    >
+      {reenviar.isPending ? (
+        <Clock className="h-4 w-4 animate-spin" />
+      ) : (
+        <Bell className="h-4 w-4" />
+      )}
+    </Button>
+  );
+}
+
 export default function AdminDashboard() {
   const [selectedEvidence, setSelectedEvidence] = useState<any>(null);
   const [showEvidenceDialog, setShowEvidenceDialog] = useState(false);
@@ -616,16 +643,7 @@ export default function AdminDashboard() {
                       >
                         Avaliar
                       </Button>
-                      <Button
-                        variant="outline"
-                        className="border-amber-300 text-amber-700 hover:bg-amber-50"
-                        onClick={() => {
-                          toast.info(`Notificação de Solicitação de Ajuste Pendente enviada para o líder ${adjustment.solicitante?.liderNome || 'do colaborador'}`);
-                        }}
-                        title="Enviar notificação de solicitação pendente"
-                      >
-                        <Bell className="h-4 w-4" />
-                      </Button>
+                      <ReenviarNotificacaoButton adjustmentId={adjustment.id} liderNome={adjustment.solicitante?.liderNome || 'do colaborador'} />
                     </div>
                   )}
                   
