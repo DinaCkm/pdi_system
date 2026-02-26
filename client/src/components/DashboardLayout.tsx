@@ -70,11 +70,11 @@ const getMenuItems = (userRole: string) => {
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
       { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
       { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
+      { icon: Send, label: "Minhas Solicitações de Ação", path: "/solicitacoes-acoes?aba=minhas" },
       { icon: Target, label: "PDIs da Equipe", path: "/pdis-equipe" },
       { icon: CheckSquare, label: "Ações da Equipe", path: "/acoes-equipe" },
       { icon: MessageSquarePlus, label: "Solicitações de Ajuste", path: "/solicitacoes-equipe" },
       { icon: Users, label: "Solicitações da Equipe", path: "/solicitacoes-acoes?aba=equipe" },
-      { icon: Send, label: "Minhas Solicitações de Ação", path: "/solicitacoes-acoes?aba=minhas" },
     );
   } else if (userRole === "gerente") {
     // Gerente tem acesso de leitura: Dashboard, PDIs, Ações, Histórico, Relatório de Vencidas

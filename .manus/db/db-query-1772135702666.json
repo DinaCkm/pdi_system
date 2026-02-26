@@ -1,0 +1,20 @@
+{
+  "query": "SELECT id, titulo, statusGeral, liderRevisaoSolicitada, liderMotivoRevisao, historicoRodadas, ckmParecerTipo, ckmParecerTexto FROM solicitacoes_acoes WHERE liderRevisaoSolicitada = 1 OR statusGeral = 'aguardando_ckm' ORDER BY id DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, titulo, statusGeral, liderRevisaoSolicitada, liderMotivoRevisao, historicoRodadas, ckmParecerTipo, ckmParecerTexto FROM solicitacoes_acoes WHERE liderRevisaoSolicitada = 1 OR statusGeral = 'aguardando_ckm' ORDER BY id DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "300020",
+      "titulo": "teste",
+      "statusGeral": "aguardando_ckm",
+      "liderRevisaoSolicitada": "1",
+      "liderMotivoRevisao": "eu quero revisar ",
+      "historicoRodadas": "NULL",
+      "ckmParecerTipo": "NULL",
+      "ckmParecerTexto": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\ttitulo\tstatusGeral\tliderRevisaoSolicitada\tliderMotivoRevisao\thistoricoRodadas\tckmParecerTipo\tckmParecerTexto\n300020\tteste\taguardando_ckm\t1\teu quero revisar \tNULL\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 103
+}

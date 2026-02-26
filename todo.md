@@ -2929,3 +2929,5 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Implementar contador de caracteres no campo de justificativa do Líder (DecisaoGestorForm)
 
 - [x] Exibir parecer original do CKM quando solicitação volta para revisão pelo Líder (CKM precisa ver o que havia dado como parecer)
+
+- [x] Mover "Minhas Solicitações de Ação" para logo abaixo de "Minhas Ações" no menu do Líder
