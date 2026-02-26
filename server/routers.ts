@@ -11,7 +11,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { invokeLLM } from "./_core/llm";
-import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador } from "./_core/email";
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM } from "./_core/email";
 
 // Mantendo os roteadores que já existiam
 import { systemRouter } from "./_core/systemRouter";
@@ -1182,8 +1182,9 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
     decisaoRH: protectedProcedure
       .input(z.object({
         id: z.number(),
-        decisao: z.enum(['aprovado', 'reprovado']),
+        decisao: z.enum(['aprovado', 'reprovado', 'solicitar_revisao']),
         justificativa: z.string().min(1, "Justificativa é obrigatória"),
+        motivoRevisao: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         if (ctx.user.role !== 'gerente' && ctx.user.role !== 'admin') {
@@ -1196,6 +1197,56 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação não está aguardando decisão do RH' });
         }
 
+        // === SOLICITAR REVISÃO ===
+        if (input.decisao === 'solicitar_revisao') {
+          if (!input.motivoRevisao?.trim()) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'O motivo da revisão é obrigatório' });
+          }
+          if (solicitacao.rodadaAtual >= 2) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Esta solicitação já passou por uma rodada de revisão. Não é possível solicitar nova revisão. Vete a solicitação e oriente o colaborador a abrir uma nova.' });
+          }
+
+          await db.solicitarRevisaoRH(input.id, {
+            justificativa: input.justificativa,
+            motivoRevisao: input.motivoRevisao,
+            rhId: ctx.user.id,
+            rhNome: ctx.user.name || 'RH',
+          });
+
+          // Notificar CKM/Admin (in-app + email)
+          try {
+            const admins = await db.getUsersByRole('admin');
+            const solicitante = await db.getUserById(solicitacao.solicitanteId);
+            for (const admin of admins) {
+              // Notificação in-app
+              await db.createNotification({
+                destinatarioId: admin.id,
+                tipo: 'solicitacao_acao_revisao',
+                titulo: 'Revisão Solicitada — Nova Análise Necessária',
+                mensagem: `O RH (${ctx.user.name}) solicitou revisão na solicitação de ação "${solicitacao.titulo}" de ${solicitante?.name || 'colaborador'}. Motivo: ${input.motivoRevisao}. É necessário emitir novo parecer técnico (Rodada 2).`,
+                referenciaId: input.id,
+              });
+
+              // Enviar email
+              if (admin.email) {
+                await sendEmailRevisaoSolicitadaParaCKM({
+                  adminEmail: admin.email,
+                  adminName: admin.name,
+                  rhName: ctx.user.name,
+                  colaboradorName: solicitante?.name || null,
+                  tituloAcao: solicitacao.titulo,
+                  motivoRevisao: input.motivoRevisao,
+                  departamento: (solicitante as any)?.departamentoNome || undefined,
+                });
+                console.log(`[Email] Email enviado para admin ${admin.name} (${admin.email}) - revisão solicitada pelo RH na solicitação ${input.id}`);
+              }
+            }
+          } catch (e) { console.error('Erro ao notificar admins sobre revisão:', e); }
+
+          return { success: true, acaoId: null };
+        }
+
+        // === APROVAR OU VETAR (fluxo original) ===
         const acaoId = await db.decisaoRH(input.id, {
           decisao: input.decisao,
           justificativa: input.justificativa,

@@ -3182,6 +3182,8 @@ export async function listSolicitacoesAcoes(filtros?: {
       rhId: solicitacoesAcoes.rhId,
       rhDecisaoEm: solicitacoesAcoes.rhDecisaoEm,
       acaoIncluidaId: solicitacoesAcoes.acaoIncluidaId,
+      rodadaAtual: solicitacoesAcoes.rodadaAtual,
+      historicoRodadas: solicitacoesAcoes.historicoRodadas,
       createdAt: solicitacoesAcoes.createdAt,
       updatedAt: solicitacoesAcoes.updatedAt,
       // Joins
@@ -3343,6 +3345,83 @@ export async function decisaoRH(id: number, data: {
   return acaoId;
 }
 
+
+// ============= SOLICITAR REVISÃO (RH) =============
+
+export async function solicitarRevisaoRH(id: number, data: {
+  justificativa: string;
+  motivoRevisao: string;
+  rhId: number;
+  rhNome: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Buscar solicitação atual
+  const solicitacao = await getSolicitacaoById(id);
+  if (!solicitacao) throw new Error("Solicitação não encontrada");
+
+  // Verificar se já está na rodada 2 (não permite mais revisões)
+  if (solicitacao.rodadaAtual >= 2) {
+    throw new Error("Esta solicitação já passou por uma rodada de revisão. Não é possível solicitar nova revisão.");
+  }
+
+  // Montar o snapshot da rodada atual para salvar no histórico
+  const rodadaSnapshot = {
+    rodada: solicitacao.rodadaAtual,
+    ckm: {
+      parecerTipo: solicitacao.ckmParecerTipo,
+      parecerTexto: solicitacao.ckmParecerTexto,
+      porId: solicitacao.ckmParecerPor,
+      em: solicitacao.ckmParecerEm,
+    },
+    gestor: {
+      decisao: solicitacao.gestorDecisao,
+      justificativa: solicitacao.gestorJustificativa,
+      id: solicitacao.gestorId,
+      em: solicitacao.gestorDecisaoEm,
+    },
+    rh: {
+      decisao: 'solicitar_revisao',
+      justificativa: data.justificativa,
+      id: data.rhId,
+      nome: data.rhNome,
+      em: new Date().toISOString(),
+    },
+    motivoRevisao: data.motivoRevisao,
+  };
+
+  // Montar o histórico (pode já ter histórico anterior, embora neste caso não deveria)
+  let historico: any[] = [];
+  if (solicitacao.historicoRodadas) {
+    try {
+      historico = JSON.parse(solicitacao.historicoRodadas);
+    } catch (e) {
+      historico = [];
+    }
+  }
+  historico.push(rodadaSnapshot);
+
+  // Atualizar: salvar histórico, limpar pareceres, incrementar rodada, voltar para aguardando_ckm
+  await db.update(solicitacoesAcoes).set({
+    historicoRodadas: JSON.stringify(historico),
+    rodadaAtual: 2,
+    statusGeral: "aguardando_ckm",
+    // Limpar pareceres da rodada anterior
+    ckmParecerTipo: null,
+    ckmParecerTexto: null,
+    ckmParecerPor: null,
+    ckmParecerEm: null,
+    gestorDecisao: null,
+    gestorJustificativa: null,
+    gestorId: null,
+    gestorDecisaoEm: null,
+    rhDecisao: null,
+    rhJustificativa: null,
+    rhId: null,
+    rhDecisaoEm: null,
+  }).where(eq(solicitacoesAcoes.id, id));
+}
 
 // ============= NORMAS E REGRAS =============
 

@@ -226,7 +226,10 @@ export const solicitacoesAcoes = mysqlTable("solicitacoes_acoes", {
 	// Quem solicitou
 	solicitanteId: int().notNull(),
 	// Fluxo de aprovação
-	statusGeral: mysqlEnum(['aguardando_ckm','aguardando_gestor','aguardando_rh','aprovada','vetada_gestor','vetada_rh']).default('aguardando_ckm').notNull(),
+	statusGeral: mysqlEnum(['aguardando_ckm','aguardando_gestor','aguardando_rh','aprovada','vetada_gestor','vetada_rh','em_revisao']).default('aguardando_ckm').notNull(),
+	// Controle de rodadas de revisão
+	rodadaAtual: int().default(1).notNull(),
+	historicoRodadas: text(),
 	// Etapa 1: Parecer CKM (Admin)
 	ckmParecerTipo: mysqlEnum(['com_aderencia','sem_aderencia']),
 	ckmParecerTexto: text(),

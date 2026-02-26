@@ -426,3 +426,44 @@ ${ASSINATURA}
     body,
   });
 }
+
+/**
+ * Envia email para o CKM/Admin informando que o RH solicitou revisão
+ */
+export async function sendEmailRevisaoSolicitadaParaCKM(params: {
+  adminEmail: string;
+  adminName: string | null;
+  rhName: string | null;
+  colaboradorName: string | null;
+  tituloAcao: string;
+  motivoRevisao: string;
+  departamento?: string;
+}) {
+  const { adminEmail, adminName, rhName, colaboradorName, tituloAcao, motivoRevisao, departamento } = params;
+
+  const body = `
+Prezado(a) ${adminName || 'Administrador'},
+
+O RH (${rhName || 'Gerente'}) solicitou uma REVISÃO na solicitação de inclusão de ação no PDI.
+
+📋 DETALHES DA SOLICITAÇÃO:
+• Ação: ${tituloAcao}
+• Colaborador: ${colaboradorName || 'N/A'}${departamento ? `\n• Departamento: ${departamento}` : ''}
+
+📝 MOTIVO DA REVISÃO:
+${motivoRevisao}
+
+⚠️ AÇÃO NECESSÁRIA:
+É necessário emitir um novo parecer técnico (Rodada 2) para esta solicitação.
+Acesse o sistema para reanalisar e emitir seu parecer.
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return sendEmail({
+    to: adminEmail,
+    subject: `REVISÃO SOLICITADA — Nova Análise Necessária — ${tituloAcao}`,
+    body,
+  });
+}

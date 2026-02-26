@@ -6,7 +6,7 @@ import { useSearch } from 'wouter';
 import { 
   FileText, Plus, Clock, CheckCircle2, XCircle, AlertTriangle, 
   Search, ChevronDown, X, Check, Send, Eye, MessageSquare,
-  Loader2, Filter, ChevronRight, User, Users, Mail
+  Loader2, Filter, ChevronRight, User, Users, Mail, RotateCcw, History, Info
 } from 'lucide-react';
 
 // ============= STATUS HELPERS =============
@@ -17,6 +17,7 @@ const statusLabels: Record<string, string> = {
   aprovada: 'Aprovada e Incluída no PDI',
   vetada_gestor: 'Vetada pelo Gestor',
   vetada_rh: 'Vetada pelo RH',
+  em_revisao: 'Em Revisão',
 };
 
 const statusColors: Record<string, string> = {
@@ -26,6 +27,7 @@ const statusColors: Record<string, string> = {
   aprovada: 'bg-green-100 text-green-800 border-green-300',
   vetada_gestor: 'bg-red-100 text-red-800 border-red-300',
   vetada_rh: 'bg-red-100 text-red-800 border-red-300',
+  em_revisao: 'bg-purple-100 text-purple-800 border-purple-300',
 };
 
 const statusIcons: Record<string, any> = {
@@ -35,6 +37,7 @@ const statusIcons: Record<string, any> = {
   aprovada: CheckCircle2,
   vetada_gestor: XCircle,
   vetada_rh: XCircle,
+  em_revisao: RotateCcw,
 };
 
 function formatDate(d: any) {
@@ -557,6 +560,8 @@ function DecisaoGestorForm({ solicitacao, onSuccess }: { solicitacao: any; onSuc
 // ============= CARD DE DECISÃO DO RH =============
 function DecisaoRHForm({ solicitacao, onSuccess }: { solicitacao: any; onSuccess: () => void }) {
   const [justificativa, setJustificativa] = useState('');
+  const [motivoRevisao, setMotivoRevisao] = useState('');
+  const [showRevisaoForm, setShowRevisaoForm] = useState(false);
 
   const mutation = trpc.solicitacoesAcoes.decisaoRH.useMutation({
     onSuccess: (data) => {
@@ -575,12 +580,35 @@ function DecisaoRHForm({ solicitacao, onSuccess }: { solicitacao: any; onSuccess
     mutation.mutate({ id: solicitacao.id, decisao, justificativa });
   }
 
+  function handleSolicitarRevisao() {
+    if (!justificativa.trim()) return toast.error('Justificativa é obrigatória');
+    if (!motivoRevisao.trim()) return toast.error('O motivo da revisão é obrigatório');
+    if (!confirm('Confirma a solicitação de revisão? O processo voltará para o CKM/Admin emitir novo parecer (Rodada 2).')) return;
+    mutation.mutate({ id: solicitacao.id, decisao: 'solicitar_revisao', justificativa, motivoRevisao });
+  }
+
+  const jaPassouPorRevisao = solicitacao.rodadaAtual >= 2;
+
   return (
     <div className="border-t border-blue-200 pt-4 mt-4">
       <h4 className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
         <FileText className="h-4 w-4" />
-        Decisão Final do RH
+        Decisão Final do RH {jaPassouPorRevisao && <span className="text-xs font-normal text-purple-600">(Rodada 2)</span>}
       </h4>
+
+      {/* Aviso quando já passou por revisão - não pode solicitar nova */}
+      {jaPassouPorRevisao && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 mb-3">
+          <div className="flex gap-2">
+            <Info className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800">
+              <p className="font-semibold">Esta solicitação já passou por uma rodada de revisão.</p>
+              <p className="mt-1">Não é possível solicitar nova revisão. Caso necessário, <strong>vete esta solicitação</strong> e oriente o colaborador a abrir uma nova.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-3">
         <textarea
           value={justificativa}
@@ -588,6 +616,40 @@ function DecisaoRHForm({ solicitacao, onSuccess }: { solicitacao: any; onSuccess
           placeholder="Justifique sua decisão..."
           className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[80px] overflow-auto"
         />
+
+        {/* Formulário de solicitação de revisão (só aparece na Rodada 1) */}
+        {showRevisaoForm && !jaPassouPorRevisao && (
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+            <h5 className="text-sm font-bold text-purple-800 mb-2 flex items-center gap-2">
+              <RotateCcw className="h-4 w-4" />
+              Solicitar Revisão
+            </h5>
+            <p className="text-xs text-purple-600 mb-2">O processo voltará para o CKM/Admin emitir novo parecer técnico (Rodada 2). Os pareceres da Rodada 1 serão preservados no histórico.</p>
+            <textarea
+              value={motivoRevisao}
+              onChange={(e) => setMotivoRevisao(e.target.value)}
+              placeholder="Descreva o motivo da solicitação de revisão (obrigatório)..."
+              className="w-full border border-purple-300 rounded-lg px-3 py-2.5 text-sm min-h-[80px] overflow-auto"
+            />
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={handleSolicitarRevisao}
+                disabled={mutation.isPending}
+                className="bg-purple-600 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                Confirmar Solicitação de Revisão
+              </button>
+              <button
+                onClick={() => { setShowRevisaoForm(false); setMotivoRevisao(''); }}
+                className="bg-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-3">
           <button
             onClick={() => handleDecisao('aprovado')}
@@ -605,6 +667,17 @@ function DecisaoRHForm({ solicitacao, onSuccess }: { solicitacao: any; onSuccess
             {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
             Vetar
           </button>
+          {/* Botão Solicitar Revisão: só aparece na Rodada 1 */}
+          {!jaPassouPorRevisao && !showRevisaoForm && (
+            <button
+              onClick={() => setShowRevisaoForm(true)}
+              disabled={mutation.isPending}
+              className="flex-1 bg-purple-600 text-white rounded-lg px-4 py-2.5 text-sm font-bold hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Solicitar Revisão
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -643,6 +716,12 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                 <StatusIcon className="h-3 w-3" />
                 {statusLabels[solicitacao.statusGeral]}
               </span>
+              {solicitacao.rodadaAtual >= 2 && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">
+                  <RotateCcw className="h-3 w-3" />
+                  Rodada {solicitacao.rodadaAtual}
+                </span>
+              )}
               {isOwnRequest && userRole === 'lider' && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-300">
                   <User className="h-3 w-3" />
@@ -678,13 +757,109 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
             </div>
           </div>
 
-          {/* Instâncias de Aprovação */}
+          {/* Histórico de Rodadas Anteriores */}
+          {solicitacao.historicoRodadas && (() => {
+            let historico: any[] = [];
+            try { historico = JSON.parse(solicitacao.historicoRodadas); } catch (e) { historico = []; }
+            if (historico.length === 0) return null;
+            return (
+              <div className="mt-4">
+                <details className="group">
+                  <summary className="cursor-pointer flex items-center gap-2 text-sm font-bold text-purple-700 hover:text-purple-900 transition-colors">
+                    <History className="h-4 w-4" />
+                    Histórico de Rodadas Anteriores ({historico.length})
+                    <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="mt-2 space-y-3">
+                    {historico.map((rodada: any, idx: number) => (
+                      <div key={idx} className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-200 text-purple-800">
+                            Rodada {rodada.rodada}
+                          </span>
+                          {rodada.motivoRevisao && (
+                            <span className="text-xs text-purple-600 italic">Revisão solicitada</span>
+                          )}
+                        </div>
+
+                        {/* Motivo da revisão */}
+                        {rodada.motivoRevisao && (
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 mb-2">
+                            <p className="text-xs font-bold text-amber-700 mb-1">Motivo da Solicitação de Revisão:</p>
+                            <p className="text-sm text-amber-800 whitespace-pre-wrap">{rodada.motivoRevisao}</p>
+                          </div>
+                        )}
+
+                        {/* Parecer CKM da rodada */}
+                        {rodada.ckm?.parecerTipo && (
+                          <div className="mb-2">
+                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Parecer CKM</p>
+                            {!isColaboradorView && (
+                              <>
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1 ${rodada.ckm.parecerTipo === 'com_aderencia' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                                  {rodada.ckm.parecerTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
+                                </span>
+                                {rodada.ckm.parecerTexto && <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{rodada.ckm.parecerTexto}</p>}
+                                <p className="text-xs text-gray-400 mt-1">Em: {formatDate(rodada.ckm.em)}</p>
+                              </>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Decisão Gestor da rodada */}
+                        {rodada.gestor?.decisao && (
+                          <div className="mb-2">
+                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Decisão do Gestor</p>
+                            {!isColaboradorView && (
+                              <>
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1 ${rodada.gestor.decisao === 'aprovado' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                                  {rodada.gestor.decisao === 'aprovado' ? 'Aprovado' : 'Reprovado'}
+                                </span>
+                                {rodada.gestor.justificativa && <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{rodada.gestor.justificativa}</p>}
+                                <p className="text-xs text-gray-400 mt-1">Em: {formatDate(rodada.gestor.em)}</p>
+                              </>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Decisão RH da rodada (solicitar_revisao) */}
+                        {rodada.rh?.decisao && (
+                          <div>
+                            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Decisão do RH</p>
+                            {!isColaboradorView && (
+                              <>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1 bg-purple-200 text-purple-800">
+                                  Revisão Solicitada
+                                </span>
+                                {rodada.rh.justificativa && <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{rodada.rh.justificativa}</p>}
+                                <p className="text-xs text-gray-400 mt-1">Por: {rodada.rh.nome} em {formatDate(rodada.rh.em)}</p>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              </div>
+            );
+          })()}
+
+          {/* Instâncias de Aprovação (Rodada Atual) */}
           <div className="mt-4 space-y-3">
+            {solicitacao.rodadaAtual >= 2 && (solicitacao.ckmParecerTipo || solicitacao.gestorDecisao || solicitacao.rhDecisao) && (
+              <div className="flex items-center gap-2 mb-1">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-300">
+                  Rodada {solicitacao.rodadaAtual} — Análise Atual
+                </span>
+              </div>
+            )}
+
             {/* 1. Parecer CKM */}
             {solicitacao.ckmParecerTipo && (
               <div className={`rounded-lg p-3 border ${solicitacao.ckmParecerTipo === 'com_aderencia' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">1. Parecer CKM</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">1. Parecer CKM {solicitacao.rodadaAtual >= 2 ? `(Rodada ${solicitacao.rodadaAtual})` : ''}</span>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${solicitacao.ckmParecerTipo === 'com_aderencia' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
                     {solicitacao.ckmParecerTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
                   </span>
@@ -698,7 +873,7 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
             {solicitacao.gestorDecisao && (
               <div className={`rounded-lg p-3 border ${solicitacao.gestorDecisao === 'aprovado' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">2. Decisão do Gestor</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">2. Decisão do Gestor {solicitacao.rodadaAtual >= 2 ? `(Rodada ${solicitacao.rodadaAtual})` : ''}</span>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${solicitacao.gestorDecisao === 'aprovado' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
                     {solicitacao.gestorDecisao === 'aprovado' ? 'Aprovado' : 'Reprovado'}
                   </span>
@@ -712,7 +887,7 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
             {solicitacao.rhDecisao && (
               <div className={`rounded-lg p-3 border ${solicitacao.rhDecisao === 'aprovado' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">3. Decisão do RH</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">3. Decisão do RH {solicitacao.rodadaAtual >= 2 ? `(Rodada ${solicitacao.rodadaAtual})` : ''}</span>
                   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${solicitacao.rhDecisao === 'aprovado' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
                     {solicitacao.rhDecisao === 'aprovado' ? 'Aprovado e Incluído no PDI' : 'Vetado'}
                   </span>
@@ -948,6 +1123,7 @@ export default function SolicitacoesAcoes() {
                 <option value="aprovada">Aprovadas ({contadores.aprovada || 0})</option>
                 <option value="vetada_gestor">Vetadas Gestor ({contadores.vetada_gestor || 0})</option>
                 <option value="vetada_rh">Vetadas RH ({contadores.vetada_rh || 0})</option>
+                <option value="em_revisao">Em Revisão ({contadores.em_revisao || 0})</option>
               </select>
             </div>
             <button

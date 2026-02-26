@@ -2889,3 +2889,16 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Email automático ao Colaborador quando CKM aprova/reprova o ajuste
 - [x] Adicionar coluna Descrição da Ação no relatório geral CSV
 - [x] Adicionar menu PDIs para o Gerente com acesso somente leitura (sem aprovar, alterar, editar ou excluir)
+
+## Fluxo de Revisão Única - Solicitação de Ação (RH pode devolver uma vez)
+- [x] Adicionar colunas rodadaAtual e historicoRodadas no schema
+- [x] Alterar enum statusGeral para incluir em_revisao
+- [x] Migrar banco de dados (SQL direto)
+- [x] Criar função solicitarRevisao no db.ts
+- [x] Alterar procedure decisaoRH para aceitar solicitar_revisao
+- [x] Adicionar notificações (in-app + email) ao CKM quando revisão solicitada
+- [x] Adicionar botão "Solicitar Revisão" no DecisaoRHForm (apenas Rodada 1)
+- [x] Aviso visual quando revisão já foi feita (Rodada 2) - informar que deve abrir nova solicitação
+- [x] Exibir histórico de rodadas anteriores no SolicitacaoCard (accordion)
+- [x] Adicionar novos status labels e cores para em_revisao
+- [x] Escrever testes unitários para fluxo de revisão
