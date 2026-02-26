@@ -365,8 +365,8 @@ export const pdiAjustesRouter = router({
                 liderName: user.name,
                 colaboradorName: colaborador[0].name,
                 tituloAcao: acao[0].descricao || 'Ação do PDI',
-                tipoAjuste: solicitacao[0].tipoSolicitacao,
-                justificativa: solicitacao[0].descricaoSolicitacao,
+                camposAjustar: solicitacao[0].camposAjustar,
+                justificativa: solicitacao[0].justificativa,
                 feedbackLider: input.feedback_lider,
                 departamento: deptNome || undefined,
               });
@@ -526,7 +526,7 @@ export const pdiAjustesRouter = router({
               colaboradorEmail: solicitante[0].email,
               colaboradorName: solicitante[0].name,
               tituloAcao: acao[0].descricao || 'Ação do PDI',
-              tipoAjuste: solicitacao[0].tipoSolicitacao,
+              camposAjustar: solicitacao[0].camposAjustar,
               departamento: deptNome || undefined,
             });
           } else {
@@ -534,7 +534,7 @@ export const pdiAjustesRouter = router({
               colaboradorEmail: solicitante[0].email,
               colaboradorName: solicitante[0].name,
               tituloAcao: acao[0].descricao || 'Ação do PDI',
-              tipoAjuste: solicitacao[0].tipoSolicitacao,
+              camposAjustar: solicitacao[0].camposAjustar,
               justificativa: input.justificativa || undefined,
               departamento: deptNome || undefined,
             });
@@ -707,8 +707,8 @@ export const pdiAjustesRouter = router({
         liderName: lider[0].name,
         colaboradorName: colaborador[0].name,
         tituloAcao: acao[0].descricao || 'Ação do PDI',
-        tipoAjuste: solicitacao[0].tipoSolicitacao,
-        justificativa: solicitacao[0].descricaoSolicitacao || '',
+        camposAjustar: solicitacao[0].camposAjustar,
+        justificativa: solicitacao[0].justificativa || '',
         departamento: deptNome || undefined,
       });
 

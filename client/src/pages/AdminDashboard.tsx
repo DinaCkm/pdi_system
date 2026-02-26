@@ -728,7 +728,21 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             <div>
               <p className="text-sm font-semibold">Campos a Alterar:</p>
-              <p className="text-sm text-gray-600 mt-1">{selectedAdjustment?.camposAjustar}</p>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {(() => {
+                  try {
+                    const dados = JSON.parse(selectedAdjustment?.camposAjustar || '{}');
+                    if (dados.camposSelecionados && Array.isArray(dados.camposSelecionados)) {
+                      return dados.camposSelecionados.map((campo: string) => (
+                        <span key={campo} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">{campo}</span>
+                      ));
+                    }
+                    return <p className="text-sm text-gray-600">{selectedAdjustment?.camposAjustar}</p>;
+                  } catch {
+                    return <p className="text-sm text-gray-600">{selectedAdjustment?.camposAjustar || 'Não especificado'}</p>;
+                  }
+                })()}
+              </div>
             </div>
 
             <div>

@@ -1,0 +1,17 @@
+Imagem mostra:
+- Filtros: Todos(30), Pendentes(12), Aguardando Líder(12) [ATIVO/SELECIONADO], Aprovadas(17), Reprovadas(1), Aguardando CKM(0), Com Parecer(12)
+- Card ID #420001 com status "Pendente"
+- Título: "Visão Sistêmica com foco em Indicadores Estratégicos"
+- Solicitada por: DANIEL CAIO LEMOS PENNO
+- Depto: UTIC-UNIDADE DE TECNOLOGIA DA INFORM. E COMUNICAÇÃO DE DADOS
+- Líder: LEONARDO CAMPELO LEITE GUEDES
+- Data: 25/02/2026 às 17:16
+- Tempo de resposta: 1 dia
+- Campos: Título, Descrição, Prazo, Macro Competência
+- Justificativa: texto longo sobre substituição de curso
+- Botão "Avaliar" azul grande
+- Erro toast: "Cannot read properties of undefined (reading 'replace')"
+
+Isso é a tela do pdi-ajustes (fluxo 2 de ajuste), vista pelo LÍDER.
+Os filtros "Aguardando CKM" e "Com Parecer" indicam que é a tela do pdi-ajustes.
+O botão "Avaliar" é para o líder avaliar a solicitação de ajuste.

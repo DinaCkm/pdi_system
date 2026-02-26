@@ -2937,3 +2937,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Correção Notificação Ajuste + CC Global
 - [x] Corrigir botão do sino no AdminDashboard para enviar email real ao líder
 - [x] Adicionar CC para jumakiyama@gmail.com em todos os envios de email do sistema
+
+- [ ] Bug: Erro "Cannot read properties of undefined (reading 'replace')" ao clicar em Avaliar na tela de Solicitações de Ajuste do Líder (ID #420001)
+
+## Bugs no AdminDashboard - Avaliar Solicitação de Ajuste
+- [x] Bug: Erro "Cannot read properties of undefined (reading 'replace')" ao aprovar/rejeitar ajuste — campo tipoSolicitacao não existe na tabela adjustment_requests, email crasheia
+- [x] Bug: Dialog "Avaliar Solicitação de Ajuste" mostra JSON bruto em "Campos a Alterar" em vez de formatar os campos selecionados

@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, actionId, solicitanteId, tipoSolicitante, camposAjustar, justificativa, status FROM adjustment_requests WHERE id = 420001 LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, actionId, solicitanteId, tipoSolicitante, camposAjustar, justificativa, status FROM adjustment_requests WHERE id = 420001 LIMIT 1;",
+  "rows": [
+    {
+      "id": "420001",
+      "actionId": "900541",
+      "solicitanteId": "1290107",
+      "tipoSolicitante": "colaborador",
+      "camposAjustar": "{\"camposSelecionados\":[\"Título\",\"Descrição\",\"Prazo\",\"Macro Competência\"]}",
+      "justificativa": "Gostaria de solicitar a substituição do curso \"Gestão da Inovação no Setor Público\" por um treinamento mais alinhado à minha rotina. Embora nossa realidade no terceiro setor envolva algumas práticas de gestão pública, um curso focado integralmente nisso não se aplica muito ao meu dia a dia. Como atuo diretamente na infraestrutura de TI, minhas demandas são estritamente técnicas. Acaba que o conteúdo dessa capacitação não traria um impacto prático nas minhas entregas e no ambiente que gerencio. Podemos verificar a viabilidade de uma troca por algo voltado para a área de tecnologia?",
+      "status": "pendente"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tactionId\tsolicitanteId\ttipoSolicitante\tcamposAjustar\tjustificativa\tstatus\n420001\t900541\t1290107\tcolaborador\t{\"camposSelecionados\":[\"Título\",\"Descrição\",\"Prazo\",\"Macro Competência\"]}\tGostaria de solicitar a substituição do curso \"Gestão da Inovação no Setor Público\" por um treinamento mais alinhado à minha rotina. Embora nossa realidade no terceiro setor envolva algumas práticas de gestão pública, um curso focado integralmente nisso não se aplica muito ao meu dia a dia. Como atuo diretamente na infraestrutura de TI, minhas demandas são estritamente técnicas. Acaba que o conteúdo dessa capacitação não traria um impacto prático nas minhas entregas e no ambiente que gerencio. Podemos verificar a viabilidade de uma troca por algo voltado para a área de tecnologia?\tpendente\n",
+  "stderr": "",
+  "execution_time_ms": 58
+}

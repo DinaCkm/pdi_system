@@ -255,6 +255,36 @@ ${ASSINATURA}
  */
 
 /**
+ * Função auxiliar para formatar o tipo de ajuste.
+ * Suporta tanto o formato antigo (tipoAjuste string) quanto o novo (camposAjustar JSON).
+ */
+function formatarTipoAjuste(tipoAjuste?: string, camposAjustar?: string): string {
+  // Formato novo: camposAjustar é um JSON com array de campos selecionados
+  if (camposAjustar) {
+    try {
+      const parsed = JSON.parse(camposAjustar);
+      if (parsed.camposSelecionados && Array.isArray(parsed.camposSelecionados)) {
+        return `Alteração de: ${parsed.camposSelecionados.join(', ')}`;
+      }
+    } catch {
+      // Se não for JSON válido, usa como texto direto
+      return camposAjustar;
+    }
+  }
+
+  // Formato antigo: tipoAjuste é uma string com código
+  if (tipoAjuste) {
+    return tipoAjuste
+      .replace('alteracao_descricao', 'Alteração de Descrição')
+      .replace('alteracao_prazo', 'Alteração de Prazo')
+      .replace('alteracao_competencia', 'Alteração de Competência')
+      .replace('cancelamento', 'Cancelamento da Ação');
+  }
+
+  return 'Ajuste Geral';
+}
+
+/**
  * Etapa 1: Envia email para o Líder quando o Colaborador solicita ajuste na ação.
  * O líder deve acessar o sistema e validar o ajuste.
  */
@@ -263,17 +293,14 @@ export async function sendEmailAjusteSolicitadoParaLider(params: {
   liderName: string;
   colaboradorName: string;
   tituloAcao: string;
-  tipoAjuste: string;
+  tipoAjuste?: string;
+  camposAjustar?: string;
   justificativa: string;
   departamento?: string;
 }): Promise<boolean> {
-  const { liderEmail, liderName, colaboradorName, tituloAcao, tipoAjuste, justificativa, departamento } = params;
+  const { liderEmail, liderName, colaboradorName, tituloAcao, tipoAjuste, camposAjustar, justificativa, departamento } = params;
 
-  const tipoText = tipoAjuste
-    .replace('alteracao_descricao', 'Alteração de Descrição')
-    .replace('alteracao_prazo', 'Alteração de Prazo')
-    .replace('alteracao_competencia', 'Alteração de Competência')
-    .replace('cancelamento', 'Cancelamento da Ação');
+  const tipoText = formatarTipoAjuste(tipoAjuste, camposAjustar);
   const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
 
   const body = `
@@ -309,18 +336,15 @@ export async function sendEmailAjusteValidadoParaAdmin(params: {
   liderName: string;
   colaboradorName: string;
   tituloAcao: string;
-  tipoAjuste: string;
+  tipoAjuste?: string;
+  camposAjustar?: string;
   justificativa: string;
   feedbackLider: string;
   departamento?: string;
 }): Promise<boolean> {
-  const { adminEmail, adminName, liderName, colaboradorName, tituloAcao, tipoAjuste, justificativa, feedbackLider, departamento } = params;
+  const { adminEmail, adminName, liderName, colaboradorName, tituloAcao, tipoAjuste, camposAjustar, justificativa, feedbackLider, departamento } = params;
 
-  const tipoText = tipoAjuste
-    .replace('alteracao_descricao', 'Alteração de Descrição')
-    .replace('alteracao_prazo', 'Alteração de Prazo')
-    .replace('alteracao_competencia', 'Alteração de Competência')
-    .replace('cancelamento', 'Cancelamento da Ação');
+  const tipoText = formatarTipoAjuste(tipoAjuste, camposAjustar);
   const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
 
   const body = `
@@ -356,16 +380,13 @@ export async function sendEmailAjusteAprovadoParaColaborador(params: {
   colaboradorEmail: string;
   colaboradorName: string;
   tituloAcao: string;
-  tipoAjuste: string;
+  tipoAjuste?: string;
+  camposAjustar?: string;
   departamento?: string;
 }): Promise<boolean> {
-  const { colaboradorEmail, colaboradorName, tituloAcao, tipoAjuste, departamento } = params;
+  const { colaboradorEmail, colaboradorName, tituloAcao, tipoAjuste, camposAjustar, departamento } = params;
 
-  const tipoText = tipoAjuste
-    .replace('alteracao_descricao', 'Alteração de Descrição')
-    .replace('alteracao_prazo', 'Alteração de Prazo')
-    .replace('alteracao_competencia', 'Alteração de Competência')
-    .replace('cancelamento', 'Cancelamento da Ação');
+  const tipoText = formatarTipoAjuste(tipoAjuste, camposAjustar);
   const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
 
   const body = `
@@ -396,17 +417,14 @@ export async function sendEmailAjusteReprovadoParaColaborador(params: {
   colaboradorEmail: string;
   colaboradorName: string;
   tituloAcao: string;
-  tipoAjuste: string;
+  tipoAjuste?: string;
+  camposAjustar?: string;
   justificativa?: string;
   departamento?: string;
 }): Promise<boolean> {
-  const { colaboradorEmail, colaboradorName, tituloAcao, tipoAjuste, justificativa, departamento } = params;
+  const { colaboradorEmail, colaboradorName, tituloAcao, tipoAjuste, camposAjustar, justificativa, departamento } = params;
 
-  const tipoText = tipoAjuste
-    .replace('alteracao_descricao', 'Alteração de Descrição')
-    .replace('alteracao_prazo', 'Alteração de Prazo')
-    .replace('alteracao_competencia', 'Alteração de Competência')
-    .replace('cancelamento', 'Cancelamento da Ação');
+  const tipoText = formatarTipoAjuste(tipoAjuste, camposAjustar);
   const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
   const justText = justificativa ? `\n- Justificativa: ${justificativa}` : '';
 
