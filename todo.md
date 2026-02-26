@@ -2888,3 +2888,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Email automático ao Admin (CKM) quando Líder valida o ajuste
 - [x] Email automático ao Colaborador quando CKM aprova/reprova o ajuste
 - [x] Adicionar coluna Descrição da Ação no relatório geral CSV
+- [x] Adicionar menu PDIs para o Gerente com acesso somente leitura (sem aprovar, alterar, editar ou excluir)

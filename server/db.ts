@@ -321,7 +321,7 @@ export async function deleteAction(id: number, excluidoPor?: number, excluidoPor
     
     // 1. Buscar todas as evidências da ação para deletar arquivos e textos
     const evidenciasAcao = await db.select({ id: evidences.id }).from(evidences).where(eq(evidences.actionId, id));
-    const evidenceIds = evidenciasAcao.map(e => e.id);
+    const evidenceIds = evidenciasAcao.map((e: any) => e.id);
     
     // 2. Deletar arquivos e textos das evidências
     if (evidenceIds.length > 0) {
@@ -333,7 +333,7 @@ export async function deleteAction(id: number, excluidoPor?: number, excluidoPor
     
     // 3. Buscar todas as solicitações de ajuste para deletar comentários
     const solicitacoesAcao = await db.select({ id: adjustmentRequests.id }).from(adjustmentRequests).where(eq(adjustmentRequests.actionId, id));
-    const solicitacaoIds = solicitacoesAcao.map(s => s.id);
+    const solicitacaoIds = solicitacoesAcao.map((s: any) => s.id);
     
     // 4. Deletar comentários das solicitações de ajuste
     if (solicitacaoIds.length > 0) {
@@ -439,7 +439,7 @@ export async function getAllPDIs() {
     .orderBy(desc(pdis.createdAt));
 
   const enriched = await Promise.all(
-    result.map(async (pdi) => {
+    result.map(async (pdi: any) => {
       const [user] = await db.select().from(users).where(eq(users.id, pdi.colaboradorId));
       const [ciclo] = await db.select().from(ciclos).where(eq(ciclos.id, pdi.cicloId));
       const [dept] = user ? await db.select().from(departamentos).where(eq(departamentos.id, user.departamentoId)) : [null];

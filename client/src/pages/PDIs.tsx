@@ -81,9 +81,12 @@ export default function PDIs() {
     },
   });
 
-  // Redirecionar se não for Admin
+  const isGerente = user?.role === 'gerente';
+  const isAdmin = user?.role === 'admin';
+
+  // Redirecionar se não for Admin nem Gerente
   useEffect(() => {
-    if (user && user.role !== "admin") {
+    if (user && user.role !== "admin" && user.role !== "gerente") {
       if (user.role === "lider") {
         setLocation("/pdis-equipe");
       } else {
@@ -92,7 +95,7 @@ export default function PDIs() {
     }
   }, [user, setLocation]);
 
-  if (user?.role !== "admin") {
+  if (!isAdmin && !isGerente) {
     return null;
   }
 
@@ -170,18 +173,28 @@ export default function PDIs() {
               Central de controle de Planos de Desenvolvimento Individual
             </p>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-gradient-to-r from-blue-600 to-orange-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:opacity-90"
-          >
-            <Plus className="w-4 h-4" />
-            Novo PDI
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="bg-gradient-to-r from-blue-600 to-orange-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:opacity-90"
+            >
+              <Plus className="w-4 h-4" />
+              Novo PDI
+            </button>
+          )}
         </div>
 
         {/* DataTable de PDIs */}
         <div>
-          <DataTablePDIs />
+          {/* Aviso de somente leitura para Gerente */}
+          {isGerente && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-amber-800 font-medium">
+                🔒 Modo de visualização — Você tem acesso somente leitura aos PDIs.
+              </p>
+            </div>
+          )}
+          <DataTablePDIs isReadOnly={isGerente} />
         </div>
 
         {/* Modal de Criação de PDI */}

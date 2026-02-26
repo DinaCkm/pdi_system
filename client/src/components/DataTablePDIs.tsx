@@ -20,7 +20,7 @@ interface PDI {
   validadoEm?: string | null;
 }
 
-export function DataTablePDIs() {
+export function DataTablePDIs({ isReadOnly = false }: { isReadOnly?: boolean } = {}) {
   const [, navigate] = useLocation();
   const [departamentoFilter, setDepartamentoFilter] = useState<string>("");
   const [pessoaFilter, setPessoaFilter] = useState<string>("");
@@ -302,20 +302,24 @@ export function DataTablePDIs() {
                       >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button
-                        onClick={() => handleOpenEdit(pdi)}
-                        className="p-2 hover:bg-gray-200 rounded"
-                        title="Editar"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => setPdiToDelete(pdi.pdiId)}
-                        className="p-2 hover:bg-gray-200 rounded"
-                        title="Deletar"
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </button>
+                      {!isReadOnly && (
+                        <button
+                          onClick={() => handleOpenEdit(pdi)}
+                          className="p-2 hover:bg-gray-200 rounded"
+                          title="Editar"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                      )}
+                      {!isReadOnly && (
+                        <button
+                          onClick={() => setPdiToDelete(pdi.pdiId)}
+                          className="p-2 hover:bg-gray-200 rounded"
+                          title="Deletar"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
