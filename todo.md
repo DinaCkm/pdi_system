@@ -2943,3 +2943,5 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Bugs no AdminDashboard - Avaliar Solicitação de Ajuste
 - [x] Bug: Erro "Cannot read properties of undefined (reading 'replace')" ao aprovar/rejeitar ajuste — campo tipoSolicitacao não existe na tabela adjustment_requests, email crasheia
 - [x] Bug: Dialog "Avaliar Solicitação de Ajuste" mostra JSON bruto em "Campos a Alterar" em vez de formatar os campos selecionados
+
+- [x] Adicionar botão "Detalhes" no card do PDI na tela "PDIs da Equipe" do líder para acessar relatórios individuais dos empregados
