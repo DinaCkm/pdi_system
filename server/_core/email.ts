@@ -209,27 +209,21 @@ export async function sendEmailAcaoAprovadaParaColaborador(params: {
   pdiTitulo?: string;
   departamento?: string;
 }): Promise<boolean> {
-  const { colaboradorEmail, colaboradorName, tituloAcao, pdiTitulo, departamento } = params;
-
-  const pdiText = pdiTitulo ? `\n- PDI: ${pdiTitulo}` : '';
-  const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
+  const { colaboradorEmail, colaboradorName, tituloAcao } = params;
 
   const body = `
 Prezado(a) ${colaboradorName},
 
-Temos o prazer de informar que sua solicitação de inclusão de nova ação foi APROVADA e já foi incluída automaticamente no seu PDI!
+Sua solicitação de inclusão de nova ação "${tituloAcao}" foi respondida.
 
-DETALHES DA AÇÃO APROVADA:
-- Título da Ação: ${tituloAcao}${pdiText}${deptText}
-
-Acesse o sistema Evoluir CKM para visualizar a ação no seu PDI e iniciar o desenvolvimento.
+Acesse o Sistema de Gestão de PDI da CKM Talents (SGP) para visualizar o resultado.
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: `PARABÉNS - Sua Solicitação de Ação foi Aprovada e Incluída no PDI — ${tituloAcao}`,
+    subject: `INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcao}`,
     body,
   });
 }
@@ -243,26 +237,21 @@ export async function sendEmailAcaoReprovadaParaColaborador(params: {
   tituloAcao: string;
   departamento?: string;
 }): Promise<boolean> {
-  const { colaboradorEmail, colaboradorName, tituloAcao, departamento } = params;
-
-  const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
+  const { colaboradorEmail, colaboradorName, tituloAcao } = params;
 
   const body = `
 Prezado(a) ${colaboradorName},
 
-Informamos que sua solicitação de inclusão de nova ação NÃO foi aprovada na etapa final de análise.
+Sua solicitação de inclusão de nova ação "${tituloAcao}" foi respondida.
 
-DETALHES DA SOLICITAÇÃO:
-- Título da Ação: ${tituloAcao}${deptText}
-
-Solicite feedback ao seu gestor sobre a motivação da decisão.
+Acesse o Sistema de Gestão de PDI da CKM Talents (SGP) para visualizar o resultado.
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: `INFORMATIVO - Sua Solicitação de Ação Não Foi Aprovada — ${tituloAcao}`,
+    subject: `INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcao}`,
     body,
   });
 }
@@ -402,28 +391,21 @@ export async function sendEmailAjusteAprovadoParaColaborador(params: {
   camposAjustar?: string;
   departamento?: string;
 }): Promise<boolean> {
-  const { colaboradorEmail, colaboradorName, tituloAcao, tipoAjuste, camposAjustar, departamento } = params;
-
-  const tipoText = formatarTipoAjuste(tipoAjuste, camposAjustar);
-  const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
+  const { colaboradorEmail, colaboradorName, tituloAcao } = params;
 
   const body = `
 Prezado(a) ${colaboradorName},
 
-Informamos que sua solicitação de ajuste na ação do PDI foi APROVADA e as alterações já foram aplicadas!
+Sua solicitação de ajuste na ação "${tituloAcao}" foi respondida.
 
-DETALHES DO AJUSTE APROVADO:
-- Ação: ${tituloAcao}${deptText}
-- Tipo de Ajuste: ${tipoText}
-
-Acesse o sistema Evoluir CKM para visualizar as alterações aplicadas na sua ação.
+Acesse o Sistema de Gestão de PDI da CKM Talents (SGP) para visualizar o resultado.
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: `APROVADO - Sua Solicitação de Ajuste foi Realizada — ${tituloAcao}`,
+    subject: `INFORMATIVO — Sua Solicitação de Ajuste foi Respondida — ${tituloAcao}`,
     body,
   });
 }
@@ -440,29 +422,21 @@ export async function sendEmailAjusteReprovadoParaColaborador(params: {
   justificativa?: string;
   departamento?: string;
 }): Promise<boolean> {
-  const { colaboradorEmail, colaboradorName, tituloAcao, tipoAjuste, camposAjustar, justificativa, departamento } = params;
-
-  const tipoText = formatarTipoAjuste(tipoAjuste, camposAjustar);
-  const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
-  const justText = justificativa ? `\n- Justificativa: ${stripHtmlForEmail(justificativa)}` : '';
+  const { colaboradorEmail, colaboradorName, tituloAcao } = params;
 
   const body = `
 Prezado(a) ${colaboradorName},
 
-Informamos que sua solicitação de ajuste na ação do PDI NÃO foi aprovada.
+Sua solicitação de ajuste na ação "${tituloAcao}" foi respondida.
 
-DETALHES DA SOLICITAÇÃO:
-- Ação: ${tituloAcao}${deptText}
-- Tipo de Ajuste: ${tipoText}${justText}
-
-Solicite feedback ao seu gestor sobre a motivação da decisão.
+Acesse o Sistema de Gestão de PDI da CKM Talents (SGP) para visualizar o resultado.
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: `INFORMATIVO - Sua Solicitação de Ajuste Não Foi Aprovada — ${tituloAcao}`,
+    subject: `INFORMATIVO — Sua Solicitação de Ajuste foi Respondida — ${tituloAcao}`,
     body,
   });
 }
