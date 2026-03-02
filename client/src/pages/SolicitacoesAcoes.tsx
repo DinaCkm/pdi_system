@@ -1138,7 +1138,7 @@ export default function SolicitacoesAcoes() {
   const pageTitle = userRole === 'colaborador' 
     ? 'Solicitar Ação' 
     : userRole === 'lider'
-    ? (abaLider === 'minhas' ? 'Minhas Solicitações de Ação' : 'Solicitações da Equipe')
+    ? (abaLider === 'minhas' ? 'Minhas Solicitações de Ação' : 'Solicitações de Novas Ações/Equipe')
     : 'Ações Solicitadas por Empregados';
   
   const pageDescription = userRole === 'colaborador'

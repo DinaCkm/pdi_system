@@ -164,7 +164,7 @@ export default function SolicitacoesEquipe() {
   return (
     <div className="container py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Solicitações de Ajuste da Equipe</h1>
+        <h1 className="text-3xl font-bold mb-2">Solicitações de Ajustes nas Ações/Equipe</h1>
         <p className="text-muted-foreground">
           Acompanhe as solicitações de ajuste dos seus liderados
         </p>
