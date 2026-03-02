@@ -11,6 +11,25 @@ export type EmailPayload = {
 const GLOBAL_CC_EMAIL = 'jumakiyama@gmail.com';
 
 /**
+ * Remove tags HTML de uma string para uso em emails plain text
+ */
+function stripHtmlForEmail(html: string): string {
+  if (!html) return '';
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/**
  * Envia email para um usuário
  * Utiliza a API de email do Manus
  */
@@ -84,7 +103,7 @@ Prezado(a) ${leaderName},
 O colaborador ${colaboradorName} solicitou ALTERAÇÕES na ação do PDI: ${acaoNome}
 
 Segue a alteração solicitada:
-${justificativa}
+${stripHtmlForEmail(justificativa)}
 
 Campos a alterar: ${camposText}
 ${AVISO_NAO_RESPONDA}
@@ -166,7 +185,7 @@ DETALHES DA SOLICITAÇÃO:
 - Colaborador: ${colaboradorName}${deptText}
 - Título da Ação: ${tituloAcao}
 - Decisão do Líder: ${decisaoText}
-- Justificativa do Líder: ${justificativaLider}
+- Justificativa do Líder: ${stripHtmlForEmail(justificativaLider)}
 
 Acesse o sistema Evoluir CKM para avaliar e registrar sua decisão final sobre esta solicitação.
 ${AVISO_NAO_RESPONDA}
@@ -311,7 +330,7 @@ DETALHES DA SOLICITAÇÃO DE AJUSTE:
 - Colaborador: ${colaboradorName}${deptText}
 - Ação: ${tituloAcao}
 - Tipo de Ajuste: ${tipoText}
-- Justificativa do Colaborador: ${justificativa}
+- Justificativa do Colaborador: ${stripHtmlForEmail(justificativa)}
 
 Acesse o sistema Evoluir CKM para avaliar e registrar seu parecer sobre esta solicitação de ajuste.
 ${AVISO_NAO_RESPONDA}
@@ -356,9 +375,9 @@ DETALHES DA SOLICITAÇÃO DE AJUSTE:
 - Líder: ${liderName}
 - Ação: ${tituloAcao}
 - Tipo de Ajuste: ${tipoText}
-- Justificativa do Colaborador: ${justificativa}
+- Justificativa do Colaborador: ${stripHtmlForEmail(justificativa)}
 - Parecer do Líder: DE ACORDO
-- Feedback do Líder: ${feedbackLider}
+- Feedback do Líder: ${stripHtmlForEmail(feedbackLider)}
 
 Acesse o sistema Evoluir CKM para realizar o ajuste solicitado.
 ${AVISO_NAO_RESPONDA}
@@ -425,7 +444,7 @@ export async function sendEmailAjusteReprovadoParaColaborador(params: {
 
   const tipoText = formatarTipoAjuste(tipoAjuste, camposAjustar);
   const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
-  const justText = justificativa ? `\n- Justificativa: ${justificativa}` : '';
+  const justText = justificativa ? `\n- Justificativa: ${stripHtmlForEmail(justificativa)}` : '';
 
   const body = `
 Prezado(a) ${colaboradorName},

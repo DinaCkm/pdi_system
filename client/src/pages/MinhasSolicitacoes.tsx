@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Clock, FileText, Info, Target, Calendar, FileEdit, Filter, X, CheckCircle, XCircle, AlertCircle, History } from "lucide-react";
+import RichTextDisplay from '@/components/RichTextDisplay';
 
 // Função para obter o badge de status
 function getStatusBadge(status: string) {
@@ -304,14 +305,19 @@ export default function MinhasSolicitacoes() {
                         )}
                         Resposta do Administrador:
                       </h4>
-                      <p className={`whitespace-pre-wrap ${
-                        solicitacao.status === 'aprovada' ? 'text-green-700' : 'text-red-700'
-                      }`}>
-                        {solicitacao.status === 'aprovada' 
-                          ? "Sua solicitação foi aprovada. As alterações foram realizadas pelo administrador."
-                          : solicitacao.justificativaAdmin || "Solicitação não aceita pelo administrador."
-                        }
-                      </p>
+                      {solicitacao.status === 'aprovada' ? (
+                        <p className="whitespace-pre-wrap text-green-700">
+                          Sua solicitação foi aprovada. As alterações foram realizadas pelo administrador.
+                        </p>
+                      ) : (
+                        <div className="text-red-700">
+                          {solicitacao.justificativaAdmin ? (
+                            <RichTextDisplay content={solicitacao.justificativaAdmin} />
+                          ) : (
+                            <p>Solicitação não aceita pelo administrador.</p>
+                          )}
+                        </div>
+                      )}
                       {solicitacao.updatedAt && solicitacao.updatedAt !== solicitacao.createdAt && (
                         <p className={`text-sm mt-2 ${
                           solicitacao.status === 'aprovada' ? 'text-green-600' : 'text-red-600'

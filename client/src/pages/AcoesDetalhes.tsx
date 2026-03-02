@@ -188,9 +188,9 @@ export default function AcoesDetalhes() {
                 <p style={{ fontSize: '13px', fontWeight: '700', color: '#991b1b', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <XCircle size={16} /> Motivo da Rejeição:
                 </p>
-                <p style={{ fontSize: '14px', color: '#7f1d1d', lineHeight: '1.5' }}>
-                  {ev.justificativaAdmin}
-                </p>
+                <div style={{ fontSize: '14px', color: '#7f1d1d', lineHeight: '1.5' }}>
+                  <RichTextDisplay content={ev.justificativaAdmin} />
+                </div>
               </div>
             )}
             

@@ -2960,3 +2960,5 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Atualizar exibição em Acoes.tsx, AcoesDetalhes.tsx, AcoesEquipe.tsx, PDITimeline.tsx, SolicitarAjusteModal, EvidenciaModal
 - [x] Tratar stripHtml no EvidenciaModal (link mailto)
 - [x] Adicionar Rich Text Editor ao campo de justificativa da solicitação de ajuste (edição e exibição)
+- [x] Implementar Rich Text Editor no campo "Motivo da Rejeição" em todos os pontos do sistema
+- [ ] Implementar envio de email com motivo da rejeição nos fluxos de rejeição de evidência e ajuste

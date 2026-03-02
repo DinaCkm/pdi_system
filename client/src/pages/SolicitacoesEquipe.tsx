@@ -463,7 +463,7 @@ export default function SolicitacoesEquipe() {
                   {solicitacao.justificativaAdmin && (
                     <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
                       <h4 className="font-medium mb-2 text-orange-800">Resposta do Administrador:</h4>
-                      <p className="text-sm text-orange-700">{solicitacao.justificativaAdmin}</p>
+                      <div className="text-sm text-orange-700"><RichTextDisplay content={solicitacao.justificativaAdmin} /></div>
                     </div>
                   )}
 

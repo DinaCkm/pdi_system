@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from "@/components/ui/textarea";
 import RichTextEditor from '@/components/RichTextEditor';
 import RichTextDisplay from '@/components/RichTextDisplay';
+import { stripHtml } from '@/components/RichTextDisplay';
 import { toast } from "sonner";
 import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter, TrendingUp, ArrowRight, Building2, User, Calendar, Timer, Bell } from "lucide-react";
 import { Link } from "wouter";
@@ -185,7 +186,7 @@ export default function AdminDashboard() {
   };
 
   const handleRejectEvidence = () => {
-    if (!selectedEvidence || !rejectionReason.trim()) {
+    if (!selectedEvidence || !stripHtml(rejectionReason).trim()) {
       toast.error("Forneça um motivo para a rejeição");
       return;
     }
@@ -201,7 +202,7 @@ export default function AdminDashboard() {
   };
 
   const handleRejectAdjustment = () => {
-    if (!selectedAdjustment || !adjustmentReason.trim()) {
+    if (!selectedAdjustment || !stripHtml(adjustmentReason).trim()) {
       toast.error("Forneça um motivo para a rejeição");
       return;
     }
@@ -653,7 +654,7 @@ export default function AdminDashboard() {
                   {adjustment.justificativaAdmin && (
                     <div className="mt-2 p-3 bg-gray-100 rounded-lg border">
                       <p className="text-sm font-semibold text-gray-700">Justificativa do Admin:</p>
-                      <p className="text-sm text-gray-600 mt-1">{adjustment.justificativaAdmin}</p>
+                      <div className="text-sm text-gray-600 mt-1"><RichTextDisplay content={adjustment.justificativaAdmin} /></div>
                     </div>
                   )}
                 </CardContent>
@@ -681,12 +682,14 @@ export default function AdminDashboard() {
 
             <div>
               <label className="text-sm font-semibold">Motivo da Rejeição (se aplicável):</label>
-              <Textarea
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Explique por que está rejeitando..."
-                className="mt-2"
-              />
+              <div className="mt-2">
+                <RichTextEditor
+                  value={rejectionReason}
+                  onChange={setRejectionReason}
+                  placeholder="Explique por que está rejeitando..."
+                  minHeight="80px"
+                />
+              </div>
             </div>
           </div>
 
@@ -754,12 +757,14 @@ export default function AdminDashboard() {
 
             <div>
               <label className="text-sm font-semibold">Motivo da Rejeição (se aplicável):</label>
-              <Textarea
-                value={adjustmentReason}
-                onChange={(e) => setAdjustmentReason(e.target.value)}
-                placeholder="Explique por que está rejeitando..."
-                className="mt-2"
-              />
+              <div className="mt-2">
+                <RichTextEditor
+                  value={adjustmentReason}
+                  onChange={setAdjustmentReason}
+                  placeholder="Explique por que está rejeitando..."
+                  minHeight="80px"
+                />
+              </div>
             </div>
           </div>
 
