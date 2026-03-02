@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
 import { Loader2, CalendarIcon } from "lucide-react";
+import RichTextEditor from '@/components/RichTextEditor';
 import { toast } from "sonner";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -278,7 +279,14 @@ export function NovoFormularioAcao({ open, onOpenChange, pdiIdProp }: NovoFormul
             <Controller
               name="descricao"
               control={control}
-              render={({ field }) => <Textarea {...field} placeholder="Digite a descrição da ação" rows={3} />}
+              render={({ field }) => (
+                <RichTextEditor
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Digite a descrição da ação"
+                  minHeight="100px"
+                />
+              )}
             />
           </div>
 

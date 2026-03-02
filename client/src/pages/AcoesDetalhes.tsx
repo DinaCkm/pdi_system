@@ -4,6 +4,7 @@ import { trpc } from '@/lib/trpc';
 import { formatDateDisplay } from '@/lib/dateUtils';
 import { Loader2, CheckCircle, XCircle, FileText, Upload, Send, Mail, ArrowLeft, User, Calendar, AlignLeft, Target, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
+import RichTextDisplay from '@/components/RichTextDisplay';
 
 export default function AcoesDetalhes() {
   const [location, setLocation] = useLocation();
@@ -154,8 +155,8 @@ export default function AcoesDetalhes() {
           <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#374151', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase' }}>
             <AlignLeft size={16} /> Descrição Detalhada
           </h3>
-          <div style={{ fontSize: '16px', lineHeight: '1.6', color: '#4b5563', whiteSpace: 'pre-wrap' }}>
-            {acao.descricao || "Sem descrição informada."}
+          <div style={{ fontSize: '16px', lineHeight: '1.6', color: '#4b5563' }}>
+            {acao.descricao ? <RichTextDisplay content={acao.descricao} /> : "Sem descrição informada."}
           </div>
         </div>
       </div>

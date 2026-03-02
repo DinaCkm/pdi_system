@@ -1,4 +1,5 @@
 import { CheckCircle2, Circle, Clock, AlertCircle } from "lucide-react";
+import RichTextDisplay from '@/components/RichTextDisplay';
 
 interface Acao {
   id: number;
@@ -140,9 +141,9 @@ export function PDITimeline({ acoes, usuarioRole = "colaborador" }: PDITimelineP
               )}
 
               {/* Descrição */}
-              <p className="text-slate-600 text-sm mb-3 line-clamp-2">
-                {acao.descricao}
-              </p>
+              <div className="text-slate-600 text-sm mb-3 line-clamp-2">
+                {acao.descricao ? <RichTextDisplay content={acao.descricao} /> : null}
+              </div>
 
               {/* Responsável pela Próxima Etapa */}
               <div className="pt-3 border-t border-slate-100">

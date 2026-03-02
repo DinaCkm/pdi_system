@@ -2947,3 +2947,15 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar botão "Detalhes" no card do PDI na tela "PDIs da Equipe" do líder para acessar relatórios individuais dos empregados
 - [x] Alterar título do menu "Solicitações de Ajuste" para "Solicitações de Ajustes nas Ações/Equipe" (líder)
 - [x] Alterar título do menu "Solicitações da Equipe" para "Solicitações de Novas Ações/Equipe" (líder)
+- [x] Remover texto do parecer CKM (Observação CKM) do email enviado ao líder (sendEmailParecerCKMParaLider)
+- [x] Instalar TipTap e DOMPurify
+- [x] Criar componente RichTextEditor reutilizável
+- [x] Criar componente RichTextDisplay para exibição de HTML sanitizado
+- [x] Substituir textarea por RichTextEditor em AcoesNova.tsx (descritivo da ação)
+- [x] Substituir textarea por RichTextEditor em AcoesEditar.tsx (descritivo da ação)
+- [x] Substituir textarea por RichTextEditor em AcoesNovoFormulario.tsx (descritivo da ação)
+- [x] Substituir textarea por RichTextEditor em AdminDashboard.tsx (edição de ação no ajuste)
+- [x] Substituir textarea por RichTextEditor em SolicitacoesAcoes.tsx (descritivo da solicitação)
+- [x] Substituir textarea por RichTextEditor em SolicitacoesAcoes.tsx (parecer CKM)
+- [x] Atualizar exibição em Acoes.tsx, AcoesDetalhes.tsx, AcoesEquipe.tsx, PDITimeline.tsx, SolicitarAjusteModal, EvidenciaModal
+- [x] Tratar stripHtml no EvidenciaModal (link mailto)

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Eye, History, Calendar, Filter, X } from "lucide-react";
 import { HistoryModal } from "@/components/HistoryModal";
+import RichTextDisplay from '@/components/RichTextDisplay';
 
 export default function AcoesEquipe() {
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
@@ -196,7 +197,7 @@ export default function AcoesEquipe() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-base break-words">{acao.titulo}</h3>
-                    <p className="text-sm text-muted-foreground mt-1 break-words whitespace-pre-wrap max-w-full">{acao.descricao}</p>
+                    <div className="text-sm text-muted-foreground mt-1 break-words max-w-full">{acao.descricao ? <RichTextDisplay content={acao.descricao} /> : null}</div>
                     
                     <div className="flex flex-wrap items-center gap-3 mt-3 text-xs">
                       <span className="text-muted-foreground">

@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import RichTextDisplay from '@/components/RichTextDisplay';
 
 interface SolicitarAjusteModalMelhoradoProps {
   open: boolean;
@@ -191,9 +192,9 @@ export function SolicitarAjusteModalMelhorado({
               
               <div>
                 <span className="text-xs text-gray-500 uppercase tracking-wide">Descrição</span>
-                <p className="text-sm text-gray-900 mt-0.5 whitespace-pre-wrap">
-                  {currentData.descricao || "Não definida"}
-                </p>
+                <div className="text-sm text-gray-900 mt-0.5">
+                  {currentData.descricao ? <RichTextDisplay content={currentData.descricao} /> : "Não definida"}
+                </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">

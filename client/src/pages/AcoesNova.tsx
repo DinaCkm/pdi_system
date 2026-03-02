@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Sparkles, Loader2, Search, ChevronDown, X, Check } from 'lucide-react';
+import RichTextEditor from '@/components/RichTextEditor';
 
 export function AcoesNova() {
   const [, navigate] = useLocation();
@@ -686,13 +687,11 @@ export function AcoesNova() {
           {/* 5. DESCRIÇÃO */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
             <label htmlFor="descricao" style={{ fontWeight: '500' }}>Detalhes da ação</label>
-            <textarea
-              id="descricao"
-              name="descricao"
+            <RichTextEditor
               value={formData.descricao}
-              onChange={handleChange}
-              rows={8}
-              style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px', whiteSpace: 'pre-wrap' }}
+              onChange={(val) => setFormData(prev => ({ ...prev, descricao: val }))}
+              placeholder="Descreva o que fazer, como fazer e como comprovar..."
+              minHeight="150px"
             />
             <span style={{ fontSize: '12px', color: '#666' }}>
               A descrição inclui: o que fazer, aviso de flexibilidade e evidência esperada.

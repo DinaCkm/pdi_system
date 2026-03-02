@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { formatDateForInput, formatDateDisplay } from '@/lib/dateUtils';
+import RichTextEditor from '@/components/RichTextEditor';
 
 export default function AcoesEditar() {
   const [, navigate] = useLocation();
@@ -143,22 +144,11 @@ export default function AcoesEditar() {
           {/* Descrição */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <label htmlFor="descricao" style={{ fontWeight: '500' }}>Descrição</label>
-            <textarea
-              id="descricao"
-              name="descricao"
+            <RichTextEditor
               value={formData.descricao}
-              onChange={handleChange}
-              rows={3}
-              style={{ 
-                width: '100%', 
-                padding: '8px 12px', 
-                border: '1px solid #ccc', 
-                borderRadius: '4px', 
-                backgroundColor: 'white', 
-                color: 'black', 
-                fontSize: '14px', 
-                fontFamily: 'inherit' 
-              }}
+              onChange={(val) => setFormData(prev => ({ ...prev, descricao: val }))}
+              placeholder="Descreva a ação..."
+              minHeight="100px"
             />
           </div>
 

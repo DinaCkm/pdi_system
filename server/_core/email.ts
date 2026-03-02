@@ -125,7 +125,6 @@ DETALHES DA SOLICITAÇÃO:
 - Colaborador: ${colaboradorName}${deptText}
 - Título da Ação: ${tituloAcao}
 - Parecer CKM: ${tipoParecer}
-- Observação CKM: ${parecerTexto}
 
 Acesse o sistema Evoluir CKM para avaliar e registrar seu parecer sobre esta solicitação.
 ${AVISO_NAO_RESPONDA}

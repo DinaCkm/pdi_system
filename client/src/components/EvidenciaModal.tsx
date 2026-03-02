@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Loader2, Mail, CheckCircle, Copy, AlertTriangle, ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { stripHtml } from '@/components/RichTextDisplay';
 
 interface EvidenciaModalProps {
   open: boolean;
@@ -137,7 +138,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
         : new Date().toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' });
       
       const corpo = encodeURIComponent(
-        `ID: ${evidenceIdFormatted}\n\nCompetência: ${macrocompetencia || 'N/A'}\n\nDescrição: ${descricao || 'N/A'}\n\nData de Conclusão: ${dataFormatada}\n\nSeguem anexas as evidências.`
+        `ID: ${evidenceIdFormatted}\n\nCompetência: ${macrocompetencia || 'N/A'}\n\nDescrição: ${stripHtml(descricao || 'N/A')}\n\nData de Conclusão: ${dataFormatada}\n\nSeguem anexas as evidências.`
       );
       const mailtoLink = `mailto:${adminEmail}?subject=${assunto}&body=${corpo}`;
       

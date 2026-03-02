@@ -8,6 +8,8 @@ import {
   Search, ChevronDown, X, Check, Send, Eye, MessageSquare,
   Loader2, Filter, ChevronRight, User, Users, Mail, RotateCcw, History, Info
 } from 'lucide-react';
+import RichTextEditor from '@/components/RichTextEditor';
+import RichTextDisplay from '@/components/RichTextDisplay';
 
 // ============= STATUS HELPERS =============
 const statusLabels: Record<string, string> = {
@@ -395,12 +397,12 @@ function FormularioSolicitacao({ onClose, onSuccess }: { onClose: () => void; on
         {/* Descrição */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">Descrição</label>
-          <textarea
-            value={formData.descricao}
-            onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[100px] overflow-auto"
-            placeholder="Descreva o que fazer, como fazer e como comprovar..."
-          />
+        <RichTextEditor
+          value={formData.descricao}
+          onChange={(val) => setFormData({ ...formData, descricao: val })}
+          placeholder="Descreva o que fazer, como fazer e como comprovar..."
+          minHeight="100px"
+        />
         </div>
 
         {/* Prazo */}
@@ -483,7 +485,7 @@ function ParecerCKMForm({ solicitacao, onSuccess }: { solicitacao: any; onSucces
                       {ultimaRodada.ckm.parecerTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{ultimaRodada.ckm.parecerTexto}</p>
+                  <div className="text-sm text-gray-700">{ultimaRodada.ckm.parecerTexto ? <RichTextDisplay content={ultimaRodada.ckm.parecerTexto} /> : null}</div>
                   {ultimaRodada.ckm.em && <p className="text-xs text-gray-400 mt-1">Emitido em: {new Date(ultimaRodada.ckm.em).toLocaleDateString('pt-BR')} às {new Date(ultimaRodada.ckm.em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>}
                 </div>
               )}
@@ -519,11 +521,11 @@ function ParecerCKMForm({ solicitacao, onSuccess }: { solicitacao: any; onSucces
             Sem Aderência
           </button>
         </div>
-        <textarea
+        <RichTextEditor
           value={parecerTexto}
-          onChange={(e) => setParecerTexto(e.target.value)}
+          onChange={(val) => setParecerTexto(val)}
           placeholder="Justifique seu parecer técnico..."
-          className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm min-h-[80px] overflow-auto"
+          minHeight="80px"
         />
         <button
           onClick={() => {
@@ -904,7 +906,7 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1 ${rodada.ckm.parecerTipo === 'com_aderencia' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
                                   {rodada.ckm.parecerTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
                                 </span>
-                                {rodada.ckm.parecerTexto && <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{rodada.ckm.parecerTexto}</p>}
+                                {rodada.ckm.parecerTexto && <div className="text-sm text-gray-600 mt-1"><RichTextDisplay content={rodada.ckm.parecerTexto} /></div>}
                                 <p className="text-xs text-gray-400 mt-1">Em: {formatDate(rodada.ckm.em)}</p>
                               </>
                             )}
@@ -969,7 +971,7 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                     {solicitacao.ckmParecerTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
                   </span>
                 </div>
-                {!isColaboradorView && <p className="text-sm text-gray-700 whitespace-pre-wrap">{solicitacao.ckmParecerTexto}</p>}
+                {!isColaboradorView && <div className="text-sm text-gray-700">{solicitacao.ckmParecerTexto ? <RichTextDisplay content={solicitacao.ckmParecerTexto} /> : null}</div>}
                 {!isColaboradorView && <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.ckmNome} em {formatDate(solicitacao.ckmParecerEm)}</p>}
               </div>
             )}

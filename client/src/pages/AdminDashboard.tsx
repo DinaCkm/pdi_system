@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from '@/components/RichTextEditor';
 import { toast } from "sonner";
 import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter, TrendingUp, ArrowRight, Building2, User, Calendar, Timer, Bell } from "lucide-react";
 import { Link } from "wouter";
@@ -825,15 +826,15 @@ export default function AdminDashboard() {
 
               <div>
                 <label className="text-sm font-semibold">Descrição:</label>
-                <Textarea
+                <RichTextEditor
                   value={editingActionData.descricao || ""}
-                  onChange={(e) =>
+                  onChange={(val) =>
                     setEditingActionData({
                       ...editingActionData,
-                      descricao: e.target.value,
+                      descricao: val,
                     })
                   }
-                  className="mt-1"
+                  minHeight="100px"
                 />
               </div>
 
