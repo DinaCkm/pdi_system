@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import RichTextDisplay from '@/components/RichTextDisplay';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MessageSquare, Clock, User, FileText, Info, ArrowRight, Target, Calendar, FileEdit, Filter, X } from "lucide-react";
@@ -356,9 +357,9 @@ export default function SolicitacoesEquipe() {
                   {/* Justificativa */}
                   <div>
                     <h4 className="font-medium mb-2">Justificativa do Colaborador</h4>
-                    <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
-                      {solicitacao.justificativa || "Sem justificativa"}
-                    </p>
+                    <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+                      <RichTextDisplay content={solicitacao.justificativa || "Sem justificativa"} />
+                    </div>
                   </div>
 
                   {/* Campos a Ajustar - Mostrando DE/PARA */}

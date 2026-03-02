@@ -6,8 +6,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import RichTextEditor from '@/components/RichTextEditor';
+import { stripHtml } from '@/components/RichTextDisplay';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
@@ -91,7 +92,8 @@ export function SolicitarAjusteModalMelhorado({
       return;
     }
 
-    if (justificativa.trim().length < 10) {
+    const justificativaText = stripHtml(justificativa).trim();
+    if (justificativaText.length < 10) {
       toast.error("Justificativa deve ter no mínimo 10 caracteres");
       return;
     }
@@ -309,13 +311,11 @@ export function SolicitarAjusteModalMelhorado({
             <Label htmlFor="justificativa" className="text-sm font-medium">
               Descreva detalhadamente o que você gostaria de alterar *
             </Label>
-            <Textarea
-              id="justificativa"
+            <RichTextEditor
               value={justificativa}
-              onChange={(e) => setJustificativa(e.target.value)}
-              placeholder={`Explique o que você gostaria de alterar nos campos selecionados. Por exemplo:\n\n• Se selecionou Prazo: "Gostaria de alterar o prazo de 15/03/2026 para 30/04/2026 porque..."\n• Se selecionou Título: "Solicito alteração do título para 'Novo Título' porque..."`}
-              disabled={hasPendingRequest}
-              className="mt-2 min-h-[120px]"
+              onChange={setJustificativa}
+              placeholder="Explique o que você gostaria de alterar nos campos selecionados..."
+              minHeight="120px"
             />
             <p className="text-xs text-gray-500 mt-1">
               Mínimo 10 caracteres. Seja específico sobre o que deseja alterar e o motivo.

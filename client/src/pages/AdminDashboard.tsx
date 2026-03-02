@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import RichTextEditor from '@/components/RichTextEditor';
+import RichTextDisplay from '@/components/RichTextDisplay';
 import { toast } from "sonner";
 import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter, TrendingUp, ArrowRight, Building2, User, Calendar, Timer, Bell } from "lucide-react";
 import { Link } from "wouter";
@@ -606,7 +607,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-gray-700">Justificativa:</p>
-                    <p className="text-sm text-gray-600 mt-1 bg-blue-50 p-2 rounded border border-blue-100">{adjustment.justificativa}</p>
+                    <div className="text-sm text-gray-600 mt-1 bg-blue-50 p-2 rounded border border-blue-100"><RichTextDisplay content={adjustment.justificativa || ''} /></div>
                   </div>
                   
                   {/* Mostrar comentários do líder */}
@@ -748,7 +749,7 @@ export default function AdminDashboard() {
 
             <div>
               <p className="text-sm font-semibold">Justificativa:</p>
-              <p className="text-sm text-gray-600 mt-1">{selectedAdjustment?.justificativa}</p>
+              <div className="text-sm text-gray-600 mt-1"><RichTextDisplay content={selectedAdjustment?.justificativa || ''} /></div>
             </div>
 
             <div>

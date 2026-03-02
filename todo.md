@@ -2959,3 +2959,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Substituir textarea por RichTextEditor em SolicitacoesAcoes.tsx (parecer CKM)
 - [x] Atualizar exibição em Acoes.tsx, AcoesDetalhes.tsx, AcoesEquipe.tsx, PDITimeline.tsx, SolicitarAjusteModal, EvidenciaModal
 - [x] Tratar stripHtml no EvidenciaModal (link mailto)
+- [x] Adicionar Rich Text Editor ao campo de justificativa da solicitação de ajuste (edição e exibição)
