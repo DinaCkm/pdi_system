@@ -2945,3 +2945,5 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Bug: Dialog "Avaliar Solicitação de Ajuste" mostra JSON bruto em "Campos a Alterar" em vez de formatar os campos selecionados
 
 - [x] Adicionar botão "Detalhes" no card do PDI na tela "PDIs da Equipe" do líder para acessar relatórios individuais dos empregados
+- [x] Alterar título do menu "Solicitações de Ajuste" para "Solicitações de Ajustes nas Ações/Equipe" (líder)
+- [x] Alterar título do menu "Solicitações da Equipe" para "Solicitações de Novas Ações/Equipe" (líder)
