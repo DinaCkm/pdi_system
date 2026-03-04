@@ -474,7 +474,7 @@ function ParecerCKMForm({ solicitacao, onSuccess }: { solicitacao: any; onSucces
                   <AlertTriangle className="h-4 w-4 text-orange-600" />
                   <span className="text-xs font-bold text-orange-700 uppercase tracking-wider">Motivo da Revisão (Líder)</span>
                 </div>
-                <p className="text-sm text-orange-800 whitespace-pre-wrap">{ultimaRodada.motivoDevolucao || solicitacao.liderMotivoRevisao}</p>
+                <div className="text-sm text-orange-800"><RichTextDisplay content={ultimaRodada.motivoDevolucao || solicitacao.liderMotivoRevisao} /></div>
               </div>
               {/* Parecer original do CKM */}
               {ultimaRodada.ckm?.parecerTipo && (
@@ -860,7 +860,7 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div><span className="text-gray-500">Competência:</span> <strong>{solicitacao.macroNome || '-'}</strong></div>
               <div><span className="text-gray-500">Foco:</span> <strong>{solicitacao.microcompetencia || '-'}</strong></div>
-              <div className="md:col-span-2"><span className="text-gray-500">Descrição:</span> <p className="mt-1 text-gray-700 whitespace-pre-wrap">{solicitacao.descricao || 'Sem descrição'}</p></div>
+              <div className="md:col-span-2"><span className="text-gray-500">Descrição:</span> <div className="mt-1 text-gray-700">{solicitacao.descricao ? <RichTextDisplay content={solicitacao.descricao} /> : 'Sem descrição'}</div></div>
             </div>
           </div>
 
@@ -893,7 +893,7 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                         {rodada.motivoRevisao && (
                           <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 mb-2">
                             <p className="text-xs font-bold text-amber-700 mb-1">Motivo da Solicitação de Revisão:</p>
-                            <p className="text-sm text-amber-800 whitespace-pre-wrap">{rodada.motivoRevisao}</p>
+                            <div className="text-sm text-amber-800"><RichTextDisplay content={rodada.motivoRevisao} /></div>
                           </div>
                         )}
 
@@ -922,7 +922,7 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1 ${rodada.gestor.decisao === 'aprovado' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
                                   {rodada.gestor.decisao === 'aprovado' ? 'Aprovado' : 'Reprovado'}
                                 </span>
-                                {rodada.gestor.justificativa && <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{rodada.gestor.justificativa}</p>}
+                                {rodada.gestor.justificativa && <div className="text-sm text-gray-600 mt-1"><RichTextDisplay content={rodada.gestor.justificativa} /></div>}
                                 <p className="text-xs text-gray-400 mt-1">Em: {formatDate(rodada.gestor.em)}</p>
                               </>
                             )}
@@ -938,7 +938,7 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1 bg-purple-200 text-purple-800">
                                   Revisão Solicitada
                                 </span>
-                                {rodada.rh.justificativa && <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{rodada.rh.justificativa}</p>}
+                                {rodada.rh.justificativa && <div className="text-sm text-gray-600 mt-1"><RichTextDisplay content={rodada.rh.justificativa} /></div>}
                                 <p className="text-xs text-gray-400 mt-1">Por: {rodada.rh.nome} em {formatDate(rodada.rh.em)}</p>
                               </>
                             )}
@@ -985,7 +985,7 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                     {solicitacao.gestorDecisao === 'aprovado' ? 'De Acordo' : solicitacao.gestorDecisao === 'encerrada' ? 'Encerrada' : 'Reprovado'}
                   </span>
                 </div>
-                {!isColaboradorView && <p className="text-sm text-gray-700 whitespace-pre-wrap">{solicitacao.gestorJustificativa}</p>}
+                {!isColaboradorView && <div className="text-sm text-gray-700">{solicitacao.gestorJustificativa ? <RichTextDisplay content={solicitacao.gestorJustificativa} /> : null}</div>}
                 {!isColaboradorView && <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.gestorNome} em {formatDate(solicitacao.gestorDecisaoEm)}</p>}
               </div>
             )}
@@ -999,7 +999,7 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                     {solicitacao.rhDecisao === 'aprovado' ? 'Aprovado e Incluído no PDI' : 'Vetado'}
                   </span>
                 </div>
-                {!isColaboradorView && <p className="text-sm text-gray-700 whitespace-pre-wrap">{solicitacao.rhJustificativa}</p>}
+                {!isColaboradorView && <div className="text-sm text-gray-700">{solicitacao.rhJustificativa ? <RichTextDisplay content={solicitacao.rhJustificativa} /> : null}</div>}
                 {!isColaboradorView && <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.rhNome} em {formatDate(solicitacao.rhDecisaoEm)}</p>}
               </div>
             )}

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Loader2, FileText, Download, CheckCircle, XCircle, Eye, Calendar, User, Building2, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import RichTextDisplay from '@/components/RichTextDisplay';
 
 type DialogType = 'none' | 'view' | 'aprovar' | 'reprovar';
 
@@ -242,7 +243,7 @@ export default function EvidenciasEquipe() {
                       {text.titulo && (
                         <p className="font-medium mb-2">{text.titulo}</p>
                       )}
-                      <p className="text-sm whitespace-pre-wrap">{text.texto}</p>
+                      <div className="text-sm"><RichTextDisplay content={text.texto} /></div>
                     </div>
                   ))}
                 </div>
@@ -253,7 +254,7 @@ export default function EvidenciasEquipe() {
                 <div className="space-y-2">
                   <Label>Descrição</Label>
                   <div className="p-4 border rounded-lg bg-muted/50">
-                    <p className="text-sm whitespace-pre-wrap">{selectedEvidence.descricao}</p>
+                    <div className="text-sm"><RichTextDisplay content={selectedEvidence.descricao} /></div>
                   </div>
                 </div>
               )}

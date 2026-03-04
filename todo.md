@@ -2964,3 +2964,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Implementar envio de email com motivo da rejeição nos fluxos de rejeição de evidência e ajuste (substituído por email genérico)
 - [x] Padronizar emails de resposta de solicitação de ajuste (aprovação e rejeição) para texto genérico "Sua solicitação foi respondida"
 - [x] Padronizar emails de resposta de solicitação de nova ação (aprovação e rejeição) para texto genérico "Sua solicitação foi respondida"
+- [x] Auditoria: corrigir todos os pontos onde textos rich text (HTML) são exibidos como texto bruto em vez de renderizados

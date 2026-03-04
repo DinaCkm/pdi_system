@@ -283,9 +283,9 @@ export default function MinhasSolicitacoes() {
                       <FileText className="h-4 w-4" />
                       Sua justificativa:
                     </h4>
-                    <p className="text-gray-700 whitespace-pre-wrap">
-                      {solicitacao.justificativa || "Sem justificativa informada"}
-                    </p>
+                    <div className="text-gray-700">
+                      {solicitacao.justificativa ? <RichTextDisplay content={solicitacao.justificativa} /> : "Sem justificativa informada"}
+                    </div>
                   </div>
 
                   {/* Resposta do Admin (quando aprovada ou reprovada) */}

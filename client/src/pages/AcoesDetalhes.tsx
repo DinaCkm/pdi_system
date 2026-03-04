@@ -180,7 +180,7 @@ export default function AcoesDetalhes() {
               {ev.status === 'reprovada' && <span style={{ color: '#dc2626', display: 'flex', gap: '6px', fontSize: '14px', fontWeight: '700' }}><XCircle size={18}/> RECUSADA</span>}
             </div>
             
-            <p style={{ fontSize: '15px', color: '#374151', marginBottom: '16px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>{ev.descricao}</p>
+            <div style={{ fontSize: '15px', color: '#374151', marginBottom: '16px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>{ev.descricao ? <RichTextDisplay content={ev.descricao} /> : null}</div>
             
             {/* Motivo da Rejeição - Exibido quando a evidência foi reprovada */}
             {ev.status === 'reprovada' && ev.justificativaAdmin && (
