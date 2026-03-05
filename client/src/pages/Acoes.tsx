@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, Edit, Trash2, Eye, History, Building, Target, Calendar, Filter, X } from "lucide-react";
 import { formatDateDisplay } from "@/lib/dateUtils";
 import { useLocation, useSearch } from "wouter";
-import RichTextDisplay from '@/components/RichTextDisplay';
+import RichTextDisplay, { stripHtml } from '@/components/RichTextDisplay';
 import { HistoryModal } from "@/components/HistoryModal";
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -402,7 +402,7 @@ export default function Acoes() {
                             overflow: "hidden",
                             textOverflow: "ellipsis"
                         }}>
-                            {acao.descricao ? <RichTextDisplay content={acao.descricao} /> : "Sem detalhes adicionais."}
+                            {acao.descricao ? stripHtml(acao.descricao) : "Sem detalhes adicionais."}
                         </p>
                     </div>
 

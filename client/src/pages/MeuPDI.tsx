@@ -93,7 +93,7 @@ export default function MeuPDI() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg truncate">{pdi.titulo}</CardTitle>
+                    <CardTitle className="text-base leading-snug break-words">{pdi.titulo}</CardTitle>
                     <CardDescription className="mt-1">
                       {pdi.ciclo ? pdi.ciclo.nome : "Sem ciclo"}
                     </CardDescription>
