@@ -1,0 +1,30 @@
+{
+  "query": "\nSELECT p.id AS pdi_id, p.createdBy\nFROM pdis p\nJOIN users u ON p.colaboradorId = u.id\nLEFT JOIN pdi_validacoes pv ON pv.pdiId = p.id\nWHERE u.role = 'lider' AND pv.id IS NULL\nLIMIT 5;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute \nSELECT p.id AS pdi_id, p.createdBy\nFROM pdis p\nJOIN users u ON p.colaboradorId = u.id\nLEFT JOIN pdi_validacoes pv ON pv.pdiId = p.id\nWHERE u.role = 'lider' AND pv.id IS NULL\nLIMIT 5;\n",
+  "rows": [
+    {
+      "pdi_id": "1020089",
+      "createdBy": "1"
+    },
+    {
+      "pdi_id": "1020091",
+      "createdBy": "1"
+    },
+    {
+      "pdi_id": "1020093",
+      "createdBy": "1"
+    },
+    {
+      "pdi_id": "1020094",
+      "createdBy": "1"
+    },
+    {
+      "pdi_id": "1020096",
+      "createdBy": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "pdi_id\tcreatedBy\n1020089\t1\n1020091\t1\n1020093\t1\n1020094\t1\n1020096\t1\n",
+  "stderr": "",
+  "execution_time_ms": 351
+}

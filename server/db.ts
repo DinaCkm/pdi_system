@@ -520,7 +520,26 @@ export async function createPDI(data: {
     updatedAt: new Date(),
   });
 
-  return result[0]?.insertId || 0;
+  const pdiId = result[0]?.insertId || 0;
+
+  // Auto-validar PDI se o colaborador for líder (líderes não precisam de aprovação do superior)
+  if (pdiId) {
+    try {
+      const [colaborador] = await db.select().from(users).where(eq(users.id, data.colaboradorId));
+      if (colaborador && colaborador.role === 'lider') {
+        await db.insert(pdiValidacoes).values({
+          pdiId,
+          liderId: data.createdBy,
+          justificativa: 'Validação automática — PDI de líder não requer aprovação do superior hierárquico',
+        });
+        console.log(`[PDI] Auto-validação criada para PDI ${pdiId} (colaborador líder: ${colaborador.name})`);
+      }
+    } catch (err) {
+      console.error(`[PDI] Erro ao auto-validar PDI ${pdiId} de líder:`, err);
+    }
+  }
+
+  return pdiId;
 }
 
 export async function updatePDI(

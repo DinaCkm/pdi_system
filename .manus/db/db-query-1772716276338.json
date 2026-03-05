@@ -1,0 +1,9 @@
+{
+  "query": "\nINSERT INTO pdi_validacoes (pdiId, liderId, aprovadoEm, justificativa)\nSELECT p.id, p.createdBy, NOW(), 'Validação automática — PDI de líder não requer aprovação do superior hierárquico'\nFROM pdis p\nJOIN users u ON p.colaboradorId = u.id\nLEFT JOIN pdi_validacoes pv ON pv.pdiId = p.id\nWHERE u.role = 'lider' AND pv.id IS NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute \nINSERT INTO pdi_validacoes (pdiId, liderId, aprovadoEm, justificativa)\nSELECT p.id, p.createdBy, NOW(), 'Validação automática — PDI de líder não requer aprovação do superior hierárquico'\nFROM pdis p\nJOIN users u ON p.colaboradorId = u.id\nLEFT JOIN pdi_validacoes pv ON pv.pdiId = p.id\nWHERE u.role = 'lider' AND pv.id IS NULL;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 382
+}

@@ -1,0 +1,28 @@
+{
+  "query": "SELECT id, name, email, role FROM users WHERE role = 'admin';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT id, name, email, role FROM users WHERE role = 'admin';",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Equipe CKM Talents",
+      "email": "relacionamento@ckmtalents.net",
+      "role": "admin"
+    },
+    {
+      "id": "1380001",
+      "name": "Adm2",
+      "email": "anamaria@makiyama.com.br",
+      "role": "admin"
+    },
+    {
+      "id": "1440001",
+      "name": "AdmAdm",
+      "email": "adriana.deus@makiyama.com.br",
+      "role": "admin"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\n1\tEquipe CKM Talents\trelacionamento@ckmtalents.net\tadmin\n1380001\tAdm2\tanamaria@makiyama.com.br\tadmin\n1440001\tAdmAdm\tadriana.deus@makiyama.com.br\tadmin\n",
+  "stderr": "",
+  "execution_time_ms": 355
+}

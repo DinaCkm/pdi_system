@@ -1,0 +1,14 @@
+{
+  "query": "\nSELECT \n  CASE WHEN pv.id IS NOT NULL THEN 'COM_VALIDACAO' ELSE 'SEM_VALIDACAO' END AS estado,\n  COUNT(*) AS quantidade\nFROM pdis p\nJOIN users u ON p.colaboradorId = u.id\nLEFT JOIN pdi_validacoes pv ON pv.pdiId = p.id\nWHERE u.role = 'lider'\nGROUP BY CASE WHEN pv.id IS NOT NULL THEN 'COM_VALIDACAO' ELSE 'SEM_VALIDACAO' END;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute \nSELECT \n  CASE WHEN pv.id IS NOT NULL THEN 'COM_VALIDACAO' ELSE 'SEM_VALIDACAO' END AS estado,\n  COUNT(*) AS quantidade\nFROM pdis p\nJOIN users u ON p.colaboradorId = u.id\nLEFT JOIN pdi_validacoes pv ON pv.pdiId = p.id\nWHERE u.role = 'lider'\nGROUP BY CASE WHEN pv.id IS NOT NULL THEN 'COM_VALIDACAO' ELSE 'SEM_VALIDACAO' END;\n",
+  "rows": [
+    {
+      "estado": "COM_VALIDACAO",
+      "quantidade": "46"
+    }
+  ],
+  "messages": [],
+  "stdout": "estado\tquantidade\nCOM_VALIDACAO\t46\n",
+  "stderr": "",
+  "execution_time_ms": 357
+}

@@ -1,0 +1,15 @@
+{
+  "query": "\nSELECT COUNT(*) as total_pdis_lideres,\n  SUM(CASE WHEN pv.id IS NOT NULL THEN 1 ELSE 0 END) as com_validacao,\n  SUM(CASE WHEN pv.id IS NULL THEN 1 ELSE 0 END) as sem_validacao\nFROM pdis p\nJOIN users u ON p.colaboradorId = u.id\nLEFT JOIN pdi_validacoes pv ON pv.pdiId = p.id\nWHERE u.role = 'lider';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute \nSELECT COUNT(*) as total_pdis_lideres,\n  SUM(CASE WHEN pv.id IS NOT NULL THEN 1 ELSE 0 END) as com_validacao,\n  SUM(CASE WHEN pv.id IS NULL THEN 1 ELSE 0 END) as sem_validacao\nFROM pdis p\nJOIN users u ON p.colaboradorId = u.id\nLEFT JOIN pdi_validacoes pv ON pv.pdiId = p.id\nWHERE u.role = 'lider';\n",
+  "rows": [
+    {
+      "total_pdis_lideres": "46",
+      "com_validacao": "46",
+      "sem_validacao": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_pdis_lideres\tcom_validacao\tsem_validacao\n46\t46\t0\n",
+  "stderr": "",
+  "execution_time_ms": 374
+}
