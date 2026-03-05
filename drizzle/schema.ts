@@ -223,10 +223,16 @@ export const solicitacoesAcoes = mysqlTable("solicitacoes_acoes", {
 	titulo: varchar({ length: 255 }).notNull(),
 	descricao: text(),
 	prazo: date("prazo").notNull(),
+	// Campos informativos para análise de aprovação
+	porqueFazer: text(),
+	ondeFazer: text(),
+	linkEvento: varchar({ length: 1000 }),
+	previsaoInvestimento: varchar({ length: 100 }),
+	outrosProfissionaisParticipando: mysqlEnum(['sim','nao']),
 	// Quem solicitou
 	solicitanteId: int().notNull(),
 	// Fluxo de aprovação
-	statusGeral: mysqlEnum(['aguardando_ckm','aguardando_gestor','aguardando_rh','aprovada','vetada_gestor','vetada_rh','em_revisao','encerrada_lider']).default('aguardando_ckm').notNull(),
+	statusGeral: mysqlEnum(['aguardando_ckm','aguardando_gestor','aguardando_rh','aprovada','vetada_gestor','vetada_rh','em_revisao','encerrada_lider','aguardando_solicitante']).default('aguardando_ckm').notNull(),
 	// Controle de rodadas de revisão
 	rodadaAtual: int().default(1).notNull(),
 	historicoRodadas: text(),

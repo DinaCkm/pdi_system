@@ -1004,6 +1004,12 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         titulo: z.string().min(1, "Título é obrigatório"),
         descricao: z.string().optional(),
         prazo: z.string(),
+        // Campos informativos para análise de aprovação
+        porqueFazer: z.string().min(1, "'Por que fazer' é obrigatório"),
+        ondeFazer: z.string().min(1, "'Onde fazer' é obrigatório"),
+        linkEvento: z.string().optional(),
+        previsaoInvestimento: z.string().min(1, "'Previsão de investimento' é obrigatório"),
+        outrosProfissionaisParticipando: z.enum(['sim', 'nao']),
       }))
       .mutation(async ({ ctx, input }) => {
         const id = await db.createSolicitacaoAcao({
@@ -1027,6 +1033,57 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         } catch (e) { console.error('Erro ao notificar admins:', e); }
 
         return { id, success: true };
+      }),
+
+    // Reenviar solicitação após revisão do RH (Solicitante edita e reenvia)
+    reenviar: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        titulo: z.string().min(1, "Título é obrigatório"),
+        descricao: z.string().optional(),
+        prazo: z.string(),
+        porqueFazer: z.string().min(1, "'Por que fazer' é obrigatório"),
+        ondeFazer: z.string().min(1, "'Onde fazer' é obrigatório"),
+        linkEvento: z.string().optional(),
+        previsaoInvestimento: z.string().min(1, "'Previsão de investimento' é obrigatório"),
+        outrosProfissionaisParticipando: z.enum(['sim', 'nao']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const solicitacao = await db.getSolicitacaoById(input.id);
+        if (!solicitacao) throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
+        if (solicitacao.solicitanteId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas o solicitante pode reenviar' });
+        }
+        if (solicitacao.statusGeral !== 'aguardando_solicitante') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação não está aguardando revisão do solicitante' });
+        }
+
+        await db.reenviarSolicitacao(input.id, {
+          titulo: input.titulo,
+          descricao: input.descricao || '',
+          prazo: new Date(input.prazo),
+          porqueFazer: input.porqueFazer,
+          ondeFazer: input.ondeFazer,
+          linkEvento: input.linkEvento || null,
+          previsaoInvestimento: input.previsaoInvestimento,
+          outrosProfissionaisParticipando: input.outrosProfissionaisParticipando,
+        });
+
+        // Notificar admins (CKM) sobre reenvio
+        try {
+          const admins = await db.getUsersByRole('admin');
+          for (const admin of admins) {
+            await db.createNotification({
+              destinatarioId: admin.id,
+              tipo: 'solicitacao_acao_nova',
+              titulo: 'Solicitação Reenviada — Nova Análise (Rodada 2)',
+              mensagem: `${ctx.user.name} reenviou a solicitação de ação "${input.titulo}" após revisão solicitada pelo RH. Aguardando novo parecer técnico.`,
+              referenciaId: input.id,
+            });
+          }
+        } catch (e) { console.error('Erro ao notificar admins sobre reenvio:', e); }
+
+        return { success: true };
       }),
 
     // Listar solicitações (adaptativo por papel)

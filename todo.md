@@ -2978,3 +2978,17 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar botão "Ecossistema do Bem - Líderes e Sucessores" no menu lateral visível apenas para líderes com link para https://ecossistemadobem.manus.space
 
 - [x] Compactar card do usuário no sidebar (reduzir tamanho do avatar) e garantir scroll no menu lateral para que todos os itens sejam visíveis
+
+## Novos Campos Informativos na Solicitação de Nova Ação (apenas para análise de aprovação)
+- [x] Adicionar 5 colunas na tabela solicitacoes_acoes: porqueFazer, ondeFazer, linkEvento, previsaoInvestimento, outrosProfissionaisParticipando
+- [x] Executar migração do banco de dados (pnpm db:push)
+- [x] Atualizar procedure solicitacoesAcoes.criar no backend para aceitar os novos campos
+- [x] Atualizar FormularioSolicitacao no SolicitacoesAcoes.tsx com os 5 novos campos
+- [x] Exibir os novos campos nos cards de análise (SolicitacaoCard) para CKM, Gestor e RH
+- [x] Escrever testes vitest para os novos campos
+- [x] Garantir que no fluxo de revisão (quando RH solicita revisão), o solicitante veja os 5 campos pré-preenchidos e editáveis
+- [x] Ajustar fluxo de revisão: quando RH solicita revisão, status volta para 'aguardando_solicitante' (não para CKM)
+- [x] Criar novo status 'aguardando_solicitante' no enum do schema
+- [x] Criar procedure backend para solicitante reenviar solicitação editada (com novos campos)
+- [x] No frontend, exibir formulário de edição pré-preenchido para o solicitante quando status = aguardando_solicitante
+- [x] Tornar obrigatórios os campos: porqueFazer, ondeFazer, previsaoInvestimento, outrosProfissionaisParticipando (linkEvento permanece opcional)

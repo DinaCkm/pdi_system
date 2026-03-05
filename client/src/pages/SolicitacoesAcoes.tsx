@@ -21,6 +21,7 @@ const statusLabels: Record<string, string> = {
   vetada_rh: 'Vetada pelo RH',
   em_revisao: 'Em Revisão',
   encerrada_lider: 'Encerrada pelo Líder',
+  aguardando_solicitante: 'Aguardando Revisão do Solicitante',
 };
 
 const statusColors: Record<string, string> = {
@@ -32,6 +33,7 @@ const statusColors: Record<string, string> = {
   vetada_rh: 'bg-red-100 text-red-800 border-red-300',
   em_revisao: 'bg-purple-100 text-purple-800 border-purple-300',
   encerrada_lider: 'bg-gray-100 text-gray-800 border-gray-300',
+  aguardando_solicitante: 'bg-amber-100 text-amber-800 border-amber-300',
 };
 
 const statusIcons: Record<string, any> = {
@@ -43,6 +45,7 @@ const statusIcons: Record<string, any> = {
   vetada_rh: XCircle,
   em_revisao: RotateCcw,
   encerrada_lider: XCircle,
+  aguardando_solicitante: RotateCcw,
 };
 
 function formatDate(d: any) {
@@ -176,6 +179,11 @@ function FormularioSolicitacao({ onClose, onSuccess }: { onClose: () => void; on
     titulo: '',
     descricao: '',
     prazo: '',
+    porqueFazer: '',
+    ondeFazer: '',
+    linkEvento: '',
+    previsaoInvestimento: '',
+    outrosProfissionaisParticipando: '' as '' | 'sim' | 'nao',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -239,6 +247,10 @@ function FormularioSolicitacao({ onClose, onSuccess }: { onClose: () => void; on
     if (!formData.macroId) e.macroId = 'Selecione a competência';
     if (!formData.titulo.trim()) e.titulo = 'Título é obrigatório';
     if (!formData.prazo) e.prazo = 'Prazo é obrigatório';
+    if (!formData.porqueFazer.trim()) e.porqueFazer = '"Por que fazer" é obrigatório';
+    if (!formData.ondeFazer.trim()) e.ondeFazer = '"Onde fazer" é obrigatório';
+    if (!formData.previsaoInvestimento.trim()) e.previsaoInvestimento = '"Previsão de investimento" é obrigatório';
+    if (!formData.outrosProfissionaisParticipando) e.outrosProfissionaisParticipando = 'Selecione Sim ou Não';
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -253,6 +265,11 @@ function FormularioSolicitacao({ onClose, onSuccess }: { onClose: () => void; on
       titulo: formData.titulo,
       descricao: formData.descricao || undefined,
       prazo: formData.prazo,
+      porqueFazer: formData.porqueFazer,
+      ondeFazer: formData.ondeFazer,
+      linkEvento: formData.linkEvento || undefined,
+      previsaoInvestimento: formData.previsaoInvestimento,
+      outrosProfissionaisParticipando: formData.outrosProfissionaisParticipando as 'sim' | 'nao',
     });
   }
 
@@ -415,6 +432,98 @@ function FormularioSolicitacao({ onClose, onSuccess }: { onClose: () => void; on
             className={`w-full border rounded-lg px-3 py-2.5 text-sm ${errors.prazo ? 'border-red-400' : 'border-gray-300'}`}
           />
           {errors.prazo && <p className="text-xs text-red-500 mt-1">{errors.prazo}</p>}
+        </div>
+
+        {/* === CAMPOS INFORMATIVOS PARA ANÁLISE === */}
+        <div className="border-t border-blue-200 pt-4 mt-2">
+          <h4 className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Informações para Análise de Aprovação
+          </h4>
+
+          {/* 01 - Por que fazer */}
+          <div className="mb-3">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">01 - Por que fazer? *</label>
+            <textarea
+              value={formData.porqueFazer}
+              onChange={(e) => setFormData({ ...formData, porqueFazer: e.target.value })}
+              className={`w-full border rounded-lg px-3 py-2.5 text-sm min-h-[80px] ${errors.porqueFazer ? 'border-red-400' : 'border-gray-300'}`}
+              placeholder="Justifique a necessidade desta ação de desenvolvimento..."
+            />
+            {errors.porqueFazer && <p className="text-xs text-red-500 mt-1">{errors.porqueFazer}</p>}
+          </div>
+
+          {/* 02 - Onde fazer */}
+          <div className="mb-3">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">02 - Onde fazer? *</label>
+            <input
+              type="text"
+              value={formData.ondeFazer}
+              onChange={(e) => setFormData({ ...formData, ondeFazer: e.target.value })}
+              className={`w-full border rounded-lg px-3 py-2.5 text-sm ${errors.ondeFazer ? 'border-red-400' : 'border-gray-300'}`}
+              placeholder="Se externo, informe a empresa ou fornecedor (ex: SENAI, FGV, Coursera...)"
+            />
+            {errors.ondeFazer && <p className="text-xs text-red-500 mt-1">{errors.ondeFazer}</p>}
+          </div>
+
+          {/* 03 - Link do evento (opcional) */}
+          <div className="mb-3">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">03 - Link do treinamento/curso/congresso/evento</label>
+            <input
+              type="url"
+              value={formData.linkEvento}
+              onChange={(e) => setFormData({ ...formData, linkEvento: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm"
+              placeholder="https://... (opcional)"
+            />
+          </div>
+
+          {/* 04 - Previsão de investimento */}
+          <div className="mb-3">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">04 - Previsão de investimento (valor total) *</label>
+            <input
+              type="text"
+              value={formData.previsaoInvestimento}
+              onChange={(e) => setFormData({ ...formData, previsaoInvestimento: e.target.value })}
+              className={`w-full border rounded-lg px-3 py-2.5 text-sm ${errors.previsaoInvestimento ? 'border-red-400' : 'border-gray-300'}`}
+              placeholder="Ex: R$ 1.500,00 ou Sem custo"
+            />
+            {errors.previsaoInvestimento && <p className="text-xs text-red-500 mt-1">{errors.previsaoInvestimento}</p>}
+          </div>
+
+          {/* 05 - Outros profissionais participando */}
+          <div className="mb-3">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">05 - Outros profissionais da mesma área participarão? *</label>
+            <div className="flex gap-4 mt-1">
+              <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
+                formData.outrosProfissionaisParticipando === 'sim' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}>
+                <input
+                  type="radio"
+                  name="outrosProfissionais"
+                  value="sim"
+                  checked={formData.outrosProfissionaisParticipando === 'sim'}
+                  onChange={() => setFormData({ ...formData, outrosProfissionaisParticipando: 'sim' })}
+                  className="sr-only"
+                />
+                <span className="text-sm font-medium">Sim</span>
+              </label>
+              <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
+                formData.outrosProfissionaisParticipando === 'nao' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}>
+                <input
+                  type="radio"
+                  name="outrosProfissionais"
+                  value="nao"
+                  checked={formData.outrosProfissionaisParticipando === 'nao'}
+                  onChange={() => setFormData({ ...formData, outrosProfissionaisParticipando: 'nao' })}
+                  className="sr-only"
+                />
+                <span className="text-sm font-medium">Não</span>
+              </label>
+            </div>
+            {errors.outrosProfissionaisParticipando && <p className="text-xs text-red-500 mt-1">{errors.outrosProfissionaisParticipando}</p>}
+          </div>
         </div>
 
         {/* Botões */}
@@ -791,6 +900,138 @@ function DecisaoRHForm({ solicitacao, onSuccess }: { solicitacao: any; onSuccess
   );
 }
 
+// ============= FORMULÁRIO DE REENVIO (após revisão do RH) =============
+function FormularioReenvio({ solicitacao, onSuccess }: { solicitacao: any; onSuccess: () => void }) {
+  const [formData, setFormData] = useState({
+    titulo: solicitacao.titulo || '',
+    descricao: solicitacao.descricao || '',
+    prazo: solicitacao.prazo ? new Date(solicitacao.prazo).toISOString().split('T')[0] : '',
+    porqueFazer: solicitacao.porqueFazer || '',
+    ondeFazer: solicitacao.ondeFazer || '',
+    linkEvento: solicitacao.linkEvento || '',
+    previsaoInvestimento: solicitacao.previsaoInvestimento || '',
+    outrosProfissionaisParticipando: solicitacao.outrosProfissionaisParticipando || '',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const reenviarMutation = trpc.solicitacoesAcoes.reenviar.useMutation({
+    onSuccess: () => {
+      toast.success('Solicitação reenviada com sucesso! O fluxo de análise será reiniciado.');
+      onSuccess();
+    },
+    onError: (err: any) => toast.error(err.message || 'Erro ao reenviar'),
+  });
+
+  function validate() {
+    const e: Record<string, string> = {};
+    if (!formData.titulo.trim()) e.titulo = 'Título é obrigatório';
+    if (!formData.prazo) e.prazo = 'Prazo é obrigatório';
+    if (!formData.porqueFazer.trim()) e.porqueFazer = '"Por que fazer" é obrigatório';
+    if (!formData.ondeFazer.trim()) e.ondeFazer = '"Onde fazer" é obrigatório';
+    if (!formData.previsaoInvestimento.trim()) e.previsaoInvestimento = '"Previsão de investimento" é obrigatório';
+    if (!formData.outrosProfissionaisParticipando) e.outrosProfissionaisParticipando = 'Selecione Sim ou Não';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  function handleReenviar(ev: React.FormEvent) {
+    ev.preventDefault();
+    if (!validate()) return;
+    reenviarMutation.mutate({
+      id: solicitacao.id,
+      titulo: formData.titulo,
+      descricao: formData.descricao || undefined,
+      prazo: formData.prazo,
+      porqueFazer: formData.porqueFazer,
+      ondeFazer: formData.ondeFazer,
+      linkEvento: formData.linkEvento || undefined,
+      previsaoInvestimento: formData.previsaoInvestimento,
+      outrosProfissionaisParticipando: formData.outrosProfissionaisParticipando as 'sim' | 'nao',
+    });
+  }
+
+  return (
+    <div className="mt-4 bg-amber-50 rounded-lg p-4 border-2 border-amber-300">
+      <h4 className="text-sm font-bold text-amber-800 mb-3 flex items-center gap-2">
+        <RotateCcw className="h-4 w-4" />
+        Revisão Solicitada pelo RH — Edite e Reenvie
+      </h4>
+      <p className="text-xs text-amber-700 mb-4">O RH solicitou revisão desta solicitação. Revise os dados abaixo e clique em "Reenviar" para reiniciar o fluxo de análise.</p>
+      <form onSubmit={handleReenviar} className="space-y-3">
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">Título da Ação *</label>
+          <input type="text" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+            className={`w-full border rounded-lg px-3 py-2 text-sm ${errors.titulo ? 'border-red-400' : 'border-gray-300'}`} />
+          {errors.titulo && <p className="text-xs text-red-500 mt-1">{errors.titulo}</p>}
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">Descrição</label>
+          <RichTextEditor value={formData.descricao} onChange={(val) => setFormData({ ...formData, descricao: val })} placeholder="Descrição da ação..." minHeight="80px" />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">Prazo *</label>
+          <input type="date" value={formData.prazo} onChange={(e) => setFormData({ ...formData, prazo: e.target.value })}
+            className={`w-full border rounded-lg px-3 py-2 text-sm ${errors.prazo ? 'border-red-400' : 'border-gray-300'}`} />
+          {errors.prazo && <p className="text-xs text-red-500 mt-1">{errors.prazo}</p>}
+        </div>
+
+        <div className="border-t border-amber-200 pt-3 mt-2">
+          <h5 className="text-xs font-bold text-blue-800 mb-2">Informações para Análise</h5>
+          <div className="mb-2">
+            <label className="block text-xs font-semibold text-gray-700 mb-1">01 - Por que fazer? *</label>
+            <textarea value={formData.porqueFazer} onChange={(e) => setFormData({ ...formData, porqueFazer: e.target.value })}
+              className={`w-full border rounded-lg px-3 py-2 text-sm min-h-[60px] ${errors.porqueFazer ? 'border-red-400' : 'border-gray-300'}`}
+              placeholder="Justifique a necessidade..." />
+            {errors.porqueFazer && <p className="text-xs text-red-500 mt-1">{errors.porqueFazer}</p>}
+          </div>
+          <div className="mb-2">
+            <label className="block text-xs font-semibold text-gray-700 mb-1">02 - Onde fazer? *</label>
+            <input type="text" value={formData.ondeFazer} onChange={(e) => setFormData({ ...formData, ondeFazer: e.target.value })}
+              className={`w-full border rounded-lg px-3 py-2 text-sm ${errors.ondeFazer ? 'border-red-400' : 'border-gray-300'}`}
+              placeholder="Empresa ou fornecedor..." />
+            {errors.ondeFazer && <p className="text-xs text-red-500 mt-1">{errors.ondeFazer}</p>}
+          </div>
+          <div className="mb-2">
+            <label className="block text-xs font-semibold text-gray-700 mb-1">03 - Link (opcional)</label>
+            <input type="url" value={formData.linkEvento} onChange={(e) => setFormData({ ...formData, linkEvento: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="https://..." />
+          </div>
+          <div className="mb-2">
+            <label className="block text-xs font-semibold text-gray-700 mb-1">04 - Previsão de investimento *</label>
+            <input type="text" value={formData.previsaoInvestimento} onChange={(e) => setFormData({ ...formData, previsaoInvestimento: e.target.value })}
+              className={`w-full border rounded-lg px-3 py-2 text-sm ${errors.previsaoInvestimento ? 'border-red-400' : 'border-gray-300'}`}
+              placeholder="Ex: R$ 1.500,00" />
+            {errors.previsaoInvestimento && <p className="text-xs text-red-500 mt-1">{errors.previsaoInvestimento}</p>}
+          </div>
+          <div className="mb-2">
+            <label className="block text-xs font-semibold text-gray-700 mb-1">05 - Outros profissionais participando? *</label>
+            <div className="flex gap-3">
+              <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer text-sm ${formData.outrosProfissionaisParticipando === 'sim' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'border-gray-300 text-gray-600'}`}>
+                <input type="radio" name="reenvio_outros" value="sim" checked={formData.outrosProfissionaisParticipando === 'sim'}
+                  onChange={() => setFormData({ ...formData, outrosProfissionaisParticipando: 'sim' })} className="sr-only" />
+                Sim
+              </label>
+              <label className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer text-sm ${formData.outrosProfissionaisParticipando === 'nao' ? 'bg-blue-50 border-blue-400 text-blue-700' : 'border-gray-300 text-gray-600'}`}>
+                <input type="radio" name="reenvio_outros" value="nao" checked={formData.outrosProfissionaisParticipando === 'nao'}
+                  onChange={() => setFormData({ ...formData, outrosProfissionaisParticipando: 'nao' })} className="sr-only" />
+                Não
+              </label>
+            </div>
+            {errors.outrosProfissionaisParticipando && <p className="text-xs text-red-500 mt-1">{errors.outrosProfissionaisParticipando}</p>}
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          <button type="submit" disabled={reenviarMutation.isPending}
+            className="flex-1 bg-amber-600 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-amber-700 disabled:opacity-50 flex items-center justify-center gap-2">
+            {reenviarMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Reenviando...</> : <><Send className="h-4 w-4" /> Reenviar Solicitação</>}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 // ============= CARD DE SOLICITAÇÃO =============
 function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnRequest }: { 
   solicitacao: any; 
@@ -863,6 +1104,38 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
               <div className="md:col-span-2"><span className="text-gray-500">Descrição:</span> <div className="mt-1 text-gray-700">{solicitacao.descricao ? <RichTextDisplay content={solicitacao.descricao} /> : 'Sem descrição'}</div></div>
             </div>
           </div>
+
+          {/* Informações para Análise de Aprovação */}
+          {(solicitacao.porqueFazer || solicitacao.ondeFazer || solicitacao.previsaoInvestimento || solicitacao.outrosProfissionaisParticipando) && (
+            <div className="mt-4 bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <h4 className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Informações para Análise de Aprovação
+              </h4>
+              <div className="space-y-2 text-sm">
+                {solicitacao.porqueFazer && (
+                  <div><span className="text-blue-700 font-semibold">01 - Por que fazer:</span> <span className="text-gray-800">{solicitacao.porqueFazer}</span></div>
+                )}
+                {solicitacao.ondeFazer && (
+                  <div><span className="text-blue-700 font-semibold">02 - Onde fazer:</span> <span className="text-gray-800">{solicitacao.ondeFazer}</span></div>
+                )}
+                {solicitacao.linkEvento && (
+                  <div><span className="text-blue-700 font-semibold">03 - Link:</span> <a href={solicitacao.linkEvento} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-800 break-all">{solicitacao.linkEvento}</a></div>
+                )}
+                {solicitacao.previsaoInvestimento && (
+                  <div><span className="text-blue-700 font-semibold">04 - Previsão de investimento:</span> <span className="text-gray-800 font-medium">{solicitacao.previsaoInvestimento}</span></div>
+                )}
+                {solicitacao.outrosProfissionaisParticipando && (
+                  <div><span className="text-blue-700 font-semibold">05 - Outros profissionais da mesma área participando:</span> <span className={`font-medium ${solicitacao.outrosProfissionaisParticipando === 'sim' ? 'text-green-700' : 'text-gray-700'}`}>{solicitacao.outrosProfissionaisParticipando === 'sim' ? 'Sim' : 'Não'}</span></div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Formulário de Reenvio (quando aguardando_solicitante) */}
+          {solicitacao.statusGeral === 'aguardando_solicitante' && solicitacao.solicitanteId === userId && (
+            <FormularioReenvio solicitacao={solicitacao} onSuccess={onRefresh} />
+          )}
 
           {/* Histórico de Rodadas Anteriores */}
           {solicitacao.historicoRodadas && (() => {

@@ -3171,6 +3171,12 @@ export async function createSolicitacaoAcao(data: {
   descricao?: string;
   prazo: Date;
   solicitanteId: number;
+  // Campos informativos para análise de aprovação
+  porqueFazer: string;
+  ondeFazer: string;
+  linkEvento?: string;
+  previsaoInvestimento: string;
+  outrosProfissionaisParticipando: 'sim' | 'nao';
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -3184,9 +3190,40 @@ export async function createSolicitacaoAcao(data: {
     prazo: data.prazo,
     solicitanteId: data.solicitanteId,
     statusGeral: "aguardando_ckm",
+    porqueFazer: data.porqueFazer,
+    ondeFazer: data.ondeFazer,
+    linkEvento: data.linkEvento || null,
+    previsaoInvestimento: data.previsaoInvestimento,
+    outrosProfissionaisParticipando: data.outrosProfissionaisParticipando,
   });
 
   return result[0]?.insertId || 0;
+}
+
+export async function reenviarSolicitacao(id: number, data: {
+  titulo: string;
+  descricao: string;
+  prazo: Date;
+  porqueFazer: string;
+  ondeFazer: string;
+  linkEvento: string | null;
+  previsaoInvestimento: string;
+  outrosProfissionaisParticipando: 'sim' | 'nao';
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(solicitacoesAcoes).set({
+    titulo: data.titulo,
+    descricao: data.descricao,
+    prazo: data.prazo,
+    porqueFazer: data.porqueFazer,
+    ondeFazer: data.ondeFazer,
+    linkEvento: data.linkEvento,
+    previsaoInvestimento: data.previsaoInvestimento,
+    outrosProfissionaisParticipando: data.outrosProfissionaisParticipando,
+    statusGeral: "aguardando_ckm",
+  }).where(eq(solicitacoesAcoes.id, id));
 }
 
 export async function listSolicitacoesAcoes(filtros?: {
@@ -3525,11 +3562,11 @@ export async function solicitarRevisaoRH(id: number, data: {
   }
   historico.push(rodadaSnapshot);
 
-  // Atualizar: salvar histórico, limpar pareceres, incrementar rodada, voltar para aguardando_ckm
+  // Atualizar: salvar histórico, limpar pareceres, incrementar rodada, voltar para o solicitante
   await db.update(solicitacoesAcoes).set({
     historicoRodadas: JSON.stringify(historico),
     rodadaAtual: 2,
-    statusGeral: "aguardando_ckm",
+    statusGeral: "aguardando_solicitante",
     // Limpar pareceres da rodada anterior
     ckmParecerTipo: null,
     ckmParecerTexto: null,

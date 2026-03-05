@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE solicitacoes_acoes ADD COLUMN porqueFazer text, ADD COLUMN ondeFazer text, ADD COLUMN linkEvento varchar(1000), ADD COLUMN previsaoInvestimento varchar(100), ADD COLUMN outrosProfissionaisParticipando enum('sim','nao')",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute ALTER TABLE solicitacoes_acoes ADD COLUMN porqueFazer text, ADD COLUMN ondeFazer text, ADD COLUMN linkEvento varchar(1000), ADD COLUMN previsaoInvestimento varchar(100), ADD COLUMN outrosProfissionaisParticipando enum('sim','nao')",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 993
+}
