@@ -75,12 +75,14 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
 }
 
 const AVISO_NAO_RESPONDA = `
-⚠️ NÃO RESPONDA ESTE EMAIL - O FLUXO É VIA SISTEMA EVOLUIR CKM ⚠️`;
+⚠️ NÃO RESPONDA ESTE EMAIL - O FLUXO É VIA SISTEMA ECO_EVOLUIR ⚠️`;
 
 const ASSINATURA = `
 ---
 Sistema de Gestão de PDI — CKM Talents
-Evoluir CKM`;
+Eco_Evoluir`;
+
+const TEXTO_PADRAO_ACESSE = 'Acesse o Sistema Eco_Evoluir para tomar ciência e providências. Você possui notificações pendentes.';
 
 /**
  * Envia email para o líder informando sobre solicitação de alteração
@@ -100,12 +102,10 @@ export async function sendEmailSolicitacaoAjuste(params: {
   const body = `
 Prezado(a) ${leaderName},
 
-O colaborador ${colaboradorName} solicitou ALTERAÇÕES na ação do PDI: ${acaoNome}
+Informamos que a solicitação de ajuste na ação "${acaoNome}" do(a) colaborador(a) ${colaboradorName} foi respondida.
 
-Segue a alteração solicitada:
-${stripHtmlForEmail(justificativa)}
+${TEXTO_PADRAO_ACESSE}
 
-Campos a alterar: ${camposText}
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
@@ -138,14 +138,12 @@ export async function sendEmailParecerCKMParaLider(params: {
   const body = `
 Prezado(a) ${liderName},
 
-Informamos que a CKM Talents analisou a solicitação de inclusão de nova ação no PDI do seu liderado e emitiu seu parecer técnico. Agora é necessário que você acesse o sistema e registre sua decisão (aprovar ou reprovar).
+Informamos que a solicitação de inclusão de nova ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName} foi respondida.
 
-DETALHES DA SOLICITAÇÃO:
-- Colaborador: ${colaboradorName}${deptText}
-- Título da Ação: ${tituloAcao}
-- Parecer CKM: ${tipoParecer}
+${TEXTO_PADRAO_ACESSE}
 
-Acesse o sistema Evoluir CKM para avaliar e registrar seu parecer sobre esta solicitação.
+Colaborador: ${colaboradorName}${deptText}
+
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
@@ -179,15 +177,12 @@ export async function sendEmailParecerLiderParaGerente(params: {
   const body = `
 Prezado(a) ${gerenteName},
 
-Informamos que o líder ${liderName} registrou seu parecer sobre a solicitação de inclusão de nova ação no PDI. Agora é necessário que você acesse o sistema e registre sua decisão final.
+Informamos que a solicitação de inclusão de nova ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName} foi respondida.
 
-DETALHES DA SOLICITAÇÃO:
-- Colaborador: ${colaboradorName}${deptText}
-- Título da Ação: ${tituloAcao}
-- Decisão do Líder: ${decisaoText}
-- Justificativa do Líder: ${stripHtmlForEmail(justificativaLider)}
+${TEXTO_PADRAO_ACESSE}
 
-Acesse o sistema Evoluir CKM para avaliar e registrar sua decisão final sobre esta solicitação.
+Colaborador: ${colaboradorName}${deptText}
+
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
@@ -214,9 +209,10 @@ export async function sendEmailAcaoAprovadaParaColaborador(params: {
   const body = `
 Prezado(a) ${colaboradorName},
 
-Sua solicitação de inclusão de nova ação "${tituloAcao}" foi respondida.
+Informamos que a sua solicitação de inclusão de nova ação "${tituloAcao}" foi respondida.
 
-Acesse o Sistema de Gestão de PDI da CKM Talents (SGP) para visualizar o resultado.
+${TEXTO_PADRAO_ACESSE}
+
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
@@ -242,9 +238,10 @@ export async function sendEmailAcaoReprovadaParaColaborador(params: {
   const body = `
 Prezado(a) ${colaboradorName},
 
-Sua solicitação de inclusão de nova ação "${tituloAcao}" foi respondida.
+Informamos que a sua solicitação de inclusão de nova ação "${tituloAcao}" foi respondida.
 
-Acesse o Sistema de Gestão de PDI da CKM Talents (SGP) para visualizar o resultado.
+${TEXTO_PADRAO_ACESSE}
+
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
@@ -313,15 +310,12 @@ export async function sendEmailAjusteSolicitadoParaLider(params: {
   const body = `
 Prezado(a) ${liderName},
 
-Informamos que seu liderado ${colaboradorName} solicitou um AJUSTE em uma ação do PDI. É necessário que você acesse o sistema e registre se está de acordo ou não com a alteração solicitada.
+Informamos que a solicitação de ajuste na ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName} foi respondida.
 
-DETALHES DA SOLICITAÇÃO DE AJUSTE:
-- Colaborador: ${colaboradorName}${deptText}
-- Ação: ${tituloAcao}
-- Tipo de Ajuste: ${tipoText}
-- Justificativa do Colaborador: ${stripHtmlForEmail(justificativa)}
+${TEXTO_PADRAO_ACESSE}
 
-Acesse o sistema Evoluir CKM para avaliar e registrar seu parecer sobre esta solicitação de ajuste.
+Colaborador: ${colaboradorName}${deptText}
+
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
@@ -357,18 +351,12 @@ export async function sendEmailAjusteValidadoParaAdmin(params: {
   const body = `
 Prezado(a) ${adminName},
 
-Informamos que o líder ${liderName} AUTORIZOU a solicitação de ajuste do colaborador ${colaboradorName}. Agora é necessário que você acesse o sistema e realize o ajuste ou reprove a solicitação.
+Informamos que a solicitação de ajuste na ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName} foi respondida.
 
-DETALHES DA SOLICITAÇÃO DE AJUSTE:
-- Colaborador: ${colaboradorName}${deptText}
-- Líder: ${liderName}
-- Ação: ${tituloAcao}
-- Tipo de Ajuste: ${tipoText}
-- Justificativa do Colaborador: ${stripHtmlForEmail(justificativa)}
-- Parecer do Líder: DE ACORDO
-- Feedback do Líder: ${stripHtmlForEmail(feedbackLider)}
+${TEXTO_PADRAO_ACESSE}
 
-Acesse o sistema Evoluir CKM para realizar o ajuste solicitado.
+Colaborador: ${colaboradorName}${deptText}
+
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
@@ -396,9 +384,10 @@ export async function sendEmailAjusteAprovadoParaColaborador(params: {
   const body = `
 Prezado(a) ${colaboradorName},
 
-Sua solicitação de ajuste na ação "${tituloAcao}" foi respondida.
+Informamos que a sua solicitação de ajuste na ação "${tituloAcao}" foi respondida.
 
-Acesse o Sistema de Gestão de PDI da CKM Talents (SGP) para visualizar o resultado.
+${TEXTO_PADRAO_ACESSE}
+
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
@@ -427,9 +416,10 @@ export async function sendEmailAjusteReprovadoParaColaborador(params: {
   const body = `
 Prezado(a) ${colaboradorName},
 
-Sua solicitação de ajuste na ação "${tituloAcao}" foi respondida.
+Informamos que a sua solicitação de ajuste na ação "${tituloAcao}" foi respondida.
 
-Acesse o Sistema de Gestão de PDI da CKM Talents (SGP) para visualizar o resultado.
+${TEXTO_PADRAO_ACESSE}
+
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
@@ -458,18 +448,11 @@ export async function sendEmailRevisaoSolicitadaParaCKM(params: {
   const body = `
 Prezado(a) ${adminName || 'Administrador'},
 
-O RH (${rhName || 'Gerente'}) solicitou uma REVISÃO na solicitação de inclusão de ação no PDI.
+Informamos que a solicitação de inclusão de nova ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName || 'N/A'} foi respondida.
 
-📋 DETALHES DA SOLICITAÇÃO:
-• Ação: ${tituloAcao}
-• Colaborador: ${colaboradorName || 'N/A'}${departamento ? `\n• Departamento: ${departamento}` : ''}
+${TEXTO_PADRAO_ACESSE}
 
-📝 MOTIVO DA REVISÃO:
-${motivoRevisao}
-
-⚠️ AÇÃO NECESSÁRIA:
-É necessário emitir um novo parecer técnico (Rodada 2) para esta solicitação.
-Acesse o sistema para reanalisar e emitir seu parecer.
+Colaborador: ${colaboradorName || 'N/A'}${departamento ? ` | Depto: ${departamento}` : ''}
 
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
@@ -496,18 +479,11 @@ export async function sendEmailRevisaoLiderParaCKM(params: {
   const body = `
 Prezado(a) ${adminName || 'Administrador'},
 
-O Líder ${liderName || '(Gestor)'} solicitou um ESCLARECIMENTO sobre o parecer técnico da solicitação de inclusão de ação no PDI.
+Informamos que a solicitação de inclusão de nova ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName || 'N/A'} foi respondida.
 
-📋 DETALHES DA SOLICITAÇÃO:
-• Ação: ${tituloAcao}
-• Colaborador: ${colaboradorName || 'N/A'}${departamento ? `\n• Departamento: ${departamento}` : ''}
+${TEXTO_PADRAO_ACESSE}
 
-📝 MOTIVO DO ESCLARECIMENTO:
-${motivoRevisao}
-
-⚠️ AÇÃO NECESSÁRIA:
-É necessário complementar/atualizar o parecer técnico para esta solicitação.
-Acesse o sistema para reanalisar e emitir seu parecer atualizado.
+Colaborador: ${colaboradorName || 'N/A'}${departamento ? ` | Depto: ${departamento}` : ''}
 
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
@@ -517,5 +493,112 @@ ${ASSINATURA}
     to: adminEmail,
     subject: `ESCLARECIMENTO SOLICITADO PELO LÍDER — ${tituloAcao}`,
     body,
+  });
+}
+
+
+/**
+ * Envia email para o Líder e Empregado (com CC para relacionamento@ckmtalents.net)
+ * quando uma solicitação de ação é vetada/encerrada.
+ * Informa que devem acessar o Sistema Eco_Evoluir para tomar ciência e providências.
+ */
+export async function sendEmailSolicitacaoVetada(params: {
+  colaboradorEmail: string;
+  colaboradorName: string;
+  liderEmail: string;
+  liderName: string;
+  tituloAcao: string;
+  vetadoPor: 'gestor' | 'rh';
+  justificativa?: string;
+  departamento?: string;
+}): Promise<boolean> {
+  const { colaboradorEmail, colaboradorName, liderEmail, liderName, tituloAcao, vetadoPor, justificativa, departamento } = params;
+
+  const quemVetou = vetadoPor === 'gestor' ? 'Gestor (Líder)' : 'RH';
+  const deptText = departamento ? ` | Depto: ${departamento}` : '';
+
+  const bodyColaborador = `
+Prezado(a) ${colaboradorName},
+
+Informamos que a sua solicitação de inclusão de nova ação "${tituloAcao}" foi respondida.
+
+${TEXTO_PADRAO_ACESSE}
+
+Colaborador: ${colaboradorName}${deptText}
+Líder: ${liderName}
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  const bodyLider = `
+Prezado(a) ${liderName},
+
+Informamos que a solicitação de inclusão de nova ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName} foi respondida.
+
+${TEXTO_PADRAO_ACESSE}
+
+Colaborador: ${colaboradorName}${deptText}
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  const CC_RELACIONAMENTO = 'relacionamento@ckmtalents.net';
+
+  // Enviar para o colaborador com CC para relacionamento
+  const envioColaborador = await sendEmail({
+    to: colaboradorEmail,
+    subject: `INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${tituloAcao}`,
+    body: bodyColaborador,
+    cc: `${CC_RELACIONAMENTO}, ${GLOBAL_CC_EMAIL}`,
+  });
+
+  // Enviar para o líder com CC para relacionamento
+  const envioLider = await sendEmail({
+    to: liderEmail,
+    subject: `INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${colaboradorName} — ${tituloAcao}`,
+    body: bodyLider,
+    cc: `${CC_RELACIONAMENTO}, ${GLOBAL_CC_EMAIL}`,
+  });
+
+  return envioColaborador && envioLider;
+}
+
+
+/**
+ * Envia email para o Líder informando que a ação do colaborador foi APROVADA pelo RH
+ * e incluída no PDI. CC para relacionamento@ckmtalents.net.
+ */
+export async function sendEmailAcaoAprovadaParaLider(params: {
+  liderEmail: string;
+  liderName: string;
+  colaboradorName: string;
+  tituloAcao: string;
+  departamento?: string;
+}): Promise<boolean> {
+  const { liderEmail, liderName, colaboradorName, tituloAcao, departamento } = params;
+  const deptText = departamento ? ` | Depto: ${departamento}` : '';
+
+  const body = `
+Prezado(a) ${liderName},
+
+Informamos que a solicitação de inclusão de nova ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName} foi respondida.
+
+${TEXTO_PADRAO_ACESSE}
+
+Colaborador: ${colaboradorName}${deptText}
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  const CC_RELACIONAMENTO = 'relacionamento@ckmtalents.net';
+
+  return sendEmail({
+    to: liderEmail,
+    subject: `INFORMATIVO — Ação APROVADA e Incluída no PDI — ${colaboradorName} — ${tituloAcao}`,
+    body,
+    cc: `${CC_RELACIONAMENTO}, ${GLOBAL_CC_EMAIL}`,
   });
 }

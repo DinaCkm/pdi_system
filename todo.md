@@ -2993,3 +2993,10 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] No frontend, exibir formulário de edição pré-preenchido para o solicitante quando status = aguardando_solicitante
 - [x] Tornar obrigatórios os campos: porqueFazer, ondeFazer, previsaoInvestimento, outrosProfissionaisParticipando (linkEvento permanece opcional)
 - [x] BUG: Os 5 novos campos informativos não aparecem no SolicitacaoCard para CKM/Gestor/RH visualizarem durante análise
+
+## Notificação por E-mail - Decisão Final (RH finaliza, todos recebem)
+- [x] RH aprova → e-mail para líder + empregado + CC relacionamento@ckmtalents.net
+- [x] RH veta → e-mail para líder + empregado + CC relacionamento@ckmtalents.net
+- [x] Gestor encerra solicitação → e-mail para empregado + CC relacionamento@ckmtalents.net
+- [x] E-mail deve informar que devem acessar o Sistema Eco_Evoluir para tomar ciência e providências
+- [x] Padronizar texto de TODOS os e-mails do sistema para usar texto padrão Eco_Evoluir

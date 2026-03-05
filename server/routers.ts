@@ -11,7 +11,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { invokeLLM } from "./_core/llm";
-import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM } from "./_core/email";
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider } from "./_core/email";
 
 // Mantendo os roteadores que já existiam
 import { systemRouter } from "./_core/systemRouter";
@@ -1239,7 +1239,7 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
             gestorId: ctx.user.id,
           });
 
-          // Notificar colaborador que foi encerrada
+          // Notificar colaborador que foi encerrada (in-app + email)
           try {
             await db.createNotification({
               destinatarioId: solicitacao.solicitanteId,
@@ -1248,6 +1248,22 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
               mensagem: `Sua solicitação de ação "${solicitacao.titulo}" foi encerrada pelo líder após revisão.`,
               referenciaId: input.id,
             });
+
+            // Enviar email para o colaborador + CC relacionamento
+            const solicitante = await db.getUserById(solicitacao.solicitanteId);
+            if (solicitante?.email) {
+              await sendEmailSolicitacaoVetada({
+                colaboradorEmail: solicitante.email,
+                colaboradorName: solicitante.name,
+                liderEmail: ctx.user.email || '',
+                liderName: ctx.user.name,
+                tituloAcao: solicitacao.titulo,
+                vetadoPor: 'gestor',
+                justificativa: input.justificativa,
+                departamento: (solicitante as any).departamentoNome || undefined,
+              });
+              console.log(`[Email] Email enviado para colaborador ${solicitante.name} e líder ${ctx.user.name} - solicitação encerrada, CC relacionamento`);
+            }
           } catch (e) { console.error('Erro ao notificar colaborador:', e); }
 
           return { success: true };
@@ -1390,6 +1406,21 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
               });
               console.log(`[Email] Email enviado para colaborador ${solicitante.name} (${solicitante.email}) - ação aprovada e incluída no PDI`);
             }
+
+            // Enviar email para o líder informando da aprovação + CC relacionamento
+            if (solicitante?.leaderId) {
+              const lider = await db.getUserById(solicitante.leaderId);
+              if (lider?.email) {
+                await sendEmailAcaoAprovadaParaLider({
+                  liderEmail: lider.email,
+                  liderName: lider.name,
+                  colaboradorName: solicitante.name,
+                  tituloAcao: solicitacao.titulo,
+                  departamento: (solicitante as any).departamentoNome || undefined,
+                });
+                console.log(`[Email] Email enviado para líder ${lider.name} (${lider.email}) - ação aprovada pelo RH, CC relacionamento`);
+              }
+            }
           } else {
             // Notificação in-app
             await db.createNotification({
@@ -1409,6 +1440,24 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
                 departamento: (solicitante as any).departamentoNome || undefined,
               });
               console.log(`[Email] Email enviado para colaborador ${solicitante.name} (${solicitante.email}) - ação não aprovada`);
+            }
+
+            // Enviar email para o líder informando do veto + CC relacionamento
+            if (solicitante?.leaderId) {
+              const lider = await db.getUserById(solicitante.leaderId);
+              if (lider?.email) {
+                await sendEmailSolicitacaoVetada({
+                  colaboradorEmail: solicitante.email || '',
+                  colaboradorName: solicitante.name,
+                  liderEmail: lider.email,
+                  liderName: lider.name,
+                  tituloAcao: solicitacao.titulo,
+                  vetadoPor: 'rh',
+                  justificativa: input.justificativa,
+                  departamento: (solicitante as any).departamentoNome || undefined,
+                });
+                console.log(`[Email] Email enviado para líder ${lider.name} (${lider.email}) - ação vetada pelo RH, CC relacionamento`);
+              }
             }
           }
         } catch (e) { console.error('Erro ao notificar colaborador:', e); }
