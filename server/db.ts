@@ -723,7 +723,22 @@ export async function createDepartamento(data: {
     createdAt: new Date(),
   });
 
-  return result[0]?.insertId || 0;
+  const newDeptId = result[0]?.insertId || 0;
+
+  // Se o departamento foi criado com um líder, atualizar o leaderId
+  // de todos os usuários que já estejam nesse departamento
+  if (data.leaderId && newDeptId) {
+    await db.update(users)
+      .set({ leaderId: data.leaderId })
+      .where(
+        and(
+          eq(users.departamentoId, newDeptId),
+          not(eq(users.id, data.leaderId))
+        )
+      );
+  }
+
+  return newDeptId;
 }
 
 export async function updateDepartamento(
@@ -734,6 +749,20 @@ export async function updateDepartamento(
   if (!db) throw new Error("Database not available");
 
   await db.update(departamentos).set(data).where(eq(departamentos.id, id));
+
+  // Quando o líder do departamento é alterado, atualizar automaticamente
+  // o leaderId de todos os colaboradores/líderes daquele departamento
+  if (data.leaderId !== undefined) {
+    await db.update(users)
+      .set({ leaderId: data.leaderId })
+      .where(
+        and(
+          eq(users.departamentoId, id),
+          // Não atribuir o líder como líder de si mesmo
+          not(eq(users.id, data.leaderId))
+        )
+      );
+  }
 }
 
 export async function deleteDepartamento(id: number) {

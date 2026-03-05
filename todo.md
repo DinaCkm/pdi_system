@@ -2970,3 +2970,5 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Bug persistente: Tags HTML brutas ainda aparecem na descrição das ações em Minhas Ações após correção anterior (causa: componente era MinhasPendencias.tsx, não Acoes.tsx)
 - [x] PDIs de líderes devem nascer com status "em_andamento" automaticamente (sem necessidade de aprovação do superior hierárquico)
 - [x] Adicionar barra de rolagem no modal de detalhes da ação em Minhas Ações (MinhasPendencias.tsx)
+- [x] Bug: leaderId na tabela departamentos aponta para admin geral em vez do líder operacional do departamento
+- [x] Melhoria: Ao trocar o líder de um departamento, transferir automaticamente todos os subordinados para o novo líder

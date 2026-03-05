@@ -1,0 +1,31 @@
+{
+  "query": "\nSELECT id, name, role, departamentoId, leaderId\nFROM users\nWHERE name LIKE '%GABRIELA%' OR name LIKE '%EMERSON%'\nORDER BY name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute \nSELECT id, name, role, departamentoId, leaderId\nFROM users\nWHERE name LIKE '%GABRIELA%' OR name LIKE '%EMERSON%'\nORDER BY name;\n",
+  "rows": [
+    {
+      "id": "1290057",
+      "name": "EMERSON EDUARDO AIRES NUNES",
+      "role": "colaborador",
+      "departamentoId": "630004",
+      "leaderId": "1260010"
+    },
+    {
+      "id": "1320013",
+      "name": "EMERSON MONTENEGRO LIMA",
+      "role": "lider",
+      "departamentoId": "660001",
+      "leaderId": "1410001"
+    },
+    {
+      "id": "1260017",
+      "name": "GABRIELA TOMASI",
+      "role": "colaborador",
+      "departamentoId": "660001",
+      "leaderId": "1410001"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\trole\tdepartamentoId\tleaderId\n1290057\tEMERSON EDUARDO AIRES NUNES\tcolaborador\t630004\t1260010\n1320013\tEMERSON MONTENEGRO LIMA\tlider\t660001\t1410001\n1260017\tGABRIELA TOMASI\tcolaborador\t660001\t1410001\n",
+  "stderr": "",
+  "execution_time_ms": 363
+}
