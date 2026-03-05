@@ -2972,3 +2972,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar barra de rolagem no modal de detalhes da ação em Minhas Ações (MinhasPendencias.tsx)
 - [x] Bug: leaderId na tabela departamentos aponta para admin geral em vez do líder operacional do departamento
 - [x] Melhoria: Ao trocar o líder de um departamento, transferir automaticamente todos os subordinados para o novo líder
+- [x] Adicionar nome do PDI no card da ação em Minhas Ações (MinhasPendencias.tsx) para identificação

@@ -443,6 +443,11 @@ export default function MinhasPendencias() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-lg truncate">{acao.titulo}</CardTitle>
+                    {acao.pdiTitulo && (
+                      <p className="text-xs text-blue-600 font-medium mt-0.5 truncate">
+                        {acao.pdiTitulo}
+                      </p>
+                    )}
                     <CardDescription className="mt-1 line-clamp-2">
                       {acao.descricao ? stripHtml(acao.descricao) : "Sem descrição"}
                     </CardDescription>
