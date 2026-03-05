@@ -3271,6 +3271,11 @@ export async function listSolicitacoesAcoes(filtros?: {
       historicoRodadas: solicitacoesAcoes.historicoRodadas,
       liderRevisaoSolicitada: solicitacoesAcoes.liderRevisaoSolicitada,
       liderMotivoRevisao: solicitacoesAcoes.liderMotivoRevisao,
+      porqueFazer: solicitacoesAcoes.porqueFazer,
+      ondeFazer: solicitacoesAcoes.ondeFazer,
+      linkEvento: solicitacoesAcoes.linkEvento,
+      previsaoInvestimento: solicitacoesAcoes.previsaoInvestimento,
+      outrosProfissionaisParticipando: solicitacoesAcoes.outrosProfissionaisParticipando,
       createdAt: solicitacoesAcoes.createdAt,
       updatedAt: solicitacoesAcoes.updatedAt,
       // Joins

@@ -2992,3 +2992,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Criar procedure backend para solicitante reenviar solicitação editada (com novos campos)
 - [x] No frontend, exibir formulário de edição pré-preenchido para o solicitante quando status = aguardando_solicitante
 - [x] Tornar obrigatórios os campos: porqueFazer, ondeFazer, previsaoInvestimento, outrosProfissionaisParticipando (linkEvento permanece opcional)
+- [x] BUG: Os 5 novos campos informativos não aparecem no SolicitacaoCard para CKM/Gestor/RH visualizarem durante análise
