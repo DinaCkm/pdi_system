@@ -305,6 +305,11 @@ export default function MinhasPendencias() {
       const matchesStatus = filterStatus === "todos" || acao.status === filterStatus;
 
       return matchesSearch && matchesStatus;
+    }).sort((a: any, b: any) => {
+      // Ordenar por data de entrega (prazo) - mais próximas primeiro
+      const prazoA = a.prazo ? new Date(a.prazo).getTime() : Infinity;
+      const prazoB = b.prazo ? new Date(b.prazo).getTime() : Infinity;
+      return prazoA - prazoB;
     });
   }, [minhasAcoes, searchTerm, filterStatus]);
 

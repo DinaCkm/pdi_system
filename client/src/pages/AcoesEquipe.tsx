@@ -81,6 +81,11 @@ export default function AcoesEquipe() {
     if (searchTerm && !textoGeral.includes(termoBusca)) return false;
 
     return true;
+  }).sort((a: any, b: any) => {
+    // Ordenar por data de entrega (prazo) - mais próximas primeiro
+    const prazoA = a.prazo ? new Date(a.prazo).getTime() : Infinity;
+    const prazoB = b.prazo ? new Date(b.prazo).getTime() : Infinity;
+    return prazoA - prazoB;
   });
 
   const clearFilters = () => {

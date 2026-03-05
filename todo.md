@@ -2973,3 +2973,5 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Bug: leaderId na tabela departamentos aponta para admin geral em vez do líder operacional do departamento
 - [x] Melhoria: Ao trocar o líder de um departamento, transferir automaticamente todos os subordinados para o novo líder
 - [x] Adicionar nome do PDI no card da ação em Minhas Ações (MinhasPendencias.tsx) para identificação
+- [x] Adicionar nome do PDI nos cards de Ações da Equipe para que o líder identifique o PDI de cada ação (já existia)
+- [x] Ordenar ações por data de entrega (prazo) na visão do líder (AcoesEquipe) e do colaborador (MinhasPendencias)
