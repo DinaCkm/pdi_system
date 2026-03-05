@@ -2976,3 +2976,5 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar nome do PDI nos cards de Ações da Equipe para que o líder identifique o PDI de cada ação (já existia)
 - [x] Ordenar ações por data de entrega (prazo) na visão do líder (AcoesEquipe) e do colaborador (MinhasPendencias)
 - [x] Adicionar botão "Ecossistema do Bem - Líderes e Sucessores" no menu lateral visível apenas para líderes com link para https://ecossistemadobem.manus.space
+
+- [x] Compactar card do usuário no sidebar (reduzir tamanho do avatar) e garantir scroll no menu lateral para que todos os itens sejam visíveis

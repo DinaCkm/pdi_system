@@ -263,8 +263,8 @@ function DashboardLayoutContent({
           className="border-r-0"
           disableTransition={isResizing}
         >
-          <SidebarHeader className="h-20 justify-center">
-            <div className="flex items-center gap-3 px-2 transition-all w-full">
+          <SidebarHeader className="h-14 justify-center">
+            <div className="flex items-center gap-2 px-2 transition-all w-full">
               <button
                 onClick={toggleSidebar}
                 className="h-8 w-8 flex items-center justify-center hover:bg-accent rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
@@ -273,50 +273,46 @@ function DashboardLayoutContent({
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
               {!isCollapsed ? (
-                <div className="flex items-center gap-3 min-w-0">
-                  <img src="/logo-ckm.png" alt="CKM Talents" className="h-10 w-auto" />
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-semibold text-blue-600 tracking-tight truncate">
-                      Gestão de PDI
-                    </span>
-                  </div>
+                <div className="flex items-center gap-2 min-w-0">
+                  <img src="/logo-ckm.png" alt="CKM Talents" className="h-8 w-auto" />
+                  <span className="font-semibold text-blue-600 tracking-tight truncate text-sm">
+                    Gestão de PDI
+                  </span>
                 </div>
               ) : (
-                <img src="/logo-ckm.png" alt="CKM Talents" className="h-8 w-auto" />
+                <img src="/logo-ckm.png" alt="CKM Talents" className="h-7 w-auto" />
               )}
             </div>
           </SidebarHeader>
 
-          {/* Informações do Usuário - Card Reorganizado */}
+          {/* Informações do Usuário - Card Compacto */}
           {!isCollapsed && user && (
-            <div className="mx-3 my-3 p-3 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-sm">
-              {/* Nome do Usuário - Destaque Principal */}
-              <div className="text-center mb-3">
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white font-bold text-lg mb-2">
+            <div className="mx-3 my-2 px-3 py-2 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-sm shrink-0">
                   {user.name ? user.name.charAt(0).toUpperCase() : "U"}
                 </div>
-                <h3 className="text-sm font-semibold text-gray-800 truncate">
-                  {user.name || "Usuário"}
-                </h3>
-                <span className="inline-block mt-1 px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded-full bg-blue-600 text-white">
-                  {user.role === "admin" ? "Administrador" : user.role === "lider" ? "Líder" : user.role === "gerente" ? "Gerente" : "Colaborador"}
-                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xs font-semibold text-gray-800 truncate leading-tight">
+                    {user.name || "Usuário"}
+                  </h3>
+                  <span className="inline-block mt-0.5 px-1.5 py-0 text-[9px] uppercase tracking-wider font-bold rounded-full bg-blue-600 text-white leading-relaxed">
+                    {user.role === "admin" ? "Administrador" : user.role === "lider" ? "Líder" : user.role === "gerente" ? "Gerente" : "Colaborador"}
+                  </span>
+                </div>
               </div>
-              
-              {/* Informações Secundárias */}
-              <div className="space-y-1.5 pt-2 border-t border-blue-100">
-                {/* Departamento */}
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-                  <span className="text-xs text-gray-600 truncate">
+              {/* Info compacta */}
+              <div className="mt-1.5 pt-1.5 border-t border-blue-100 space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <Building2 className="h-3 w-3 text-blue-500 shrink-0" />
+                  <span className="text-[11px] text-gray-600 truncate">
                     {user.departamentoNome || "Sem Departamento"}
                   </span>
                 </div>
-                {/* Líder - apenas para colaboradores e líderes */}
                 {user.role !== "admin" && user.role !== "gerente" && (
-                  <div className="flex items-center gap-2">
-                    <Users className="h-3.5 w-3.5 text-orange-500 shrink-0" />
-                    <span className="text-xs text-gray-600 truncate">
+                  <div className="flex items-center gap-1.5">
+                    <Users className="h-3 w-3 text-orange-500 shrink-0" />
+                    <span className="text-[11px] text-gray-600 truncate">
                       Líder: {user.leaderName || "Não definido"}
                     </span>
                   </div>
@@ -325,7 +321,7 @@ function DashboardLayoutContent({
             </div>
           )}
 
-          <SidebarContent className="gap-0 overflow-y-auto">
+          <SidebarContent className="gap-0 overflow-y-auto flex-1">
             {/* Menu simples para Admin - lista direta sem separação */}
             {user?.role === "admin" && (
               <SidebarMenu className="px-2 py-1">
@@ -379,6 +375,9 @@ function DashboardLayoutContent({
                   }
                   return (
                     <SidebarMenuItem key={item.path}>
+                      {item.external && (
+                        <div className="mx-2 my-1 border-t border-blue-200" />
+                      )}
                       <SidebarMenuButton
                         isActive={isActive}
                         onClick={() => {
@@ -397,12 +396,12 @@ function DashboardLayoutContent({
                           }
                         }}
                         tooltip={item.label}
-                        className={`h-10 transition-all font-normal relative ${item.external ? 'text-blue-600 hover:text-blue-700' : ''}`}
+                        className={`h-9 transition-all font-normal relative ${item.external ? 'text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg mt-1' : ''}`}
                       >
                         <item.icon
                           className={`h-4 w-4 ${isActive ? "text-primary" : item.external ? "text-blue-600" : ""}`}
                         />
-                        <span>{item.label}</span>
+                        <span className={item.external ? 'text-xs font-medium' : ''}>{item.label}</span>
                         {badgeCount > 0 && (
                           <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full animate-pulse">
                             {badgeCount}
@@ -416,20 +415,20 @@ function DashboardLayoutContent({
             )}
           </SidebarContent>
 
-          <SidebarFooter className="p-3">
+          <SidebarFooter className="p-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar className="h-9 w-9 border shrink-0">
+                <button className="flex items-center gap-2 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <Avatar className="h-7 w-7 border shrink-0">
                     <AvatarFallback className="text-xs font-medium">
                       {user?.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium truncate leading-none">
+                    <p className="text-xs font-medium truncate leading-none">
                       {user?.name || "-"}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate mt-1.5">
+                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">
                       {user?.email || "-"}
                     </p>
                   </div>

@@ -1,0 +1,14 @@
+{
+  "query": "SELECT email, cpf FROM users WHERE role = 'lider' AND status = 'ativo' AND name LIKE '%BRUNO%' LIMIT 1",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT email, cpf FROM users WHERE role = 'lider' AND status = 'ativo' AND name LIKE '%BRUNO%' LIMIT 1",
+  "rows": [
+    {
+      "email": "bruno.vieira@to.sebrae.com.br",
+      "cpf": "06668878610"
+    }
+  ],
+  "messages": [],
+  "stdout": "email\tcpf\nbruno.vieira@to.sebrae.com.br\t06668878610\n",
+  "stderr": "",
+  "execution_time_ms": 360
+}
