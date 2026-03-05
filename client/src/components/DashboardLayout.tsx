@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2, CheckSquare, MessageSquarePlus, Upload, ClipboardCheck, History, Trash2, AlertTriangle, TrendingUp, ChevronDown, ChevronRight, User, Send, BookOpen } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2, CheckSquare, MessageSquarePlus, Upload, ClipboardCheck, History, Trash2, AlertTriangle, TrendingUp, ChevronDown, ChevronRight, User, Send, BookOpen, ExternalLink } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -31,7 +31,7 @@ import { PendencyBadge } from "./PendencyBadge";
 import { ModalPrimeiroAcesso } from "./ModalPrimeiroAcesso";
 
 const getMenuItems = (userRole: string) => {
-  const items: Array<{ icon: any; label: string; path: string; section?: string }> = [];
+  const items: Array<{ icon: any; label: string; path: string; section?: string; external?: boolean }> = [];
   
   if (userRole === "admin") {
     // Normas e Regras - primeiro item
@@ -75,6 +75,7 @@ const getMenuItems = (userRole: string) => {
       { icon: CheckSquare, label: "Ações da Equipe", path: "/acoes-equipe" },
       { icon: MessageSquarePlus, label: "Solicitações de Ajustes nas Ações/Equipe", path: "/solicitacoes-equipe" },
       { icon: Users, label: "Solicitações de Novas Ações/Equipe", path: "/solicitacoes-acoes?aba=equipe" },
+      { icon: ExternalLink, label: "Ecossistema do Bem - Líderes e Sucessores", path: "https://ecossistemadobem.manus.space", external: true },
     );
   } else if (userRole === "gerente") {
     // Gerente tem acesso de leitura: Dashboard, PDIs, Ações, Histórico, Relatório de Vencidas
@@ -364,7 +365,7 @@ function DashboardLayoutContent({
               <SidebarMenu className="px-2 py-1">
                 {menuItems.map((item: any) => {
                   // Para itens com query params, comparar pathname + search
-                  const isActive = item.path.includes('?')
+                  const isActive = item.external ? false : item.path.includes('?')
                     ? (location + window.location.search) === item.path
                     : location === item.path;
                   let badgeCount = 0;
@@ -381,7 +382,9 @@ function DashboardLayoutContent({
                       <SidebarMenuButton
                         isActive={isActive}
                         onClick={() => {
-                          if (item.path.includes('?')) {
+                          if (item.external) {
+                            window.open(item.path, '_blank', 'noopener,noreferrer');
+                          } else if (item.path.includes('?')) {
                             // Para itens com query params, usar window.location para navegar
                             const [pathname, search] = item.path.split('?');
                             setLocation(pathname);
@@ -394,10 +397,10 @@ function DashboardLayoutContent({
                           }
                         }}
                         tooltip={item.label}
-                        className={`h-10 transition-all font-normal relative`}
+                        className={`h-10 transition-all font-normal relative ${item.external ? 'text-blue-600 hover:text-blue-700' : ''}`}
                       >
                         <item.icon
-                          className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                          className={`h-4 w-4 ${isActive ? "text-primary" : item.external ? "text-blue-600" : ""}`}
                         />
                         <span>{item.label}</span>
                         {badgeCount > 0 && (
