@@ -79,7 +79,7 @@ export function SolicitarAjusteModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Solicitar Alteração</DialogTitle>
         </DialogHeader>

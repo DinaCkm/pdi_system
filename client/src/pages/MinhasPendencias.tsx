@@ -739,7 +739,7 @@ export default function MinhasPendencias() {
 
       {/* Dialog de Detalhes */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedAcao?.titulo}</DialogTitle>
             <DialogDescription>
