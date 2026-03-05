@@ -14,6 +14,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { EvidenciaModal } from "@/components/EvidenciaModal";
 import { SolicitarAjusteModal } from "@/components/SolicitarAjusteModal";
 import { SolicitarAjusteModalMelhorado } from "@/components/SolicitarAjusteModalMelhorado";
+import RichTextDisplay, { stripHtml } from '@/components/RichTextDisplay';
 
 // Hook para buscar nomes de competências
 function useMacroNames(macroIds: number[]) {
@@ -443,7 +444,7 @@ export default function MinhasPendencias() {
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-lg truncate">{acao.titulo}</CardTitle>
                     <CardDescription className="mt-1 line-clamp-2">
-                      {acao.descricao || "Sem descrição"}
+                      {acao.descricao ? stripHtml(acao.descricao) : "Sem descrição"}
                     </CardDescription>
                   </div>
                   <div className="ml-4">
@@ -750,7 +751,7 @@ export default function MinhasPendencias() {
             <div className="space-y-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Descrição</p>
-                <p className="mt-1">{selectedAcao.descricao || "Sem descrição"}</p>
+                <div className="mt-1">{selectedAcao.descricao ? <RichTextDisplay content={selectedAcao.descricao} /> : "Sem descrição"}</div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

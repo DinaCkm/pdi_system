@@ -402,7 +402,7 @@ export default function AdminDashboard() {
                 <CardContent className="space-y-4">
                   <div>
                     <p className="text-sm font-semibold text-gray-700">Descrição da Evidência:</p>
-                    <p className="text-sm text-gray-600 mt-1">{evidence.descricao}</p>
+                    <div className="text-sm text-gray-600 mt-1 line-clamp-3">{evidence.descricao ? stripHtml(evidence.descricao) : "Sem descrição"}</div>
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -677,7 +677,7 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             <div>
               <p className="text-sm font-semibold">Descrição:</p>
-              <p className="text-sm text-gray-600 mt-1">{selectedEvidence?.descricao}</p>
+              <div className="text-sm text-gray-600 mt-1">{selectedEvidence?.descricao ? <RichTextDisplay content={selectedEvidence.descricao} /> : "Sem descrição"}</div>
             </div>
 
             <div>

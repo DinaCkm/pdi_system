@@ -2967,3 +2967,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Auditoria: corrigir todos os pontos onde textos rich text (HTML) são exibidos como texto bruto em vez de renderizados
 - [x] Bug: Tags HTML brutas na descrição das ações em Minhas Ações (Acoes.tsx) - strong, ul, li, p, span visíveis
 - [x] Ajuste: Título do PDI truncado nos cards de Meu PDI - nome completo não visível
+- [x] Bug persistente: Tags HTML brutas ainda aparecem na descrição das ações em Minhas Ações após correção anterior (causa: componente era MinhasPendencias.tsx, não Acoes.tsx)
