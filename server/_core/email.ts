@@ -79,7 +79,7 @@ const AVISO_NAO_RESPONDA = `
 
 const ASSINATURA = `
 ---
-Sistema de Gestão de PDI — CKM Talents
+Sistema de Gestão de PDI — B.E.M - Ecossistema de Desenvolvimento
 Eco_Evoluir`;
 
 const TEXTO_PADRAO_ACESSE = 'Acesse o Sistema Eco_Evoluir para tomar ciência e providências. Você possui notificações pendentes.';

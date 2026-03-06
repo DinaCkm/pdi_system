@@ -78,7 +78,7 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
-            <img src="/logo-ckm.png" alt="CKM Talents" className="h-16 w-auto" />
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/logo-bem-cerebro_582bcb56.png" alt="B.E.M - Ecossistema de Desenvolvimento" className="h-20 w-auto" />
           </div>
           <CardTitle className="text-2xl font-bold text-blue-600">Gestão de PDI</CardTitle>
           <CardDescription>Entre com seu e-mail e CPF</CardDescription>
@@ -109,7 +109,7 @@ export default function Login() {
       {/* Rodapé Fixo */}
       <footer className="fixed bottom-0 left-0 right-0 h-10 bg-gray-100 border-t border-gray-200 flex items-center justify-center">
         <p className="text-xs text-gray-500">
-          © {new Date().getFullYear()} CKM Talents - Todos os direitos reservados
+          © {new Date().getFullYear()} B.E.M - Ecossistema de Desenvolvimento do B.E.M. - Todos os direitos reservados
         </p>
       </footer>
     </div>

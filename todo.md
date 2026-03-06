@@ -3000,3 +3000,10 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Gestor encerra solicitação → e-mail para empregado + CC relacionamento@ckmtalents.net
 - [x] E-mail deve informar que devem acessar o Sistema Eco_Evoluir para tomar ciência e providências
 - [x] Padronizar texto de TODOS os e-mails do sistema para usar texto padrão Eco_Evoluir
+
+## Integração Ecossistema do Bem
+- [x] BUG: Link do Ecossistema do Bem no menu lateral abre a página de outro aluno em vez do usuário logado (resolvido: link já aponta para tela de login, usuário faz login com suas credenciais)
+- [x] Opção A: Link mantido como está - abre tela de login do Ecossistema do Bem em nova aba
+
+## Troca de Logo
+- [x] Trocar o logo atual por novo logo B.E.M (cérebro) em todos os lugares do sistema (DashboardLayout, Login, e-mails)
