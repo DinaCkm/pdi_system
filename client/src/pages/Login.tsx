@@ -76,13 +76,13 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mb-4 flex justify-center">
-            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/eco-do-bem-logo_3a3668d7.png" alt="Eco do Bem" className="h-20 w-auto max-w-[280px]" />
+        <CardHeader className="text-center pt-6 pb-2 gap-0">
+          <div className="flex justify-center">
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/eco-do-bem-logo-cropped_564da75a.png" alt="Eco do Bem" className="w-[280px] h-auto" />
           </div>
-          <CardTitle className="text-xl font-bold text-blue-900">Ecossistema de Desenvolvimento do B.E.M</CardTitle>
-          <p className="text-2xl font-extrabold text-amber-600 tracking-wider mt-1">EVOLUIR</p>
-          <CardDescription className="mt-2">Entre com seu e-mail e CPF</CardDescription>
+          <CardTitle className="text-sm font-semibold text-blue-900 tracking-wide mt-2">Ecossistema de Desenvolvimento do B.E.M</CardTitle>
+          <p className="text-sm font-bold text-amber-600 tracking-widest mt-0.5">EVOLUIR</p>
+          <CardDescription className="mt-3 text-xs">Entre com seu e-mail e CPF</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

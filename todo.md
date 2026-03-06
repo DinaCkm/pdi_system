@@ -3015,3 +3015,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Atualizar rodapé da tela de login para "Eco do Bem"
 - [x] Atualizar assinatura dos e-mails para "Eco do Bem"
 - [x] Atualizar testes de email para refletir nova marca
+
+## Melhoria de Design - Tela de Login
+- [x] Aumentar tamanho do logo Eco do Bem na tela de login
+- [x] Reduzir e proporcionar o título "Ecossistema de Desenvolvimento do B.E.M"
+- [x] Reduzir tamanho da palavra "EVOLUIR"
+- [x] Melhorar design geral da tela de login (proporções)
