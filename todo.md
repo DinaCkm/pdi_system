@@ -3007,3 +3007,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Troca de Logo
 - [x] Trocar o logo atual por novo logo B.E.M (cérebro) em todos os lugares do sistema (DashboardLayout, Login, e-mails)
+- [x] Trocar título da tela de login para "Ecossistema de Desenvolvimento do B.E.M" e adicionar "EVOLUIR" abaixo

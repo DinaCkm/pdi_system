@@ -80,8 +80,9 @@ export default function Login() {
           <div className="mb-4 flex justify-center">
             <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/logo-bem-cerebro_582bcb56.png" alt="B.E.M - Ecossistema de Desenvolvimento" className="h-20 w-auto" />
           </div>
-          <CardTitle className="text-2xl font-bold text-blue-600">Gestão de PDI</CardTitle>
-          <CardDescription>Entre com seu e-mail e CPF</CardDescription>
+          <CardTitle className="text-xl font-bold text-blue-900">Ecossistema de Desenvolvimento do B.E.M</CardTitle>
+          <p className="text-2xl font-extrabold text-amber-600 tracking-wider mt-1">EVOLUIR</p>
+          <CardDescription className="mt-2">Entre com seu e-mail e CPF</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
