@@ -274,13 +274,13 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/logo-bem-cerebro_582bcb56.png" alt="B.E.M" className="h-8 w-auto" />
+                  <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/eco-do-bem-logo_3a3668d7.png" alt="Eco do Bem" className="h-8 w-auto" />
                   <span className="font-semibold text-blue-600 tracking-tight truncate text-sm">
-                    Gestão de PDI
+                    Eco do Bem
                   </span>
                 </div>
               ) : (
-                <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/logo-bem-cerebro_582bcb56.png" alt="B.E.M" className="h-7 w-auto" />
+                <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/eco-do-bem-logo_3a3668d7.png" alt="Eco do Bem" className="h-7 w-auto" />
               )}
             </div>
           </SidebarHeader>

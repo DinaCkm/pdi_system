@@ -36,7 +36,7 @@ describe('Notificações por Email - Solicitação de Nova Ação', () => {
       expect(body.body).toContain('Maria Santos');
       expect(body.body).toContain('Eco_Evoluir');
       expect(body.body).toContain('NÃO RESPONDA ESTE EMAIL');
-      expect(body.body).toContain('B.E.M - Ecossistema de Desenvolvimento');
+      expect(body.body).toContain('Eco do Bem - Ecossistema de Desenvolvimento');
     });
 
     it('deve funcionar sem departamento', async () => {
@@ -84,7 +84,7 @@ describe('Notificações por Email - Solicitação de Nova Ação', () => {
       expect(body.body).toContain('Maria Santos');
       expect(body.body).toContain('Eco_Evoluir');
       expect(body.body).toContain('NÃO RESPONDA ESTE EMAIL');
-      expect(body.body).toContain('B.E.M - Ecossistema de Desenvolvimento');
+      expect(body.body).toContain('Eco do Bem - Ecossistema de Desenvolvimento');
     });
   });
 

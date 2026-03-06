@@ -3008,3 +3008,10 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Troca de Logo
 - [x] Trocar o logo atual por novo logo B.E.M (cérebro) em todos os lugares do sistema (DashboardLayout, Login, e-mails)
 - [x] Trocar título da tela de login para "Ecossistema de Desenvolvimento do B.E.M" e adicionar "EVOLUIR" abaixo
+
+## Troca de Logo - Eco do Bem (novo logo roxo/turquesa)
+- [x] Substituir logo B.E.M (cérebro dourado) pelo novo logo "Eco do Bem" (cérebro roxo/turquesa) em: Login, DashboardLayout (sidebar expandido e colapsado), e-mails (assinatura), rodapé
+- [x] Atualizar texto do sidebar de "Gestão de PDI" para "Eco do Bem"
+- [x] Atualizar rodapé da tela de login para "Eco do Bem"
+- [x] Atualizar assinatura dos e-mails para "Eco do Bem"
+- [x] Atualizar testes de email para refletir nova marca

@@ -78,7 +78,7 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
-            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/logo-bem-cerebro_582bcb56.png" alt="B.E.M - Ecossistema de Desenvolvimento" className="h-20 w-auto" />
+            <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/eco-do-bem-logo_3a3668d7.png" alt="Eco do Bem" className="h-20 w-auto max-w-[280px]" />
           </div>
           <CardTitle className="text-xl font-bold text-blue-900">Ecossistema de Desenvolvimento do B.E.M</CardTitle>
           <p className="text-2xl font-extrabold text-amber-600 tracking-wider mt-1">EVOLUIR</p>
@@ -110,7 +110,7 @@ export default function Login() {
       {/* Rodapé Fixo */}
       <footer className="fixed bottom-0 left-0 right-0 h-10 bg-gray-100 border-t border-gray-200 flex items-center justify-center">
         <p className="text-xs text-gray-500">
-          © {new Date().getFullYear()} B.E.M - Ecossistema de Desenvolvimento do B.E.M. - Todos os direitos reservados
+          © {new Date().getFullYear()} Eco do Bem - Ecossistema de Desenvolvimento - Todos os direitos reservados
         </p>
       </footer>
     </div>
