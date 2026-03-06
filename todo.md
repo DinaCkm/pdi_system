@@ -3021,3 +3021,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Reduzir e proporcionar o título "Ecossistema de Desenvolvimento do B.E.M"
 - [x] Reduzir tamanho da palavra "EVOLUIR"
 - [x] Melhorar design geral da tela de login (proporções)
+
+## Botão de Compartilhamento no LinkedIn - Ação Concluída
+- [x] Adicionar botão "Compartilhar no LinkedIn" no card de ação concluída (MinhasPendencias.tsx)
+- [x] Adicionar botão "Compartilhar no LinkedIn" no modal de celebração (confetes/troféu)
+- [x] Incluir menções @competênciasdobem e @ecobem no texto pré-preenchido
+- [x] Texto motivacional com nome da ação e competência

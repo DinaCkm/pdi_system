@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search, AlertTriangle, Eye, MessageSquare, Upload, History, User, Zap, Sparkles, Trophy, FileArchive } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search, AlertTriangle, Eye, MessageSquare, Upload, History, User, Zap, Sparkles, Trophy, FileArchive, Linkedin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -579,14 +579,27 @@ export default function MinhasPendencias() {
                       
                       // CASO 1: AÇÃO APROVADA/CONCLUÍDA - PRIORIDADE MÁXIMA
                       if (acao.status === 'concluida') {
+                        const linkedinText = encodeURIComponent(
+                          `Concluí mais uma etapa do meu Plano de Desenvolvimento Individual (PDI)!\n\nAção: "${acao.titulo}"${acao.macroId && macroNames[acao.macroId] ? `\nCompetência: "${macroNames[acao.macroId]}"` : ''}\n\nInvestindo no meu crescimento profissional com o programa Eco do Bem - EVOLUIR!\n\n@competênciasdobem @ecobem\n\n#DesenvolvimentoProfissional #PDI #EcoDoBem #EVOLUIR #CrescimentoProfissional`
+                        );
+                        const linkedinUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${linkedinText}`;
                         return (
-                          <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 rounded-lg font-bold flex flex-col items-center justify-center cursor-default">
-                            <div className="flex items-center justify-center">
-                              <span className="mr-2">✓</span> Ação Concluída
+                          <div className="w-full space-y-2">
+                            <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 rounded-lg font-bold flex flex-col items-center justify-center cursor-default">
+                              <div className="flex items-center justify-center">
+                                <span className="mr-2">✓</span> Ação Concluída
+                              </div>
+                              <div className="text-[10px] mt-1 font-mono">
+                                ID VALIDAÇÃO: {evidenciaDesta_Acao?.id || 'BUSCANDO NO BANCO...'}
+                              </div>
                             </div>
-                            <div className="text-[10px] mt-1 font-mono">
-                              ID VALIDAÇÃO: {evidenciaDesta_Acao?.id || 'BUSCANDO NO BANCO...'}
-                            </div>
+                            <button
+                              onClick={() => window.open(linkedinUrl, '_blank')}
+                              className="w-full py-2.5 px-4 bg-[#0A66C2] hover:bg-[#004182] text-white rounded-lg font-semibold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-sm"
+                            >
+                              <Linkedin className="h-4 w-4" />
+                              Compartilhar Conquista no LinkedIn
+                            </button>
                           </div>
                         );
                       }
@@ -822,55 +835,41 @@ export default function MinhasPendencias() {
               <Trophy className="h-16 w-16 text-yellow-500 drop-shadow-lg" />
             </div>
             <DialogTitle className="text-2xl font-bold text-center text-yellow-700">
-              Parabéns, Júlia! Meta Batida!
+              Parabéns{user?.name ? `, ${user.name.split(' ')[0]}` : ''}! Meta Batida!
             </DialogTitle>
             <DialogDescription className="text-center text-base mt-4 text-gray-700">
               Sua evidência foi aprovada e você concluiu mais uma etapa do seu PDI. Continue assim!
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-6 text-center">
+          <div className="py-4 text-center">
             <p className="text-sm text-gray-600 mb-2">Ação concluída:</p>
             <p className="font-semibold text-lg text-blue-600">{celebrationAcao?.titulo}</p>
           </div>
 
-          <DialogFooter className="flex justify-center">
-                        <Button
-              className="bg-gradient-to-r from-blue-600 to-orange-500 text-white"
-              onClick={async () => {
-                if (!evidenceDescription.trim()) {
-                  toast.error("Por favor, descreva sua conquista");
-                  return;
-                }
-                setIsSubmittingEvidence(true);
-                try {
-                  await submitEvidenceMutation.mutateAsync({
-                    actionId: selectedAcaoEvidence.id,
-                    descricao: evidenceDescription,
-                    files: evidenceFile ? [evidenceFile] : undefined,
-                  });
-                } finally {
-                  setIsSubmittingEvidence(false);
-                }
+          <div className="text-center text-sm text-gray-500 mb-2">
+            Que tal compartilhar essa conquista?
+          </div>
+
+          <DialogFooter className="flex flex-col gap-3 sm:flex-col">
+            <button
+              onClick={() => {
+                const linkedinText = encodeURIComponent(
+                  `Concluí mais uma etapa do meu Plano de Desenvolvimento Individual (PDI)!\n\nAção: "${celebrationAcao?.titulo || ''}"\n\nInvestindo no meu crescimento profissional com o programa Eco do Bem - EVOLUIR!\n\n@competênciasdobem @ecobem\n\n#DesenvolvimentoProfissional #PDI #EcoDoBem #EVOLUIR #CrescimentoProfissional`
+                );
+                window.open(`https://www.linkedin.com/feed/?shareActive=true&text=${linkedinText}`, '_blank');
               }}
-              disabled={isSubmittingEvidence || !podeEnviarEvidencia}
+              className="w-full py-3 px-4 bg-[#0A66C2] hover:bg-[#004182] text-white rounded-lg font-semibold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
             >
-              {isSubmittingEvidence ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Enviando...
-                </>
-              ) : !podeEnviarEvidencia ? (
-                <>
-                  <Clock className="h-4 w-4 mr-2" />
-                  Em Análise...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Enviar Evidência
-                </>
-              )}
+              <Linkedin className="h-5 w-5" />
+              Compartilhar no LinkedIn
+            </button>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setShowCelebrationDialog(false)}
+            >
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>
