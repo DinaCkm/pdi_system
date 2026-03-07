@@ -3027,3 +3027,11 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar botão "Compartilhar no LinkedIn" no modal de celebração (confetes/troféu)
 - [x] Incluir menções @competênciasdobem e @ecobem no texto pré-preenchido
 - [x] Texto motivacional com nome da ação e competência
+
+## Certificado Digital de Conclusão de Ação do PDI
+- [x] Criar endpoint backend para gerar certificado/card de conquista como imagem PNG (1080x1080)
+- [x] Design moderno com gradiente escuro, badge "DESAFIO CONCLUÍDO", card glassmorphism, frase motivacional
+- [x] Upload automático da imagem para S3 e retorno da URL
+- [x] Botão "Baixar Card de Conquista" no card de ação concluída
+- [x] Botão "Baixar Card de Conquista" no modal de celebração (confetes/troféu)
+- [x] Testes vitest para o endpoint de geração do certificado (8 testes passando)

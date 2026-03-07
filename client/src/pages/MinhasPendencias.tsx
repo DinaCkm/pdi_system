@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search, AlertTriangle, Eye, MessageSquare, Upload, History, User, Zap, Sparkles, Trophy, FileArchive, Linkedin } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle, XCircle, Clock, FileText, Filter, Search, AlertTriangle, Eye, MessageSquare, Upload, History, User, Zap, Sparkles, Trophy, FileArchive, Linkedin, Download, Award } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +15,62 @@ import { EvidenciaModal } from "@/components/EvidenciaModal";
 import { SolicitarAjusteModal } from "@/components/SolicitarAjusteModal";
 import { SolicitarAjusteModalMelhorado } from "@/components/SolicitarAjusteModalMelhorado";
 import RichTextDisplay, { stripHtml } from '@/components/RichTextDisplay';
+
+// Componente de botão para gerar e baixar certificado de conquista
+function CertificateButton({ actionId, variant = 'card' }: { actionId: number; variant?: 'card' | 'celebration' }) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const generateCert = trpc.actions.generateCertificate.useMutation();
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    try {
+      const result = await generateCert.mutateAsync({ actionId });
+      // Abrir a imagem em nova aba para download
+      const link = document.createElement('a');
+      link.href = result.url;
+      link.download = `conquista-eco-do-bem-${actionId}.png`;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Card de conquista gerado! Salve a imagem e compartilhe no LinkedIn.');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao gerar o card de conquista');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  if (variant === 'celebration') {
+    return (
+      <button
+        onClick={handleGenerate}
+        disabled={isGenerating}
+        className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-semibold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+      >
+        {isGenerating ? (
+          <><Loader2 className="h-5 w-5 animate-spin" /> Gerando card...</>
+        ) : (
+          <><Award className="h-5 w-5" /> Baixar Card de Conquista</>
+        )}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleGenerate}
+      disabled={isGenerating}
+      className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-semibold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+    >
+      {isGenerating ? (
+        <><Loader2 className="h-4 w-4 animate-spin" /> Gerando...</>
+      ) : (
+        <><Award className="h-4 w-4" /> Baixar Card de Conquista</>
+      )}
+    </button>
+  );
+}
 
 // Hook para buscar nomes de competências
 function useMacroNames(macroIds: number[]) {
@@ -600,6 +656,7 @@ export default function MinhasPendencias() {
                               <Linkedin className="h-4 w-4" />
                               Compartilhar Conquista no LinkedIn
                             </button>
+                            <CertificateButton actionId={acao.id} />
                           </div>
                         );
                       }
@@ -852,6 +909,9 @@ export default function MinhasPendencias() {
           </div>
 
           <DialogFooter className="flex flex-col gap-3 sm:flex-col">
+            {celebrationAcao?.id && (
+              <CertificateButton actionId={celebrationAcao.id} variant="celebration" />
+            )}
             <button
               onClick={() => {
                 const linkedinText = encodeURIComponent(

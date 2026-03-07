@@ -4,6 +4,7 @@ import * as db from "../db";
 import { actions as acoes } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
+import { generateCertificate } from "./certificateGenerator";
 
 // Router de Ações Simplificado
 export const actionsRouter = router({
@@ -242,5 +243,55 @@ export const actionsRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas admin pode aprovar' });
       }
       return { success: true };
+    }),
+
+  // Gerar certificado de conclusão de ação
+  generateCertificate: protectedProcedure
+    .input(z.object({ actionId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const user = ctx.user!;
+      
+      // Buscar a ação
+      const action = await db.getActionById(input.actionId);
+      if (!action) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
+      }
+      
+      // Verificar se a ação está concluída
+      if (action.status !== 'concluida') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Apenas ações concluídas podem gerar certificado' });
+      }
+      
+      // Buscar nome da macro competência
+      let competenciaNome: string | undefined;
+      if (action.macroId) {
+        const macro = await db.getMacroById(action.macroId);
+        competenciaNome = macro?.nome;
+      }
+      
+      // Buscar título do PDI
+      let pdiTitulo: string | undefined;
+      if (action.pdiId) {
+        const pdi = await db.getPDIById(action.pdiId);
+        pdiTitulo = pdi?.titulo;
+      }
+      
+      // Formatar data de conclusão
+      const dataConclusao = action.updatedAt 
+        ? new Date(action.updatedAt).toLocaleDateString('pt-BR')
+        : new Date().toLocaleDateString('pt-BR');
+      
+      // Gerar o certificado
+      const { url, key } = await generateCertificate({
+        nomeColaborador: user.name || 'Colaborador',
+        tituloAcao: action.titulo,
+        competencia: competenciaNome,
+        dataConclusao,
+        pdiTitulo,
+      });
+      
+      console.log('[actions.generateCertificate] Certificado gerado:', { actionId: input.actionId, url });
+      
+      return { url, key };
     }),
 });
