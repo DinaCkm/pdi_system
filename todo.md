@@ -3078,3 +3078,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Gerar arquivo .xlsx para download
 - [x] Nome do líder do solicitante incluído nos dados retornados
 - [x] Testes vitest para a lógica de mapeamento do relatório (8/8 passando)
+
+## Ajustes Visuais - Documento Ajusteevoluir01 (09/03/2026)
+- [x] Cards recolhíveis no Histórico de Alteração nas Ações (expandir/recolher)
+- [x] Centralizar layout do Relatório de Ações Vencidas
+- [x] Redesign da página Análise de Liderança (clareza, layout, gráficos)

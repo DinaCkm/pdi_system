@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-// Select removido - filtro por departamento desativado
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Collapsible,
   CollapsibleContent,
@@ -22,6 +22,9 @@ import {
   CheckCircle,
   Sparkles,
   ArrowLeft,
+  BarChart3,
+  Award,
+  UserCheck,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -67,11 +70,11 @@ interface LeaderData {
   }>;
 }
 
-function ProgressBar({ value, color = "bg-blue-500" }: { value: number; color?: string }) {
+function ProgressBar({ value, color = "bg-blue-500", height = "h-3" }: { value: number; color?: string; height?: string }) {
   return (
-    <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+    <div className={`w-full bg-gray-200 rounded-full ${height} overflow-hidden`}>
       <div
-        className={`h-full ${color} transition-all duration-500`}
+        className={`h-full ${color} transition-all duration-500 rounded-full`}
         style={{ width: `${Math.min(value, 100)}%` }}
       />
     </div>
@@ -81,235 +84,283 @@ function ProgressBar({ value, color = "bg-blue-500" }: { value: number; color?: 
 function InsightIcon({ tipo }: { tipo: string }) {
   switch (tipo) {
     case "atencao":
-      return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+      return <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />;
     case "destaque":
-      return <CheckCircle className="h-5 w-5 text-green-500" />;
+      return <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />;
     case "alinhamento":
-      return <Sparkles className="h-5 w-5 text-blue-500" />;
+      return <Sparkles className="h-4 w-4 text-blue-500 shrink-0" />;
     case "oportunidade":
-      return <Target className="h-5 w-5 text-purple-500" />;
+      return <Target className="h-4 w-4 text-purple-500 shrink-0" />;
     default:
-      return <Lightbulb className="h-5 w-5 text-gray-500" />;
+      return <Lightbulb className="h-4 w-4 text-gray-500 shrink-0" />;
   }
 }
 
 function InsightBadgeColor(tipo: string) {
   switch (tipo) {
     case "atencao":
-      return "bg-amber-100 text-amber-800 border-amber-200";
+      return "bg-amber-50 text-amber-800 border-amber-200";
     case "destaque":
-      return "bg-green-100 text-green-800 border-green-200";
+      return "bg-green-50 text-green-800 border-green-200";
     case "alinhamento":
-      return "bg-blue-100 text-blue-800 border-blue-200";
+      return "bg-blue-50 text-blue-800 border-blue-200";
     case "oportunidade":
-      return "bg-purple-100 text-purple-800 border-purple-200";
+      return "bg-purple-50 text-purple-800 border-purple-200";
     default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
+      return "bg-gray-50 text-gray-800 border-gray-200";
   }
 }
 
-function LeaderCard({ leader, isExpanded, onToggle }: { 
+function getPerformanceColor(value: number) {
+  if (value >= 70) return "text-green-600";
+  if (value >= 40) return "text-amber-600";
+  return "text-red-600";
+}
+
+function getPerformanceBg(value: number) {
+  if (value >= 70) return "bg-green-500";
+  if (value >= 40) return "bg-amber-400";
+  return "bg-red-400";
+}
+
+function getPerformanceBadge(value: number) {
+  if (value >= 70) return "bg-green-100 text-green-700 border-green-200";
+  if (value >= 40) return "bg-amber-100 text-amber-700 border-amber-200";
+  return "bg-red-100 text-red-700 border-red-200";
+}
+
+function LeaderCard({ leader, index, isExpanded, onToggle }: { 
   leader: LeaderData; 
+  index: number;
   isExpanded: boolean;
   onToggle: () => void;
 }) {
   return (
-    <Card className="mb-4 overflow-hidden">
+    <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
       <Collapsible open={isExpanded} onOpenChange={onToggle}>
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                {isExpanded ? (
-                  <ChevronDown className="h-5 w-5 text-gray-500" />
-                ) : (
-                  <ChevronRight className="h-5 w-5 text-gray-500" />
+          <CardHeader className="cursor-pointer hover:bg-gray-50/50 transition-colors py-4 px-5">
+            <div className="flex items-center gap-4">
+              {/* Posição no ranking */}
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full shrink-0 text-sm font-bold ${
+                index === 0 ? "bg-amber-100 text-amber-700" :
+                index === 1 ? "bg-gray-200 text-gray-700" :
+                index === 2 ? "bg-orange-100 text-orange-700" :
+                "bg-gray-100 text-gray-500"
+              }`}>
+                {index + 1}
+              </div>
+
+              {/* Chevron */}
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
+              )}
+
+              {/* Nome e departamento */}
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 truncate">{leader.liderNome}</p>
+                <p className="text-sm text-muted-foreground truncate">
+                  {leader.departamentoNome} &middot; {leader.equipeTotalColaboradores} colaborador{leader.equipeTotalColaboradores !== 1 ? "es" : ""}
+                </p>
+              </div>
+
+              {/* Métricas resumidas */}
+              <div className="hidden md:flex items-center gap-6">
+                {/* PDIs */}
+                {leader.totalPdisSubordinados > 0 && (
+                  <div className="text-center">
+                    <p className="text-xs text-muted-foreground">PDIs</p>
+                    <div className="flex items-center gap-1">
+                      <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                      <span className="text-sm font-medium">{leader.pdisValidados}/{leader.totalPdisSubordinados}</span>
+                      {leader.pdisPendentesValidacao > 0 && (
+                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 ml-1">
+                          {leader.pdisPendentesValidacao} pend.
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
                 )}
-                <div>
-                  <CardTitle className="text-lg">{leader.liderNome}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {leader.departamentoNome} • {leader.equipeTotalColaboradores} colaboradores
+
+                {/* Líder pessoal */}
+                <div className="text-center min-w-[70px]">
+                  <p className="text-xs text-muted-foreground">Líder</p>
+                  <p className={`text-lg font-bold ${getPerformanceColor(leader.liderTaxaConclusao)}`}>
+                    {leader.liderTaxaConclusao}%
+                  </p>
+                </div>
+
+                {/* Equipe */}
+                <div className="text-center min-w-[70px]">
+                  <p className="text-xs text-muted-foreground">Equipe</p>
+                  <p className={`text-lg font-bold ${getPerformanceColor(leader.equipeTaxaConclusao)}`}>
+                    {leader.equipeTaxaConclusao}%
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground mb-1">Líder</p>
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                    {leader.liderTaxaConclusao}%
-                  </Badge>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground mb-1">Equipe</p>
-                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-                    {leader.equipeTaxaConclusao}%
-                  </Badge>
-                </div>
-              </div>
-            </div>
-            
-            {/* Barras de progresso lado a lado */}
-            <div className="mt-4 space-y-2">
-              <div className="flex items-center gap-3">
-                <span className="text-xs w-16 text-right text-blue-600 font-medium">Líder</span>
-                <div className="flex-1">
-                  <ProgressBar value={leader.liderTaxaConclusao} color="bg-blue-500" />
-                </div>
-                <span className="text-xs w-12 text-right">{leader.liderAcoesConcluidas}/{leader.liderTotalAcoes}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-xs w-16 text-right text-emerald-600 font-medium">Equipe</span>
-                <div className="flex-1">
-                  <ProgressBar value={leader.equipeTaxaConclusao} color="bg-emerald-500" />
-                </div>
-                <span className="text-xs w-12 text-right">{leader.equipeAcoesConcluidas}/{leader.equipeTotalAcoes}</span>
-              </div>
-            </div>
-            
-            {/* Validação de PDIs */}
-            {leader.totalPdisSubordinados > 0 && (
-              <div className="mt-3 flex items-center gap-4 text-xs">
+
+              {/* Barras de progresso compactas (visíveis em mobile) */}
+              <div className="flex md:hidden flex-col gap-1 min-w-[80px]">
                 <div className="flex items-center gap-1">
-                  <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                  <span className="text-green-700 font-medium">{leader.pdisValidados} PDIs validados</span>
-                </div>
-                {leader.pdisPendentesValidacao > 0 && (
-                  <div className="flex items-center gap-1">
-                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="text-amber-700 font-medium">{leader.pdisPendentesValidacao} PDIs pendentes de validação</span>
+                  <span className="text-[10px] w-6 text-blue-600">L</span>
+                  <div className="flex-1">
+                    <ProgressBar value={leader.liderTaxaConclusao} color="bg-blue-500" height="h-2" />
                   </div>
-                )}
+                  <span className="text-[10px] w-8 text-right">{leader.liderTaxaConclusao}%</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] w-6 text-emerald-600">E</span>
+                  <div className="flex-1">
+                    <ProgressBar value={leader.equipeTaxaConclusao} color="bg-emerald-500" height="h-2" />
+                  </div>
+                  <span className="text-[10px] w-8 text-right">{leader.equipeTaxaConclusao}%</span>
+                </div>
               </div>
-            )}
+            </div>
+
+            {/* Barras de progresso desktop */}
+            <div className="hidden md:block mt-3">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-xs w-12 text-right text-blue-600 font-medium shrink-0">Líder</span>
+                  <div className="flex-1">
+                    <ProgressBar value={leader.liderTaxaConclusao} color="bg-blue-500" height="h-2.5" />
+                  </div>
+                  <span className="text-xs w-16 text-right text-muted-foreground shrink-0">
+                    {leader.liderAcoesConcluidas}/{leader.liderTotalAcoes} ações
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-xs w-12 text-right text-emerald-600 font-medium shrink-0">Equipe</span>
+                  <div className="flex-1">
+                    <ProgressBar value={leader.equipeTaxaConclusao} color="bg-emerald-500" height="h-2.5" />
+                  </div>
+                  <span className="text-xs w-16 text-right text-muted-foreground shrink-0">
+                    {leader.equipeAcoesConcluidas}/{leader.equipeTotalAcoes} ações
+                  </span>
+                </div>
+              </div>
+            </div>
           </CardHeader>
         </CollapsibleTrigger>
         
         <CollapsibleContent>
-          <CardContent className="border-t bg-gray-50/50 pt-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Competências Focais */}
-              <div className="space-y-4">
-                <h4 className="font-semibold flex items-center gap-2">
+          <CardContent className="border-t bg-gray-50/30 pt-6 px-5 pb-6">
+            {/* Grid de 3 colunas no desktop */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              {/* Coluna 1: Competências do Líder */}
+              <div>
+                <h4 className="font-semibold text-sm flex items-center gap-2 mb-3 text-blue-700">
                   <Target className="h-4 w-4" />
-                  Competências Focais
+                  Foco do Líder
                 </h4>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Foco do Líder */}
-                  <div className="bg-white rounded-lg p-4 border">
-                    <h5 className="text-sm font-medium text-blue-600 mb-3">Foco do Líder</h5>
-                    {leader.competenciasLider.length > 0 ? (
-                      <ul className="space-y-2">
-                        {leader.competenciasLider.map((comp, idx) => (
-                          <li key={comp.macroId} className="text-sm">
-                            <div className="flex items-start justify-between gap-2">
-                              <span className="leading-tight break-words" style={{ wordBreak: 'break-word' }}>{idx + 1}. {comp.nome}</span>
-                              <Badge variant="secondary" className="ml-1 shrink-0">{comp.quantidade}</Badge>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">Sem ações registradas</p>
-                    )}
-                  </div>
-                  
-                  {/* Foco da Equipe */}
-                  <div className="bg-white rounded-lg p-4 border">
-                    <h5 className="text-sm font-medium text-emerald-600 mb-3">Foco da Equipe</h5>
-                    {leader.competenciasEquipe.length > 0 ? (
-                      <ul className="space-y-2">
-                        {leader.competenciasEquipe.map((comp, idx) => (
-                          <li key={comp.macroId} className="text-sm">
-                            <div className="flex items-start justify-between gap-2">
-                              <span className="leading-tight break-words" style={{ wordBreak: 'break-word' }}>{idx + 1}. {comp.nome}</span>
-                              <Badge 
-                                variant="secondary" 
-                                className={`shrink-0 ${comp.taxaConclusao >= 70 ? "bg-green-100 text-green-700" : comp.taxaConclusao < 50 ? "bg-red-100 text-red-700" : ""}`}
-                              >
-                                {comp.taxaConclusao}%
-                              </Badge>
-                            </div>
-                            <div className="mt-1">
-                              <ProgressBar 
-                                value={comp.taxaConclusao} 
-                                color={comp.taxaConclusao >= 70 ? "bg-green-500" : comp.taxaConclusao < 50 ? "bg-red-400" : "bg-amber-400"} 
-                              />
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">Sem ações registradas</p>
-                    )}
-                  </div>
+                <div className="bg-white rounded-lg border p-4 space-y-2">
+                  {leader.competenciasLider.length > 0 ? (
+                    leader.competenciasLider.map((comp, idx) => (
+                      <div key={comp.macroId} className="flex items-center justify-between gap-2 py-1">
+                        <span className="text-sm text-gray-700 leading-tight flex-1 min-w-0 break-words">
+                          {idx + 1}. {comp.nome}
+                        </span>
+                        <Badge variant="secondary" className="shrink-0 text-xs">
+                          {comp.quantidade} {comp.quantidade === 1 ? "ação" : "ações"}
+                        </Badge>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-2">Sem ações registradas</p>
+                  )}
                 </div>
               </div>
-              
-              {/* Colaboradores da Equipe */}
-              <div className="space-y-4">
-                <h4 className="font-semibold flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Colaboradores da Equipe
+
+              {/* Coluna 2: Competências da Equipe */}
+              <div>
+                <h4 className="font-semibold text-sm flex items-center gap-2 mb-3 text-emerald-700">
+                  <BarChart3 className="h-4 w-4" />
+                  Foco da Equipe
                 </h4>
-                
-                <div className="bg-white rounded-lg p-4 border max-h-64 overflow-y-auto">
-                  {leader.colaboradores.length > 0 ? (
-                    <ul className="space-y-3">
-                      {leader.colaboradores.map((colab) => (
-                        <li key={colab.id} className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{colab.nome}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {colab.acoesConcluidas}/{colab.totalAcoes} ações
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2 ml-2">
-                            <div className="w-20">
-                              <ProgressBar 
-                                value={colab.taxaConclusao} 
-                                color={colab.taxaConclusao >= 70 ? "bg-green-500" : colab.taxaConclusao < 50 ? "bg-red-400" : "bg-amber-400"} 
-                              />
-                            </div>
-                            <Badge 
-                              variant="outline"
-                              className={
-                                colab.taxaConclusao >= 70 
-                                  ? "bg-green-50 text-green-700 border-green-200" 
-                                  : colab.taxaConclusao < 50 
-                                    ? "bg-red-50 text-red-700 border-red-200" 
-                                    : "bg-amber-50 text-amber-700 border-amber-200"
-                              }
-                            >
-                              {colab.taxaConclusao}%
-                            </Badge>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
+                <div className="bg-white rounded-lg border p-4 space-y-3">
+                  {leader.competenciasEquipe.length > 0 ? (
+                    leader.competenciasEquipe.map((comp, idx) => (
+                      <div key={comp.macroId}>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-sm text-gray-700 leading-tight flex-1 min-w-0 break-words">
+                            {idx + 1}. {comp.nome}
+                          </span>
+                          <Badge 
+                            variant="outline" 
+                            className={`shrink-0 text-xs ${getPerformanceBadge(comp.taxaConclusao)}`}
+                          >
+                            {comp.taxaConclusao}%
+                          </Badge>
+                        </div>
+                        <ProgressBar 
+                          value={comp.taxaConclusao} 
+                          color={getPerformanceBg(comp.taxaConclusao)} 
+                          height="h-1.5"
+                        />
+                      </div>
+                    ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">Nenhum colaborador encontrado</p>
+                    <p className="text-sm text-muted-foreground py-2">Sem ações registradas</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Coluna 3: Colaboradores */}
+              <div>
+                <h4 className="font-semibold text-sm flex items-center gap-2 mb-3 text-gray-700">
+                  <Users className="h-4 w-4" />
+                  Colaboradores ({leader.colaboradores.length})
+                </h4>
+                <div className="bg-white rounded-lg border p-4 max-h-72 overflow-y-auto space-y-2">
+                  {leader.colaboradores.length > 0 ? (
+                    leader.colaboradores.map((colab) => (
+                      <div key={colab.id} className="flex items-center gap-3 py-1">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{colab.nome}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {colab.acoesConcluidas}/{colab.totalAcoes} ações concluídas
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="w-16">
+                            <ProgressBar 
+                              value={colab.taxaConclusao} 
+                              color={getPerformanceBg(colab.taxaConclusao)} 
+                              height="h-1.5"
+                            />
+                          </div>
+                          <span className={`text-xs font-medium w-8 text-right ${getPerformanceColor(colab.taxaConclusao)}`}>
+                            {colab.taxaConclusao}%
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-2">Nenhum colaborador encontrado</p>
                   )}
                 </div>
               </div>
             </div>
             
-            {/* Insights */}
+            {/* Insights - largura total abaixo das 3 colunas */}
             {leader.insights.length > 0 && (
-              <div className="mt-6 space-y-3">
-                <h4 className="font-semibold flex items-center gap-2">
+              <div className="mt-6">
+                <h4 className="font-semibold text-sm flex items-center gap-2 mb-3 text-gray-700">
                   <Lightbulb className="h-4 w-4" />
                   Insights e Recomendações
                 </h4>
-                
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {leader.insights.map((insight, idx) => (
                     <div 
                       key={idx} 
-                      className={`flex items-start gap-3 p-3 rounded-lg border ${InsightBadgeColor(insight.tipo)}`}
+                      className={`flex items-start gap-2 p-3 rounded-lg border text-sm ${InsightBadgeColor(insight.tipo)}`}
                     >
                       <InsightIcon tipo={insight.tipo} />
-                      <p className="text-sm">{insight.mensagem}</p>
+                      <p className="leading-snug">{insight.mensagem}</p>
                     </div>
                   ))}
                 </div>
@@ -327,19 +378,26 @@ export default function AnaliseLideranca() {
   
   const { data: leadershipData, isLoading } = trpc.dashboard.getLeadershipAnalysis.useQuery();
   
-  // Usar dados diretamente sem filtro - já vem ordenado por ranking do backend
   const rankingData = leadershipData || [];
   
   // Calcular média geral
   const mediaGeral = rankingData.length > 0
     ? Math.round(rankingData.reduce((sum: number, l: LeaderData) => sum + l.equipeTaxaConclusao, 0) / rankingData.length)
     : 0;
+
+  // Calcular média pessoal dos líderes
+  const mediaLideres = rankingData.length > 0
+    ? Math.round(rankingData.reduce((sum: number, l: LeaderData) => sum + l.liderTaxaConclusao, 0) / rankingData.length)
+    : 0;
+
+  // Total de colaboradores
+  const totalColaboradores = rankingData.reduce((sum: number, l: LeaderData) => sum + l.equipeTotalColaboradores, 0);
   
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-7xl mx-auto p-2 md:p-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <Link href="/admin">
@@ -349,79 +407,137 @@ export default function AnaliseLideranca() {
                 </Button>
               </Link>
             </div>
-            <h1 className="text-2xl font-bold">Análise de Liderança</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Análise de Liderança</h1>
             <p className="text-muted-foreground">
               Ranking de engajamento: desempenho do líder vs equipe
             </p>
           </div>
-          
-          <div className="text-right">
-            <p className="text-sm text-muted-foreground">Média Geral das Equipes</p>
-            <p className="text-2xl font-bold text-emerald-600">{mediaGeral}%</p>
+        </div>
+
+        {/* Cards de resumo */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="pt-5 pb-4 px-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100">
+                  <Award className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Líderes</p>
+                  <p className="text-2xl font-bold text-gray-900">{rankingData.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-5 pb-4 px-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-100">
+                  <Users className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Colaboradores</p>
+                  <p className="text-2xl font-bold text-gray-900">{totalColaboradores}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-5 pb-4 px-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-100">
+                  <UserCheck className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Média Líderes</p>
+                  <p className={`text-2xl font-bold ${getPerformanceColor(mediaLideres)}`}>{mediaLideres}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-5 pb-4 px-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-100">
+                  <TrendingUp className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Média Equipes</p>
+                  <p className={`text-2xl font-bold ${getPerformanceColor(mediaGeral)}`}>{mediaGeral}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Legenda */}
+        <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground bg-white rounded-lg border py-3 px-4">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-sm bg-blue-500" />
+            <span>Conclusão do Líder (pessoal)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-sm bg-emerald-500" />
+            <span>Conclusão da Equipe</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-sm bg-green-500" />
+            <span>&ge;70% Meta</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-sm bg-amber-400" />
+            <span>40-69%</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-sm bg-red-400" />
+            <span>&lt;40%</span>
           </div>
         </div>
-        
-        {/* Legenda */}
-        <Card>
-          <CardContent className="py-4">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-center gap-8">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-blue-500" />
-                  <span className="text-sm">Taxa de Conclusão do Líder (pessoal)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-emerald-500" />
-                  <span className="text-sm">Taxa de Conclusão da Equipe</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 rounded bg-gray-300" />
-                  <span className="text-sm">Linha de meta: 70%</span>
-                </div>
-              </div>
-              
-              {/* Instrução para o usuário */}
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground bg-blue-50 rounded-lg py-2 px-4 border border-blue-200">
-                <ChevronRight className="h-4 w-4 text-blue-500" />
-                <span><strong>Dica:</strong> Clique em um líder para ver detalhes das competências focais, lista de colaboradores e insights automáticos.</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
+        {/* Dica */}
+        <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 rounded-lg py-2.5 px-4 border border-blue-200">
+          <ChevronRight className="h-4 w-4 shrink-0" />
+          <span><strong>Dica:</strong> Clique em um líder para ver detalhes das competências focais, lista de colaboradores e insights automáticos.</span>
+        </div>
         
         {/* Lista de Líderes */}
         {isLoading ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {[1, 2, 3].map((i) => (
               <Card key={i}>
-                <CardHeader>
-                  <Skeleton className="h-6 w-48" />
-                  <Skeleton className="h-4 w-32 mt-2" />
-                  <div className="mt-4 space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
+                <CardHeader className="py-4">
+                  <div className="flex items-center gap-4">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="flex-1">
+                      <Skeleton className="h-5 w-48" />
+                      <Skeleton className="h-4 w-32 mt-1" />
+                    </div>
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-6 w-16" />
+                  </div>
+                  <div className="mt-3 flex gap-4">
+                    <Skeleton className="h-2.5 flex-1 rounded-full" />
+                    <Skeleton className="h-2.5 flex-1 rounded-full" />
                   </div>
                 </CardHeader>
               </Card>
             ))}
           </div>
         ) : rankingData.length > 0 ? (
-          <div>
+          <div className="space-y-3">
             {rankingData.map((leader: LeaderData, index: number) => (
-              <div key={leader.liderId} className="relative">
-                {/* Indicador de posição */}
-                <div className="absolute -left-8 top-6 flex items-center justify-center w-6 h-6 rounded-full bg-gray-200 text-xs font-bold">
-                  {index + 1}
-                </div>
-                
-                <LeaderCard
-                  leader={leader}
-                  isExpanded={expandedLeader === leader.liderId}
-                  onToggle={() => setExpandedLeader(
-                    expandedLeader === leader.liderId ? null : leader.liderId
-                  )}
-                />
-              </div>
+              <LeaderCard
+                key={leader.liderId}
+                leader={leader}
+                index={index}
+                isExpanded={expandedLeader === leader.liderId}
+                onToggle={() => setExpandedLeader(
+                  expandedLeader === leader.liderId ? null : leader.liderId
+                )}
+              />
             ))}
           </div>
         ) : (

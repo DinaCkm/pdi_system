@@ -6,7 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MessageSquare, Clock, User, FileText, ArrowRight, Target, Calendar, FileEdit, Filter } from "lucide-react";
+import { MessageSquare, Clock, User, FileText, ArrowRight, Target, Calendar, FileEdit, Filter, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { toast } from "sonner";
 
 // Função para obter o badge de status
@@ -32,6 +37,19 @@ export default function SolicitacoesAdmin() {
   const [comentario, setComentario] = useState("");
   const [justificativaRejeicao, setJustificativaRejeicao] = useState("");
   const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<number>>(new Set());
+
+  const toggleCard = (id: number) => {
+    setExpandedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
   
   // Filtros
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
@@ -249,37 +267,50 @@ export default function SolicitacoesAdmin() {
 
             const isPending = solicitacao.status === "pendente" || solicitacao.status === "aguardando_lider";
 
+            const isExpanded = expandedCards.has(solicitacao.id);
+
             return (
               <Card key={solicitacao.id} className="border-l-4 border-l-blue-500">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-blue-600" />
-                        {solicitacao.actionTitulo || "Ação sem título"}
-                      </CardTitle>
-                      <CardDescription className="flex flex-wrap items-center gap-4">
-                        <span className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          {solicitacao.solicitanteNome || "Colaborador"}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          {new Date(solicitacao.createdAt).toLocaleString("pt-BR")}
-                        </span>
-                        {solicitacao.departamentoNome && (
-                          <span className="flex items-center gap-1">
-                            <Target className="h-4 w-4" />
-                            {solicitacao.departamentoNome}
-                          </span>
-                        )}
-                      </CardDescription>
-                    </div>
-                    {getStatusBadge(solicitacao.status)}
-                  </div>
-                </CardHeader>
+                <Collapsible open={isExpanded} onOpenChange={() => toggleCard(solicitacao.id)}>
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-gray-50/50 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3">
+                          {isExpanded ? (
+                            <ChevronDown className="h-5 w-5 text-gray-500 mt-1 shrink-0" />
+                          ) : (
+                            <ChevronRight className="h-5 w-5 text-gray-500 mt-1 shrink-0" />
+                          )}
+                          <div className="space-y-1">
+                            <CardTitle className="flex items-center gap-2">
+                              <FileText className="h-5 w-5 text-blue-600" />
+                              {solicitacao.actionTitulo || "Ação sem título"}
+                            </CardTitle>
+                            <CardDescription className="flex flex-wrap items-center gap-4">
+                              <span className="flex items-center gap-1">
+                                <User className="h-4 w-4" />
+                                {solicitacao.solicitanteNome || "Colaborador"}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                {new Date(solicitacao.createdAt).toLocaleString("pt-BR")}
+                              </span>
+                              {solicitacao.departamentoNome && (
+                                <span className="flex items-center gap-1">
+                                  <Target className="h-4 w-4" />
+                                  {solicitacao.departamentoNome}
+                                </span>
+                              )}
+                            </CardDescription>
+                          </div>
+                        </div>
+                        {getStatusBadge(solicitacao.status)}
+                      </div>
+                    </CardHeader>
+                  </CollapsibleTrigger>
 
-                <CardContent className="space-y-6">
+                <CollapsibleContent>
+                <CardContent className="space-y-6 border-t">
                   {/* Informações da Ação */}
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h4 className="font-medium mb-3 flex items-center gap-2">
@@ -474,6 +505,8 @@ export default function SolicitacoesAdmin() {
                     </div>
                   </div>
                 </CardContent>
+                </CollapsibleContent>
+                </Collapsible>
               </Card>
             );
           })}

@@ -74,7 +74,7 @@ export default function RelatorioAcoesVencidas() {
 
   return (
     <DashboardLayout>
-      <div className="flex-1 w-full min-w-0 space-y-6 p-2 md:p-6">
+      <div className="flex-1 w-full min-w-0 space-y-6 p-2 md:p-6 max-w-7xl mx-auto">
         {/* Cabeçalho */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
