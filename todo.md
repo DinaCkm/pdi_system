@@ -3055,3 +3055,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Alteração de Link Externo
 - [x] Alterar link do menu lateral de https://ecossistemadobem.manus.space para https://ecolider.evoluirckm.com
+
+## Fix Deploy - Canvas
+- [ ] Remover pacote canvas (incompatível com produção) e substituir por geração de certificado via SVG/HTML
+
+## Fix Deploy - Remover referência ao canvas (Opção A)
+- [x] Remover "canvas" da seção pnpm.onlyBuiltDependencies do package.json (manter certificado com resvg-js)
