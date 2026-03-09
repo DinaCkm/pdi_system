@@ -3035,3 +3035,23 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Botão "Baixar Card de Conquista" no card de ação concluída
 - [x] Botão "Baixar Card de Conquista" no modal de celebração (confetes/troféu)
 - [x] Testes vitest para o endpoint de geração do certificado (8 testes passando)
+
+## Diagnóstico - E-mails de Notificação Não Enviados
+- [ ] Verificar configuração de envio de e-mails (SMTP/API)
+- [ ] Identificar se há servidor de e-mail configurado
+- [ ] Propor solução para envio de e-mails funcionar
+
+## Configuração SMTP - Google Workspace
+- [ ] Instalar nodemailer
+- [ ] Configurar secrets SMTP (email, senha de app)
+- [ ] Reescrever sendEmail para usar SMTP Google Workspace
+- [ ] Testar envio de email real
+
+## Configuração Email - Resend API
+- [ ] Instalar Resend SDK e configurar API Key
+- [ ] Reescrever sendEmail para usar Resend API
+- [ ] Testar envio de email real
+- [ ] Corrigir problema do canvas no deploy (substituir por alternativa compatível com produção)
+
+## Alteração de Link Externo
+- [x] Alterar link do menu lateral de https://ecossistemadobem.manus.space para https://ecolider.evoluirckm.com

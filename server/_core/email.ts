@@ -1,4 +1,5 @@
 import { ENV } from "./env";
+import { Resend } from "resend";
 
 export type EmailPayload = {
   to: string;
@@ -31,45 +32,40 @@ function stripHtmlForEmail(html: string): string {
 
 /**
  * Envia email para um usuário
- * Utiliza a API de email do Manus
+ * Utiliza Resend API para envio de emails transacionais
  */
 export async function sendEmail(payload: EmailPayload): Promise<boolean> {
   const { to, subject, body } = payload;
 
-  if (!ENV.forgeApiUrl) {
-    console.warn("[Email] Email service URL is not configured.");
-    return false;
-  }
-
-  if (!ENV.forgeApiKey) {
-    console.warn("[Email] Email service API key is not configured.");
+  if (!ENV.resendApiKey) {
+    console.warn("[Email] Resend API key not configured (RESEND_API_KEY).");
     return false;
   }
 
   try {
-    const response = await fetch(`${ENV.forgeApiUrl}/email/send`, {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        authorization: `Bearer ${ENV.forgeApiKey}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ to, subject, body, cc: payload.cc || GLOBAL_CC_EMAIL }),
+    const resend = new Resend(ENV.resendApiKey);
+    const ccList = payload.cc
+      ? [payload.cc, GLOBAL_CC_EMAIL].filter(Boolean)
+      : [GLOBAL_CC_EMAIL];
+
+    const { data, error } = await resend.emails.send({
+      from: 'Eco do Bem - EVOLUIR <onboarding@resend.dev>',
+      to: [to],
+      cc: ccList,
+      subject,
+      text: stripHtmlForEmail(body),
+      html: body,
     });
 
-    if (!response.ok) {
-      const detail = await response.text().catch(() => "");
-      console.warn(
-        `[Email] Failed to send email (${response.status} ${response.statusText})${
-          detail ? `: ${detail}` : ""
-        }`
-      );
+    if (error) {
+      console.warn(`[Email] Erro Resend ao enviar para ${to}:`, error.message);
       return false;
     }
 
+    console.log(`[Email] Email enviado com sucesso para ${to} (id: ${data?.id})`);
     return true;
-  } catch (error) {
-    console.warn("[Email] Error calling email service:", error);
+  } catch (error: any) {
+    console.warn(`[Email] Erro ao enviar email para ${to}:`, error.message || error);
     return false;
   }
 }

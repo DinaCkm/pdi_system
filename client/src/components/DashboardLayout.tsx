@@ -75,7 +75,7 @@ const getMenuItems = (userRole: string) => {
       { icon: CheckSquare, label: "Ações da Equipe", path: "/acoes-equipe" },
       { icon: MessageSquarePlus, label: "Solicitações de Ajustes nas Ações/Equipe", path: "/solicitacoes-equipe" },
       { icon: Users, label: "Solicitações de Novas Ações/Equipe", path: "/solicitacoes-acoes?aba=equipe" },
-      { icon: ExternalLink, label: "Ecossistema do Bem - Líderes e Sucessores", path: "https://ecossistemadobem.manus.space", external: true },
+      { icon: ExternalLink, label: "Ecossistema do Bem - Líderes e Sucessores", path: "https://ecolider.evoluirckm.com", external: true },
     );
   } else if (userRole === "gerente") {
     // Gerente tem acesso de leitura: Dashboard, PDIs, Ações, Histórico, Relatório de Vencidas
