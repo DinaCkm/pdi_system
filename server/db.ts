@@ -3299,6 +3299,7 @@ export async function listSolicitacoesAcoes(filtros?: {
       let rhNome = null;
       let solicitanteDepartamento = null;
       let solicitanteLiderId = null;
+      let solicitanteLiderNome = null;
 
       if (s.ckmParecerPor) {
         const [u] = await db.select({ name: users.name }).from(users).where(eq(users.id, s.ckmParecerPor));
@@ -3325,6 +3326,11 @@ export async function listSolicitacoesAcoes(filtros?: {
             const [dept] = await db.select({ nome: departamentos.nome }).from(departamentos).where(eq(departamentos.id, solicitante.departamentoId));
             solicitanteDepartamento = dept?.nome;
           }
+          // Buscar nome do líder do solicitante
+          if (solicitante.leaderId) {
+            const [ldr] = await db.select({ name: users.name }).from(users).where(eq(users.id, solicitante.leaderId));
+            solicitanteLiderNome = ldr?.name || null;
+          }
         }
       }
 
@@ -3335,6 +3341,7 @@ export async function listSolicitacoesAcoes(filtros?: {
         rhNome,
         solicitanteDepartamento,
         solicitanteLiderId,
+        solicitanteLiderNome,
       };
     })
   );

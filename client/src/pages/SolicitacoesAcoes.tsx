@@ -6,8 +6,9 @@ import { useSearch } from 'wouter';
 import { 
   FileText, Plus, Clock, CheckCircle2, XCircle, AlertTriangle, 
   Search, ChevronDown, X, Check, Send, Eye, MessageSquare,
-  Loader2, Filter, ChevronRight, User, Users, Mail, RotateCcw, History, Info
+  Loader2, Filter, ChevronRight, User, Users, Mail, RotateCcw, History, Info, Download
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import RichTextEditor from '@/components/RichTextEditor';
 import RichTextDisplay from '@/components/RichTextDisplay';
 
@@ -52,6 +53,83 @@ function formatDate(d: any) {
   if (!d) return '-';
   const date = new Date(d);
   return date.toLocaleDateString('pt-BR');
+}
+
+// ============= BOTÃO EXPORTAR RELATÓRIO EXCEL =============
+function BotaoExportarRelatorio() {
+  const [isLoading, setIsLoading] = useState(false);
+  const utils = trpc.useUtils();
+
+  const handleExportar = async () => {
+    setIsLoading(true);
+    try {
+      const dados = await utils.solicitacoesAcoes.exportarRelatorio.fetch();
+
+      if (!dados || dados.length === 0) {
+        toast.info('Nenhuma solicitação encontrada para exportar.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Preparar dados para o Excel com cabeçalhos em português
+      const dadosExcel = dados.map((item: any) => ({
+        'Departamento': item.departamento || '',
+        'Líder': item.lider || '',
+        'Empregado': item.empregado || '',
+        'Título da Ação': item.tituloAcao || '',
+        'Período de Execução': item.periodoExecucao || '',
+        'Valor do Investimento': item.valorInvestimento || '',
+        'Parecer CKM': item.parecerCKM || '',
+        'Parecer do Líder': item.parecerLider || '',
+        'Parecer do RH': item.parecerRH || '',
+        'Data de Inclusão': item.dataInclusao || '',
+      }));
+
+      // Criar workbook e worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(dadosExcel);
+
+      // Ajustar largura das colunas
+      const colWidths = [
+        { wch: 25 }, // Departamento
+        { wch: 30 }, // Líder
+        { wch: 30 }, // Empregado
+        { wch: 40 }, // Título da Ação
+        { wch: 18 }, // Período de Execução
+        { wch: 22 }, // Valor do Investimento
+        { wch: 18 }, // Parecer CKM
+        { wch: 18 }, // Parecer do Líder
+        { wch: 22 }, // Parecer do RH
+        { wch: 18 }, // Data de Inclusão
+      ];
+      ws['!cols'] = colWidths;
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Solicitações de Ações');
+
+      // Gerar arquivo e baixar
+      const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+      XLSX.writeFile(wb, `Relatorio_Solicitacoes_Acoes_${dataAtual}.xlsx`);
+
+      toast.success(`Relatório exportado com sucesso! ${dados.length} registro(s).`);
+    } catch (e: any) {
+      console.error('Erro ao exportar relatório:', e);
+      toast.error(e.message || 'Erro ao exportar relatório');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleExportar}
+      disabled={isLoading}
+      className="bg-green-600 text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-green-700 flex items-center gap-2 shrink-0 disabled:opacity-50"
+      title="Exportar relatório de solicitações de ações em formato Excel"
+    >
+      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+      {isLoading ? 'Exportando...' : 'Exportar Excel'}
+    </button>
+  );
 }
 
 // ============= BOTÃO REENVIAR NOTIFICAÇÕES PENDENTES =============
@@ -1445,6 +1523,8 @@ export default function SolicitacoesAcoes() {
               Nova Solicitação
             </button>
           )}
+          {/* Botão Exportar Relatório Excel: visível para Admin e Gerente */}
+          {(userRole === 'admin' || userRole === 'gerente') && <BotaoExportarRelatorio />}
           {/* Botão Reenviar Notificações: visível apenas para Admin */}
           {userRole === 'admin' && <BotaoReenviarNotificacoes />}
         </div>

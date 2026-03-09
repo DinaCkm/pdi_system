@@ -1517,6 +1517,53 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
 
         return { success: true, enviados, falhas, total: solicitacoes.length, detalhes };
       }),
+
+    // Exportar relatório Excel das solicitações de ações
+    exportarRelatorio: adminOrGerenteProcedure
+      .query(async () => {
+        const solicitacoes = await db.listSolicitacoesAcoes();
+        
+        return solicitacoes.map((s: any) => {
+          // Mapear parecer CKM
+          let parecerCKM = '';
+          if (s.ckmParecerTipo === 'com_aderencia') parecerCKM = 'Com Aderência';
+          else if (s.ckmParecerTipo === 'sem_aderencia') parecerCKM = 'Sem Aderência';
+
+          // Mapear parecer do Líder
+          let parecerLider = '';
+          if (s.gestorDecisao === 'aprovado') parecerLider = 'De Acordo';
+          else if (s.gestorDecisao === 'reprovado') parecerLider = 'Não Aprovado';
+          else if (s.gestorDecisao === 'encerrada') parecerLider = 'Encerrada';
+
+          // Mapear parecer do RH
+          let parecerRH = '';
+          if (s.rhDecisao === 'aprovado') parecerRH = 'Aprovado';
+          else if (s.rhDecisao === 'reprovado') parecerRH = 'Vetado';
+          // Verificar se está em revisão (aguardando_solicitante)
+          if (s.statusGeral === 'aguardando_solicitante') parecerRH = 'Revisão Solicitada';
+
+          // Formatar data
+          const formatDateExport = (d: any) => {
+            if (!d) return '';
+            const date = new Date(d);
+            return date.toLocaleDateString('pt-BR');
+          };
+
+          return {
+            departamento: s.solicitanteDepartamento || '',
+            lider: s.solicitanteLiderNome || '',
+            empregado: s.solicitanteNome || '',
+            tituloAcao: s.titulo || '',
+            periodoExecucao: s.prazo ? formatDateExport(s.prazo) : '',
+            valorInvestimento: s.previsaoInvestimento || '',
+            parecerCKM,
+            parecerLider,
+            parecerRH,
+            dataInclusao: formatDateExport(s.createdAt),
+            statusGeral: s.statusGeral || '',
+          };
+        });
+      }),
    }),
 
   // ============= NORMAS E REGRAS =============

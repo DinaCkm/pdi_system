@@ -3069,3 +3069,12 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Correção de Testes de Email (Resend API)
 - [x] Atualizar testes email-notificacoes.test.ts para usar mock do Resend em vez de fetch
 - [x] Corrigir testes smtp-connection.test.ts para aceitar domínio não verificado (403) e usar endereço de teste do Resend
+
+## Relatório Excel - Ações Solicitadas por Empregados (Gestor)
+- [x] Criar endpoint backend para exportar dados das solicitações de ações
+- [x] Incluir colunas: Departamento, Líder, Empregado, Título da Ação, Período de Execução, Valor do Investimento, Parecer CKM, Parecer do Líder, Parecer do RH, Data de Inclusão
+- [x] Campos sem informação devem aparecer em branco
+- [x] Adicionar botão "Exportar Excel" na página de Ações Solicitadas por Empregados
+- [x] Gerar arquivo .xlsx para download
+- [x] Nome do líder do solicitante incluído nos dados retornados
+- [x] Testes vitest para a lógica de mapeamento do relatório (8/8 passando)
