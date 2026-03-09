@@ -3061,3 +3061,11 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Fix Deploy - Remover referência ao canvas (Opção A)
 - [x] Remover "canvas" da seção pnpm.onlyBuiltDependencies do package.json (manter certificado com resvg-js)
+
+## Link EcoLider para Colaboradores
+- [x] Adicionar link EcoLider no menu dos colaboradores
+- [x] Adicionar tooltip "Somente para participantes do banco de líderes sucessores" ao passar o mouse
+
+## Correção de Testes de Email (Resend API)
+- [x] Atualizar testes email-notificacoes.test.ts para usar mock do Resend em vez de fetch
+- [x] Corrigir testes smtp-connection.test.ts para aceitar domínio não verificado (403) e usar endereço de teste do Resend

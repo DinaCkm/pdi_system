@@ -31,7 +31,7 @@ import { PendencyBadge } from "./PendencyBadge";
 import { ModalPrimeiroAcesso } from "./ModalPrimeiroAcesso";
 
 const getMenuItems = (userRole: string) => {
-  const items: Array<{ icon: any; label: string; path: string; section?: string; external?: boolean }> = [];
+  const items: Array<{ icon: any; label: string; path: string; section?: string; external?: boolean; tooltipText?: string }> = [];
   
   if (userRole === "admin") {
     // Normas e Regras - primeiro item
@@ -96,6 +96,7 @@ const getMenuItems = (userRole: string) => {
       { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
       { icon: History, label: "Minhas Solicitações", path: "/minhas-solicitacoes" },
       { icon: FileText, label: "Solicitar Ação", path: "/solicitacoes-acoes" },
+      { icon: ExternalLink, label: "EcoLider - Líderes e Sucessores", path: "https://ecolider.evoluirckm.com", external: true, tooltipText: "Somente para participantes do banco de líderes sucessores" },
     );
   }
   
@@ -395,7 +396,8 @@ function DashboardLayoutContent({
                             setLocation(item.path);
                           }
                         }}
-                        tooltip={item.label}
+                        tooltip={item.tooltipText || item.label}
+                        title={item.tooltipText || ''}
                         className={`h-9 transition-all font-normal relative ${item.external ? 'text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg mt-1' : ''}`}
                       >
                         <item.icon

@@ -1,0 +1,28 @@
+{
+  "query": "SELECT email, cpf, name, role FROM users WHERE role = 'colaborador' LIMIT 3",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT email, cpf, name, role FROM users WHERE role = 'colaborador' LIMIT 3",
+  "rows": [
+    {
+      "email": "gabriela@to.sebrae.com.br",
+      "cpf": "00792361113",
+      "name": "GABRIELA TOMASI",
+      "role": "colaborador"
+    },
+    {
+      "email": "wanderson.chagas@to.sebrae.com.br",
+      "cpf": "03804969178",
+      "name": "WANDERSON DA SILVA PIMENTEL CHAGAS",
+      "role": "colaborador"
+    },
+    {
+      "email": "juliana.prediger@to.sebrae.com.br",
+      "cpf": "92391842287",
+      "name": "JULIANA MASSON PREDIGER",
+      "role": "colaborador"
+    }
+  ],
+  "messages": [],
+  "stdout": "email\tcpf\tname\trole\ngabriela@to.sebrae.com.br\t00792361113\tGABRIELA TOMASI\tcolaborador\nwanderson.chagas@to.sebrae.com.br\t03804969178\tWANDERSON DA SILVA PIMENTEL CHAGAS\tcolaborador\njuliana.prediger@to.sebrae.com.br\t92391842287\tJULIANA MASSON PREDIGER\tcolaborador\n",
+  "stderr": "",
+  "execution_time_ms": 361
+}

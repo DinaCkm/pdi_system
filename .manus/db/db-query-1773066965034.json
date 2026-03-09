@@ -1,0 +1,27 @@
+{
+  "query": "SELECT * FROM users WHERE role = 'colaborador' LIMIT 1",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT * FROM users WHERE role = 'colaborador' LIMIT 1",
+  "rows": [
+    {
+      "id": "1260017",
+      "openId": "gabriela-00792361113",
+      "name": "GABRIELA TOMASI",
+      "email": "gabriela@to.sebrae.com.br",
+      "loginMethod": "NULL",
+      "role": "colaborador",
+      "createdAt": "2026-01-29 22:07:25",
+      "updatedAt": "2026-03-05 13:55:52",
+      "lastSignedIn": "2026-01-29 22:07:25",
+      "cpf": "00792361113",
+      "cargo": "GERENTE DE UNIDADE",
+      "leaderId": "1410001",
+      "status": "ativo",
+      "departamentoId": "660001",
+      "viuNormasVersao": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\tloginMethod\trole\tcreatedAt\tupdatedAt\tlastSignedIn\tcpf\tcargo\tleaderId\tstatus\tdepartamentoId\tviuNormasVersao\n1260017\tgabriela-00792361113\tGABRIELA TOMASI\tgabriela@to.sebrae.com.br\tNULL\tcolaborador\t2026-01-29 22:07:25\t2026-03-05 13:55:52\t2026-01-29 22:07:25\t00792361113\tGERENTE DE UNIDADE\t1410001\tativo\t660001\t0\n",
+  "stderr": "",
+  "execution_time_ms": 369
+}
