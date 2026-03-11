@@ -10,6 +10,7 @@ export default function AcoesDetalhes() {
   const [location, setLocation] = useLocation();
   const actionId = parseInt(location.split('/').pop() || '0');
   const [descricaoEvidencia, setDescricaoEvidencia] = useState("");
+  const [principalAprendizado, setPrincipalAprendizado] = useState("");
 
   // Queries
   const { data: acao, isLoading: loadingAcao, refetch } = trpc.actions.getById.useQuery({ id: actionId }, { enabled: !!actionId });
@@ -33,6 +34,7 @@ export default function AcoesDetalhes() {
     onSuccess: () => {
       toast.success("Evidência enviada!");
       setDescricaoEvidencia("");
+      setPrincipalAprendizado("");
       refetch();
       utils.evidences.listByAction.invalidate();
     },
@@ -230,21 +232,38 @@ export default function AcoesDetalhes() {
             
             <div style={{ marginBottom: '12px', padding: '14px 16px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d', fontSize: '13px', color: '#92400e', lineHeight: '1.6' }}>
               <strong style={{ display: 'block', marginBottom: '6px', fontSize: '14px', color: '#78350f' }}>Instruções para envio da evidência:</strong>
-              Detalhe no campo abaixo como está comprovando esta evidência, quais são os arquivos que vai enviar e qual foi seu principal aprendizado na realização desta ação.
+              Detalhe no campo abaixo como está comprovando esta evidência e quais são os arquivos que vai enviar.
             </div>
             
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#1e40af', marginBottom: '6px' }}>Descrição da Evidência *</label>
             <textarea
-              placeholder="Descreva: 1) Como está comprovando esta evidência; 2) Quais arquivos está enviando; 3) Qual foi seu principal aprendizado na realização desta ação."
+              placeholder="Descreva como está comprovando esta evidência e quais arquivos está enviando."
               value={descricaoEvidencia}
               onChange={(e) => setDescricaoEvidencia(e.target.value)}
-              rows={6}
-              style={{ width: '100%', padding: '16px', borderRadius: '8px', border: '1px solid #93c5fd', marginBottom: '16px', fontSize: '15px', outline: 'none', transition: 'border 0.2s' }}
+              rows={5}
+              style={{ width: '100%', padding: '16px', borderRadius: '8px', border: '1px solid #93c5fd', marginBottom: '16px', fontSize: '15px', outline: 'none', transition: 'border 0.2s', overflow: 'auto' }}
             />
+            
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#1e40af', marginBottom: '6px' }}>Principal Aprendizado *</label>
+            <textarea
+              placeholder="Descreva qual foi seu principal aprendizado na realização desta ação."
+              value={principalAprendizado}
+              onChange={(e) => setPrincipalAprendizado(e.target.value)}
+              rows={3}
+              style={{ width: '100%', padding: '16px', borderRadius: '8px', border: '1px solid #93c5fd', marginBottom: '4px', fontSize: '15px', outline: 'none', transition: 'border 0.2s', overflow: 'auto' }}
+            />
+            {!principalAprendizado.trim() && descricaoEvidencia.trim() && (
+              <p style={{ fontSize: '12px', color: '#dc2626', marginBottom: '12px' }}>O campo "Principal Aprendizado" é obrigatório.</p>
+            )}
+            {principalAprendizado.trim() && <div style={{ marginBottom: '12px' }} />}
             
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
-                onClick={() => enviarEvidencia.mutate({ actionId, descricao: descricaoEvidencia })}
-                disabled={!descricaoEvidencia.trim() || enviarEvidencia.isPending}
+                onClick={() => {
+                  const descricaoCompleta = `${descricaoEvidencia.trim()}\n\n--- Principal Aprendizado ---\n${principalAprendizado.trim()}`;
+                  enviarEvidencia.mutate({ actionId, descricao: descricaoCompleta });
+                }}
+                disabled={!descricaoEvidencia.trim() || !principalAprendizado.trim() || enviarEvidencia.isPending}
                 style={{ backgroundColor: '#2563eb', color: 'white', padding: '12px 32px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', opacity: enviarEvidencia.isPending ? 0.7 : 1 }}
               >
                 {enviarEvidencia.isPending ? <Loader2 className="animate-spin" /> : <Send size={18} />}

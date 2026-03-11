@@ -3106,3 +3106,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar instruções orientativas no campo de texto de envio de evidências do empregado
 - [x] Instruções adicionadas em AcoesDetalhes.tsx (textarea direto)
 - [x] Instruções adicionadas em EvidenciaModal.tsx (modal de envio por email)
+
+## Campo Principal Aprendizado (11/03/2026)
+- [x] Adicionar campo separado e obrigatório "Principal Aprendizado" no AcoesDetalhes.tsx
+- [x] Adicionar campo separado e obrigatório "Principal Aprendizado" no EvidenciaModal.tsx
+- [x] Concatenar o aprendizado na descrição antes de enviar ao backend (separador: --- Principal Aprendizado ---)

@@ -19,6 +19,7 @@ interface EvidenciaModalProps {
 
 export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macrocompetencia, descricao, prazo, onSuccess }: EvidenciaModalProps) {
   const [textoEvidencia, setTextoEvidencia] = useState("");
+  const [principalAprendizado, setPrincipalAprendizado] = useState("");
   const [uploading, setUploading] = useState(false);
   const [registrada, setRegistrada] = useState(false);
   const [evidenceId, setEvidenceId] = useState<number | null>(null);
@@ -74,6 +75,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
 
   const resetForm = () => {
     setTextoEvidencia("");
+    setPrincipalAprendizado("");
     setUploading(false);
     setRegistrada(false);
     setEvidenceId(null);
@@ -90,6 +92,10 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
       toast.error("Por favor, descreva a evidência antes de enviar");
       return;
     }
+    if (!principalAprendizado.trim()) {
+      toast.error("Por favor, preencha o campo 'Principal Aprendizado'");
+      return;
+    }
 
     setUploading(true);
     try {
@@ -97,7 +103,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
       console.log('[EvidenciaModal] Enviando evidência com files: []');
       await createEvidenceMutation.mutateAsync({
         actionId,
-        descricao: textoEvidencia.trim(),
+        descricao: `${textoEvidencia.trim()}\n\n--- Principal Aprendizado ---\n${principalAprendizado.trim()}`,
         files: [], // 🛑 Array vazio obrigatório - sem undefined
       });
     } catch (error) {
@@ -216,7 +222,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                 <div>
                   <p className="text-sm font-medium text-amber-900">Instruções para envio da evidência:</p>
                   <p className="text-sm text-amber-800 mt-2 leading-relaxed">
-                    Detalhe no campo abaixo como está comprovando esta evidência, quais são os arquivos que vai enviar e qual foi seu principal aprendizado na realização desta ação.
+                    Detalhe no campo abaixo como está comprovando esta evidência e quais são os arquivos que vai enviar.
                   </p>
                 </div>
               </div>
@@ -226,15 +232,33 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
             <div>
               <label className="text-sm font-medium block mb-2">Descrição da Evidência *</label>
               <textarea
-                placeholder="Descreva: 1) Como está comprovando esta evidência; 2) Quais arquivos está enviando; 3) Qual foi seu principal aprendizado na realização desta ação."
+                placeholder="Descreva como está comprovando esta evidência e quais arquivos está enviando."
                 value={textoEvidencia}
                 onChange={(e) => setTextoEvidencia(e.target.value)}
-                rows={6}
+                rows={4}
                 disabled={uploading}
                 className="w-full p-2 border rounded bg-white text-black disabled:bg-gray-100"
+                style={{ overflow: 'auto' }}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 mb-4">
                 Seja específico e detalhado. O administrador usará esta descrição para avaliar sua evidência.
+              </p>
+              
+              <label className="text-sm font-medium block mb-2">Principal Aprendizado *</label>
+              <textarea
+                placeholder="Descreva qual foi seu principal aprendizado na realização desta ação."
+                value={principalAprendizado}
+                onChange={(e) => setPrincipalAprendizado(e.target.value)}
+                rows={3}
+                disabled={uploading}
+                className="w-full p-2 border rounded bg-white text-black disabled:bg-gray-100"
+                style={{ overflow: 'auto' }}
+              />
+              {!principalAprendizado.trim() && textoEvidencia.trim() && (
+                <p className="text-xs text-red-600 mt-1">O campo "Principal Aprendizado" é obrigatório.</p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Compartilhe o que aprendeu com esta ação de desenvolvimento.
               </p>
             </div>
           </div>
