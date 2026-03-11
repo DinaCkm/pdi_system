@@ -1208,6 +1208,7 @@ export async function getEvidencesByStatus(statusFilter: 'aprovada' | 'reprovada
 
   return rows.map((ev: any) => ({
     ...ev,
+    justificativaRejeicao: ev.justificativaAdmin || null,
     solicitante: { 
       name: ev.colaboradorNome, 
       email: ev.colaboradorEmail,
@@ -1253,6 +1254,7 @@ export async function getAllEvidences() {
 
   return rows.map((ev: any) => ({
     ...ev,
+    justificativaRejeicao: ev.justificativaAdmin || null,
     solicitante: { 
       name: ev.colaboradorNome, 
       email: ev.colaboradorEmail,
@@ -1286,7 +1288,7 @@ export async function getAcoesConcluidas() {
       mc.nome as macroCompetencia
     FROM actions a
     LEFT JOIN pdis p ON a.pdiId = p.id
-    LEFT JOIN users u ON p.userId = u.id
+    LEFT JOIN users u ON p.colaboradorId = u.id
     LEFT JOIN departamentos d ON u.departamentoId = d.id
     LEFT JOIN users ldr ON u.leaderId = ldr.id
     LEFT JOIN competencias_macros mc ON a.macroId = mc.id

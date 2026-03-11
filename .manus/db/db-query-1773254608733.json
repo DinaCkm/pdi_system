@@ -1,0 +1,248 @@
+{
+  "query": "SELECT e.id, e.actionId, e.status, e.descricao, e.createdAt \nFROM evidences e \nLEFT JOIN actions a ON e.actionId = a.id \nWHERE a.id IS NULL \nORDER BY e.createdAt DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT e.id, e.actionId, e.status, e.descricao, e.createdAt \nFROM evidences e \nLEFT JOIN actions a ON e.actionId = a.id \nWHERE a.id IS NULL \nORDER BY e.createdAt DESC;",
+  "rows": [
+    {
+      "id": "1500028",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste de evidência",
+      "createdAt": "2026-03-09 10:43:16"
+    },
+    {
+      "id": "1500030",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com texto",
+      "createdAt": "2026-03-09 10:43:16"
+    },
+    {
+      "id": "1500029",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com arquivo",
+      "createdAt": "2026-03-09 10:43:16"
+    },
+    {
+      "id": "1500025",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste de evidência",
+      "createdAt": "2026-03-09 10:42:44"
+    },
+    {
+      "id": "1500027",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com texto",
+      "createdAt": "2026-03-09 10:42:44"
+    },
+    {
+      "id": "1500026",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com arquivo",
+      "createdAt": "2026-03-09 10:42:44"
+    },
+    {
+      "id": "1500018",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com texto",
+      "createdAt": "2026-03-09 10:39:08"
+    },
+    {
+      "id": "1500017",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com arquivo",
+      "createdAt": "2026-03-09 10:39:08"
+    },
+    {
+      "id": "1500016",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste de evidência",
+      "createdAt": "2026-03-09 10:39:08"
+    },
+    {
+      "id": "1500009",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com texto",
+      "createdAt": "2026-03-09 10:38:35"
+    },
+    {
+      "id": "1500008",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com arquivo",
+      "createdAt": "2026-03-09 10:38:35"
+    },
+    {
+      "id": "1500007",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste de evidência",
+      "createdAt": "2026-03-09 10:38:34"
+    },
+    {
+      "id": "1350011",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com texto",
+      "createdAt": "2026-03-06 15:20:44"
+    },
+    {
+      "id": "1350009",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste de evidência",
+      "createdAt": "2026-03-06 15:20:43"
+    },
+    {
+      "id": "1350010",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com arquivo",
+      "createdAt": "2026-03-06 15:20:43"
+    },
+    {
+      "id": "1290007",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste de evidência",
+      "createdAt": "2026-03-06 01:39:59"
+    },
+    {
+      "id": "1290008",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com arquivo",
+      "createdAt": "2026-03-06 01:39:59"
+    },
+    {
+      "id": "1290009",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com texto",
+      "createdAt": "2026-03-06 01:39:59"
+    },
+    {
+      "id": "840018",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com texto",
+      "createdAt": "2026-02-12 16:47:13"
+    },
+    {
+      "id": "840017",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com arquivo",
+      "createdAt": "2026-02-12 16:47:13"
+    },
+    {
+      "id": "840016",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste de evidência",
+      "createdAt": "2026-02-12 16:47:13"
+    },
+    {
+      "id": "840009",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com texto",
+      "createdAt": "2026-02-12 16:36:59"
+    },
+    {
+      "id": "840008",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com arquivo",
+      "createdAt": "2026-02-12 16:36:59"
+    },
+    {
+      "id": "840007",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste de evidência",
+      "createdAt": "2026-02-12 16:36:58"
+    },
+    {
+      "id": "810017",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com arquivo",
+      "createdAt": "2026-02-12 14:55:30"
+    },
+    {
+      "id": "810018",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com texto",
+      "createdAt": "2026-02-12 14:55:30"
+    },
+    {
+      "id": "810016",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste de evidência",
+      "createdAt": "2026-02-12 14:55:30"
+    },
+    {
+      "id": "810009",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com texto",
+      "createdAt": "2026-02-12 13:17:30"
+    },
+    {
+      "id": "810008",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com arquivo",
+      "createdAt": "2026-02-12 13:17:30"
+    },
+    {
+      "id": "810007",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste de evidência",
+      "createdAt": "2026-02-12 13:17:30"
+    },
+    {
+      "id": "750009",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com texto",
+      "createdAt": "2026-02-12 09:33:16"
+    },
+    {
+      "id": "750008",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste com arquivo",
+      "createdAt": "2026-02-12 09:33:16"
+    },
+    {
+      "id": "750007",
+      "actionId": "1",
+      "status": "reprovada",
+      "descricao": "Teste de evidência",
+      "createdAt": "2026-02-12 09:33:16"
+    }
+  ],
+  "messages": [
+    "630003\t630003\taprovada\tJá fiz. ",
+    "Ação 2.\t2026-01-30 16:34:21",
+    "630002\t630004\treprovada\tJá fiz. ",
+    "Ação 2.\t2026-01-30 16:34:12",
+    "630001\t630005\taprovada\tJá fiz. ",
+    "Ação 1.\t2026-01-30 16:33:58"
+  ],
+  "stdout": "id\tactionId\tstatus\tdescricao\tcreatedAt\n1500028\t1\treprovada\tTeste de evidência\t2026-03-09 10:43:16\n1500030\t1\treprovada\tTeste com texto\t2026-03-09 10:43:16\n1500029\t1\treprovada\tTeste com arquivo\t2026-03-09 10:43:16\n1500025\t1\treprovada\tTeste de evidência\t2026-03-09 10:42:44\n1500027\t1\treprovada\tTeste com texto\t2026-03-09 10:42:44\n1500026\t1\treprovada\tTeste com arquivo\t2026-03-09 10:42:44\n1500018\t1\treprovada\tTeste com texto\t2026-03-09 10:39:08\n1500017\t1\treprovada\tTeste com arquivo\t2026-03-09 10:39:08\n1500016\t1\treprovada\tTeste de evidência\t2026-03-09 10:39:08\n1500009\t1\treprovada\tTeste com texto\t2026-03-09 10:38:35\n1500008\t1\treprovada\tTeste com arquivo\t2026-03-09 10:38:35\n1500007\t1\treprovada\tTeste de evidência\t2026-03-09 10:38:34\n1350011\t1\treprovada\tTeste com texto\t2026-03-06 15:20:44\n1350009\t1\treprovada\tTeste de evidência\t2026-03-06 15:20:43\n1350010\t1\treprovada\tTeste com arquivo\t2026-03-06 15:20:43\n1290007\t1\treprovada\tTeste de evidência\t2026-03-06 01:39:59\n1290008\t1\treprovada\tTeste com arquivo\t2026-03-06 01:39:59\n1290009\t1\treprovada\tTeste com texto\t2026-03-06 01:39:59\n840018\t1\treprovada\tTeste com texto\t2026-02-12 16:47:13\n840017\t1\treprovada\tTeste com arquivo\t2026-02-12 16:47:13\n840016\t1\treprovada\tTeste de evidência\t2026-02-12 16:47:13\n840009\t1\treprovada\tTeste com texto\t2026-02-12 16:36:59\n840008\t1\treprovada\tTeste com arquivo\t2026-02-12 16:36:59\n840007\t1\treprovada\tTeste de evidência\t2026-02-12 16:36:58\n810017\t1\treprovada\tTeste com arquivo\t2026-02-12 14:55:30\n810018\t1\treprovada\tTeste com texto\t2026-02-12 14:55:30\n810016\t1\treprovada\tTeste de evidência\t2026-02-12 14:55:30\n810009\t1\treprovada\tTeste com texto\t2026-02-12 13:17:30\n810008\t1\treprovada\tTeste com arquivo\t2026-02-12 13:17:30\n810007\t1\treprovada\tTeste de evidência\t2026-02-12 13:17:30\n750009\t1\treprovada\tTeste com texto\t2026-02-12 09:33:16\n750008\t1\treprovada\tTeste com arquivo\t2026-02-12 09:33:16\n750007\t1\treprovada\tTeste de evidência\t2026-02-12 09:33:16\n630003\t630003\taprovada\tJá fiz. \nAção 2.\t2026-01-30 16:34:21\n630002\t630004\treprovada\tJá fiz. \nAção 2.\t2026-01-30 16:34:12\n630001\t630005\taprovada\tJá fiz. \nAção 1.\t2026-01-30 16:33:58\n",
+  "stderr": "",
+  "execution_time_ms": 353
+}

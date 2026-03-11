@@ -1,0 +1,114 @@
+{
+  "query": "DESCRIBE evidences;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute DESCRIBE evidences;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "actionId",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "colaboradorId",
+      "Type": "int",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "status",
+      "Type": "enum('aguardando_avaliacao','aprovada','reprovada','correcao_solicitada')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "aguardando_avaliacao",
+      "Extra": ""
+    },
+    {
+      "Field": "justificativaAdmin",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "NO",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "evaluatedAt",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "evaluatedBy",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "satisfactionScore",
+      "Type": "int",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "descricao",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "arquivo",
+      "Type": "varchar(255)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "respostaColaborador",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "dataResposta",
+      "Type": "bigint",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint\tNO\tPRI\tNULL\tauto_increment\nactionId\tint\tNO\t\tNULL\t\ncolaboradorId\tint\tNO\t\tNULL\t\nstatus\tenum('aguardando_avaliacao','aprovada','reprovada','correcao_solicitada')\tNO\t\taguardando_avaliacao\t\njustificativaAdmin\ttext\tYES\t\tNULL\t\ncreatedAt\ttimestamp\tNO\t\tCURRENT_TIMESTAMP\t\nevaluatedAt\ttimestamp\tYES\t\tNULL\t\nevaluatedBy\tint\tYES\t\tNULL\t\nsatisfactionScore\tint\tYES\t\tNULL\t\ndescricao\ttext\tYES\t\tNULL\t\narquivo\tvarchar(255)\tYES\t\tNULL\t\nrespostaColaborador\ttext\tYES\t\tNULL\t\ndataResposta\tbigint\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 360
+}

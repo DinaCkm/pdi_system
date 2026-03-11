@@ -3111,3 +3111,14 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Adicionar campo separado e obrigatório "Principal Aprendizado" no AcoesDetalhes.tsx
 - [x] Adicionar campo separado e obrigatório "Principal Aprendizado" no EvidenciaModal.tsx
 - [x] Concatenar o aprendizado na descrição antes de enviar ao backend (separador: --- Principal Aprendizado ---)
+
+## Limpeza de Dados de Teste (11/03/2026)
+- [x] Eliminar evidências órfãs/teste com "Ação desconhecida" do banco de dados (33 registros removidos, 75 evidências válidas mantidas)
+
+## Motivo da Devolução nas Evidências (11/03/2026)
+- [x] Exibir campo "Motivo da Devolução" (justificativaAdmin) nos cards de evidências devolvidas na GestaoGerente
+- [x] Exibir campo "Motivo da Devolução" nos cards de evidências devolvidas no AdminDashboard
+
+## Bugs - Gestão de Ações e Evidências (11/03/2026)
+- [x] Corrigir ações concluídas mostrando zero na página GestaoGerente (p.userId corrigido para p.colaboradorId)
+- [x] Verificar motivo da devolução (justificativaAdmin) no AdminDashboard evidências devolvidas (mapeado justificativaAdmin -> justificativaRejeicao)
