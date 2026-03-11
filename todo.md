@@ -3101,3 +3101,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Filtros por departamento e por empregado (Select)
 - [x] Busca textual por nome, ação ou departamento
 - [x] Adicionar link "Gestão de Ações e Evidências" no menu do gerente
+
+## Instruções no Campo de Evidências (11/03/2026)
+- [x] Adicionar instruções orientativas no campo de texto de envio de evidências do empregado
+- [x] Instruções adicionadas em AcoesDetalhes.tsx (textarea direto)
+- [x] Instruções adicionadas em EvidenciaModal.tsx (modal de envio por email)

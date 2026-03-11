@@ -209,11 +209,24 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
               </div>
             </div>
 
+            {/* Instruções para o empregado */}
+            <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+              <div className="flex gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-amber-900">Instruções para envio da evidência:</p>
+                  <p className="text-sm text-amber-800 mt-2 leading-relaxed">
+                    Detalhe no campo abaixo como está comprovando esta evidência, quais são os arquivos que vai enviar e qual foi seu principal aprendizado na realização desta ação.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Descrição */}
             <div>
               <label className="text-sm font-medium block mb-2">Descrição da Evidência *</label>
               <textarea
-                placeholder="Descreva detalhadamente como você cumpriu esta ação..."
+                placeholder="Descreva: 1) Como está comprovando esta evidência; 2) Quais arquivos está enviando; 3) Qual foi seu principal aprendizado na realização desta ação."
                 value={textoEvidencia}
                 onChange={(e) => setTextoEvidencia(e.target.value)}
                 rows={6}

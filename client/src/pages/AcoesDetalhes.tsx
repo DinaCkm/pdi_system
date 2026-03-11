@@ -228,11 +228,16 @@ export default function AcoesDetalhes() {
               <Upload size={22} /> Enviar Evidência
             </h3>
             
+            <div style={{ marginBottom: '12px', padding: '14px 16px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d', fontSize: '13px', color: '#92400e', lineHeight: '1.6' }}>
+              <strong style={{ display: 'block', marginBottom: '6px', fontSize: '14px', color: '#78350f' }}>Instruções para envio da evidência:</strong>
+              Detalhe no campo abaixo como está comprovando esta evidência, quais são os arquivos que vai enviar e qual foi seu principal aprendizado na realização desta ação.
+            </div>
+            
             <textarea
-              placeholder="Descreva o que foi feito..."
+              placeholder="Descreva: 1) Como está comprovando esta evidência; 2) Quais arquivos está enviando; 3) Qual foi seu principal aprendizado na realização desta ação."
               value={descricaoEvidencia}
               onChange={(e) => setDescricaoEvidencia(e.target.value)}
-              rows={5}
+              rows={6}
               style={{ width: '100%', padding: '16px', borderRadius: '8px', border: '1px solid #93c5fd', marginBottom: '16px', fontSize: '15px', outline: 'none', transition: 'border 0.2s' }}
             />
             
