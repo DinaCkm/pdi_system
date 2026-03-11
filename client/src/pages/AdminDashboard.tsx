@@ -10,7 +10,8 @@ import RichTextEditor from '@/components/RichTextEditor';
 import RichTextDisplay from '@/components/RichTextDisplay';
 import { stripHtml } from '@/components/RichTextDisplay';
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter, TrendingUp, ArrowRight, Building2, User, Calendar, Timer, Bell } from "lucide-react";
+import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter, TrendingUp, ArrowRight, Building2, User, Calendar, Timer, Bell, Eye, FileCheck, FileX, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
 
 function ReenviarNotificacaoButton({ adjustmentId, liderNome }: { adjustmentId: number; liderNome: string }) {
@@ -55,9 +56,32 @@ export default function AdminDashboard() {
   
   // Filtro de status para solicitações
   const [statusFilter, setStatusFilter] = useState<string>("todos");
+  
+  // Sub-aba de evidências: pendentes, aprovadas, devolvidas
+  const [evidenceTab, setEvidenceTab] = useState<'pendentes' | 'aprovadas' | 'devolvidas'>('pendentes');
+  
+  // Busca de evidências
+  const [evidenceSearch, setEvidenceSearch] = useState('');
 
   const { data: pendingEvidences = [], isLoading: evLoading, error: evError } = trpc.evidences.listPending.useQuery();
+  const { data: approvedEvidences = [], isLoading: approvedEvLoading } = trpc.evidences.listApproved.useQuery();
+  const { data: rejectedEvidences = [], isLoading: rejectedEvLoading } = trpc.evidences.listRejected.useQuery();
   const { data: allAdjustments = [], isLoading: adjLoading, error: adjError } = trpc.adjustmentRequests.listPending.useQuery();
+  
+  // Filtrar evidências por busca
+  const filterEvidences = (evidences: any[]) => {
+    if (!evidenceSearch.trim()) return evidences;
+    const search = evidenceSearch.toLowerCase();
+    return evidences.filter((ev: any) => 
+      (ev.solicitante?.name || '').toLowerCase().includes(search) ||
+      (ev.acao?.titulo || '').toLowerCase().includes(search) ||
+      (ev.solicitante?.departamento || '').toLowerCase().includes(search)
+    );
+  };
+  
+  const filteredPendingEvidences = filterEvidences(pendingEvidences);
+  const filteredApprovedEvidences = filterEvidences(approvedEvidences);
+  const filteredRejectedEvidences = filterEvidences(rejectedEvidences);
   
   // Filtrar solicitações por status
   const filteredAdjustments = statusFilter === "todos" 
@@ -130,6 +154,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       toast.success("✅ Evidência aprovada!");
       utils.evidences.listPending.invalidate();
+      utils.evidences.listApproved.invalidate();
       utils.evidences.listByUser.invalidate();
       setShowEvidenceDialog(false);
       setSelectedEvidence(null);
@@ -141,6 +166,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       toast.success("❌ Evidência rejeitada!");
       utils.evidences.listPending.invalidate();
+      utils.evidences.listRejected.invalidate();
       utils.evidences.listByUser.invalidate();
       setShowEvidenceDialog(false);
       setSelectedEvidence(null);
@@ -299,16 +325,40 @@ export default function AdminDashboard() {
         <p className="text-gray-600 mt-2">Gerencie evidências e solicitações de ajuste</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setEvidenceTab('pendentes')}>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              📋 Evidências Pendentes
+              📋 Evid. Pendentes
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-blue-600">{pendingEvidences.length}</div>
             <p className="text-sm text-gray-600">aguardando avaliação</p>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-green-200 bg-green-50/30" onClick={() => setEvidenceTab('aprovadas')}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              ✅ Evid. Aprovadas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-green-600">{approvedEvidences.length}</div>
+            <p className="text-sm text-gray-600">validadas</p>
+          </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow border-red-200 bg-red-50/30" onClick={() => setEvidenceTab('devolvidas')}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              ❌ Evid. Devolvidas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-red-600">{rejectedEvidences.length}</div>
+            <p className="text-sm text-gray-600">devolvidas</p>
           </CardContent>
         </Card>
 
@@ -354,7 +404,7 @@ export default function AdminDashboard() {
       <Tabs defaultValue="evidences" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="evidences">
-            Evidências ({pendingEvidences.length})
+            Evidências ({pendingEvidences.length + approvedEvidences.length + rejectedEvidences.length})
           </TabsTrigger>
           <TabsTrigger value="adjustments">
             Solicitações ({allAdjustments.length})
@@ -362,62 +412,239 @@ export default function AdminDashboard() {
         </TabsList>
 
         <TabsContent value="evidences" className="space-y-4">
-          {pendingEvidences.length === 0 ? (
-            <Card className="text-center py-8">
-              <p className="text-gray-600">Nenhuma evidência pendente</p>
-            </Card>
-          ) : (
-            pendingEvidences.map((evidence: any) => (
-              <Card key={evidence.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{evidence.acao?.titulo || "Ação desconhecida"}</CardTitle>
-                      <CardDescription className="space-y-1">
-                        <span className="block">Enviada por: <strong>{evidence.solicitante?.name || "Desconhecido"}</strong></span>
-                        <span className="flex items-center gap-1 text-xs">
-                          <Building2 className="h-3 w-3" />
-                          Depto: {evidence.solicitante?.departamento || 'Não informado'}
-                        </span>
-                        <span className="flex items-center gap-1 text-xs">
-                          <User className="h-3 w-3" />
-                          Líder: {evidence.solicitante?.liderNome || 'Não informado'}
-                        </span>
-                        <span className="flex items-center gap-1 text-xs">
-                          <Calendar className="h-3 w-3" />
-                          Data: {evidence.createdAt ? new Date(evidence.createdAt).toLocaleDateString('pt-BR') + ' às ' + new Date(evidence.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
-                        </span>
-                        <span className={`flex items-center gap-1 text-xs font-semibold ${getCorTempo(evidence.createdAt)}`}>
-                          <Timer className="h-3 w-3" />
-                          Tempo de resposta: {getTempoDecorrido(evidence.createdAt)}
-                        </span>
-                      </CardDescription>
-                    </div>
-                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                      <Clock className="h-3 w-3 mr-1" />
-                      Pendente
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm font-semibold text-gray-700">Descrição da Evidência:</p>
-                    <div className="text-sm text-gray-600 mt-1 line-clamp-3">{evidence.descricao ? stripHtml(evidence.descricao) : "Sem descrição"}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => {
-                        setSelectedEvidence(evidence);
-                        setShowEvidenceDialog(true);
-                      }}
-                      className="flex-1"
-                    >
-                      Avaliar
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+          {/* Sub-abas de evidências */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <Button
+              variant={evidenceTab === 'pendentes' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setEvidenceTab('pendentes')}
+              className={evidenceTab === 'pendentes' ? 'bg-amber-600 hover:bg-amber-700' : ''}
+            >
+              <Clock className="h-4 w-4 mr-1" />
+              Pendentes ({pendingEvidences.length})
+            </Button>
+            <Button
+              variant={evidenceTab === 'aprovadas' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setEvidenceTab('aprovadas')}
+              className={evidenceTab === 'aprovadas' ? 'bg-green-600 hover:bg-green-700' : ''}
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Aprovadas ({approvedEvidences.length})
+            </Button>
+            <Button
+              variant={evidenceTab === 'devolvidas' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setEvidenceTab('devolvidas')}
+              className={evidenceTab === 'devolvidas' ? 'bg-red-600 hover:bg-red-700' : ''}
+            >
+              <XCircle className="h-4 w-4 mr-1" />
+              Devolvidas ({rejectedEvidences.length})
+            </Button>
+          </div>
+          
+          {/* Busca de evidências */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Buscar por nome, ação ou departamento..."
+              value={evidenceSearch}
+              onChange={(e) => setEvidenceSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Evidências Pendentes */}
+          {evidenceTab === 'pendentes' && (
+            <>
+              {filteredPendingEvidences.length === 0 ? (
+                <Card className="text-center py-8">
+                  <p className="text-gray-600">Nenhuma evidência pendente</p>
+                </Card>
+              ) : (
+                filteredPendingEvidences.map((evidence: any) => (
+                  <Card key={evidence.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{evidence.acao?.titulo || "Ação desconhecida"}</CardTitle>
+                          <CardDescription className="space-y-1">
+                            <span className="block">Enviada por: <strong>{evidence.solicitante?.name || "Desconhecido"}</strong></span>
+                            <span className="flex items-center gap-1 text-xs">
+                              <Building2 className="h-3 w-3" />
+                              Depto: {evidence.solicitante?.departamento || 'Não informado'}
+                            </span>
+                            <span className="flex items-center gap-1 text-xs">
+                              <User className="h-3 w-3" />
+                              Líder: {evidence.solicitante?.liderNome || 'Não informado'}
+                            </span>
+                            <span className="flex items-center gap-1 text-xs">
+                              <Calendar className="h-3 w-3" />
+                              Data: {evidence.createdAt ? new Date(evidence.createdAt).toLocaleDateString('pt-BR') + ' às ' + new Date(evidence.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                            </span>
+                            <span className={`flex items-center gap-1 text-xs font-semibold ${getCorTempo(evidence.createdAt)}`}>
+                              <Timer className="h-3 w-3" />
+                              Tempo de resposta: {getTempoDecorrido(evidence.createdAt)}
+                            </span>
+                          </CardDescription>
+                        </div>
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Pendente
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700">Descrição da Evidência:</p>
+                        <div className="text-sm text-gray-600 mt-1 line-clamp-3">{evidence.descricao ? stripHtml(evidence.descricao) : "Sem descrição"}</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => {
+                            setSelectedEvidence(evidence);
+                            setShowEvidenceDialog(true);
+                          }}
+                          className="flex-1"
+                        >
+                          Avaliar
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </>
+          )}
+
+          {/* Evidências Aprovadas */}
+          {evidenceTab === 'aprovadas' && (
+            <>
+              {approvedEvLoading ? (
+                <Card className="text-center py-8">
+                  <p className="text-gray-600">Carregando evidências aprovadas...</p>
+                </Card>
+              ) : filteredApprovedEvidences.length === 0 ? (
+                <Card className="text-center py-8">
+                  <p className="text-gray-600">Nenhuma evidência aprovada encontrada</p>
+                </Card>
+              ) : (
+                filteredApprovedEvidences.map((evidence: any) => (
+                  <Card key={evidence.id} className="border-green-200 bg-green-50/20">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{evidence.acao?.titulo || "Ação desconhecida"}</CardTitle>
+                          <CardDescription className="space-y-1">
+                            <span className="block">Enviada por: <strong>{evidence.solicitante?.name || "Desconhecido"}</strong></span>
+                            <span className="flex items-center gap-1 text-xs">
+                              <Building2 className="h-3 w-3" />
+                              Depto: {evidence.solicitante?.departamento || 'Não informado'}
+                            </span>
+                            <span className="flex items-center gap-1 text-xs">
+                              <User className="h-3 w-3" />
+                              Líder: {evidence.solicitante?.liderNome || 'Não informado'}
+                            </span>
+                            <span className="flex items-center gap-1 text-xs">
+                              <Calendar className="h-3 w-3" />
+                              Enviada em: {evidence.createdAt ? new Date(evidence.createdAt).toLocaleDateString('pt-BR') : 'N/A'}
+                            </span>
+                            <span className="flex items-center gap-1 text-xs text-green-700 font-semibold">
+                              <CheckCircle className="h-3 w-3" />
+                              Aprovada em: {evidence.evaluatedAt ? new Date(evidence.evaluatedAt).toLocaleDateString('pt-BR') + ' às ' + new Date(evidence.evaluatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                            </span>
+                            {evidence.avaliador?.name && (
+                              <span className="flex items-center gap-1 text-xs">
+                                <User className="h-3 w-3" />
+                                Avaliado por: {evidence.avaliador.name}
+                              </span>
+                            )}
+                          </CardDescription>
+                        </div>
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Aprovada
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700">Descrição da Evidência:</p>
+                        <div className="text-sm text-gray-600 mt-1 line-clamp-3">{evidence.descricao ? stripHtml(evidence.descricao) : "Sem descrição"}</div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </>
+          )}
+
+          {/* Evidências Devolvidas */}
+          {evidenceTab === 'devolvidas' && (
+            <>
+              {rejectedEvLoading ? (
+                <Card className="text-center py-8">
+                  <p className="text-gray-600">Carregando evidências devolvidas...</p>
+                </Card>
+              ) : filteredRejectedEvidences.length === 0 ? (
+                <Card className="text-center py-8">
+                  <p className="text-gray-600">Nenhuma evidência devolvida encontrada</p>
+                </Card>
+              ) : (
+                filteredRejectedEvidences.map((evidence: any) => (
+                  <Card key={evidence.id} className="border-red-200 bg-red-50/20">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{evidence.acao?.titulo || "Ação desconhecida"}</CardTitle>
+                          <CardDescription className="space-y-1">
+                            <span className="block">Enviada por: <strong>{evidence.solicitante?.name || "Desconhecido"}</strong></span>
+                            <span className="flex items-center gap-1 text-xs">
+                              <Building2 className="h-3 w-3" />
+                              Depto: {evidence.solicitante?.departamento || 'Não informado'}
+                            </span>
+                            <span className="flex items-center gap-1 text-xs">
+                              <User className="h-3 w-3" />
+                              Líder: {evidence.solicitante?.liderNome || 'Não informado'}
+                            </span>
+                            <span className="flex items-center gap-1 text-xs">
+                              <Calendar className="h-3 w-3" />
+                              Enviada em: {evidence.createdAt ? new Date(evidence.createdAt).toLocaleDateString('pt-BR') : 'N/A'}
+                            </span>
+                            <span className="flex items-center gap-1 text-xs text-red-700 font-semibold">
+                              <XCircle className="h-3 w-3" />
+                              Devolvida em: {evidence.evaluatedAt ? new Date(evidence.evaluatedAt).toLocaleDateString('pt-BR') + ' às ' + new Date(evidence.evaluatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
+                            </span>
+                            {evidence.avaliador?.name && (
+                              <span className="flex items-center gap-1 text-xs">
+                                <User className="h-3 w-3" />
+                                Avaliado por: {evidence.avaliador.name}
+                              </span>
+                            )}
+                          </CardDescription>
+                        </div>
+                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Devolvida
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-700">Descrição da Evidência:</p>
+                        <div className="text-sm text-gray-600 mt-1 line-clamp-3">{evidence.descricao ? stripHtml(evidence.descricao) : "Sem descrição"}</div>
+                      </div>
+                      {evidence.justificativaRejeicao && (
+                        <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                          <p className="text-sm font-semibold text-red-700">Motivo da Devolução:</p>
+                          <div className="text-sm text-red-600 mt-1"><RichTextDisplay content={evidence.justificativaRejeicao} /></div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </>
           )}
         </TabsContent>
 

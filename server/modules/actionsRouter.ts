@@ -294,4 +294,9 @@ export const actionsRouter = router({
       
       return { url, key };
     }),
+
+  // Listar ações concluídas (para admin e gerente)
+  listConcluidas: protectedProcedure.query(async () => {
+    return await db.getAcoesConcluidas();
+  }),
 });

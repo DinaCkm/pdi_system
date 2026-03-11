@@ -258,7 +258,7 @@ export async function updateAction(
     // PRAZO (Converter para YYYY-MM-DD antes de comparar)
     if (data.prazo) {
       const dataAntiga = new Date(acaoAntiga.prazo).toISOString().split('T')[0];
-      const dataNova = new Date(normalizedData.prazo).toISOString().split('T')[0];
+      const dataNova = new Date(normalizedData.prazo!).toISOString().split('T')[0];
       
       if (dataAntiga !== dataNova) {
         const [anoAntigo, mesAntigo, diaAntigo] = dataAntiga.split('-');
@@ -1173,6 +1173,128 @@ export async function getPendingEvidences() {
     },
     acao: { titulo: ev.actionNome }
   }));
+}
+
+export async function getEvidencesByStatus(statusFilter: 'aprovada' | 'reprovada' | 'all') {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const statusCondition = statusFilter === 'all' 
+    ? sql`e.status IN ('aprovada', 'reprovada')` 
+    : sql`e.status = ${statusFilter}`;
+
+  const [rows]: any = await db.execute(sql`
+    SELECT 
+      e.*, 
+      u.name as colaboradorNome,
+      u.email as colaboradorEmail,
+      u.departamentoId as userDeptoId,
+      u.leaderId as userLeaderId,
+      a.titulo as actionNome,
+      a.prazo as actionPrazo,
+      d.id as deptoId,
+      d.nome as deptoNome,
+      ldr.name as leaderName,
+      evaluator.name as evaluatorName
+    FROM evidences e
+    LEFT JOIN users u ON e.colaboradorId = u.id
+    LEFT JOIN actions a ON e.actionId = a.id
+    LEFT JOIN departamentos d ON u.departamentoId = d.id
+    LEFT JOIN users ldr ON u.leaderId = ldr.id
+    LEFT JOIN users evaluator ON e.evaluatedBy = evaluator.id
+    WHERE ${statusCondition}
+    ORDER BY e.evaluatedAt DESC
+  `);
+
+  return rows.map((ev: any) => ({
+    ...ev,
+    solicitante: { 
+      name: ev.colaboradorNome, 
+      email: ev.colaboradorEmail,
+      departamento: ev.deptoNome || 'Não informado',
+      departamentoId: ev.deptoId,
+      liderNome: ev.leaderName || 'Não informado',
+    },
+    acao: { titulo: ev.actionNome, prazo: ev.actionPrazo },
+    avaliador: { name: ev.evaluatorName || 'Não informado' },
+  }));
+}
+
+// Alias para compatibilidade
+export async function getEvaluatedEvidences() {
+  return getEvidencesByStatus('all');
+}
+
+export async function getAllEvidences() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [rows]: any = await db.execute(sql`
+    SELECT 
+      e.*, 
+      u.name as colaboradorNome,
+      u.email as colaboradorEmail,
+      u.departamentoId as userDeptoId,
+      u.leaderId as userLeaderId,
+      a.titulo as actionNome,
+      a.prazo as actionPrazo,
+      d.id as deptoId,
+      d.nome as deptoNome,
+      ldr.name as leaderName,
+      evaluator.name as evaluatorName
+    FROM evidences e
+    LEFT JOIN users u ON e.colaboradorId = u.id
+    LEFT JOIN actions a ON e.actionId = a.id
+    LEFT JOIN departamentos d ON u.departamentoId = d.id
+    LEFT JOIN users ldr ON u.leaderId = ldr.id
+    LEFT JOIN users evaluator ON e.evaluatedBy = evaluator.id
+    ORDER BY e.createdAt DESC
+  `);
+
+  return rows.map((ev: any) => ({
+    ...ev,
+    solicitante: { 
+      name: ev.colaboradorNome, 
+      email: ev.colaboradorEmail,
+      departamento: ev.deptoNome || 'Não informado',
+      departamentoId: ev.deptoId,
+      liderNome: ev.leaderName || 'Não informado',
+    },
+    acao: { titulo: ev.actionNome, prazo: ev.actionPrazo },
+    avaliador: { name: ev.evaluatorName || 'Não informado' },
+  }));
+}
+
+export async function getAcoesConcluidas() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [rows]: any = await db.execute(sql`
+    SELECT 
+      a.id,
+      a.titulo,
+      a.descricao,
+      a.prazo,
+      a.status,
+      a.updatedAt as dataConclusao,
+      p.titulo as pdiTitulo,
+      u.name as empregadoNome,
+      u.id as empregadoId,
+      d.id as departamentoId,
+      d.nome as departamentoNome,
+      ldr.name as liderNome,
+      mc.nome as macroCompetencia
+    FROM actions a
+    LEFT JOIN pdis p ON a.pdiId = p.id
+    LEFT JOIN users u ON p.userId = u.id
+    LEFT JOIN departamentos d ON u.departamentoId = d.id
+    LEFT JOIN users ldr ON u.leaderId = ldr.id
+    LEFT JOIN competencias_macros mc ON a.macroId = mc.id
+    WHERE a.status = 'concluida'
+    ORDER BY a.updatedAt DESC
+  `);
+
+  return rows;
 }
 
 export async function getMacroById(macroId: number) {

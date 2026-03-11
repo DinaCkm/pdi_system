@@ -84,6 +84,7 @@ const getMenuItems = (userRole: string) => {
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
       { icon: FileText, label: "PDIs", path: "/pdis" },
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
+      { icon: ClipboardCheck, label: "Gestão de Ações e Evidências", path: "/gestao-gerente" },
       { icon: History, label: "Histórico de Alterações", path: "/solicitacoes-admin" },
       { icon: AlertTriangle, label: "Relatório de Ações Vencidas", path: "/relatorio-acoes-vencidas" },
       { icon: FileText, label: "Ações Solicitadas por Empregados", path: "/solicitacoes-acoes" },

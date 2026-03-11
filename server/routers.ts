@@ -429,6 +429,82 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         throw error;
       }
     }),
+    listEvaluated: adminProcedure.query(async () => {
+      try {
+        const rawEvidences = await db.getEvaluatedEvidences();
+        return await Promise.all(
+          rawEvidences.map(async (ev: any) => {
+            try {
+              const [filesRows]: any = await db.execute(sql`SELECT * FROM evidence_files WHERE evidenceId = ${ev.id}`);
+              const [textsRows]: any = await db.execute(sql`SELECT * FROM evidence_texts WHERE evidenceId = ${ev.id}`);
+              return { 
+                ...ev, 
+                files: filesRows || [], 
+                texts: textsRows || [] 
+              };
+            } catch (error) {
+              return { ...ev, files: [], texts: [] };
+            }
+          })
+        );
+      } catch (error) {
+        throw error;
+      }
+    }),
+    listApproved: adminProcedure.query(async () => {
+      try {
+        const rawEvidences = await db.getEvidencesByStatus('aprovada');
+        return await Promise.all(
+          rawEvidences.map(async (ev: any) => {
+            try {
+              const [filesRows]: any = await db.execute(sql`SELECT * FROM evidence_files WHERE evidenceId = ${ev.id}`);
+              const [textsRows]: any = await db.execute(sql`SELECT * FROM evidence_texts WHERE evidenceId = ${ev.id}`);
+              return { ...ev, files: filesRows || [], texts: textsRows || [] };
+            } catch (error) {
+              return { ...ev, files: [], texts: [] };
+            }
+          })
+        );
+      } catch (error) {
+        throw error;
+      }
+    }),
+    listRejected: adminProcedure.query(async () => {
+      try {
+        const rawEvidences = await db.getEvidencesByStatus('reprovada');
+        return await Promise.all(
+          rawEvidences.map(async (ev: any) => {
+            try {
+              const [filesRows]: any = await db.execute(sql`SELECT * FROM evidence_files WHERE evidenceId = ${ev.id}`);
+              const [textsRows]: any = await db.execute(sql`SELECT * FROM evidence_texts WHERE evidenceId = ${ev.id}`);
+              return { ...ev, files: filesRows || [], texts: textsRows || [] };
+            } catch (error) {
+              return { ...ev, files: [], texts: [] };
+            }
+          })
+        );
+      } catch (error) {
+        throw error;
+      }
+    }),
+    listAll: protectedProcedure.query(async () => {
+      try {
+        const rawEvidences = await db.getAllEvidences();
+        return await Promise.all(
+          rawEvidences.map(async (ev: any) => {
+            try {
+              const [filesRows]: any = await db.execute(sql`SELECT * FROM evidence_files WHERE evidenceId = ${ev.id}`);
+              const [textsRows]: any = await db.execute(sql`SELECT * FROM evidence_texts WHERE evidenceId = ${ev.id}`);
+              return { ...ev, files: filesRows || [], texts: textsRows || [] };
+            } catch (error) {
+              return { ...ev, files: [], texts: [] };
+            }
+          })
+        );
+      } catch (error) {
+        throw error;
+      }
+    }),
     listByUser: protectedProcedure.query(async ({ ctx }) => {
       const userId = ctx.user?.id;
       if (!userId) return [];

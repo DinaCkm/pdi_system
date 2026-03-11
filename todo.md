@@ -3083,3 +3083,21 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Cards recolhíveis no Histórico de Alteração nas Ações (expandir/recolher)
 - [x] Centralizar layout do Relatório de Ações Vencidas
 - [x] Redesign da página Análise de Liderança (clareza, layout, gráficos)
+
+## Visão de Evidências no Admin Dashboard (09/03/2026)
+- [x] Endpoint backend para listar evidências validadas (aprovadas) - evidences.listApproved
+- [x] Endpoint backend para listar evidências devolvidas (reprovadas) - evidences.listRejected
+- [x] Adicionar abas no Admin Dashboard: Pendentes / Aprovadas / Devolvidas
+- [x] Exibir detalhes das evidências validadas (data validação, avaliador, comentários)
+- [x] Busca por nome, ação ou departamento nas evidências
+- [x] Cards de resumo clicáveis para navegar entre abas
+- [x] Testes vitest passando (20/20)
+
+## Visão Completa para o Gerente (09/03/2026)
+- [x] Endpoint backend para listar ações concluídas - actions.listConcluidas
+- [x] Endpoint backend para listar todas evidências - evidences.listAll
+- [x] Filtro automático por status (pendentes/devolvidas)
+- [x] Criar página GestaoGerente com abas: Ações Concluídas / Evidências Pendentes / Evidências Devolvidas
+- [x] Filtros por departamento e por empregado (Select)
+- [x] Busca textual por nome, ação ou departamento
+- [x] Adicionar link "Gestão de Ações e Evidências" no menu do gerente
