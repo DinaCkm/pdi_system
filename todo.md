@@ -3122,3 +3122,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Bugs - Gestão de Ações e Evidências (11/03/2026)
 - [x] Corrigir ações concluídas mostrando zero na página GestaoGerente (p.userId corrigido para p.colaboradorId)
 - [x] Verificar motivo da devolução (justificativaAdmin) no AdminDashboard evidências devolvidas (mapeado justificativaAdmin -> justificativaRejeicao)
+
+## Exibir Texto dos Pareceres nas Solicitações (11/03/2026)
+- [x] Exibir texto/justificativa do Parecer CKM junto com a decisão (com/sem aderência)
+- [x] Exibir texto/justificativa da Decisão do Líder junto com a decisão (de acordo/não de acordo)
+- [x] Exibir texto/justificativa do Parecer RH junto com a decisão (aprovar/vetar/solicitar revisão)
+- [x] Visível para todos os perfis (empregado, líder, gerente, admin) - removida restrição !isColaboradorView

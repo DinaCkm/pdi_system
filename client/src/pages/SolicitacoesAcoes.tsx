@@ -1252,15 +1252,11 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                         {rodada.ckm?.parecerTipo && (
                           <div className="mb-2">
                             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Parecer CKM</p>
-                            {!isColaboradorView && (
-                              <>
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1 ${rodada.ckm.parecerTipo === 'com_aderencia' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                                  {rodada.ckm.parecerTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
-                                </span>
-                                {rodada.ckm.parecerTexto && <div className="text-sm text-gray-600 mt-1"><RichTextDisplay content={rodada.ckm.parecerTexto} /></div>}
-                                <p className="text-xs text-gray-400 mt-1">Em: {formatDate(rodada.ckm.em)}</p>
-                              </>
-                            )}
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1 ${rodada.ckm.parecerTipo === 'com_aderencia' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                              {rodada.ckm.parecerTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
+                            </span>
+                            {rodada.ckm.parecerTexto && <div className="text-sm text-gray-600 mt-1"><RichTextDisplay content={rodada.ckm.parecerTexto} /></div>}
+                            <p className="text-xs text-gray-400 mt-1">Em: {formatDate(rodada.ckm.em)}</p>
                           </div>
                         )}
 
@@ -1268,15 +1264,11 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                         {rodada.gestor?.decisao && (
                           <div className="mb-2">
                             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Decisão do Gestor</p>
-                            {!isColaboradorView && (
-                              <>
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1 ${rodada.gestor.decisao === 'aprovado' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                                  {rodada.gestor.decisao === 'aprovado' ? 'Aprovado' : 'Reprovado'}
-                                </span>
-                                {rodada.gestor.justificativa && <div className="text-sm text-gray-600 mt-1"><RichTextDisplay content={rodada.gestor.justificativa} /></div>}
-                                <p className="text-xs text-gray-400 mt-1">Em: {formatDate(rodada.gestor.em)}</p>
-                              </>
-                            )}
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1 ${rodada.gestor.decisao === 'aprovado' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
+                              {rodada.gestor.decisao === 'aprovado' ? 'Aprovado' : 'Reprovado'}
+                            </span>
+                            {rodada.gestor.justificativa && <div className="text-sm text-gray-600 mt-1"><RichTextDisplay content={rodada.gestor.justificativa} /></div>}
+                            <p className="text-xs text-gray-400 mt-1">Em: {formatDate(rodada.gestor.em)}</p>
                           </div>
                         )}
 
@@ -1284,15 +1276,11 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                         {rodada.rh?.decisao && (
                           <div>
                             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Decisão do RH</p>
-                            {!isColaboradorView && (
-                              <>
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1 bg-purple-200 text-purple-800">
-                                  Revisão Solicitada
-                                </span>
-                                {rodada.rh.justificativa && <div className="text-sm text-gray-600 mt-1"><RichTextDisplay content={rodada.rh.justificativa} /></div>}
-                                <p className="text-xs text-gray-400 mt-1">Por: {rodada.rh.nome} em {formatDate(rodada.rh.em)}</p>
-                              </>
-                            )}
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-1 bg-purple-200 text-purple-800">
+                              Revisão Solicitada
+                            </span>
+                            {rodada.rh.justificativa && <div className="text-sm text-gray-600 mt-1"><RichTextDisplay content={rodada.rh.justificativa} /></div>}
+                            <p className="text-xs text-gray-400 mt-1">Por: {rodada.rh.nome} em {formatDate(rodada.rh.em)}</p>
                           </div>
                         )}
                       </div>
@@ -1322,8 +1310,8 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                     {solicitacao.ckmParecerTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
                   </span>
                 </div>
-                {!isColaboradorView && <div className="text-sm text-gray-700">{solicitacao.ckmParecerTexto ? <RichTextDisplay content={solicitacao.ckmParecerTexto} /> : null}</div>}
-                {!isColaboradorView && <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.ckmNome} em {formatDate(solicitacao.ckmParecerEm)}</p>}
+                <div className="text-sm text-gray-700">{solicitacao.ckmParecerTexto ? <RichTextDisplay content={solicitacao.ckmParecerTexto} /> : null}</div>
+                <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.ckmNome} em {formatDate(solicitacao.ckmParecerEm)}</p>
               </div>
             )}
 
@@ -1336,8 +1324,8 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                     {solicitacao.gestorDecisao === 'aprovado' ? 'De Acordo' : solicitacao.gestorDecisao === 'encerrada' ? 'Encerrada' : 'Reprovado'}
                   </span>
                 </div>
-                {!isColaboradorView && <div className="text-sm text-gray-700">{solicitacao.gestorJustificativa ? <RichTextDisplay content={solicitacao.gestorJustificativa} /> : null}</div>}
-                {!isColaboradorView && <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.gestorNome} em {formatDate(solicitacao.gestorDecisaoEm)}</p>}
+                <div className="text-sm text-gray-700">{solicitacao.gestorJustificativa ? <RichTextDisplay content={solicitacao.gestorJustificativa} /> : null}</div>
+                <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.gestorNome} em {formatDate(solicitacao.gestorDecisaoEm)}</p>
               </div>
             )}
 
@@ -1350,8 +1338,8 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
                     {solicitacao.rhDecisao === 'aprovado' ? 'Aprovado e Incluído no PDI' : 'Vetado'}
                   </span>
                 </div>
-                {!isColaboradorView && <div className="text-sm text-gray-700">{solicitacao.rhJustificativa ? <RichTextDisplay content={solicitacao.rhJustificativa} /> : null}</div>}
-                {!isColaboradorView && <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.rhNome} em {formatDate(solicitacao.rhDecisaoEm)}</p>}
+                <div className="text-sm text-gray-700">{solicitacao.rhJustificativa ? <RichTextDisplay content={solicitacao.rhJustificativa} /> : null}</div>
+                <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.rhNome} em {formatDate(solicitacao.rhDecisaoEm)}</p>
               </div>
             )}
           </div>
