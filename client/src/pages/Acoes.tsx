@@ -32,8 +32,8 @@ export default function Acoes() {
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [historyActionId, setHistoryActionId] = useState<number | null>(null);
   
-  // Gerente tem acesso somente leitura
-  const isReadOnly = user?.role === 'gerente';
+  // Empregado e Gerente têm acesso somente leitura (apenas admin pode editar ações)
+  const isReadOnly = user?.role === 'gerente' || user?.role === 'user';
 
   // --- FUNÇÃO PARA LER QUERY PARAMS ---
   const getQueryParams = useCallback(() => {

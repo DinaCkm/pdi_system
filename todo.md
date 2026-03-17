@@ -3141,3 +3141,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Ao excluir parecer, tudo que foi escrito depois é deletado e retorna para inclusão daquele parecer
 - [x] Testes vitest para devolução por informações incompletas
 - [x] Testes vitest para exclusão de parecer
+
+## Bug: Botão Editar Ação aparecendo para empregado (17/03/2026)
+- [x] Remover/ocultar botão de editar ação na visualização do empregado (empregado não pode editar ações)
