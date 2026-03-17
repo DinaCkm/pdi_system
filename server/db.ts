@@ -3719,6 +3719,128 @@ export async function solicitarRevisaoRH(id: number, data: {
   }).where(eq(solicitacoesAcoes.id, id));
 }
 
+// ============= DEVOLVER POR INFORMAÇÕES INCOMPLETAS (ADMIN/CKM) =============
+
+export async function devolverPorInformacoesIncompletas(id: number, data: {
+  justificativa: string;
+  adminId: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const solicitacao = await getSolicitacaoById(id);
+  if (!solicitacao) throw new Error("Solicitação não encontrada");
+
+  // Salvar snapshot da rodada atual no histórico
+  const historicoAtual = solicitacao.historicoRodadas ? JSON.parse(solicitacao.historicoRodadas as string) : [];
+  const rodadaSnapshot = {
+    rodada: solicitacao.rodadaAtual,
+    ckm: {
+      parecerTipo: solicitacao.ckmParecerTipo,
+      parecerTexto: solicitacao.ckmParecerTexto,
+      porId: solicitacao.ckmParecerPor,
+      em: solicitacao.ckmParecerEm,
+    },
+    gestor: {
+      decisao: solicitacao.gestorDecisao,
+      justificativa: solicitacao.gestorJustificativa,
+      id: solicitacao.gestorId,
+      em: solicitacao.gestorDecisaoEm,
+    },
+    rh: {
+      decisao: solicitacao.rhDecisao,
+      justificativa: solicitacao.rhJustificativa,
+      id: solicitacao.rhId,
+      em: solicitacao.rhDecisaoEm,
+    },
+    motivoDevolucao: data.justificativa,
+    devolvidoPor: 'admin_info_incompleta',
+    devolvidoPorId: data.adminId,
+    devolvidoEm: new Date().toISOString(),
+  };
+  historicoAtual.push(rodadaSnapshot);
+
+  // Devolver ao solicitante sem incrementar rodada (não é revisão do RH)
+  await db.update(solicitacoesAcoes).set({
+    statusGeral: "aguardando_solicitante",
+    historicoRodadas: JSON.stringify(historicoAtual),
+    // Limpar pareceres da rodada atual
+    ckmParecerTipo: null,
+    ckmParecerTexto: null,
+    ckmParecerPor: null,
+    ckmParecerEm: null,
+    gestorDecisao: null,
+    gestorJustificativa: null,
+    gestorId: null,
+    gestorDecisaoEm: null,
+    rhDecisao: null,
+    rhJustificativa: null,
+    rhId: null,
+    rhDecisaoEm: null,
+  }).where(eq(solicitacoesAcoes.id, id));
+}
+
+// ============= EXCLUIR PARECER (ADMIN) =============
+
+export async function excluirParecer(id: number, data: {
+  etapa: 'ckm' | 'gestor' | 'rh';
+  adminId: number;
+  justificativa: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const solicitacao = await getSolicitacaoById(id);
+  if (!solicitacao) throw new Error("Solicitação não encontrada");
+
+  // Determinar o que limpar baseado na etapa
+  // Se excluir CKM -> limpa CKM + Gestor + RH, volta para aguardando_ckm
+  // Se excluir Gestor -> limpa Gestor + RH, volta para aguardando_gestor
+  // Se excluir RH -> limpa RH, volta para aguardando_rh
+
+  const updateData: any = {};
+
+  if (data.etapa === 'ckm') {
+    updateData.ckmParecerTipo = null;
+    updateData.ckmParecerTexto = null;
+    updateData.ckmParecerPor = null;
+    updateData.ckmParecerEm = null;
+    updateData.gestorDecisao = null;
+    updateData.gestorJustificativa = null;
+    updateData.gestorId = null;
+    updateData.gestorDecisaoEm = null;
+    updateData.rhDecisao = null;
+    updateData.rhJustificativa = null;
+    updateData.rhId = null;
+    updateData.rhDecisaoEm = null;
+    updateData.statusGeral = 'aguardando_ckm';
+  } else if (data.etapa === 'gestor') {
+    updateData.gestorDecisao = null;
+    updateData.gestorJustificativa = null;
+    updateData.gestorId = null;
+    updateData.gestorDecisaoEm = null;
+    updateData.rhDecisao = null;
+    updateData.rhJustificativa = null;
+    updateData.rhId = null;
+    updateData.rhDecisaoEm = null;
+    updateData.statusGeral = 'aguardando_gestor';
+  } else if (data.etapa === 'rh') {
+    updateData.rhDecisao = null;
+    updateData.rhJustificativa = null;
+    updateData.rhId = null;
+    updateData.rhDecisaoEm = null;
+    updateData.statusGeral = 'aguardando_rh';
+    // Se a ação já foi incluída no PDI, precisamos removê-la
+    if (solicitacao.acaoIncluidaId) {
+      // Deletar a ação que foi criada
+      await db.delete(actions).where(eq(actions.id, solicitacao.acaoIncluidaId));
+      updateData.acaoIncluidaId = null;
+    }
+  }
+
+  await db.update(solicitacoesAcoes).set(updateData).where(eq(solicitacoesAcoes.id, id));
+}
+
 // ============= NORMAS E REGRAS =============
 
 import { asc } from "drizzle-orm";

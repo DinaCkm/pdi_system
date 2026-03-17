@@ -3132,3 +3132,12 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ## Tratamento de Erro Rate Limiting (17/03/2026)
 - [x] Implementar mensagem amigável para erro de rate limiting no login (Login.tsx)
 - [x] Tratar respostas não-JSON do servidor em chamadas API gerais (main.tsx - fetch wrapper)
+
+## Devolução por Informações Incompletas e Exclusão de Parecer (17/03/2026)
+- [x] Botão "Informações Incompletas" para admin devolver solicitação ao empregado com justificativa
+- [x] Empregado pode reescrever/editar a ação quando devolvida por informações incompletas
+- [x] Empregado sempre vê todos os campos de parecer (líder e RH) para acompanhamento
+- [x] Admin pode excluir um parecer específico (CKM, Líder ou RH)
+- [x] Ao excluir parecer, tudo que foi escrito depois é deletado e retorna para inclusão daquele parecer
+- [x] Testes vitest para devolução por informações incompletas
+- [x] Testes vitest para exclusão de parecer

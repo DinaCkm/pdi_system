@@ -1640,6 +1640,72 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           };
         });
       }),
+
+    // Devolver por Informações Incompletas (Admin/CKM)
+    devolverPorInformacoesIncompletas: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        justificativa: z.string().min(10, "Justificativa deve ter no mínimo 10 caracteres"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const solicitacao = await db.getSolicitacaoById(input.id);
+        if (!solicitacao) throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
+        if (solicitacao.statusGeral !== 'aguardando_ckm') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Solicitação não está na etapa de análise CKM' });
+        }
+
+        await db.devolverPorInformacoesIncompletas(input.id, {
+          justificativa: input.justificativa,
+          adminId: ctx.user.id,
+        });
+
+        // Notificar o solicitante (in-app)
+        try {
+          await db.createNotification({
+            destinatarioId: solicitacao.solicitanteId,
+            tipo: 'solicitacao_acao_info_incompleta',
+            titulo: 'Informações Incompletas — Ação Devolvida',
+            mensagem: `Sua solicitação de ação "${solicitacao.titulo}" foi devolvida por informações incompletas. Motivo: ${input.justificativa}. Por favor, revise e reenvie.`,
+            referenciaId: input.id,
+          });
+        } catch (e) { console.error('Erro ao notificar solicitante sobre devolução:', e); }
+
+        return { success: true };
+      }),
+
+    // Excluir Parecer (Admin)
+    excluirParecer: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        etapa: z.enum(['ckm', 'gestor', 'rh']),
+        justificativa: z.string().min(5, "Justificativa é obrigatória"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const solicitacao = await db.getSolicitacaoById(input.id);
+        if (!solicitacao) throw new TRPCError({ code: 'NOT_FOUND', message: 'Solicitação não encontrada' });
+
+        // Validar que o parecer existe
+        if (input.etapa === 'ckm' && !solicitacao.ckmParecerTipo) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Não há parecer CKM para excluir' });
+        }
+        if (input.etapa === 'gestor' && !solicitacao.gestorDecisao) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Não há parecer do gestor para excluir' });
+        }
+        if (input.etapa === 'rh' && !solicitacao.rhDecisao) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Não há parecer do RH para excluir' });
+        }
+
+        await db.excluirParecer(input.id, {
+          etapa: input.etapa,
+          adminId: ctx.user.id,
+          justificativa: input.justificativa,
+        });
+
+        const etapaLabel = input.etapa === 'ckm' ? 'CKM' : input.etapa === 'gestor' ? 'Líder' : 'RH';
+        console.log(`[Admin] Parecer ${etapaLabel} excluído na solicitação #${input.id} por ${ctx.user.name}. Motivo: ${input.justificativa}`);
+
+        return { success: true };
+      }),
    }),
 
   // ============= NORMAS E REGRAS =============

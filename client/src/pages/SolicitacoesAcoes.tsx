@@ -6,7 +6,7 @@ import { useSearch } from 'wouter';
 import { 
   FileText, Plus, Clock, CheckCircle2, XCircle, AlertTriangle, 
   Search, ChevronDown, X, Check, Send, Eye, MessageSquare,
-  Loader2, Filter, ChevronRight, User, Users, Mail, RotateCcw, History, Info, Download
+  Loader2, Filter, ChevronRight, User, Users, Mail, RotateCcw, History, Info, Download, Trash2, AlertCircle
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import RichTextEditor from '@/components/RichTextEditor';
@@ -631,6 +631,8 @@ function FormularioSolicitacao({ onClose, onSuccess }: { onClose: () => void; on
 function ParecerCKMForm({ solicitacao, onSuccess }: { solicitacao: any; onSuccess: () => void }) {
   const [parecerTipo, setParecerTipo] = useState<'com_aderencia' | 'sem_aderencia' | ''>('');
   const [parecerTexto, setParecerTexto] = useState('');
+  const [showInfoIncompleta, setShowInfoIncompleta] = useState(false);
+  const [justificativaIncompleta, setJustificativaIncompleta] = useState('');
 
   const mutation = trpc.solicitacoesAcoes.emitirParecerCKM.useMutation({
     onSuccess: () => {
@@ -639,6 +641,23 @@ function ParecerCKMForm({ solicitacao, onSuccess }: { solicitacao: any; onSucces
     },
     onError: (err) => toast.error(err.message),
   });
+
+  const devolverMutation = trpc.solicitacoesAcoes.devolverPorInformacoesIncompletas.useMutation({
+    onSuccess: () => {
+      toast.success('Solicitação devolvida ao empregado por informações incompletas.');
+      onSuccess();
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  function handleDevolverInfoIncompleta() {
+    if (!justificativaIncompleta.trim() || justificativaIncompleta.trim().length < 10) {
+      toast.error('Justificativa deve ter no mínimo 10 caracteres');
+      return;
+    }
+    if (!confirm('Confirma a devolução desta solicitação por informações incompletas? O empregado poderá editar e reenviar.')) return;
+    devolverMutation.mutate({ id: solicitacao.id, justificativa: justificativaIncompleta });
+  }
 
   return (
     <div className="border-t border-yellow-200 pt-4 mt-4">
@@ -714,18 +733,72 @@ function ParecerCKMForm({ solicitacao, onSuccess }: { solicitacao: any; onSucces
           placeholder="Justifique seu parecer técnico..."
           minHeight="80px"
         />
-        <button
-          onClick={() => {
-            if (!parecerTipo) return toast.error('Selecione o tipo de parecer');
-            if (!parecerTexto.trim()) return toast.error('Justificativa é obrigatória');
-            mutation.mutate({ id: solicitacao.id, parecerTipo, parecerTexto });
-          }}
-          disabled={mutation.isPending}
-          className="w-full bg-yellow-600 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-yellow-700 disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          Emitir Parecer
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => {
+              if (!parecerTipo) return toast.error('Selecione o tipo de parecer');
+              if (!parecerTexto.trim()) return toast.error('Justificativa é obrigatória');
+              mutation.mutate({ id: solicitacao.id, parecerTipo, parecerTexto });
+            }}
+            disabled={mutation.isPending || devolverMutation.isPending}
+            className="flex-1 bg-yellow-600 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-yellow-700 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            Emitir Parecer
+          </button>
+          {!showInfoIncompleta && (
+            <button
+              onClick={() => setShowInfoIncompleta(true)}
+              disabled={mutation.isPending || devolverMutation.isPending}
+              className="flex-1 bg-orange-500 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-orange-600 disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <AlertCircle className="h-4 w-4" />
+              Informações Incompletas
+            </button>
+          )}
+        </div>
+
+        {/* Formulário de Devolução por Informações Incompletas */}
+        {showInfoIncompleta && (
+          <div className="bg-orange-50 border border-orange-300 rounded-lg p-4 mt-3">
+            <h5 className="text-sm font-bold text-orange-800 mb-2 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              Devolver por Informações Incompletas
+            </h5>
+            <p className="text-xs text-orange-700 mb-3">A solicitação será devolvida ao empregado para que ele possa complementar as informações e reenviar.</p>
+            <textarea
+              value={justificativaIncompleta}
+              onChange={(e) => setJustificativaIncompleta(e.target.value)}
+              placeholder="Descreva quais informações estão faltando ou precisam ser complementadas (mínimo 10 caracteres)..."
+              className="w-full border border-orange-300 rounded-lg px-3 py-2.5 text-sm min-h-[80px] overflow-auto"
+              maxLength={500}
+            />
+            <div className="flex justify-between items-center mt-1 px-1 mb-3">
+              <span className={`text-xs ${justificativaIncompleta.length < 10 ? 'text-red-500' : 'text-gray-400'}`}>
+                {justificativaIncompleta.length < 10 ? `Mínimo 10 caracteres (faltam ${10 - justificativaIncompleta.length})` : ''}
+              </span>
+              <span className={`text-xs ${justificativaIncompleta.length >= 450 ? 'text-orange-500' : 'text-gray-400'}`}>
+                {justificativaIncompleta.length}/500
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDevolverInfoIncompleta}
+                disabled={devolverMutation.isPending}
+                className="bg-orange-600 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-orange-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {devolverMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertCircle className="h-4 w-4" />}
+                Confirmar Devolução
+              </button>
+              <button
+                onClick={() => { setShowInfoIncompleta(false); setJustificativaIncompleta(''); }}
+                className="bg-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -978,7 +1051,7 @@ function DecisaoRHForm({ solicitacao, onSuccess }: { solicitacao: any; onSuccess
   );
 }
 
-// ============= FORMULÁRIO DE REENVIO (após revisão do RH) =============
+// ============= FORMULÁRIO DE REENVIO (após revisão do RH ou devolução por info incompleta) =============
 function FormularioReenvio({ solicitacao, onSuccess }: { solicitacao: any; onSuccess: () => void }) {
   const [formData, setFormData] = useState({
     titulo: solicitacao.titulo || '',
@@ -1030,11 +1103,46 @@ function FormularioReenvio({ solicitacao, onSuccess }: { solicitacao: any; onSuc
 
   return (
     <div className="mt-4 bg-amber-50 rounded-lg p-4 border-2 border-amber-300">
-      <h4 className="text-sm font-bold text-amber-800 mb-3 flex items-center gap-2">
-        <RotateCcw className="h-4 w-4" />
-        Revisão Solicitada pelo RH — Edite e Reenvie
-      </h4>
-      <p className="text-xs text-amber-700 mb-4">O RH solicitou revisão desta solicitação. Revise os dados abaixo e clique em "Reenviar" para reiniciar o fluxo de análise.</p>
+      {/* Detectar se foi devolvido por info incompleta ou revisão do RH */}
+      {(() => {
+        let motivoDevolucao = '';
+        let devolvidoPor = '';
+        try {
+          const historico = JSON.parse(solicitacao.historicoRodadas || '[]');
+          const ultimaRodada = historico[historico.length - 1];
+          if (ultimaRodada?.devolvidoPor === 'admin_info_incompleta') {
+            motivoDevolucao = ultimaRodada.motivoDevolucao || '';
+            devolvidoPor = 'admin_info_incompleta';
+          } else if (ultimaRodada?.motivoRevisao) {
+            motivoDevolucao = ultimaRodada.motivoRevisao;
+            devolvidoPor = 'rh';
+          }
+        } catch {}
+        return (
+          <>
+            <h4 className="text-sm font-bold text-amber-800 mb-3 flex items-center gap-2">
+              <RotateCcw className="h-4 w-4" />
+              {devolvidoPor === 'admin_info_incompleta' ? 'Informações Incompletas — Edite e Reenvie' : 'Revisão Solicitada pelo RH — Edite e Reenvie'}
+            </h4>
+            {motivoDevolucao && (
+              <div className="bg-orange-50 border border-orange-300 rounded-lg p-3 mb-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertCircle className="h-4 w-4 text-orange-600" />
+                  <span className="text-xs font-bold text-orange-700 uppercase tracking-wider">
+                    {devolvidoPor === 'admin_info_incompleta' ? 'Motivo da Devolução (Administrador)' : 'Motivo da Revisão (RH)'}
+                  </span>
+                </div>
+                <p className="text-sm text-orange-800">{motivoDevolucao}</p>
+              </div>
+            )}
+            <p className="text-xs text-amber-700 mb-4">
+              {devolvidoPor === 'admin_info_incompleta'
+                ? 'O administrador identificou que as informações estão incompletas. Revise os dados abaixo e clique em "Reenviar" para reiniciar o fluxo de análise.'
+                : 'O RH solicitou revisão desta solicitação. Revise os dados abaixo e clique em "Reenviar" para reiniciar o fluxo de análise.'}
+            </p>
+          </>
+        );
+      })()}
       <form onSubmit={handleReenviar} className="space-y-3">
         <div>
           <label className="block text-xs font-semibold text-gray-700 mb-1">Título da Ação *</label>
@@ -1106,6 +1214,113 @@ function FormularioReenvio({ solicitacao, onSuccess }: { solicitacao: any; onSuc
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+// ============= COMPONENTE DE EXIBIÇÃO DE PARECER COM BOTÃO DE EXCLUSÃO (ADMIN) =============
+function ParecerDisplay({ etapa, numero, label, tipo, tipoLabel, texto, autor, data, rodadaAtual, solicitacaoId, userRole, onRefresh, bgPositivo, bgNegativo, badgePositivo, badgeNegativo }: {
+  etapa: 'ckm' | 'gestor' | 'rh';
+  numero: number;
+  label: string;
+  tipo: string;
+  tipoLabel: string;
+  texto: string | null;
+  autor: string;
+  data: string | Date;
+  rodadaAtual: number;
+  solicitacaoId: number;
+  userRole: string;
+  onRefresh: () => void;
+  bgPositivo: string;
+  bgNegativo: string;
+  badgePositivo: string;
+  badgeNegativo: string;
+}) {
+  const [showDeleteForm, setShowDeleteForm] = useState(false);
+  const [deleteJustificativa, setDeleteJustificativa] = useState('');
+
+  const excluirMutation = trpc.solicitacoesAcoes.excluirParecer.useMutation({
+    onSuccess: () => {
+      toast.success(`Parecer ${label} excluído com sucesso. O status foi atualizado.`);
+      setShowDeleteForm(false);
+      setDeleteJustificativa('');
+      onRefresh();
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const isPositivo = tipo === 'com_aderencia' || tipo === 'aprovado';
+  const bgClass = isPositivo ? bgPositivo : bgNegativo;
+  const badgeClass = isPositivo ? badgePositivo : badgeNegativo;
+
+  return (
+    <div className={`rounded-lg p-3 border ${bgClass}`}>
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-gray-500">{numero}. {label} {rodadaAtual >= 2 ? `(Rodada ${rodadaAtual})` : ''}</span>
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${badgeClass}`}>
+            {tipoLabel}
+          </span>
+        </div>
+        {userRole === 'admin' && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowDeleteForm(!showDeleteForm); }}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-red-600 hover:bg-red-100 transition-colors border border-red-200"
+            title={`Excluir parecer ${label}`}
+          >
+            <Trash2 className="h-3 w-3" />
+            Excluir
+          </button>
+        )}
+      </div>
+      <div className="text-sm text-gray-700">{texto ? <RichTextDisplay content={texto} /> : null}</div>
+      <p className="text-xs text-gray-400 mt-1">Por: {autor} em {formatDate(data)}</p>
+
+      {/* Formulário de exclusão de parecer (Admin) */}
+      {showDeleteForm && userRole === 'admin' && (
+        <div className="mt-3 bg-red-50 border border-red-300 rounded-lg p-3" onClick={(e) => e.stopPropagation()}>
+          <h5 className="text-sm font-bold text-red-800 mb-2 flex items-center gap-2">
+            <Trash2 className="h-4 w-4" />
+            Excluir Parecer: {label}
+          </h5>
+          <p className="text-xs text-red-700 mb-2">
+            <strong>Atenção:</strong> Ao excluir este parecer, todos os pareceres posteriores também serão excluídos e o status retornará para a etapa correspondente.
+            {etapa === 'ckm' && ' (Voltará para "Aguardando CKM" e os pareceres do Líder e RH serão removidos)'}
+            {etapa === 'gestor' && ' (Voltará para "Aguardando Gestor" e o parecer do RH será removido)'}
+            {etapa === 'rh' && ' (Voltará para "Aguardando RH")'}
+          </p>
+          <textarea
+            value={deleteJustificativa}
+            onChange={(e) => setDeleteJustificativa(e.target.value)}
+            placeholder="Justificativa para exclusão do parecer (mínimo 5 caracteres)..."
+            className="w-full border border-red-300 rounded-lg px-3 py-2 text-sm min-h-[60px] overflow-auto mb-2"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                if (!deleteJustificativa.trim() || deleteJustificativa.trim().length < 5) {
+                  toast.error('Justificativa deve ter no mínimo 5 caracteres');
+                  return;
+                }
+                if (!confirm(`Confirma a exclusão do parecer "${label}"? Esta ação não pode ser desfeita.`)) return;
+                excluirMutation.mutate({ id: solicitacaoId, etapa, justificativa: deleteJustificativa });
+              }}
+              disabled={excluirMutation.isPending}
+              className="bg-red-600 text-white rounded-lg px-4 py-2 text-sm font-semibold hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+            >
+              {excluirMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Confirmar Exclusão
+            </button>
+            <button
+              onClick={() => { setShowDeleteForm(false); setDeleteJustificativa(''); }}
+              className="bg-gray-200 text-gray-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-300"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1303,44 +1518,68 @@ function SolicitacaoCard({ solicitacao, userRole, userId, onRefresh, isOwnReques
 
             {/* 1. Parecer CKM */}
             {solicitacao.ckmParecerTipo && (
-              <div className={`rounded-lg p-3 border ${solicitacao.ckmParecerTipo === 'com_aderencia' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">1. Parecer CKM {solicitacao.rodadaAtual >= 2 ? `(Rodada ${solicitacao.rodadaAtual})` : ''}</span>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${solicitacao.ckmParecerTipo === 'com_aderencia' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                    {solicitacao.ckmParecerTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-700">{solicitacao.ckmParecerTexto ? <RichTextDisplay content={solicitacao.ckmParecerTexto} /> : null}</div>
-                <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.ckmNome} em {formatDate(solicitacao.ckmParecerEm)}</p>
-              </div>
+              <ParecerDisplay
+                etapa="ckm"
+                numero={1}
+                label="Parecer CKM"
+                tipo={solicitacao.ckmParecerTipo}
+                tipoLabel={solicitacao.ckmParecerTipo === 'com_aderencia' ? 'Com Aderência' : 'Sem Aderência'}
+                texto={solicitacao.ckmParecerTexto}
+                autor={solicitacao.ckmNome}
+                data={solicitacao.ckmParecerEm}
+                rodadaAtual={solicitacao.rodadaAtual}
+                solicitacaoId={solicitacao.id}
+                userRole={userRole}
+                onRefresh={onRefresh}
+                bgPositivo="bg-green-50 border-green-200"
+                bgNegativo="bg-red-50 border-red-200"
+                badgePositivo="bg-green-200 text-green-800"
+                badgeNegativo="bg-red-200 text-red-800"
+              />
             )}
 
             {/* 2. Decisão Gestor */}
             {solicitacao.gestorDecisao && (
-              <div className={`rounded-lg p-3 border ${solicitacao.gestorDecisao === 'aprovado' ? 'bg-green-50 border-green-200' : solicitacao.gestorDecisao === 'encerrada' ? 'bg-gray-50 border-gray-200' : 'bg-red-50 border-red-200'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">2. Decisão do Líder {solicitacao.rodadaAtual >= 2 ? `(Rodada ${solicitacao.rodadaAtual})` : ''}</span>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${solicitacao.gestorDecisao === 'aprovado' ? 'bg-green-200 text-green-800' : solicitacao.gestorDecisao === 'encerrada' ? 'bg-gray-200 text-gray-800' : 'bg-red-200 text-red-800'}`}>
-                    {solicitacao.gestorDecisao === 'aprovado' ? 'De Acordo' : solicitacao.gestorDecisao === 'encerrada' ? 'Encerrada' : 'Reprovado'}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-700">{solicitacao.gestorJustificativa ? <RichTextDisplay content={solicitacao.gestorJustificativa} /> : null}</div>
-                <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.gestorNome} em {formatDate(solicitacao.gestorDecisaoEm)}</p>
-              </div>
+              <ParecerDisplay
+                etapa="gestor"
+                numero={2}
+                label="Decisão do Líder"
+                tipo={solicitacao.gestorDecisao}
+                tipoLabel={solicitacao.gestorDecisao === 'aprovado' ? 'De Acordo' : solicitacao.gestorDecisao === 'encerrada' ? 'Encerrada' : 'Reprovado'}
+                texto={solicitacao.gestorJustificativa}
+                autor={solicitacao.gestorNome}
+                data={solicitacao.gestorDecisaoEm}
+                rodadaAtual={solicitacao.rodadaAtual}
+                solicitacaoId={solicitacao.id}
+                userRole={userRole}
+                onRefresh={onRefresh}
+                bgPositivo="bg-green-50 border-green-200"
+                bgNegativo={solicitacao.gestorDecisao === 'encerrada' ? 'bg-gray-50 border-gray-200' : 'bg-red-50 border-red-200'}
+                badgePositivo="bg-green-200 text-green-800"
+                badgeNegativo={solicitacao.gestorDecisao === 'encerrada' ? 'bg-gray-200 text-gray-800' : 'bg-red-200 text-red-800'}
+              />
             )}
 
             {/* 3. Decisão RH */}
             {solicitacao.rhDecisao && (
-              <div className={`rounded-lg p-3 border ${solicitacao.rhDecisao === 'aprovado' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold uppercase tracking-wider text-gray-500">3. Decisão do RH {solicitacao.rodadaAtual >= 2 ? `(Rodada ${solicitacao.rodadaAtual})` : ''}</span>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${solicitacao.rhDecisao === 'aprovado' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                    {solicitacao.rhDecisao === 'aprovado' ? 'Aprovado e Incluído no PDI' : 'Vetado'}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-700">{solicitacao.rhJustificativa ? <RichTextDisplay content={solicitacao.rhJustificativa} /> : null}</div>
-                <p className="text-xs text-gray-400 mt-1">Por: {solicitacao.rhNome} em {formatDate(solicitacao.rhDecisaoEm)}</p>
-              </div>
+              <ParecerDisplay
+                etapa="rh"
+                numero={3}
+                label="Decisão do RH"
+                tipo={solicitacao.rhDecisao}
+                tipoLabel={solicitacao.rhDecisao === 'aprovado' ? 'Aprovado e Incluído no PDI' : 'Vetado'}
+                texto={solicitacao.rhJustificativa}
+                autor={solicitacao.rhNome}
+                data={solicitacao.rhDecisaoEm}
+                rodadaAtual={solicitacao.rodadaAtual}
+                solicitacaoId={solicitacao.id}
+                userRole={userRole}
+                onRefresh={onRefresh}
+                bgPositivo="bg-green-50 border-green-200"
+                bgNegativo="bg-red-50 border-red-200"
+                badgePositivo="bg-green-200 text-green-800"
+                badgeNegativo="bg-red-200 text-red-800"
+              />
             )}
           </div>
 
