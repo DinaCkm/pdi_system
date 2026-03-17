@@ -44,7 +44,13 @@ export default function Login() {
     },
     onError: (error) => {
       console.error("[Login] Erro de autenticação:", error);
-      toast.error(error.message || "Erro ao fazer login");
+      const msg = error.message || "Erro ao fazer login";
+      // Tratar mensagens técnicas de rate limiting
+      if (msg.includes('Rate exceeded') || msg.includes('rate limit') || msg.includes('Unexpected token')) {
+        toast.error('Muitas tentativas de acesso. Por favor, aguarde alguns instantes e tente novamente.');
+      } else {
+        toast.error(msg);
+      }
       setIsLoading(false);
     },
   });

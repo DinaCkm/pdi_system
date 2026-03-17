@@ -54,6 +54,26 @@ const trpcClient = trpc.createClient({
           ...(init ?? {}),
           credentials: "include",
           headers,
+        }).then(async (response) => {
+          // Tratar respostas não-JSON (ex: rate limiting retorna texto puro)
+          if (!response.ok) {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+              const text = await response.text();
+              let friendlyMessage = 'Erro inesperado no servidor. Tente novamente em instantes.';
+              if (text.toLowerCase().includes('rate exceeded') || text.toLowerCase().includes('rate limit') || response.status === 429) {
+                friendlyMessage = 'Muitas tentativas de acesso. Por favor, aguarde alguns instantes e tente novamente.';
+              } else if (response.status === 502 || response.status === 503 || response.status === 504) {
+                friendlyMessage = 'O servidor está temporariamente indisponível. Tente novamente em alguns instantes.';
+              }
+              // Retornar uma resposta JSON válida com o erro para o tRPC processar
+              return new Response(
+                JSON.stringify([{ error: { message: friendlyMessage, code: -1, data: { code: 'INTERNAL_SERVER_ERROR' } } }]),
+                { status: response.status, headers: { 'content-type': 'application/json' } }
+              );
+            }
+          }
+          return response;
         });
       },
     }),

@@ -3128,3 +3128,7 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Exibir texto/justificativa da Decisão do Líder junto com a decisão (de acordo/não de acordo)
 - [x] Exibir texto/justificativa do Parecer RH junto com a decisão (aprovar/vetar/solicitar revisão)
 - [x] Visível para todos os perfis (empregado, líder, gerente, admin) - removida restrição !isColaboradorView
+
+## Tratamento de Erro Rate Limiting (17/03/2026)
+- [x] Implementar mensagem amigável para erro de rate limiting no login (Login.tsx)
+- [x] Tratar respostas não-JSON do servidor em chamadas API gerais (main.tsx - fetch wrapper)
