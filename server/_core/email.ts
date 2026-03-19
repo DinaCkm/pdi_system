@@ -1,5 +1,5 @@
 import { ENV } from "./env";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 
 export type EmailPayload = {
   to: string;
@@ -31,38 +31,48 @@ function stripHtmlForEmail(html: string): string {
 }
 
 /**
+ * Cria o transporter SMTP reutilizável (Nodemailer + Google SMTP)
+ */
+function createTransporter() {
+  return nodemailer.createTransport({
+    host: ENV.smtpHost,
+    port: ENV.smtpPort,
+    secure: ENV.smtpPort === 465,
+    auth: {
+      user: ENV.smtpUser,
+      pass: ENV.smtpPass,
+    },
+  });
+}
+
+/**
  * Envia email para um usuário
- * Utiliza Resend API para envio de emails transacionais
+ * Utiliza Nodemailer com SMTP do Google (relacionamento@ckmtalents.net)
  */
 export async function sendEmail(payload: EmailPayload): Promise<boolean> {
   const { to, subject, body } = payload;
 
-  if (!ENV.resendApiKey) {
-    console.warn("[Email] Resend API key not configured (RESEND_API_KEY).");
+  if (!ENV.smtpUser || !ENV.smtpPass) {
+    console.warn("[Email] SMTP credentials not configured (SMTP_USER / SMTP_PASS).");
     return false;
   }
 
   try {
-    const resend = new Resend(ENV.resendApiKey);
+    const transporter = createTransporter();
     const ccList = payload.cc
-      ? [payload.cc, GLOBAL_CC_EMAIL].filter(Boolean)
-      : [GLOBAL_CC_EMAIL];
+      ? `${payload.cc}, ${GLOBAL_CC_EMAIL}`
+      : GLOBAL_CC_EMAIL;
 
-    const { data, error } = await resend.emails.send({
-      from: 'Eco do Bem - EVOLUIR <onboarding@resend.dev>',
-      to: [to],
+    const info = await transporter.sendMail({
+      from: `"Eco do Bem - EVOLUIR" <${ENV.smtpUser}>`,
+      to,
       cc: ccList,
       subject,
       text: stripHtmlForEmail(body),
       html: body,
     });
 
-    if (error) {
-      console.warn(`[Email] Erro Resend ao enviar para ${to}:`, error.message);
-      return false;
-    }
-
-    console.log(`[Email] Email enviado com sucesso para ${to} (id: ${data?.id})`);
+    console.log(`[Email] Email enviado com sucesso para ${to} (messageId: ${info.messageId})`);
     return true;
   } catch (error: any) {
     console.warn(`[Email] Erro ao enviar email para ${to}:`, error.message || error);

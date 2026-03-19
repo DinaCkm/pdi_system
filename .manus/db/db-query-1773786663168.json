@@ -1,0 +1,9 @@
+{
+  "query": "UPDATE pdis SET titulo = 'PDI – Consolidação de Ações Pendentes de 2025 Transferidas para 2026 (Vedada Inclusão de Novas Ações)' WHERE titulo = 'AÇÕES REMANESCENTES DE 2025 - NÃO INCLUA AÇÕES NOVAS';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute UPDATE pdis SET titulo = 'PDI – Consolidação de Ações Pendentes de 2025 Transferidas para 2026 (Vedada Inclusão de Novas Ações)' WHERE titulo = 'AÇÕES REMANESCENTES DE 2025 - NÃO INCLUA AÇÕES NOVAS';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 393
+}

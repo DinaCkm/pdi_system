@@ -3144,3 +3144,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Bug: Botão Editar Ação aparecendo para empregado (17/03/2026)
 - [x] Remover/ocultar botão de editar ação na visualização do empregado (empregado não pode editar ações)
+
+## Configurar SMTP Google para envio de e-mails (19/03/2026)
+- [x] Configurar secrets SMTP (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS)
+- [x] Substituir Resend por Nodemailer com SMTP do Google no email.ts
+- [x] Testar envio de e-mail real
