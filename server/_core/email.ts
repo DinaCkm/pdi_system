@@ -733,3 +733,76 @@ ${ASSINATURA}
 
   return envioColaborador && envioLider;
 }
+
+
+/**
+ * Envia e-mail ao empregado quando sua evidência é reprovada pelo administrador ou líder.
+ * Inclui a justificativa do avaliador para que o empregado saiba o que precisa ajustar.
+ */
+export async function sendEmailEvidenciaReprovada(params: {
+  colaboradorEmail: string;
+  colaboradorName: string;
+  tituloAcao: string;
+  tituloPdi: string;
+  justificativa: string;
+  avaliadorName: string;
+  liderEmail?: string;
+  liderName?: string;
+}): Promise<boolean> {
+  const { colaboradorEmail, colaboradorName, tituloAcao, tituloPdi, justificativa, avaliadorName, liderEmail, liderName } = params;
+
+  const bodyColaborador = `
+Prezado(a) ${colaboradorName},
+
+Informamos que a evidência enviada para a ação "${tituloAcao}" do seu PDI "${tituloPdi}" foi DEVOLVIDA para ajustes.
+
+📋 MOTIVO DA DEVOLUÇÃO:
+
+"${justificativa}"
+
+O QUE FAZER AGORA:
+
+1. Acesse o sistema em https://www.evoluirckm.com
+2. Verifique a justificativa acima com atenção
+3. Faça os ajustes necessários na sua evidência
+4. Reenvie a evidência corrigida pelo sistema
+
+Lembre-se: a devolução de uma evidência é uma oportunidade de aprimorar o seu trabalho. Revise os pontos indicados e reenvie com as correções solicitadas.
+
+Em caso de dúvidas, entre em contato com o seu líder direto.
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  const envioColaborador = await sendEmail({
+    to: colaboradorEmail,
+    subject: `AÇÃO NECESSÁRIA — Evidência Devolvida para Ajustes — ${tituloAcao}`,
+    body: bodyColaborador,
+  });
+
+  // Enviar cópia informativa para o líder, se disponível
+  let envioLider = true;
+  if (liderEmail && liderName) {
+    const bodyLider = `
+Prezado(a) ${liderName},
+
+Informamos que a evidência da ação "${tituloAcao}" do PDI "${tituloPdi}" do(a) colaborador(a) ${colaboradorName} foi DEVOLVIDA para ajustes pelo avaliador ${avaliadorName}.
+
+Motivo da devolução: "${justificativa}"
+
+O(A) colaborador(a) foi notificado(a) e orientado(a) a realizar os ajustes necessários e reenviar a evidência.
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+    `.trim();
+
+    envioLider = await sendEmail({
+      to: liderEmail,
+      subject: `INFORMATIVO — Evidência Devolvida — ${colaboradorName} — ${tituloAcao}`,
+      body: bodyLider,
+    });
+  }
+
+  return envioColaborador && envioLider;
+}

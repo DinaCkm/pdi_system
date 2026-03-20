@@ -11,7 +11,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { invokeLLM } from "./_core/llm";
-import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI, sendEmailParabensEvidenciaAprovada } from "./_core/email";
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI, sendEmailParabensEvidenciaAprovada, sendEmailEvidenciaReprovada } from "./_core/email";
 
 // Mantendo os roteadores que já existiam
 import { systemRouter } from "./_core/systemRouter";
@@ -448,6 +448,38 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
                     title: '❌ Evidência Reprovada',
                     content: `A evidência para a ação "${action.titulo}" foi reprovada. Motivo: ${input.justificativa || 'Não especificado'}`
                 });
+
+                // Enviar e-mail ao colaborador e líder sobre a reprovação
+                try {
+                  const colaborador = await db.getUserById(ev.colaboradorId);
+                  if (colaborador && colaborador.email) {
+                    const [pdiRows]: any = await db.execute(sql`SELECT p.titulo FROM pdis p JOIN actions a ON a.pdiId = p.id WHERE a.id = ${ev.actionId} LIMIT 1`);
+                    const tituloPdi = pdiRows?.[0]?.titulo || 'PDI';
+
+                    let liderEmail: string | undefined;
+                    let liderName: string | undefined;
+                    if (colaborador.leaderId) {
+                      const lider = await db.getUserById(colaborador.leaderId);
+                      if (lider && lider.email) {
+                        liderEmail = lider.email;
+                        liderName = lider.name || 'Líder';
+                      }
+                    }
+
+                    await sendEmailEvidenciaReprovada({
+                      colaboradorEmail: colaborador.email,
+                      colaboradorName: colaborador.name || 'Colaborador(a)',
+                      tituloAcao: action.titulo,
+                      tituloPdi,
+                      justificativa: input.justificativa || 'Evidência rejeitada pelo administrador',
+                      avaliadorName: ctx.user?.name || 'Administrador',
+                      liderEmail,
+                      liderName,
+                    });
+                  }
+                } catch (emailErr) {
+                  console.warn('[evidences.reject] Erro ao enviar e-mail de reprovação:', emailErr);
+                }
             }
         }
         return { success: true };
@@ -715,6 +747,38 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           title: '❌ Evidência Reprovada',
           content: `A evidência para a ação "${action.titulo}" foi reprovada. Justificativa: ${input.justificativa}`
         });
+
+        // Enviar e-mail ao colaborador e líder sobre a reprovação
+        try {
+          const colaboradorRepr = await db.getUserById(ev.colaboradorId);
+          if (colaboradorRepr && colaboradorRepr.email) {
+            const [pdiRowsRepr]: any = await db.execute(sql`SELECT p.titulo FROM pdis p JOIN actions a ON a.pdiId = p.id WHERE a.id = ${ev.actionId} LIMIT 1`);
+            const tituloPdiRepr = pdiRowsRepr?.[0]?.titulo || 'PDI';
+
+            let liderEmailRepr: string | undefined;
+            let liderNameRepr: string | undefined;
+            if (colaboradorRepr.leaderId) {
+              const liderRepr = await db.getUserById(colaboradorRepr.leaderId);
+              if (liderRepr && liderRepr.email) {
+                liderEmailRepr = liderRepr.email;
+                liderNameRepr = liderRepr.name || 'Líder';
+              }
+            }
+
+            await sendEmailEvidenciaReprovada({
+              colaboradorEmail: colaboradorRepr.email,
+              colaboradorName: colaboradorRepr.name || 'Colaborador(a)',
+              tituloAcao: action.titulo,
+              tituloPdi: tituloPdiRepr,
+              justificativa: input.justificativa,
+              avaliadorName: ctx.user?.name || 'Avaliador',
+              liderEmail: liderEmailRepr,
+              liderName: liderNameRepr,
+            });
+          }
+        } catch (emailErr) {
+          console.warn('[evidences.reprovar-lider] Erro ao enviar e-mail de reprovação:', emailErr);
+        }
       }
       
       return { success: true };

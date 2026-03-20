@@ -3160,3 +3160,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Criar função sendEmailParabensEvidenciaAprovada no email.ts (com incentivo LinkedIn)
 - [x] Integrar envio no fluxo de aprovação de evidência pelo admin e pelo líder
 - [x] Testar envio de e-mail de parabéns (4 testes vitest passando)
+
+## E-mail de notificação ao empregado quando evidência é reprovada (20/03/2026)
+- [x] Criar função sendEmailEvidenciaReprovada no email.ts (com justificativa do admin)
+- [x] Integrar envio no fluxo de reprovação de evidência pelo admin e pelo líder
+- [x] Testar com vitest (5 testes passando)
