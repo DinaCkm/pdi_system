@@ -11,7 +11,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { invokeLLM } from "./_core/llm";
-import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI } from "./_core/email";
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI, sendEmailParabensEvidenciaAprovada } from "./_core/email";
 
 // Mantendo os roteadores que já existiam
 import { systemRouter } from "./_core/systemRouter";
@@ -394,6 +394,38 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
                     title: '✅ Evidência Aprovada',
                     content: `A evidência para a ação "${action.titulo}" foi aprovada pelo administrador.`
                 });
+
+                // Enviar e-mail de parabéns ao colaborador e cópia ao líder
+                try {
+                  const colaborador = await db.getUserById(ev.colaboradorId);
+                  if (colaborador && colaborador.email) {
+                    // Buscar o PDI da ação para incluir o título
+                    const [pdiRows]: any = await db.execute(sql`SELECT p.titulo FROM pdis p JOIN actions a ON a.pdiId = p.id WHERE a.id = ${ev.actionId} LIMIT 1`);
+                    const tituloPdi = pdiRows?.[0]?.titulo || 'PDI';
+
+                    // Buscar líder do colaborador
+                    let liderEmail: string | undefined;
+                    let liderName: string | undefined;
+                    if (colaborador.leaderId) {
+                      const lider = await db.getUserById(colaborador.leaderId);
+                      if (lider && lider.email) {
+                        liderEmail = lider.email;
+                        liderName = lider.name || 'Líder';
+                      }
+                    }
+
+                    await sendEmailParabensEvidenciaAprovada({
+                      colaboradorEmail: colaborador.email,
+                      colaboradorName: colaborador.name || 'Colaborador(a)',
+                      tituloAcao: action.titulo,
+                      tituloPdi,
+                      liderEmail,
+                      liderName,
+                    });
+                  }
+                } catch (emailErr) {
+                  console.warn('[evidences.approve] Erro ao enviar e-mail de parabéns:', emailErr);
+                }
             }
         }
         return { success: true };
@@ -615,6 +647,36 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           title: '✅ Evidência Aprovada pelo Líder',
           content: `A evidência para a ação "${action.titulo}" foi aprovada.`
         });
+
+        // Enviar e-mail de parabéns ao colaborador
+        try {
+          const colaboradorAprov = await db.getUserById(ev.colaboradorId);
+          if (colaboradorAprov && colaboradorAprov.email) {
+            const [pdiRowsAprov]: any = await db.execute(sql`SELECT p.titulo FROM pdis p JOIN actions a ON a.pdiId = p.id WHERE a.id = ${ev.actionId} LIMIT 1`);
+            const tituloPdiAprov = pdiRowsAprov?.[0]?.titulo || 'PDI';
+
+            let liderEmailAprov: string | undefined;
+            let liderNameAprov: string | undefined;
+            if (colaboradorAprov.leaderId) {
+              const liderAprov = await db.getUserById(colaboradorAprov.leaderId);
+              if (liderAprov && liderAprov.email) {
+                liderEmailAprov = liderAprov.email;
+                liderNameAprov = liderAprov.name || 'Líder';
+              }
+            }
+
+            await sendEmailParabensEvidenciaAprovada({
+              colaboradorEmail: colaboradorAprov.email,
+              colaboradorName: colaboradorAprov.name || 'Colaborador(a)',
+              tituloAcao: action.titulo,
+              tituloPdi: tituloPdiAprov,
+              liderEmail: liderEmailAprov,
+              liderName: liderNameAprov,
+            });
+          }
+        } catch (emailErr) {
+          console.warn('[evidences.aprovar-lider] Erro ao enviar e-mail de parabéns:', emailErr);
+        }
       }
       
       return { success: true };

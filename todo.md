@@ -3155,3 +3155,8 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Integrar envio de e-mail na procedure de inclusão de relatório
 - [x] Envio retroativo não necessário (apenas novos relatórios serão notificados)
 - [x] Testar envio (2 colaboradores de teste enviados com sucesso)
+
+## E-mail de parabéns ao empregado quando evidência é aprovada (20/03/2026)
+- [x] Criar função sendEmailParabensEvidenciaAprovada no email.ts (com incentivo LinkedIn)
+- [x] Integrar envio no fluxo de aprovação de evidência pelo admin e pelo líder
+- [x] Testar envio de e-mail de parabéns (4 testes vitest passando)

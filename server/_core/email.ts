@@ -664,3 +664,72 @@ ${ASSINATURA}
 
   return envioColaborador && envioLider;
 }
+
+
+/**
+ * Envia e-mail de parabéns ao empregado quando sua evidência é aprovada pelo administrador.
+ * Inclui incentivo para publicar a conquista no LinkedIn.
+ */
+export async function sendEmailParabensEvidenciaAprovada(params: {
+  colaboradorEmail: string;
+  colaboradorName: string;
+  tituloAcao: string;
+  tituloPdi: string;
+  liderEmail?: string;
+  liderName?: string;
+}): Promise<boolean> {
+  const { colaboradorEmail, colaboradorName, tituloAcao, tituloPdi, liderEmail, liderName } = params;
+
+  const bodyColaborador = `
+Prezado(a) ${colaboradorName},
+
+🎉 PARABÉNS! Sua evidência foi APROVADA!
+
+A evidência da ação "${tituloAcao}" do seu PDI "${tituloPdi}" foi aprovada pelo administrador. Isso significa que você concluiu mais uma etapa importante do seu Plano de Desenvolvimento Individual.
+
+Cada meta alcançada é um passo a mais na construção da sua trajetória profissional. Continue com essa dedicação e comprometimento!
+
+💼 PUBLIQUE SUA CONQUISTA NO LINKEDIN!
+
+O LinkedIn é a vitrine dos profissionais de alta performance. Compartilhe essa conquista com a sua rede! Mostre ao mercado que você investe no seu desenvolvimento contínuo e que está sempre evoluindo.
+
+Dica: Ao publicar, mencione a competência desenvolvida e como ela contribui para o seu crescimento profissional. Profissionais que compartilham suas conquistas no LinkedIn têm até 3x mais visibilidade para novas oportunidades.
+
+👉 Acesse agora: https://www.linkedin.com
+
+Continue evoluindo! 🚀
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  // Enviar para o colaborador
+  const envioColaborador = await sendEmail({
+    to: colaboradorEmail,
+    subject: `🎉 PARABÉNS — Evidência Aprovada — ${tituloAcao}`,
+    body: bodyColaborador,
+  });
+
+  // Enviar cópia informativa para o líder, se disponível
+  let envioLider = true;
+  if (liderEmail && liderName) {
+    const bodyLider = `
+Prezado(a) ${liderName},
+
+Informamos que a evidência da ação "${tituloAcao}" do PDI "${tituloPdi}" do(a) colaborador(a) ${colaboradorName} foi APROVADA pelo administrador.
+
+O(A) colaborador(a) concluiu mais uma etapa do seu Plano de Desenvolvimento Individual. Parabenize-o(a) pela conquista!
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+    `.trim();
+
+    envioLider = await sendEmail({
+      to: liderEmail,
+      subject: `INFORMATIVO — Evidência Aprovada — ${colaboradorName} — ${tituloAcao}`,
+      body: bodyLider,
+    });
+  }
+
+  return envioColaborador && envioLider;
+}
