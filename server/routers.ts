@@ -11,7 +11,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { invokeLLM } from "./_core/llm";
-import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider } from "./_core/email";
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI } from "./_core/email";
 
 // Mantendo os roteadores que já existiam
 import { systemRouter } from "./_core/systemRouter";
@@ -170,7 +170,35 @@ export const appRouter = router({
       status: z.string().optional()
     })).mutation(async ({ input }) => {
       const { id, ...data } = input;
-      await db.updatePDI(id, data);
+      
+      // Verificar se está incluindo relatório (texto) pela primeira vez
+      if (data.relatorioAnalise && data.relatorioAnalise.trim().length > 0) {
+        const pdiAntes = await db.getPDIById(id);
+        const tinhaRelatorioAntes = pdiAntes?.relatorioAnalise && (pdiAntes.relatorioAnalise as string).trim().length > 0;
+        
+        await db.updatePDI(id, data);
+        
+        // Enviar e-mail se é a primeira vez que o relatório é incluído
+        if (!tinhaRelatorioAntes && pdiAntes) {
+          const pdiAtualizado = await db.getPDIById(id);
+          if (pdiAtualizado) {
+            const colaborador = await db.getUserById(pdiAtualizado.colaboradorId);
+            const lider = colaborador?.leaderId ? await db.getUserById(colaborador.leaderId) : null;
+            if (colaborador?.email) {
+              sendEmailRelatorioIncluidoNoPDI({
+                colaboradorEmail: colaborador.email,
+                colaboradorName: colaborador.name || 'Colaborador',
+                liderEmail: lider?.email || undefined,
+                liderName: lider?.name || undefined,
+                tituloPdi: pdiAtualizado.titulo || 'PDI',
+              }).catch(err => console.warn('[Email] Erro ao enviar email de relatório:', err));
+            }
+          }
+        }
+      } else {
+        await db.updatePDI(id, data);
+      }
+      
       return { success: true };
     }),
     // Upload de arquivo do relatório de análise

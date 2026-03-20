@@ -3149,3 +3149,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Configurar secrets SMTP (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS)
 - [x] Substituir Resend por Nodemailer com SMTP do Google no email.ts
 - [x] Testar envio de e-mail real
+
+## E-mail informativo ao incluir relatório no PDI (19/03/2026)
+- [x] Criar função sendEmailRelatorioIncluidoNoPDI no email.ts (texto informativo padrão)
+- [x] Integrar envio de e-mail na procedure de inclusão de relatório
+- [x] Envio retroativo não necessário (apenas novos relatórios serão notificados)
+- [x] Testar envio (2 colaboradores de teste enviados com sucesso)

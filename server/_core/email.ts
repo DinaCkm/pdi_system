@@ -608,3 +608,59 @@ ${ASSINATURA}
     cc: `${CC_RELACIONAMENTO}, ${GLOBAL_CC_EMAIL}`,
   });
 }
+
+
+/**
+ * Envia email informativo ao empregado e ao líder quando um relatório de performance
+ * é incluído no PDI do empregado.
+ */
+export async function sendEmailRelatorioIncluidoNoPDI(params: {
+  colaboradorEmail: string;
+  colaboradorName: string;
+  liderEmail?: string;
+  liderName?: string;
+  tituloPdi: string;
+}): Promise<boolean> {
+  const { colaboradorEmail, colaboradorName, liderEmail, liderName, tituloPdi } = params;
+
+  const bodyColaborador = `
+Prezado(a) ${colaboradorName},
+
+Gostaríamos de informar que foi incluído o Relatório de Performance no seu PDI "${tituloPdi}".
+
+Acesse o link https://www.evoluirckm.com para ter acesso.
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  // Enviar para o colaborador
+  const envioColaborador = await sendEmail({
+    to: colaboradorEmail,
+    subject: `INFORMATIVO — Relatório de Performance Incluído no seu PDI — ${tituloPdi}`,
+    body: bodyColaborador,
+  });
+
+  // Enviar para o líder, se disponível
+  let envioLider = true;
+  if (liderEmail && liderName) {
+    const bodyLider = `
+Prezado(a) ${liderName},
+
+Gostaríamos de informar que foi incluído o Relatório de Performance no PDI "${tituloPdi}" do(a) colaborador(a) ${colaboradorName}.
+
+Acesse o link https://www.evoluirckm.com para ter acesso.
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+    `.trim();
+
+    envioLider = await sendEmail({
+      to: liderEmail,
+      subject: `INFORMATIVO — Relatório de Performance Incluído no PDI — ${colaboradorName} — ${tituloPdi}`,
+      body: bodyLider,
+    });
+  }
+
+  return envioColaborador && envioLider;
+}
