@@ -3173,3 +3173,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Criar endpoint/procedure para executar a varredura (POST /api/cron/acoes-vencidas)
 - [x] Agendar rotina quinzenal (dias 1 e 15 de cada mês às 9h)
 - [x] Testar com vitest (4 testes passando) + teste real: 10 empregados e 6 líderes notificados
+
+## Notificação ao admin após varredura quinzenal (20/03/2026)
+- [x] Enviar e-mail ao administrador com resumo da varredura quinzenal (qtd empregados, líderes notificados, ações vencidas)

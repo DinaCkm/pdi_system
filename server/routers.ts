@@ -11,7 +11,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { invokeLLM } from "./_core/llm";
-import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI, sendEmailParabensEvidenciaAprovada, sendEmailEvidenciaReprovada, sendEmailAcoesVencidasEmpregado, sendEmailAcoesVencidasLider } from "./_core/email";
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI, sendEmailParabensEvidenciaAprovada, sendEmailEvidenciaReprovada, sendEmailAcoesVencidasEmpregado, sendEmailAcoesVencidasLider, sendEmailResumoVarreduraAdmin } from "./_core/email";
 
 // Mantendo os roteadores que já existiam
 import { systemRouter } from "./_core/systemRouter";
@@ -2081,6 +2081,29 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           }
 
           console.log(`[AlertaVencidas] Varredura concluída: ${empregadosNotificados} empregados e ${lideresNotificados} líderes notificados. Total de ações vencidas: ${acoesVencidas.length}`);
+
+          // Notificar todos os administradores com o resumo da varredura
+          try {
+            const [adminsRows]: any = await db.execute(sql.raw(`SELECT id, name, email FROM users WHERE role = 'admin' AND status = 'ativo' AND email IS NOT NULL AND email != ''`));
+            const dataFormatada = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            for (const admin of (adminsRows || [])) {
+              try {
+                await sendEmailResumoVarreduraAdmin({
+                  adminEmail: admin.email,
+                  adminName: admin.name || 'Administrador',
+                  totalAcoesVencidas: acoesVencidas.length,
+                  empregadosNotificados,
+                  lideresNotificados,
+                  dataVarredura: dataFormatada,
+                });
+                console.log(`[AlertaVencidas] Resumo enviado ao admin ${admin.name} (${admin.email})`);
+              } catch (e) {
+                console.warn(`[AlertaVencidas] Erro ao enviar resumo ao admin ${admin.email}:`, e);
+              }
+            }
+          } catch (e) {
+            console.warn('[AlertaVencidas] Erro ao notificar admins:', e);
+          }
 
           return {
             success: true,

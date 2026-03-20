@@ -880,3 +880,44 @@ ${ASSINATURA}
     body,
   });
 }
+
+
+/**
+ * Envia e-mail ao administrador com o resumo da varredura quinzenal de ações vencidas
+ */
+export async function sendEmailResumoVarreduraAdmin(params: {
+  adminEmail: string;
+  adminName: string;
+  totalAcoesVencidas: number;
+  empregadosNotificados: number;
+  lideresNotificados: number;
+  dataVarredura: string;
+}): Promise<boolean> {
+  const { adminEmail, adminName, totalAcoesVencidas, empregadosNotificados, lideresNotificados, dataVarredura } = params;
+
+  const body = `
+Prezado(a) ${adminName},
+
+Informamos que a varredura quinzenal de ações vencidas foi executada com sucesso em ${dataVarredura}.
+
+📊 RESUMO DA VARREDURA:
+
+• Total de ações vencidas há mais de 15 dias: ${totalAcoesVencidas}
+• Empregados notificados: ${empregadosNotificados}
+• Líderes notificados: ${lideresNotificados}
+
+Os empregados receberam um e-mail solicitando que acessem o sistema e incluam as evidências pendentes.
+Os líderes receberam um e-mail informando sobre as ações vencidas na sua equipe.
+
+Acesse o sistema para mais detalhes: https://www.evoluirckm.com
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return await sendEmail({
+    to: adminEmail,
+    subject: `RELATÓRIO — Varredura Quinzenal de Ações Vencidas (${dataVarredura})`,
+    body,
+  });
+}
