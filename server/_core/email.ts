@@ -8,8 +8,7 @@ export type EmailPayload = {
   cc?: string;
 };
 
-// CC global: todos os emails enviados pelo sistema terão cópia para este endereço
-const GLOBAL_CC_EMAIL = 'jumakiyama@gmail.com';
+// CC global removido a pedido do administrador
 
 /**
  * Remove tags HTML de uma string para uso em emails plain text
@@ -59,14 +58,10 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
 
   try {
     const transporter = createTransporter();
-    const ccList = payload.cc
-      ? `${payload.cc}, ${GLOBAL_CC_EMAIL}`
-      : GLOBAL_CC_EMAIL;
-
     const info = await transporter.sendMail({
       from: `"Eco do Bem - EVOLUIR" <${ENV.smtpUser}>`,
       to,
-      cc: ccList,
+      ...(payload.cc ? { cc: payload.cc } : {}),
       subject,
       text: stripHtmlForEmail(body),
       html: body,
@@ -557,7 +552,7 @@ ${ASSINATURA}
     to: colaboradorEmail,
     subject: `INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${tituloAcao}`,
     body: bodyColaborador,
-    cc: `${CC_RELACIONAMENTO}, ${GLOBAL_CC_EMAIL}`,
+    cc: CC_RELACIONAMENTO,
   });
 
   // Enviar para o líder com CC para relacionamento
@@ -565,7 +560,7 @@ ${ASSINATURA}
     to: liderEmail,
     subject: `INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${colaboradorName} — ${tituloAcao}`,
     body: bodyLider,
-    cc: `${CC_RELACIONAMENTO}, ${GLOBAL_CC_EMAIL}`,
+    cc: CC_RELACIONAMENTO,
   });
 
   return envioColaborador && envioLider;
@@ -605,7 +600,7 @@ ${ASSINATURA}
     to: liderEmail,
     subject: `INFORMATIVO — Ação APROVADA e Incluída no PDI — ${colaboradorName} — ${tituloAcao}`,
     body,
-    cc: `${CC_RELACIONAMENTO}, ${GLOBAL_CC_EMAIL}`,
+    cc: CC_RELACIONAMENTO,
   });
 }
 

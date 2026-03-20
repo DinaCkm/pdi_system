@@ -3176,3 +3176,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Notificação ao admin após varredura quinzenal (20/03/2026)
 - [x] Enviar e-mail ao administrador com resumo da varredura quinzenal (qtd empregados, líderes notificados, ações vencidas)
+
+## Remover CC global jumakiyama@gmail.com (20/03/2026)
+- [x] Remover jumakiyama@gmail.com como CC de todos os e-mails de notificação
