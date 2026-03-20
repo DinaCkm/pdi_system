@@ -806,3 +806,77 @@ ${ASSINATURA}
 
   return envioColaborador && envioLider;
 }
+
+/**
+ * Envia e-mail ao empregado informando que há ações vencidas no seu PDI.
+ * Um único e-mail por empregado, listando os PDIs com ações vencidas.
+ */
+export async function sendEmailAcoesVencidasEmpregado(params: {
+  colaboradorEmail: string;
+  colaboradorName: string;
+  pdisComAcoesVencidas: Array<{ tituloPdi: string; qtdAcoesVencidas: number }>;
+}): Promise<boolean> {
+  const { colaboradorEmail, colaboradorName, pdisComAcoesVencidas } = params;
+
+  const listaPdis = pdisComAcoesVencidas
+    .map(p => `  • ${p.tituloPdi} — ${p.qtdAcoesVencidas} ação(ões) vencida(s)`)
+    .join('\n');
+
+  const body = `
+Prezado(a) ${colaboradorName},
+
+Informamos que há ações vencidas no seu Plano de Desenvolvimento Individual (PDI):
+
+${listaPdis}
+
+Acesse o sistema em https://www.evoluirckm.com e providencie a inclusão das evidências das ações pendentes.
+
+Lembre-se: manter seu PDI atualizado é fundamental para o seu desenvolvimento profissional e para o acompanhamento da sua evolução.
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return await sendEmail({
+    to: colaboradorEmail,
+    subject: `AÇÃO NECESSÁRIA — Ações Vencidas no seu PDI`,
+    body,
+  });
+}
+
+/**
+ * Envia e-mail ao líder informando que há ações vencidas na sua equipe.
+ * Um único e-mail por líder, consolidando todos os subordinados com pendências.
+ */
+export async function sendEmailAcoesVencidasLider(params: {
+  liderEmail: string;
+  liderName: string;
+  subordinadosComPendencias: Array<{ nomeColaborador: string; qtdAcoesVencidas: number }>;
+}): Promise<boolean> {
+  const { liderEmail, liderName, subordinadosComPendencias } = params;
+
+  const listaSubordinados = subordinadosComPendencias
+    .map(s => `  • ${s.nomeColaborador} — ${s.qtdAcoesVencidas} ação(ões) vencida(s)`)
+    .join('\n');
+
+  const body = `
+Prezado(a) ${liderName},
+
+Informamos que há ações vencidas nos PDIs da sua equipe:
+
+${listaSubordinados}
+
+Acesse o sistema em https://www.evoluirckm.com e converse com sua equipe para regularizar as pendências.
+
+O acompanhamento próximo do desenvolvimento da sua equipe é essencial para garantir a evolução de todos.
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return await sendEmail({
+    to: liderEmail,
+    subject: `AÇÃO NECESSÁRIA — Ações Vencidas na Sua Equipe`,
+    body,
+  });
+}

@@ -11,7 +11,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { invokeLLM } from "./_core/llm";
-import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI, sendEmailParabensEvidenciaAprovada, sendEmailEvidenciaReprovada } from "./_core/email";
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI, sendEmailParabensEvidenciaAprovada, sendEmailEvidenciaReprovada, sendEmailAcoesVencidasEmpregado, sendEmailAcoesVencidasLider } from "./_core/email";
 
 // Mantendo os roteadores que já existiam
 import { systemRouter } from "./_core/systemRouter";
@@ -1965,6 +1965,136 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         await database.update(users)
           .set({ viuNormasVersao: 0 });
         return { success: true };
+      }),
+  }),
+
+  // ============= ROTINA DE ALERTA DE AÇÕES VENCIDAS =============
+  alertaAcoesVencidas: router({
+    executarVarredura: adminProcedure
+      .mutation(async () => {
+        try {
+          const database = await db.getDb();
+          const { sql: sqlTag } = await import('drizzle-orm');
+
+          // Buscar ações vencidas há mais de 15 dias (prazo < hoje - 15 dias)
+          // e que não estejam concluídas
+          const [acoesVencidas]: any = await database.execute(sqlTag`
+            SELECT 
+              a.id as actionId,
+              a.titulo as tituloAcao,
+              a.prazo,
+              a.status,
+              p.id as pdiId,
+              p.titulo as tituloPdi,
+              p.colaboradorId,
+              u.name as colaboradorName,
+              u.email as colaboradorEmail,
+              u.leaderId
+            FROM actions a
+            JOIN pdis p ON a.pdiId = p.id
+            JOIN users u ON p.colaboradorId = u.id
+            WHERE a.prazo < DATE_SUB(CURDATE(), INTERVAL 15 DAY)
+              AND a.status NOT IN ('concluida', 'cancelada')
+              AND p.status = 'em_andamento'
+            ORDER BY u.id, p.id
+          `);
+
+          if (!acoesVencidas || acoesVencidas.length === 0) {
+            return { success: true, empregadosNotificados: 0, lideresNotificados: 0, totalAcoesVencidas: 0 };
+          }
+
+          // Agrupar por empregado -> PDIs com ações vencidas
+          const porEmpregado = new Map<number, {
+            colaboradorName: string;
+            colaboradorEmail: string;
+            leaderId: number | null;
+            pdis: Map<number, { tituloPdi: string; qtdAcoesVencidas: number }>;
+          }>();
+
+          for (const row of acoesVencidas) {
+            if (!porEmpregado.has(row.colaboradorId)) {
+              porEmpregado.set(row.colaboradorId, {
+                colaboradorName: row.colaboradorName,
+                colaboradorEmail: row.colaboradorEmail,
+                leaderId: row.leaderId,
+                pdis: new Map(),
+              });
+            }
+            const emp = porEmpregado.get(row.colaboradorId)!;
+            if (!emp.pdis.has(row.pdiId)) {
+              emp.pdis.set(row.pdiId, { tituloPdi: row.tituloPdi, qtdAcoesVencidas: 0 });
+            }
+            emp.pdis.get(row.pdiId)!.qtdAcoesVencidas++;
+          }
+
+          let empregadosNotificados = 0;
+          let lideresNotificados = 0;
+          const lideresJaNotificados = new Map<number, Array<{ nomeColaborador: string; qtdAcoesVencidas: number }>>();
+
+          // Enviar e-mail para cada empregado
+          const empregadoEntries = Array.from(porEmpregado.entries());
+          for (const [colabId, dados] of empregadoEntries) {
+            if (dados.colaboradorEmail) {
+              const pdisArray: Array<{ tituloPdi: string; qtdAcoesVencidas: number }> = Array.from(dados.pdis.values());
+              try {
+                await sendEmailAcoesVencidasEmpregado({
+                  colaboradorEmail: dados.colaboradorEmail,
+                  colaboradorName: dados.colaboradorName,
+                  pdisComAcoesVencidas: pdisArray,
+                });
+                empregadosNotificados++;
+              } catch (e) {
+                console.warn(`[AlertaVencidas] Erro ao enviar e-mail para ${dados.colaboradorName}:`, e);
+              }
+            }
+
+            // Acumular dados para o líder
+            if (dados.leaderId) {
+              if (!lideresJaNotificados.has(dados.leaderId)) {
+                lideresJaNotificados.set(dados.leaderId, []);
+              }
+              const pdisValues: Array<{ tituloPdi: string; qtdAcoesVencidas: number }> = Array.from(dados.pdis.values());
+              const totalAcoes: number = pdisValues.reduce((sum: number, p) => sum + p.qtdAcoesVencidas, 0);
+              lideresJaNotificados.get(dados.leaderId)!.push({
+                nomeColaborador: dados.colaboradorName,
+                qtdAcoesVencidas: totalAcoes,
+              });
+            }
+          }
+
+          // Enviar e-mail consolidado para cada líder
+          const lideresEntries = Array.from(lideresJaNotificados.entries());
+          for (const [liderId, subordinados] of lideresEntries) {
+            try {
+              const lider = await db.getUserById(liderId);
+              if (lider && lider.email) {
+                await sendEmailAcoesVencidasLider({
+                  liderEmail: lider.email,
+                  liderName: lider.name || 'Líder',
+                  subordinadosComPendencias: subordinados,
+                });
+                lideresNotificados++;
+              }
+            } catch (e) {
+              console.warn(`[AlertaVencidas] Erro ao enviar e-mail para líder #${liderId}:`, e);
+            }
+          }
+
+          console.log(`[AlertaVencidas] Varredura concluída: ${empregadosNotificados} empregados e ${lideresNotificados} líderes notificados. Total de ações vencidas: ${acoesVencidas.length}`);
+
+          return {
+            success: true,
+            empregadosNotificados,
+            lideresNotificados,
+            totalAcoesVencidas: acoesVencidas.length,
+          };
+        } catch (error: any) {
+          console.error('[AlertaVencidas] Erro na varredura:', error);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Erro ao executar varredura de ações vencidas: ${error.message}`
+          });
+        }
       }),
   }),
 });

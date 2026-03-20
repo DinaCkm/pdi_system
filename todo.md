@@ -3165,3 +3165,11 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Criar função sendEmailEvidenciaReprovada no email.ts (com justificativa do admin)
 - [x] Integrar envio no fluxo de reprovação de evidência pelo admin e pelo líder
 - [x] Testar com vitest (5 testes passando)
+
+## Rotina quinzenal de alerta de ações vencidas (20/03/2026)
+- [x] Criar função de varredura de PDIs com ações vencidas há mais de 15 dias
+- [x] Criar e-mail ao empregado: "Há ações vencidas no seu PDI [nome], acesse o sistema e inclua as evidências"
+- [x] Criar e-mail ao líder: "Há ações vencidas na sua equipe, acesse o sistema e converse com sua equipe"
+- [x] Criar endpoint/procedure para executar a varredura (POST /api/cron/acoes-vencidas)
+- [x] Agendar rotina quinzenal (dias 1 e 15 de cada mês às 9h)
+- [x] Testar com vitest (4 testes passando) + teste real: 10 empregados e 6 líderes notificados
