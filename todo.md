@@ -3249,3 +3249,4 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Atualizar backend (procedure validateImpact) para aceitar esta nova opção
 - [x] Atualizar o campo evidenciaComprova para aceitar 'insuficiente' como valor
 - [x] Remover página "Evidências Pendentes" duplicada (rota e menu lateral) - manter apenas no Admin Dashboard
+- [x] Atualizar texto explicativo do IIP no dashboard conforme solicitação do usuário

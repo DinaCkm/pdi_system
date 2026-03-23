@@ -186,7 +186,7 @@ export function IIPDashboard({ userRole, colaboradorId, departamentoId, compact 
             <div className="flex flex-col items-center justify-center">
               <IIPGauge value={iipData.iipGeral} size="lg" />
               <p className="text-xs text-gray-500 mt-2 text-center">
-                Média entre impacto declarado pelo empregado e validado pelo admin
+                Impacto prático das ações entregues no dia a dia
               </p>
             </div>
 
@@ -242,8 +242,9 @@ export function IIPDashboard({ userRole, colaboradorId, departamentoId, compact 
                   <Info className="h-3.5 w-3.5" /> O que é o IIP?
                 </h4>
                 <p className="text-xs text-gray-600 leading-relaxed">
+                  Este indicador mede o <strong>impacto prático das ações entregues</strong> no dia a dia do empregado.
                   O <strong>IIP</strong> é a média entre o impacto declarado pelo empregado e o validado pelo administrador.
-                  Quando o empregado não declara impacto, usa-se apenas a avaliação do admin.
+                  Quando o empregado não declara impacto, este cálculo não é considerado na entrega da ação concluída.
                 </p>
               </div>
             </div>
