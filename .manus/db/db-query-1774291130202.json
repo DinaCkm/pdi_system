@@ -1,0 +1,28 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'evidences' AND ORDINAL_POSITION > 20 ORDER BY ORDINAL_POSITION",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2kPX7CjhqdMFT8y.671da1035469 --database Uksxtg83ZJDkZPJL3fCmwT --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'evidences' AND ORDINAL_POSITION > 20 ORDER BY ORDINAL_POSITION",
+  "rows": [
+    {
+      "COLUMN_NAME": "principalAprendizado"
+    },
+    {
+      "COLUMN_NAME": "linkExterno"
+    },
+    {
+      "COLUMN_NAME": "evidenciaComprova"
+    },
+    {
+      "COLUMN_NAME": "impactoComprova"
+    },
+    {
+      "COLUMN_NAME": "impactoValidadoAdmin"
+    },
+    {
+      "COLUMN_NAME": "parecerImpacto"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nprincipalAprendizado\nlinkExterno\nevidenciaComprova\nimpactoComprova\nimpactoValidadoAdmin\nparecerImpacto\n",
+  "stderr": "",
+  "execution_time_ms": 361
+}

@@ -6,9 +6,10 @@ import { DirecionamentoEstrategico } from "@/components/DirecionamentoEstrategic
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectContentNoPortal } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Download, TrendingUp, ArrowRight } from "lucide-react";
+import { Download, TrendingUp, ArrowRight, Gauge } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
+import { IIPDashboard } from "@/components/IIPDashboard";
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -210,6 +211,13 @@ export function Dashboard() {
             </Link>
           )}
           
+          {/* IIP - Índice de Impacto Prático */}
+          <IIPDashboard
+            userRole={user?.role}
+            departamentoId={selectedDepartamento && selectedDepartamento !== 'todos' ? parseInt(selectedDepartamento) : undefined}
+            colaboradorId={user?.role === 'colaborador' ? user?.id : undefined}
+          />
+
           {/* Estatísticas Gerais do Dashboard */}
           <DashboardStats stats={stats} userRole={user?.role} departamentoId={selectedDepartamento && selectedDepartamento !== 'todos' ? parseInt(selectedDepartamento) : undefined} />
         </>

@@ -3188,3 +3188,43 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Ocultar seção de Ações na página Meu PDI para empregado (23/03/2026)
 - [x] Remover seção "Ações de Desenvolvimento" da página PDI Detalhes para o empregado (evitar confusão com Minhas Ações)
+
+## Mensagem orientativa e verificação rotina ações vencidas (23/03/2026)
+- [ ] Adicionar mensagem orientativa na página PDI Detalhes para empregado: "Para visualizar e gerenciar suas ações, acesse o menu Minhas Ações"
+- [ ] Verificar se rotina de alerta de ações vencidas já existe no sistema
+
+## Reformulação Completa do Fluxo de Evidências (23/03/2026)
+
+### Schema e Backend
+- [x] Adicionar novos campos na tabela evidences: tipoEvidencia, dataRealizacao, cargaHoraria, comoAplicou, resultadoPratico, impactoPercentual, principalAprendizado, linkExterno
+- [x] Adicionar campos de avaliação admin: evidenciaComprova (sim/não), impactoComprova (sim/não/parcialmente), impactoValidadoAdmin (%), parecerImpacto
+- [x] Adicionar tabela evidence_files para arquivos anexados (S3)
+- [x] Migrar banco de dados (pnpm db:push)
+- [x] Atualizar procedures de criação de evidência com novos campos
+- [x] Atualizar procedures de avaliação do admin com validação de impacto
+- [x] Criar procedure de upload de arquivos para evidências (S3)
+
+### Frontend - Formulário do Empregado
+- [x] Reformular EvidenciaModal com formulário guiado e textos explicativos
+- [x] Adicionar campos: tipo evidência, data realização, carga horária, como aplicou, resultado prático, impacto (slider), aprendizado, link externo
+- [x] Adicionar upload de arquivos comprovantes
+- [x] Adicionar indicador de progresso visual (etapas)
+- [x] Eliminar fluxo de e-mail (tudo pelo sistema)
+
+### Frontend - Tela de Avaliação do Admin
+- [x] Exibir todas as respostas do empregado na tela de avaliação
+- [x] Exibir arquivos anexados com preview/download
+- [x] Campo: "A evidência comprova a realização da ação?" (Sim/Não)
+- [x] Campo: "O relato comprova impacto prático real?" (Sim/Não/Parcialmente) - só aparece se aprovou
+- [x] Campo: "Impacto validado pelo admin (%)" - slider
+- [x] Campo: "Parecer do admin sobre o impacto"
+
+### IIP nos Dashboards
+- [x] Criar procedure de cálculo do IIP (média dos impactos validados pelo admin)
+- [x] IIP no Dashboard Admin: média geral, por departamento, por competência, evolução mensal
+- [x] IIP no Dashboard Líder: média da equipe, por subordinado, comparativo
+- [x] IIP no Dashboard Empregado: IIP pessoal, evolução ao longo do tempo
+
+### Outros
+- [x] Mensagem orientativa na página PDI Detalhes para empregado (já existia, ajustado role para incluir 'colaborador')
+- [x] Testes vitest para novos fluxos (7 testes passando: formulário guiado, validação impacto, IIP, evidence_files)

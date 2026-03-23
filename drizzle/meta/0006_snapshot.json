@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "d83d279a-5e8c-4ace-a7b2-f71f74a883bf",
-  "prevId": "f9e5faa6-8eb2-4e9f-947e-631727519299",
+  "id": "3bc4e15b-7461-4342-b45b-0d97c4f0d4db",
+  "prevId": "ce8a2f5f-783f-43f7-8235-7121a1bf914f",
   "tables": {
     "acoes_historico": {
       "name": "acoes_historico",
@@ -95,13 +95,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "blocoId": {
-          "name": "blocoId",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
         "macroId": {
           "name": "macroId",
           "type": "int",
@@ -109,15 +102,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "microId": {
-          "name": "microId",
-          "type": "int",
+        "microcompetencia": {
+          "name": "microcompetencia",
+          "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
-        "nome": {
-          "name": "nome",
+        "titulo": {
+          "name": "titulo",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
@@ -127,30 +120,23 @@
           "name": "descricao",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "prazo": {
           "name": "prazo",
-          "type": "timestamp",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "status": {
           "name": "status",
-          "type": "enum('pendente_aprovacao_lider','aprovada_lider','reprovada_lider','em_andamento','em_discussao','evidencia_enviada','evidencia_aprovada','evidencia_reprovada','correcao_solicitada','concluida','vencida','cancelada')",
+          "type": "varchar(50)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "'pendente_aprovacao_lider'"
-        },
-        "justificativaReprovacaoLider": {
-          "name": "justificativaReprovacaoLider",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "default": "'nao_iniciada'"
         },
         "createdAt": {
           "name": "createdAt",
@@ -168,31 +154,10 @@
           "autoincrement": false,
           "onUpdate": true,
           "default": "(now())"
-        },
-        "createdBy": {
-          "name": "createdBy",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "actions_pdiId_pdis_id_fk": {
-          "name": "actions_pdiId_pdis_id_fk",
-          "tableFrom": "actions",
-          "tableTo": "pdis",
-          "columnsFrom": [
-            "pdiId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraint": {}
@@ -290,7 +255,7 @@
         },
         "status": {
           "name": "status",
-          "type": "enum('pendente','mais_informacoes','aprovada','reprovada','aguardando_lider','lider_de_acordo')",
+          "type": "enum('pendente','mais_informacoes','aprovada','reprovada','aguardando_lider')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -298,13 +263,6 @@
         },
         "justificativaAdmin": {
           "name": "justificativaAdmin",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "comentarioLider": {
-          "name": "comentarioLider",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -488,53 +446,6 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
-    "competencias_blocos": {
-      "name": "competencias_blocos",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "nome": {
-          "name": "nome",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "descricao": {
-          "name": "descricao",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "enum('ativo','inativo')",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "'ativo'"
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "'CURRENT_TIMESTAMP'"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
     "competencias_macros": {
       "name": "competencias_macros",
       "columns": {
@@ -545,13 +456,6 @@
           "notNull": true,
           "autoincrement": true
         },
-        "blocoId": {
-          "name": "blocoId",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
         "nome": {
           "name": "nome",
           "type": "varchar(255)",
@@ -563,16 +467,15 @@
           "name": "descricao",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
-        "status": {
-          "name": "status",
-          "type": "enum('ativo','inativo')",
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "'ativo'"
+          "notNull": true,
+          "autoincrement": false
         },
         "createdAt": {
           "name": "createdAt",
@@ -586,11 +489,18 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "competencias_macros_nome_unique": {
+          "name": "competencias_macros_nome_unique",
+          "columns": [
+            "nome"
+          ]
+        }
+      },
       "checkConstraint": {}
     },
-    "competencias_micros": {
-      "name": "competencias_micros",
+    "deletion_audit_log": {
+      "name": "deletion_audit_log",
       "columns": {
         "id": {
           "name": "id",
@@ -599,40 +509,60 @@
           "notNull": true,
           "autoincrement": true
         },
-        "macroId": {
-          "name": "macroId",
+        "entidadeTipo": {
+          "name": "entidadeTipo",
+          "type": "enum('acao','pdi','usuario','evidencia','solicitacao')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entidadeId": {
+          "name": "entidadeId",
           "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "nome": {
-          "name": "nome",
+        "entidadeNome": {
+          "name": "entidadeNome",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "descricao": {
-          "name": "descricao",
+        "dadosExcluidos": {
+          "name": "dadosExcluidos",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "excluidoPor": {
+          "name": "excluidoPor",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "excluidoPorNome": {
+          "name": "excluidoPorNome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "motivoExclusao": {
+          "name": "motivoExclusao",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "status": {
-          "name": "status",
-          "type": "enum('ativo','inativo')",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "'ativo'"
-        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false,
           "default": "'CURRENT_TIMESTAMP'"
         }
@@ -738,7 +668,7 @@
         },
         "fileSize": {
           "name": "fileSize",
-          "type": "int",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -842,6 +772,20 @@
           "notNull": true,
           "autoincrement": false
         },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "arquivo": {
+          "name": "arquivo",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "status": {
           "name": "status",
           "type": "enum('aguardando_avaliacao','aprovada','reprovada','correcao_solicitada')",
@@ -885,6 +829,191 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "tipoEvidencia": {
+          "name": "tipoEvidencia",
+          "type": "enum('certificado','relatorio','projeto','apresentacao','evento','mentoria','outro')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "data_realizacao": {
+          "name": "data_realizacao",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cargaHoraria": {
+          "name": "cargaHoraria",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "oQueRealizou": {
+          "name": "oQueRealizou",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "comoAplicou": {
+          "name": "comoAplicou",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "resultadoPratico": {
+          "name": "resultadoPratico",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "impactoPercentual": {
+          "name": "impactoPercentual",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "principalAprendizado": {
+          "name": "principalAprendizado",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "linkExterno": {
+          "name": "linkExterno",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "evidenciaComprova": {
+          "name": "evidenciaComprova",
+          "type": "enum('sim','nao')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "impactoComprova": {
+          "name": "impactoComprova",
+          "type": "enum('sim','nao','parcialmente')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "impactoValidadoAdmin": {
+          "name": "impactoValidadoAdmin",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "parecerImpacto": {
+          "name": "parecerImpacto",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "normas_regras": {
+      "name": "normas_regras",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "titulo": {
+          "name": "titulo",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subtitulo": {
+          "name": "subtitulo",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "conteudo": {
+          "name": "conteudo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "icone": {
+          "name": "icone",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'BookOpen'"
+        },
+        "imagemUrl": {
+          "name": "imagemUrl",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "categoria": {
+          "name": "categoria",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'geral'"
+        },
+        "ordem": {
+          "name": "ordem",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "ativo": {
+          "name": "ativo",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'CURRENT_TIMESTAMP'"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
         }
       },
       "indexes": {},
@@ -968,6 +1097,87 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
+    "pdi_validacoes": {
+      "name": "pdi_validacoes",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "pdiId": {
+          "name": "pdiId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "liderId": {
+          "name": "liderId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "aprovadoEm": {
+          "name": "aprovadoEm",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'CURRENT_TIMESTAMP'"
+        },
+        "justificativa": {
+          "name": "justificativa",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'CURRENT_TIMESTAMP'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pdi_validacoes_pdiId_pdis_id_fk": {
+          "name": "pdi_validacoes_pdiId_pdis_id_fk",
+          "tableFrom": "pdi_validacoes",
+          "tableTo": "pdis",
+          "columnsFrom": [
+            "pdiId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "pdi_validacoes_liderId_users_id_fk": {
+          "name": "pdi_validacoes_liderId_users_id_fk",
+          "tableFrom": "pdi_validacoes",
+          "tableTo": "users",
+          "columnsFrom": [
+            "liderId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
     "pdis": {
       "name": "pdis",
       "columns": {
@@ -1001,6 +1211,34 @@
         },
         "objetivoGeral": {
           "name": "objetivoGeral",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "relatorioAnalise": {
+          "name": "relatorioAnalise",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "relatorioArquivoUrl": {
+          "name": "relatorioArquivoUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "relatorioArquivoNome": {
+          "name": "relatorioArquivoNome",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "relatorioArquivoKey": {
+          "name": "relatorioArquivoKey",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -1042,15 +1280,254 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "uq_colaborador_ciclo": {
-          "name": "uq_colaborador_ciclo",
-          "columns": [
-            "colaboradorId",
-            "cicloId"
-          ]
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "solicitacoes_acoes": {
+      "name": "solicitacoes_acoes",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "pdiId": {
+          "name": "pdiId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "macroId": {
+          "name": "macroId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "microcompetencia": {
+          "name": "microcompetencia",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "titulo": {
+          "name": "titulo",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "descricao": {
+          "name": "descricao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "prazo": {
+          "name": "prazo",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "porqueFazer": {
+          "name": "porqueFazer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ondeFazer": {
+          "name": "ondeFazer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "linkEvento": {
+          "name": "linkEvento",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "previsaoInvestimento": {
+          "name": "previsaoInvestimento",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "outrosProfissionaisParticipando": {
+          "name": "outrosProfissionaisParticipando",
+          "type": "enum('sim','nao')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "solicitanteId": {
+          "name": "solicitanteId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "statusGeral": {
+          "name": "statusGeral",
+          "type": "enum('aguardando_ckm','aguardando_gestor','aguardando_rh','aprovada','vetada_gestor','vetada_rh','em_revisao','encerrada_lider','aguardando_solicitante')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'aguardando_ckm'"
+        },
+        "rodadaAtual": {
+          "name": "rodadaAtual",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "historicoRodadas": {
+          "name": "historicoRodadas",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ckmParecerTipo": {
+          "name": "ckmParecerTipo",
+          "type": "enum('com_aderencia','sem_aderencia')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ckmParecerTexto": {
+          "name": "ckmParecerTexto",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ckmParecerPor": {
+          "name": "ckmParecerPor",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ckmParecerEm": {
+          "name": "ckmParecerEm",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "liderRevisaoSolicitada": {
+          "name": "liderRevisaoSolicitada",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "liderMotivoRevisao": {
+          "name": "liderMotivoRevisao",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "gestorDecisao": {
+          "name": "gestorDecisao",
+          "type": "enum('aprovado','reprovado','encerrada')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "gestorJustificativa": {
+          "name": "gestorJustificativa",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "gestorId": {
+          "name": "gestorId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "gestorDecisaoEm": {
+          "name": "gestorDecisaoEm",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "rhDecisao": {
+          "name": "rhDecisao",
+          "type": "enum('aprovado','reprovado')",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "rhJustificativa": {
+          "name": "rhJustificativa",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "rhId": {
+          "name": "rhId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "rhDecisaoEm": {
+          "name": "rhDecisaoEm",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "acaoIncluidaId": {
+          "name": "acaoIncluidaId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'CURRENT_TIMESTAMP'"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
+          "default": "(now())"
         }
       },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "checkConstraint": {}
     },
     "user_department_roles": {
@@ -1241,7 +1718,7 @@
         },
         "role": {
           "name": "role",
-          "type": "enum('admin','lider','colaborador')",
+          "type": "enum('admin','gerente','lider','colaborador')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -1306,6 +1783,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "viuNormasVersao": {
+          "name": "viuNormasVersao",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         }
       },
       "indexes": {

@@ -2,7 +2,7 @@
   "version": "5",
   "dialect": "mysql",
   "id": "ce8a2f5f-783f-43f7-8235-7121a1bf914f",
-  "prevId": "d83d279a-5e8c-4ace-a7b2-f71f74a883bf",
+  "prevId": "0ad7a6d8-17f6-4ae9-8102-78f91062a13b",
   "tables": {
     "acoes_historico": {
       "name": "acoes_historico",

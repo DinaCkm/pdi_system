@@ -124,6 +124,21 @@ export const evidences = mysqlTable("evidences", {
 	evaluatedAt: timestamp({ mode: 'string' }),
 	evaluatedBy: int(),
 	satisfactionScore: int(),
+	// Novos campos - Formulário guiado
+	tipoEvidencia: mysqlEnum(['certificado','relatorio','projeto','apresentacao','evento','mentoria','outro']),
+	dataRealizacao: date("data_realizacao"),
+	cargaHoraria: int(),
+	oQueRealizou: text(),
+	comoAplicou: text(),
+	resultadoPratico: text(),
+	impactoPercentual: int(),
+	principalAprendizado: text(),
+	linkExterno: varchar({ length: 1000 }),
+	// Novos campos - Avaliação do admin
+	evidenciaComprova: mysqlEnum(['sim','nao']),
+	impactoComprova: mysqlEnum(['sim','nao','parcialmente']),
+	impactoValidadoAdmin: int(),
+	parecerImpacto: text(),
 });
 
 export const notifications = mysqlTable("notifications", {

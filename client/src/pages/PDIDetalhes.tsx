@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
-import { ArrowLeft, User, Calendar, Building, Target, CheckCircle2, Clock, FileText, Edit2, Loader2, Upload, X, FileDown, Save } from "lucide-react";
+import { ArrowLeft, User, Calendar, Building, Target, CheckCircle2, Clock, FileText, Edit2, Loader2, Upload, X, FileDown, Save, Info } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -453,6 +453,16 @@ export default function PDIDetalhes() {
           </div>
         )}
       </div>
+
+      {/* Mensagem orientativa para empregado */}
+      {(user?.role === 'user' || user?.role === 'colaborador') && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3">
+          <Info className="w-5 h-5 text-blue-600 flex-shrink-0" />
+          <p className="text-sm text-blue-800">
+            Para visualizar e gerenciar suas ações, acesse o menu <strong>Minhas Ações</strong> no painel lateral.
+          </p>
+        </div>
+      )}
 
       {/* Lista de Ações - visível apenas para admin, gerente e líder */}
       {(user?.role === 'admin' || user?.role === 'gerente' || user?.role === 'lider') && (

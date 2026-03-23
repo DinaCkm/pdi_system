@@ -11,6 +11,7 @@ import {
   CheckCircle, XCircle, Clock, Building2, User, Calendar, 
   Search, FileText, Target, Filter, Download
 } from "lucide-react";
+import { IIPDashboard } from "@/components/IIPDashboard";
 
 type TabType = 'concluidas' | 'evidencias_pendentes' | 'evidencias_devolvidas';
 
@@ -123,6 +124,13 @@ export default function GestaoGerente() {
         <h1 className="text-3xl font-bold text-blue-600">Gestão de Ações e Evidências</h1>
         <p className="text-gray-600 mt-2">Consulte ações concluídas e evidências por departamento e empregado</p>
       </div>
+
+      {/* IIP Compacto */}
+      <IIPDashboard
+        userRole="gerente"
+        departamentoId={departamentoFilter && departamentoFilter !== 'todos' ? parseInt(departamentoFilter) : undefined}
+        compact
+      />
 
       {/* Cards de resumo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

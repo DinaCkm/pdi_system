@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { EvidenciaModal } from "@/components/EvidenciaModal";
 import { SolicitarAjusteModal } from "@/components/SolicitarAjusteModal";
+import { IIPDashboard } from "@/components/IIPDashboard";
 import { SolicitarAjusteModalMelhorado } from "@/components/SolicitarAjusteModalMelhorado";
 import RichTextDisplay, { stripHtml } from '@/components/RichTextDisplay';
 
@@ -413,6 +414,13 @@ export default function MinhasPendencias() {
           Acompanhe o andamento das suas ações do PDI.
         </p>
       </div>
+
+      {/* IIP Pessoal do Empregado */}
+      {userId && (
+        <div className="mb-6">
+          <IIPDashboard userRole="colaborador" colaboradorId={userId} compact />
+        </div>
+      )}
 
       {/* Banner de Alerta - Ações Vencidas */}
       {minhasAcoesVencidas.length > 0 && (

@@ -326,6 +326,16 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
       .input(z.object({ 
         actionId: z.number(), 
         descricao: z.string().optional(), 
+        // Novos campos do formulário guiado
+        tipoEvidencia: z.enum(['certificado','relatorio','projeto','apresentacao','evento','mentoria','outro']).optional(),
+        dataRealizacao: z.string().optional(), // formato YYYY-MM-DD
+        cargaHoraria: z.number().optional(),
+        oQueRealizou: z.string().optional(),
+        comoAplicou: z.string().optional(),
+        resultadoPratico: z.string().optional(),
+        impactoPercentual: z.number().min(0).max(100).optional(),
+        principalAprendizado: z.string().optional(),
+        linkExterno: z.string().optional(),
         files: z.array(z.object({
           fileName: z.string(),
           fileType: z.string(),
@@ -339,13 +349,30 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         console.log('[evidences.create] User ID:', ctx.user?.id, 'Role:', ctx.user?.role);
         
         try {
-          // 1. Criar a evidência principal e capturar o ID (MySQL insertId)
-          console.log('[evidences.create] Chamando db.createEvidence com:', { actionId: input.actionId, colaboradorId: ctx.user!.id, status: 'aguardando_avaliacao' });
+          // Montar descrição consolidada (compatibilidade com sistema antigo)
+          let descricaoConsolidada = input.descricao || '';
+          if (input.oQueRealizou) {
+            descricaoConsolidada = input.oQueRealizou;
+            if (input.comoAplicou) descricaoConsolidada += `\n\n--- Como Apliquei ---\n${input.comoAplicou}`;
+            if (input.resultadoPratico) descricaoConsolidada += `\n\n--- Resultado Prático ---\n${input.resultadoPratico}`;
+            if (input.principalAprendizado) descricaoConsolidada += `\n\n--- Principal Aprendizado ---\n${input.principalAprendizado}`;
+          }
+
+          // 1. Criar a evidência principal com todos os novos campos
           const evidenceId = await db.createEvidence({ 
             actionId: input.actionId, 
             colaboradorId: Number(ctx.user!.id), 
-            descricao: input.descricao,
-            status: 'aguardando_avaliacao'
+            descricao: descricaoConsolidada || null,
+            status: 'aguardando_avaliacao',
+            tipoEvidencia: input.tipoEvidencia || null,
+            dataRealizacao: input.dataRealizacao || null,
+            cargaHoraria: input.cargaHoraria || null,
+            oQueRealizou: input.oQueRealizou || null,
+            comoAplicou: input.comoAplicou || null,
+            resultadoPratico: input.resultadoPratico || null,
+            impactoPercentual: input.impactoPercentual ?? null,
+            principalAprendizado: input.principalAprendizado || null,
+            linkExterno: input.linkExterno || null,
           });
           console.log('[evidences.create] ✅ Evidence criada com ID:', evidenceId);
           
@@ -353,30 +380,25 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           if (input.files && input.files.length > 0) {
             console.log('[evidences.create] Salvando', input.files.length, 'arquivos...');
             for (const file of input.files) {
-              console.log('[evidences.create] Arquivo recebido:', JSON.stringify(file, null, 2));
               if (!file.fileUrl) {
-                console.error('[evidences.create] ERRO: fileUrl ausente');
                 throw new Error('Arquivo sem URL');
               }
               await db.createEvidenceFile(evidenceId, file);
             }
           }
           
-          // 3. Salvar o texto na tabela vinculada
-          if (input.descricao) {
-            console.log('[evidences.create] Salvando descrição...');
-            await db.createEvidenceText(evidenceId, input.descricao);
+          // 3. Salvar o texto na tabela vinculada (compatibilidade)
+          if (descricaoConsolidada) {
+            await db.createEvidenceText(evidenceId, descricaoConsolidada);
           }
           
           // 4. Atualizar status da ação
-          console.log('[evidences.create] Atualizando ação', input.actionId, 'para aguardando_avaliacao...');
           await db.updateAction(input.actionId, { status: 'aguardando_avaliacao' });
           
           console.log('[evidences.create] ✅ SUCESSO COMPLETO - Evidence ID:', evidenceId);
           return { success: true, evidenceId };
         } catch (error) {
           console.error('[evidences.create] ❌ ERRO CAPTURADO:', error);
-          console.error('[evidences.create] Stack trace:', (error as any)?.stack);
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Falha ao salvar evidência' });
         }
       }),
@@ -824,6 +846,120 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
       
       return { success: true };
     }),
+
+    // Validar impacto da evidência (admin) - Avaliação em 2 etapas
+    validateImpact: adminProcedure
+      .input(z.object({
+        evidenceId: z.number(),
+        evidenciaComprova: z.enum(['sim', 'nao']),
+        impactoComprova: z.enum(['sim', 'nao', 'parcialmente']).optional(),
+        impactoValidadoAdmin: z.number().min(0).max(100).optional(),
+        parecerImpacto: z.string().optional(),
+        justificativaAdmin: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const ev = await db.getEvidenceById(input.evidenceId);
+        if (!ev) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Evidência não encontrada' });
+        }
+
+        if (input.evidenciaComprova === 'nao') {
+          await db.updateEvidenceStatus(input.evidenceId, {
+            status: 'reprovada',
+            evaluatedBy: ctx.user!.id,
+            evaluatedAt: new Date(),
+            justificativaAdmin: input.justificativaAdmin || 'Evidência não comprova a realização da ação',
+          });
+          await db.execute(sql`
+            UPDATE evidences 
+            SET evidenciaComprova = 'nao',
+                impactoComprova = NULL,
+                impactoValidadoAdmin = NULL,
+                parecerImpacto = ${input.parecerImpacto || null}
+            WHERE id = ${input.evidenceId}
+          `);
+          const action = await db.getActionById(ev.actionId);
+          if (action) await db.updateAction(ev.actionId, { status: 'em_andamento' });
+
+          try {
+            const colaborador = await db.getUserById(ev.colaboradorId);
+            if (colaborador?.email) {
+              const [pdiRows]: any = await db.execute(sql`SELECT p.titulo FROM pdis p JOIN actions a ON a.pdiId = p.id WHERE a.id = ${ev.actionId} LIMIT 1`);
+              let liderEmail: string | undefined, liderName: string | undefined;
+              if (colaborador.leaderId) { const lider = await db.getUserById(colaborador.leaderId); if (lider?.email) { liderEmail = lider.email; liderName = lider.name || 'Líder'; } }
+              await sendEmailEvidenciaReprovada({ colaboradorEmail: colaborador.email, colaboradorName: colaborador.name || 'Colaborador(a)', tituloAcao: action?.titulo || 'Ação', tituloPdi: pdiRows?.[0]?.titulo || 'PDI', justificativa: input.justificativaAdmin || 'Evidência não comprova', avaliadorName: ctx.user?.name || 'Admin', liderEmail, liderName });
+            }
+          } catch (e) { console.warn('[validateImpact] Erro email:', e); }
+          return { success: true, status: 'reprovada' as const };
+        }
+
+        // Aprovar + validar impacto
+        await db.updateEvidenceStatus(input.evidenceId, { status: 'aprovada', evaluatedBy: ctx.user!.id, evaluatedAt: new Date() });
+        await db.execute(sql`
+          UPDATE evidences 
+          SET evidenciaComprova = 'sim',
+              impactoComprova = ${input.impactoComprova || null},
+              impactoValidadoAdmin = ${input.impactoValidadoAdmin ?? null},
+              parecerImpacto = ${input.parecerImpacto || null}
+          WHERE id = ${input.evidenceId}
+        `);
+        const action = await db.getActionById(ev.actionId);
+        if (action) await db.updateAction(ev.actionId, { status: 'concluida' });
+
+        try {
+          const colaborador = await db.getUserById(ev.colaboradorId);
+          if (colaborador?.email) {
+            const [pdiRows]: any = await db.execute(sql`SELECT p.titulo FROM pdis p JOIN actions a ON a.pdiId = p.id WHERE a.id = ${ev.actionId} LIMIT 1`);
+            let liderEmail: string | undefined, liderName: string | undefined;
+            if (colaborador.leaderId) { const lider = await db.getUserById(colaborador.leaderId); if (lider?.email) { liderEmail = lider.email; liderName = lider.name || 'Líder'; } }
+            await sendEmailParabensEvidenciaAprovada({ colaboradorEmail: colaborador.email, colaboradorName: colaborador.name || 'Colaborador(a)', tituloAcao: action?.titulo || 'Ação', tituloPdi: pdiRows?.[0]?.titulo || 'PDI', liderEmail, liderName });
+          }
+        } catch (e) { console.warn('[validateImpact] Erro email:', e); }
+        return { success: true, status: 'aprovada' as const, impactoValidado: input.impactoValidadoAdmin };
+      }),
+
+    // Upload de arquivo para evidência (S3)
+    uploadFile: protectedProcedure
+      .input(z.object({ fileName: z.string(), fileType: z.string(), fileBase64: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const { storagePut } = await import('./storage');
+        const randomSuffix = Math.random().toString(36).substring(2, 10);
+        const safeFileName = input.fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const fileKey = `evidences/${ctx.user!.id}/${randomSuffix}-${safeFileName}`;
+        const buffer = Buffer.from(input.fileBase64, 'base64');
+        const { url } = await storagePut(fileKey, buffer, input.fileType);
+        return { fileName: input.fileName, fileType: input.fileType, fileSize: buffer.length, fileUrl: url, fileKey };
+      }),
+
+    // Calcular IIP (Indice de Impacto Prático)
+    getIIP: protectedProcedure
+      .input(z.object({ colaboradorId: z.number().optional(), departamentoId: z.number().optional() }))
+      .query(async ({ ctx, input }) => {
+        let whereClause = `WHERE e.status = 'aprovada' AND e.impactoValidadoAdmin IS NOT NULL`;
+        if (input.colaboradorId) whereClause += ` AND e.colaboradorId = ${input.colaboradorId}`;
+        if (input.departamentoId) whereClause += ` AND u.departamentoId = ${input.departamentoId}`;
+        if (ctx.user?.role === 'lider' && !input.colaboradorId) whereClause += ` AND u.leaderId = ${ctx.user.id}`;
+        if (ctx.user?.role === 'colaborador') whereClause += ` AND e.colaboradorId = ${ctx.user.id}`;
+
+        const [rows]: any = await db.execute(sql.raw(`
+          SELECT AVG(e.impactoValidadoAdmin) as iipGeral, COUNT(e.id) as totalEvidencias, COUNT(DISTINCT e.colaboradorId) as totalColaboradores
+          FROM evidences e JOIN users u ON u.id = e.colaboradorId ${whereClause}
+        `));
+        const iipGeral = rows?.[0]?.iipGeral ? Number(rows[0].iipGeral) : 0;
+
+        const [porColaborador]: any = await db.execute(sql.raw(`
+          SELECT e.colaboradorId, u.name as colaboradorNome, AVG(e.impactoValidadoAdmin) as iip, COUNT(e.id) as totalEvidencias
+          FROM evidences e JOIN users u ON u.id = e.colaboradorId ${whereClause}
+          GROUP BY e.colaboradorId, u.name ORDER BY iip DESC
+        `));
+
+        return {
+          iipGeral: Math.round(iipGeral * 100) / 100,
+          totalEvidencias: rows?.[0]?.totalEvidencias || 0,
+          totalColaboradores: rows?.[0]?.totalColaboradores || 0,
+          porColaborador: (porColaborador || []).map((r: any) => ({ colaboradorId: r.colaboradorId, colaboradorNome: r.colaboradorNome, iip: Math.round(Number(r.iip) * 100) / 100, totalEvidencias: r.totalEvidencias })),
+        };
+      }),
   }),
 
   // ROUTER DE BACKUP
