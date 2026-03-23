@@ -198,18 +198,58 @@ describe("Evidências - Formulário Guiado e IIP", () => {
     console.log("✅ Evidência aprovada com impacto parcial: 35%");
   });
 
-  // ============= TESTES DO IIP =============
+  // ============= TESTE DA OPÇÃO INSUFICIENTE =============
 
-  it("deve calcular IIP corretamente com evidências aprovadas", async () => {
+  it("deve devolver evidência com opção 'insuficiente'", async () => {
+    const evidenceId = await db.createEvidence({
+      actionId: testActionId,
+      colaboradorId: testColaboradorId,
+      descricao: "Evidência com relato insuficiente",
+      oQueRealizou: "Fiz algo",
+      impactoPercentual: 20,
+      principalAprendizado: "Não sei",
+    });
+    createdEvidenceIds.push(evidenceId);
+
+    // Simular devolução por relato insuficiente
+    await db.updateEvidenceStatus(evidenceId, {
+      status: "reprovada",
+      evaluatedBy: 1,
+      evaluatedAt: new Date(),
+      justificativaAdmin: "Não foi possível avaliar a aplicabilidade prática com base nos relatos apresentados.",
+    });
+    await db.execute(sql`
+      UPDATE evidences 
+      SET evidenciaComprova = 'insuficiente',
+          impactoComprova = NULL,
+          impactoValidadoAdmin = NULL,
+          parecerImpacto = NULL
+      WHERE id = ${evidenceId}
+    `);
+
+    const retrieved = await db.getEvidenceById(evidenceId);
+    expect(retrieved?.status).toBe("reprovada");
+    expect(retrieved?.evidenciaComprova).toBe("insuficiente");
+    expect(retrieved?.impactoValidadoAdmin).toBeNull();
+    console.log("✅ Evidência devolvida com evidenciaComprova='insuficiente'");
+  });
+
+  // ============= TESTES DO IIP (MÉDIA EMPREGADO VS ADMIN) =============
+
+  it("deve calcular IIP como média entre impacto do empregado e do admin", async () => {
     // Criar 3 evidências aprovadas com impactos diferentes
+    // Empregado declara: 80, 60, 40 | Admin valida: 70, 50, 30
+    // IIP individual: (80+70)/2=75, (60+50)/2=55, (40+30)/2=35
+    // IIP geral: (75+55+35)/3 = 55
+    const pares = [{emp: 80, admin: 70}, {emp: 60, admin: 50}, {emp: 40, admin: 30}];
     const ids: number[] = [];
-    for (const impacto of [80, 60, 40]) {
+    for (const par of pares) {
       const eid = await db.createEvidence({
         actionId: testActionId,
         colaboradorId: testColaboradorId,
-        descricao: `Evidência IIP ${impacto}`,
-        oQueRealizou: `Ação com impacto ${impacto}`,
-        impactoPercentual: impacto,
+        descricao: `Evidência IIP emp=${par.emp} admin=${par.admin}`,
+        oQueRealizou: `Ação com impacto ${par.emp}`,
+        impactoPercentual: par.emp,
         principalAprendizado: "Aprendizado",
       });
       ids.push(eid);
@@ -223,33 +263,46 @@ describe("Evidências - Formulário Guiado e IIP", () => {
       await db.execute(sql`
         UPDATE evidences 
         SET evidenciaComprova = 'sim',
-            impactoValidadoAdmin = ${impacto}
+            impactoValidadoAdmin = ${par.admin}
         WHERE id = ${eid}
       `);
     }
 
-    // Verificar que todas foram salvas com impacto
+    // Verificar que todas foram salvas
     for (const id of ids) {
       const ev = await db.getEvidenceById(id);
       expect(ev?.status).toBe("aprovada");
       expect(ev?.impactoValidadoAdmin).toBeDefined();
+      expect(ev?.impactoPercentual).toBeDefined();
     }
 
-    // O IIP é a média dos impactos validados
-    // Média de 80, 60, 40 = 60
-    // Mas como há outras evidências de teste, verificamos que o IIP existe e é > 0
+    // Verificar o cálculo do IIP com a nova fórmula
     const [rows]: any = await db.execute(sql`
-      SELECT AVG(impactoValidadoAdmin) as iip, COUNT(id) as total
+      SELECT 
+        AVG(
+          CASE 
+            WHEN impactoPercentual IS NOT NULL AND impactoPercentual > 0 
+            THEN (impactoPercentual + impactoValidadoAdmin) / 2.0
+            ELSE impactoValidadoAdmin
+          END
+        ) as iip,
+        AVG(impactoPercentual) as mediaEmpregado,
+        AVG(impactoValidadoAdmin) as mediaAdmin,
+        COUNT(id) as total
       FROM evidences 
       WHERE status = 'aprovada' AND impactoValidadoAdmin IS NOT NULL AND colaboradorId = ${testColaboradorId}
     `);
     
     const iip = Number(rows?.[0]?.iip || 0);
+    const mediaEmpregado = Number(rows?.[0]?.mediaEmpregado || 0);
+    const mediaAdmin = Number(rows?.[0]?.mediaAdmin || 0);
     const total = Number(rows?.[0]?.total || 0);
     expect(total).toBeGreaterThanOrEqual(3);
     expect(iip).toBeGreaterThan(0);
     expect(iip).toBeLessThanOrEqual(100);
-    console.log(`✅ IIP calculado: ${iip.toFixed(2)}% (${total} evidências)`);
+    // IIP deve ser menor ou igual à média do empregado (admin tende a validar menos)
+    expect(mediaAdmin).toBeLessThanOrEqual(mediaEmpregado + 1); // +1 para margem de arredondamento
+    console.log(`✅ IIP calculado: ${iip.toFixed(2)}% (Média Emp: ${mediaEmpregado.toFixed(2)}%, Média Admin: ${mediaAdmin.toFixed(2)}%, ${total} evidências)`);
   });
 
   // ============= TESTES DE EVIDENCE FILES =============

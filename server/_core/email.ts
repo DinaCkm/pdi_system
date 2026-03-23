@@ -916,3 +916,57 @@ ${ASSINATURA}
     body,
   });
 }
+
+
+/**
+ * Envia e-mail ao líder quando o empregado envia uma evidência de ação realizada,
+ * destacando a aplicabilidade prática e incentivando o líder a parabenizar o empregado.
+ */
+export async function sendEmailEvidenciaEnviadaParaLider(params: {
+  liderEmail: string;
+  liderName: string;
+  colaboradorName: string;
+  tituloAcao: string;
+  tituloPdi: string;
+  oQueRealizou?: string;
+  comoAplicou?: string;
+  resultadoPratico?: string;
+  impactoPercentual?: number;
+  principalAprendizado?: string;
+}): Promise<boolean> {
+  const { liderEmail, liderName, colaboradorName, tituloAcao, tituloPdi,
+    oQueRealizou, comoAplicou, resultadoPratico, impactoPercentual, principalAprendizado } = params;
+
+  let relatoDetalhado = '';
+  if (oQueRealizou) relatoDetalhado += `\n📋 O QUE REALIZOU:\n${oQueRealizou}\n`;
+  if (comoAplicou) relatoDetalhado += `\n🔧 COMO APLICOU NA PRÁTICA:\n${comoAplicou}\n`;
+  if (resultadoPratico) relatoDetalhado += `\n📊 RESULTADO PRÁTICO:\n${resultadoPratico}\n`;
+  if (impactoPercentual != null) relatoDetalhado += `\n📈 IMPACTO DECLARADO: ${impactoPercentual}%\n`;
+  if (principalAprendizado) relatoDetalhado += `\n💡 PRINCIPAL APRENDIZADO:\n${principalAprendizado}\n`;
+
+  const body = `
+Prezado(a) ${liderName},
+
+Seu empregado ${colaboradorName} enviou a evidência de uma ação realizada e ele destacou que a realização dela possibilitou que ele aplicasse no dia a dia e que isto se configurou como um aprendizado prático no seu dia a dia, evidenciando uma evolução na sua performance.
+
+Parabenize ele por esta conquista!
+
+Veja abaixo o relato:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📌 AÇÃO: ${tituloAcao}
+📄 PDI: ${tituloPdi}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${relatoDetalhado}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return await sendEmail({
+    to: liderEmail,
+    subject: `EVIDÊNCIA ENVIADA — ${colaboradorName} — ${tituloAcao}`,
+    body,
+  });
+}

@@ -3228,3 +3228,24 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 ### Outros
 - [x] Mensagem orientativa na página PDI Detalhes para empregado (já existia, ajustado role para incluir 'colaborador')
 - [x] Testes vitest para novos fluxos (7 testes passando: formulário guiado, validação impacto, IIP, evidence_files)
+
+## Correções e Melhorias no Fluxo de Evidências (23/03/2026)
+
+### Tela de Avaliação do Admin
+- [x] Reformular dialog de avaliação para exibir campos estruturados (O que realizou, Como aplicou, Resultado prático, Impacto %, Aprendizado) em vez de texto concatenado
+- [x] Adicionar slider de avaliação do admin para validar aplicabilidade prática
+- [x] Garantir que campos do formulário guiado sejam salvos corretamente no banco (não concatenados)
+
+### E-mail para o Líder
+- [x] Enviar e-mail ao líder SOMENTE quando empregado preenche os campos de aplicabilidade prática E dá nota de impacto (campos opcionais - e-mail só dispara se preenchidos)lo usuário
+- [x] Corpo do e-mail deve conter o relato completo do empregado
+
+### Indicador de Aplicabilidade Prática
+- [x] Corrigir cálculo do IIP: deve ser média entre impacto declarado pelo empregado e impacto validado pelo admin
+- [x] Atualizar dashboards com o novo cálculo (exibindo média empregado vs admin separadamente)
+
+### Opção "Não foi possível avaliar" na avaliação do admin
+- [x] Adicionar terceira opção na avaliação do admin: "Não foi possível avaliar a aplicabilidade prática com base nos relatos"
+- [x] Atualizar backend (procedure validateImpact) para aceitar esta nova opção
+- [x] Atualizar o campo evidenciaComprova para aceitar 'insuficiente' como valor
+- [x] Remover página "Evidências Pendentes" duplicada (rota e menu lateral) - manter apenas no Admin Dashboard

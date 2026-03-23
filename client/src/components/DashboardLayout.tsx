@@ -55,7 +55,7 @@ const getMenuItems = (userRole: string) => {
       { icon: Target, label: "Competências", path: "/competencias", section: "operacional" },
       { icon: FileText, label: "PDIs", path: "/pdis", section: "operacional" },
       { icon: CheckSquare, label: "Ações", path: "/acoes", section: "operacional" },
-      { icon: ClipboardCheck, label: "Evidências Pendentes", path: "/evidencias-pendentes", section: "operacional" },
+      // { icon: ClipboardCheck, label: "Evidências Pendentes", path: "/evidencias-pendentes", section: "operacional" }, // REMOVIDO - consolidado no Admin Dashboard
       { icon: MessageSquarePlus, label: "Histórico de Alteração nas Ações", path: "/solicitacoes-admin", section: "operacional" },
       { icon: Upload, label: "Importação em Massa", path: "/importacao", section: "operacional" },
       { icon: Trash2, label: "Auditoria de Exclusões", path: "/auditoria-exclusoes", section: "operacional" },

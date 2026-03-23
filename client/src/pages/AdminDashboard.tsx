@@ -10,7 +10,7 @@ import RichTextEditor from '@/components/RichTextEditor';
 import RichTextDisplay from '@/components/RichTextDisplay';
 import { stripHtml } from '@/components/RichTextDisplay';
 import { toast } from "sonner";
-import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter, TrendingUp, ArrowRight, Building2, User, Calendar, Timer, Bell, Eye, FileCheck, FileX, Search, ExternalLink, FileText, Gauge } from "lucide-react";
+import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter, TrendingUp, ArrowRight, Building2, User, Calendar, Timer, Bell, Eye, FileCheck, FileX, Search, ExternalLink, FileText, Gauge, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
 
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
 
   // Estados para validação de impacto (novo fluxo)
-  const [evidenciaComprova, setEvidenciaComprova] = useState<'sim' | 'nao' | ''>('');
+  const [evidenciaComprova, setEvidenciaComprova] = useState<'sim' | 'nao' | 'insuficiente' | ''>('');
   const [impactoComprova, setImpactoComprova] = useState<'sim' | 'nao' | 'parcialmente' | ''>('');
   const [impactoValidadoAdmin, setImpactoValidadoAdmin] = useState(50);
   const [parecerImpacto, setParecerImpacto] = useState('');
@@ -256,17 +256,19 @@ export default function AdminDashboard() {
       toast.error('Informe se a evidência comprova a realização da ação');
       return;
     }
-    if (evidenciaComprova === 'nao' && !stripHtml(rejectionReason).trim()) {
-      toast.error('Forneça um motivo para a devolução');
+    if ((evidenciaComprova === 'nao' || evidenciaComprova === 'insuficiente') && !stripHtml(rejectionReason).trim()) {
+      toast.error(evidenciaComprova === 'insuficiente' 
+        ? 'Forneça uma orientação ao empregado sobre o que precisa melhorar no relato' 
+        : 'Forneça um motivo para a devolução');
       return;
     }
     validateImpactMutation.mutate({
       evidenceId: selectedEvidence.id,
-      evidenciaComprova,
+      evidenciaComprova: evidenciaComprova as 'sim' | 'nao' | 'insuficiente',
       impactoComprova: evidenciaComprova === 'sim' ? (impactoComprova || undefined) : undefined,
       impactoValidadoAdmin: evidenciaComprova === 'sim' ? impactoValidadoAdmin : undefined,
       parecerImpacto: parecerImpacto.trim() || undefined,
-      justificativaAdmin: evidenciaComprova === 'nao' ? rejectionReason : undefined,
+      justificativaAdmin: (evidenciaComprova === 'nao' || evidenciaComprova === 'insuficiente') ? rejectionReason : undefined,
     });
   };
 
@@ -542,11 +544,59 @@ export default function AdminDashboard() {
                         </Badge>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <p className="text-sm font-semibold text-gray-700">Descrição da Evidência:</p>
-                        <div className="text-sm text-gray-600 mt-1 line-clamp-3">{evidence.descricao ? stripHtml(evidence.descricao) : "Sem descrição"}</div>
-                      </div>
+                    <CardContent className="space-y-3">
+                      {/* Campos estruturados do formulário guiado */}
+                      {evidence.oQueRealizou ? (
+                        <div className="space-y-2">
+                          {(evidence.tipoEvidencia || evidence.cargaHoraria) && (
+                            <div className="flex gap-3 text-xs text-gray-500">
+                              {evidence.tipoEvidencia && <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{evidence.tipoEvidencia}</span>}
+                              {evidence.cargaHoraria && <span className="bg-gray-100 px-2 py-0.5 rounded">{evidence.cargaHoraria}h</span>}
+                              {evidence.dataRealizacao && <span className="bg-gray-100 px-2 py-0.5 rounded">{new Date(evidence.dataRealizacao + 'T12:00:00').toLocaleDateString('pt-BR')}</span>}
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">O que realizou</p>
+                            <p className="text-sm text-gray-700 mt-0.5 line-clamp-2">{evidence.oQueRealizou}</p>
+                          </div>
+                          {evidence.comoAplicou && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Como aplicou na prática</p>
+                              <p className="text-sm text-gray-700 mt-0.5 line-clamp-2">{evidence.comoAplicou}</p>
+                            </div>
+                          )}
+                          {evidence.resultadoPratico && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Resultado prático</p>
+                              <p className="text-sm text-gray-700 mt-0.5 line-clamp-2">{evidence.resultadoPratico}</p>
+                            </div>
+                          )}
+                          {evidence.impactoPercentual != null && (
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Impacto declarado:</p>
+                              <span className="text-sm font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">{evidence.impactoPercentual}%</span>
+                            </div>
+                          )}
+                          {evidence.principalAprendizado && (
+                            <div>
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Principal aprendizado</p>
+                              <p className="text-sm text-gray-700 mt-0.5 line-clamp-2">{evidence.principalAprendizado}</p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700">Descrição da Evidência:</p>
+                          <div className="text-sm text-gray-600 mt-1 line-clamp-3">{evidence.descricao ? stripHtml(evidence.descricao) : "Sem descrição"}</div>
+                        </div>
+                      )}
+                      {/* Arquivos anexados */}
+                      {evidence.files && evidence.files.length > 0 && (
+                        <div className="flex items-center gap-2 text-xs text-blue-600">
+                          <FileText className="h-3.5 w-3.5" />
+                          <span>{evidence.files.length} arquivo(s) anexado(s)</span>
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <Button
                           onClick={() => {
@@ -1060,10 +1110,10 @@ export default function AdminDashboard() {
               {/* Pergunta 1: A evidência comprova? */}
               <div className="mb-4">
                 <label className="text-sm font-semibold text-gray-800 block mb-2">A evidência comprova a realização da ação? *</label>
-                <div className="flex gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => setEvidenciaComprova('sim')}
-                    className={`flex-1 p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                       evidenciaComprova === 'sim' ? 'border-green-500 bg-green-50 text-green-800' : 'border-gray-200 hover:border-gray-300 text-gray-600'
                     }`}
                   >
@@ -1072,12 +1122,21 @@ export default function AdminDashboard() {
                   </button>
                   <button
                     onClick={() => setEvidenciaComprova('nao')}
-                    className={`flex-1 p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                       evidenciaComprova === 'nao' ? 'border-red-500 bg-red-50 text-red-800' : 'border-gray-200 hover:border-gray-300 text-gray-600'
                     }`}
                   >
                     <XCircle className={`h-5 w-5 mx-auto mb-1 ${evidenciaComprova === 'nao' ? 'text-red-600' : 'text-gray-400'}`} />
                     Não comprova
+                  </button>
+                  <button
+                    onClick={() => setEvidenciaComprova('insuficiente')}
+                    className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                      evidenciaComprova === 'insuficiente' ? 'border-amber-500 bg-amber-50 text-amber-800' : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                    }`}
+                  >
+                    <AlertTriangle className={`h-5 w-5 mx-auto mb-1 ${evidenciaComprova === 'insuficiente' ? 'text-amber-600' : 'text-gray-400'}`} />
+                    Não foi possível avaliar
                   </button>
                 </div>
               </div>
@@ -1090,6 +1149,20 @@ export default function AdminDashboard() {
                     value={rejectionReason}
                     onChange={setRejectionReason}
                     placeholder="Explique por que a evidência não comprova a realização da ação..."
+                    minHeight="80px"
+                  />
+                </div>
+              )}
+
+              {/* Se INSUFICIENTE: orientação ao empregado */}
+              {evidenciaComprova === 'insuficiente' && (
+                <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-xs text-amber-700 mb-2">Não foi possível avaliar a aplicabilidade prática com base nos relatos apresentados. A evidência será devolvida para que o empregado complemente as informações.</p>
+                  <label className="text-sm font-semibold text-amber-800 block mb-2">Orientação ao empregado *</label>
+                  <RichTextEditor
+                    value={rejectionReason}
+                    onChange={setRejectionReason}
+                    placeholder="Oriente o empregado sobre o que precisa ser detalhado ou complementado no relato..."
                     minHeight="80px"
                   />
                 </div>
@@ -1161,10 +1234,16 @@ export default function AdminDashboard() {
               <Button
                 onClick={handleValidateImpact}
                 disabled={validateImpactMutation.isPending}
-                className={evidenciaComprova === 'sim' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+                className={
+                  evidenciaComprova === 'sim' ? 'bg-green-600 hover:bg-green-700' 
+                  : evidenciaComprova === 'insuficiente' ? 'bg-amber-600 hover:bg-amber-700'
+                  : 'bg-red-600 hover:bg-red-700'
+                }
               >
                 {validateImpactMutation.isPending ? 'Processando...' : evidenciaComprova === 'sim' ? (
                   <><CheckCircle className="h-4 w-4 mr-2" /> Aprovar e Validar Impacto</>
+                ) : evidenciaComprova === 'insuficiente' ? (
+                  <><AlertTriangle className="h-4 w-4 mr-2" /> Devolver para Complementar Relato</>
                 ) : (
                   <><XCircle className="h-4 w-4 mr-2" /> Devolver ao Empregado</>
                 )}

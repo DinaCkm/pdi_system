@@ -186,7 +186,7 @@ export function IIPDashboard({ userRole, colaboradorId, departamentoId, compact 
             <div className="flex flex-col items-center justify-center">
               <IIPGauge value={iipData.iipGeral} size="lg" />
               <p className="text-xs text-gray-500 mt-2 text-center">
-                Média do impacto prático validado pelo administrador
+                Média entre impacto declarado pelo empregado e validado pelo admin
               </p>
             </div>
 
@@ -219,16 +219,33 @@ export function IIPDashboard({ userRole, colaboradorId, departamentoId, compact 
               )}
             </div>
 
-            {/* Info explicativa */}
-            <div className="flex flex-col justify-center p-3 bg-white/50 rounded-lg">
-              <h4 className="text-sm font-semibold text-indigo-800 mb-2 flex items-center gap-1.5">
-                <Info className="h-4 w-4" /> O que é o IIP?
-              </h4>
-              <p className="text-xs text-gray-600 leading-relaxed">
-                O <strong>Índice de Impacto Prático (IIP)</strong> mede a efetividade real das ações de desenvolvimento.
-                É calculado pela média dos percentuais de impacto validados pelo administrador nas evidências aprovadas.
-                Quanto maior o IIP, maior o impacto real das ações no dia a dia do colaborador.
-              </p>
+            {/* Médias separadas: Empregado vs Admin */}
+            <div className="space-y-3">
+              {iipData.mediaEmpregado != null && (
+                <div className="flex items-center justify-between p-3 bg-white/70 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm text-gray-700">Média Empregado</span>
+                  </div>
+                  <span className="text-lg font-bold text-blue-600">{iipData.mediaEmpregado}%</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between p-3 bg-white/70 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Award className="h-4 w-4 text-purple-500" />
+                  <span className="text-sm text-gray-700">Média Admin</span>
+                </div>
+                <span className="text-lg font-bold text-purple-600">{iipData.mediaAdmin}%</span>
+              </div>
+              <div className="p-3 bg-white/50 rounded-lg">
+                <h4 className="text-xs font-semibold text-indigo-800 mb-1 flex items-center gap-1">
+                  <Info className="h-3.5 w-3.5" /> O que é o IIP?
+                </h4>
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  O <strong>IIP</strong> é a média entre o impacto declarado pelo empregado e o validado pelo administrador.
+                  Quando o empregado não declara impacto, usa-se apenas a avaliação do admin.
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -276,7 +293,11 @@ export function IIPDashboard({ userRole, colaboradorId, departamentoId, compact 
                     <span className="font-medium">{c.colaboradorNome}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-500">{c.totalEvidencias} evidência{c.totalEvidencias !== 1 ? 's' : ''}</span>
+                    <span className="text-xs text-gray-500">{c.totalEvidencias} evid.</span>
+                    {c.mediaEmpregado != null && (
+                      <span className="text-xs text-blue-500" title="Média empregado">E: {c.mediaEmpregado}%</span>
+                    )}
+                    <span className="text-xs text-purple-500" title="Média admin">A: {c.mediaAdmin}%</span>
                     <span className="font-bold" style={{ color: getIIPColor(c.iip) }}>{c.iip}%</span>
                   </div>
                 </div>

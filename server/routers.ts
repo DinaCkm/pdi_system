@@ -11,7 +11,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { invokeLLM } from "./_core/llm";
-import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI, sendEmailParabensEvidenciaAprovada, sendEmailEvidenciaReprovada, sendEmailAcoesVencidasEmpregado, sendEmailAcoesVencidasLider, sendEmailResumoVarreduraAdmin } from "./_core/email";
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI, sendEmailParabensEvidenciaAprovada, sendEmailEvidenciaReprovada, sendEmailAcoesVencidasEmpregado, sendEmailAcoesVencidasLider, sendEmailResumoVarreduraAdmin, sendEmailEvidenciaEnviadaParaLider } from "./_core/email";
 
 // Mantendo os roteadores que já existiam
 import { systemRouter } from "./_core/systemRouter";
@@ -394,6 +394,39 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           
           // 4. Atualizar status da ação
           await db.updateAction(input.actionId, { status: 'aguardando_avaliacao' });
+          
+          // 5. Enviar e-mail ao líder SOMENTE se o empregado preencheu aplicabilidade prática (impactoPercentual)
+          if (input.impactoPercentual != null && input.impactoPercentual > 0) {
+            try {
+              // Buscar dados da ação e do PDI para o e-mail
+              const action = await db.getActionById(input.actionId);
+              if (action) {
+                const pdi = await db.getPDIById(action.pdiId);
+                const colaborador = await db.getUserById(Number(ctx.user!.id));
+                if (pdi && colaborador && colaborador.leaderId) {
+                  const lider = await db.getUserById(colaborador.leaderId);
+                  if (lider && lider.email) {
+                    await sendEmailEvidenciaEnviadaParaLider({
+                      liderEmail: lider.email,
+                      liderName: lider.name || 'Líder',
+                      colaboradorName: colaborador.name || 'Colaborador',
+                      tituloAcao: action.titulo || 'Ação',
+                      tituloPdi: pdi.titulo || pdi.objetivoGeral || 'PDI',
+                      oQueRealizou: input.oQueRealizou || undefined,
+                      comoAplicou: input.comoAplicou || undefined,
+                      resultadoPratico: input.resultadoPratico || undefined,
+                      impactoPercentual: input.impactoPercentual,
+                      principalAprendizado: input.principalAprendizado || undefined,
+                    });
+                    console.log('[evidences.create] ✅ E-mail de aplicabilidade prática enviado ao líder:', lider.email);
+                  }
+                }
+              }
+            } catch (emailError) {
+              // Não falhar a criação da evidência por causa do e-mail
+              console.error('[evidences.create] ⚠️ Erro ao enviar e-mail ao líder (não crítico):', emailError);
+            }
+          }
           
           console.log('[evidences.create] ✅ SUCESSO COMPLETO - Evidence ID:', evidenceId);
           return { success: true, evidenceId };
@@ -851,7 +884,7 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
     validateImpact: adminProcedure
       .input(z.object({
         evidenceId: z.number(),
-        evidenciaComprova: z.enum(['sim', 'nao']),
+        evidenciaComprova: z.enum(['sim', 'nao', 'insuficiente']),
         impactoComprova: z.enum(['sim', 'nao', 'parcialmente']).optional(),
         impactoValidadoAdmin: z.number().min(0).max(100).optional(),
         parecerImpacto: z.string().optional(),
@@ -863,16 +896,19 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Evidência não encontrada' });
         }
 
-        if (input.evidenciaComprova === 'nao') {
+        if (input.evidenciaComprova === 'nao' || input.evidenciaComprova === 'insuficiente') {
+          const statusMsg = input.evidenciaComprova === 'insuficiente' 
+            ? 'Não foi possível avaliar a aplicabilidade prática com base nos relatos'
+            : 'Evidência não comprova a realização da ação';
           await db.updateEvidenceStatus(input.evidenceId, {
             status: 'reprovada',
             evaluatedBy: ctx.user!.id,
             evaluatedAt: new Date(),
-            justificativaAdmin: input.justificativaAdmin || 'Evidência não comprova a realização da ação',
+            justificativaAdmin: input.justificativaAdmin || statusMsg,
           });
           await db.execute(sql`
             UPDATE evidences 
-            SET evidenciaComprova = 'nao',
+            SET evidenciaComprova = ${input.evidenciaComprova},
                 impactoComprova = NULL,
                 impactoValidadoAdmin = NULL,
                 parecerImpacto = ${input.parecerImpacto || null}
@@ -941,23 +977,57 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         if (ctx.user?.role === 'lider' && !input.colaboradorId) whereClause += ` AND u.leaderId = ${ctx.user.id}`;
         if (ctx.user?.role === 'colaborador') whereClause += ` AND e.colaboradorId = ${ctx.user.id}`;
 
+        // IIP = média entre impacto declarado pelo empregado e impacto validado pelo admin
+        // Se o empregado não declarou impacto (impactoPercentual IS NULL), usa apenas o do admin
         const [rows]: any = await db.execute(sql.raw(`
-          SELECT AVG(e.impactoValidadoAdmin) as iipGeral, COUNT(e.id) as totalEvidencias, COUNT(DISTINCT e.colaboradorId) as totalColaboradores
+          SELECT 
+            AVG(
+              CASE 
+                WHEN e.impactoPercentual IS NOT NULL AND e.impactoPercentual > 0 
+                THEN (e.impactoPercentual + e.impactoValidadoAdmin) / 2.0
+                ELSE e.impactoValidadoAdmin
+              END
+            ) as iipGeral,
+            AVG(e.impactoPercentual) as mediaEmpregado,
+            AVG(e.impactoValidadoAdmin) as mediaAdmin,
+            COUNT(e.id) as totalEvidencias, 
+            COUNT(DISTINCT e.colaboradorId) as totalColaboradores
           FROM evidences e JOIN users u ON u.id = e.colaboradorId ${whereClause}
         `));
         const iipGeral = rows?.[0]?.iipGeral ? Number(rows[0].iipGeral) : 0;
+        const mediaEmpregado = rows?.[0]?.mediaEmpregado ? Number(rows[0].mediaEmpregado) : null;
+        const mediaAdmin = rows?.[0]?.mediaAdmin ? Number(rows[0].mediaAdmin) : 0;
 
         const [porColaborador]: any = await db.execute(sql.raw(`
-          SELECT e.colaboradorId, u.name as colaboradorNome, AVG(e.impactoValidadoAdmin) as iip, COUNT(e.id) as totalEvidencias
+          SELECT e.colaboradorId, u.name as colaboradorNome, 
+            AVG(
+              CASE 
+                WHEN e.impactoPercentual IS NOT NULL AND e.impactoPercentual > 0 
+                THEN (e.impactoPercentual + e.impactoValidadoAdmin) / 2.0
+                ELSE e.impactoValidadoAdmin
+              END
+            ) as iip,
+            AVG(e.impactoPercentual) as mediaEmpregado,
+            AVG(e.impactoValidadoAdmin) as mediaAdmin,
+            COUNT(e.id) as totalEvidencias
           FROM evidences e JOIN users u ON u.id = e.colaboradorId ${whereClause}
           GROUP BY e.colaboradorId, u.name ORDER BY iip DESC
         `));
 
         return {
           iipGeral: Math.round(iipGeral * 100) / 100,
+          mediaEmpregado: mediaEmpregado != null ? Math.round(mediaEmpregado * 100) / 100 : null,
+          mediaAdmin: Math.round(mediaAdmin * 100) / 100,
           totalEvidencias: rows?.[0]?.totalEvidencias || 0,
           totalColaboradores: rows?.[0]?.totalColaboradores || 0,
-          porColaborador: (porColaborador || []).map((r: any) => ({ colaboradorId: r.colaboradorId, colaboradorNome: r.colaboradorNome, iip: Math.round(Number(r.iip) * 100) / 100, totalEvidencias: r.totalEvidencias })),
+          porColaborador: (porColaborador || []).map((r: any) => ({
+            colaboradorId: r.colaboradorId, 
+            colaboradorNome: r.colaboradorNome, 
+            iip: Math.round(Number(r.iip) * 100) / 100, 
+            mediaEmpregado: r.mediaEmpregado != null ? Math.round(Number(r.mediaEmpregado) * 100) / 100 : null,
+            mediaAdmin: Math.round(Number(r.mediaAdmin) * 100) / 100,
+            totalEvidencias: r.totalEvidencias 
+          })),
         };
       }),
   }),

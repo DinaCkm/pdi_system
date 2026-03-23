@@ -24,7 +24,7 @@ import PDIsEquipe from "./pages/PDIsEquipe";
 import MeuPDI from "./pages/MeuPDI";
 import ImportarUsuarios from "./pages/ImportarUsuarios";
 import ImportarCompetencias from "./pages/ImportarCompetencias";
-import EvidenciasPendentes from "./pages/EvidenciasPendentes";
+// import EvidenciasPendentes from "./pages/EvidenciasPendentes"; // REMOVIDO - duplicado com Admin Dashboard
 import EvidenciasEquipe from "./pages/EvidenciasEquipe";
 // import MinhasAcoes from "./pages/MinhasAcoes"; // DESATUALIZADO
 import HistoricoAlteracoes from "./pages/HistoricoAlteracoes";
@@ -197,11 +197,7 @@ function Router() {
         </DashboardLayout>
       </Route>
       
-      <Route path={"/evidencias-pendentes"}>
-        <DashboardLayout>
-          <EvidenciasPendentes />
-        </DashboardLayout>
-      </Route>
+      {/* Rota evidencias-pendentes removida - funcionalidade consolidada no Admin Dashboard */}
       
       <Route path={"/evidencias-equipe"}>
         <DashboardLayout>
