@@ -415,12 +415,10 @@ export default function MinhasPendencias() {
         </p>
       </div>
 
-      {/* IIP Pessoal do Empregado */}
-      {userId && (
-        <div className="mb-6">
-          <IIPDashboard userRole="colaborador" colaboradorId={userId} compact />
-        </div>
-      )}
+      {/* IIP - Visão da Empresa (sem filtros de departamento/empregado) */}
+      <div className="mb-6">
+        <IIPDashboard userRole="colaborador" />
+      </div>
 
       {/* Banner de Alerta - Ações Vencidas */}
       {minhasAcoesVencidas.length > 0 && (

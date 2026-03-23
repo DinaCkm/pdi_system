@@ -3250,3 +3250,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 - [x] Atualizar o campo evidenciaComprova para aceitar 'insuficiente' como valor
 - [x] Remover página "Evidências Pendentes" duplicada (rota e menu lateral) - manter apenas no Admin Dashboard
 - [x] Atualizar texto explicativo do IIP no dashboard conforme solicitação do usuário
+- [x] Gerente/Líder: trocar IIP compacto para versão completa igual admin (com ranking, médias, texto explicativo e clique para ver evidência)
+- [x] Empregado: trocar IIP compacto pessoal para versão completa da empresa inteira (sem filtro por departamento e sem filtro por empregado)
+- [x] Gerente/Líder: trocar IIP compacto para versão completa igual admin (com ranking, médias, texto explicativo e clique para ver evidência)
+- [x] Líder: mesma visualização do gerente e admin
+- [x] Empregado: trocar IIP compacto pessoal para versão completa da empresa inteira (sem filtro por departamento e sem filtro por empregado)
+- [x] Adicionar funcionalidade de clique no ranking para ver texto da evidência que comprova aplicabilidade

@@ -975,7 +975,7 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         if (input.colaboradorId) whereClause += ` AND e.colaboradorId = ${input.colaboradorId}`;
         if (input.departamentoId) whereClause += ` AND u.departamentoId = ${input.departamentoId}`;
         if (ctx.user?.role === 'lider' && !input.colaboradorId) whereClause += ` AND u.leaderId = ${ctx.user.id}`;
-        if (ctx.user?.role === 'colaborador') whereClause += ` AND e.colaboradorId = ${ctx.user.id}`;
+        // Colaborador vê a empresa inteira (sem filtro por empregado/departamento)
 
         // IIP = média entre impacto declarado pelo empregado e impacto validado pelo admin
         // Se o empregado não declarou impacto (impactoPercentual IS NULL), usa apenas o do admin
@@ -1029,6 +1029,46 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
             totalEvidencias: r.totalEvidencias 
           })),
         };
+      }),
+
+    // Listar evidências aprovadas de um colaborador específico (para o dialog de detalhes do IIP)
+    listByColaborador: protectedProcedure
+      .input(z.object({ colaboradorId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        // Apenas admin, gerente e líder podem ver evidências de outros
+        if (ctx.user?.role === 'colaborador' && ctx.user?.id !== input.colaboradorId) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Sem permissão' });
+        }
+        const [rows]: any = await db.execute(sql.raw(`
+          SELECT e.*, u.name as colaboradorNome, a.titulo as acaoTitulo
+          FROM evidences e 
+          JOIN users u ON u.id = e.colaboradorId 
+          LEFT JOIN actions a ON a.id = e.acaoId
+          WHERE e.colaboradorId = ${input.colaboradorId} 
+            AND e.status = 'aprovada' 
+            AND e.impactoValidadoAdmin IS NOT NULL
+          ORDER BY e.createdAt DESC
+        `));
+        return (rows || []).map((r: any) => ({
+          id: r.id,
+          acaoTitulo: r.acaoTitulo,
+          colaboradorNome: r.colaboradorNome,
+          status: r.status,
+          createdAt: r.createdAt,
+          tipoEvidencia: r.tipoEvidencia,
+          cargaHoraria: r.cargaHoraria,
+          oQueRealizou: r.oQueRealizou,
+          comoAplicou: r.comoAplicou,
+          resultadoPratico: r.resultadoPratico,
+          impactoPercentual: r.impactoPercentual,
+          principalAprendizado: r.principalAprendizado,
+          linkExterno: r.linkExterno,
+          evidenciaComprova: r.evidenciaComprova,
+          impactoComprova: r.impactoComprova,
+          impactoValidadoAdmin: r.impactoValidadoAdmin,
+          parecerImpacto: r.parecerImpacto,
+          descricao: r.descricao,
+        }));
       }),
   }),
 

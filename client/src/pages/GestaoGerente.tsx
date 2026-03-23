@@ -125,11 +125,10 @@ export default function GestaoGerente() {
         <p className="text-gray-600 mt-2">Consulte ações concluídas e evidências por departamento e empregado</p>
       </div>
 
-      {/* IIP Compacto */}
+      {/* IIP - Visão Completa (igual admin) */}
       <IIPDashboard
         userRole="gerente"
         departamentoId={departamentoFilter && departamentoFilter !== 'todos' ? parseInt(departamentoFilter) : undefined}
-        compact
       />
 
       {/* Cards de resumo */}
