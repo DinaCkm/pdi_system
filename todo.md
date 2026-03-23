@@ -3179,3 +3179,9 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Remover CC global jumakiyama@gmail.com (20/03/2026)
 - [x] Remover jumakiyama@gmail.com como CC de todos os e-mails de notificação
+
+## Filtrar competências com nota abaixo de 4 no onboarding (20/03/2026)
+- [ ] Após preenchimento do formulário de percepções, mostrar apenas competências com nota abaixo de 4
+
+## Unificar local de envio de evidências (23/03/2026)
+- [x] Remover fluxo duplicado de envio de evidências - manter apenas o da página Minhas Ações (botão azul "Registrar Minha Conquista")

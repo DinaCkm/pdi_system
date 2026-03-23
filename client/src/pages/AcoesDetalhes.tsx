@@ -2,15 +2,13 @@ import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { formatDateDisplay } from '@/lib/dateUtils';
-import { Loader2, CheckCircle, XCircle, FileText, Upload, Send, Mail, ArrowLeft, User, Calendar, AlignLeft, Target, BookOpen } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, FileText, Mail, ArrowLeft, User, Calendar, AlignLeft, Target, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import RichTextDisplay from '@/components/RichTextDisplay';
 
 export default function AcoesDetalhes() {
   const [location, setLocation] = useLocation();
   const actionId = parseInt(location.split('/').pop() || '0');
-  const [descricaoEvidencia, setDescricaoEvidencia] = useState("");
-  const [principalAprendizado, setPrincipalAprendizado] = useState("");
 
   // Queries
   const { data: acao, isLoading: loadingAcao, refetch } = trpc.actions.getById.useQuery({ id: actionId }, { enabled: !!actionId });
@@ -29,18 +27,7 @@ export default function AcoesDetalhes() {
 
   const utils = trpc.useUtils();
 
-  // Mutações
-  const enviarEvidencia = trpc.evidences.create.useMutation({
-    onSuccess: () => {
-      toast.success("Evidência enviada!");
-      setDescricaoEvidencia("");
-      setPrincipalAprendizado("");
-      refetch();
-      utils.evidences.listByAction.invalidate();
-    },
-    onError: () => toast.error("Erro ao enviar.")
-  });
-
+  // Mutações (apenas avaliação do admin)
   const aprovarMutation = trpc.evidences.aprovar.useMutation({
     onSuccess: () => { toast.success("Ação Concluída!"); refetch(); }
   });
@@ -62,14 +49,8 @@ export default function AcoesDetalhes() {
 
   if (loadingAcao || !acao) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-600" /></div>;
 
-  // --- LÓGICA DE PERMISSÃO CORRIGIDA (BLINDADA) ---
+  // --- LÓGICA DE PERMISSÃO ---
   const isAdmin = currentUser?.role === 'admin';
-  
-  // Garante que ambos sejam números para comparar
-  const isDono = currentUser && colaborador && (Number(currentUser.id) === Number(colaborador.id));
-  
-  // O dono só pode enviar se não estiver concluída ou em análise
-  const podeEnviar = isDono && (acao.status === 'em_andamento' || acao.status === 'nao_iniciada' || acao.status === 'atrasada');
   
   // O Admin só avalia se tiver algo para avaliar
   const podeAvaliar = isAdmin && acao.status === 'aguardando_avaliacao';
@@ -163,7 +144,7 @@ export default function AcoesDetalhes() {
         </div>
       </div>
 
-      {/* --- ÁREA DE EVIDÊNCIAS --- */}
+      {/* --- ÁREA DE EVIDÊNCIAS (SOMENTE HISTÓRICO) --- */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
         <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', margin: 0 }}>Histórico de Entregas</h2>
         <div style={{ flex: 1, height: '1px', backgroundColor: '#e5e7eb' }}></div>
@@ -217,59 +198,18 @@ export default function AcoesDetalhes() {
         ))}
 
         {evidencias.length === 0 && (
-          <div style={{ padding: '32px', textAlign: 'center', color: '#9ca3af', backgroundColor: '#f3f4f6', borderRadius: '8px', border: '1px dashed #d1d5db' }}>
+          <div style={{ padding: '32px', textAlign: 'center', color: '#9ca3af', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
             <FileText size={32} style={{ opacity: 0.5, marginBottom: '8px' }} />
             <p>Nenhuma entrega realizada ainda.</p>
           </div>
         )}
 
-        {/* --- FORMULÁRIO DE ENVIO (SÓ APARECE SE FOR O DONO MESMO) --- */}
-        {podeEnviar && (
-          <div style={{ marginTop: '24px', backgroundColor: '#eff6ff', padding: '24px', borderRadius: '12px', border: '2px solid #bfdbfe' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e40af', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Upload size={22} /> Enviar Evidência
-            </h3>
-            
-            <div style={{ marginBottom: '12px', padding: '14px 16px', backgroundColor: '#fef3c7', borderRadius: '8px', border: '1px solid #fcd34d', fontSize: '13px', color: '#92400e', lineHeight: '1.6' }}>
-              <strong style={{ display: 'block', marginBottom: '6px', fontSize: '14px', color: '#78350f' }}>Instruções para envio da evidência:</strong>
-              Detalhe no campo abaixo como está comprovando esta evidência e quais são os arquivos que vai enviar.
-            </div>
-            
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#1e40af', marginBottom: '6px' }}>Descrição da Evidência *</label>
-            <textarea
-              placeholder="Descreva como está comprovando esta evidência e quais arquivos está enviando."
-              value={descricaoEvidencia}
-              onChange={(e) => setDescricaoEvidencia(e.target.value)}
-              rows={5}
-              style={{ width: '100%', padding: '16px', borderRadius: '8px', border: '1px solid #93c5fd', marginBottom: '16px', fontSize: '15px', outline: 'none', transition: 'border 0.2s', overflow: 'auto' }}
-            />
-            
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#1e40af', marginBottom: '6px' }}>Principal Aprendizado *</label>
-            <textarea
-              placeholder="Descreva qual foi seu principal aprendizado na realização desta ação."
-              value={principalAprendizado}
-              onChange={(e) => setPrincipalAprendizado(e.target.value)}
-              rows={3}
-              style={{ width: '100%', padding: '16px', borderRadius: '8px', border: '1px solid #93c5fd', marginBottom: '4px', fontSize: '15px', outline: 'none', transition: 'border 0.2s', overflow: 'auto' }}
-            />
-            {!principalAprendizado.trim() && descricaoEvidencia.trim() && (
-              <p style={{ fontSize: '12px', color: '#dc2626', marginBottom: '12px' }}>O campo "Principal Aprendizado" é obrigatório.</p>
-            )}
-            {principalAprendizado.trim() && <div style={{ marginBottom: '12px' }} />}
-            
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                onClick={() => {
-                  const descricaoCompleta = `${descricaoEvidencia.trim()}\n\n--- Principal Aprendizado ---\n${principalAprendizado.trim()}`;
-                  enviarEvidencia.mutate({ actionId, descricao: descricaoCompleta });
-                }}
-                disabled={!descricaoEvidencia.trim() || !principalAprendizado.trim() || enviarEvidencia.isPending}
-                style={{ backgroundColor: '#2563eb', color: 'white', padding: '12px 32px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', opacity: enviarEvidencia.isPending ? 0.7 : 1 }}
-              >
-                {enviarEvidencia.isPending ? <Loader2 className="animate-spin" /> : <Send size={18} />}
-                Enviar para Análise
-              </button>
-            </div>
+        {/* Informativo: envio de evidências é feito na página Minhas Ações */}
+        {!isAdmin && (
+          <div style={{ marginTop: '8px', padding: '16px', backgroundColor: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe', textAlign: 'center' }}>
+            <p style={{ fontSize: '14px', color: '#1e40af', fontWeight: '500' }}>
+              Para enviar evidências, acesse a página <strong>"Minhas Ações"</strong> no menu lateral e clique no botão <strong>"Registrar Minha Conquista"</strong>.
+            </p>
           </div>
         )}
       </div>
