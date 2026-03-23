@@ -3185,3 +3185,6 @@ Ambas as correções testadas e validadas com sucesso. Fluxo completo funcionand
 
 ## Unificar local de envio de evidências (23/03/2026)
 - [x] Remover fluxo duplicado de envio de evidências - manter apenas o da página Minhas Ações (botão azul "Registrar Minha Conquista")
+
+## Ocultar seção de Ações na página Meu PDI para empregado (23/03/2026)
+- [x] Remover seção "Ações de Desenvolvimento" da página PDI Detalhes para o empregado (evitar confusão com Minhas Ações)

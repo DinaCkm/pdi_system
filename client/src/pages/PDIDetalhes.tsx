@@ -454,53 +454,55 @@ export default function PDIDetalhes() {
         )}
       </div>
 
-      {/* Lista de Ações */}
-      <div className="bg-white rounded-lg border shadow-sm">
-        <div className="p-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-600" />
-            Ações de Desenvolvimento ({totalAcoes})
-          </h2>
-        </div>
-        
-        {isLoadingAcoes ? (
-          <div className="p-8 text-center">
-            <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600" />
-            <span className="text-gray-500 mt-2">Carregando ações...</span>
+      {/* Lista de Ações - visível apenas para admin, gerente e líder */}
+      {(user?.role === 'admin' || user?.role === 'gerente' || user?.role === 'lider') && (
+        <div className="bg-white rounded-lg border shadow-sm">
+          <div className="p-4 border-b">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              Ações de Desenvolvimento ({totalAcoes})
+            </h2>
           </div>
-        ) : acoes.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            Nenhuma ação cadastrada para este PDI
-          </div>
-        ) : (
-          <div className="divide-y">
-            {acoes.map((acao: any) => (
-              <div
-                key={acao.id}
-                className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                onClick={() => navigate(`/acoes/${acao.id}`)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-800">{acao.titulo || "Ação sem título"}</h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {acao.competenciaMacroNome && (
-                        <span className="mr-3">📚 {acao.competenciaMacroNome}</span>
-                      )}
-                      {acao.prazo && (
-                        <span>📅 Prazo: {new Date(acao.prazo).toLocaleDateString("pt-BR")}</span>
-                      )}
-                    </p>
+          
+          {isLoadingAcoes ? (
+            <div className="p-8 text-center">
+              <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600" />
+              <span className="text-gray-500 mt-2">Carregando ações...</span>
+            </div>
+          ) : acoes.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              Nenhuma ação cadastrada para este PDI
+            </div>
+          ) : (
+            <div className="divide-y">
+              {acoes.map((acao: any) => (
+                <div
+                  key={acao.id}
+                  className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => navigate(`/acoes/${acao.id}`)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-800">{acao.titulo || "Ação sem título"}</h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {acao.competenciaMacroNome && (
+                          <span className="mr-3">📚 {acao.competenciaMacroNome}</span>
+                        )}
+                        {acao.prazo && (
+                          <span>📅 Prazo: {new Date(acao.prazo).toLocaleDateString("pt-BR")}</span>
+                        )}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${getAcaoStatusColor(acao.status)}`}>
+                      {getStatusLabel(acao.status)}
+                    </span>
                   </div>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${getAcaoStatusColor(acao.status)}`}>
-                    {getStatusLabel(acao.status)}
-                  </span>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
