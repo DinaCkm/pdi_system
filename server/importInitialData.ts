@@ -24,11 +24,28 @@ export async function importInitialData() {
 
     // Baixa o conteúdo SQL da URL
     const response = await axios.get(SQL_DATA_URL);
-    const sqlContent = response.data;
+    const sqlContent: string = response.data;
     console.log('📖 Conteúdo SQL baixado com sucesso da URL.');
 
-    // Executa múltiplas declarações SQL
-    await db.execute(sql`${sqlContent}`);
+    // Divide o conteúdo SQL em declarações individuais separadas por ponto-e-vírgula
+    const statements = sqlContent
+      .split(';')
+      .map((stmt: string) => stmt.trim())
+      .filter((stmt: string) => stmt.length > 0);
+
+    console.log(`📋 ${statements.length} declarações SQL encontradas para execução.`);
+
+    // Desabilita verificações de chave estrangeira antes da importação
+    await db.execute(sql.raw('SET FOREIGN_KEY_CHECKS = 0'));
+
+    // Executa cada declaração SQL individualmente
+    for (const statement of statements) {
+      await db.execute(sql.raw(statement));
+    }
+
+    // Reabilita verificações de chave estrangeira após a importação
+    await db.execute(sql.raw('SET FOREIGN_KEY_CHECKS = 1'));
+
     console.log('✅ Dados SQL importados com sucesso!');
 
   } catch (error) {
