@@ -1,6 +1,6 @@
-import { getDb } from '../db';
+import { getDb } from './db';
 import { sql } from 'drizzle-orm';
-import { users } from '../../drizzle/schema'; // Assumindo que 'users' é uma tabela chave para verificar dados
+import { users } from '../drizzle/schema'; // Assumindo que 'users' é uma tabela chave para verificar dados
 import axios from 'axios';
 
 const SQL_DATA_URL = 'https://pastebin.com/raw/U7j18M19'; // URL RAW do Pastebin
