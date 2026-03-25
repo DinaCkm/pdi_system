@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { importInitialData } from "../importInitialData";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
@@ -29,6 +30,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   const app = express();
+
+  // Executa a importação de dados iniciais antes de iniciar o servidor
+  await importInitialData();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
