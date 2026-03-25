@@ -1,5 +1,5 @@
 import "dotenv/config";
-// import { importInitialData } from "../importInitialData"; // See startServer() note below
+import { importInitialData } from "../importInitialData";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
@@ -32,9 +32,7 @@ async function startServer() {
   const app = express();
 
   // Executa a importação de dados iniciais antes de iniciar o servidor
-  // NOTE: Commented out to prevent startup crash when DB tables don't exist yet.
-  // Tables are created by the pre-deploy command `pnpm drizzle-kit push:mysql`.
-  // await importInitialData();
+  await importInitialData();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
