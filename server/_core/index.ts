@@ -31,8 +31,6 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
 
-  // Executa a importação de dados iniciais antes de iniciar o servidor
-  // await importInitialData();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
@@ -67,6 +65,9 @@ async function startServer() {
   } else {
     serveStatic(app);
   }
+
+  // Importa os dados iniciais antes de iniciar o servidor
+  await importInitialData();
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
