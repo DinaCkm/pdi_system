@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm"
 import { date } from "drizzle-orm/mysql-core"
 
 export const acoesHistorico = mysqlTable("acoes_historico", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey().notNull(),
 	actionId: int().notNull(),
 	campo: varchar({ length: 50 }).notNull(),
 	valorAnterior: text(),
