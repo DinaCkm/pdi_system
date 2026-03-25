@@ -1,7 +1,9 @@
-import { readFileSync } from 'fs';
 import { getDb } from '../db';
 import { sql } from 'drizzle-orm';
 import { users } from '../../drizzle/schema'; // Assumindo que 'users' é uma tabela chave para verificar dados
+import axios from 'axios';
+
+const SQL_DATA_URL = 'https://pastebin.com/raw/U7j18M19'; // URL RAW do Pastebin
 
 export async function importInitialData() {
   const db = await getDb();
@@ -20,13 +22,14 @@ export async function importInitialData() {
 
     console.log('🚀 Banco de dados vazio. Iniciando importação de dados iniciais...');
 
-    // O arquivo load_data.sql precisa estar na raiz do projeto para este caminho funcionar no Railway
-    const sqlContent = readFileSync('./load_data.sql', 'utf-8');
-    console.log('📖 Arquivo load_data.sql lido com sucesso.');
+    // Baixa o conteúdo SQL da URL
+    const response = await axios.get(SQL_DATA_URL);
+    const sqlContent = response.data;
+    console.log('📖 Conteúdo SQL baixado com sucesso da URL.');
 
     // Executa múltiplas declarações SQL
     await db.execute(sql`${sqlContent}`);
-    console.log('✅ Dados do load_data.sql importados com sucesso!');
+    console.log('✅ Dados SQL importados com sucesso!');
 
   } catch (error) {
     console.error('❌ Erro durante a importação de dados iniciais:', error);
