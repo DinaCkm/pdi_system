@@ -1,31 +1,36 @@
-import { db } from "../db";
+import { getDb } from "./db";
 import { sql } from "drizzle-orm";
 import axios from "axios";
 
 async function importInitialData() {
-  console.log("🚀 Iniciando Carga Total de Elite (Garantindo PDIs e Ações)...");
+  console.log("🚀 Iniciando importação do backup (MySQL)...");
 
   try {
-    const sqlUrl = "https://pdi-ckm.s3.us-east-1.amazonaws.com/backup_pdi_system_20250324_223405.sql";
-    const response = await axios.get(sqlUrl);
+    const db = await getDb();
+    if (!db) throw new Error("Database not available (falha ao conectar no DB)");
+
+    const sqlUrl =
+      "https://pdi-ckm.s3.us-east-1.amazonaws.com/backup_pdi_system_20250324_223405.sql";
+
+    console.log("📥 Baixando arquivo SQL...");
+    const response = await axios.get(sqlUrl, { timeout: 120000 }); // 2 min
     const sqlContent = response.data;
 
-    if (!sqlContent) {
-      throw new Error("Conteúdo SQL vazio ou não encontrado.");
+    if (!sqlContent || typeof sqlContent !== "string") {
+      throw new Error("Conteúdo SQL vazio ou inválido.");
     }
 
-    // Desabilitar checks de FK para permitir a carga em qualquer ordem
-    await db.execute(sql`SET FOREIGN_KEY_CHECKS = 0`);
-    console.log("🔓 Verificação de Chaves Estrangeiras desabilitada.");
+    // Desabilitar checks de FK
+    await db.execute(sql.raw("SET FOREIGN_KEY_CHECKS = 0"));
+    console.log("🔓 FOREIGN_KEY_CHECKS = 0");
 
-    // Dividir o conteúdo em comandos individuais por ponto e vírgula
-    // Regex aprimorada para lidar com strings que podem conter ponto e vírgula
+    // Quebrar em comandos por ponto e vírgula (sem quebrar dentro de strings)
     const commands = sqlContent
       .split(/;(?=(?:[^']*'[^']*')*[^']*$)/)
       .map((cmd: string) => cmd.trim())
-      .filter((cmd: string) => cmd.length > 5);
+      .filter((cmd: string) => cmd.length > 0);
 
-    console.log(`📖 Total de comandos SQL encontrados: ${commands.length}`);
+    console.log(`📖 Total de comandos encontrados no arquivo: ${commands.length}`);
 
     let successCount = 0;
     let skipCount = 0;
@@ -33,48 +38,57 @@ async function importInitialData() {
     const tableStats: Record<string, number> = {};
 
     for (const command of commands) {
-      try {
-        // Limpeza do comando para MySQL (substituir aspas duplas por crases se necessário)
-        // O backup do PostgreSQL usa aspas duplas em nomes de tabelas/colunas, o MySQL usa crases
-        let finalCommand = command
-          .replace(/"(\w+)"/g, '`$1`') // Substitui "tabela" por `tabela`
-          .replace(/INSERT INTO/i, "INSERT IGNORE INTO"); // Ignora duplicatas
+      // Ignorar comentários e comandos vazios
+      if (!command || command.startsWith("--") || command.startsWith("/*")) continue;
 
-        // Executar o comando SQL bruto
+      // ✅ Importar só INSERT (o resto do dump geralmente dá ruído / erro)
+      // Se seu dump tiver COPY (Postgres), este importador não executa COPY.
+      if (!/^insert\s+into/i.test(command)) continue;
+
+      try {
+        // Ajustes de compatibilidade:
+        // 1) "tabela" -> `tabela`
+        // 2) INSERT INTO -> INSERT IGNORE INTO (evita quebrar por duplicidade)
+        const finalCommand = command
+          .replace(/"([a-zA-Z0-9_]+)"/g, "`$1`")
+          .replace(/^INSERT\s+INTO/i, "INSERT IGNORE INTO");
+
         await db.execute(sql.raw(finalCommand));
-        
-        // Extrair nome da tabela para o resumo
-        const tableMatch = finalCommand.match(/INSERT IGNORE INTO\s+`?(\w+)`?/i);
+
+        // Extrair nome da tabela para estatística
+        const tableMatch = finalCommand.match(/INSERT IGNORE INTO\s+`?([a-zA-Z0-9_]+)`?/i);
         const tableName = tableMatch ? tableMatch[1] : "outros";
         tableStats[tableName] = (tableStats[tableName] || 0) + 1;
-        
+
         successCount++;
       } catch (err: any) {
-        if (err.message && err.message.includes("Duplicate entry")) {
+        const msg = String(err?.message || err);
+
+        // Duplicidade: conta como "ignorado"
+        if (msg.includes("Duplicate entry")) {
           skipCount++;
-        } else {
-          // Logar apenas os primeiros 100 caracteres do comando com erro para não poluir o log
-          console.error(`❌ Erro no comando: ${command.substring(0, 100)}...`);
-          console.error(`Mensagem: ${err.message}`);
-          errorCount++;
+          continue;
         }
+
+        console.error(`❌ Erro no comando: ${command.substring(0, 120)}...`);
+        console.error(`Mensagem: ${msg}`);
+        errorCount++;
       }
     }
 
-    // Reabilitar checks de FK
-    await db.execute(sql`SET FOREIGN_KEY_CHECKS = 1`);
-    console.log("🔒 Verificação de Chaves Estrangeiras reabilitada.");
+    // Reabilitar FK
+    await db.execute(sql.raw("SET FOREIGN_KEY_CHECKS = 1"));
+    console.log("🔒 FOREIGN_KEY_CHECKS = 1");
 
-    console.log("\n--- 📊 RESUMO DA CARGA DE DADOS ---");
+    console.log("\n--- 📊 RESUMO DA IMPORTAÇÃO ---");
     console.log(`✅ Sucesso: ${successCount}`);
     console.log(`⏭️ Ignorados (duplicados): ${skipCount}`);
-    console.log(`❌ Erros reais: ${errorCount}`);
-    console.log("\n--- Detalhamento por Tabela ---");
+    console.log(`❌ Erros: ${errorCount}`);
+    console.log("\n--- Por Tabela (comandos INSERT executados) ---");
     Object.entries(tableStats).forEach(([table, count]) => {
-      console.log(`- ${table}: ${count} registros carregados`);
+      console.log(`- ${table}: ${count}`);
     });
-    console.log("-----------------------------------\n");
-
+    console.log("--------------------------------------------\n");
   } catch (error) {
     console.error("❌ Erro fatal na importação:", error);
     process.exit(1);
