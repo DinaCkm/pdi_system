@@ -13,7 +13,23 @@ function buildMysqlConfig() {
   const host = getEnv("MYSQLHOST") || getEnv("DB_HOST") || "mysql.railway.internal";
   const port = Number(getEnv("MYSQLPORT") || getEnv("DB_PORT") || "3306");
   const user = getEnv("MYSQLUSER") || getEnv("DB_USER") || "root";
-  const password = getEnv("MYSQLPASSWORD") || getEnv("MYSQL_ROOT_PASSWORD") || getEnv("DB_PASSWORD") || "";
+  const databaseUrl = getEnv("DATABASE_URL") || getEnv("MYSQL_PUBLIC_URL");
+if (databaseUrl && !getEnv("MYSQLPASSWORD") && !getEnv("MYSQL_ROOT_PASSWORD")) {
+  try {
+    const u = new URL(databaseUrl);
+    // u.password pode vir vazio em alguns casos; por isso o fallback abaixo ainda existe
+    const pwFromUrl = decodeURIComponent(u.password || "");
+    if (pwFromUrl) {
+      return {
+        host: u.hostname || host,
+        port: Number(u.port || port),
+        user: decodeURIComponent(u.username || user),
+        password: pwFromUrl,
+        database: u.pathname?.replace("/", "") || database,
+      };
+    }
+  } catch {}
+}
   const database = getEnv("MYSQLDATABASE") || getEnv("DB_NAME") || "railway";
 
   return { host, port, user, password, database };
