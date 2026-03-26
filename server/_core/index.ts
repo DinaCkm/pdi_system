@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { importInitialData } from "../importInitialData";
+// import { importInitialData } from "../importInitialData";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
