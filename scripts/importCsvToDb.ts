@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import mysql from "mysql2/promise";
-import * as XLSX from "xlsx";
+import XLSX from "xlsx";
 
 function getEnv(name: string): string | undefined {
   const v = process.env[name];
