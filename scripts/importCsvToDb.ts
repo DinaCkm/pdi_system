@@ -51,7 +51,12 @@ function findLatestCsv(csvDir: string, tableName: string): string | null {
 }
 
 function readCsvAsObjects(filePath: string): Record<string, any>[] {
-  const wb = XLSX.readFile(filePath, { raw: true });
+  // Força leitura como UTF-8 para preservar acentos
+  const csvText = fs.readFileSync(filePath, "utf8");
+
+  // XLSX.read lendo string garante que não perca acentos
+  const wb = XLSX.read(csvText, { type: "string", raw: true });
+
   const sheet = wb.Sheets[wb.SheetNames[0]];
   return XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: null });
 }
