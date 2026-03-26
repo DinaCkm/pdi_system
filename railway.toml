@@ -1,2 +1,2 @@
 [deploy]
-preDeployCommand = "pnpm drizzle-kit push && (pnpm tsx scripts/importCsvToDb.ts || echo '⚠️ Import CSV falhou, mas deploy continua') && (pnpm tsx scripts/fixEncoding.ts || echo '⚠️ Fix encoding falhou, mas deploy continua')"
+preDeployCommand = "pnpm drizzle-kit push && (pnpm tsx scripts/importCsvToDb.ts || echo '⚠️ Import CSV falhou, mas deploy continua')"
