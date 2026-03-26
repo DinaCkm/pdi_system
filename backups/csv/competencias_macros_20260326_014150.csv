@@ -1,0 +1,59 @@
+id,nome,descricao,ativo,createdAt
+210001,COMPORTAMENTAL - Relacionamento Interpessoal,"Capacidade de estabelecer relações profissionais respeitosas, cooperativas e produtivas, promovendo interação saudável, colaboração e convivência institucional adequada.",1,2026-01-25 20:25:05
+210002,COMPORTAMENTAL - Comunicação,"Capacidade de comunicar-se de forma clara, objetiva e adequada aos diferentes públicos, contextos e canais institucionais.",1,2026-01-25 20:25:05
+210003,COMPORTAMENTAL - Atendimento e Relacionamento com o Cliente,"Capacidade de atender clientes internos e externos com foco em qualidade, empatia, solução de demandas e fortalecimento da imagem institucional.",1,2026-01-25 20:25:05
+210004,"COMPORTAMENTAL - Ética, Integridade e Responsabilidade","Capacidade de atuar com ética, integridade, responsabilidade institucional e respeito às normas, valores e princípios organizacionais.",1,2026-01-25 20:25:05
+210005,COMPORTAMENTAL - Inteligência Emocional e Autoconhecimento,"Capacidade de reconhecer, compreender e gerenciar emoções próprias e alheias, mantendo equilíbrio, autocontrole e postura profissional.",1,2026-01-25 20:25:05
+210006,"COMPORTAMENTAL - Adaptabilidade, Flexibilidade e Resiliência","Capacidade de lidar com mudanças, adversidades e pressões, ajustando comportamentos e mantendo desempenho consistente.",1,2026-01-25 20:25:05
+210007,"COMPORTAMENTAL - Protagonismo, Autogestão e Responsabilidade Profissional","Capacidade de assumir responsabilidade pelas próprias entregas, agir com iniciativa, autonomia e compromisso com resultados.",1,2026-01-25 20:25:05
+210008,COMPORTAMENTAL - Presença Executiva e Postura Profissional,"Capacidade de representar a instituição com postura adequada, credibilidade, segurança e alinhamento à imagem institucional.",1,2026-01-25 20:25:05
+210009,"COMPORTAMENTAL - Gestão do Tempo, Organização e Disciplina","Capacidade de planejar, organizar e priorizar atividades, cumprindo prazos e mantendo disciplina operacional.",1,2026-01-25 20:25:05
+210010,COMPORTAMENTAL - Liderança e Gestão de Pessoas,"Capacidade de liderar, orientar, desenvolver e engajar pessoas, promovendo desempenho, aprendizado e alinhamento institucional.",1,2026-01-25 20:25:05
+210011,COMPORTAMENTAL - Gestão de Equipes e Clima Organizacional,"Capacidade de gerir equipes de forma integrada, promovendo cooperação, clima positivo e resultados coletivos.",1,2026-01-25 20:25:05
+210012,"COMPORTAMENTAL - Desenvolvimento de Pessoas, Carreira e Sucessão","Capacidade de identificar, desenvolver talentos e apoiar planos de carreira e sucessão organizacional.",1,2026-01-25 20:25:05
+210013,COMPORTAMENTAL - Tomada de Decisão e Julgamento Técnico,"Capacidade de analisar informações, avaliar riscos e tomar decisões fundamentadas técnica e institucionalmente.",1,2026-01-25 20:25:05
+210014,"COMPORTAMENTAL - Planejamento, Foco e Resultados","Capacidade de planejar ações, estabelecer prioridades e direcionar esforços para o alcance de resultados.",1,2026-01-25 20:25:05
+210015,"COMPORTAMENTAL - Estratégia, Visão Sistêmica e Indicadores","Capacidade de compreender o contexto organizacional, alinhar ações à estratégia e utilizar indicadores para tomada de decisão.",1,2026-01-25 20:25:05
+210016,COMPORTAMENTAL - Gestão de Projetos e Processos,"Capacidade de planejar, executar, monitorar e aprimorar projetos e processos organizacionais.",1,2026-01-25 20:25:19
+210017,COMPORTAMENTAL - Resolução de Problemas e Melhoria Contínua,"Capacidade de identificar problemas, analisar causas e implementar soluções eficazes e sustentáveis.",1,2026-01-25 20:25:19
+210018,"COMPORTAMENTAL - Governança, Controles Internos e Compliance","Capacidade de atuar em conformidade com estruturas de governança, controles internos e requisitos de compliance.",1,2026-01-25 20:25:19
+210019,COMPORTAMENTAL - Integração Organizacional e Trabalho Interáreas,"Capacidade de atuar de forma integrada com diferentes áreas, promovendo cooperação e visão institucional.",1,2026-01-25 20:25:19
+210020,TÉCNICA - Gestão Administrativa e Processos de Apoio,Capacidade de executar e apoiar processos administrativos essenciais ao funcionamento da organização.,1,2026-01-25 20:25:19
+210021,TÉCNICA - Gestão Documental e Memória Institucional,"Capacidade de organizar, manter e utilizar documentos e registros institucionais de forma adequada e rastreável.",1,2026-01-25 20:25:19
+210022,TÉCNICA - Gestão Patrimonial e Controle de Bens,"Capacidade de gerir, controlar e zelar pelo patrimônio institucional.",1,2026-01-25 20:25:19
+210023,"TÉCNICA - Compras, Licitações, Facilities e Gestão Contratual","Capacidade de atuar nos processos de compras, licitações, contratos e facilities conforme normas e procedimentos.",1,2026-01-25 20:25:19
+210024,TÉCNICA - Contratação de Obras e Serviços de Engenharia,"Capacidade de acompanhar e gerir processos de contratação, execução e fiscalização de obras e serviços de engenharia.",1,2026-01-25 20:25:19
+210025,TÉCNICA - Ouvidoria e Relacionamento Institucional,"Capacidade de tratar manifestações, demandas e relações institucionais de forma ética, transparente e adequada.",1,2026-01-25 20:25:19
+210026,"TÉCNICA - Finanças, Orçamento e Contabilidade Pública","Capacidade de atuar nos processos financeiros, orçamentários e contábeis conforme normas aplicáveis.",1,2026-01-25 20:25:19
+210027,TÉCNICA - Gestão Orçamentária e Financeira,"Capacidade de planejar, executar e monitorar recursos orçamentários e financeiros.",1,2026-01-25 20:25:19
+210028,TÉCNICA - Tributária,Capacidade de compreender e aplicar normas tributárias pertinentes à atuação institucional.,1,2026-01-25 20:25:19
+210029,"TÉCNICA - Legislação, Normas e Conformidade Jurídica","Capacidade de atuar em conformidade com a legislação, normas internas e orientações jurídicas.",1,2026-01-25 20:25:19
+210030,TÉCNICA - Auditoria Interna e Prestação de Contas,"Capacidade de atuar em processos de auditoria interna, controle, avaliação e prestação de contas.",1,2026-01-25 20:25:19
+210031,TÉCNICA - Políticas Públicas e Desenvolvimento Territorial,Capacidade de compreender e atuar em políticas públicas e iniciativas de desenvolvimento territorial.,1,2026-01-25 20:25:33
+210032,"TÉCNICA - Vendas, Negociação e Soluções Comerciais","Capacidade de negociar, ofertar soluções e conduzir processos comerciais alinhados às diretrizes institucionais.",1,2026-01-25 20:25:33
+210033,TÉCNICA - Marketing Institucional e Inteligência de Mercado,Capacidade de planejar e executar ações de marketing e análise de mercado com foco institucional.,1,2026-01-25 20:25:33
+210034,TÉCNICA - Conhecimentos Práticos e Acadêmicos em Marketing,"Capacidade de aplicar conceitos, técnicas e fundamentos teóricos e práticos de marketing.",1,2026-01-25 20:25:33
+210035,"TÉCNICA - Tecnologia, Dados e Transformação Digital","Capacidade de utilizar tecnologias e dados para apoiar processos, inovação e transformação digital.",1,2026-01-25 20:25:33
+210036,"TÉCNICA - Governança de Dados, Informação e Uso de Sistemas Corporativos","Capacidade de utilizar sistemas corporativos e dados de forma padronizada, segura e governada.",1,2026-01-25 20:25:33
+210037,TÉCNICA - Desenvolvimento e Utilização de Ferramentas de Apoio à Gestão,Capacidade de desenvolver ou utilizar ferramentas que apoiem a gestão e a tomada de decisão.,1,2026-01-25 20:25:33
+210038,"COMPORTAMENTAL - Inovação, Criatividade e Visão de Futuro","Capacidade de propor soluções inovadoras, criativas e alinhadas à visão de futuro institucional.",1,2026-01-25 20:25:33
+210039,TÉCNICA - Processos Técnicos da Área / Função,Capacidade de executar processos técnicos específicos da área ou função com precisão e conformidade.,1,2026-01-25 20:25:33
+210040,TÉCNICA - Normativos Técnicos e Regulamentações da Área,Capacidade de interpretar e aplicar normativos técnicos e regulatórios específicos da área.,1,2026-01-25 20:25:33
+210041,TÉCNICA - Metodologias e Procedimentos Técnicos da Função,Capacidade de aplicar metodologias e procedimentos técnicos próprios da função exercida.,1,2026-01-25 20:25:33
+210042,TÉCNICA - Sistemas e Tecnologias Especializadas da Área,Capacidade de utilizar sistemas e tecnologias específicas e especializadas da área de atuação.,1,2026-01-25 20:25:33
+210043,"TÉCNICA - Análise Técnica, Pareceres e Tomada de Decisão Técnica","Capacidade de realizar análises técnicas, emitir pareceres e tomar decisões fundamentadas.",1,2026-01-25 20:25:33
+210044,"TÉCNICA - Execução Técnica, Qualidade e Conformidade da Entrega","Capacidade de executar entregas técnicas com qualidade, conformidade e aderência aos padrões estabelecidos.",1,2026-01-25 20:25:33
+330001,COMPORTAMENTAL - Desenvolvimento Integração (Onboarding),COMPORTAMENTAL - Desenvolvimento Integração (Onboarding),1,2026-02-03 21:14:34
+360001,Macro Teste 1770906791116,Descrição de teste,1,2026-02-12 09:33:11
+390001,Macro Teste 1770920244958,Descrição de teste,1,2026-02-12 13:17:25
+390002,Macro Teste 1770926125353,Descrição de teste,1,2026-02-12 14:55:25
+420001,Macro Teste 1770932213147,Descrição de teste,1,2026-02-12 16:36:53
+420002,Macro Teste 1770932828047,Descrição de teste,1,2026-02-12 16:47:08
+450001,Macro Teste 1772124354684,Descrição de teste,1,2026-02-26 11:45:55
+480001,Macro Teste 1772779194175,Descrição de teste,1,2026-03-06 01:39:54
+510001,Macro Teste 1772828438152,Descrição de teste,1,2026-03-06 15:20:38
+540001,Macro Teste 1773067109015,Descrição de teste,1,2026-03-09 10:38:29
+540002,Macro Teste 1773067142574,Descrição de teste,1,2026-03-09 10:39:03
+540003,Macro Teste 1773067358098,Descrição de teste,1,2026-03-09 10:42:38
+570001,Macro Teste 1774292005546,Descrição de teste,1,2026-03-23 14:53:26
+570002,Macro Teste 1774292140677,Descrição de teste,1,2026-03-23 14:55:41

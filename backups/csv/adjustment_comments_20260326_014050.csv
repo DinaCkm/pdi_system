@@ -1,0 +1,65 @@
+id,adjustmentRequestId,autorId,comentario,createdAt
+90001,270002,1350001,Pode excluir essa.,2026-01-30 16:30:51
+90002,270001,1350001,Não pode alterar o prazo.,2026-01-30 16:31:08
+120001,330009,1260008,Tal solicitação de ajuste foi realizada durante reunião de monitoramento. Estou ciente e de acordo.,2026-02-19 13:11:42
+120002,330010,1260008,Tal solicitação de ajuste foi alinhada durante reunião monitoramento do PDI com o colaborador. Estou ciente e de acordo.,2026-02-19 13:13:36
+120003,330009,1260008,Tal solicitação de ajuste foi alinhada durante reunião monitoramento do PDI com o colaborador. Estou ciente e de acordo.,2026-02-19 13:13:46
+120004,330008,1260008,Tal solicitação de ajuste foi alinhada durante reunião monitoramento do PDI com o colaborador. Estou ciente e de acordo.,2026-02-19 13:13:55
+120005,330007,1260008,Tal solicitação de ajuste foi alinhada durante reunião monitoramento do PDI com o colaborador. Estou ciente e de acordo.,2026-02-19 13:14:04
+120006,330006,1260008,Tal solicitação de ajuste foi alinhada durante reunião monitoramento do PDI com o colaborador. Estou ciente e de acordo.,2026-02-19 13:14:11
+120007,330005,1260008,Tal solicitação de ajuste foi alinhada durante reunião monitoramento do PDI com o colaborador. Estou ciente e de acordo.,2026-02-19 13:14:24
+120008,330004,1260008,Tal solicitação de ajuste foi alinhada durante reunião monitoramento do PDI com o colaborador. Estou ciente e de acordo.,2026-02-19 13:14:29
+120009,330003,1260008,Tal solicitação de ajuste foi alinhada durante reunião monitoramento do PDI com o colaborador. Estou ciente e de acordo.,2026-02-19 13:14:37
+120010,330002,1260008,Tal solicitação de ajuste foi alinhada durante reunião monitoramento do PDI com o colaborador. Estou ciente e de acordo.,2026-02-19 13:14:44
+150001,390004,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:04:54
+150002,390003,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:05:04
+150003,390002,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:05:12
+150004,390001,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:05:21
+150005,360011,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:05:28
+150006,360010,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:05:35
+150007,360009,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:05:41
+150008,360008,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:05:48
+150009,360007,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:05:54
+150010,360006,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:06:00
+150011,360005,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:06:07
+150012,330010,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:06:12
+150013,330009,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:06:17
+150014,330008,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:06:23
+150015,390005,1260008,Ajuste validado! O mesmo foi definido durante reunião individual com o colaboradosr. Estou ciente e de acordo!,2026-03-02 15:06:41
+180001,750001,1260009,APROVADO,2026-03-12 20:36:46
+180004,660003,1260009,APROVADO,2026-03-12 20:37:01
+180005,660002,1260009,APROVADO,2026-03-12 20:37:06
+180006,660001,1260009,APROVADO,2026-03-12 20:37:11
+180007,690001,1260003,"Aprovado
+",2026-03-12 21:22:46
+210001,570002,1260012,De acordo.,2026-03-13 13:28:19
+240001,900001,1260002,"Diante do exposto, solicito ao colaborador Odilo Junior que avalie se a referida competência ainda faz sentido para suas atividades no âmbito da Regional. Após sua análise, fica validada a alteração da data, conforme solicitado pela CKM.",2026-03-16 17:47:53
+240002,870001,1260002,"Após sua análise, fica validada a alteração da data, conforme solicitado pela CKM.
+",2026-03-16 17:48:09
+240005,930009,1260002,Autorizado,2026-03-16 20:26:41
+240006,930008,1260002,Autorizado,2026-03-16 20:26:52
+240007,930007,1260002,Autorizado,2026-03-16 20:26:59
+240008,930006,1260002,Autorizado,2026-03-16 20:27:05
+240009,930005,1260002,Autorizado,2026-03-16 20:27:20
+240010,930029,1260002,Autorizado,2026-03-16 20:28:24
+240011,930028,1260002,Autorizado,2026-03-16 20:28:28
+240012,930027,1260002,Autorizado,2026-03-16 20:28:32
+240013,930026,1260002,Autorizado,2026-03-16 20:28:38
+240014,930025,1260002,Autorizado,2026-03-16 20:28:42
+240015,930024,1260002,Autorizado,2026-03-16 20:28:46
+240016,930023,1260002,Autorizado,2026-03-16 20:28:50
+240017,930022,1260002,Autorizado,2026-03-16 20:28:54
+240018,930021,1260002,Autorizado,2026-03-16 20:29:00
+240019,930020,1260002,Autorizado,2026-03-16 20:29:05
+240020,930019,1260002,Autorizado,2026-03-16 20:29:09
+240021,930018,1260002,"Gentileza, alterar para até dia 30/06/2026.",2026-03-16 20:29:33
+240022,930017,1260002,"Gentileza, alterar para até dia 30/06/2026.",2026-03-16 20:29:45
+240023,930016,1260002,"Gentileza, alterar para até dia 30/06/2026.",2026-03-16 20:29:49
+240024,930015,1260002,"Gentileza, alterar para até dia 30/06/2026.",2026-03-16 20:29:53
+240025,930014,1260002,"Gentileza, alterar para até dia 30/06/2026.",2026-03-16 20:29:57
+240026,930013,1260002,"Gentileza, alterar para até dia 30/06/2026.",2026-03-16 20:30:00
+240027,930012,1260002,"Gentileza, alterar para até dia 30/06/2026.",2026-03-16 20:30:03
+240028,930011,1260002,"Gentileza, alterar para até dia 30/06/2026.",2026-03-16 20:30:07
+240029,930010,1260002,"Gentileza, alterar para até dia 30/06/2026.",2026-03-16 20:30:12
+270001,930030,1260002,Autorizado,2026-03-17 14:43:50
+270002,930031,1260002,"Diante do exposto, a referida competência não faz sentido para suas atividades no âmbito da Regional.",2026-03-17 14:46:49

@@ -1,0 +1,122 @@
+id,titulo,subtitulo,conteudo,icone,categoria,ordem,ativo,createdAt,updatedAt,imagemUrl
+1,Alterar ou Substituir uma Ação,Só acontece com a aprovação do gestor.,"+ Saiba Mais
+
+Passo 1: O colaborador entra na plataforma, vai em ""Minhas Ações"", seleciona a ação que quer alterar ou substituir, e solicita a alteração ou substituição da ação (ex: trocar um curso por outro equivalente).
+
+Passo 2: O gestor entra na plataforma, no menu ""Solicitações de Alteração"", analisa e aprova/reprova com um comentário.
+
+Resultado: Sem a aprovação do gestor, a alteração não acontece. Se ele validar, a CKM realiza a alteração.",RefreshCw,regras,1,1,2026-02-12 06:45:47,2026-02-12 16:11:59,
+2,Excluir uma Ação,Só acontece com a aprovação do gestor.,"+ Saiba Mais
+
+Passo 1: O colaborador entra na plataforma, vai em ""Minhas Ações"", seleciona a ação que quer excluir, e solicita a exclusão.
+
+Passo 2: O gestor entra na plataforma, no menu ""Solicitações de Alteração"", analisa e aprova/reprova com um comentário.
+
+Resultado: Se o gestor não validar no sistema, a ação permanece no seu PDI. Se ele validar, a CKM realiza a exclusão.",Trash2,regras,2,1,2026-02-12 06:45:47,2026-02-12 16:12:03,
+3,Incluir Nova Ação,"Requer análise da CKM, aprovação do gestor e da UGP.","+ Saiba Mais
+
+Passo 1: O colaborador entra na plataforma e solicita a inclusão da nova ação através do menu ""Solicitar Ação"".
+
+Passo 2: A CKM analisa a viabilidade técnica e o escopo da área, manda seu parecer, sendo ele negativo ou positivo, e solicita aprovação do gestor.
+
+Passo 3: O gestor entra na plataforma, no menu ""Ações Solicitadas por Empregados"", analisa e aprova/reprova com um comentário.
+
+Passo 4: A UGP analisa a viabilidade, aprova ou reprova.
+
+Resultado: A ação só é incluída no PDI após a análise positiva da CKM, gestor e UGP.
+
+------
+
+Ao solicitar novas ações para seu PDI 2026, são considerados os seguintes critérios além da análise técnica e comportamental baseada na sua certificação, cargo e área:
+
+1) Pendências de 2025 bloqueiam novas solicitações para 2026
+Se você ainda não concluiu alguma ação prevista para 2025, você não poderá solicitar novas ações/eventos para 2026 neste momento.
+➡️ Primeiro, é necessário finalizar as ações de 2025.
+Essas ações ficam no Plano intitulado: PDI - 2025/2026 - AÇÕES REMANESCENTES DE 2025 E PROGRAMADAS PARA 2026
+
+
+2) Ações de 2025 prorrogadas para 2026 também entram no bloqueio
+Se a sua ação era de 2025, mas foi prorrogada oficialmente para 2026, mesmo com aprovação do gestor, ela continua contando como ação de 2025 pendente.
+➡️ Ou seja: precisa ser executada antes de pedir uma nova ação/evento para 2026.
+Essas ações ficam no Plano intitulado: PDI - 2025/2026 - AÇÕES REMANESCENTES DE 2025 E PROGRAMADAS PARA 2026
+
+3) Importante: a regra vale apenas para ações transferidas de 2025
+Ações que já estavam previstas originalmente para 2026 não têm relação com esse bloqueio.
+Essas ações ficam no Plano intitulado: PDI - 01/2026 - BASE: CERTIFICAÇÃO
+
+Em resumo:
+✅ Concluiu tudo de 2025 (inclusive o que foi prorrogado para 2026)? Pode solicitar novas ações/eventos.
+❌ Ainda tem algo de 2025 pendente (mesmo prorrogado para 2026)? Ainda não pode solicitar novas ações/eventos.
+
+Em caso de dúvida sobre o seu status (pendente x concluído), procure seu gestor e/ou a UGP antes de enviar a solicitação.
+",PlusCircle,regras,3,1,2026-02-12 06:45:47,2026-02-24 13:43:31,
+4,Alterar o Prazo,Depende da quantidade de dias solicitados.,"+ Saiba Mais
+
+Passo 1: O colaborador entra na plataforma, vai em ""Minhas Ações"", seleciona a ação que quer alterar o prazo, e solicita a alteração.
+
+Alteração MENOR que 30 dias:
+Resultado: A CKM realiza a alteração de prazo diretamente.
+
+Alteração MAIOR que 30 dias:
+Passo 2: O gestor deve acessar o menu ""Solicitações de Alteração"" para validar.
+Resultado: Sem a aprovação do gestor, a alteração não acontece. Se ele validar, a CKM realiza a alteração.",Calendar,regras,4,1,2026-02-12 06:45:47,2026-02-12 16:12:14,
+5,Ajustes Técnicos,Correções simples sem necessidade de aprovação do gestor.,"+Saiba Mais
+
+Passo 1: O colaborador entra na plataforma, vai em ""Minhas Ações"", seleciona a ação que está com algum erro técnico, e solicita o ajuste (ex: correção de erro de digitação ou informação incompleta).
+Resultado: O ajuste é realizado normalmente no sistema pela CKM.
+",Wrench,regras,5,1,2026-02-12 06:45:47,2026-02-12 15:53:48,
+6,1. Fase de Ajustes/Início,O ponto de partida do ciclo.,"O ponto de partida. O foco aqui é alinhar as expectativas:
+O colaborador entra no sistema e revisa suas ações. O ideal é que ele faça e discuta isso com seu gestor direto.
+Caso precise mudar algo, ele pode pedir via plataforma: Alteração, substituição ou exclusão de ações e Ajuste de prazos.",GitBranch,fluxo,6,1,2026-02-12 06:45:47,2026-02-12 14:06:13,https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/normas-regras/w7x2540y-68PIS4pIponUwnq1rsFj_.png
+7,2. Validação das Mudanças,A responsabilidade passa para o gestor.,"Nesta etapa, a responsabilidade passa para o gestor, que deve filtrar o que faz sentido para o desenvolvimento do colaborador.
+Ele acessa o menu de ""Solicitações de Alteração"" e analisa cada pedido individualmente.
+Para concluir sua parte, o gestor insere um comentário aprovando ou não.",Search,fluxo,7,1,2026-02-12 06:45:47,2026-02-12 14:31:08,
+8,3. Operacionalização,A equipe da CKM entra em cena.,"A equipe da CKM entra em cena para garantir que o sistema reflita exatamente o que foi combinado entre líder e liderado.
+O setor processa as alterações validadas pelo gestor e organiza toda a estrutura do PDI para que ele esteja pronto em sua versão final.",Settings,fluxo,8,1,2026-02-12 06:45:47,2026-02-12 14:31:08,
+9,4. Aprovação Final,Hora de oficializar o plano.,"Com tudo devidamente ajustado no sistema, chega a hora de oficializar o plano.
+O gestor acessa a seção correspondente aos PDIs de sua equipe e realiza o clique de aprovação final.
+A partir deste momento, o status do PDI passa a ser considerado oficialmente aprovado.",CheckCircle,fluxo,9,1,2026-02-12 06:45:47,2026-02-12 06:45:47,
+10,5. Manutenção e Pós-Aprovação,O PDI é um documento vivo.,"Feito isso, o colaborador já pode começar a enviar suas evidências e comprovações.
+O PDI é um documento vivo, mas após a aprovação final, alterações permanecem liberadas mas como exceção à regra, e passa a exigir uma justificativa clara e um novo aceite do gestor, tornando a análise de novos pedidos muito mais criteriosa.",Shield,fluxo,10,1,2026-02-12 06:45:47,2026-02-12 06:45:47,
+30002,TIPOS DE PDI,,"Existem 3 tipos de PDI.
+PDI - Foco em ações 2025/2026 - Aprovação do lider até 15/03/2025
+
+PDI - Foco em ações com base na Certificação:  ""Em fase de construção"" 
+
+PDI Integração - Onboarding: Apenas para colaboradores que estão atualmente em processo de Integração - Onboarding no SEBRAE Tocantins.
+",CheckCircle,geral,11,1,2026-02-12 14:23:48,2026-02-12 16:10:19,https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/normas-regras/az9hvbwv-1g6q2iGYkfxdRQRQ9buKy.png
+60004,Como usar o sistema?,Acesse para saber em detalhes o uso de cada menu,"Através deste link:
+https://gamma.app/docs/Tutorial-Sistema-de-Gestao-de-PDI-rb1zvtsahrahavs",ClipboardList,geral,12,1,2026-02-12 19:17:31,2026-03-23 15:30:35,https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/normas-regras/4ofo0vn0-xbleLWH992wmFYZ8Qu_NS.png
+120001,COMUNICADO,Solicitação de novas ações (PDI – Evoluir 2026),"Ao solicitar novas ações para seu PDI 2026, são considerados os seguintes critérios além da análise técnica e comportamental baseada na sua certificação, cargo e área:
+
+1) Pendências de 2025 bloqueiam novas solicitações para 2026
+Se você ainda não concluiu alguma ação prevista para 2025, você não poderá solicitar novas ações/eventos para 2026 neste momento.
+➡️ Primeiro, é necessário finalizar as ações de 2025.
+Essas ações ficam no Plano intitulado: PDI - 2025/2026 - AÇÕES REMANESCENTES DE 2025 E PROGRAMADAS PARA 2026
+
+
+2) Ações de 2025 prorrogadas para 2026 também entram no bloqueio
+Se a sua ação era de 2025, mas foi prorrogada oficialmente para 2026, mesmo com aprovação do gestor, ela continua contando como ação de 2025 pendente.
+➡️ Ou seja: precisa ser executada antes de pedir uma nova ação/evento para 2026.
+Essas ações ficam no Plano intitulado: PDI - 2025/2026 - AÇÕES REMANESCENTES DE 2025 E PROGRAMADAS PARA 2026
+
+3) Importante: a regra vale apenas para ações transferidas de 2025
+Ações que já estavam previstas originalmente para 2026 não têm relação com esse bloqueio.
+Essas ações ficam no Plano intitulado: PDI - 01/2026 - BASE: CERTIFICAÇÃO
+
+Em resumo:
+✅ Concluiu tudo de 2025 (inclusive o que foi prorrogado para 2026)? Pode solicitar novas ações/eventos.
+❌ Ainda tem algo de 2025 pendente (mesmo prorrogado para 2026)? Ainda não pode solicitar novas ações/eventos.
+
+Em caso de dúvida sobre o seu status (pendente x concluído), procure seu gestor e/ou a UGP antes de enviar a solicitação.
+
+Obrigado(a)!
+
+",Info,geral,13,1,2026-02-24 13:44:18,2026-02-24 13:44:18,
+270001,Enviar uma Evidência,,"Passo 1: O colaborador entra na plataforma, acessa “Minhas Ações”, seleciona a ação que deseja concluir e vai até a seção “Registrar Minha Conquista”.
+
+Passo 2: O colaborador descreve de forma detalhada o que foi realizado, clica em “Registrar Evidência” e, na tela seguinte, lê atentamente as orientações da ação para enviar/anexar todos os arquivos solicitados (certificados, relatórios, prints, documentos, etc.).
+
+Passo 3: Após o envio, a evidência é analisada para validação.
+
+Resultado: Quando a evidência é enviada conforme as orientações da ação, com a descrição completa e todos os comprovantes solicitados, a solicitação pode ser validada com mais agilidade. Caso o envio esteja incompleto ou fora do que foi solicitado, a aprovação poderá ser negada até a regularização.",FileEdit,regras,14,1,2026-03-23 15:33:19,2026-03-23 15:33:19,
