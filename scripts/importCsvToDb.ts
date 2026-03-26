@@ -9,27 +9,37 @@ function getEnv(name: string): string | undefined {
 }
 
 function buildMysqlConfig() {
-  // Railway normalmente disponibiliza MYSQLHOST/MYSQLPORT/MYSQLUSER/MYSQLPASSWORD/MYSQLDATABASE
+  // 1) Preferir DATABASE_URL (é o que seu app usa no Railway)
+  const databaseUrl = getEnv("DATABASE_URL") || getEnv("MYSQL_PUBLIC_URL");
+
+  if (databaseUrl) {
+    try {
+      const u = new URL(databaseUrl);
+
+      const host = u.hostname;
+      const port = Number(u.port || "3306");
+      const user = decodeURIComponent(u.username || "root");
+      const password = decodeURIComponent(u.password || "");
+      const database = (u.pathname || "/railway").replace("/", "") || "railway";
+
+      // Se vier sem senha (raro), cai no fallback abaixo
+      if (password) {
+        return { host, port, user, password, database };
+      }
+    } catch (e) {
+      // se der erro ao ler a URL, cai no fallback abaixo
+    }
+  }
+
+  // 2) Fallback: variáveis MYSQL* (caso existam no ambiente)
   const host = getEnv("MYSQLHOST") || getEnv("DB_HOST") || "mysql.railway.internal";
   const port = Number(getEnv("MYSQLPORT") || getEnv("DB_PORT") || "3306");
   const user = getEnv("MYSQLUSER") || getEnv("DB_USER") || "root";
-  const databaseUrl = getEnv("DATABASE_URL") || getEnv("MYSQL_PUBLIC_URL");
-if (databaseUrl && !getEnv("MYSQLPASSWORD") && !getEnv("MYSQL_ROOT_PASSWORD")) {
-  try {
-    const u = new URL(databaseUrl);
-    // u.password pode vir vazio em alguns casos; por isso o fallback abaixo ainda existe
-    const pwFromUrl = decodeURIComponent(u.password || "");
-    if (pwFromUrl) {
-      return {
-        host: u.hostname || host,
-        port: Number(u.port || port),
-        user: decodeURIComponent(u.username || user),
-        password: pwFromUrl,
-        database: u.pathname?.replace("/", "") || database,
-      };
-    }
-  } catch {}
-}
+  const password =
+    getEnv("MYSQLPASSWORD") ||
+    getEnv("MYSQL_ROOT_PASSWORD") ||
+    getEnv("DB_PASSWORD") ||
+    "";
   const database = getEnv("MYSQLDATABASE") || getEnv("DB_NAME") || "railway";
 
   return { host, port, user, password, database };
