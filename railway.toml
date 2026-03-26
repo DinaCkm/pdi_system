@@ -1,2 +1,2 @@
 [deploy]
-preDeployCommand = "pnpm drizzle-kit push"
+preDeployCommand = "pnpm drizzle-kit push && pnpm tsx server/importInitialData.ts"
