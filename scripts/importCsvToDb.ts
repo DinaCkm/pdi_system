@@ -1,4 +1,3 @@
-// updated importer
 import fs from "node:fs";
 import path from "node:path";
 import mysql from "mysql2/promise";
@@ -64,7 +63,6 @@ function chunk<T>(arr: T[], size: number): T[][] {
 }
 
 async function getTableColumns(conn: mysql.Connection, table: string): Promise<Set<string>> {
-  // Descobre colunas reais da tabela no MySQL (pra evitar erro se CSV tiver colunas extras)
   const [rows] = await conn.query<any[]>(`SHOW COLUMNS FROM \`${table}\``);
   return new Set(rows.map((r: any) => String(r.Field)));
 }
@@ -81,12 +79,11 @@ async function main() {
     process.exit(1);
   }
 
-  // Ordem segura (respeita dependências)
   const importOrder = [
     "departamentos",
     "ciclos",
     "competencias_macros",
-    "users", // só importa se existir CSV de users
+    "users",
     "user_department_roles",
     "pdis",
     "actions",
@@ -101,7 +98,6 @@ async function main() {
     "notifications",
     "deletion_audit_log",
     "acoes_historico",
-    // extras (só se existirem no banco E tiver CSV)
     "blocos",
     "backups",
     "macros",
@@ -132,12 +128,10 @@ async function main() {
   await conn.query("SET FOREIGN_KEY_CHECKS = 0");
   console.log("🔓 FOREIGN_KEY_CHECKS = 0");
 
-  // Descobrir quais tabelas existem no banco
   const [tables] = await conn.query<any[]>("SHOW TABLES");
-  const tableKey = Object.keys(tables[0] || {})[0]; // ex.: "Tables_in_railway"
+  const tableKey = Object.keys(tables[0] || {})[0];
   const existingTables = new Set((tables || []).map((r: any) => r[tableKey]));
 
-  // Mapear tabelas -> csv mais recente (pra ficar bem explícito no log)
   const csvByTable: Record<string, string> = {};
   for (const t of importOrder) {
     const p = findLatestCsv(csvDir, t);
@@ -147,7 +141,6 @@ async function main() {
   console.log("📁 CSVs detectados:");
   Object.entries(csvByTable).forEach(([t, p]) => console.log(`- ${t}: ${path.basename(p)}`));
 
-  // Limpar dados (apenas das tabelas que têm CSV e existem no banco)
   console.log("\n🧹 Limpando tabelas que serão importadas...");
   for (const table of deleteOrder) {
     const csvPath = csvByTable[table];
@@ -160,7 +153,6 @@ async function main() {
     console.log(`🗑️ TRUNCATE ${table}`);
   }
 
-  // Importar dados
   console.log("\n📦 Importando CSVs...");
   for (const table of importOrder) {
     const csvPath = csvByTable[table];
@@ -179,21 +171,16 @@ async function main() {
       continue;
     }
 
-    // Colunas existentes na tabela
     const tableCols = await getTableColumns(conn, table);
-
-    // Colunas do CSV, filtradas para só as que existem no MySQL
     const csvCols = Object.keys(rows[0]).filter((c) => c && c.trim().length > 0);
     const cols = csvCols.filter((c) => tableCols.has(c));
 
-    // Se nenhuma coluna bate, não tem como importar
     if (!cols.length) {
       console.log(`❌ Nenhuma coluna do CSV corresponde à tabela ${table}. Pulando.`);
       console.log(`CSV cols: ${csvCols.join(", ")}`);
       continue;
     }
 
-    // Avisar colunas ignoradas (muito útil pra entender por que algo não aparece)
     const ignored = csvCols.filter((c) => !tableCols.has(c));
     if (ignored.length) {
       console.log(`ℹ️ Colunas ignoradas (não existem na tabela ${table}): ${ignored.join(", ")}`);
