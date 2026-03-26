@@ -143,7 +143,7 @@ importers:
         specifier: ^11.6.0
         version: 11.6.0(typescript@5.9.3)
       axios:
-        specifier: ^1.12.0
+        specifier: ^1.6.0
         version: 1.12.2
       canvas-confetti:
         specifier: ^1.9.4
