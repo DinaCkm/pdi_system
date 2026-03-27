@@ -7,8 +7,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Loader2, Search, ChevronLeft, ChevronRight, Settings, UserCheck, UserX } from "lucide-react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  Plus,
+  Pencil,
+  Loader2,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Settings,
+  UserCheck,
+  UserX,
+} from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 
@@ -17,14 +36,17 @@ export default function Users() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; userId?: number; currentStatus?: string }>({ open: false });
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    userId?: number;
+    currentStatus?: string;
+  }>({ open: false });
   const [editingUser, setEditingUser] = useState<number | null>(null);
   const [filterDepartamento, setFilterDepartamento] = useState<number | undefined>(undefined);
   const [filterStatus, setFilterStatus] = useState<"" | "ativo" | "inativo">("");
   const ITEMS_PER_PAGE = 10;
   const [, navigate] = useLocation();
 
-  // Form state (apenas campos básicos)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -38,16 +60,21 @@ export default function Users() {
   const updateMutation = trpc.users.update.useMutation();
   const deleteMutation = trpc.users.delete.useMutation();
 
+  const safeString = (value: unknown): string =>
+    typeof value === "string" ? value : "";
+
+  const safeLower = (value: unknown): string =>
+    safeString(value).toLowerCase();
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      // Criar usuário com perfil padrão "user" (Colaborador)
       await createMutation.mutateAsync({
         ...formData,
-        role: "colaborador" as any, // Perfil padrão
+        role: "colaborador" as any,
       });
-      
+
       toast.success("Usuário criado com sucesso! Configure o perfil e hierarquia na próxima etapa.");
       setIsCreateOpen(false);
       setFormData({ name: "", email: "", cpf: "", cargo: "" });
@@ -60,10 +87,10 @@ export default function Users() {
   const handleEdit = (user: any) => {
     setEditingUser(user.id);
     setFormData({
-      name: user.name,
-      email: user.email,
-      cpf: user.cpf,
-      cargo: user.cargo,
+      name: safeString(user?.name),
+      email: safeString(user?.email),
+      cpf: safeString(user?.cpf),
+      cargo: safeString(user?.cargo),
     });
     setIsEditOpen(true);
   };
@@ -71,13 +98,13 @@ export default function Users() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
-    
+
     try {
       await updateMutation.mutateAsync({
         id: editingUser,
         ...formData,
       });
-      
+
       toast.success("Dados do usuário atualizados com sucesso!");
       setIsEditOpen(false);
       setEditingUser(null);
@@ -90,22 +117,23 @@ export default function Users() {
 
   const handleToggleStatus = async () => {
     if (!confirmDialog.userId) return;
-    const isAtivando = confirmDialog.currentStatus === 'inativo';
-    
+    const isAtivando = confirmDialog.currentStatus === "inativo";
+
     try {
       if (isAtivando) {
-        // Reativar: atualizar status para 'ativo'
-        await updateMutation.mutateAsync({ id: confirmDialog.userId, status: 'ativo' });
+        await updateMutation.mutateAsync({ id: confirmDialog.userId, status: "ativo" });
         toast.success("Usuário reativado com sucesso!");
       } else {
-        // Inativar: usar delete que já faz status='inativo'
         await deleteMutation.mutateAsync({ id: confirmDialog.userId });
         toast.success("Usuário inativado com sucesso!");
       }
+
       setConfirmDialog({ open: false });
       refetch();
     } catch (error: any) {
-      toast.error(error.message || (isAtivando ? "Erro ao reativar usuário" : "Erro ao inativar usuário"));
+      toast.error(
+        error.message || (isAtivando ? "Erro ao reativar usuário" : "Erro ao inativar usuário")
+      );
     }
   };
 
@@ -121,37 +149,48 @@ export default function Users() {
   };
 
   const getRoleBadge = (role: string) => {
-    const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+    const variants: Record<
+      string,
+      { variant: "default" | "secondary" | "destructive" | "outline"; label: string }
+    > = {
       admin: { variant: "destructive", label: "Administrador" },
       lider: { variant: "default", label: "Líder" },
       user: { variant: "secondary", label: "Colaborador" },
+      colaborador: { variant: "secondary", label: "Colaborador" },
     };
+
     const config = variants[role] || variants.user;
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   const getDepartamentoNome = (departamentoId: number | null) => {
     if (!departamentoId) return "-";
-    const dept = departamentos?.find((d) => d.id === departamentoId);
+    const dept = departamentos?.find((d: any) => d.id === departamentoId);
     return dept?.nome || "-";
   };
 
   const getLiderNome = (leaderId: number | null) => {
     if (!leaderId) return "-";
-    const leader = users?.find((u) => u.id === leaderId);
-    return leader?.name || "-";
+    const leader = users?.find((u: any) => u.id === leaderId);
+    return safeString(leader?.name) || "-";
   };
 
-  // Filtrar e paginar
-  const filteredUsers = users?.filter(
-    (user) => {
-      const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           user.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesDepartamento = !filterDepartamento || user.departamentoId === filterDepartamento;
-      const matchesStatus = !filterStatus || user.status === filterStatus;
+  const filteredUsers =
+    users?.filter((user: any) => {
+      const term = safeLower(searchTerm);
+
+      const matchesSearch =
+        safeLower(user?.name).includes(term) ||
+        safeLower(user?.email).includes(term);
+
+      const matchesDepartamento =
+        !filterDepartamento || user.departamentoId === filterDepartamento;
+
+      const matchesStatus =
+        !filterStatus || user.status === filterStatus;
+
       return matchesSearch && matchesDepartamento && matchesStatus;
-    }
-  ) || [];
+    }) || [];
 
   const handleResetFilters = () => {
     setSearchTerm("");
@@ -183,6 +222,7 @@ export default function Users() {
             Gerencie os usuários do sistema
           </CardDescription>
         </CardHeader>
+
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 mb-6">
             <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
@@ -198,6 +238,7 @@ export default function Users() {
                   className="pl-10 w-full"
                 />
               </div>
+
               <select
                 value={filterDepartamento || ""}
                 onChange={(e) => {
@@ -207,12 +248,13 @@ export default function Users() {
                 className="px-3 py-2 border border-input rounded-md bg-background text-sm"
               >
                 <option value="">Todos os Departamentos</option>
-                {departamentos?.map((dept) => (
+                {departamentos?.map((dept: any) => (
                   <option key={dept.id} value={dept.id}>
                     {dept.nome}
                   </option>
                 ))}
               </select>
+
               <select
                 value={filterStatus}
                 onChange={(e) => {
@@ -225,10 +267,15 @@ export default function Users() {
                 <option value="ativo">Ativo</option>
                 <option value="inativo">Inativo</option>
               </select>
+
               <Button onClick={handleResetFilters} variant="outline" className="whitespace-nowrap">
                 Limpar Filtros
               </Button>
-              <Button onClick={() => setIsCreateOpen(true)} className="bg-gradient-to-r from-blue-600 to-orange-500 whitespace-nowrap">
+
+              <Button
+                onClick={() => setIsCreateOpen(true)}
+                className="bg-gradient-to-r from-blue-600 to-orange-500 whitespace-nowrap"
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Novo Usuário
               </Button>
@@ -248,6 +295,7 @@ export default function Users() {
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
                 {paginatedUsers.length === 0 ? (
                   <TableRow>
@@ -256,68 +304,88 @@ export default function Users() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedUsers.map((user) => {
-                    // Buscar departamento que o usuário lidera (se for líder)
-                    const departamentoLiderado = departamentos?.find(d => d.leaderId === user.id);
-                    
+                  paginatedUsers.map((user: any) => {
+                    const departamentoLiderado = departamentos?.find((d: any) => d.leaderId === user.id);
+
                     return (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <span className="max-w-[200px] truncate block" title={getDepartamentoNome(user.departamentoId)}>
-                          {getDepartamentoNome(user.departamentoId)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {user.role === "lider" && departamentoLiderado ? (
-                          <span className="font-semibold text-blue-600 flex items-center gap-1">
-                            👑 {departamentoLiderado.nome}
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">
+                          {safeString(user?.name) || "-"}
+                        </TableCell>
+
+                        <TableCell>
+                          {safeString(user?.email) || "-"}
+                        </TableCell>
+
+                        <TableCell>
+                          <span
+                            className="max-w-[200px] truncate block"
+                            title={getDepartamentoNome(user.departamentoId)}
+                          >
+                            {getDepartamentoNome(user.departamentoId)}
                           </span>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{getRoleBadge(user.role)}</TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {getLiderNome(user.leaderId)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(user)}
-                            title="Editar Dados"
-                          >
-                            <Pencil className="h-4 w-4 text-green-600" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/usuarios/${user.id}/configurar`)}
-                            title="Configurar Perfil"
-                          >
-                            <Settings className="h-4 w-4 text-blue-600" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setConfirmDialog({ open: true, userId: user.id, currentStatus: user.status })}
-                            title={user.status === 'inativo' ? 'Reativar' : 'Inativar'}
-                          >
-                            {user.status === 'inativo' ? (
-                              <UserCheck className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <UserX className="h-4 w-4 text-red-600" />
-                            )}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
+                        </TableCell>
+
+                        <TableCell>
+                          {user.role === "lider" && departamentoLiderado ? (
+                            <span className="font-semibold text-blue-600 flex items-center gap-1">
+                              👑 {departamentoLiderado.nome}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+
+                        <TableCell>{getRoleBadge(safeString(user?.role))}</TableCell>
+
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {getLiderNome(user.leaderId)}
+                          </span>
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(user)}
+                              title="Editar Dados"
+                            >
+                              <Pencil className="h-4 w-4 text-green-600" />
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/usuarios/${user.id}/configurar`)}
+                              title="Configurar Perfil"
+                            >
+                              <Settings className="h-4 w-4 text-blue-600" />
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setConfirmDialog({
+                                  open: true,
+                                  userId: user.id,
+                                  currentStatus: user.status,
+                                })
+                              }
+                              title={user.status === "inativo" ? "Reativar" : "Inativar"}
+                            >
+                              {user.status === "inativo" ? (
+                                <UserCheck className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <UserX className="h-4 w-4 text-red-600" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
                   })
                 )}
               </TableBody>
@@ -329,6 +397,7 @@ export default function Users() {
               <p className="text-sm text-muted-foreground">
                 Página {currentPage} de {totalPages}
               </p>
+
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -338,6 +407,7 @@ export default function Users() {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
+
                 <Button
                   variant="outline"
                   size="sm"
@@ -352,7 +422,6 @@ export default function Users() {
         </CardContent>
       </Card>
 
-      {/* Modal de Criação com ModalCustomizado */}
       <ModalCustomizado
         isOpen={isCreateOpen}
         onClose={() => {
@@ -408,9 +477,14 @@ export default function Users() {
           </div>
 
           <div className="flex gap-2 mt-6 justify-end">
-            <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCreateOpen(false)}
+            >
               Cancelar
             </Button>
+
             <Button type="submit" disabled={createMutation.isPending}>
               {createMutation.isPending ? "Criando..." : "Criar Usuário"}
             </Button>
@@ -418,7 +492,6 @@ export default function Users() {
         </form>
       </ModalCustomizado>
 
-      {/* Modal de Edição com ModalCustomizado */}
       <ModalCustomizado
         isOpen={isEditOpen}
         onClose={() => {
@@ -475,9 +548,14 @@ export default function Users() {
           </div>
 
           <div className="flex gap-2 mt-6 justify-end">
-            <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsEditOpen(false)}
+            >
               Cancelar
             </Button>
+
             <Button type="submit" disabled={updateMutation.isPending}>
               {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
             </Button>
@@ -485,26 +563,36 @@ export default function Users() {
         </form>
       </ModalCustomizado>
 
-      {/* Modal de Confirmação de Ativar/Inativar */}
-      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ open })}>
+      <AlertDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog({ open })}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmDialog.currentStatus === 'inativo' ? 'Confirmar Reativação' : 'Confirmar Inativação'}
+              {confirmDialog.currentStatus === "inativo"
+                ? "Confirmar Reativação"
+                : "Confirmar Inativação"}
             </AlertDialogTitle>
+
             <AlertDialogDescription>
-              {confirmDialog.currentStatus === 'inativo'
-                ? 'Tem certeza que deseja reativar este usuário? Ele voltará a ter acesso ao sistema e seus dados serão restaurados.'
-                : 'Tem certeza que deseja inativar este usuário? Ele poderá ser reativado dentro de 6 meses.'}
+              {confirmDialog.currentStatus === "inativo"
+                ? "Tem certeza que deseja reativar este usuário? Ele voltará a ter acesso ao sistema e seus dados serão restaurados."
+                : "Tem certeza que deseja inativar este usuário? Ele poderá ser reativado dentro de 6 meses."}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleToggleStatus}
-              className={confirmDialog.currentStatus === 'inativo' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+              className={
+                confirmDialog.currentStatus === "inativo"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-red-600 hover:bg-red-700"
+              }
             >
-              {confirmDialog.currentStatus === 'inativo' ? 'Reativar' : 'Inativar'}
+              {confirmDialog.currentStatus === "inativo" ? "Reativar" : "Inativar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
