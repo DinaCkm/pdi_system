@@ -1563,14 +1563,24 @@ export async function updateAdjustmentRequest(id: number, data: Partial<{
   status: 'pendente' | 'mais_informacoes' | 'aprovada' | 'reprovada' | 'aguardando_lider';
   justificativaAdmin: string;
   evaluatedBy: number;
-  evaluatedAt: string;
+  evaluatedAt: string | Date;
 }>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  const normalizedData = {
+    ...data,
+    evaluatedAt:
+      data.evaluatedAt instanceof Date
+        ? data.evaluatedAt
+        : data.evaluatedAt
+          ? new Date(data.evaluatedAt)
+          : undefined,
+  };
+
   const result = await db
     .update(adjustmentRequests)
-    .set(data)
+    .set(normalizedData)
     .where(eq(adjustmentRequests.id, id));
 
   return result;
