@@ -1,3 +1,4 @@
+import RichTextDisplay from "@/components/RichTextDisplay";
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -343,11 +344,15 @@ export default function SolicitacoesAdmin() {
 
                   {/* Justificativa */}
                   <div>
-                    <h4 className="font-medium mb-2">Justificativa do Colaborador</h4>
-                    <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
-                      {solicitacao.justificativa || "Sem justificativa"}
-                    </p>
-                  </div>
+  <h4 className="font-medium mb-2">Justificativa do Colaborador</h4>
+  <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+    {solicitacao.justificativa ? (
+      <RichTextDisplay content={solicitacao.justificativa} />
+    ) : (
+      "Sem justificativa"
+    )}
+  </div>
+</div>
 
                   {/* Campos a Ajustar - Mostrando DE/PARA */}
                   <div>
@@ -448,11 +453,13 @@ export default function SolicitacoesAdmin() {
 
                   {/* Resposta do Admin (se houver) */}
                   {solicitacao.justificativaAdmin && (
-                    <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
-                      <h4 className="font-medium mb-2 text-orange-800">Resposta do Administrador:</h4>
-                      <p className="text-sm text-orange-700">{solicitacao.justificativaAdmin}</p>
-                    </div>
-                  )}
+  <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
+    <h4 className="font-medium mb-2 text-orange-800">Resposta do Administrador:</h4>
+    <div className="text-sm text-orange-700">
+      <RichTextDisplay content={solicitacao.justificativaAdmin} />
+    </div>
+  </div>
+)}
 
                   {/* Comentários */}
                   <div className="border-t pt-4">
