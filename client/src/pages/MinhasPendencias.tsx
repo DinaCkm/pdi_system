@@ -618,10 +618,13 @@ export default function MinhasPendencias() {
                           )}
                         </div>
                         {!isAprovada && ultimaSolicitacao.justificativaAdmin && (
-                          <div className="mt-2 text-xs bg-white/50 p-2 rounded border border-red-100">
-                            <span className="font-medium">Motivo:</span> {ultimaSolicitacao.justificativaAdmin}
-                          </div>
-                        )}
+  <div className="mt-2 text-xs bg-white/50 p-2 rounded border border-red-100">
+    <span className="font-medium">Motivo:</span>
+    <div className="mt-1">
+      <RichTextDisplay content={ultimaSolicitacao.justificativaAdmin} />
+    </div>
+  </div>
+)}
                         {isAprovada && (
                           <div className="mt-1 text-xs opacity-75">
                             Alterações aplicadas com sucesso
