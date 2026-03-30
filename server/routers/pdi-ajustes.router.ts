@@ -13,13 +13,13 @@ import {
 
 /**
  * REGRA CRÍTICA #10 REFINADA: Fluxo de Solicitação de Ajuste com Precedência do Líder
- * 
+ *
  * FASE 1: PROPOSTA (pendente_aprovacao_lider)
  * - Dina é autoridade principal
  * - Colaborador solicita ajustes (limite 5)
  * - Dina pode editar DIRETO
  * - Status: pendente_admin
- * 
+ *
  * FASE 2: COMPROMISSO (aprovada_lider+)
  * - Líder é "dono" da prioridade
  * - Colaborador solicita ajuste
@@ -202,7 +202,7 @@ export const pdiAjustesRouter = router({
                 liderEmail: lider[0].email,
                 liderName: lider[0].name,
                 colaboradorName: colaboradorDono[0].name,
-                tituloAcao: acao[0].descricao || 'Ação do PDI',
+                tituloAcao: acao[0].titulo || 'Ação do PDI',
                 tipoAjuste: input.tipoSolicitacao,
                 justificativa: input.descricaoSolicitacao,
                 departamento: deptNome || undefined,
@@ -364,7 +364,7 @@ export const pdiAjustesRouter = router({
                 adminName: admin.name,
                 liderName: user.name,
                 colaboradorName: colaborador[0].name,
-                tituloAcao: acao[0].descricao || 'Ação do PDI',
+                tituloAcao: acao[0].titulo || 'Ação do PDI',
                 camposAjustar: solicitacao[0].camposAjustar,
                 justificativa: solicitacao[0].justificativa,
                 feedbackLider: input.feedback_lider,
@@ -525,7 +525,7 @@ export const pdiAjustesRouter = router({
             await sendEmailAjusteAprovadoParaColaborador({
               colaboradorEmail: solicitante[0].email,
               colaboradorName: solicitante[0].name,
-              tituloAcao: acao[0].descricao || 'Ação do PDI',
+              tituloAcao: acao[0].titulo || 'Ação do PDI',
               camposAjustar: solicitacao[0].camposAjustar,
               departamento: deptNome || undefined,
             });
@@ -533,7 +533,7 @@ export const pdiAjustesRouter = router({
             await sendEmailAjusteReprovadoParaColaborador({
               colaboradorEmail: solicitante[0].email,
               colaboradorName: solicitante[0].name,
-              tituloAcao: acao[0].descricao || 'Ação do PDI',
+              tituloAcao: acao[0].titulo || 'Ação do PDI',
               camposAjustar: solicitacao[0].camposAjustar,
               justificativa: input.justificativa || undefined,
               departamento: deptNome || undefined,
@@ -584,7 +584,7 @@ export const pdiAjustesRouter = router({
       }
 
       let results;
-      
+
       if (input.status) {
         results = await db.select().from(adjustmentRequests).where(eq(adjustmentRequests.status, input.status));
       } else if (user.role === "lider") {
@@ -706,7 +706,7 @@ export const pdiAjustesRouter = router({
         liderEmail: lider[0].email,
         liderName: lider[0].name,
         colaboradorName: colaborador[0].name,
-        tituloAcao: acao[0].descricao || 'Ação do PDI',
+        tituloAcao: acao[0].titulo || 'Ação do PDI',
         camposAjustar: solicitacao[0].camposAjustar,
         justificativa: solicitacao[0].justificativa || '',
         departamento: deptNome || undefined,
