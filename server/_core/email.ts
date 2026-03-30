@@ -29,6 +29,24 @@ function stripHtmlForEmail(html: string): string {
     .trim();
 }
 
+function escapeHtml(value: string): string {
+  if (!value) return '';
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function plainTextToHtml(text: string): string {
+  if (!text) return '';
+
+  return escapeHtml(text)
+    .replace(/\n\n+/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+}
+
 /**
  * Cria o transporter SMTP reutilizável (Nodemailer + Google SMTP)
  */
@@ -58,13 +76,20 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
 
   try {
     const transporter = createTransporter();
+
+    const htmlBody = `
+      <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #222;">
+        <p>${plainTextToHtml(body)}</p>
+      </div>
+    `;
+
     const info = await transporter.sendMail({
       from: `"Eco do Bem - EVOLUIR" <${ENV.smtpUser}>`,
       to,
       ...(payload.cc ? { cc: payload.cc } : {}),
       subject,
       text: stripHtmlForEmail(body),
-      html: body,
+      html: htmlBody,
     });
 
     console.log(`[Email] Email enviado com sucesso para ${to} (messageId: ${info.messageId})`);
