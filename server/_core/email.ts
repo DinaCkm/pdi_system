@@ -101,14 +101,13 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
 }
 
 const AVISO_NAO_RESPONDA = `
-⚠️ NÃO RESPONDA ESTE EMAIL - O FLUXO É VIA SISTEMA ECO_EVOLUIR ⚠️`;
+⚠️ NÃO RESPONDA ESTE EMAIL - O FLUXO É VIA SISTEMA ⚠️`;
 
 const ASSINATURA = `
 ---
-Sistema de Gestão de PDI — Eco do Bem - Ecossistema de Desenvolvimento
-Eco_Evoluir`;
+Sistema de Gestão de PDI — Eco do Bem - Ecossistema de Desenvolvimento`;
 
-const TEXTO_PADRAO_ACESSE = 'Acesse o Sistema Eco_Evoluir para tomar ciência e providências. Você possui notificações pendentes.';
+const TEXTO_PADRAO_ACESSE = 'Acesse o Sistema para tomar ciência e providências. Você possui notificações pendentes.';
 
 /**
  * Envia email para o líder informando sobre solicitação de alteração
@@ -161,12 +160,12 @@ export async function sendEmailParecerCKMParaLider(params: {
   const tipoParecer = parecerTipo === 'com_aderencia' ? 'COM ADERÊNCIA' : 'SEM ADERÊNCIA';
   const deptText = departamento ? `\nDepartamento: ${departamento}` : '';
 
-  const body = `
+const body = `
 Prezado(a) ${liderName},
 
-Informamos que a solicitação de inclusão de nova ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName} foi respondida.
+Informamos que a solicitação de inclusão de nova ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName} aguarda seu parecer.
 
-${TEXTO_PADRAO_ACESSE}
+Acesse o Sistema para analisar a solicitação e registrar seu parecer.
 
 Colaborador: ${colaboradorName}${deptText}
 
@@ -200,12 +199,12 @@ export async function sendEmailParecerLiderParaGerente(params: {
   const decisaoText = decisaoLider === 'aprovado' ? 'APROVADA' : 'REPROVADA';
   const deptText = departamento ? `\nDepartamento: ${departamento}` : '';
 
-  const body = `
+ const body = `
 Prezado(a) ${gerenteName},
 
-Informamos que a solicitação de inclusão de nova ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName} foi respondida.
+Informamos que a solicitação de inclusão de nova ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName} aguarda sua decisão final.
 
-${TEXTO_PADRAO_ACESSE}
+Acesse o Sistema para analisar a solicitação e registrar sua decisão.
 
 Colaborador: ${colaboradorName}${deptText}
 
@@ -333,12 +332,12 @@ export async function sendEmailAjusteSolicitadoParaLider(params: {
   const tipoText = formatarTipoAjuste(tipoAjuste, camposAjustar);
   const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
 
-  const body = `
+const body = `
 Prezado(a) ${liderName},
 
-Informamos que a solicitação de ajuste na ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName} foi respondida.
+Informamos que o(a) colaborador(a) ${colaboradorName} solicitou ajuste na ação "${tituloAcao}".
 
-${TEXTO_PADRAO_ACESSE}
+A solicitação aguarda sua validação no Sistema.
 
 Colaborador: ${colaboradorName}${deptText}
 
@@ -374,12 +373,12 @@ export async function sendEmailAjusteValidadoParaAdmin(params: {
   const tipoText = formatarTipoAjuste(tipoAjuste, camposAjustar);
   const deptText = departamento ? `\n- Departamento: ${departamento}` : '';
 
-  const body = `
+ const body = `
 Prezado(a) ${adminName},
 
-Informamos que a solicitação de ajuste na ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName} foi respondida.
+Informamos que o ajuste solicitado para a ação "${tituloAcao}" do(a) colaborador(a) ${colaboradorName} foi validado pelo líder.
 
-${TEXTO_PADRAO_ACESSE}
+A solicitação aguarda sua execução no Sistema.
 
 Colaborador: ${colaboradorName}${deptText}
 
@@ -526,7 +525,7 @@ ${ASSINATURA}
 /**
  * Envia email para o Líder e Empregado (com CC para relacionamento@ckmtalents.net)
  * quando uma solicitação de ação é vetada/encerrada.
- * Informa que devem acessar o Sistema Eco_Evoluir para tomar ciência e providências.
+ * Informa que devem acessar o Sistema para tomar ciência e providências.
  */
 export async function sendEmailSolicitacaoVetada(params: {
   colaboradorEmail: string;
@@ -648,7 +647,7 @@ Prezado(a) ${colaboradorName},
 
 Gostaríamos de informar que foi incluído o Relatório de Performance no seu PDI "${tituloPdi}".
 
-Acesse o link https://www.evoluirckm.com para ter acesso.
+Acesse o link https://pdi.ecodobem.com para ter acesso.
 
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
@@ -669,7 +668,7 @@ Prezado(a) ${liderName},
 
 Gostaríamos de informar que foi incluído o Relatório de Performance no PDI "${tituloPdi}" do(a) colaborador(a) ${colaboradorName}.
 
-Acesse o link https://www.evoluirckm.com para ter acesso.
+Acesse o link https://pdi.ecodobem.com para ter acesso.
 
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
@@ -782,7 +781,7 @@ Informamos que a evidência enviada para a ação "${tituloAcao}" do seu PDI "${
 
 O QUE FAZER AGORA:
 
-1. Acesse o sistema em https://www.evoluirckm.com
+1. Acesse o sistema em https://pdi.ecodobem.com
 2. Verifique a justificativa acima com atenção
 3. Faça os ajustes necessários na sua evidência
 4. Reenvie a evidência corrigida pelo sistema
@@ -849,7 +848,7 @@ Informamos que há ações vencidas no seu Plano de Desenvolvimento Individual (
 
 ${listaPdis}
 
-Acesse o sistema em https://www.evoluirckm.com e providencie a inclusão das evidências das ações pendentes.
+Acesse o sistema em https://pdi.ecodobem.com e providencie a inclusão das evidências das ações pendentes.
 
 Lembre-se: manter seu PDI atualizado é fundamental para o seu desenvolvimento profissional e para o acompanhamento da sua evolução.
 
@@ -886,7 +885,7 @@ Informamos que há ações vencidas nos PDIs da sua equipe:
 
 ${listaSubordinados}
 
-Acesse o sistema em https://www.evoluirckm.com e converse com sua equipe para regularizar as pendências.
+Acesse o sistema em https://pdi.ecodobem.com e converse com sua equipe para regularizar as pendências.
 
 O acompanhamento próximo do desenvolvimento da sua equipe é essencial para garantir a evolução de todos.
 
@@ -929,7 +928,7 @@ Informamos que a varredura quinzenal de ações vencidas foi executada com suces
 Os empregados receberam um e-mail solicitando que acessem o sistema e incluam as evidências pendentes.
 Os líderes receberam um e-mail informando sobre as ações vencidas na sua equipe.
 
-Acesse o sistema para mais detalhes: https://www.evoluirckm.com
+Acesse o sistema para mais detalhes: https://pdi.ecodobem.com
 
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
