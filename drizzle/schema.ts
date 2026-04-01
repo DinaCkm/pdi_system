@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, varchar, text, timestamp, mysqlEnum, index, foreignKey, bigint, boolean } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, varchar, text, timestamp, mysqlEnum, index, uniqueIndex, foreignKey, bigint, boolean } from "drizzle-orm/mysql-core"
 import { sql } from "drizzle-orm"
 import { date } from "drizzle-orm/mysql-core"
 
@@ -202,6 +202,7 @@ export const users = mysqlTable("users", {
 	updatedAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
 	lastSignedIn: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	cpf: varchar({ length: 14 }).notNull(),
+	studentId: varchar({ length: 50 }),
 	cargo: varchar({ length: 255 }).notNull(),
 	leaderId: int(),
 	status: mysqlEnum([`ativo`,`inativo`]).default(`ativo`).notNull(),
@@ -211,6 +212,7 @@ export const users = mysqlTable("users", {
 (table) => {
 	return {
 		users_openId_unique: index("users_openId_unique").on(table.openId),
+		users_studentId_unique: uniqueIndex("users_studentId_unique").on(table.studentId),
 	}
 });
 
