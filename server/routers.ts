@@ -52,25 +52,92 @@ export const appRouter = router({
   users: router({
     list: adminOrGerenteProcedure.query(async () => await db.getAllUsers()),
     getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => await db.getUserById(input.id)),
-    create: adminProcedure.input(z.object({ name: z.string(), email: z.string().email(), cpf: z.string(), role: z.enum(["admin", "gerente", "lider", "colaborador"]), cargo: z.string(), departamentoId: z.number().nullable().optional() })).mutation(async ({ input }) => {
-      const cpf = input.cpf.replace(/\D/g, "");
-      await db.createUser({ ...input, cpf, openId: `local_${cpf}`, status: "ativo" });
-      return { success: true };
-    }),
+    create: adminProcedure
+  .input(
+    z.object({
+      name: z.string(),
+      email: z.string().email(),
+      cpf: z.string(),
+      studentId: z.string().optional().nullable(),
+      role: z.enum(["admin", "gerente", "lider", "colaborador"]),
+      cargo: z.string(),
+      departamentoId: z.number().nullable().optional(),
+    })
+  )
+  .mutation(async ({ input }) => {
+    const cpf = input.cpf.replace(/\D/g, "");
+    const studentId =
+      input.studentId && input.studentId.trim() !== ""
+        ? input.studentId.trim()
+        : null;
+
+    if (studentId) {
+      const existingUserWithStudentId = await db.getUserByStudentId(studentId);
+      if (existingUserWithStudentId) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Já existe um usuário com este ID do aluno.",
+        });
+      }
+    }
+
+    await db.createUser({
+      ...input,
+      cpf,
+      studentId,
+      openId: `local_${cpf}`,
+      status: "ativo",
+    });
+
+    return { success: true };
+  }),
     // Endpoint simplificado para não quebrar a tipagem antiga
     buscarPorCpf: publicProcedure.input(z.object({ cpf: z.string() })).query(async ({ input }) => {
        const users = await db.getAllUsers();
        return users.find((u: { cpf?: string | null }) => u.cpf?.replace(/\D/g, "") === input.cpf.replace(/\D/g, "")) || null;
     }),
-    update: adminProcedure.input(z.object({ id: z.number(), leaderId: z.number().nullable().optional(), role: z.enum(["admin", "gerente", "lider", "colaborador"]).optional(), name: z.string().optional(), email: z.string().optional(), cpf: z.string().optional(), cargo: z.string().optional(), departamentoId: z.number().nullable().optional(), status: z.string().optional() })).mutation(async ({ input }) => {
-      const { id, ...data } = input;
-      // Limpar CPF se fornecido (remover formatação)
-      if (data.cpf) {
-        data.cpf = data.cpf.replace(/\D/g, "");
+    update: adminProcedure
+  .input(
+    z.object({
+      id: z.number(),
+      leaderId: z.number().nullable().optional(),
+      role: z.enum(["admin", "gerente", "lider", "colaborador"]).optional(),
+      name: z.string().optional(),
+      email: z.string().optional(),
+      cpf: z.string().optional(),
+      studentId: z.string().nullable().optional(),
+      cargo: z.string().optional(),
+      departamentoId: z.number().nullable().optional(),
+      status: z.string().optional(),
+    })
+  )
+  .mutation(async ({ input }) => {
+    const { id, ...data } = input;
+
+    if (data.cpf) {
+      data.cpf = data.cpf.replace(/\D/g, "");
+    }
+
+    if (data.studentId !== undefined) {
+      data.studentId =
+        data.studentId && data.studentId.trim() !== ""
+          ? data.studentId.trim()
+          : null;
+
+      if (data.studentId) {
+        const existingUserWithStudentId = await db.getUserByStudentId(data.studentId);
+        if (existingUserWithStudentId && existingUserWithStudentId.id !== id) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Já existe um usuário com este ID do aluno.",
+          });
+        }
       }
-      await db.updateUser(id, data);
-      return { success: true };
-    }),
+    }
+
+    await db.updateUser(id, data);
+    return { success: true };
+  }),
     delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
       await db.updateUser(input.id, { status: 'inativo' });
       return { success: true };

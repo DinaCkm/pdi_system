@@ -616,6 +616,20 @@ export async function getUserByCpf(cpf: string) {
   return result;
 }
 
+export async function getUserByStudentId(studentId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const normalizedStudentId = studentId.trim();
+
+  const [result] = await db
+    .select()
+    .from(users)
+    .where(eq(users.studentId, normalizedStudentId));
+
+  return result;
+}
+
 export async function getUserByEmailAndCpf(email: string, cpf: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -623,6 +637,19 @@ export async function getUserByEmailAndCpf(email: string, cpf: string) {
   const [result] = await db.select().from(users).where(
     and(eq(users.email, email), eq(users.cpf, cpf))
   );
+  return result;
+}
+
+export async function getUserByEmailAndStudentId(email: string, studentId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const normalizedStudentId = studentId.trim();
+
+  const [result] = await db.select().from(users).where(
+    and(eq(users.email, email), eq(users.studentId, normalizedStudentId))
+  );
+
   return result;
 }
 
@@ -639,6 +666,7 @@ export async function createUser(data: {
   name: string;
   email: string;
   cpf: string;
+  studentId?: string | null;
   role: string;
   cargo: string;
   leaderId?: number;
@@ -648,11 +676,17 @@ export async function createUser(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+const normalizedStudentId =
+  data.studentId && data.studentId.trim() !== ""
+    ? data.studentId.trim()
+    : null;
+  
   const result = await db.insert(users).values({
     openId: data.openId,
     name: data.name,
     email: data.email,
     cpf: data.cpf,
+    studentId: normalizedStudentId,
     role: data.role,
     cargo: data.cargo,
     leaderId: data.leaderId,
@@ -670,6 +704,7 @@ export async function updateUser(
     name: string;
     email: string;
     cpf: string;
+    studentId: string | null;
     role: string;
     cargo: string;
     leaderId: number | null;
@@ -680,7 +715,19 @@ export async function updateUser(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.update(users).set(data).where(eq(users.id, id));
+  const normalizedData = {
+  ...data,
+  ...(data.studentId !== undefined
+    ? {
+        studentId:
+          data.studentId && data.studentId.trim() !== ""
+            ? data.studentId.trim()
+            : null,
+      }
+    : {}),
+};
+
+await db.update(users).set(normalizedData).where(eq(users.id, id));
 }
 
 export async function deleteUser(id: number) {

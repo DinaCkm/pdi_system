@@ -9,7 +9,9 @@ import { Loader2 } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
+  const [loginType, setLoginType] = useState<"cpf" | "studentId">("cpf");
   const [cpf, setCpf] = useState("");
+  const [studentId, setStudentId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const loginMutation = trpc.auth.login.useMutation({
@@ -56,18 +58,47 @@ export default function Login() {
   });
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !cpf) return toast.error("Preencha todos os campos");
+  e.preventDefault();
 
-    console.log("[Login] Iniciando login com email:", email);
-    setIsLoading(true);
-    
-    // Limpa CPF antes de enviar
+  if (!email) {
+    return toast.error("Informe o e-mail");
+  }
+
+  if (loginType === "cpf") {
+    if (!cpf) {
+      return toast.error("Informe o CPF");
+    }
+
     const cpfLimpo = cpf.replace(/\D/g, "");
-    console.log("[Login] CPF limpo:", cpfLimpo);
-    
-    loginMutation.mutate({ email, cpf: cpfLimpo });
-  };
+
+    if (!cpfLimpo) {
+      return toast.error("Informe o CPF");
+    }
+
+    setIsLoading(true);
+    loginMutation.mutate({
+      email,
+      loginType: "cpf",
+      cpf: cpfLimpo,
+    });
+    return;
+  }
+
+  if (loginType === "studentId") {
+    const normalizedStudentId = studentId.trim();
+
+    if (!normalizedStudentId) {
+      return toast.error("Informe o ID do aluno");
+    }
+
+    setIsLoading(true);
+    loginMutation.mutate({
+      email,
+      loginType: "studentId",
+      studentId: normalizedStudentId,
+    });
+  }
+};
 
   // Formatação visual do CPF
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,7 +119,9 @@ export default function Login() {
           </div>
           <CardTitle className="text-sm font-semibold text-blue-900 tracking-wide mt-2">Ecossistema de Desenvolvimento do B.E.M</CardTitle>
           <p className="text-sm font-bold text-amber-600 tracking-widest mt-0.5">EVOLUIR</p>
-          <CardDescription className="mt-3 text-xs">Entre com seu e-mail e CPF</CardDescription>
+          <CardDescription className="mt-3 text-xs">
+  Entre com seu e-mail e escolha CPF ou ID do aluno
+</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -100,12 +133,40 @@ export default function Login() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cpf">CPF</Label>
-              <Input 
-                id="cpf" placeholder="000.000.000-00" required 
-                value={cpf} onChange={handleCpfChange}
-              />
-            </div>
+  <Label htmlFor="loginType">Tipo de acesso</Label>
+  <select
+    id="loginType"
+    value={loginType}
+    onChange={(e) => setLoginType(e.target.value as "cpf" | "studentId")}
+    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+  >
+    <option value="cpf">CPF</option>
+    <option value="studentId">ID do aluno</option>
+  </select>
+</div>
+            {loginType === "cpf" ? (
+  <div className="space-y-2">
+    <Label htmlFor="cpf">CPF</Label>
+    <Input
+      id="cpf"
+      placeholder="000.000.000-00"
+      value={cpf}
+      onChange={handleCpfChange}
+      required
+    />
+  </div>
+) : (
+  <div className="space-y-2">
+    <Label htmlFor="studentId">ID do Aluno</Label>
+    <Input
+      id="studentId"
+      placeholder="Informe seu ID do aluno"
+      value={studentId}
+      onChange={(e) => setStudentId(e.target.value)}
+      required
+    />
+  </div>
+)}
             <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Entrar"}
             </Button>
