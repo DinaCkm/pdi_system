@@ -48,11 +48,12 @@ export default function Users() {
   const [, navigate] = useLocation();
 
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    cpf: "",
-    cargo: "",
-  });
+  name: "",
+  email: "",
+  cpf: "",
+  studentId: "",
+  cargo: "",
+});
 
   const { data: users, isLoading, refetch } = trpc.users.list.useQuery();
   const { data: departamentos } = trpc.departamentos.list.useQuery();
@@ -77,7 +78,7 @@ export default function Users() {
 
       toast.success("Usuário criado com sucesso! Configure o perfil e hierarquia na próxima etapa.");
       setIsCreateOpen(false);
-      setFormData({ name: "", email: "", cpf: "", cargo: "" });
+      setFormData({ name: "", email: "", cpf: "", studentId: "", cargo: "" });
       refetch();
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar usuário");
@@ -87,11 +88,12 @@ export default function Users() {
   const handleEdit = (user: any) => {
     setEditingUser(user.id);
     setFormData({
-      name: safeString(user?.name),
-      email: safeString(user?.email),
-      cpf: safeString(user?.cpf),
-      cargo: safeString(user?.cargo),
-    });
+  name: safeString(user?.name),
+  email: safeString(user?.email),
+  cpf: safeString(user?.cpf),
+  studentId: safeString(user?.studentId),
+  cargo: safeString(user?.cargo),
+});
     setIsEditOpen(true);
   };
 
@@ -108,7 +110,7 @@ export default function Users() {
       toast.success("Dados do usuário atualizados com sucesso!");
       setIsEditOpen(false);
       setEditingUser(null);
-      setFormData({ name: "", email: "", cpf: "", cargo: "" });
+      setFormData({ name: "", email: "", cpf: "", studentId: "", cargo: "" });
       refetch();
     } catch (error: any) {
       toast.error(error.message || "Erro ao atualizar usuário");
@@ -180,8 +182,9 @@ export default function Users() {
       const term = safeLower(searchTerm);
 
       const matchesSearch =
-        safeLower(user?.name).includes(term) ||
-        safeLower(user?.email).includes(term);
+  safeLower(user?.name).includes(term) ||
+  safeLower(user?.email).includes(term) ||
+  safeLower(user?.studentId).includes(term);
 
       const matchesDepartamento =
         !filterDepartamento || user.departamentoId === filterDepartamento;
@@ -229,7 +232,7 @@ export default function Users() {
               <div className="relative flex-1 min-w-[250px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Buscar por nome ou e-mail..."
+                  placeholder="Buscar por nome, e-mail ou ID do aluno..."
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
@@ -288,6 +291,7 @@ export default function Users() {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>ID do Aluno</TableHead>
                   <TableHead>Depto. Pertence</TableHead>
                   <TableHead>Depto. Lidera</TableHead>
                   <TableHead>Perfil</TableHead>
@@ -299,7 +303,7 @@ export default function Users() {
               <TableBody>
                 {paginatedUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground">
                       Nenhum usuário encontrado
                     </TableCell>
                   </TableRow>
@@ -317,6 +321,11 @@ export default function Users() {
                           {safeString(user?.email) || "-"}
                         </TableCell>
 
+                        <TableCell>
+                          {safeString(user?.studentId) || "-"}
+                        </TableCell>
+
+                        
                         <TableCell>
                           <span
                             className="max-w-[200px] truncate block"
@@ -426,7 +435,7 @@ export default function Users() {
         isOpen={isCreateOpen}
         onClose={() => {
           setIsCreateOpen(false);
-          setFormData({ name: "", email: "", cpf: "", cargo: "" });
+          setFormData({ name: "", email: "", cpf: "", studentId: "", cargo: "" });
         }}
         title="Criar Novo Usuário"
         description="Preencha os dados básicos. Configure perfil e hierarquia depois."
@@ -466,6 +475,15 @@ export default function Users() {
             </div>
 
             <div className="space-y-2">
+  <Label htmlFor="create-student-id">ID do Aluno</Label>
+  <Input
+    id="create-student-id"
+    value={formData.studentId}
+    onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+    placeholder="Informe o ID do aluno"
+  />
+</div>
+            <div className="space-y-2">
               <Label htmlFor="create-cargo">Cargo *</Label>
               <Input
                 id="create-cargo"
@@ -497,7 +515,7 @@ export default function Users() {
         onClose={() => {
           setIsEditOpen(false);
           setEditingUser(null);
-          setFormData({ name: "", email: "", cpf: "", cargo: "" });
+          setFormData({ name: "", email: "", cpf: "", studentId: "", cargo: "" });
         }}
         title="Editar Dados do Usuário"
         description="Atualize os dados básicos do usuário (nome, email, CPF, cargo)."
@@ -535,6 +553,16 @@ export default function Users() {
                 required
               />
             </div>
+
+            <div className="space-y-2">
+  <Label htmlFor="edit-student-id">ID do Aluno</Label>
+  <Input
+    id="edit-student-id"
+    value={formData.studentId}
+    onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+    placeholder="Informe o ID do aluno"
+  />
+</div>
 
             <div className="space-y-2">
               <Label htmlFor="edit-cargo">Cargo *</Label>
