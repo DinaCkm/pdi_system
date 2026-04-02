@@ -652,6 +652,99 @@ export async function getUserByEmailAndStudentId(email: string, studentId: strin
 
   return result;
 }
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const normalizedEmail = email.trim();
+
+  const [result] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, normalizedEmail));
+
+  return result;
+}
+
+export async function updateUserPassword(
+  userId: number,
+  passwordHash: string,
+  mustChangePassword = false
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(users)
+    .set({
+      passwordHash,
+      passwordUpdatedAt: new Date(),
+      passwordResetTokenHash: null,
+      passwordResetExpiresAt: null,
+      mustChangePassword,
+      temporaryPasswordGeneratedAt: mustChangePassword ? new Date() : null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+}
+
+export async function setPasswordResetToken(
+  userId: number,
+  tokenHash: string,
+  expiresAt: Date
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(users)
+    .set({
+      passwordResetTokenHash: tokenHash,
+      passwordResetExpiresAt: expiresAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+}
+
+export async function getUserByPasswordResetTokenHash(tokenHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [result] = await db
+    .select()
+    .from(users)
+    .where(eq(users.passwordResetTokenHash, tokenHash));
+
+  return result;
+}
+
+export async function clearPasswordResetToken(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(users)
+    .set({
+      passwordResetTokenHash: null,
+      passwordResetExpiresAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+}
+
+export async function clearMustChangePassword(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(users)
+    .set({
+      mustChangePassword: false,
+      temporaryPasswordGeneratedAt: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+}
 
 export async function countUsers() {
   const db = await getDb();
