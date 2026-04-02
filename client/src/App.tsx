@@ -8,6 +8,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import Home from "./pages/Home";
 import Setup from "./pages/Setup";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import Users from "./pages/Users";
 import ConfigurarUsuario from "./pages/ConfigurarUsuario";
 import Competencias from "./pages/Competencias";
@@ -52,6 +53,7 @@ function Router() {
     <Switch>
       <Route path={"/setup"} component={Setup} />
       <Route path={"/login"} component={Login} />
+      <Route path={"/reset-password"} component={ResetPassword} />
       <Route path={"/?"} component={Home} />
       
       <Route path={"/dashboard"}>
