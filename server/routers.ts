@@ -29,27 +29,27 @@ export const appRouter = router({
   adjustmentRequests: adjustmentRequestsRouter,
 
   // MANTENDO A ESTRUTURA ORIGINAL DE DEPARTAMENTOS
-  departamentos: router({
-    list: adminOrGerenteProcedure.query(async () => {
-      return await db.getAllDepartamentos();
-    }),
-    getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
-      return await db.getDepartamentoById(input.id);
-    }),
-    create: adminProcedure.input(z.object({ nome: z.string(), descricao: z.string().optional(), leaderId: z.number().optional() })).mutation(async ({ input }) => {
-      await db.createDepartamento(input);
-      return { success: true };
-    }),
-    update: adminProcedure.input(z.object({ id: z.number(), nome: z.string().optional(), leaderId: z.number().optional().nullable() })).mutation(async ({ input }) => {
-      const { id, leaderId, ...rest } = input;
-      await db.updateDepartamento(id, { ...rest, leaderId: leaderId ?? undefined });
-      return { success: true };
-    }),
-    delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
-      await db.deleteDepartamento(input.id);
-      return { success: true };
-    }),
+departamentos: router({
+  list: adminOrGerenteProcedure.query(async () => {
+    return await db.getAllDepartamentos();
   }),
+  getById: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    return await db.getDepartamentoById(input.id);
+  }),
+  create: adminProcedure.input(z.object({ nome: z.string(), descricao: z.string().optional(), leaderId: z.number().optional() })).mutation(async ({ input }) => {
+    await db.createDepartamento(input);
+    return { success: true };
+  }),
+  update: adminProcedure.input(z.object({ id: z.number(), nome: z.string().optional(), leaderId: z.number().optional().nullable() })).mutation(async ({ input }) => {
+    const { id, leaderId, ...rest } = input;
+    await db.updateDepartamento(id, { ...rest, leaderId: leaderId ?? undefined });
+    return { success: true };
+  }),
+  delete: adminProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    await db.deleteDepartamento(input.id);
+    return { success: true };
+  }),
+}),
 
   // MANTENDO USUÁRIOS
   users: router({
@@ -145,6 +145,82 @@ export const appRouter = router({
       await db.updateUser(input.id, { status: 'inativo' });
       return { success: true };
     }),
+      sendPasswordReset: adminProcedure
+  .input(z.object({ id: z.number() }))
+  .mutation(async ({ input }) => {
+    const user = await db.getUserById(input.id);
+
+    if (!user) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Usuário não encontrado.",
+      });
+    }
+
+    if (user.status !== "ativo") {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Usuário inativo.",
+      });
+    }
+
+    if (!user.email) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Usuário sem e-mail cadastrado.",
+      });
+    }
+
+    const { token, tokenHash } = generatePasswordResetToken();
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
+
+    await db.setPasswordResetToken(user.id, tokenHash, expiresAt);
+
+    const baseUrl = ENV.appBaseUrl.replace(/\/$/, "");
+    const resetLink = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+
+    await sendPasswordResetEmail({
+      to: user.email,
+      name: user.name,
+      resetLink,
+    });
+
+    return {
+      success: true,
+      message: "E-mail de redefinição enviado com sucesso.",
+    };
+  }),
+
+generateTemporaryPassword: adminProcedure
+  .input(z.object({ id: z.number() }))
+  .mutation(async ({ input }) => {
+    const user = await db.getUserById(input.id);
+
+    if (!user) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Usuário não encontrado.",
+      });
+    }
+
+    if (user.status !== "ativo") {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Usuário inativo.",
+      });
+    }
+
+    const temporaryPassword = generateTemporaryPassword(12);
+    const passwordHash = hashPassword(temporaryPassword);
+
+    await db.updateUserPassword(user.id, passwordHash, true);
+
+    return {
+      success: true,
+      temporaryPassword,
+      message: "Senha temporária gerada com sucesso.",
+    };
+  }),
   }),
 
   // MANTENDO COMPETÊNCIAS E CICLOS (SIMPLIFICADO PARA O TESTE)
