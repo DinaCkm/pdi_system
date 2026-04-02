@@ -11,7 +11,10 @@ import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { invokeLLM } from "./_core/llm";
+import { generatePasswordResetToken, generateTemporaryPassword, hashPassword } from "./_core/password";
+import { ENV } from "./_core/env";
 import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI, sendEmailParabensEvidenciaAprovada, sendEmailEvidenciaReprovada, sendEmailAcoesVencidasEmpregado, sendEmailAcoesVencidasLider, sendEmailResumoVarreduraAdmin, sendEmailEvidenciaEnviadaParaLider } from "./_core/email";
+import { sendPasswordResetEmail } from "./_core/email";
 
 // Mantendo os roteadores que já existiam
 import { systemRouter } from "./_core/systemRouter";
