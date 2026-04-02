@@ -2,7 +2,14 @@ import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "./_core/customTrpc";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
-import { hashPassword, verifyPassword } from "./_core/password";
+import {
+  hashPassword,
+  verifyPassword,
+  generatePasswordResetToken,
+  hashResetToken,
+} from "./_core/password";
+import { sendPasswordResetEmail } from "./_core/email";
+import { ENV } from "./_core/env";
 
 export const authRouter = router({
   // LOGIN COM SENHA
@@ -66,12 +73,94 @@ export const authRouter = router({
       };
     }),
 
+  // ESQUECI MINHA SENHA
+  forgotPassword: publicProcedure
+    .input(
+      z.object({
+        email: z.string().email("Informe um e-mail válido."),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const normalizedEmail = input.email.trim();
+      const user = await db.getUserByEmail(normalizedEmail);
+
+      // Resposta genérica para não revelar se o e-mail existe ou não
+      if (!user || !user.email || user.status !== "ativo") {
+        return {
+          success: true,
+          message:
+            "Se existir uma conta ativa com este e-mail, enviaremos um link de redefinição.",
+        };
+      }
+
+      const { token, tokenHash } = generatePasswordResetToken();
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
+
+      await db.setPasswordResetToken(user.id, tokenHash, expiresAt);
+
+      const baseUrl = ENV.appBaseUrl.replace(/\/$/, "");
+      const resetLink = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+
+      await sendPasswordResetEmail({
+        to: user.email,
+        name: user.name,
+        resetLink,
+      });
+
+      return {
+        success: true,
+        message:
+          "Se existir uma conta ativa com este e-mail, enviaremos um link de redefinição.",
+      };
+    }),
+
+  // REDEFINIR SENHA PELO LINK
+  resetPassword: publicProcedure
+    .input(
+      z.object({
+        token: z.string().min(1, "Token inválido."),
+        newPassword: z
+          .string()
+          .min(8, "A nova senha deve ter pelo menos 8 caracteres."),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const tokenHash = hashResetToken(input.token);
+      const user = await db.getUserByPasswordResetTokenHash(tokenHash);
+
+      if (!user || !user.passwordResetExpiresAt) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Link de redefinição inválido ou expirado.",
+        });
+      }
+
+      const expiresAt = new Date(user.passwordResetExpiresAt);
+
+      if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() < Date.now()) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Link de redefinição inválido ou expirado.",
+        });
+      }
+
+      const newPasswordHash = hashPassword(input.newPassword);
+
+      await db.updateUserPassword(user.id, newPasswordHash, false);
+      await db.clearPasswordResetToken(user.id);
+      await db.clearMustChangePassword(user.id);
+
+      return { success: true };
+    }),
+
   // TROCAR A PRÓPRIA SENHA
   changePassword: protectedProcedure
     .input(
       z.object({
         currentPassword: z.string().min(8, "Informe a senha atual."),
-        newPassword: z.string().min(8, "A nova senha deve ter pelo menos 8 caracteres."),
+        newPassword: z
+          .string()
+          .min(8, "A nova senha deve ter pelo menos 8 caracteres."),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -113,6 +202,7 @@ export const authRouter = router({
       const newPasswordHash = hashPassword(input.newPassword);
 
       await db.updateUserPassword(user.id, newPasswordHash, false);
+      await db.clearMustChangePassword(user.id);
 
       return { success: true };
     }),
