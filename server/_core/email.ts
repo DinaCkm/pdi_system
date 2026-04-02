@@ -1004,3 +1004,35 @@ ${ASSINATURA}
     body,
   });
 }
+
+export async function sendPasswordResetEmail(params: {
+  to: string;
+  name?: string | null;
+  resetLink: string;
+}): Promise<boolean> {
+  const { to, name, resetLink } = params;
+
+  const body = `
+Prezado(a) ${name || 'usuário(a)'},
+
+Recebemos uma solicitação para redefinir a sua senha de acesso ao sistema EVOLUIR.
+
+Para cadastrar uma nova senha, clique no link abaixo:
+
+${resetLink}
+
+IMPORTANTE:
+- Este link é pessoal e temporário.
+- Se você não solicitou a redefinição, ignore este e-mail.
+- Por segurança, após definir a nova senha, este link deixará de funcionar.
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  return sendEmail({
+    to,
+    subject: "Redefinição de senha — EVOLUIR",
+    body,
+  });
+}
