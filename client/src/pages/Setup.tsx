@@ -11,25 +11,40 @@ import { toast } from "sonner";
 export default function Setup() {
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
     cpf: "",
-    cargo: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
-  const setupMutation = trpc.auth.setup.useMutation({
+  const setupMutation = trpc.auth.bootstrapAdminPassword.useMutation({
     onSuccess: () => {
-      toast.success("Administrador criado com sucesso!");
-      setLocation("/");
+      toast.success("Senha inicial do administrador cadastrada com sucesso!");
+      setLocation("/login");
     },
     onError: (error) => {
-      toast.error(error.message || "Erro ao criar administrador");
+      toast.error(error.message || "Erro ao cadastrar senha inicial");
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setupMutation.mutate(formData);
+
+    if (formData.newPassword.trim().length < 8) {
+      toast.error("A senha deve ter pelo menos 8 caracteres.");
+      return;
+    }
+
+    if (formData.newPassword !== formData.confirmPassword) {
+      toast.error("A confirmação da senha não confere.");
+      return;
+    }
+
+    setupMutation.mutate({
+      email: formData.email.trim(),
+      cpf: formData.cpf,
+      newPassword: formData.newPassword,
+    });
   };
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,11 +71,11 @@ export default function Setup() {
           <div>
             <CardTitle className="text-2xl">
               <span className="bg-gradient-to-r from-blue-600 to-orange-600 bg-clip-text text-transparent">
-                Setup Inicial
+                Ativação Inicial do Administrador
               </span>
             </CardTitle>
             <CardDescription className="mt-2">
-              Configure o primeiro administrador do sistema
+              Cadastre a primeira senha de acesso do administrador
             </CardDescription>
           </div>
         </CardHeader>
@@ -68,24 +83,11 @@ export default function Setup() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome Completo</Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="João Silva"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                disabled={setupMutation.isPending}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">E-mail do Administrador</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="joao@empresa.com"
+                placeholder="admin@empresa.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
@@ -94,7 +96,7 @@ export default function Setup() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cpf">CPF</Label>
+              <Label htmlFor="cpf">CPF do Administrador</Label>
               <Input
                 id="cpf"
                 type="text"
@@ -107,13 +109,26 @@ export default function Setup() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cargo">Cargo</Label>
+              <Label htmlFor="newPassword">Nova Senha</Label>
               <Input
-                id="cargo"
-                type="text"
-                placeholder="Diretor de RH"
-                value={formData.cargo}
-                onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
+                id="newPassword"
+                type="password"
+                placeholder="Digite a nova senha"
+                value={formData.newPassword}
+                onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                required
+                disabled={setupMutation.isPending}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirme a nova senha"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 required
                 disabled={setupMutation.isPending}
               />
@@ -127,17 +142,17 @@ export default function Setup() {
               {setupMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Criando...
+                  Salvando...
                 </>
               ) : (
-                "Criar Administrador"
+                "Cadastrar Senha Inicial"
               )}
             </Button>
           </form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Este é o primeiro acesso ao sistema.</p>
-            <p className="mt-1">Use este email e CPF para fazer login após a criação.</p>
+            <p>Use o e-mail e o CPF do administrador já cadastrado no sistema.</p>
+            <p className="mt-1">Depois disso, o acesso normal será feito pela tela de login com senha.</p>
           </div>
         </CardContent>
       </Card>

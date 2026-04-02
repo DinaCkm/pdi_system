@@ -197,6 +197,12 @@ export const users = mysqlTable("users", {
 	name: text(),
 	email: varchar({ length: 320 }),
 	loginMethod: varchar({ length: 64 }),
+	passwordHash: varchar({ length: 255 }),
+	passwordUpdatedAt: timestamp({ mode: 'string' }),
+	passwordResetTokenHash: varchar({ length: 255 }),
+	passwordResetExpiresAt: timestamp({ mode: 'string' }),
+	mustChangePassword: boolean().default(false).notNull(),
+	temporaryPasswordGeneratedAt: timestamp({ mode: 'string' }),
 	role: mysqlEnum([`admin`,`gerente`,`lider`,`colaborador`]).notNull(),
 	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
@@ -212,7 +218,6 @@ export const users = mysqlTable("users", {
 (table) => {
 	return {
 		users_openId_unique: index("users_openId_unique").on(table.openId),
-		
 	}
 });
 

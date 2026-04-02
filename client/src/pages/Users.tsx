@@ -17,6 +17,8 @@ import {
   Settings,
   UserCheck,
   UserX,
+  Mail,
+  KeyRound,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -44,22 +46,34 @@ export default function Users() {
   const [editingUser, setEditingUser] = useState<number | null>(null);
   const [filterDepartamento, setFilterDepartamento] = useState<number | undefined>(undefined);
   const [filterStatus, setFilterStatus] = useState<"" | "ativo" | "inativo">("");
+  const [temporaryPasswordModal, setTemporaryPasswordModal] = useState<{
+    open: boolean;
+    userName: string;
+    temporaryPassword: string;
+  }>({
+    open: false,
+    userName: "",
+    temporaryPassword: "",
+  });
+
   const ITEMS_PER_PAGE = 10;
   const [, navigate] = useLocation();
 
   const [formData, setFormData] = useState({
-  name: "",
-  email: "",
-  cpf: "",
-  studentId: "",
-  cargo: "",
-});
+    name: "",
+    email: "",
+    cpf: "",
+    studentId: "",
+    cargo: "",
+  });
 
   const { data: users, isLoading, refetch } = trpc.users.list.useQuery();
   const { data: departamentos } = trpc.departamentos.list.useQuery();
   const createMutation = trpc.users.create.useMutation();
   const updateMutation = trpc.users.update.useMutation();
   const deleteMutation = trpc.users.delete.useMutation();
+  const sendPasswordResetMutation = trpc.users.sendPasswordReset.useMutation();
+  const generateTemporaryPasswordMutation = trpc.users.generateTemporaryPassword.useMutation();
 
   const safeString = (value: unknown): string =>
     typeof value === "string" ? value : "";
@@ -88,12 +102,12 @@ export default function Users() {
   const handleEdit = (user: any) => {
     setEditingUser(user.id);
     setFormData({
-  name: safeString(user?.name),
-  email: safeString(user?.email),
-  cpf: safeString(user?.cpf),
-  studentId: safeString(user?.studentId),
-  cargo: safeString(user?.cargo),
-});
+      name: safeString(user?.name),
+      email: safeString(user?.email),
+      cpf: safeString(user?.cpf),
+      studentId: safeString(user?.studentId),
+      cargo: safeString(user?.cargo),
+    });
     setIsEditOpen(true);
   };
 
@@ -139,6 +153,53 @@ export default function Users() {
     }
   };
 
+  const handleSendPasswordReset = async (user: any) => {
+    try {
+      const response = await sendPasswordResetMutation.mutateAsync({ id: user.id });
+      toast.success(response?.message || "E-mail de redefinição enviado com sucesso!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao enviar e-mail de redefinição");
+    }
+  };
+
+  const handleGenerateTemporaryPassword = async (user: any) => {
+    try {
+      const response = await generateTemporaryPasswordMutation.mutateAsync({ id: user.id });
+
+      if (!response?.temporaryPassword) {
+        toast.error("A senha temporária não foi retornada pelo servidor.");
+        return;
+      }
+
+      setTemporaryPasswordModal({
+        open: true,
+        userName: safeString(user?.name) || "Usuário",
+        temporaryPassword: response.temporaryPassword,
+      });
+
+      toast.success(response?.message || "Senha temporária gerada com sucesso!");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao gerar senha temporária");
+    }
+  };
+
+  const handleCloseTemporaryPasswordModal = () => {
+    setTemporaryPasswordModal({
+      open: false,
+      userName: "",
+      temporaryPassword: "",
+    });
+  };
+
+  const handleCopyTemporaryPassword = async () => {
+    try {
+      await navigator.clipboard.writeText(temporaryPasswordModal.temporaryPassword);
+      toast.success("Senha temporária copiada!");
+    } catch {
+      toast.error("Não foi possível copiar automaticamente. Copie manualmente.");
+    }
+  };
+
   const formatCPF = (value: string) => {
     const numbers = value.replace(/\D/g, "");
     if (numbers.length <= 11) {
@@ -159,6 +220,7 @@ export default function Users() {
       lider: { variant: "default", label: "Líder" },
       user: { variant: "secondary", label: "Colaborador" },
       colaborador: { variant: "secondary", label: "Colaborador" },
+      gerente: { variant: "outline", label: "Gerente" },
     };
 
     const config = variants[role] || variants.user;
@@ -182,9 +244,9 @@ export default function Users() {
       const term = safeLower(searchTerm);
 
       const matchesSearch =
-  safeLower(user?.name).includes(term) ||
-  safeLower(user?.email).includes(term) ||
-  safeLower(user?.studentId).includes(term);
+        safeLower(user?.name).includes(term) ||
+        safeLower(user?.email).includes(term) ||
+        safeLower(user?.studentId).includes(term);
 
       const matchesDepartamento =
         !filterDepartamento || user.departamentoId === filterDepartamento;
@@ -325,7 +387,6 @@ export default function Users() {
                           {safeString(user?.studentId) || "-"}
                         </TableCell>
 
-                        
                         <TableCell>
                           <span
                             className="max-w-[200px] truncate block"
@@ -354,7 +415,7 @@ export default function Users() {
                         </TableCell>
 
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end gap-2 flex-wrap">
                             <Button
                               variant="outline"
                               size="sm"
@@ -371,6 +432,26 @@ export default function Users() {
                               title="Configurar Perfil"
                             >
                               <Settings className="h-4 w-4 text-blue-600" />
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSendPasswordReset(user)}
+                              title="Enviar redefinição de senha"
+                              disabled={sendPasswordResetMutation.isPending}
+                            >
+                              <Mail className="h-4 w-4 text-amber-600" />
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleGenerateTemporaryPassword(user)}
+                              title="Gerar senha temporária"
+                              disabled={generateTemporaryPasswordMutation.isPending}
+                            >
+                              <KeyRound className="h-4 w-4 text-purple-600" />
                             </Button>
 
                             <Button
@@ -475,14 +556,15 @@ export default function Users() {
             </div>
 
             <div className="space-y-2">
-  <Label htmlFor="create-student-id">ID do Aluno</Label>
-  <Input
-    id="create-student-id"
-    value={formData.studentId}
-    onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-    placeholder="Informe o ID do aluno"
-  />
-</div>
+              <Label htmlFor="create-student-id">ID do Aluno</Label>
+              <Input
+                id="create-student-id"
+                value={formData.studentId}
+                onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                placeholder="Informe o ID do aluno"
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="create-cargo">Cargo *</Label>
               <Input
@@ -555,14 +637,14 @@ export default function Users() {
             </div>
 
             <div className="space-y-2">
-  <Label htmlFor="edit-student-id">ID do Aluno</Label>
-  <Input
-    id="edit-student-id"
-    value={formData.studentId}
-    onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-    placeholder="Informe o ID do aluno"
-  />
-</div>
+              <Label htmlFor="edit-student-id">ID do Aluno</Label>
+              <Input
+                id="edit-student-id"
+                value={formData.studentId}
+                onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                placeholder="Informe o ID do aluno"
+              />
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="edit-cargo">Cargo *</Label>
@@ -589,6 +671,38 @@ export default function Users() {
             </Button>
           </div>
         </form>
+      </ModalCustomizado>
+
+      <ModalCustomizado
+        isOpen={temporaryPasswordModal.open}
+        onClose={handleCloseTemporaryPasswordModal}
+        title="Senha temporária gerada"
+        description="Copie agora. Depois de fechar esta janela, a senha não será exibida novamente."
+      >
+        <div className="space-y-4">
+          <div className="rounded-md border bg-slate-50 p-4">
+            <p className="text-sm text-muted-foreground mb-2">Usuário</p>
+            <p className="font-medium">{temporaryPasswordModal.userName}</p>
+          </div>
+
+          <div className="rounded-md border bg-amber-50 p-4">
+            <p className="text-sm text-muted-foreground mb-2">Senha temporária</p>
+            <p className="font-mono text-lg break-all">{temporaryPasswordModal.temporaryPassword}</p>
+          </div>
+
+          <p className="text-sm text-red-600">
+            Atenção: copie esta senha agora. Ao fechar esta janela, ela não será mostrada novamente.
+          </p>
+
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="outline" onClick={handleCopyTemporaryPassword}>
+              Copiar senha
+            </Button>
+            <Button type="button" onClick={handleCloseTemporaryPasswordModal}>
+              Fechar
+            </Button>
+          </div>
+        </div>
       </ModalCustomizado>
 
       <AlertDialog

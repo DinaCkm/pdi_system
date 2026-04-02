@@ -2,102 +2,276 @@ import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "./_core/customTrpc";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
+import {
+  hashPassword,
+  verifyPassword,
+  generatePasswordResetToken,
+  hashResetToken,
+} from "./_core/password";
+import { sendPasswordResetEmail } from "./_core/email";
+import { ENV } from "./_core/env";
 
 export const authRouter = router({
-  // 1. LOGIN: Gera o token compatível (Base64)
-  login: publicProcedure
+  // LOGIN COM SENHA
+  bootstrapAdminPassword: publicProcedure
   .input(
     z.object({
-      email: z.string().email(),
-      loginType: z.enum(["cpf", "studentId"]),
-      cpf: z.string().optional(),
-      studentId: z.string().optional(),
+      email: z.string().email("Informe um e-mail válido."),
+      cpf: z.string().min(11, "Informe o CPF."),
+      newPassword: z
+        .string()
+        .min(8, "A nova senha deve ter pelo menos 8 caracteres."),
     })
   )
   .mutation(async ({ input }) => {
-    let user = null;
+    const normalizedEmail = input.email.trim();
+    const normalizedCpf = input.cpf.replace(/\D/g, "");
 
-    if (input.loginType === "cpf") {
-      const cpfLimpo = (input.cpf || "").replace(/\D/g, "");
-
-      if (!cpfLimpo) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "CPF é obrigatório para este tipo de login.",
-        });
-      }
-
-      user = await db.getUserByEmailAndCpf(input.email, cpfLimpo);
-
-      if (!user) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "E-mail ou CPF inválidos.",
-        });
-      }
-    }
-
-    if (input.loginType === "studentId") {
-      const studentId = (input.studentId || "").trim();
-
-      if (!studentId) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "ID do aluno é obrigatório para este tipo de login.",
-        });
-      }
-
-      user = await db.getUserByEmailAndStudentId(input.email, studentId);
-
-      if (!user) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "E-mail ou ID do aluno inválidos.",
-        });
-      }
-    }
+    const user = await db.getUserByEmail(normalizedEmail);
 
     if (!user) {
       throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "Usuário não encontrado.",
+        code: "NOT_FOUND",
+        message: "Administrador não encontrado.",
       });
     }
 
-    if (user.status !== "ativo") {
+    if (user.role !== "admin") {
       throw new TRPCError({
         code: "FORBIDDEN",
-        message: "Usuário inativo.",
+        message: "Apenas administradores podem usar esta ativação inicial.",
       });
     }
 
-    const payload = {
-      id: user.id,
-      role: user.role,
-      name: user.name,
-      email: user.email,
-      departmentId: user.departamentoId,
-    };
+    if ((user.cpf || "").replace(/\D/g, "") !== normalizedCpf) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "E-mail ou CPF inválidos.",
+      });
+    }
 
-    const token = Buffer.from(JSON.stringify(payload)).toString("base64");
+    if (user.passwordHash) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Este administrador já possui senha cadastrada.",
+      });
+    }
+
+    const newPasswordHash = hashPassword(input.newPassword);
+
+    await db.updateUserPassword(user.id, newPasswordHash, false);
 
     return {
       success: true,
-      token,
-      user: payload,
+      message: "Senha inicial do administrador cadastrada com sucesso.",
     };
   }),
+  login: publicProcedure
+    .input(
+      z.object({
+        email: z.string().email(),
+        password: z.string().min(8, "Informe sua senha."),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const normalizedEmail = input.email.trim();
 
-  // 2. ME: Verifica quem é o usuário atual
+      const user = await db.getUserByEmail(normalizedEmail);
+
+      if (!user) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "E-mail ou senha inválidos.",
+        });
+      }
+
+      if (user.status !== "ativo") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Usuário inativo.",
+        });
+      }
+
+      if (!user.passwordHash) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "E-mail ou senha inválidos.",
+        });
+      }
+
+      const senhaValida = verifyPassword(input.password, user.passwordHash);
+
+      if (!senhaValida) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "E-mail ou senha inválidos.",
+        });
+      }
+
+      const payload = {
+        id: user.id,
+        role: user.role,
+        name: user.name,
+        email: user.email,
+        departmentId: user.departamentoId,
+      };
+
+      const token = Buffer.from(JSON.stringify(payload)).toString("base64");
+
+      return {
+        success: true,
+        token,
+        user: payload,
+        mustChangePassword: !!user.mustChangePassword,
+      };
+    }),
+
+  // ESQUECI MINHA SENHA
+  forgotPassword: publicProcedure
+    .input(
+      z.object({
+        email: z.string().email("Informe um e-mail válido."),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const normalizedEmail = input.email.trim();
+      const user = await db.getUserByEmail(normalizedEmail);
+
+      // Resposta genérica para não revelar se o e-mail existe ou não
+      if (!user || !user.email || user.status !== "ativo") {
+        return {
+          success: true,
+          message:
+            "Se existir uma conta ativa com este e-mail, enviaremos um link de redefinição.",
+        };
+      }
+
+      const { token, tokenHash } = generatePasswordResetToken();
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hora
+
+      await db.setPasswordResetToken(user.id, tokenHash, expiresAt);
+
+      const baseUrl = ENV.appBaseUrl.replace(/\/$/, "");
+      const resetLink = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+
+      await sendPasswordResetEmail({
+        to: user.email,
+        name: user.name,
+        resetLink,
+      });
+
+      return {
+        success: true,
+        message:
+          "Se existir uma conta ativa com este e-mail, enviaremos um link de redefinição.",
+      };
+    }),
+
+  // REDEFINIR SENHA PELO LINK
+  resetPassword: publicProcedure
+    .input(
+      z.object({
+        token: z.string().min(1, "Token inválido."),
+        newPassword: z
+          .string()
+          .min(8, "A nova senha deve ter pelo menos 8 caracteres."),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const tokenHash = hashResetToken(input.token);
+      const user = await db.getUserByPasswordResetTokenHash(tokenHash);
+
+      if (!user || !user.passwordResetExpiresAt) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Link de redefinição inválido ou expirado.",
+        });
+      }
+
+      const expiresAt = new Date(user.passwordResetExpiresAt);
+
+      if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() < Date.now()) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Link de redefinição inválido ou expirado.",
+        });
+      }
+
+      const newPasswordHash = hashPassword(input.newPassword);
+
+      await db.updateUserPassword(user.id, newPasswordHash, false);
+      await db.clearPasswordResetToken(user.id);
+      await db.clearMustChangePassword(user.id);
+
+      return { success: true };
+    }),
+
+  // TROCAR A PRÓPRIA SENHA
+  changePassword: protectedProcedure
+    .input(
+      z.object({
+        currentPassword: z.string().min(8, "Informe a senha atual."),
+        newPassword: z
+          .string()
+          .min(8, "A nova senha deve ter pelo menos 8 caracteres."),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = await db.getUserById(ctx.user.id);
+
+      if (!user) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Usuário não encontrado.",
+        });
+      }
+
+      if (!user.passwordHash) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Este usuário ainda não possui senha configurada.",
+        });
+      }
+
+      const senhaAtualValida = verifyPassword(input.currentPassword, user.passwordHash);
+
+      if (!senhaAtualValida) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Senha atual inválida.",
+        });
+      }
+
+      const currentNormalized = input.currentPassword.normalize("NFKC").trim();
+      const newNormalized = input.newPassword.normalize("NFKC").trim();
+
+      if (currentNormalized === newNormalized) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "A nova senha deve ser diferente da senha atual.",
+        });
+      }
+
+      const newPasswordHash = hashPassword(input.newPassword);
+
+      await db.updateUserPassword(user.id, newPasswordHash, false);
+      await db.clearMustChangePassword(user.id);
+
+      return { success: true };
+    }),
+
+  // ME
   me: protectedProcedure.query(async ({ ctx }) => {
     const user = await db.getUserById(ctx.user.id);
+
     if (!user) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
+
     return user;
   }),
 
-  // 3. LOGOUT: Apenas confirma a saída
+  // LOGOUT
   logout: publicProcedure.mutation(() => {
     return { success: true };
   }),
