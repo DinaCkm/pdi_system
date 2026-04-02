@@ -13,6 +13,59 @@ import { ENV } from "./_core/env";
 
 export const authRouter = router({
   // LOGIN COM SENHA
+  bootstrapAdminPassword: publicProcedure
+  .input(
+    z.object({
+      email: z.string().email("Informe um e-mail válido."),
+      cpf: z.string().min(11, "Informe o CPF."),
+      newPassword: z
+        .string()
+        .min(8, "A nova senha deve ter pelo menos 8 caracteres."),
+    })
+  )
+  .mutation(async ({ input }) => {
+    const normalizedEmail = input.email.trim();
+    const normalizedCpf = input.cpf.replace(/\D/g, "");
+
+    const user = await db.getUserByEmail(normalizedEmail);
+
+    if (!user) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Administrador não encontrado.",
+      });
+    }
+
+    if (user.role !== "admin") {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Apenas administradores podem usar esta ativação inicial.",
+      });
+    }
+
+    if ((user.cpf || "").replace(/\D/g, "") !== normalizedCpf) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "E-mail ou CPF inválidos.",
+      });
+    }
+
+    if (user.passwordHash) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Este administrador já possui senha cadastrada.",
+      });
+    }
+
+    const newPasswordHash = hashPassword(input.newPassword);
+
+    await db.updateUserPassword(user.id, newPasswordHash, false);
+
+    return {
+      success: true,
+      message: "Senha inicial do administrador cadastrada com sucesso.",
+    };
+  }),
   login: publicProcedure
     .input(
       z.object({
