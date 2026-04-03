@@ -11,6 +11,7 @@ import {
 } from "./_core/password";
 import { sendPasswordResetEmail } from "./_core/email";
 import { ENV } from "./_core/env";
+import { createAuthToken } from "./_core/authToken";
 
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const LOGIN_BLOCK_DURATION_MINUTES = 15;
@@ -156,22 +157,22 @@ export const authRouter = router({
 
       await db.resetLoginAttempts(user.id);
 
-      const payload = {
-        id: user.id,
-        role: user.role,
-        name: user.name,
-        email: user.email,
-        departmentId: user.departamentoId,
-      };
+     const payload = {
+  id: user.id,
+  role: user.role,
+  name: user.name,
+  email: user.email,
+  departmentId: user.departamentoId ?? null,
+};
 
-      const token = Buffer.from(JSON.stringify(payload)).toString("base64");
+const token = await createAuthToken(payload);
 
-      return {
-        success: true,
-        token,
-        user: payload,
-        mustChangePassword: !!user.mustChangePassword,
-      };
+return {
+  success: true,
+  token,
+  user: payload,
+  mustChangePassword: !!user.mustChangePassword,
+};
     }),
 
   // ESQUECI MINHA SENHA
