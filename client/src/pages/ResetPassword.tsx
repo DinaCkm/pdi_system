@@ -12,6 +12,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { PASSWORD_POLICY_TEXT, validatePasswordStrength } from "@/lib/passwordPolicy";
 
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState("");
@@ -49,8 +50,10 @@ export default function ResetPassword() {
       return toast.error("Informe a nova senha.");
     }
 
-    if (newPassword.trim().length < 8) {
-      return toast.error("A nova senha deve ter pelo menos 8 caracteres.");
+    const passwordError = validatePasswordStrength(newPassword);
+
+    if (passwordError) {
+      return toast.error(passwordError);
     }
 
     if (!confirmPassword.trim()) {
@@ -117,6 +120,9 @@ export default function ResetPassword() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  {PASSWORD_POLICY_TEXT}
+                </p>
               </div>
 
               <div className="space-y-2">

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { PASSWORD_POLICY_TEXT, validatePasswordStrength } from "@/lib/passwordPolicy";
 
 export default function Setup() {
   const [, setLocation] = useLocation();
@@ -30,8 +31,10 @@ export default function Setup() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (formData.newPassword.trim().length < 8) {
-      toast.error("A senha deve ter pelo menos 8 caracteres.");
+    const passwordError = validatePasswordStrength(formData.newPassword);
+
+    if (passwordError) {
+      toast.error(passwordError);
       return;
     }
 
@@ -119,6 +122,9 @@ export default function Setup() {
                 required
                 disabled={setupMutation.isPending}
               />
+              <p className="text-xs text-muted-foreground">
+                {PASSWORD_POLICY_TEXT}
+              </p>
             </div>
 
             <div className="space-y-2">
