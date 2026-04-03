@@ -3,14 +3,73 @@ import { createHash, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 const HASH_KEY_LENGTH = 64;
 const SALT_LENGTH = 16;
 const RESET_TOKEN_LENGTH = 32;
+const MIN_PASSWORD_LENGTH = 8;
 
-export function hashPassword(password: string): string {
-  const normalized = password.normalize("NFKC").trim();
+const LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const DIGITS = "23456789";
+const SPECIALS = "!@#$%";
+const ALL_PASSWORD_CHARS = `${LETTERS}${DIGITS}${SPECIALS}`;
 
-  if (normalized.length < 8) {
-    throw new Error("A senha deve ter pelo menos 8 caracteres.");
+export function validatePasswordStrength(password: string): {
+  isValid: boolean;
+  message?: string;
+} {
+  const normalized = password.normalize("NFKC");
+
+  if (!normalized.trim()) {
+    return {
+      isValid: false,
+      message: "Informe a senha.",
+    };
   }
 
+  if (normalized.length < MIN_PASSWORD_LENGTH) {
+    return {
+      isValid: false,
+      message: `A senha deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`,
+    };
+  }
+
+  if (!/[0-9]/.test(normalized)) {
+    return {
+      isValid: false,
+      message: "A senha deve conter ao menos 1 número.",
+    };
+  }
+
+  if (!/[!@#$%]/.test(normalized)) {
+    return {
+      isValid: false,
+      message: "A senha deve conter ao menos 1 caractere especial (!@#$%).",
+    };
+  }
+
+  return { isValid: true };
+}
+
+function pickRandomChar(charset: string): string {
+  return charset[randomBytes(1)[0] % charset.length];
+}
+
+function shuffleString(value: string): string {
+  const chars = value.split("");
+
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = randomBytes(1)[0] % (i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+
+  return chars.join("");
+}
+
+export function hashPassword(password: string): string {
+  const validation = validatePasswordStrength(password);
+
+  if (!validation.isValid) {
+    throw new Error(validation.message || "Senha inválida.");
+  }
+
+  const normalized = password.normalize("NFKC").trim();
   const salt = randomBytes(SALT_LENGTH).toString("hex");
   const derivedKey = scryptSync(normalized, salt, HASH_KEY_LENGTH).toString("hex");
 
@@ -54,14 +113,17 @@ export function hashResetToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export function generateTemporaryPassword(length = 12): string {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
-  const bytes = randomBytes(length);
-  let password = "";
+export function generateTemporaryPassword(length = MIN_PASSWORD_LENGTH): string {
+  const safeLength = Math.max(length, MIN_PASSWORD_LENGTH);
 
-  for (let i = 0; i < length; i++) {
-    password += alphabet[bytes[i] % alphabet.length];
+  const chars = [
+    pickRandomChar(DIGITS),
+    pickRandomChar(SPECIALS),
+  ];
+
+  for (let i = chars.length; i < safeLength; i++) {
+    chars.push(pickRandomChar(ALL_PASSWORD_CHARS));
   }
 
-  return password;
+  return shuffleString(chars.join(""));
 }
