@@ -729,6 +729,9 @@ export async function updateUserPassword(
       passwordResetExpiresAt: null,
       mustChangePassword,
       temporaryPasswordGeneratedAt: mustChangePassword ? new Date() : null,
+      failedLoginAttempts: 0,
+      lastFailedLoginAt: null,
+      loginBlockedUntil: null,
       updatedAt: new Date(),
     })
     .where(eq(users.id, userId));
