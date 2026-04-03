@@ -9,6 +9,7 @@ export type AuthTokenPayload = {
   name: string;
   email: string;
   departmentId: number | null;
+  authTokenVersion: number;
 };
 
 function getJwtSecret() {
@@ -30,6 +31,7 @@ export async function createAuthToken(payload: AuthTokenPayload) {
     name: payload.name,
     email: payload.email,
     departmentId: payload.departmentId,
+    authTokenVersion: payload.authTokenVersion,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -47,7 +49,8 @@ export async function verifyAuthToken(token: string): Promise<AuthTokenPayload |
       typeof payload.id !== "number" ||
       typeof payload.role !== "string" ||
       typeof payload.name !== "string" ||
-      typeof payload.email !== "string"
+      typeof payload.email !== "string" ||
+      typeof payload.authTokenVersion !== "number"
     ) {
       return null;
     }
@@ -59,6 +62,7 @@ export async function verifyAuthToken(token: string): Promise<AuthTokenPayload |
       email: payload.email,
       departmentId:
         typeof payload.departmentId === "number" ? payload.departmentId : null,
+      authTokenVersion: payload.authTokenVersion,
     };
   } catch {
     return null;
