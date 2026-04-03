@@ -665,6 +665,52 @@ export async function getUserByEmail(email: string) {
 
   return result;
 }
+export async function registerFailedLoginAttempt(
+  userId: number,
+  failedLoginAttempts: number,
+  loginBlockedUntil: Date | null
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(users)
+    .set({
+      failedLoginAttempts,
+      lastFailedLoginAt: new Date(),
+      loginBlockedUntil,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+}
+
+export async function resetLoginAttempts(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(users)
+    .set({
+      failedLoginAttempts: 0,
+      lastFailedLoginAt: null,
+      loginBlockedUntil: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+}
+
+export async function clearExpiredLoginBlock(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(users)
+    .set({
+      loginBlockedUntil: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+}
 
 export async function updateUserPassword(
   userId: number,
@@ -683,6 +729,9 @@ export async function updateUserPassword(
       passwordResetExpiresAt: null,
       mustChangePassword,
       temporaryPasswordGeneratedAt: mustChangePassword ? new Date() : null,
+      failedLoginAttempts: 0,
+      lastFailedLoginAt: null,
+      loginBlockedUntil: null,
       updatedAt: new Date(),
     })
     .where(eq(users.id, userId));
