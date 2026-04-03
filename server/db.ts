@@ -712,6 +712,32 @@ export async function clearExpiredLoginBlock(userId: number) {
     .where(eq(users.id, userId));
 }
 
+export async function incrementAuthTokenVersion(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [user] = await db
+    .select({ authTokenVersion: users.authTokenVersion })
+    .from(users)
+    .where(eq(users.id, userId));
+
+  if (!user) {
+    throw new Error("Usuário não encontrado.");
+  }
+
+  const nextVersion = (user.authTokenVersion || 0) + 1;
+
+  await db
+    .update(users)
+    .set({
+      authTokenVersion: nextVersion,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
+
+  return nextVersion;
+}
+
 export async function updateUserPassword(
   userId: number,
   passwordHash: string,
