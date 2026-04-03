@@ -746,6 +746,15 @@ export async function updateUserPassword(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  const [user] = await db
+    .select({ authTokenVersion: users.authTokenVersion })
+    .from(users)
+    .where(eq(users.id, userId));
+
+  if (!user) {
+    throw new Error("Usuário não encontrado.");
+  }
+
   await db
     .update(users)
     .set({
@@ -758,6 +767,7 @@ export async function updateUserPassword(
       failedLoginAttempts: 0,
       lastFailedLoginAt: null,
       loginBlockedUntil: null,
+      authTokenVersion: (user.authTokenVersion || 0) + 1,
       updatedAt: new Date(),
     })
     .where(eq(users.id, userId));
