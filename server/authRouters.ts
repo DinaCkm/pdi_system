@@ -12,6 +12,9 @@ import {
 import { sendPasswordResetEmail } from "./_core/email";
 import { ENV } from "./_core/env";
 
+const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const LOGIN_BLOCK_DURATION_MINUTES = 15;
+
 export const authRouter = router({
   // LOGIN COM SENHA
   bootstrapAdminPassword: publicProcedure
@@ -108,14 +111,50 @@ export const authRouter = router({
         });
       }
 
+      if (user.loginBlockedUntil) {
+        const blockedUntil = new Date(user.loginBlockedUntil);
+
+        if (!Number.isNaN(blockedUntil.getTime()) && blockedUntil.getTime() > Date.now()) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: `Muitas tentativas de login. Tente novamente em ${LOGIN_BLOCK_DURATION_MINUTES} minutos.`,
+          });
+        }
+
+        if (!Number.isNaN(blockedUntil.getTime()) && blockedUntil.getTime() <= Date.now()) {
+          await db.resetLoginAttempts(user.id);
+          user.failedLoginAttempts = 0;
+          user.loginBlockedUntil = null;
+        }
+      }
+
       const senhaValida = verifyPassword(input.password, user.passwordHash);
 
       if (!senhaValida) {
+        const nextFailedAttempts = (user.failedLoginAttempts || 0) + 1;
+
+        if (nextFailedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+          const loginBlockedUntil = new Date(
+            Date.now() + LOGIN_BLOCK_DURATION_MINUTES * 60 * 1000
+          );
+
+          await db.registerFailedLoginAttempt(user.id, nextFailedAttempts, loginBlockedUntil);
+
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: `Muitas tentativas de login. Tente novamente em ${LOGIN_BLOCK_DURATION_MINUTES} minutos.`,
+          });
+        }
+
+        await db.registerFailedLoginAttempt(user.id, nextFailedAttempts, null);
+
         throw new TRPCError({
           code: "UNAUTHORIZED",
           message: "E-mail ou senha inválidos.",
         });
       }
+
+      await db.resetLoginAttempts(user.id);
 
       const payload = {
         id: user.id,
