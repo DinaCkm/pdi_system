@@ -3,8 +3,9 @@ import { type CreateExpressContextOptions } from "@trpc/server/adapters/express"
 import superjson from "superjson";
 import { ZodError } from "zod";
 import { verifyAuthToken } from "./authToken";
+import * as db from "../db";
 
-// 1. CONTEXTO COM VALIDAÇÃO DE TOKEN ASSINADO
+// 1. CONTEXTO COM VALIDAÇÃO DE TOKEN ASSINADO + VERSÃO DE SESSÃO
 export const createTRPCContext = async (opts: CreateExpressContextOptions) => {
   const { req, res } = opts;
   const token = req.headers.authorization?.split(" ")[1];
@@ -12,7 +13,25 @@ export const createTRPCContext = async (opts: CreateExpressContextOptions) => {
   let user = null;
 
   if (token) {
-    user = await verifyAuthToken(token);
+    const tokenUser = await verifyAuthToken(token);
+
+    if (tokenUser) {
+      const currentUser = await db.getUserById(tokenUser.id);
+
+      if (
+        currentUser &&
+        currentUser.status === "ativo" &&
+        (currentUser.authTokenVersion ?? 0) === tokenUser.authTokenVersion
+      ) {
+        user = {
+          id: tokenUser.id,
+          role: tokenUser.role,
+          name: tokenUser.name,
+          email: tokenUser.email,
+          departmentId: tokenUser.departmentId,
+        };
+      }
+    }
   }
 
   return { user, req, res };

@@ -157,20 +157,27 @@ export const authRouter = router({
 
       await db.resetLoginAttempts(user.id);
 
-     const payload = {
+ const tokenPayload = {
   id: user.id,
   role: user.role,
   name: user.name,
   email: user.email,
   departmentId: user.departamentoId ?? null,
+  authTokenVersion: user.authTokenVersion ?? 0,
 };
 
-const token = await createAuthToken(payload);
+const token = await createAuthToken(tokenPayload);
 
 return {
   success: true,
   token,
-  user: payload,
+  user: {
+    id: user.id,
+    role: user.role,
+    name: user.name,
+    email: user.email,
+    departmentId: user.departamentoId ?? null,
+  },
   mustChangePassword: !!user.mustChangePassword,
 };
     }),
@@ -334,8 +341,9 @@ return {
     return user;
   }),
 
-  // LOGOUT
-  logout: publicProcedure.mutation(() => {
+   // LOGOUT
+  logout: protectedProcedure.mutation(async ({ ctx }) => {
+    await db.incrementAuthTokenVersion(ctx.user.id);
     return { success: true };
   }),
 });
