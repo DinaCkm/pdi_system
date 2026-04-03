@@ -2,24 +2,17 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import { type CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import superjson from "superjson";
 import { ZodError } from "zod";
+import { verifyAuthToken } from "./authToken";
 
-// 1. CONTEXTO SEM DEPENDÊNCIA DE JWT
+// 1. CONTEXTO COM VALIDAÇÃO DE TOKEN ASSINADO
 export const createTRPCContext = async (opts: CreateExpressContextOptions) => {
   const { req, res } = opts;
-  // Pega o token do cabeçalho Authorization
   const token = req.headers.authorization?.split(" ")[1];
 
   let user = null;
-  
+
   if (token) {
-    try {
-      // A MÁGICA: Decodificação nativa (Base64 -> JSON)
-      // Substitui o jwt.verify para não precisarmos instalar pacotes
-      const decoded = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
-      user = decoded;
-    } catch (cause) {
-      // Se o token for inválido, o usuário segue como null (deslogado)
-    }
+    user = await verifyAuthToken(token);
   }
 
   return { user, req, res };
@@ -55,7 +48,7 @@ export const protectedProcedure = t.procedure.use(isAuthed);
 
 // Middleware: Apenas Admin
 const isAdmin = t.middleware(({ ctx, next }) => {
-  const isAdminRole = ctx.user?.role === 'admin' || ctx.user?.role === 'Administrador';
+  const isAdminRole = ctx.user?.role === "admin" || ctx.user?.role === "Administrador";
   if (!ctx.user || !isAdminRole) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Acesso restrito a administradores." });
   }
@@ -66,7 +59,7 @@ export const adminProcedure = t.procedure.use(isAuthed).use(isAdmin);
 
 // Middleware: Admin ou Líder
 const isAdminOrLeader = t.middleware(({ ctx, next }) => {
-  const isAllowed = ctx.user?.role === 'admin' || ctx.user?.role === 'lider';
+  const isAllowed = ctx.user?.role === "admin" || ctx.user?.role === "lider";
   if (!ctx.user || !isAllowed) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Acesso restrito." });
   }
@@ -75,9 +68,9 @@ const isAdminOrLeader = t.middleware(({ ctx, next }) => {
 
 export const adminOrLeaderProcedure = t.procedure.use(isAuthed).use(isAdminOrLeader);
 
-// Middleware: Admin ou Gerente (gerente tem acesso de visualização limitado)
+// Middleware: Admin ou Gerente
 const isAdminOrGerente = t.middleware(({ ctx, next }) => {
-  const isAllowed = ctx.user?.role === 'admin' || ctx.user?.role === 'gerente';
+  const isAllowed = ctx.user?.role === "admin" || ctx.user?.role === "gerente";
   if (!ctx.user || !isAllowed) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Acesso restrito." });
   }
@@ -86,9 +79,9 @@ const isAdminOrGerente = t.middleware(({ ctx, next }) => {
 
 export const adminOrGerenteProcedure = t.procedure.use(isAuthed).use(isAdminOrGerente);
 
-// Middleware: Gerente (acesso de visualização a Dashboard, PDIs, Ações, Histórico)
+// Middleware: Gerente
 const isGerente = t.middleware(({ ctx, next }) => {
-  const isAllowed = ctx.user?.role === 'gerente';
+  const isAllowed = ctx.user?.role === "gerente";
   if (!ctx.user || !isAllowed) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Acesso restrito a gerentes." });
   }
