@@ -203,6 +203,7 @@ export const users = mysqlTable("users", {
 	passwordResetExpiresAt: timestamp({ mode: 'string' }),
 	mustChangePassword: boolean().default(false).notNull(),
 	temporaryPasswordGeneratedAt: timestamp({ mode: 'string' }),
+	authTokenVersion: int().default(0).notNull(),
 	failedLoginAttempts: int().default(0).notNull(),
 	lastFailedLoginAt: timestamp({ mode: 'string' }),
 	loginBlockedUntil: timestamp({ mode: 'string' }),
