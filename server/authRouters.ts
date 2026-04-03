@@ -341,8 +341,9 @@ return {
     return user;
   }),
 
-  // LOGOUT
+   // LOGOUT
   logout: protectedProcedure.mutation(async ({ ctx }) => {
-  await db.incrementAuthTokenVersion(ctx.user.id);
-  return { success: true };
-}),
+    await db.incrementAuthTokenVersion(ctx.user.id);
+    return { success: true };
+  }),
+});
