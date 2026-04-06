@@ -108,14 +108,8 @@ export default function Login() {
               </div>
 
               <h1 className="text-4xl font-bold leading-tight text-white">
-                Bem-vindo(a)
+                Bem-vindo(a)!
               </h1>
-
-              <p className="mt-5 text-base leading-7 text-slate-300">
-                Um ambiente do ecossistema do B.E.M. para acompanhar seu desenvolvimento,
-                fortalecer competências e apoiar a evolução profissional com clareza,
-                organização e segurança.
-              </p>
             </div>
           </div>
 
@@ -140,8 +134,8 @@ export default function Login() {
                   </h2>
                   <p className="mt-3 text-sm leading-6 text-slate-500">
                     Entre com seu e-mail corporativo e sua senha para acessar a
-                    plataforma. Caso seja seu primeiro acesso, clique em:
-                    Esqueci minha senha.
+                    plataforma. <i>Caso seja seu primeiro acesso, clique em:
+                    Esqueci minha senha.</i>
                   </p>
                 </div>
 
