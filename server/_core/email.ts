@@ -248,6 +248,135 @@ function buildBrandedEmailTemplate(params: BrandedEmailTemplateParams): string {
   `.trim();
 }
 
+type BrandedNotificationEmailParams = {
+  to: string;
+  subject: string;
+  plainTextBody: string;
+  greeting: string;
+  title: string;
+  intro: string;
+  bodyHtml: string;
+  cc?: string;
+  preheader?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  footerNote?: string;
+};
+
+function getSystemUrl(): string {
+  return "https://pdi.ecodobem.com";
+}
+
+function deriveTitleFromSubject(subject: string): string {
+  return subject
+    .replace(/^AÇÃO NECESSÁRIA\s*[-—]\s*/i, "")
+    .replace(/^INFORMATIVO\s*[-—]\s*/i, "")
+    .replace(/^RELATÓRIO\s*[-—]\s*/i, "")
+    .replace(/^PARA A SUA CIÊNCIA\s*[-—]\s*/i, "")
+    .replace(/^🎉\s*PARABÉNS\s*[-—]\s*/i, "")
+    .replace(/\s+[-—]\s+[^—-]+$/, "")
+    .trim();
+}
+
+function buildAutomaticBrandedHtmlFromBody(subject: string, body: string): string {
+  const normalizedBody = body.trim();
+
+  const parts = normalizedBody
+    .split(/\n\s*\n/)
+    .map(part => part.trim())
+    .filter(Boolean);
+
+  let greeting = "";
+  let intro = "";
+  const contentParts: string[] = [];
+
+  for (const part of parts) {
+    if (!greeting && /^(Prezado\(a\)|Olá[,!]?)/i.test(part)) {
+      greeting = part;
+      continue;
+    }
+
+    if (
+      part.includes("NÃO RESPONDA ESTE EMAIL") ||
+      part.includes("Sistema de Gestão de PDI") ||
+      part === "---"
+    ) {
+      continue;
+    }
+
+    if (!intro) {
+      intro = part;
+      continue;
+    }
+
+    contentParts.push(part);
+  }
+
+  const cleanedGreeting = greeting.replace(/,$/, "").trim();
+  const title = deriveTitleFromSubject(subject) || "Notificação do sistema";
+
+  const bodyHtml = contentParts.length
+    ? contentParts
+        .map(
+          part => `<p style="margin: 0 0 16px;">${plainTextToHtml(part)}</p>`
+        )
+        .join("")
+    : `<p style="margin: 0;">Acesse o sistema para acompanhar esta atualização.</p>`;
+
+  const needsAction =
+    /AÇÃO NECESSÁRIA|pendente|aguarda|aguardando|ajuste|providências|vencidas/i.test(subject + " " + body);
+
+  return buildBrandedEmailTemplate({
+    preheader: intro || title,
+    title,
+    greeting: cleanedGreeting || undefined,
+    intro: intro || "Você recebeu uma atualização no Sistema de Gestão de PDI — EVOLUIR.",
+    bodyHtml,
+    ctaLabel: needsAction ? "Acessar o sistema" : "Ver no sistema",
+    ctaUrl: getSystemUrl(),
+    footerNote: "Mensagem enviada automaticamente pela plataforma.",
+  });
+}
+
+async function sendBrandedNotificationEmail(
+  params: BrandedNotificationEmailParams
+): Promise<boolean> {
+  const {
+    to,
+    subject,
+    plainTextBody,
+    greeting,
+    title,
+    intro,
+    bodyHtml,
+    cc,
+    preheader,
+    ctaLabel,
+    ctaUrl,
+    footerNote,
+  } = params;
+
+  const html = buildBrandedEmailTemplate({
+    preheader: preheader || title,
+    title,
+    greeting,
+    intro,
+    bodyHtml,
+    ctaLabel,
+    ctaUrl,
+    footerNote,
+  });
+
+  return sendEmail({
+    to,
+    subject,
+    body: plainTextBody,
+    cc,
+    html,
+  });
+}
+
+
 /**
  * Cria o transporter SMTP reutilizável (Nodemailer + Google SMTP)
  */
@@ -278,13 +407,7 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
   try {
     const transporter = createTransporter();
 
-    const htmlBody =
-      payload.html ||
-      `
-        <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #222;">
-          <p>${plainTextToHtml(body)}</p>
-        </div>
-      `;
+    const htmlBody = payload.html || buildAutomaticBrandedHtmlFromBody(subject, body);
 
     const info = await transporter.sendMail({
       from: `"Eco do Bem - EVOLUIR" <${ENV.smtpUser}>`,
