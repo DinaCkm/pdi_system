@@ -21,7 +21,7 @@ type BrandedEmailTemplateParams = {
 };
 
 const EMAIL_LOGO_URL =
-  "https://i.ibb.co/HTWppQBP/eco-do-bem-logo-cropped-564da75a.png";
+  "https://i.ibb.co/k2qC433y/eco-11.png";
 
 // CC global removido a pedido do administrador
 
