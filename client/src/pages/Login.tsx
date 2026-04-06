@@ -110,13 +110,13 @@ export default function Login() {
               </div>
 
               <h1 className="text-4xl font-bold leading-tight text-white">
-                Bem-vindo(a),
-              </h1>
-<br>
-  <p className="text-center text-xs text-slate-400">
-        <p>Ambiente do ecossistema do B.E.M. para acompanhar seu desenvolvimento, 
-  fortalecer competências e apoiar a evolução profissional.</p>
-        </p></br>
+  Bem-vindo(a)
+</h1>
+
+<p className="mt-5 text-base leading-7 text-slate-300">
+  Ambiente do ecossistema do B.E.M. para acompanhar seu desenvolvimento,
+  fortalecer competências e apoiar a evolução profissional.
+</p>
 
 
             </div>
