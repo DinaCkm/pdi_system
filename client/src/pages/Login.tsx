@@ -5,9 +5,6 @@ import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -25,20 +22,22 @@ export default function Login() {
         localStorage.setItem("token", data.token);
 
         if (data.user) {
-  localStorage.setItem(
-    "user",
-    JSON.stringify({
-      ...data.user,
-      mustChangePassword: !!data.mustChangePassword,
-    })
-  );
-}
+          localStorage.setItem(
+            "user",
+            JSON.stringify({
+              ...data.user,
+              mustChangePassword: !!data.mustChangePassword,
+            })
+          );
+        }
 
-toast.success("Login realizado com sucesso!");
+        toast.success("Login realizado com sucesso!");
 
-setTimeout(() => {
-  window.location.href = data.mustChangePassword ? "/change-password" : "/dashboard";
-}, 500);
+        setTimeout(() => {
+          window.location.href = data.mustChangePassword
+            ? "/change-password"
+            : "/dashboard";
+        }, 500);
       } else {
         toast.error("Erro: token não recebido do servidor");
         setIsLoading(false);
@@ -95,79 +94,154 @@ setTimeout(() => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center pt-6 pb-2 gap-0">
-          <div className="flex justify-center">
-            <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/eco-do-bem-logo-cropped_564da75a.png"
-              alt="Eco do Bem"
-              className="w-[280px] h-auto"
-            />
+    <div className="relative min-h-screen overflow-hidden bg-slate-950">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.16),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(139,92,246,0.18),_transparent_32%)]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8">
+        <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-sm lg:grid-cols-2">
+          <div className="hidden lg:flex flex-col justify-between border-r border-white/10 bg-gradient-to-br from-teal-500/15 via-emerald-400/10 to-transparent p-10">
+            <div>
+              <div className="inline-flex items-center rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-emerald-200">
+                Plataforma Evoluir
+              </div>
+
+              <div className="mt-8">
+                <img
+                  src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/eco-do-bem-logo-cropped_564da75a.png"
+                  alt="Eco do Bem"
+                  className="w-[300px] max-w-full h-auto drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
+                />
+              </div>
+
+              <h1 className="mt-10 text-4xl font-bold leading-tight text-white">
+                Bem-vindo ao Ecossistema de Desenvolvimento do B.E.M
+              </h1>
+
+              <p className="mt-5 max-w-xl text-base leading-7 text-slate-300">
+                Um ambiente para acompanhar desenvolvimento, fortalecer competências
+                e apoiar a evolução profissional com clareza, organização e segurança.
+              </p>
+            </div>
+
+            <div className="grid gap-4">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                <p className="text-sm font-semibold text-white">
+                  Segurança e continuidade
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-300">
+                  Acesso com autenticação, recuperação de senha e fluxo estável para
+                  uso corporativo.
+                </p>
+              </div>
+            </div>
           </div>
-          <CardTitle className="text-sm font-semibold text-blue-900 tracking-wide mt-2">
-            Ecossistema de Desenvolvimento do B.E.M
-          </CardTitle>
-          <p className="text-sm font-bold text-amber-600 tracking-widest mt-0.5">
-            EVOLUIR
-          </p>
-          <CardDescription className="mt-3 text-xs">
-            Entre com seu e-mail corporativo e sua senha
-          </CardDescription>
-        </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail Corporativo</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="nome@empresa.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
+          <div className="flex items-center justify-center p-4 sm:p-8 lg:p-10">
+            <Card className="w-full max-w-md border border-white/10 bg-white shadow-2xl rounded-3xl">
+              <CardContent className="p-6 sm:p-8">
+                <div className="mb-8 text-center lg:hidden">
+                  <div className="flex justify-center">
+                    <img
+                      src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/eco-do-bem-logo-cropped_564da75a.png"
+                      alt="Eco do Bem"
+                      className="w-[220px] h-auto"
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Digite sua senha"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
+                <div className="mb-8 text-center">
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700">
+                    Evoluir
+                  </p>
+                  <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
+                    Acesse sua conta
+                  </h2>
+                  <p className="mt-3 text-sm leading-6 text-slate-500">
+                    Entre com seu e-mail corporativo e sua senha para acessar a
+                    plataforma.
+                  </p>
+                </div>
 
-            <button
-              type="button"
-              onClick={handleForgotPassword}
-              disabled={isSendingReset}
-              className="text-sm text-blue-600 hover:text-blue-700 underline underline-offset-2"
-            >
-              {isSendingReset ? "Enviando link..." : "Esqueci minha senha"}
-            </button>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="email"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      E-mail corporativo
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="nome@empresa.com"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="h-12 rounded-xl border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-teal-500"
+                    />
+                  </div>
 
-            <Button
-              type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                "Entrar"
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <Label
+                        htmlFor="password"
+                        className="text-sm font-medium text-slate-700"
+                      >
+                        Senha
+                      </Label>
 
-      <footer className="fixed bottom-0 left-0 right-0 h-10 bg-gray-100 border-t border-gray-200 flex items-center justify-center">
-        <p className="text-xs text-gray-500">
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        disabled={isSendingReset}
+                        className="text-xs font-semibold text-teal-700 transition hover:text-teal-800 disabled:opacity-60"
+                      >
+                        {isSendingReset ? "Enviando link..." : "Esqueci minha senha"}
+                      </button>
+                    </div>
+
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="Digite sua senha"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="h-12 rounded-xl border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-teal-500"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="h-12 w-full rounded-xl bg-slate-900 text-base font-semibold text-white hover:bg-slate-800"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Entrando...
+                      </>
+                    ) : (
+                      "Entrar"
+                    )}
+                  </Button>
+                </form>
+
+                <div className="mt-8 rounded-2xl bg-slate-50 px-4 py-3 text-center">
+                  <p className="text-xs leading-5 text-slate-500">
+                    Ambiente corporativo de desenvolvimento e acompanhamento de
+                    ações, evidências e evolução profissional.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      <footer className="relative z-10 border-t border-white/10 bg-black/20 px-4 py-4 backdrop-blur-sm">
+        <p className="text-center text-xs text-slate-400">
           © {new Date().getFullYear()} Eco do Bem - Ecossistema de Desenvolvimento - Todos os direitos reservados
         </p>
       </footer>
