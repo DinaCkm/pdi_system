@@ -378,7 +378,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: liderEmail,
-    subject: \`AÇÃO NECESSÁRIA - Solicitação de Ação Aguardando seu Parecer — ${colaboradorName}\`,
+    subject: `AÇÃO NECESSÁRIA - Solicitação de Ação Aguardando seu Parecer — ${colaboradorName}`,
     body,
   });
 }
@@ -417,7 +417,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: gerenteEmail,
-    subject: \`AÇÃO NECESSÁRIA - Solicitação de Ação Aguardando sua Decisão Final — ${colaboradorName}\`,
+    subject: `AÇÃO NECESSÁRIA - Solicitação de Ação Aguardando sua Decisão Final — ${colaboradorName}`,
     body,
   });
 }
@@ -448,7 +448,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: \`INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}\`,
+    subject: `INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}`,
     body,
   });
 }
@@ -478,7 +478,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: \`INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}\`,
+    subject: `INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}`,
     body,
   });
 }
@@ -497,7 +497,7 @@ function formatarTipoAjuste(tipoAjuste?: string, camposAjustar?: string): string
     try {
       const parsed = JSON.parse(camposAjustar);
       if (parsed.camposSelecionados && Array.isArray(parsed.camposSelecionados)) {
-        return \`Alteração de: \${parsed.camposSelecionados.join(', ')}\`;
+        return `Alteração de: ${parsed.camposSelecionados.join(', ')}`;
       }
     } catch {
       return camposAjustar;
@@ -549,7 +549,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: liderEmail,
-    subject: \`AÇÃO NECESSÁRIA - Solicitação de Ajuste Aguardando sua Validação — ${colaboradorName}\`,
+    subject: `AÇÃO NECESSÁRIA - Solicitação de Ajuste Aguardando sua Validação — ${colaboradorName}`,
     body,
   });
 }
@@ -590,7 +590,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: adminEmail,
-    subject: \`AÇÃO NECESSÁRIA - Ajuste Autorizado pelo Líder Aguardando Execução — ${colaboradorName}\`,
+    subject: `AÇÃO NECESSÁRIA - Ajuste Autorizado pelo Líder Aguardando Execução — ${colaboradorName}`,
     body,
   });
 }
@@ -622,7 +622,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: \`INFORMATIVO — Sua Solicitação de Ajuste foi Respondida — ${tituloAcaoTexto}\`,
+    subject: `INFORMATIVO — Sua Solicitação de Ajuste foi Respondida — ${tituloAcaoTexto}`,
     body,
   });
 }
@@ -655,7 +655,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: \`INFORMATIVO — Sua Solicitação de Ajuste foi Respondida — ${tituloAcaoTexto}\`,
+    subject: `INFORMATIVO — Sua Solicitação de Ajuste foi Respondida — ${tituloAcaoTexto}`,
     body,
   });
 }
@@ -690,7 +690,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: adminEmail,
-    subject: \`REVISÃO SOLICITADA — Nova Análise Necessária — ${tituloAcaoTexto}\`,
+    subject: `REVISÃO SOLICITADA — Nova Análise Necessária — ${tituloAcaoTexto}`,
     body,
   });
 }
@@ -722,7 +722,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: adminEmail,
-    subject: \`ESCLARECIMENTO SOLICITADO PELO LÍDER — ${tituloAcaoTexto}\`,
+    subject: `ESCLARECIMENTO SOLICITADO PELO LÍDER — ${tituloAcaoTexto}`,
     body,
   });
 }
@@ -779,14 +779,14 @@ ${ASSINATURA}
 
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: \`INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${tituloAcaoTexto}\`,
+    subject: `INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${tituloAcaoTexto}`,
     body: bodyColaborador,
     cc: CC_RELACIONAMENTO,
   });
 
   const envioLider = await sendEmail({
     to: liderEmail,
-    subject: \`INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${colaboradorName} — ${tituloAcaoTexto}\`,
+    subject: `INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${colaboradorName} — ${tituloAcaoTexto}`,
     body: bodyLider,
     cc: CC_RELACIONAMENTO,
   });
@@ -827,7 +827,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: liderEmail,
-    subject: \`INFORMATIVO — Ação APROVADA e Incluída no PDI — ${colaboradorName} — ${tituloAcaoTexto}\`,
+    subject: `INFORMATIVO — Ação APROVADA e Incluída no PDI — ${colaboradorName} — ${tituloAcaoTexto}`,
     body,
     cc: CC_RELACIONAMENTO,
   });
@@ -860,7 +860,7 @@ ${ASSINATURA}
 
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: \`INFORMATIVO — Relatório de Performance Incluído no seu PDI — ${tituloPdi}\`,
+    subject: `INFORMATIVO — Relatório de Performance Incluído no seu PDI — ${tituloPdi}`,
     body: bodyColaborador,
   });
 
@@ -879,7 +879,7 @@ ${ASSINATURA}
 
     envioLider = await sendEmail({
       to: liderEmail,
-      subject: \`INFORMATIVO — Relatório de Performance Incluído no PDI — ${colaboradorName} — ${tituloPdi}\`,
+      subject: `INFORMATIVO — Relatório de Performance Incluído no PDI — ${colaboradorName} — ${tituloPdi}`,
       body: bodyLider,
     });
   }
@@ -928,7 +928,7 @@ ${ASSINATURA}
 
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: \`🎉 PARABÉNS — Evidência Aprovada — ${tituloAcaoTexto}\`,
+    subject: `🎉 PARABÉNS — Evidência Aprovada — ${tituloAcaoTexto}`,
     body: bodyColaborador,
   });
 
@@ -947,7 +947,7 @@ ${ASSINATURA}
 
     envioLider = await sendEmail({
       to: liderEmail,
-      subject: \`INFORMATIVO — Evidência Aprovada — ${colaboradorName} — ${tituloAcaoTexto}\`,
+      subject: `INFORMATIVO — Evidência Aprovada — ${colaboradorName} — ${tituloAcaoTexto}`,
       body: bodyLider,
     });
   }
@@ -999,7 +999,7 @@ ${ASSINATURA}
 
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: \`AÇÃO NECESSÁRIA — Evidência Devolvida para Ajustes — ${tituloAcaoTexto}\`,
+    subject: `AÇÃO NECESSÁRIA — Evidência Devolvida para Ajustes — ${tituloAcaoTexto}`,
     body: bodyColaborador,
   });
 
@@ -1020,7 +1020,7 @@ ${ASSINATURA}
 
     envioLider = await sendEmail({
       to: liderEmail,
-      subject: \`INFORMATIVO — Evidência Devolvida — ${colaboradorName} — ${tituloAcaoTexto}\`,
+      subject: `INFORMATIVO — Evidência Devolvida — ${colaboradorName} — ${tituloAcaoTexto}`,
       body: bodyLider,
     });
   }
