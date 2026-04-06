@@ -2,10 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -95,18 +92,14 @@ export default function Login() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-slate-950">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.16),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(139,92,246,0.18),_transparent_32%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.24),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(34,211,238,0.18),_transparent_34%)]" />
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8">
         <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-sm lg:grid-cols-2">
-          <div className="hidden lg:flex flex-col justify-between border-r border-white/10 bg-gradient-to-br from-teal-500/15 via-emerald-400/10 to-transparent p-10">
-            <div>
-              <div className="inline-flex items-center rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-emerald-200">
-                Plataforma Evoluir
-              </div>
-
-              <div className="mt-8">
+          <div className="hidden lg:flex flex-col justify-center border-r border-white/10 bg-gradient-to-br from-teal-400/20 via-teal-300/10 to-cyan-300/10 p-10">
+            <div className="max-w-xl">
+              <div className="mb-8">
                 <img
                   src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/eco-do-bem-logo-cropped_564da75a.png"
                   alt="Eco do Bem"
@@ -114,31 +107,20 @@ export default function Login() {
                 />
               </div>
 
-              <h1 className="mt-10 text-4xl font-bold leading-tight text-white">
-                Bem-vindo ao Ecossistema de Desenvolvimento do B.E.M
+              <h1 className="text-4xl font-bold leading-tight text-white">
+                Bem-vindo(a)
               </h1>
 
-              <p className="mt-5 max-w-xl text-base leading-7 text-slate-300">
-                Um ambiente para acompanhar desenvolvimento, fortalecer competências
-                e apoiar a evolução profissional com clareza, organização e segurança.
+              <p className="mt-5 text-base leading-7 text-slate-300">
+                Um ambiente do ecossistema do B.E.M. para acompanhar seu desenvolvimento,
+                fortalecer competências e apoiar a evolução profissional com clareza,
+                organização e segurança.
               </p>
-            </div>
-
-            <div className="grid gap-4">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <p className="text-sm font-semibold text-white">
-                  Segurança e continuidade
-                </p>
-                <p className="mt-2 text-sm leading-6 text-slate-300">
-                  Acesso com autenticação, recuperação de senha e fluxo estável para
-                  uso corporativo.
-                </p>
-              </div>
             </div>
           </div>
 
           <div className="flex items-center justify-center p-4 sm:p-8 lg:p-10">
-            <Card className="w-full max-w-md border border-white/10 bg-white shadow-2xl rounded-3xl">
+            <Card className="w-full max-w-md rounded-3xl border border-white/10 bg-white shadow-2xl">
               <CardContent className="p-6 sm:p-8">
                 <div className="mb-8 text-center lg:hidden">
                   <div className="flex justify-center">
@@ -151,10 +133,7 @@ export default function Login() {
                 </div>
 
                 <div className="mb-8 text-center">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-700">
-                    Evoluir
-                  </p>
-                  <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-900">
+                  <h2 className="text-3xl font-bold tracking-tight text-slate-900">
                     Acesse sua conta
                   </h2>
                   <p className="mt-3 text-sm leading-6 text-slate-500">
