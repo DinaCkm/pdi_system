@@ -100,13 +100,11 @@ export default function Login() {
           <div className="hidden lg:flex flex-col justify-center border-r border-white/10 bg-gradient-to-br from-purple-500/20 via-cyan-400/10 to-teal-300/40 p-10">
             <div className="max-w-xl">
               <div className="mb-8">
-               <div className="w-[220px] h-[220px] rounded-full overflow-hidden shadow-2xl">
+              
   <img
-    src="https://i.ibb.co/271MBKsS/eco-5.png"
+    src="https://i.ibb.co/HTWppQBP/eco-do-bem-logo-cropped-564da75a.png"
     alt="Eco do Bem"
-    className="w-full h-full object-cover"
-  />
-</div>
+    />
               </div>
 
               <h1 className="text-4xl font-bold leading-tight text-white">
