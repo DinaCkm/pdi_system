@@ -84,33 +84,41 @@ function buildBrandedEmailTemplate(params: BrandedEmailTemplateParams): string {
   } = params;
 
   const preheaderText = preheader || "";
+
   const greetingHtml = greeting
-    ? `<p style="margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #16323a;">${escapeHtml(greeting)}</p>`
+    ? `<p style="margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #17313a;">${escapeHtml(greeting)}</p>`
     : "";
 
   const introHtml = intro
-    ? `<p style="margin: 0 0 18px; font-size: 15px; line-height: 1.7; color: #35515a;">${escapeHtml(intro)}</p>`
+    ? `<p style="margin: 0 0 18px; font-size: 15px; line-height: 1.7; color: #425466;">${escapeHtml(intro)}</p>`
     : "";
 
   const ctaHtml =
     ctaLabel && ctaUrl
       ? `
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 28px 0 18px;">
           <tr>
-            <td align="center" style="border-radius: 10px;" bgcolor="#0f766e">
+            <td
+              align="center"
+              bgcolor="#5b21b6"
+              style="
+                border-radius: 14px;
+                background-color: #5b21b6;
+                background-image: linear-gradient(135deg, #5b21b6 0%, #0f766e 100%);
+              "
+            >
               <a
                 href="${escapeHtml(ctaUrl)}"
                 target="_blank"
                 rel="noopener noreferrer"
                 style="
                   display: inline-block;
-                  padding: 14px 22px;
+                  padding: 14px 24px;
                   font-size: 15px;
                   font-weight: 700;
                   color: #ffffff;
                   text-decoration: none;
-                  border-radius: 10px;
-                  background-color: #0f766e;
+                  border-radius: 14px;
                 "
               >
                 ${escapeHtml(ctaLabel)}
@@ -122,7 +130,7 @@ function buildBrandedEmailTemplate(params: BrandedEmailTemplateParams): string {
       : "";
 
   const footerNoteHtml = footerNote
-    ? `<p style="margin: 18px 0 0; font-size: 12px; line-height: 1.6; color: #6b7280;">${escapeHtml(
+    ? `<p style="margin: 18px 0 0; font-size: 12px; line-height: 1.7; color: #667085;">${escapeHtml(
         footerNote
       )}</p>`
     : "";
@@ -135,7 +143,7 @@ function buildBrandedEmailTemplate(params: BrandedEmailTemplateParams): string {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${escapeHtml(title)}</title>
   </head>
-  <body style="margin: 0; padding: 0; background-color: #f4f7f7;">
+  <body style="margin: 0; padding: 0; background-color: #f4f6fb;">
     <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: transparent;">
       ${escapeHtml(preheaderText)}
     </div>
@@ -146,7 +154,7 @@ function buildBrandedEmailTemplate(params: BrandedEmailTemplateParams): string {
       cellpadding="0"
       cellspacing="0"
       border="0"
-      style="width: 100%; border-collapse: collapse; background-color: #f4f7f7; margin: 0; padding: 24px 0;"
+      style="width: 100%; border-collapse: collapse; background-color: #f4f6fb; margin: 0; padding: 24px 0;"
     >
       <tr>
         <td align="center" style="padding: 24px 12px;">
@@ -161,48 +169,58 @@ function buildBrandedEmailTemplate(params: BrandedEmailTemplateParams): string {
               max-width: 640px;
               border-collapse: collapse;
               background-color: #ffffff;
-              border: 1px solid #d9e7e5;
-              border-radius: 18px;
+              border: 1px solid #e5e7eb;
+              border-radius: 24px;
               overflow: hidden;
             "
           >
             <tr>
-              <td style="padding: 28px 32px 18px; background-color: #ffffff; border-bottom: 1px solid #e6efee;">
+              <td
+                style="
+                  padding: 26px 30px 22px;
+                  background-color: #5b21b6;
+                  background-image: linear-gradient(135deg, #5b21b6 0%, #0f766e 100%);
+                "
+              >
                 <img
                   src="${EMAIL_LOGO_URL}"
                   alt="Eco do Bem"
-                  style="display: block; max-width: 220px; width: 100%; height: auto;"
+                  style="display: block; max-width: 150px; width: 100%; height: auto;"
                 />
+
+                <div
+                  style="
+                    display: inline-block;
+                    margin-top: 18px;
+                    padding: 7px 12px;
+                    border-radius: 999px;
+                    background-color: rgba(255, 255, 255, 0.16);
+                    color: #ffffff;
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.06em;
+                    text-transform: uppercase;
+                  "
+                >
+                  Sistema de Gestão de PDI
+                </div>
+
+                <p style="margin: 12px 0 0; font-size: 14px; line-height: 1.6; color: #eef2ff;">
+                  EVOLUIR • Eco do Bem
+                </p>
               </td>
             </tr>
 
             <tr>
-              <td style="padding: 32px;">
-                <div
-                  style="
-                    display: inline-block;
-                    margin-bottom: 14px;
-                    padding: 6px 10px;
-                    border-radius: 999px;
-                    background-color: #e6f4f2;
-                    color: #0f766e;
-                    font-size: 12px;
-                    font-weight: 700;
-                    letter-spacing: 0.04em;
-                    text-transform: uppercase;
-                  "
-                >
-                  Plataforma EVOLUIR
-                </div>
-
-                <h1 style="margin: 0 0 16px; font-size: 26px; line-height: 1.25; color: #0f172a;">
+              <td style="padding: 32px 32px 28px;">
+                <h1 style="margin: 0 0 16px; font-size: 28px; line-height: 1.2; color: #111827;">
                   ${escapeHtml(title)}
                 </h1>
 
                 ${greetingHtml}
                 ${introHtml}
 
-                <div style="font-size: 15px; line-height: 1.75; color: #334155;">
+                <div style="font-size: 15px; line-height: 1.75; color: #344054;">
                   ${bodyHtml}
                 </div>
 
@@ -212,12 +230,12 @@ function buildBrandedEmailTemplate(params: BrandedEmailTemplateParams): string {
             </tr>
 
             <tr>
-              <td style="padding: 20px 32px 28px; background-color: #f8fbfb; border-top: 1px solid #e6efee;">
-                <p style="margin: 0 0 8px; font-size: 12px; line-height: 1.6; color: #64748b;">
-                  Este é um e-mail automático da plataforma. Não responda esta mensagem.
+              <td style="padding: 18px 32px 26px; background-color: #fafafa; border-top: 1px solid #eceff3;">
+                <p style="margin: 0 0 8px; font-size: 12px; line-height: 1.6; color: #667085;">
+                  Este é um e-mail automático do Sistema de Gestão de PDI — EVOLUIR. Não responda esta mensagem.
                 </p>
-                <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #64748b;">
-                  Sistema de Gestão de PDI — Eco do Bem - Ecossistema de Desenvolvimento
+                <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #667085;">
+                  Eco do Bem - Ecossistema de Desenvolvimento
                 </p>
               </td>
             </tr>
@@ -269,7 +287,7 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
       `;
 
     const info = await transporter.sendMail({
-      from: `"Eco do Bem - EVOLUIR" <${ENV.smtpUser}>`,
+      from: \`"Eco do Bem - EVOLUIR" <\${ENV.smtpUser}>\`,
       to,
       ...(payload.cc ? { cc: payload.cc } : {}),
       subject,
@@ -277,10 +295,10 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
       html: htmlBody,
     });
 
-    console.log(`[Email] Email enviado com sucesso para ${to} (messageId: ${info.messageId})`);
+    console.log(\`[Email] Email enviado com sucesso para \${to} (messageId: \${info.messageId})\`);
     return true;
   } catch (error: any) {
-    console.warn(`[Email] Erro ao enviar email para ${to}:`, error.message || error);
+    console.warn(\`[Email] Erro ao enviar email para \${to}:\`, error.message || error);
     return false;
   }
 }
@@ -360,7 +378,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: liderEmail,
-    subject: `AÇÃO NECESSÁRIA - Solicitação de Ação Aguardando seu Parecer — ${colaboradorName}`,
+    subject: \`AÇÃO NECESSÁRIA - Solicitação de Ação Aguardando seu Parecer — ${colaboradorName}\`,
     body,
   });
 }
@@ -399,7 +417,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: gerenteEmail,
-    subject: `AÇÃO NECESSÁRIA - Solicitação de Ação Aguardando sua Decisão Final — ${colaboradorName}`,
+    subject: \`AÇÃO NECESSÁRIA - Solicitação de Ação Aguardando sua Decisão Final — ${colaboradorName}\`,
     body,
   });
 }
@@ -430,7 +448,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: `INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}`,
+    subject: \`INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}\`,
     body,
   });
 }
@@ -460,7 +478,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: `INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}`,
+    subject: \`INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}\`,
     body,
   });
 }
@@ -479,7 +497,7 @@ function formatarTipoAjuste(tipoAjuste?: string, camposAjustar?: string): string
     try {
       const parsed = JSON.parse(camposAjustar);
       if (parsed.camposSelecionados && Array.isArray(parsed.camposSelecionados)) {
-        return `Alteração de: ${parsed.camposSelecionados.join(', ')}`;
+        return \`Alteração de: \${parsed.camposSelecionados.join(', ')}\`;
       }
     } catch {
       return camposAjustar;
@@ -531,7 +549,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: liderEmail,
-    subject: `AÇÃO NECESSÁRIA - Solicitação de Ajuste Aguardando sua Validação — ${colaboradorName}`,
+    subject: \`AÇÃO NECESSÁRIA - Solicitação de Ajuste Aguardando sua Validação — ${colaboradorName}\`,
     body,
   });
 }
@@ -572,7 +590,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: adminEmail,
-    subject: `AÇÃO NECESSÁRIA - Ajuste Autorizado pelo Líder Aguardando Execução — ${colaboradorName}`,
+    subject: \`AÇÃO NECESSÁRIA - Ajuste Autorizado pelo Líder Aguardando Execução — ${colaboradorName}\`,
     body,
   });
 }
@@ -604,7 +622,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: `INFORMATIVO — Sua Solicitação de Ajuste foi Respondida — ${tituloAcaoTexto}`,
+    subject: \`INFORMATIVO — Sua Solicitação de Ajuste foi Respondida — ${tituloAcaoTexto}\`,
     body,
   });
 }
@@ -637,7 +655,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: `INFORMATIVO — Sua Solicitação de Ajuste foi Respondida — ${tituloAcaoTexto}`,
+    subject: \`INFORMATIVO — Sua Solicitação de Ajuste foi Respondida — ${tituloAcaoTexto}\`,
     body,
   });
 }
@@ -672,7 +690,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: adminEmail,
-    subject: `REVISÃO SOLICITADA — Nova Análise Necessária — ${tituloAcaoTexto}`,
+    subject: \`REVISÃO SOLICITADA — Nova Análise Necessária — ${tituloAcaoTexto}\`,
     body,
   });
 }
@@ -704,7 +722,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: adminEmail,
-    subject: `ESCLARECIMENTO SOLICITADO PELO LÍDER — ${tituloAcaoTexto}`,
+    subject: \`ESCLARECIMENTO SOLICITADO PELO LÍDER — ${tituloAcaoTexto}\`,
     body,
   });
 }
@@ -761,14 +779,14 @@ ${ASSINATURA}
 
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: `INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${tituloAcaoTexto}`,
+    subject: \`INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${tituloAcaoTexto}\`,
     body: bodyColaborador,
     cc: CC_RELACIONAMENTO,
   });
 
   const envioLider = await sendEmail({
     to: liderEmail,
-    subject: `INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${colaboradorName} — ${tituloAcaoTexto}`,
+    subject: \`INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${colaboradorName} — ${tituloAcaoTexto}\`,
     body: bodyLider,
     cc: CC_RELACIONAMENTO,
   });
@@ -809,7 +827,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: liderEmail,
-    subject: `INFORMATIVO — Ação APROVADA e Incluída no PDI — ${colaboradorName} — ${tituloAcaoTexto}`,
+    subject: \`INFORMATIVO — Ação APROVADA e Incluída no PDI — ${colaboradorName} — ${tituloAcaoTexto}\`,
     body,
     cc: CC_RELACIONAMENTO,
   });
@@ -842,7 +860,7 @@ ${ASSINATURA}
 
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: `INFORMATIVO — Relatório de Performance Incluído no seu PDI — ${tituloPdi}`,
+    subject: \`INFORMATIVO — Relatório de Performance Incluído no seu PDI — ${tituloPdi}\`,
     body: bodyColaborador,
   });
 
@@ -861,7 +879,7 @@ ${ASSINATURA}
 
     envioLider = await sendEmail({
       to: liderEmail,
-      subject: `INFORMATIVO — Relatório de Performance Incluído no PDI — ${colaboradorName} — ${tituloPdi}`,
+      subject: \`INFORMATIVO — Relatório de Performance Incluído no PDI — ${colaboradorName} — ${tituloPdi}\`,
       body: bodyLider,
     });
   }
@@ -910,7 +928,7 @@ ${ASSINATURA}
 
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: `🎉 PARABÉNS — Evidência Aprovada — ${tituloAcaoTexto}`,
+    subject: \`🎉 PARABÉNS — Evidência Aprovada — ${tituloAcaoTexto}\`,
     body: bodyColaborador,
   });
 
@@ -929,7 +947,7 @@ ${ASSINATURA}
 
     envioLider = await sendEmail({
       to: liderEmail,
-      subject: `INFORMATIVO — Evidência Aprovada — ${colaboradorName} — ${tituloAcaoTexto}`,
+      subject: \`INFORMATIVO — Evidência Aprovada — ${colaboradorName} — ${tituloAcaoTexto}\`,
       body: bodyLider,
     });
   }
@@ -981,7 +999,7 @@ ${ASSINATURA}
 
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: `AÇÃO NECESSÁRIA — Evidência Devolvida para Ajustes — ${tituloAcaoTexto}`,
+    subject: \`AÇÃO NECESSÁRIA — Evidência Devolvida para Ajustes — ${tituloAcaoTexto}\`,
     body: bodyColaborador,
   });
 
@@ -1002,7 +1020,7 @@ ${ASSINATURA}
 
     envioLider = await sendEmail({
       to: liderEmail,
-      subject: `INFORMATIVO — Evidência Devolvida — ${colaboradorName} — ${tituloAcaoTexto}`,
+      subject: \`INFORMATIVO — Evidência Devolvida — ${colaboradorName} — ${tituloAcaoTexto}\`,
       body: bodyLider,
     });
   }
@@ -1194,7 +1212,7 @@ export async function sendPasswordResetEmail(params: {
   const body = `
 Prezado(a) ${nomeExibicao},
 
-Recebemos uma solicitação para redefinir a sua senha de acesso à plataforma EVOLUIR.
+Recebemos uma solicitação para redefinir a sua senha de acesso ao Sistema de Gestão de PDI — EVOLUIR.
 
 Para cadastrar uma nova senha, acesse o link abaixo:
 ${resetLink}
@@ -1214,7 +1232,7 @@ ${ASSINATURA}
     title: "Redefinição de senha",
     greeting: `Olá, ${nomeExibicao}.`,
     intro:
-      "Recebemos uma solicitação para redefinir a sua senha de acesso à plataforma de PDI - EVOLUIR.",
+      "Recebemos uma solicitação para redefinir a sua senha de acesso ao Sistema de Gestão de PDI — EVOLUIR.",
     bodyHtml: `
       <p style="margin: 0 0 16px;">
         Para cadastrar uma nova senha, use o botão abaixo:
@@ -1223,13 +1241,13 @@ ${ASSINATURA}
       <div
         style="
           margin: 0 0 18px;
-          padding: 14px 16px;
-          border: 1px solid #cfe5e3;
-          border-radius: 12px;
-          background-color: #f8fbfb;
+          padding: 16px 18px;
+          border: 1px solid #d9d6fe;
+          border-radius: 16px;
+          background-color: #f8f7ff;
         "
       >
-        <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #0f766e;">
+        <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #5b21b6;">
           Importante
         </p>
         <ul style="margin: 0; padding-left: 18px; color: #475569;">
