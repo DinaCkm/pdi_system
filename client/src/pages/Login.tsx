@@ -124,11 +124,13 @@ export default function Login() {
               <CardContent className="p-6 sm:p-8">
                 <div className="mb-8 text-center lg:hidden">
                   <div className="flex justify-center">
-                    <img
-                      src="https://i.ibb.co/HTWppQBP/eco-do-bem-logo-cropped-564da75a.png"
-                      alt="Eco do Bem"
-                      className="w-[220px] h-auto"
-                    />
+                   <div className="rounded-full bg-white shadow-2xl p-8 flex items-center justify-center w-[240px] h-[240px]">
+  <img
+    src="https://i.ibb.co/271MBKsS/eco-5.png"
+    alt="Eco do Bem"
+    className="w-[150px] h-[150px] object-contain"
+  />
+</div>
                   </div>
                 </div>
 
