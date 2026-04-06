@@ -97,7 +97,7 @@ export default function Login() {
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8">
         <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-sm lg:grid-cols-2">
-          <div className="hidden lg:flex flex-col justify-center border-r border-white/10 bg-gradient-to-br from-teal-400/20 via-teal-300/10 to-cyan-300/10 p-10">
+          <div className="hidden lg:flex flex-col justify-center border-r border-white/10 bg-gradient-to-br from-cyan-300/10 via-teal-300/10 to-teal-400/20 p-10">
             <div className="max-w-xl">
               <div className="mb-8">
                 <img
@@ -138,7 +138,8 @@ export default function Login() {
                   </h2>
                   <p className="mt-3 text-sm leading-6 text-slate-500">
                     Entre com seu e-mail corporativo e sua senha para acessar a
-                    plataforma.
+                    plataforma. Caso seja seu primeiro acesso, clique em:
+                    Esqueci minha senha.
                   </p>
                 </div>
 
@@ -221,7 +222,7 @@ export default function Login() {
 
       <footer className="relative z-10 border-t border-white/10 bg-black/20 px-4 py-4 backdrop-blur-sm">
         <p className="text-center text-xs text-slate-400">
-          © {new Date().getFullYear()} Eco do Bem - Ecossistema de Desenvolvimento - Todos os direitos reservados
+          © {new Date().getFullYear()} Eco do B.E.M. - Ecossistema de Desenvolvimento - Todos os direitos reservados
         </p>
       </footer>
     </div>
