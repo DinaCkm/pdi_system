@@ -97,11 +97,11 @@ export default function Login() {
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-8">
         <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-sm lg:grid-cols-2">
-          <div className="hidden lg:flex flex-col justify-center border-r border-white/10 bg-gradient-to-br from-cyan-300/10 via-teal-300/10 to-teal-400/20 p-10">
+          <div className="hidden lg:flex flex-col justify-center border-r border-white/10 bg-gradient-to-br from-teal-300/40 via-cyan-300/25 to-sky-300/20 p-10">
             <div className="max-w-xl">
               <div className="mb-8">
                 <img
-                  src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/eco-do-bem-logo-cropped_564da75a.png"
+                  src="https://i.ibb.co/M5x99BPg/eco-3.png"
                   alt="Eco do Bem"
                   className="w-[300px] max-w-full h-auto drop-shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
                 />
@@ -125,7 +125,7 @@ export default function Login() {
                 <div className="mb-8 text-center lg:hidden">
                   <div className="flex justify-center">
                     <img
-                      src="https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/eco-do-bem-logo-cropped_564da75a.png"
+                      src="https://i.ibb.co/M5x99BPg/eco-3.png"
                       alt="Eco do Bem"
                       className="w-[220px] h-auto"
                     />
