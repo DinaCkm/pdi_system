@@ -102,7 +102,7 @@ export default function Login() {
               <div className="mb-8">
                <div className="w-[220px] h-[220px] rounded-full overflow-hidden shadow-2xl">
   <img
-    src="https://i.ibb.co/HTWppQBP/eco-do-bem-logo-cropped-564da75a.png"
+    src="https://i.ibb.co/271MBKsS/eco-5.png"
     alt="Eco do Bem"
     className="w-full h-full object-cover"
   />
@@ -112,9 +112,11 @@ export default function Login() {
               <h1 className="text-4xl font-bold leading-tight text-white">
                 Bem-vindo(a),
               </h1>
-
-<p>Ambiente do ecossistema do B.E.M. para acompanhar seu desenvolvimento, 
+<br>
+  <p className="text-center text-xs text-slate-400">
+        <p>Ambiente do ecossistema do B.E.M. para acompanhar seu desenvolvimento, 
   fortalecer competências e apoiar a evolução profissional.</p>
+        </p></br>
 
 
             </div>
@@ -128,7 +130,7 @@ export default function Login() {
                    <div className="rounded-full bg-white shadow-2xl p-8 flex items-center justify-center w-[240px] h-[240px]">
  <div className="w-[220px] h-[220px] rounded-full overflow-hidden shadow-2xl">
   <img
-    src="https://i.ibb.co/HTWppQBP/eco-do-bem-logo-cropped-564da75a.png"
+    src="https://i.ibb.co/271MBKsS/eco-5.png"
     alt="Eco do Bem"
     className="w-full h-full object-cover"
   />
