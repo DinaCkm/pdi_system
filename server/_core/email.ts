@@ -287,7 +287,7 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
       `;
 
     const info = await transporter.sendMail({
-      from: \`"Eco do Bem - EVOLUIR" <\${ENV.smtpUser}>\`,
+      from: `"Eco do Bem - EVOLUIR" <${ENV.smtpUser}>`,
       to,
       ...(payload.cc ? { cc: payload.cc } : {}),
       subject,
@@ -295,10 +295,10 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
       html: htmlBody,
     });
 
-    console.log(\`[Email] Email enviado com sucesso para \${to} (messageId: \${info.messageId})\`);
+    console.log(`[Email] Email enviado com sucesso para ${to} (messageId: ${info.messageId})`);
     return true;
   } catch (error: any) {
-    console.warn(\`[Email] Erro ao enviar email para \${to}:\`, error.message || error);
+    console.warn(`[Email] Erro ao enviar email para ${to}:`, error.message || error);
     return false;
   }
 }
