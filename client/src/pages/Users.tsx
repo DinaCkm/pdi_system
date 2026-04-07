@@ -545,14 +545,13 @@ export default function Users() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="create-cpf">CPF *</Label>
+              <Label htmlFor="create-cpf">CPF</Label>
               <Input
-                id="create-cpf"
-                value={formData.cpf}
-                onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
-                placeholder="000.000.000-00"
-                required
-              />
+  id="create-cpf"
+  value={formData.cpf}
+  onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
+  placeholder="000.000.000-00"
+ />
             </div>
 
             <div className="space-y-2">
@@ -626,14 +625,13 @@ export default function Users() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-cpf">CPF *</Label>
+              <Label htmlFor="edit-cpf">CPF</Label>
               <Input
-                id="edit-cpf"
-                value={formData.cpf}
-                onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
-                placeholder="000.000.000-00"
-                required
-              />
+  id="edit-cpf"
+  value={formData.cpf}
+  onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
+  placeholder="000.000.000-00"
+ />
             </div>
 
             <div className="space-y-2">
