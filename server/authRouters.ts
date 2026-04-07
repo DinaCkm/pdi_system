@@ -84,116 +84,117 @@ export const authRouter = router({
       };
     }),
 
-  login: publicProcedure
-    .input(
-      z.object({
-        email: z.string().email(),
-        password: z.string().min(1, "Informe sua senha."),
-      })
-    )
-    .mutation(async ({ input }) => {
-      const normalizedEmail = input.email.trim();
+ login: publicProcedure
+  .input(
+    z.object({
+      email: z.string().email(),
+      password: z.string().min(1, "Informe sua senha."),
+    })
+  )
+  .mutation(async ({ input, ctx }) => {
+    const normalizedEmail = input.email.trim();
 
-      const user = await db.getUserByEmail(normalizedEmail);
+    const user = await db.getUserByEmail(normalizedEmail);
 
-      if (!user) {
+    if (!user) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "E-mail ou senha inválidos.",
+      });
+    }
+
+    if (user.status !== "ativo") {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Usuário inativo.",
+      });
+    }
+
+    if (!user.passwordHash) {
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "E-mail ou senha inválidos.",
+      });
+    }
+
+    if (user.loginBlockedUntil) {
+      const blockedUntil = new Date(user.loginBlockedUntil);
+
+      if (!Number.isNaN(blockedUntil.getTime()) && blockedUntil.getTime() > Date.now()) {
         throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "E-mail ou senha inválidos.",
+          code: "TOO_MANY_REQUESTS",
+          message: `Muitas tentativas de login. Tente novamente em ${LOGIN_BLOCK_DURATION_MINUTES} minutos.`,
         });
       }
 
-      if (user.status !== "ativo") {
+      if (!Number.isNaN(blockedUntil.getTime()) && blockedUntil.getTime() <= Date.now()) {
+        await db.resetLoginAttempts(user.id);
+        user.failedLoginAttempts = 0;
+        user.loginBlockedUntil = null;
+      }
+    }
+
+    const senhaValida = verifyPassword(input.password, user.passwordHash);
+
+    if (!senhaValida) {
+      const nextFailedAttempts = (user.failedLoginAttempts || 0) + 1;
+
+      if (nextFailedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+        const loginBlockedUntil = new Date(
+          Date.now() + LOGIN_BLOCK_DURATION_MINUTES * 60 * 1000
+        );
+
+        await db.registerFailedLoginAttempt(user.id, nextFailedAttempts, loginBlockedUntil);
+
         throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Usuário inativo.",
+          code: "TOO_MANY_REQUESTS",
+          message: `Muitas tentativas de login. Tente novamente em ${LOGIN_BLOCK_DURATION_MINUTES} minutos.`,
         });
       }
 
-      if (!user.passwordHash) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "E-mail ou senha inválidos.",
-        });
-      }
+      await db.registerFailedLoginAttempt(user.id, nextFailedAttempts, null);
 
-      if (user.loginBlockedUntil) {
-        const blockedUntil = new Date(user.loginBlockedUntil);
+      throw new TRPCError({
+        code: "UNAUTHORIZED",
+        message: "E-mail ou senha inválidos.",
+      });
+    }
 
-        if (!Number.isNaN(blockedUntil.getTime()) && blockedUntil.getTime() > Date.now()) {
-          throw new TRPCError({
-            code: "TOO_MANY_REQUESTS",
-            message: `Muitas tentativas de login. Tente novamente em ${LOGIN_BLOCK_DURATION_MINUTES} minutos.`,
-          });
-        }
+    await db.resetLoginAttempts(user.id);
 
-        if (!Number.isNaN(blockedUntil.getTime()) && blockedUntil.getTime() <= Date.now()) {
-          await db.resetLoginAttempts(user.id);
-          user.failedLoginAttempts = 0;
-          user.loginBlockedUntil = null;
-        }
-      }
+    const tokenPayload = {
+      id: user.id,
+      role: user.role,
+      name: user.name,
+      email: user.email,
+      departmentId: user.departamentoId ?? null,
+      authTokenVersion: user.authTokenVersion ?? 0,
+    };
 
-      const senhaValida = verifyPassword(input.password, user.passwordHash);
+    const token = await createAuthToken(tokenPayload);
 
-      if (!senhaValida) {
-        const nextFailedAttempts = (user.failedLoginAttempts || 0) + 1;
+    ctx.res.cookie("auth_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 8 * 60 * 60 * 1000,
+      path: "/",
+    });
 
-        if (nextFailedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
-          const loginBlockedUntil = new Date(
-            Date.now() + LOGIN_BLOCK_DURATION_MINUTES * 60 * 1000
-          );
+    return {
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        role: user.role,
+        name: user.name,
+        email: user.email,
+        departmentId: user.departamentoId ?? null,
+      },
+      mustChangePassword: !!user.mustChangePassword,
+    };
+  }),
 
-          await db.registerFailedLoginAttempt(user.id, nextFailedAttempts, loginBlockedUntil);
-
-          throw new TRPCError({
-            code: "TOO_MANY_REQUESTS",
-            message: `Muitas tentativas de login. Tente novamente em ${LOGIN_BLOCK_DURATION_MINUTES} minutos.`,
-          });
-        }
-
-        await db.registerFailedLoginAttempt(user.id, nextFailedAttempts, null);
-
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "E-mail ou senha inválidos.",
-        });
-      }
-
-      await db.resetLoginAttempts(user.id);
-
- const tokenPayload = {
-  id: user.id,
-  role: user.role,
-  name: user.name,
-  email: user.email,
-  departmentId: user.departamentoId ?? null,
-  authTokenVersion: user.authTokenVersion ?? 0,
-};
-
-const token = await createAuthToken(tokenPayload);
-
-ctx.res.cookie("auth_token", token, {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax",
-  maxAge: 8 * 60 * 60 * 1000,
-  path: "/",
-});
-
-return {
-  success: true,
-  token,
-  user: {
-    id: user.id,
-    role: user.role,
-    name: user.name,
-    email: user.email,
-    departmentId: user.departamentoId ?? null,
-  },
-  mustChangePassword: !!user.mustChangePassword,
-};
-    }),
 
   // ESQUECI MINHA SENHA
   forgotPassword: publicProcedure
