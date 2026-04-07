@@ -843,7 +843,7 @@ export async function createUser(data: {
   openId: string;
   name: string;
   email: string;
-  cpf: string;
+  cpf?: string | null;
   studentId?: string | null;
   role: string;
   cargo: string;
@@ -863,7 +863,7 @@ const normalizedStudentId =
     openId: data.openId,
     name: data.name,
     email: data.email,
-    cpf: data.cpf,
+    cpf: data.cpf ?? null,
     studentId: normalizedStudentId,
     role: data.role,
     cargo: data.cargo,
@@ -881,7 +881,7 @@ export async function updateUser(
   data: Partial<{
     name: string;
     email: string;
-    cpf: string;
+    cpf: string | null;
     studentId: string | null;
     role: string;
     cargo: string;

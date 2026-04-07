@@ -211,7 +211,7 @@ export const users = mysqlTable("users", {
 	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
 	lastSignedIn: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	cpf: varchar({ length: 14 }).notNull(),
+	cpf: varchar({ length: 14 }),
 	studentId: varchar({ length: 50 }),
 	cargo: varchar({ length: 255 }).notNull(),
 	leaderId: int(),
