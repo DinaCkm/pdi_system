@@ -181,18 +181,18 @@ export const authRouter = router({
       path: "/",
     });
 
-    return {
-  success: true,
-  user: {
-    id: user.id,
-    role: user.role,
-    name: user.name,
-    email: user.email,
-    departmentId: user.departamentoId ?? null,
-  },
-  mustChangePassword: !!user.mustChangePassword,
-};
-
+       return {
+      success: true,
+      user: {
+        id: user.id,
+        role: user.role,
+        name: user.name,
+        email: user.email,
+        departmentId: user.departamentoId ?? null,
+      },
+      mustChangePassword: !!user.mustChangePassword,
+    };
+  }),
 
   // ESQUECI MINHA SENHA
   forgotPassword: publicProcedure
