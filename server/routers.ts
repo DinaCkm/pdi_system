@@ -60,7 +60,7 @@ departamentos: router({
     z.object({
       name: z.string(),
       email: z.string().email(),
-      cpf: z.string(),
+      cpf: z.string().optional().nullable(),
       studentId: z.string().optional().nullable(),
       role: z.enum(["admin", "gerente", "lider", "colaborador"]),
       cargo: z.string(),
@@ -68,11 +68,38 @@ departamentos: router({
     })
   )
   .mutation(async ({ input }) => {
-    const cpf = input.cpf.replace(/\D/g, "");
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const cpf =
+      input.cpf && input.cpf.trim() !== ""
+        ? input.cpf.replace(/\D/g, "")
+        : null;
+
     const studentId =
       input.studentId && input.studentId.trim() !== ""
         ? input.studentId.trim()
         : null;
+
+    const existingUserWithEmail = await db.getUserByEmail(normalizedEmail);
+    if (existingUserWithEmail) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: "Já existe um usuário com este e-mail.",
+      });
+    }
+
+    if (cpf) {
+      const users = await db.getAllUsers();
+      const existingUserWithCpf = users.find(
+        (u: { cpf?: string | null }) => u.cpf?.replace(/\D/g, "") === cpf
+      );
+
+      if (existingUserWithCpf) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Já existe um usuário com este CPF.",
+        });
+      }
+    }
 
     if (studentId) {
       const existingUserWithStudentId = await db.getUserByStudentId(studentId);
@@ -86,9 +113,12 @@ departamentos: router({
 
     await db.createUser({
       ...input,
+      email: normalizedEmail,
       cpf,
       studentId,
-      openId: `local_${cpf}`,
+      openId: cpf
+        ? `local_${cpf}`
+        : `local_${normalizedEmail.replace(/[^a-zA-Z0-9]/g, "_")}`,
       status: "ativo",
     });
 
@@ -107,7 +137,7 @@ departamentos: router({
       role: z.enum(["admin", "gerente", "lider", "colaborador"]).optional(),
       name: z.string().optional(),
       email: z.string().optional(),
-      cpf: z.string().optional(),
+      cpf: z.string().nullable().optional(),
       studentId: z.string().nullable().optional(),
       cargo: z.string().optional(),
       departamentoId: z.number().nullable().optional(),
@@ -117,8 +147,40 @@ departamentos: router({
   .mutation(async ({ input }) => {
     const { id, ...data } = input;
 
-    if (data.cpf) {
-      data.cpf = data.cpf.replace(/\D/g, "");
+    if (data.email) {
+      const normalizedEmail = data.email.trim().toLowerCase();
+      const existingUserWithEmail = await db.getUserByEmail(normalizedEmail);
+
+      if (existingUserWithEmail && existingUserWithEmail.id !== id) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Já existe um usuário com este e-mail.",
+        });
+      }
+
+      data.email = normalizedEmail;
+    }
+
+    if (data.cpf !== undefined) {
+      data.cpf =
+        data.cpf && data.cpf.trim() !== ""
+          ? data.cpf.replace(/\D/g, "")
+          : null;
+
+      if (data.cpf) {
+        const users = await db.getAllUsers();
+        const existingUserWithCpf = users.find(
+          (u: { id: number; cpf?: string | null }) =>
+            u.cpf?.replace(/\D/g, "") === data.cpf && u.id !== id
+        );
+
+        if (existingUserWithCpf) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Já existe um usuário com este CPF.",
+          });
+        }
+      }
     }
 
     if (data.studentId !== undefined) {
