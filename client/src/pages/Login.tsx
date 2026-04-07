@@ -15,27 +15,23 @@ export default function Login() {
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (data) => {
-      if (data?.token) {
-        localStorage.setItem("token", data.token);
+      if (data?.user) {
+  localStorage.setItem(
+    "user",
+    JSON.stringify({
+      ...data.user,
+      mustChangePassword: !!data.mustChangePassword,
+    })
+  );
 
-        if (data.user) {
-          localStorage.setItem(
-            "user",
-            JSON.stringify({
-              ...data.user,
-              mustChangePassword: !!data.mustChangePassword,
-            })
-          );
-        }
+  toast.success("Login realizado com sucesso!");
 
-        toast.success("Login realizado com sucesso!");
-
-        setTimeout(() => {
-          window.location.href = data.mustChangePassword
-            ? "/change-password"
-            : "/dashboard";
-        }, 500);
-      } else {
+  setTimeout(() => {
+    window.location.href = data.mustChangePassword
+      ? "/change-password"
+      : "/dashboard";
+  }, 500);
+} else {
         toast.error("Erro: token não recebido do servidor");
         setIsLoading(false);
       }
