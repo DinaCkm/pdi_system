@@ -102,7 +102,7 @@ export default function Login() {
               <div className="mb-8">
      <div className="w-[240px] h-[240px] rounded-full overflow-hidden shadow-2xl">
   <img
-    src="https://i.ibb.co/271MBKsS/eco-5.png"
+    src="https://iili.io/B7Nj9Re.png"
     alt="Eco do Bem"
     className="w-full h-full object-cover"
   />
@@ -130,7 +130,7 @@ export default function Login() {
                    <div className="mb-8">
               
   <img
-    src="https://i.ibb.co/HTWppQBP/eco-do-bem-logo-cropped-564da75a.png"
+    src="https://iili.io/B7NgXwB.png"
     alt="Eco do Bem"
     />
               </div>
