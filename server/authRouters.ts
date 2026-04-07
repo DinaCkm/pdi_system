@@ -354,16 +354,17 @@ return {
     return user;
   }),
 
-   // LOGOUT
+  // LOGOUT
   logout: protectedProcedure.mutation(async ({ ctx }) => {
-  await db.incrementAuthTokenVersion(ctx.user.id);
+    await db.incrementAuthTokenVersion(ctx.user.id);
 
-  ctx.res.clearCookie("auth_token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-  });
+    ctx.res.clearCookie("auth_token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    });
 
-  return { success: true };
-}),
+    return { success: true };
+  }),
+});
