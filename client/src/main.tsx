@@ -40,21 +40,11 @@ const trpcClient = trpc.createClient({
       url: "/api/trpc",
       transformer: superjson,
       fetch(input, init) {
-        // A MÁGICA ACONTECE AQUI:
-        // 1. Pega o token salvo no login
-        const token = localStorage.getItem('token');
-        const headers = new Headers(init?.headers ?? {});
-
-        // 2. Se tiver token, anexa no cabeçalho da requisição
-        if (token) {
-          headers.set('Authorization', `Bearer ${token}`);
-        }
-
-        return globalThis.fetch(input, {
-          ...(init ?? {}),
-          credentials: "include",
-          headers,
-        }).then(async (response) => {
+  return globalThis.fetch(input, {
+    ...(init ?? {}),
+    credentials: "include",
+    headers: init?.headers,
+  }).then(async (response) => {
           // Tratar respostas não-JSON (ex: rate limiting retorna texto puro)
           if (!response.ok) {
             const contentType = response.headers.get('content-type') || '';
