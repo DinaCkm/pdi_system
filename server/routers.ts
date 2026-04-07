@@ -95,7 +95,7 @@ departamentos: router({
     return { success: true };
   }),
     // Endpoint simplificado para não quebrar a tipagem antiga
-    buscarPorCpf: publicProcedure.input(z.object({ cpf: z.string() })).query(async ({ input }) => {
+    buscarPorCpf: protectedProcedure.input(z.object({ cpf: z.string() })).query(async ({ input }) => {
        const users = await db.getAllUsers();
        return users.find((u: { cpf?: string | null }) => u.cpf?.replace(/\D/g, "") === input.cpf.replace(/\D/g, "")) || null;
     }),
