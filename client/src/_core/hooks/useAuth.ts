@@ -35,7 +35,6 @@ export function useAuth(options?: UseAuthOptions) {
         throw error;
       }
     } finally {
-      localStorage.removeItem("token");
       localStorage.removeItem(AUTH_RUNTIME_USER_INFO_KEY);
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();

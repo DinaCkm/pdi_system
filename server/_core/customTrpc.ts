@@ -8,7 +8,9 @@ import * as db from "../db";
 // 1. CONTEXTO COM VALIDAÇÃO DE TOKEN ASSINADO + VERSÃO DE SESSÃO
 export const createTRPCContext = async (opts: CreateExpressContextOptions) => {
   const { req, res } = opts;
-  const token = req.headers.authorization?.split(" ")[1];
+  const authHeaderToken = req.headers.authorization?.split(" ")[1];
+const cookieToken = req.cookies?.auth_token;
+const token = cookieToken || authHeaderToken;
 
   let user = null;
 
