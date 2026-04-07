@@ -173,6 +173,14 @@ export const authRouter = router({
 
 const token = await createAuthToken(tokenPayload);
 
+ctx.res.cookie("auth_token", token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  maxAge: 8 * 60 * 60 * 1000,
+  path: "/",
+});
+
 return {
   success: true,
   token,
@@ -348,7 +356,14 @@ return {
 
    // LOGOUT
   logout: protectedProcedure.mutation(async ({ ctx }) => {
-    await db.incrementAuthTokenVersion(ctx.user.id);
-    return { success: true };
-  }),
-});
+  await db.incrementAuthTokenVersion(ctx.user.id);
+
+  ctx.res.clearCookie("auth_token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  });
+
+  return { success: true };
+}),
