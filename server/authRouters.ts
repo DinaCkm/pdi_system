@@ -27,6 +27,11 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      throw new TRPCError({
+  code: "FORBIDDEN",
+  message: "Fluxo de ativação inicial desabilitado por segurança.",
+});
+      
       const normalizedEmail = input.email.trim();
       const normalizedCpf = input.cpf.replace(/\D/g, "");
 
