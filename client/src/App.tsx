@@ -52,7 +52,7 @@ import GestaoGerente from './pages/GestaoGerente';
 function Router() {
   return (
     <Switch>
-      <Route path={"/setup"} component={Setup} />
+      <Route path={"/setup"} component={NotFound} />
       <Route path={"/login"} component={Login} />
       <Route path={"/reset-password"} component={ResetPassword} />
       <Route path={"/change-password"} component={ChangePassword} />
