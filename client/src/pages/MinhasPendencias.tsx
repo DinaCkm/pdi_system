@@ -130,11 +130,14 @@ function EvidenciaRejeitadaCard({ evidencia, acao, onReenviar }: { evidencia: an
           <XCircle className="h-5 w-5 text-red-600" />
           <span>Evidência Rejeitada</span>
         </div>
-        {evidencia.justificativaAdmin && (
-          <div className="mt-2 text-sm bg-white/50 p-2 rounded border border-red-100">
-            <span className="font-medium">Motivo da Rejeição:</span> {evidencia.justificativaAdmin}
-          </div>
-        )}
+{evidencia.justificativaAdmin && (
+  <div className="mt-2 text-sm bg-white/50 p-2 rounded border border-red-100">
+    <span className="font-medium">Motivo da Rejeição:</span>
+    <div className="mt-1">
+      <RichTextDisplay content={evidencia.justificativaAdmin} />
+    </div>
+  </div>
+)}
         <div className="mt-2 text-xs text-red-600">
           Rejeitada em: {evidencia.evaluatedAt ? new Date(evidencia.evaluatedAt).toLocaleDateString('pt-BR') : 'Data não disponível'}
         </div>
