@@ -794,7 +794,52 @@ ${ASSINATURA}
   });
 }
 
+export async function sendEmailAcaoReprovadaParaColaborador(params: {
+  colaboradorEmail: string;
+  colaboradorName: string;
+  tituloAcao: string;
+  departamento?: string;
+}): Promise<boolean> {
+  const { colaboradorEmail, colaboradorName, tituloAcao, departamento } = params;
+  const tituloAcaoTexto = toEmailInlineText(tituloAcao);
 
+  const subject = `INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}`;
+
+  const body = `
+Prezado(a) ${colaboradorName},
+
+Informamos que a sua solicitação de inclusão de nova ação "${tituloAcaoTexto}" foi respondida.
+
+${TEXTO_PADRAO_ACESSE}
+
+${AVISO_NAO_RESPONDA}
+${ASSINATURA}
+  `.trim();
+
+  const html = buildStandardNotificationEmail({
+    preheader: `Sua solicitação de ação ${tituloAcaoTexto} foi respondida.`,
+    title: "Sua solicitação foi respondida",
+    greeting: `Prezado(a) ${colaboradorName},`,
+    intro: "A sua solicitação de inclusão de nova ação no PDI foi analisada e já está disponível para consulta na plataforma.",
+    dataItems: [
+      { label: "Ação", value: tituloAcaoTexto },
+      { label: "Departamento", value: departamento || "" },
+      { label: "Status", value: "Solicitação respondida" },
+    ],
+    noticeTitle: "Próximo passo",
+    noticeContent: "Acesse o sistema para consultar a resposta registrada e acompanhar os próximos desdobramentos da sua solicitação.",
+    ctaLabel: "Acessar o sistema",
+    ctaUrl: getSystemUrl(),
+    footerNote: "Mensagem enviada automaticamente pela plataforma.",
+  });
+
+  return sendEmail({
+    to: colaboradorEmail,
+    subject,
+    body,
+    html,
+  });
+}
 /**
  * FLUXO DE SOLICITAÇÃO DE AJUSTE - E-MAILS
  */
