@@ -9,6 +9,7 @@ export type EmailPayload = {
   html?: string;
 };
 
+
 type BrandedEmailTemplateParams = {
   preheader?: string;
   title: string;
