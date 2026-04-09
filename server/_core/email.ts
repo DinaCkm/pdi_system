@@ -182,11 +182,12 @@ function buildBrandedEmailTemplate(params: BrandedEmailTemplateParams): string {
                   background-image: linear-gradient(135deg, #5b21b6 0%, #0f766e 100%);
                 "
               >
-                <img
-                  src="${EMAIL_LOGO_URL}"
-                  alt="Eco do Bem"
-                  style="display: block; max-width: 150px; width: 100%; height: auto;"
-                />
+               <img
+  src="${EMAIL_LOGO_URL}"
+  alt="Eco do Bem"
+  width="150"
+  style="display: block; width: 150px; max-width: 150px; height: auto; border: 0;"
+/>
 
                 <div
                   style="
