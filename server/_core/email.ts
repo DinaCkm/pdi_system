@@ -21,7 +21,7 @@ type BrandedEmailTemplateParams = {
 };
 
 const EMAIL_LOGO_URL =
-  "https://iili.io/BRQZgfI.png";
+  "https://iili.io/B0LHiej.png";
 
 // CC global removido a pedido do administrador
 
