@@ -122,8 +122,6 @@ export const evidences = mysqlTable("evidences", {
 	arquivo: varchar({ length: 255 }),
 	status: mysqlEnum([`aguardando_avaliacao`,`aprovada`,`reprovada`,`correcao_solicitada`]).default(`aguardando_avaliacao`).notNull(),
 	justificativaAdmin: text(),
-	respostaColaborador: text(),
-	dataResposta: timestamp({ mode: 'string' }),
 	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	evaluatedAt: timestamp({ mode: 'string' }),
 	evaluatedBy: int(),
