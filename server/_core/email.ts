@@ -57,9 +57,14 @@ function escapeHtml(value: string): string {
 function plainTextToHtml(text: string): string {
   if (!text) return "";
 
-  return escapeHtml(text)
+  const html = escapeHtml(text)
     .replace(/\n\n+/g, "</p><p>")
     .replace(/\n/g, "<br>");
+
+  return html.replace(
+    /&quot;([^&]+?)&quot;/g,
+    `<span style="font-weight: 700; color: #5b21b6;">$1</span>`
+  );
 }
 
 /**
