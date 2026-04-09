@@ -100,12 +100,12 @@ function buildBrandedEmailTemplate(params: BrandedEmailTemplateParams): string {
   const preheaderText = preheader || "";
 
   const greetingHtml = greeting
-    ? `<p style="margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #17313a;">${escapeHtml(greeting)}</p>`
-    : "";
+  ? `<p style="margin: 0 0 14px; font-size: 16px; line-height: 1.75; color: #17313a; font-weight: 600;">${escapeHtml(greeting)}</p>`
+  : "";
 
-  const introHtml = intro
-    ? `<p style="margin: 0 0 18px; font-size: 15px; line-height: 1.7; color: #425466;">${escapeHtml(intro)}</p>`
-    : "";
+const introHtml = intro
+  ? `<p style="margin: 0 0 24px; font-size: 15px; line-height: 1.8; color: #475467;">${escapeHtml(intro)}</p>`
+  : "";
 
   const ctaHtml =
     ctaLabel && ctaUrl
@@ -227,33 +227,38 @@ function buildBrandedEmailTemplate(params: BrandedEmailTemplateParams): string {
             </tr>
 
             <tr>
-              <td style="padding: 32px 32px 28px;">
-                <h1 style="margin: 0 0 16px; font-size: 28px; line-height: 1.2; color: #111827;">
-                  ${escapeHtml(title)}
-                </h1>
+              <td style="padding: 36px 32px 30px;">
+  <h1 style="margin: 0 0 10px; font-size: 30px; line-height: 1.15; color: #111827; font-weight: 800; letter-spacing: -0.02em;">
+    ${escapeHtml(title)}
+  </h1>
 
-                ${greetingHtml}
-                ${introHtml}
+  <div style="width: 56px; height: 4px; border-radius: 999px; background: linear-gradient(135deg, #5b21b6 0%, #0f766e 100%); margin: 0 0 22px;"></div>
 
-                <div style="font-size: 15px; line-height: 1.75; color: #344054;">
-                  ${bodyHtml}
-                </div>
+  ${greetingHtml}
+  ${introHtml}
 
-                ${ctaHtml}
-                ${footerNoteHtml}
-              </td>
+  <div style="font-size: 15px; line-height: 1.85; color: #344054;">
+    ${bodyHtml}
+  </div>
+
+  ${ctaHtml}
+  ${footerNoteHtml}
+</td>
             </tr>
 
             <tr>
-              <td style="padding: 18px 32px 26px; background-color: #fafafa; border-top: 1px solid #eceff3;">
-                <p style="margin: 0 0 8px; font-size: 12px; line-height: 1.6; color: #667085;">
-                  Este é um e-mail automático do Sistema de Gestão de PDI — EVOLUIR. Não responda esta mensagem.
-                </p>
-                <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #667085;">
-                  Eco do Bem - Ecossistema de Desenvolvimento
-                </p>
-              </td>
-            </tr>
+  <td style="padding: 20px 32px 28px; background-color: #fafafa; border-top: 1px solid #eceff3;">
+    <p style="margin: 0 0 6px; font-size: 12px; line-height: 1.7; color: #667085;">
+      Este é um e-mail automático do <strong>Sistema de Gestão de PDI — EVOLUIR</strong>.
+    </p>
+    <p style="margin: 0 0 10px; font-size: 12px; line-height: 1.7; color: #667085;">
+      Não responda esta mensagem. Em caso de necessidade, acesse a plataforma para acompanhar a solicitação.
+    </p>
+    <p style="margin: 0; font-size: 12px; line-height: 1.7; color: #98a2b3;">
+      Eco do Bem - Ecossistema de Desenvolvimento
+    </p>
+  </td>
+</tr>
           </table>
         </td>
       </tr>
