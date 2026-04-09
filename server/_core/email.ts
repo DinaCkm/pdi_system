@@ -73,6 +73,16 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+function decodeHtmlEntities(value: string): string {
+  if (!value) return "";
+  return value
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+}
+
 function getSystemUrl(): string {
   return "https://pdi.ecodobem.com";
 }
@@ -106,6 +116,26 @@ function plainTextToHtml(text: string): string {
   });
 
   return html;
+}
+
+function richTextToEmailHtml(content: string): string {
+  if (!content) return "";
+
+  const decoded = decodeHtmlEntities(content).trim();
+  const hasHtml = /<\/?[a-z][\s\S]*>/i.test(decoded);
+
+  if (!hasHtml) {
+    return plainTextToHtml(decoded);
+  }
+
+  return decoded
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<p[^>]*>/gi, '<p style="margin: 0 0 12px;">')
+    .replace(/<ul[^>]*>/gi, '<ul style="margin: 0; padding-left: 18px;">')
+    .replace(/<ol[^>]*>/gi, '<ol style="margin: 0; padding-left: 18px;">')
+    .replace(/<li[^>]*>/gi, '<li style="margin: 0 0 8px;">')
+    .replace(/<(?!\/?(p|br|strong|b|em|i|u|span|ul|ol|li)\b)[^>]+>/gi, "");
 }
 
 function toEmailInlineText(value?: string | null): string {
@@ -324,7 +354,7 @@ function buildNoticeBox(title: string, content: string): string {
         ${escapeHtml(title)}
       </p>
       <div style="font-size:14px;line-height:1.75;color:#475467;">
-        ${plainTextToHtml(content)}
+        ${richTextToEmailHtml(content)}
       </div>
     </div>
   `.trim();
@@ -455,7 +485,7 @@ function buildListBox(
     .map(
       item => `
         <li style="margin:0 0 10px;color:${palette.text};">
-          ${plainTextToHtml(item)}
+          ${richTextToEmailHtml(item)}
         </li>
       `
     )
@@ -481,7 +511,7 @@ function buildTextCard(title: string, content: string): string {
         ${escapeHtml(title)}
       </p>
       <div style="font-size:14px;line-height:1.8;color:#344054;">
-        ${plainTextToHtml(content)}
+        ${richTextToEmailHtml(content)}
       </div>
     </div>
   `.trim();
