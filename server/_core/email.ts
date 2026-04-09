@@ -57,12 +57,17 @@ function escapeHtml(value: string): string {
 function plainTextToHtml(text: string): string {
   if (!text) return "";
 
-  let html = escapeHtml(text);
+  const highlightedParts: string[] = [];
 
-  html = html.replace(
-    /&quot;([^&]+?)&quot;/g,
-    `<span style="display: inline-block; font-weight: 700; color: #5b21b6; background-color: #f4edff; padding: 2px 8px; border-radius: 999px;">$1</span>`
-  );
+  let preparedText = text.replace(/"([^"]+?)"/g, (_, content) => {
+    const token = `__EMAIL_HIGHLIGHT_${highlightedParts.length}__`;
+    highlightedParts.push(
+      `<span style="display: inline-block; font-weight: 700; color: #5b21b6; background-color: #f4edff; padding: 2px 8px; border-radius: 999px;">${escapeHtml(content)}</span>`
+    );
+    return token;
+  });
+
+  let html = escapeHtml(preparedText);
 
   html = html.replace(
     /^(IMPORTANTE:|O QUE FAZER AGORA:|MOTIVO DA DEVOLUÇÃO:|RESUMO DA VARREDURA:)/gim,
@@ -72,6 +77,11 @@ function plainTextToHtml(text: string): string {
   html = html
     .replace(/\n\n+/g, "</p><p>")
     .replace(/\n/g, "<br>");
+
+  highlightedParts.forEach((highlighted, index) => {
+    const token = `__EMAIL_HIGHLIGHT_${index}__`;
+    html = html.replace(token, highlighted);
+  });
 
   return html;
 }
