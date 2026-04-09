@@ -2062,6 +2062,8 @@ export async function getEvidencesByActionIds(actionIds: number[]) {
       evaluatedAt: evidences.evaluatedAt,
       evaluatedBy: evidences.evaluatedBy,
       justificativaAdmin: evidences.justificativaAdmin,
+      respostaColaborador: evidences.respostaColaborador,
+      dataResposta: evidences.dataResposta,
     })
     .from(evidences)
     .where(inArray(evidences.actionId, actionIds))
