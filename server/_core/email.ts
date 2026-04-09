@@ -279,6 +279,172 @@ const introHtml = intro
   `.trim();
 }
 
+function buildInfoBox(label: string, value: string): string {
+  if (!value) return "";
+
+  return `
+    <div style="margin: 0 0 12px;">
+      <p style="margin: 0 0 6px; font-size: 12px; line-height: 1.5; color: #6941c6; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">
+        ${escapeHtml(label)}
+      </p>
+      <div style="padding: 14px 16px; background-color: #f8f7ff; border: 1px solid #e9d7fe; border-radius: 14px; font-size: 14px; line-height: 1.7; color: #344054;">
+        ${escapeHtml(value)}
+      </div>
+    </div>
+  `.trim();
+}
+
+function buildNoticeBox(title: string, content: string): string {
+  if (!content) return "";
+
+  return `
+    <div style="margin: 18px 0; padding: 16px 18px; background-color: #f8f7ff; border: 1px solid #d9d6fe; border-radius: 16px;">
+      <p style="margin: 0 0 8px; font-size: 13px; line-height: 1.5; color: #5b21b6; font-weight: 700;">
+        ${escapeHtml(title)}
+      </p>
+      <div style="font-size: 14px; line-height: 1.75; color: #475467;">
+        ${plainTextToHtml(content)}
+      </div>
+    </div>
+  `.trim();
+}
+
+function buildActionBox(title: string, items: string[]): string {
+  const validItems = items.filter(Boolean);
+  if (!validItems.length) return "";
+
+  const itemsHtml = validItems
+    .map(
+      item => `
+        <li style="margin: 0 0 8px; color: #344054;">
+          ${escapeHtml(item)}
+        </li>
+      `
+    )
+    .join("");
+
+  return `
+    <div style="margin: 20px 0; padding: 16px 18px; background-color: #fffaf5; border: 1px solid #fed7aa; border-radius: 16px;">
+      <p style="margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: #b54708; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">
+        ${escapeHtml(title)}
+      </p>
+      <ol style="margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.75;">
+        ${itemsHtml}
+      </ol>
+    </div>
+  `.trim();
+}
+
+function buildMetricGrid(items: Array<{ label: string; value: string | number }>): string {
+  const validItems = items.filter(item => item.value !== undefined && item.value !== null && String(item.value).trim() !== "");
+  if (!validItems.length) return "";
+
+  const cardsHtml = validItems
+    .map(
+      item => `
+        <td style="padding: 0 6px 12px; vertical-align: top;">
+          <div style="min-width: 140px; padding: 16px 14px; background-color: #f8f7ff; border: 1px solid #e9d7fe; border-radius: 16px; text-align: center;">
+            <p style="margin: 0 0 6px; font-size: 12px; line-height: 1.5; color: #6941c6; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">
+              ${escapeHtml(item.label)}
+            </p>
+            <p style="margin: 0; font-size: 24px; line-height: 1.2; color: #111827; font-weight: 800;">
+              ${escapeHtml(String(item.value))}
+            </p>
+          </div>
+        </td>
+      `
+    )
+    .join("");
+
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0 8px; border-collapse: collapse;">
+      <tr>
+        ${cardsHtml}
+      </tr>
+    </table>
+  `.trim();
+}
+
+function buildDataGroup(items: Array<{ label: string; value?: string | null }>): string {
+  const validItems = items.filter(item => item.value && String(item.value).trim() !== "");
+  if (!validItems.length) return "";
+
+  const rowsHtml = validItems
+    .map(
+      item => `
+        <tr>
+          <td style="padding: 0 0 10px; font-size: 13px; line-height: 1.5; color: #6941c6; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">
+            ${escapeHtml(item.label)}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 0 0 14px; font-size: 14px; line-height: 1.7; color: #344054;">
+            ${escapeHtml(String(item.value))}
+          </td>
+        </tr>
+      `
+    )
+    .join("");
+
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 18px 0; padding: 18px 18px 4px; background-color: #f8fafc; border: 1px solid #e4e7ec; border-radius: 16px;">
+      ${rowsHtml}
+    </table>
+  `.trim();
+}
+
+function buildStandardNotificationEmail(params: {
+  title: string;
+  greeting: string;
+  intro: string;
+  dataItems?: Array<{ label: string; value?: string | null }>;
+  noticeTitle?: string;
+  noticeContent?: string;
+  actionTitle?: string;
+  actionItems?: string[];
+  extraHtml?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  footerNote?: string;
+  preheader?: string;
+}): string {
+  const {
+    title,
+    greeting,
+    intro,
+    dataItems = [],
+    noticeTitle,
+    noticeContent,
+    actionTitle,
+    actionItems = [],
+    extraHtml,
+    ctaLabel,
+    ctaUrl,
+    footerNote,
+    preheader,
+  } = params;
+
+  const sections = [
+    buildDataGroup(dataItems),
+    noticeTitle && noticeContent ? buildNoticeBox(noticeTitle, noticeContent) : "",
+    actionTitle && actionItems.length ? buildActionBox(actionTitle, actionItems) : "",
+    extraHtml || "",
+  ]
+    .filter(Boolean)
+    .join("");
+
+  return buildBrandedEmailTemplate({
+    preheader: preheader || intro,
+    title,
+    greeting,
+    intro,
+    bodyHtml: sections || `<p style="margin: 0;">Acesse o sistema para acompanhar esta atualização.</p>`,
+    ctaLabel,
+    ctaUrl,
+    footerNote,
+  });
+}
+
 type BrandedNotificationEmailParams = {
   to: string;
   subject: string;
@@ -586,8 +752,10 @@ export async function sendEmailAcaoAprovadaParaColaborador(params: {
   pdiTitulo?: string;
   departamento?: string;
 }): Promise<boolean> {
-  const { colaboradorEmail, colaboradorName, tituloAcao } = params;
+  const { colaboradorEmail, colaboradorName, tituloAcao, pdiTitulo, departamento } = params;
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
+
+  const subject = `INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}`;
 
   const body = `
 Prezado(a) ${colaboradorName},
@@ -600,40 +768,29 @@ ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
 
-  return sendEmail({
-    to: colaboradorEmail,
-    subject: `INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}`,
-    body,
+  const html = buildStandardNotificationEmail({
+    preheader: `Sua solicitação de ação ${tituloAcaoTexto} foi respondida.`,
+    title: "Sua solicitação foi respondida",
+    greeting: `Prezado(a) ${colaboradorName},`,
+    intro: "A sua solicitação de inclusão de nova ação no PDI foi analisada e já está disponível para consulta na plataforma.",
+    dataItems: [
+      { label: "Ação", value: tituloAcaoTexto },
+      { label: "PDI", value: pdiTitulo || "" },
+      { label: "Departamento", value: departamento || "" },
+      { label: "Status", value: "Solicitação respondida" },
+    ],
+    noticeTitle: "Próximo passo",
+    noticeContent: "Acesse o sistema para tomar ciência da resposta e acompanhar os próximos desdobramentos da sua solicitação.",
+    ctaLabel: "Acessar o sistema",
+    ctaUrl: getSystemUrl(),
+    footerNote: "Mensagem enviada automaticamente pela plataforma.",
   });
-}
-
-/**
- * Envia email para o Colaborador quando o Gerente reprova a ação.
- */
-export async function sendEmailAcaoReprovadaParaColaborador(params: {
-  colaboradorEmail: string;
-  colaboradorName: string;
-  tituloAcao: string;
-  departamento?: string;
-}): Promise<boolean> {
-  const { colaboradorEmail, colaboradorName, tituloAcao } = params;
-  const tituloAcaoTexto = toEmailInlineText(tituloAcao);
-
-  const body = `
-Prezado(a) ${colaboradorName},
-
-Informamos que a sua solicitação de inclusão de nova ação "${tituloAcaoTexto}" foi respondida.
-
-${TEXTO_PADRAO_ACESSE}
-
-${AVISO_NAO_RESPONDA}
-${ASSINATURA}
-  `.trim();
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: `INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}`,
+    subject,
     body,
+    html,
   });
 }
 
