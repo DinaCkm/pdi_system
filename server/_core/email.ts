@@ -134,8 +134,10 @@ function richTextToEmailHtml(content: string): string {
     .replace(/<p[^>]*>/gi, '<p style="margin: 0 0 12px;">')
     .replace(/<ul[^>]*>/gi, '<ul style="margin: 0; padding-left: 18px;">')
     .replace(/<ol[^>]*>/gi, '<ol style="margin: 0; padding-left: 18px;">')
-    .replace(/<li[^>]*>/gi, '<li style="margin: 0 0 8px;">')
-    .replace(/<(?!\/?(p|br|strong|b|em|i|u|span|ul|ol|li)\b)[^>]+>/gi, "");
+   .replace(/<li[^>]*>/gi, '<li style="margin: 0 0 8px;">')
+   .replace(/<span[^>]*>/gi, '<span>')
+   .replace(/<\/span>/gi, '</span>')
+   .replace(/<(?!\/?(p|br|strong|b|em|i|u|span|ul|ol|li)\b)[^>]+>/gi, "");
 }
 
 function toEmailInlineText(value?: string | null): string {
