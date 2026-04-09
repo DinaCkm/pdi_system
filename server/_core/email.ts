@@ -57,14 +57,23 @@ function escapeHtml(value: string): string {
 function plainTextToHtml(text: string): string {
   if (!text) return "";
 
-  const html = escapeHtml(text)
+  let html = escapeHtml(text);
+
+  html = html.replace(
+    /&quot;([^&]+?)&quot;/g,
+    `<span style="display: inline-block; font-weight: 700; color: #5b21b6; background-color: #f4edff; padding: 2px 8px; border-radius: 999px;">$1</span>`
+  );
+
+  html = html.replace(
+    /^(IMPORTANTE:|O QUE FAZER AGORA:|MOTIVO DA DEVOLUÇÃO:|RESUMO DA VARREDURA:)/gim,
+    `<span style="display: inline-block; margin: 10px 0 8px; padding: 6px 10px; border-radius: 10px; background-color: #f4edff; color: #5b21b6; font-size: 12px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;">$1</span>`
+  );
+
+  html = html
     .replace(/\n\n+/g, "</p><p>")
     .replace(/\n/g, "<br>");
 
-  return html.replace(
-    /&quot;([^&]+?)&quot;/g,
-    `<span style="font-weight: 700; color: #5b21b6;">$1</span>`
-  );
+  return html;
 }
 
 /**
