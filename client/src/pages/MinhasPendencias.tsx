@@ -96,11 +96,12 @@ function EvidenciaRejeitadaCard({ evidencia, acao, onReenviar }: { evidencia: an
   // Mutation para salvar contestação
   const contestarMutation = trpc.evidences.contestar.useMutation({
     onSuccess: () => {
-      toast.success("Contestação enviada com sucesso!");
-      setShowContestacao(false);
-      setContestacao("");
-      utils.evidences.listByUser.invalidate();
-    },
+  toast.success("Contestação enviada com sucesso!");
+  setShowContestacao(false);
+  setContestacao("");
+  utils.evidences.listByUser.invalidate();
+  utils.actions.list.invalidate();
+},
     onError: (error: any) => {
       toast.error(error.message || "Erro ao enviar contestação");
     }
