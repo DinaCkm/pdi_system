@@ -761,7 +761,7 @@ export async function sendEmailSolicitacaoAjuste(params: {
   const { leaderEmail, leaderName, colaboradorName, acaoNome, justificativa, camposAlterar } = params;
 
   const acaoNomeTexto = toEmailInlineText(acaoNome);
-  const subject = "PARA A SUA CIÊNCIA - ALTERAÇÃO NO PDI";
+  const subject = `Informativo | Solicitação de ajuste respondida — ${colaboradorName}`;
 
   const body = `
 Prezado(a) ${leaderName},
@@ -831,7 +831,7 @@ export async function sendEmailParecerCKMParaLider(params: {
   } = params;
 
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
-  const subject = `AÇÃO NECESSÁRIA - Solicitação de Ação Aguardando seu Parecer — ${colaboradorName}`;
+  const subject = `Ação necessária | Solicitação aguardando seu parecer — ${colaboradorName}`;
 
   const body = `
 Prezado(a) ${liderName},
@@ -899,7 +899,7 @@ export async function sendEmailParecerLiderParaGerente(params: {
   } = params;
 
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
-  const subject = `AÇÃO NECESSÁRIA - Solicitação de Ação Aguardando sua Decisão Final — ${colaboradorName}`;
+  const subject = `Ação necessária | Solicitação aguardando decisão final — ${colaboradorName}`;
 
   const body = `
 Prezado(a) ${gerenteName},
@@ -957,7 +957,7 @@ export async function sendEmailAcaoAprovadaParaColaborador(params: {
     params;
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
 
-  const subject = `INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}`;
+  const subject = "Informativo | Sua solicitação de ação foi respondida";
 
   const body = `
 Prezado(a) ${colaboradorName},
@@ -1002,7 +1002,7 @@ export async function sendEmailAcaoReprovadaParaColaborador(params: {
   const { colaboradorEmail, colaboradorName, tituloAcao, departamento } = params;
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
 
-  const subject = `INFORMATIVO — Sua Solicitação de Ação foi Respondida — ${tituloAcaoTexto}`;
+  const subject = "Informativo | Sua solicitação de ação foi respondida";
 
   const body = `
 Prezado(a) ${colaboradorName},
@@ -1060,7 +1060,7 @@ export async function sendEmailAjusteSolicitadoParaLider(params: {
 
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
   const tipoAjusteFormatado = formatarTipoAjuste(tipoAjuste, camposAjustar);
-  const subject = `AÇÃO NECESSÁRIA - Solicitação de Ajuste Aguardando sua Validação — ${colaboradorName}`;
+  const subject = `Ação necessária | Ajuste aguardando validação — ${colaboradorName}`;
 
   const body = `
 Prezado(a) ${liderName},
@@ -1131,7 +1131,7 @@ export async function sendEmailAjusteValidadoParaAdmin(params: {
 
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
   const tipoAjusteFormatado = formatarTipoAjuste(tipoAjuste, camposAjustar);
-  const subject = `AÇÃO NECESSÁRIA - Ajuste Autorizado pelo Líder Aguardando Execução — ${colaboradorName}`;
+  const subject = `Ação necessária | Ajuste aguardando execução — ${colaboradorName}`;
 
   const body = `
 Prezado(a) ${adminName},
@@ -1195,7 +1195,7 @@ export async function sendEmailAjusteAprovadoParaColaborador(params: {
 
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
   const tipoAjusteFormatado = formatarTipoAjuste(tipoAjuste, camposAjustar);
-  const subject = `INFORMATIVO — Sua Solicitação de Ajuste foi Respondida — ${tituloAcaoTexto}`;
+  const subject = "Informativo | Sua solicitação de ajuste foi respondida";
 
   const body = `
 Prezado(a) ${colaboradorName},
@@ -1255,7 +1255,7 @@ export async function sendEmailAjusteReprovadoParaColaborador(params: {
 
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
   const tipoAjusteFormatado = formatarTipoAjuste(tipoAjuste, camposAjustar);
-  const subject = `INFORMATIVO — Sua Solicitação de Ajuste foi Respondida — ${tituloAcaoTexto}`;
+  const subject = "Informativo | Sua solicitação de ajuste foi respondida";
 
   const body = `
 Prezado(a) ${colaboradorName},
@@ -1319,7 +1319,7 @@ export async function sendEmailRevisaoSolicitadaParaCKM(params: {
   const adminDisplay = adminName || "Administrador";
   const colaboradorDisplay = colaboradorName || "N/A";
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
-  const subject = `REVISÃO SOLICITADA — Nova Análise Necessária — ${tituloAcaoTexto}`;
+  const subject = `Ação necessária | Nova análise necessária — ${colaboradorDisplay}`;
 
   const body = `
 Prezado(a) ${adminDisplay},
@@ -1382,7 +1382,7 @@ export async function sendEmailRevisaoLiderParaCKM(params: {
   const adminDisplay = adminName || "Administrador";
   const colaboradorDisplay = colaboradorName || "N/A";
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
-  const subject = `ESCLARECIMENTO SOLICITADO PELO LÍDER — ${tituloAcaoTexto}`;
+  const subject = `Ação necessária | Esclarecimento solicitado — ${colaboradorDisplay}`;
 
   const body = `
 Prezado(a) ${adminDisplay},
@@ -1525,7 +1525,7 @@ ${ASSINATURA}
 
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: `INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${tituloAcaoTexto}`,
+    subject: "Informativo | Sua solicitação de ação não foi aprovada",
     body: bodyColaborador,
     cc: CC_RELACIONAMENTO,
     html: htmlColaborador,
@@ -1533,7 +1533,7 @@ ${ASSINATURA}
 
   const envioLider = await sendEmail({
     to: liderEmail,
-    subject: `INFORMATIVO — Solicitação de Ação NÃO APROVADA — ${colaboradorName} — ${tituloAcaoTexto}`,
+    subject: `Informativo | Solicitação de ação não aprovada — ${colaboradorName}`,
     body: bodyLider,
     cc: CC_RELACIONAMENTO,
     html: htmlLider,
@@ -1553,7 +1553,7 @@ export async function sendEmailAcaoAprovadaParaLider(params: {
 
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
   const CC_RELACIONAMENTO = "relacionamento@ckmtalents.net";
-  const subject = `INFORMATIVO — Ação APROVADA e Incluída no PDI — ${colaboradorName} — ${tituloAcaoTexto}`;
+  const subject = `Informativo | Ação aprovada e incluída no PDI — ${colaboradorName}`;
 
   const body = `
 Prezado(a) ${liderName},
@@ -1634,7 +1634,7 @@ ${ASSINATURA}
 
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: `INFORMATIVO — Relatório de Performance Incluído no seu PDI — ${tituloPdi}`,
+    subject: "Informativo | Relatório incluído no seu PDI",
     body: bodyColaborador,
     html: htmlColaborador,
   });
@@ -1671,7 +1671,7 @@ ${ASSINATURA}
 
     envioLider = await sendEmail({
       to: liderEmail,
-      subject: `INFORMATIVO — Relatório de Performance Incluído no PDI — ${colaboradorName} — ${tituloPdi}`,
+      subject: `Informativo | Relatório incluído no PDI — ${colaboradorName}`,
       body: bodyLider,
       html: htmlLider,
     });
@@ -1752,7 +1752,7 @@ ${ASSINATURA}
 
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: `🎉 PARABÉNS — Evidência Aprovada — ${tituloAcaoTexto}`,
+    subject: "Parabéns | Sua evidência foi aprovada",
     body: bodyColaborador,
     html: htmlColaborador,
   });
@@ -1796,7 +1796,7 @@ ${ASSINATURA}
 
     envioLider = await sendEmail({
       to: liderEmail,
-      subject: `INFORMATIVO — Evidência Aprovada — ${colaboradorName} — ${tituloAcaoTexto}`,
+      subject: `Informativo | Evidência aprovada — ${colaboradorName}`,
       body: bodyLider,
       html: htmlLider,
     });
@@ -1880,7 +1880,7 @@ ${ASSINATURA}
 
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: `AÇÃO NECESSÁRIA — Evidência Devolvida para Ajustes — ${tituloAcaoTexto}`,
+    subject: "Ação necessária | Evidência devolvida para ajustes",
     body: bodyColaborador,
     html: htmlColaborador,
   });
@@ -1923,7 +1923,7 @@ ${ASSINATURA}
 
     envioLider = await sendEmail({
       to: liderEmail,
-      subject: `INFORMATIVO — Evidência Devolvida — ${colaboradorName} — ${tituloAcaoTexto}`,
+      subject: `Informativo | Evidência devolvida — ${colaboradorName}`,
       body: bodyLider,
       html: htmlLider,
     });
@@ -1973,7 +1973,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: colaboradorEmail,
-    subject: `AÇÃO NECESSÁRIA — Ações Vencidas no seu PDI`,
+    subject: "Ação necessária | Ações vencidas no seu PDI",
     body,
     html,
   });
@@ -2020,7 +2020,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: liderEmail,
-    subject: `AÇÃO NECESSÁRIA — Ações Vencidas na Sua Equipe`,
+    subject: "Ação necessária | Ações vencidas na equipe",
     body,
     html,
   });
@@ -2079,7 +2079,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: adminEmail,
-    subject: `RELATÓRIO — Varredura Quinzenal de Ações Vencidas (${dataVarredura})`,
+    subject: "Relatório | Varredura quinzenal de ações vencidas",
     body,
     html,
   });
@@ -2160,7 +2160,7 @@ ${ASSINATURA}
 
   return sendEmail({
     to: liderEmail,
-    subject: `EVIDÊNCIA ENVIADA — ${colaboradorName} — ${tituloAcaoTexto}`,
+    subject: `Informativo | Nova evidência enviada — ${colaboradorName}`,
     body,
     html,
   });
@@ -2174,7 +2174,7 @@ export async function sendPasswordResetEmail(params: {
   const { to, name, resetLink } = params;
 
   const nomeExibicao = name || "usuário(a)";
-  const subject = "Redefinição de senha — EVOLUIR";
+  const subject = "Acesso | Redefinição de senha";
 
   const body = `
 Prezado(a) ${nomeExibicao},
