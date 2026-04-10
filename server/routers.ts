@@ -1067,11 +1067,23 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Apenas evidências reprovadas podem ser contestadas' });
       }
       
-      // Salvar a contestação sem mexer no schema da tabela evidences
+      // Salvar a contestação no histórico de textos
 await db.createEvidenceText(
   input.evidenceId,
   `[CONTESTACAO_COLABORADOR] ${input.resposta}`
 );
+
+// Voltar a evidência para nova avaliação
+await db.execute(sql`
+  UPDATE evidences
+  SET status = 'aguardando_avaliacao',
+      evaluatedBy = NULL,
+      evaluatedAt = NULL
+  WHERE id = ${input.evidenceId}
+`);
+
+// Alinhar também o status da ação
+await db.updateAction(ev.actionId, { status: 'aguardando_avaliacao' });
       
       // Notificar o líder/admin sobre a contestação
       const action = await db.getActionById(ev.actionId);
