@@ -84,6 +84,19 @@ export default function AdminDashboard() {
       (ev.solicitante?.departamento || '').toLowerCase().includes(search)
     );
   };
+
+  const getContestacaoTexto = (evidence: any) => {
+  const contestacao = evidence?.texts?.find((t: any) =>
+    typeof t?.texto === "string" &&
+    t.texto.startsWith("[CONTESTACAO_COLABORADOR]")
+  );
+
+  if (!contestacao?.texto) return null;
+
+  return contestacao.texto
+    .replace("[CONTESTACAO_COLABORADOR]", "")
+    .trim();
+};
   
   const filteredPendingEvidences = filterEvidences(pendingEvidences);
   const filteredApprovedEvidences = filterEvidences(approvedEvidences);
@@ -597,6 +610,16 @@ export default function AdminDashboard() {
                           <span>{evidence.files.length} arquivo(s) anexado(s)</span>
                         </div>
                       )}
+
+                      {getContestacaoTexto(evidence) && (
+  <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+    <p className="text-sm font-semibold text-amber-800">Contestação do Colaborador:</p>
+    <p className="text-sm text-amber-700 mt-1 whitespace-pre-wrap">
+      {getContestacaoTexto(evidence)}
+    </p>
+  </div>
+)}
+                      
                       <div className="flex gap-2">
                         <Button
                           onClick={() => {
@@ -1084,6 +1107,15 @@ export default function AdminDashboard() {
                 </a>
               </div>
             )}
+
+            {getContestacaoTexto(selectedEvidence) && (
+  <div>
+    <p className="text-sm font-semibold text-amber-800 mb-1">Contestação do Colaborador:</p>
+    <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 whitespace-pre-wrap">
+      {getContestacaoTexto(selectedEvidence)}
+    </div>
+  </div>
+)}
 
             {/* Arquivos anexados */}
             {selectedEvidence?.files && selectedEvidence.files.length > 0 && (
