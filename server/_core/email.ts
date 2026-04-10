@@ -47,6 +47,14 @@ Sistema de Gestão de PDI — Eco do Bem - Ecossistema de Desenvolvimento`;
 const TEXTO_PADRAO_ACESSE =
   "Acesse o Sistema para tomar ciência e providências. Você possui notificações pendentes.";
 
+const EMAIL_SUBJECT_SUFFIX = " [Gestão de PDI - Evoluir]";
+
+function appendEmailSubjectSuffix(subject: string): string {
+  if (!subject) return EMAIL_SUBJECT_SUFFIX.trim();
+  if (subject.endsWith(EMAIL_SUBJECT_SUFFIX)) return subject;
+  return `${subject}${EMAIL_SUBJECT_SUFFIX}`;
+}
+
 function stripHtmlForEmail(html: string): string {
   if (!html) return "";
   return html
@@ -698,6 +706,7 @@ function createTransporter() {
 
 export async function sendEmail(payload: EmailPayload): Promise<boolean> {
   const { to, subject, body } = payload;
+  const finalSubject = appendEmailSubjectSuffix(subject);
 
   if (!ENV.smtpUser || !ENV.smtpPass) {
     console.warn("[Email] SMTP credentials not configured (SMTP_USER / SMTP_PASS).");
@@ -712,7 +721,7 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
       from: `"Eco do Bem - EVOLUIR" <${ENV.smtpUser}>`,
       to,
       ...(payload.cc ? { cc: payload.cc } : {}),
-      subject,
+      subject: finalSubject,
       text: stripHtmlForEmail(body),
       html: htmlBody,
     });
@@ -1752,7 +1761,7 @@ ${ASSINATURA}
 
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: "Parabéns | Sua evidência foi aprovada",
+    subject: "Parabéns! | Sua evidência foi aprovada",
     body: bodyColaborador,
     html: htmlColaborador,
   });
