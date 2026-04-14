@@ -56,6 +56,7 @@ export default function AdminDashboard() {
 
   // Estado para visualizar detalhes da ação base nas evidências
   const [selectedActionDetails, setSelectedActionDetails] = useState<any>(null);
+  const [selectedActionId, setSelectedActionId] = useState<number | null>(null);
   const [showActionDetailsDialog, setShowActionDetailsDialog] = useState(false);
 
   // Filtro de status para solicitações
@@ -77,6 +78,14 @@ export default function AdminDashboard() {
   const { data: approvedEvidences = [], isLoading: approvedEvLoading } = trpc.evidences.listApproved.useQuery();
   const { data: rejectedEvidences = [], isLoading: rejectedEvLoading } = trpc.evidences.listRejected.useQuery();
   const { data: allAdjustments = [], isLoading: adjLoading, error: adjError } = trpc.adjustmentRequests.listPending.useQuery();
+
+  const { data: macros = [] } = trpc.competencias.listAllMacros.useQuery();
+  const { data: fullSelectedAction, isLoading: loadingSelectedAction } = trpc.actions.getById.useQuery(
+    { id: selectedActionId || 0 },
+    { enabled: !!selectedActionId && showActionDetailsDialog }
+  );
+
+  const actionDetailsResolved = fullSelectedAction || selectedActionDetails;
 
   // Filtrar evidências por busca
   const filterEvidences = (evidences: any[]) => {
@@ -155,7 +164,12 @@ export default function AdminDashboard() {
   };
 
   const getActionMacroLabel = (action: any) => {
+    if (!action) return 'Não informado';
+
+    const macroById = macros.find((m: any) => m.id === action?.macroId);
+
     return (
+      macroById?.nome ||
       action?.macroCompetencia?.nome ||
       action?.macrocompetencia?.nome ||
       action?.macro?.nome ||
@@ -166,8 +180,9 @@ export default function AdminDashboard() {
     );
   };
 
-  const handleOpenActionDetails = (action: any) => {
+  const handleOpenActionDetails = (action: any, actionId?: number) => {
     setSelectedActionDetails(action || null);
+    setSelectedActionId(actionId || action?.id || null);
     setShowActionDetailsDialog(true);
   };
 
@@ -503,7 +518,6 @@ export default function AdminDashboard() {
         </TabsList>
 
         <TabsContent value="evidences" className="space-y-4">
-          {/* Sub-abas de evidências */}
           <div className="flex flex-wrap gap-2 mb-4">
             <Button
               variant={evidenceTab === 'pendentes' ? 'default' : 'outline'}
@@ -534,7 +548,6 @@ export default function AdminDashboard() {
             </Button>
           </div>
 
-          {/* Busca de evidências */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -545,7 +558,6 @@ export default function AdminDashboard() {
             />
           </div>
 
-          {/* Evidências Pendentes */}
           {evidenceTab === 'pendentes' && (
             <>
               {filteredPendingEvidences.length === 0 ? (
@@ -566,8 +578,8 @@ export default function AdminDashboard() {
                               variant="outline"
                               size="sm"
                               className="h-8 border-blue-200 text-blue-700 hover:bg-blue-50"
-                              onClick={() => handleOpenActionDetails(evidence.acao)}
-                              disabled={!evidence.acao}
+                              onClick={() => handleOpenActionDetails(evidence.acao, evidence.actionId)}
+                              disabled={!evidence.actionId}
                             >
                               <Eye className="h-4 w-4 mr-2" />
                               Ver mais informações
@@ -601,7 +613,6 @@ export default function AdminDashboard() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {/* Campos estruturados do formulário guiado */}
                       {evidence.oQueRealizou ? (
                         <div className="space-y-2">
                           {(evidence.tipoEvidencia || evidence.cargaHoraria) && (
@@ -646,7 +657,7 @@ export default function AdminDashboard() {
                           <div className="text-sm text-gray-600 mt-1 line-clamp-3">{evidence.descricao ? stripHtml(evidence.descricao) : "Sem descrição"}</div>
                         </div>
                       )}
-                      {/* Arquivos anexados */}
+
                       {evidence.files && evidence.files.length > 0 && (
                         <div className="flex items-center gap-2 text-xs text-blue-600">
                           <FileText className="h-3.5 w-3.5" />
@@ -681,7 +692,6 @@ export default function AdminDashboard() {
             </>
           )}
 
-          {/* Evidências Aprovadas */}
           {evidenceTab === 'aprovadas' && (
             <>
               {approvedEvLoading ? (
@@ -706,8 +716,8 @@ export default function AdminDashboard() {
                               variant="outline"
                               size="sm"
                               className="h-8 border-blue-200 text-blue-700 hover:bg-blue-50"
-                              onClick={() => handleOpenActionDetails(evidence.acao)}
-                              disabled={!evidence.acao}
+                              onClick={() => handleOpenActionDetails(evidence.acao, evidence.actionId)}
+                              disabled={!evidence.actionId}
                             >
                               <Eye className="h-4 w-4 mr-2" />
                               Ver mais informações
@@ -758,7 +768,6 @@ export default function AdminDashboard() {
             </>
           )}
 
-          {/* Evidências Devolvidas */}
           {evidenceTab === 'devolvidas' && (
             <>
               {rejectedEvLoading ? (
@@ -783,8 +792,8 @@ export default function AdminDashboard() {
                               variant="outline"
                               size="sm"
                               className="h-8 border-blue-200 text-blue-700 hover:bg-blue-50"
-                              onClick={() => handleOpenActionDetails(evidence.acao)}
-                              disabled={!evidence.acao}
+                              onClick={() => handleOpenActionDetails(evidence.acao, evidence.actionId)}
+                              disabled={!evidence.actionId}
                             >
                               <Eye className="h-4 w-4 mr-2" />
                               Ver mais informações
@@ -843,7 +852,6 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="adjustments" className="space-y-4">
-          {/* Filtros de Status */}
           <Card className="p-4">
             <div className="flex items-center gap-2 flex-wrap">
               <Filter className="h-4 w-4 text-gray-500" />
@@ -954,14 +962,12 @@ export default function AdminDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Mostrar campos que o colaborador quer alterar */}
                   <div>
                     <p className="text-sm font-semibold text-gray-700 mb-2">Campos que o colaborador deseja alterar:</p>
                     {(() => {
                       try {
                         const dados = JSON.parse(adjustment.camposAjustar || '{}');
 
-                        // Novo formato: { camposSelecionados: ["Título", "Prazo", ...] }
                         if (dados.camposSelecionados && Array.isArray(dados.camposSelecionados)) {
                           const campos = dados.camposSelecionados;
                           if (campos.length === 0) {
@@ -978,7 +984,6 @@ export default function AdminDashboard() {
                           );
                         }
 
-                        // Formato antigo: { titulo: "novo valor", prazo: "novo valor", ... }
                         const valoresAnteriores = JSON.parse(adjustment.dadosAntesAjuste || '{}');
                         const campos = Object.keys(dados);
                         if (campos.length === 0) {
@@ -1034,7 +1039,6 @@ export default function AdminDashboard() {
                     <div className="text-sm text-gray-600 mt-1 bg-blue-50 p-2 rounded border border-blue-100"><RichTextDisplay content={adjustment.justificativa || ''} /></div>
                   </div>
 
-                  {/* Mostrar comentários do líder */}
                   {adjustment.comentariosLider && adjustment.comentariosLider.length > 0 && (
                     <div className="mt-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
                       <div className="flex items-center gap-2 mb-2">
@@ -1057,7 +1061,6 @@ export default function AdminDashboard() {
                     </div>
                   )}
 
-                  {/* Mostrar botão de avaliar apenas para solicitações pendentes ou aguardando líder */}
                   {(adjustment.status === 'pendente' || adjustment.status === 'aguardando_lider') && (
                     <div className="flex gap-2">
                       <Button
@@ -1073,7 +1076,6 @@ export default function AdminDashboard() {
                     </div>
                   )}
 
-                  {/* Mostrar justificativa do admin se já foi avaliada */}
                   {adjustment.justificativaAdmin && (
                     <div className="mt-2 p-3 bg-gray-100 rounded-lg border">
                       <p className="text-sm font-semibold text-gray-700">Justificativa do Admin:</p>
@@ -1087,13 +1089,13 @@ export default function AdminDashboard() {
         </TabsContent>
       </Tabs>
 
-      {/* Dialog de detalhes da ação base */}
       <Dialog
         open={showActionDetailsDialog}
         onOpenChange={(open) => {
           setShowActionDetailsDialog(open);
           if (!open) {
             setSelectedActionDetails(null);
+            setSelectedActionId(null);
           }
         }}
       >
@@ -1108,41 +1110,45 @@ export default function AdminDashboard() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm font-semibold text-gray-800 mb-1">Título</p>
-              <div className="text-sm text-gray-700 bg-white border rounded-lg p-3">
-                {selectedActionDetails?.titulo || 'Não informado'}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm font-semibold text-gray-800 mb-1">Descrição</p>
-              <div className="text-sm text-gray-700 bg-white border rounded-lg p-3">
-                {selectedActionDetails?.descricao ? (
-                  <RichTextDisplay content={selectedActionDetails.descricao} />
-                ) : (
-                  <span className="text-gray-500">Não informada</span>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {loadingSelectedAction ? (
+            <div className="py-6 text-sm text-gray-500">Carregando detalhes da ação...</div>
+          ) : (
+            <div className="space-y-4">
               <div>
-                <p className="text-sm font-semibold text-gray-800 mb-1">Prazo</p>
+                <p className="text-sm font-semibold text-gray-800 mb-1">Título</p>
                 <div className="text-sm text-gray-700 bg-white border rounded-lg p-3">
-                  {formatDateBR(selectedActionDetails?.prazo)}
+                  {actionDetailsResolved?.titulo || 'Não informado'}
                 </div>
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-gray-800 mb-1">Macrocompetência</p>
+                <p className="text-sm font-semibold text-gray-800 mb-1">Descrição</p>
                 <div className="text-sm text-gray-700 bg-white border rounded-lg p-3">
-                  {getActionMacroLabel(selectedActionDetails)}
+                  {actionDetailsResolved?.descricao ? (
+                    <RichTextDisplay content={actionDetailsResolved.descricao} />
+                  ) : (
+                    <span className="text-gray-500">Não informada</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800 mb-1">Prazo</p>
+                  <div className="text-sm text-gray-700 bg-white border rounded-lg p-3">
+                    {formatDateBR(actionDetailsResolved?.prazo)}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold text-gray-800 mb-1">Macrocompetência</p>
+                  <div className="text-sm text-gray-700 bg-white border rounded-lg p-3">
+                    {getActionMacroLabel(actionDetailsResolved)}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowActionDetailsDialog(false)}>
@@ -1152,7 +1158,6 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Avaliação de Evidência */}
       <Dialog open={showEvidenceDialog} onOpenChange={(open) => {
         setShowEvidenceDialog(open);
         if (!open) {
@@ -1175,14 +1180,12 @@ export default function AdminDashboard() {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Informações do Empregado */}
             <div className="bg-gray-50 rounded-lg p-3 space-y-1">
               <p className="text-sm"><strong>Empregado:</strong> {selectedEvidence?.solicitante?.name || 'N/A'}</p>
               <p className="text-sm"><strong>Departamento:</strong> {selectedEvidence?.solicitante?.departamento || 'N/A'}</p>
               <p className="text-sm"><strong>Data envio:</strong> {selectedEvidence?.createdAt ? new Date(selectedEvidence.createdAt).toLocaleDateString('pt-BR') : 'N/A'}</p>
             </div>
 
-            {/* Tipo e Data de Realização (novos campos) */}
             {(selectedEvidence?.tipoEvidencia || selectedEvidence?.dataRealizacao || selectedEvidence?.cargaHoraria) && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-1">
                 {selectedEvidence?.tipoEvidencia && <p className="text-sm"><strong>Tipo:</strong> {selectedEvidence.tipoEvidencia}</p>}
@@ -1191,7 +1194,6 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* O que realizou */}
             {selectedEvidence?.oQueRealizou && (
               <div>
                 <p className="text-sm font-semibold text-gray-800 mb-1">O que realizou:</p>
@@ -1199,7 +1201,6 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* Como aplicou */}
             {selectedEvidence?.comoAplicou && (
               <div>
                 <p className="text-sm font-semibold text-gray-800 mb-1">Como aplicou na prática:</p>
@@ -1207,7 +1208,6 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* Resultado prático */}
             {selectedEvidence?.resultadoPratico && (
               <div>
                 <p className="text-sm font-semibold text-gray-800 mb-1">Resultado prático:</p>
@@ -1215,14 +1215,12 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* Impacto informado pelo empregado */}
             {selectedEvidence?.impactoPercentual != null && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <p className="text-sm font-semibold text-amber-800">Impacto informado pelo empregado: <span className="text-lg">{selectedEvidence.impactoPercentual}%</span></p>
               </div>
             )}
 
-            {/* Principal Aprendizado */}
             {selectedEvidence?.principalAprendizado && (
               <div>
                 <p className="text-sm font-semibold text-gray-800 mb-1">Principal Aprendizado:</p>
@@ -1230,7 +1228,6 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* Descrição (campo legado) */}
             {selectedEvidence?.descricao && !selectedEvidence?.oQueRealizou && (
               <div>
                 <p className="text-sm font-semibold">Descrição:</p>
@@ -1238,7 +1235,6 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* Link externo */}
             {selectedEvidence?.linkExterno && (
               <div>
                 <p className="text-sm font-semibold text-gray-800 mb-1">Link externo:</p>
@@ -1257,7 +1253,6 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* Arquivos anexados */}
             {selectedEvidence?.files && selectedEvidence.files.length > 0 && (
               <div>
                 <p className="text-sm font-semibold text-gray-800 mb-2">Arquivos anexados:</p>
@@ -1273,13 +1268,11 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {/* SEPARADOR - Avaliação do Admin */}
             <div className="border-t-2 border-blue-300 pt-4">
               <h4 className="text-sm font-bold text-blue-800 mb-3 flex items-center gap-1.5">
                 <Gauge className="h-4 w-4" /> Avaliação do Administrador
               </h4>
 
-              {/* Pergunta 1: A evidência comprova? */}
               <div className="mb-4">
                 <label className="text-sm font-semibold text-gray-800 block mb-2">A evidência comprova a realização da ação? *</label>
                 <div className="grid grid-cols-3 gap-2">
@@ -1313,7 +1306,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Se NÃO comprova: motivo da devolução */}
               {evidenciaComprova === 'nao' && (
                 <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
                   <label className="text-sm font-semibold text-red-800 block mb-2">Motivo da devolução *</label>
@@ -1326,7 +1318,6 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* Se INSUFICIENTE: orientação ao empregado */}
               {evidenciaComprova === 'insuficiente' && (
                 <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
                   <p className="text-xs text-amber-700 mb-2">Não foi possível avaliar a aplicabilidade prática com base nos relatos apresentados. A evidência será devolvida para que o empregado complemente as informações.</p>
@@ -1340,10 +1331,8 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* Se SIM comprova: validação de impacto */}
               {evidenciaComprova === 'sim' && (
                 <div className="space-y-4">
-                  {/* Pergunta 2: O relato comprova impacto? */}
                   <div>
                     <label className="text-sm font-semibold text-gray-800 block mb-2">O relato comprova impacto prático real?</label>
                     <div className="flex gap-2">
@@ -1365,7 +1354,6 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Slider de impacto validado pelo admin */}
                   <div>
                     <label className="text-sm font-semibold text-gray-800 block mb-2">
                       Impacto validado pelo administrador: <span className="text-blue-600 text-lg">{impactoValidadoAdmin}%</span>
@@ -1385,7 +1373,6 @@ export default function AdminDashboard() {
                     <p className="text-xs text-gray-500 mt-1">Este valor será usado no cálculo do IIP (Índice de Impacto Prático).</p>
                   </div>
 
-                  {/* Parecer do admin */}
                   <div>
                     <label className="text-sm font-semibold text-gray-800 block mb-2">Parecer sobre o impacto (opcional)</label>
                     <Textarea
@@ -1425,7 +1412,6 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Avaliação de Solicitação */}
       <Dialog open={showAdjustmentDialog} onOpenChange={setShowAdjustmentDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -1508,7 +1494,6 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Edição de Ação */}
       <Dialog open={showEditActionModal} onOpenChange={setShowEditActionModal}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
