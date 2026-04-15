@@ -74,7 +74,7 @@ const getMenuItems = (userRole: string) => {
       { icon: CheckSquare, label: "Ações da Equipe", path: "/acoes-equipe" },
       { icon: MessageSquarePlus, label: "Solicitações de Ajustes nas Ações/Equipe", path: "/solicitacoes-equipe" },
       { icon: Users, label: "Solicitações de Novas Ações/Equipe", path: "/solicitacoes-acoes?aba=equipe" },
-      { icon: ExternalLink, label: "Ecossistema do Bem - Líderes e Sucessores", path: "https://ecolider.evoluirckm.com", external: true },
+      { icon: ExternalLink, label: "Ecossistema do Bem - Líderes e Sucessores", path: "https://ecolider.ecodobem.com", external: true },
     );
   } else if (userRole === "gerente") {
     // Gerente tem acesso de leitura: Dashboard, PDIs, Ações, Histórico, Relatório de Vencidas
@@ -96,7 +96,7 @@ const getMenuItems = (userRole: string) => {
       { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
       { icon: History, label: "Minhas Solicitações", path: "/minhas-solicitacoes" },
       { icon: FileText, label: "Solicitar Ação", path: "/solicitacoes-acoes" },
-      { icon: ExternalLink, label: "EcoLider - Líderes e Sucessores", path: "https://ecolider.evoluirckm.com", external: true, tooltipText: "Somente para participantes do banco de líderes sucessores" },
+      { icon: ExternalLink, label: "EcoLider - Líderes e Sucessores", path: "https://ecolider.ecodobem.com", external: true, tooltipText: "Somente para participantes do banco de líderes sucessores" },
     );
   }
   
