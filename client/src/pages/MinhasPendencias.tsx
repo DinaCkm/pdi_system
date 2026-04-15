@@ -96,12 +96,12 @@ function EvidenciaRejeitadaCard({ evidencia, acao, onReenviar }: { evidencia: an
   // Mutation para salvar contestação
   const contestarMutation = trpc.evidences.contestar.useMutation({
     onSuccess: () => {
-  toast.success("Contestação enviada com sucesso!");
-  setShowContestacao(false);
-  setContestacao("");
-  utils.evidences.listByUser.invalidate();
-  utils.actions.list.invalidate();
-},
+      toast.success("Contestação enviada com sucesso!");
+      setShowContestacao(false);
+      setContestacao("");
+      utils.evidences.listByUser.invalidate();
+      utils.actions.list.invalidate();
+    },
     onError: (error: any) => {
       toast.error(error.message || "Erro ao enviar contestação");
     }
@@ -131,14 +131,14 @@ function EvidenciaRejeitadaCard({ evidencia, acao, onReenviar }: { evidencia: an
           <XCircle className="h-5 w-5 text-red-600" />
           <span>Evidência Rejeitada</span>
         </div>
-{evidencia.justificativaAdmin && (
-  <div className="mt-2 text-sm bg-white/50 p-2 rounded border border-red-100">
-    <span className="font-medium">Motivo da Rejeição:</span>
-    <div className="mt-1">
-      <RichTextDisplay content={evidencia.justificativaAdmin} />
-    </div>
-  </div>
-)}
+        {evidencia.justificativaAdmin && (
+          <div className="mt-2 text-sm bg-white/50 p-2 rounded border border-red-100">
+            <span className="font-medium">Motivo da Rejeição:</span>
+            <div className="mt-1">
+              <RichTextDisplay content={evidencia.justificativaAdmin} />
+            </div>
+          </div>
+        )}
         <div className="mt-2 text-xs text-red-600">
           Rejeitada em: {evidencia.evaluatedAt ? new Date(evidencia.evaluatedAt).toLocaleDateString('pt-BR') : 'Data não disponível'}
         </div>
@@ -226,6 +226,7 @@ export default function MinhasPendencias() {
   // Estados de filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
+  const [filterPdi, setFilterPdi] = useState<string>("todos");
   const [selectedAcao, setSelectedAcao] = useState<any>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedAcaoHistory, setSelectedAcaoHistory] = useState<any>(null);
@@ -327,6 +328,23 @@ export default function MinhasPendencias() {
     return acoes.filter((acao: any) => String(acao.responsavelId) === String(userId));
   }, [acoes, userId]);
 
+  const pdiOptions = useMemo(() => {
+    const uniquePdis = new Map<string, { id: string; titulo: string }>();
+
+    minhasAcoes.forEach((acao: any) => {
+      if (acao?.pdiId) {
+        const id = String(acao.pdiId);
+        const titulo = acao.pdiTitulo?.trim() || `PDI ${id}`;
+
+        if (!uniquePdis.has(id)) {
+          uniquePdis.set(id, { id, titulo });
+        }
+      }
+    });
+
+    return Array.from(uniquePdis.values()).sort((a, b) => a.titulo.localeCompare(b.titulo, 'pt-BR'));
+  }, [minhasAcoes]);
+
   // Detectar mudança de status para celebração
   useEffect(() => {
     if (!minhasAcoes || minhasAcoes.length === 0) return;
@@ -353,7 +371,7 @@ export default function MinhasPendencias() {
     setPreviousAcoes(minhasAcoes);
   }, [minhasAcoes]);
 
-  // Filtrar ações com base em busca e status
+  // Filtrar ações com base em busca, status e PDI
   const filteredAcoes = useMemo(() => {
     return minhasAcoes.filter((acao: any) => {
       // Filtro de busca (título ou descrição)
@@ -365,14 +383,17 @@ export default function MinhasPendencias() {
       // Filtro de status
       const matchesStatus = filterStatus === "todos" || acao.status === filterStatus;
 
-      return matchesSearch && matchesStatus;
+      // Filtro de PDI
+      const matchesPdi = filterPdi === "todos" || String(acao.pdiId) === filterPdi;
+
+      return matchesSearch && matchesStatus && matchesPdi;
     }).sort((a: any, b: any) => {
       // Ordenar por data de entrega (prazo) - mais próximas primeiro
       const prazoA = a.prazo ? new Date(a.prazo).getTime() : Infinity;
       const prazoB = b.prazo ? new Date(b.prazo).getTime() : Infinity;
       return prazoA - prazoB;
     });
-  }, [minhasAcoes, searchTerm, filterStatus]);
+  }, [minhasAcoes, searchTerm, filterStatus, filterPdi]);
 
   // Função para obter badge de status
   const getStatusBadge = (status: string) => {
@@ -459,7 +480,7 @@ export default function MinhasPendencias() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Busca por Título */}
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -482,6 +503,21 @@ export default function MinhasPendencias() {
                 <SelectItem value="em_andamento">Em Andamento</SelectItem>
                 <SelectItem value="concluida">Concluída</SelectItem>
                 <SelectItem value="cancelada">Cancelada</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Filtro de PDI */}
+            <Select value={filterPdi} onValueChange={setFilterPdi}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por PDI" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os PDIs</SelectItem>
+                {pdiOptions.map((pdi) => (
+                  <SelectItem key={pdi.id} value={pdi.id}>
+                    {pdi.titulo}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -509,211 +545,211 @@ export default function MinhasPendencias() {
         <div className="grid gap-4">
           {filteredAcoes.map((acao: any) => {
             return (
-            <Card key={acao.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="text-lg truncate">{acao.titulo}</CardTitle>
-                    {acao.pdiTitulo && (
-                      <p className="text-xs text-blue-600 font-medium mt-0.5 truncate">
-                        {acao.pdiTitulo}
-                      </p>
-                    )}
-                    <CardDescription className="mt-1 line-clamp-2">
-                      {acao.descricao ? stripHtml(acao.descricao) : "Sem descrição"}
-                    </CardDescription>
-                  </div>
-                  <div className="ml-4">
-                    {getStatusBadge(acao.status)}
-                  </div>
-                </div>
-              </CardHeader>
-
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  {/* Prazo */}
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">Prazo</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Clock className="h-4 w-4 text-orange-500" />
-                      <p className="text-sm font-medium">{formatDate(acao.prazo)}</p>
+              <Card key={acao.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg truncate">{acao.titulo}</CardTitle>
+                      {acao.pdiTitulo && (
+                        <p className="text-xs text-blue-600 font-medium mt-0.5 truncate">
+                          {acao.pdiTitulo}
+                        </p>
+                      )}
+                      <CardDescription className="mt-1 line-clamp-2">
+                        {acao.descricao ? stripHtml(acao.descricao) : "Sem descrição"}
+                      </CardDescription>
+                    </div>
+                    <div className="ml-4">
+                      {getStatusBadge(acao.status)}
                     </div>
                   </div>
+                </CardHeader>
 
-                  {/* Macro Competência */}
-                  {acao.macroId && (
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    {/* Prazo */}
                     <div>
-                      <p className="text-xs text-muted-foreground font-medium">Macro</p>
-                      <p className="text-sm font-medium mt-1">{macroNames[acao.macroId] || `Competência ${acao.macroId}`}</p>
-                    </div>
-                  )}
-
-                  {/* Micro Competência */}
-                  {acao.microcompetencia && (
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Micro</p>
-                      <p className="text-sm font-medium mt-1 truncate">{acao.microcompetencia}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Botões de Ação */}
-                <div className="flex gap-2 flex-wrap">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewDetails(acao)}
-                    className="gap-2 flex-1 min-w-[120px]"
-                  >
-                    <Eye className="h-4 w-4" />
-                    Detalhes
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 flex-1 min-w-[140px]"
-                    onClick={() => {
-                      setSelectedAcaoAjuste(acao);
-                      setShowAjusteModal(true);
-                    }}
-                    disabled={adjustmentRequests.some(
-                      (req: any) => req.actionId === acao.id && req.status === 'pendente'
-                    )}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    Solicitar Alteração
-                  </Button>
-
-                  {/* Card de Feedback de Solicitação de Ajuste */}
-                  {(() => {
-                    // Buscar solicitações avaliadas (aprovadas ou reprovadas) para esta ação
-                    const solicitacoesAvaliadas = adjustmentRequests.filter(
-                      (req: any) => req.actionId === acao.id && (req.status === 'aprovada' || req.status === 'reprovada')
-                    );
-                    
-                    // Pegar a mais recente
-                    const ultimaSolicitacao = solicitacoesAvaliadas.sort((a: any, b: any) => 
-                      new Date(b.evaluatedAt || b.createdAt).getTime() - new Date(a.evaluatedAt || a.createdAt).getTime()
-                    )[0];
-                    
-                    if (!ultimaSolicitacao) return null;
-                    
-                    const isAprovada = ultimaSolicitacao.status === 'aprovada';
-                    const isReprovada = ultimaSolicitacao.status === 'reprovada';
-                    
-                    return (
-                      <div className={`w-full mt-2 p-3 rounded-lg border ${
-                        isAprovada 
-                          ? 'bg-green-50 border-green-200 text-green-800' 
-                          : 'bg-red-50 border-red-200 text-red-800'
-                      }`}>
-                        <div className="flex items-center gap-2 font-semibold text-sm">
-                          {isAprovada ? (
-                            <>
-                              <CheckCircle className="h-4 w-4 text-green-600" />
-                              <span>Solicitação de Ajuste #{ultimaSolicitacao.id} - APROVADA</span>
-                            </>
-                          ) : (
-                            <>
-                              <XCircle className="h-4 w-4 text-red-600" />
-                              <span>Solicitação de Ajuste #{ultimaSolicitacao.id} - NÃO ACEITA</span>
-                            </>
-                          )}
-                        </div>
-                        {!isAprovada && ultimaSolicitacao.justificativaAdmin && (
-  <div className="mt-2 text-xs bg-white/50 p-2 rounded border border-red-100">
-    <span className="font-medium">Motivo:</span>
-    <div className="mt-1">
-      <RichTextDisplay content={ultimaSolicitacao.justificativaAdmin} />
-    </div>
-  </div>
-)}
-                        {isAprovada && (
-                          <div className="mt-1 text-xs opacity-75">
-                            Alterações aplicadas com sucesso
-                          </div>
-                        )}
+                      <p className="text-xs text-muted-foreground font-medium">Prazo</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <Clock className="h-4 w-4 text-orange-500" />
+                        <p className="text-sm font-medium">{formatDate(acao.prazo)}</p>
                       </div>
-                    );
-                  })()}
-                  <div className="mt-4 w-full">
+                    </div>
+
+                    {/* Macro Competência */}
+                    {acao.macroId && (
+                      <div>
+                        <p className="text-xs text-muted-foreground font-medium">Macro</p>
+                        <p className="text-sm font-medium mt-1">{macroNames[acao.macroId] || `Competência ${acao.macroId}`}</p>
+                      </div>
+                    )}
+
+                    {/* Micro Competência */}
+                    {acao.microcompetencia && (
+                      <div>
+                        <p className="text-xs text-muted-foreground font-medium">Micro</p>
+                        <p className="text-sm font-medium mt-1 truncate">{acao.microcompetencia}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Botões de Ação */}
+                  <div className="flex gap-2 flex-wrap">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewDetails(acao)}
+                      className="gap-2 flex-1 min-w-[120px]"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Detalhes
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 flex-1 min-w-[140px]"
+                      onClick={() => {
+                        setSelectedAcaoAjuste(acao);
+                        setShowAjusteModal(true);
+                      }}
+                      disabled={adjustmentRequests.some(
+                        (req: any) => req.actionId === acao.id && req.status === 'pendente'
+                      )}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      Solicitar Alteração
+                    </Button>
+
+                    {/* Card de Feedback de Solicitação de Ajuste */}
                     {(() => {
-                      // CORREÇÃO 1: Filtro com comparação STRING segura
-                      const evidenciaDesta_Acao = allUserEvidences?.find(
-                        (e: any) => String(e.actionId) === String(acao.id)
+                      // Buscar solicitações avaliadas (aprovadas ou reprovadas) para esta ação
+                      const solicitacoesAvaliadas = adjustmentRequests.filter(
+                        (req: any) => req.actionId === acao.id && (req.status === 'aprovada' || req.status === 'reprovada')
                       );
                       
-                      console.log(`[DEBUG] Ação ${acao.id} (status: ${acao.status}). Evidência encontrada:`, evidenciaDesta_Acao);
+                      // Pegar a mais recente
+                      const ultimaSolicitacao = solicitacoesAvaliadas.sort((a: any, b: any) => 
+                        new Date(b.evaluatedAt || b.createdAt).getTime() - new Date(a.evaluatedAt || a.createdAt).getTime()
+                      )[0];
                       
-                      // CASO 1: AÇÃO APROVADA/CONCLUÍDA - PRIORIDADE MÁXIMA
-                      if (acao.status === 'concluida') {
-                        const linkedinText = encodeURIComponent(
-                          `Concluí mais uma etapa do meu Plano de Desenvolvimento Individual (PDI)!\n\nAção: "${acao.titulo}"${acao.macroId && macroNames[acao.macroId] ? `\nCompetência: "${macroNames[acao.macroId]}"` : ''}\n\nInvestindo no meu crescimento profissional com o programa Eco do Bem - EVOLUIR!\n\n@competênciasdobem @ecobem\n\n#DesenvolvimentoProfissional #PDI #EcoDoBem #EVOLUIR #CrescimentoProfissional`
-                        );
-                        const linkedinUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${linkedinText}`;
-                        return (
-                          <div className="w-full space-y-2">
-                            <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 rounded-lg font-bold flex flex-col items-center justify-center cursor-default">
-                              <div className="flex items-center justify-center">
-                                <span className="mr-2">✓</span> Ação Concluída
-                              </div>
-                              <div className="text-[10px] mt-1 font-mono">
-                                ID VALIDAÇÃO: {evidenciaDesta_Acao?.id || 'BUSCANDO NO BANCO...'}
+                      if (!ultimaSolicitacao) return null;
+                      
+                      const isAprovada = ultimaSolicitacao.status === 'aprovada';
+                      const isReprovada = ultimaSolicitacao.status === 'reprovada';
+                      
+                      return (
+                        <div className={`w-full mt-2 p-3 rounded-lg border ${
+                          isAprovada 
+                            ? 'bg-green-50 border-green-200 text-green-800' 
+                            : 'bg-red-50 border-red-200 text-red-800'
+                        }`}>
+                          <div className="flex items-center gap-2 font-semibold text-sm">
+                            {isAprovada ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                <span>Solicitação de Ajuste #{ultimaSolicitacao.id} - APROVADA</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="h-4 w-4 text-red-600" />
+                                <span>Solicitação de Ajuste #{ultimaSolicitacao.id} - NÃO ACEITA</span>
+                              </>
+                            )}
+                          </div>
+                          {!isAprovada && ultimaSolicitacao.justificativaAdmin && (
+                            <div className="mt-2 text-xs bg-white/50 p-2 rounded border border-red-100">
+                              <span className="font-medium">Motivo:</span>
+                              <div className="mt-1">
+                                <RichTextDisplay content={ultimaSolicitacao.justificativaAdmin} />
                               </div>
                             </div>
-                            <button
-                              onClick={() => window.open(linkedinUrl, '_blank')}
-                              className="w-full py-2.5 px-4 bg-[#0A66C2] hover:bg-[#004182] text-white rounded-lg font-semibold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-sm"
-                            >
-                              <Linkedin className="h-4 w-4" />
-                              Compartilhar Conquista no LinkedIn
-                            </button>
-                            <CertificateButton actionId={acao.id} />
-                          </div>
+                          )}
+                          {isAprovada && (
+                            <div className="mt-1 text-xs opacity-75">
+                              Alterações aplicadas com sucesso
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    <div className="mt-4 w-full">
+                      {(() => {
+                        // CORREÇÃO 1: Filtro com comparação STRING segura
+                        const evidenciaDesta_Acao = allUserEvidences?.find(
+                          (e: any) => String(e.actionId) === String(acao.id)
                         );
-                      }
-                      
-                      // CASO 2: EM ANÁLISE
-                      if (evidenciaDesta_Acao?.status === 'aguardando_avaliacao') {
+                        
+                        console.log(`[DEBUG] Ação ${acao.id} (status: ${acao.status}). Evidência encontrada:`, evidenciaDesta_Acao);
+                        
+                        // CASO 1: AÇÃO APROVADA/CONCLUÍDA - PRIORIDADE MÁXIMA
+                        if (acao.status === 'concluida') {
+                          const linkedinText = encodeURIComponent(
+                            `Concluí mais uma etapa do meu Plano de Desenvolvimento Individual (PDI)!\n\nAção: "${acao.titulo}"${acao.macroId && macroNames[acao.macroId] ? `\nCompetência: "${macroNames[acao.macroId]}"` : ''}\n\nInvestindo no meu crescimento profissional com o programa Eco do Bem - EVOLUIR!\n\n@competênciasdobem @ecobem\n\n#DesenvolvimentoProfissional #PDI #EcoDoBem #EVOLUIR #CrescimentoProfissional`
+                          );
+                          const linkedinUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${linkedinText}`;
+                          return (
+                            <div className="w-full space-y-2">
+                              <div className="w-full py-3 px-4 bg-green-100 text-green-700 border border-green-200 rounded-lg font-bold flex flex-col items-center justify-center cursor-default">
+                                <div className="flex items-center justify-center">
+                                  <span className="mr-2">✓</span> Ação Concluída
+                                </div>
+                                <div className="text-[10px] mt-1 font-mono">
+                                  ID VALIDAÇÃO: {evidenciaDesta_Acao?.id || 'BUSCANDO NO BANCO...'}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => window.open(linkedinUrl, '_blank')}
+                                className="w-full py-2.5 px-4 bg-[#0A66C2] hover:bg-[#004182] text-white rounded-lg font-semibold transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-sm"
+                              >
+                                <Linkedin className="h-4 w-4" />
+                                Compartilhar Conquista no LinkedIn
+                              </button>
+                              <CertificateButton actionId={acao.id} />
+                            </div>
+                          );
+                        }
+                        
+                        // CASO 2: EM ANÁLISE
+                        if (evidenciaDesta_Acao?.status === 'aguardando_avaliacao') {
+                          return (
+                            <div className="w-full py-3 px-4 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg font-medium flex items-center justify-center cursor-wait">
+                              <span className="mr-2">⏳</span> Evidência em Análise
+                            </div>
+                          );
+                        }
+                        
+                        // CASO 3: EVIDÊNCIA REJEITADA - MOSTRAR MOTIVO E PERMITIR CONTESTAÇÃO/REENVIO
+                        if (evidenciaDesta_Acao?.status === 'reprovada') {
+                          return (
+                            <EvidenciaRejeitadaCard
+                              evidencia={evidenciaDesta_Acao}
+                              acao={acao}
+                              onReenviar={() => {
+                                setSelectedAcaoEvidence(acao);
+                                setShowEvidenceDialog(true);
+                              }}
+                            />
+                          );
+                        }
+                        
+                        // CASO 4: BOTÃO AZUL - SÓ MOSTRA SE NÃO FOR NENHUM DOS ACIMA
                         return (
-                          <div className="w-full py-3 px-4 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg font-medium flex items-center justify-center cursor-wait">
-                            <span className="mr-2">⏳</span> Evidência em Análise
-                          </div>
-                        );
-                      }
-                      
-                      // CASO 3: EVIDÊNCIA REJEITADA - MOSTRAR MOTIVO E PERMITIR CONTESTAÇÃO/REENVIO
-                      if (evidenciaDesta_Acao?.status === 'reprovada') {
-                        return (
-                          <EvidenciaRejeitadaCard
-                            evidencia={evidenciaDesta_Acao}
-                            acao={acao}
-                            onReenviar={() => {
+                          <button
+                            onClick={() => {
                               setSelectedAcaoEvidence(acao);
                               setShowEvidenceDialog(true);
                             }}
-                          />
+                            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all shadow-md active:scale-95"
+                          >
+                            Registrar Minha Conquista
+                          </button>
                         );
-                      }
-                      
-                      // CASO 4: BOTÃO AZUL - SÓ MOSTRA SE NÃO FOR NENHUM DOS ACIMA
-                      return (
-                        <button
-                          onClick={() => {
-                            setSelectedAcaoEvidence(acao);
-                            setShowEvidenceDialog(true);
-                          }}
-                          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all shadow-md active:scale-95"
-                        >
-                          Registrar Minha Conquista
-                        </button>
-                      );
-                    })()}
+                      })()}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
             );
           })}
         </div>
