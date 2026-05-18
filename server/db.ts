@@ -4217,6 +4217,25 @@ export async function getVisaoExecutiva() {
     pdiConsolidacao2025.percentual = pdiConsolidacao2025.total > 0 ? parseFloat(((pdiConsolidacao2025.concluidas / pdiConsolidacao2025.total) * 100).toFixed(1)) : 0;
     pdiIntegracao.percentual = pdiIntegracao.total > 0 ? parseFloat(((pdiIntegracao.concluidas / pdiIntegracao.total) * 100).toFixed(1)) : 0;
 
+    // Média de ações por empregado
+    const [mediaResult]: any = await db.execute(sql`
+      SELECT 
+        COUNT(DISTINCT p.colaboradorId) as total_empregados,
+        COUNT(a.id) as total_acoes,
+        ROUND(COUNT(a.id) / NULLIF(COUNT(DISTINCT p.colaboradorId), 0), 1) as media_geral,
+        ROUND(SUM(CASE WHEN pt.titulo LIKE '%CERTIFICA%' OR pt.titulo LIKE '%Certifica%' THEN 1 ELSE 0 END) / NULLIF(COUNT(DISTINCT CASE WHEN pt.titulo LIKE '%CERTIFICA%' OR pt.titulo LIKE '%Certifica%' THEN p.colaboradorId END), 0), 1) as media_certificacao,
+        ROUND(SUM(CASE WHEN pt.titulo LIKE '%Consolida%' OR pt.titulo LIKE '%2025%' THEN 1 ELSE 0 END) / NULLIF(COUNT(DISTINCT CASE WHEN pt.titulo LIKE '%Consolida%' OR pt.titulo LIKE '%2025%' THEN p.colaboradorId END), 0), 1) as media_consolidacao,
+        ROUND(SUM(CASE WHEN pt.titulo LIKE '%INTEGRA%' OR pt.titulo LIKE '%ONBOARDING%' OR pt.titulo LIKE '%CROSSBOARDING%' THEN 1 ELSE 0 END) / NULLIF(COUNT(DISTINCT CASE WHEN pt.titulo LIKE '%INTEGRA%' OR pt.titulo LIKE '%ONBOARDING%' OR pt.titulo LIKE '%CROSSBOARDING%' THEN p.colaboradorId END), 0), 1) as media_integracao
+      FROM actions a
+      JOIN pdis p ON a.pdiId = p.id
+      JOIN pdis pt ON a.pdiId = pt.id
+    `);
+    const totalEmpregados = Number(mediaResult[0]?.total_empregados) || 0;
+    const mediaAcoesPorEmpregado = Number(mediaResult[0]?.media_geral) || 0;
+    const mediaAcoesCertificacao = Number(mediaResult[0]?.media_certificacao) || 0;
+    const mediaAcoesConsolidacao = Number(mediaResult[0]?.media_consolidacao) || 0;
+    const mediaAcoesIntegracao = Number(mediaResult[0]?.media_integracao) || 0;
+
     // Evidências
     const [evidResult]: any = await db.execute(sql`SELECT status, COUNT(*) as total FROM evidences GROUP BY status`);
     const evidMap: Record<string, number> = {};
@@ -4259,7 +4278,8 @@ export async function getVisaoExecutiva() {
       percentualConcluido, evidenciasPendentes, evidenciasDevolvidas,
       solicitacoesTotal, solicitacoesAprovadas, solicitacoesReprovadas, solicitacoesEmAndamento,
       aguardandoCkm, aguardandoGestor, aguardandoRh, ajustesPendentes, iip,
-      pdiCertificacao, pdiConsolidacao2025, pdiIntegracao
+      pdiCertificacao, pdiConsolidacao2025, pdiIntegracao,
+      totalEmpregados, mediaAcoesPorEmpregado, mediaAcoesCertificacao, mediaAcoesConsolidacao, mediaAcoesIntegracao
     };
   } catch (error) {
     console.error('[getVisaoExecutiva] Erro:', error);

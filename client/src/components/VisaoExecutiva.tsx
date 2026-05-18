@@ -127,6 +127,13 @@ export function VisaoExecutiva() {
   const cons = data?.pdiConsolidacao2025 ?? { total: 0, concluidas: 0, percentual: 0 };
   const integ = data?.pdiIntegracao ?? { total: 0, concluidas: 0, percentual: 0 };
 
+  // Médias
+  const totalEmpregados = data?.totalEmpregados ?? 0;
+  const mediaGeral = data?.mediaAcoesPorEmpregado ?? 0;
+  const mediaCert = data?.mediaAcoesCertificacao ?? 0;
+  const mediaCons = data?.mediaAcoesConsolidacao ?? 0;
+  const mediaInteg = data?.mediaAcoesIntegracao ?? 0;
+
   const handlePrint = () => {
     const el = document.getElementById("visao-executiva-print");
     if (!el) return;
@@ -245,6 +252,35 @@ export function VisaoExecutiva() {
                   O <strong>PDI de Consolidação</strong> reúne ações que foram iniciadas em 2025 e transferidas para conclusão em 2026.
                   O <strong>PDI de Integração</strong> é destinado a empregados que ingressaram recentemente na organização.
                 </p>
+
+                {/* Média de ações por empregado */}
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+                    📊 Média de ações por empregado
+                  </p>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="bg-white rounded-lg border border-violet-200 p-3 text-center">
+                      <p className="text-[10px] text-violet-500 font-bold uppercase mb-1">Total de empregados</p>
+                      <p className="text-3xl font-black text-violet-700">{totalEmpregados}</p>
+                      <p className="text-[10px] text-slate-400 mt-1">com PDI ativo</p>
+                    </div>
+                    <div className="bg-white rounded-lg border border-violet-200 p-3 text-center">
+                      <p className="text-[10px] text-violet-500 font-bold uppercase mb-1">Média geral</p>
+                      <p className="text-3xl font-black text-violet-700">{mediaGeral}</p>
+                      <p className="text-[10px] text-slate-400 mt-1">ações por empregado</p>
+                    </div>
+                    <div className="bg-white rounded-lg border border-cyan-200 p-3 text-center">
+                      <p className="text-[10px] text-cyan-500 font-bold uppercase mb-1">PDI Certificação</p>
+                      <p className="text-3xl font-black text-cyan-700">{mediaCert}</p>
+                      <p className="text-[10px] text-slate-400 mt-1">ações por empregado</p>
+                    </div>
+                    <div className="bg-white rounded-lg border border-teal-200 p-3 text-center">
+                      <p className="text-[10px] text-teal-500 font-bold uppercase mb-1">PDI Consolidação 2025</p>
+                      <p className="text-3xl font-black text-teal-700">{mediaCons}</p>
+                      <p className="text-[10px] text-slate-400 mt-1">ações por empregado</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* ── Situação das ações ── */}
