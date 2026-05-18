@@ -41,7 +41,7 @@ function InfoTooltip({ text }: { text: string }) {
         <TooltipTrigger asChild>
           <HelpCircle className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 cursor-help shrink-0" />
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+        <TooltipContent side="top" align="center" sideOffset={6} className="max-w-[260px] text-xs leading-relaxed z-50">
           {text}
         </TooltipContent>
       </Tooltip>
