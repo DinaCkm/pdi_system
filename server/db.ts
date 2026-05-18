@@ -4212,7 +4212,7 @@ export async function getVisaoExecutiva() {
     const aguardandoRh = solMap['aguardando_rh'] || 0;
 
     // Ajustes pendentes
-    const [ajusteResult]: any = await db.execute(sql`SELECT COUNT(*) as total FROM adjustmentRequests WHERE status = 'pendente'`);
+    const [ajusteResult]: any = await db.execute(sql`SELECT COUNT(*) as total FROM adjustment_requests WHERE status = 'pendente'`);
     const ajustesPendentes = Number(ajusteResult[0]?.total) || 0;
 
     // IIP — colunas reais: impactoPercentual (empregado) e impactoValidadoAdmin (admin)
