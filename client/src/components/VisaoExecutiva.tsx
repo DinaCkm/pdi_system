@@ -73,8 +73,8 @@ export function VisaoExecutiva() {
   });
 
   const pct = data?.percentualConcluido ?? 0;
-  const ano2025 = data?.porAno?.find((a) => a.ano === 2025)?.total ?? 0;
-  const ano2026 = data?.porAno?.find((a) => a.ano === 2026)?.total ?? 0;
+  const ano2025 = data?.porAno?.find((a: { ano: number; total: number }) => a.ano === 2025)?.total ?? 0;
+  const ano2026 = data?.porAno?.find((a: { ano: number; total: number }) => a.ano === 2026)?.total ?? 0;
 
   const handlePrint = () => {
     const el = document.getElementById("visao-executiva-print");

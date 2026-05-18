@@ -2,7 +2,7 @@ import { router, protectedProcedure, adminProcedure, adminOrGerenteProcedure } f
 import { z } from "zod";
 import { eq, and, sql, desc, count } from "drizzle-orm";
 import { pdis, actions, users, departamentos } from "../../drizzle/schema";
-import { getDb } from "../db";
+import { getDb, getVisaoExecutiva } from "../db";
 
 /**
  * Dashboard Router
@@ -417,7 +417,6 @@ export const dashboardRouter = router({
    * Visão Executiva — painel didático para reuniões de gestão
    */
   getVisaoExecutiva: adminOrGerenteProcedure.query(async () => {
-    const { getVisaoExecutiva } = await import("../db");
     return await getVisaoExecutiva();
   }),
 });
