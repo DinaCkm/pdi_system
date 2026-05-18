@@ -4161,14 +4161,24 @@ export async function getVisaoExecutiva() {
     for (const row of statusResult) { statusMap[row.status] = Number(row.total) || 0; }
 
     const acoesConcluidas = statusMap['concluida'] || 0;
+    // Ações aprovadas = tudo que já passou pela aprovação do líder (qualquer status além de nao_iniciada e pendente_aprovacao_lider)
     const acoesAprovadas = (
       (statusMap['aprovada_lider'] || 0) + (statusMap['em_andamento'] || 0) +
       (statusMap['em_discussao'] || 0) + (statusMap['evidencia_enviada'] || 0) +
       (statusMap['evidencia_aprovada'] || 0) + (statusMap['evidencia_reprovada'] || 0) +
-      (statusMap['correcao_solicitada'] || 0) + (statusMap['concluida'] || 0)
+      (statusMap['correcao_solicitada'] || 0) + (statusMap['concluida'] || 0) +
+      (statusMap['aguardando_avaliacao'] || 0)
     );
-    const acoesVencidas = statusMap['vencida'] || 0;
-    const aguardandoLider = statusMap['pendente_aprovacao_lider'] || 0;
+    // Ações vencidas = nao_iniciada com prazo já passado (NOW() > prazo)
+    const [vencidasResult]: any = await db.execute(sql`
+      SELECT COUNT(*) as total FROM actions
+      WHERE status = 'nao_iniciada' AND prazo < NOW()`);
+    const acoesVencidas = Number(vencidasResult[0]?.total) || 0;
+    // Aguardando líder = nao_iniciada ainda dentro do prazo
+    const [aguardandoResult]: any = await db.execute(sql`
+      SELECT COUNT(*) as total FROM actions
+      WHERE status = 'nao_iniciada' AND (prazo IS NULL OR prazo >= NOW())`);
+    const aguardandoLider = Number(aguardandoResult[0]?.total) || 0;
     const percentualConcluido = totalAcoes > 0 ? parseFloat(((acoesConcluidas / totalAcoes) * 100).toFixed(1)) : 0;
 
     // Ações por ciclo/ano
@@ -4194,7 +4204,8 @@ export async function getVisaoExecutiva() {
     for (const row of solResult) { solMap[row.statusGeral] = Number(row.total) || 0; }
     const solicitacoesTotal = Object.values(solMap).reduce((a: number, b: number) => a + b, 0);
     const solicitacoesAprovadas = solMap['aprovada'] || 0;
-    const solicitacoesReprovadas = (solMap['vetada_gestor'] || 0) + (solMap['vetada_rh'] || 0);
+    // encerrada_lider também é uma forma de reprovação/encerramento pelo líder
+    const solicitacoesReprovadas = (solMap['vetada_gestor'] || 0) + (solMap['vetada_rh'] || 0) + (solMap['encerrada_lider'] || 0);
     const solicitacoesEmAndamento = (solMap['aguardando_ckm'] || 0) + (solMap['aguardando_gestor'] || 0) + (solMap['aguardando_rh'] || 0) + (solMap['em_revisao'] || 0) + (solMap['aguardando_solicitante'] || 0);
     const aguardandoCkm = solMap['aguardando_ckm'] || 0;
     const aguardandoGestor = solMap['aguardando_gestor'] || 0;
