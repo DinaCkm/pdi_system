@@ -195,7 +195,7 @@ function LeaderCard({ leader, index, isExpanded, onToggle }: {
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-1">
                       <p className="text-xs text-muted-foreground">PDIs</p>
-                      <InfoTooltip text="Mostra quantos PDIs da equipe este líder já aprovou. O número à esquerda são os PDIs aprovados; o da direita é o total. 'Pend.' indica PDIs que ainda aguardam aprovação do líder — enquanto não aprovados, os colaboradores não podem iniciar suas ações." />
+                      <InfoTooltip text="Mostra quantos PDIs da equipe este líder já aprovou formalmente. O número à esquerda são os PDIs aprovados; o da direita é o total. 'Pend.' indica PDIs que ainda aguardam o aceite formal do líder — a aprovação é um ato de reconhecimento do plano e não impede a execução das ações." />
                     </div>
                     <div className="flex items-center gap-1">
                       <CheckCircle className="h-3.5 w-3.5 text-green-500" />
