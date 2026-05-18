@@ -41,6 +41,54 @@ function KpiCard({ icon, pergunta, titulo, numero, descricao, detalhe, cor }: Ca
   );
 }
 
+// ─── Card de PDI com barra de progresso ──────────────────────────────────────
+function PdiCard({
+  icon, titulo, subtitulo, total, concluidas, percentual, cor,
+}: {
+  icon: string;
+  titulo: string;
+  subtitulo: string;
+  total: number;
+  concluidas: number;
+  percentual: number;
+  cor: "roxo" | "ciano" | "teal";
+}) {
+  const cores = {
+    roxo:  { bg: "bg-violet-50", border: "border-violet-200", bar: "from-violet-600 to-violet-400", num: "text-violet-700", label: "text-violet-500" },
+    ciano: { bg: "bg-cyan-50",   border: "border-cyan-200",   bar: "from-cyan-600 to-cyan-400",     num: "text-cyan-700",   label: "text-cyan-500"   },
+    teal:  { bg: "bg-teal-50",   border: "border-teal-200",   bar: "from-teal-600 to-teal-400",     num: "text-teal-700",   label: "text-teal-500"   },
+  };
+  const c = cores[cor];
+  return (
+    <div className={`rounded-xl border-2 p-4 flex flex-col gap-2 ${c.bg} ${c.border}`}>
+      <div className="flex items-start gap-2">
+        <span className="text-2xl">{icon}</span>
+        <div className="flex-1">
+          <span className={`text-[10px] font-bold uppercase tracking-wide ${c.label}`}>{subtitulo}</span>
+          <p className="text-sm font-bold text-slate-700 leading-tight mt-0.5">{titulo}</p>
+        </div>
+      </div>
+      <div className="flex items-end gap-3 mt-1">
+        <span className={`text-4xl font-black leading-none ${c.num}`}>{total}</span>
+        <span className="text-xs text-slate-500 mb-1">ações planejadas</span>
+      </div>
+      {/* Barra de progresso */}
+      <div className="w-full bg-white/70 rounded-full h-5 overflow-hidden border border-black/10">
+        <div
+          className={`h-full rounded-full bg-gradient-to-r ${c.bar} flex items-center justify-end pr-2 transition-all duration-700`}
+          style={{ width: `${Math.max(percentual, 4)}%` }}
+        >
+          <span className="text-white text-[10px] font-bold">{percentual}%</span>
+        </div>
+      </div>
+      <div className="flex justify-between text-xs text-slate-500">
+        <span><strong className="text-green-600">{concluidas}</strong> concluídas</span>
+        <span><strong className="text-slate-600">{total - concluidas}</strong> em aberto</span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Card de atenção (vermelho mais intenso) ──────────────────────────────────
 function AlertCard({
   icon, pergunta, titulo, numero, descricao, detalhe,
@@ -73,8 +121,11 @@ export function VisaoExecutiva() {
   });
 
   const pct = data?.percentualConcluido ?? 0;
-  const ano2025 = data?.porAno?.find((a: { ano: number; total: number }) => a.ano === 2025)?.total ?? 0;
-  const ano2026 = data?.porAno?.find((a: { ano: number; total: number }) => a.ano === 2026)?.total ?? 0;
+
+  // Dados dos 3 PDIs
+  const cert = data?.pdiCertificacao ?? { total: 0, concluidas: 0, percentual: 0 };
+  const cons = data?.pdiConsolidacao2025 ?? { total: 0, concluidas: 0, percentual: 0 };
+  const integ = data?.pdiIntegracao ?? { total: 0, concluidas: 0, percentual: 0 };
 
   const handlePrint = () => {
     const el = document.getElementById("visao-executiva-print");
@@ -120,7 +171,7 @@ export function VisaoExecutiva() {
             <div className="text-center text-slate-400 py-10 text-sm">Carregando dados...</div>
           ) : (
             <>
-              {/* ── Barra de progresso ── */}
+              {/* ── Barra de progresso geral ── */}
               <div className="rounded-xl border-2 border-violet-200 bg-gradient-to-r from-violet-50 to-cyan-50 p-5">
                 <p className="text-[10.5px] font-bold uppercase tracking-widest text-violet-500 mb-1">
                   📌 Quanto do PDI já foi executado?
@@ -153,38 +204,47 @@ export function VisaoExecutiva() {
                 </div>
               </div>
 
-              {/* ── Volume de ações ── */}
+              {/* ── Os 3 PDIs separados ── */}
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
-                  📋 Volume de ações planejadas
+                  📋 Ações por tipo de PDI
                   <span className="flex-1 h-px bg-slate-200" />
                 </p>
                 <div className="grid grid-cols-3 gap-3">
-                  <KpiCard
-                    icon="📋" cor="roxo"
-                    pergunta="Quantas ações foram propostas no total?"
-                    titulo="Total de Ações Propostas para Todos os Empregados"
-                    numero={data?.totalAcoes ?? 0}
-                    descricao="São todas as atividades de desenvolvimento planejadas para os empregados do Sebrae TO."
-                    detalhe="Inclui ações de todos os ciclos, departamentos e situações — desde as que ainda não foram iniciadas até as já concluídas."
+                  <PdiCard
+                    icon="🎓"
+                    cor="roxo"
+                    subtitulo="PDI da Certificação 2026"
+                    titulo="PDI 01/2026 — Base: Certificação"
+                    total={cert.total}
+                    concluidas={cert.concluidas}
+                    percentual={cert.percentual}
                   />
-                  <KpiCard
-                    icon="📅" cor="roxo"
-                    pergunta="Quantas ações são do ciclo de 2025?"
-                    titulo="Ações Planejadas no Ciclo 2025"
-                    numero={ano2025}
-                    descricao="Atividades de desenvolvimento planejadas e vinculadas ao ciclo de 2025."
-                    detalhe="Estas ações são remanescentes do ciclo do PDI de 2025."
+                  <PdiCard
+                    icon="🔄"
+                    cor="ciano"
+                    subtitulo="Ações herdadas de 2025"
+                    titulo="PDI — Consolidação de Ações Pendentes de 2025"
+                    total={cons.total}
+                    concluidas={cons.concluidas}
+                    percentual={cons.percentual}
                   />
-                  <KpiCard
-                    icon="🗓️" cor="ciano"
-                    pergunta="Quantas ações são do ciclo de 2026?"
-                    titulo="Ações Planejadas no Ciclo 2026"
-                    numero={ano2026}
-                    descricao="Atividades de desenvolvimento planejadas e vinculadas ao ciclo de 2026."
-                    detalhe="Estas ações foram planejadas com foco nos Relatórios da Certificação realizada em 12/2025."
+                  <PdiCard
+                    icon="🤝"
+                    cor="teal"
+                    subtitulo="PDI de Integração (Onboarding / Crossboarding)"
+                    titulo="PDI Integração — Novos Empregados"
+                    total={integ.total}
+                    concluidas={integ.concluidas}
+                    percentual={integ.percentual}
                   />
                 </div>
+                <p className="text-[10.5px] text-slate-400 mt-2 leading-relaxed">
+                  <strong className="text-slate-500">ℹ️ Entenda os PDIs:</strong>{" "}
+                  O <strong>PDI da Certificação</strong> contém ações novas planejadas com base nos Relatórios da Certificação realizada em 12/2025.
+                  O <strong>PDI de Consolidação</strong> reúne ações que foram iniciadas em 2025 e transferidas para conclusão em 2026.
+                  O <strong>PDI de Integração</strong> é destinado a empregados que ingressaram recentemente na organização.
+                </p>
               </div>
 
               {/* ── Situação das ações ── */}
@@ -268,7 +328,7 @@ export function VisaoExecutiva() {
                     titulo="Solicitações de Inserção de Novas Ações"
                     numero={data?.solicitacoesTotal ?? 0}
                     descricao="Empregados solicitaram a inclusão de novas ações no seu plano de desenvolvimento."
-                    detalhe="Quando o empregado quer incluir uma nova ação no PDI que não estava prevista originalmente, ele faz uma solicitação que passa por um fluxo de aprovação."
+                    detalhe="Quando o empregado quer incluir uma nova ação no PDI que não estava prevista originalmente, ele precisa solicitar ao administrador."
                   />
                   <KpiCard
                     icon="✔️" cor="verde"
@@ -297,11 +357,11 @@ export function VisaoExecutiva() {
                 <div className="grid grid-cols-3 gap-3">
                   <AlertCard
                     icon="🔔"
-                    pergunta="Ações aguardando aprovação do líder"
-                    titulo="Ações Criadas — Aguardando o Líder Aprovar"
-                    numero={data?.aguardandoLider ?? 0}
-                    descricao="O administrador criou estas ações no PDI do empregado, mas o líder ainda não deu a aprovação para que o empregado possa iniciar."
-                    detalhe="Enquanto o líder não aprovar, o empregado não consegue visualizar nem executar a ação."
+                    pergunta="Ações com prazo vencido sem conclusão"
+                    titulo="Ações Vencidas — Prazo Passou Sem Conclusão"
+                    numero={data?.acoesVencidas ?? 0}
+                    descricao="Estas ações tiveram o prazo encerrado e ainda não foram concluídas. Precisam de atenção imediata do líder."
+                    detalhe="O líder deve decidir: prorrogar o prazo ou registrar como não realizada."
                   />
                   <AlertCard
                     icon="🔄"

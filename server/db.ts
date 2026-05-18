@@ -4181,15 +4181,41 @@ export async function getVisaoExecutiva() {
     const aguardandoLider = Number(aguardandoResult[0]?.total) || 0;
     const percentualConcluido = totalAcoes > 0 ? parseFloat(((acoesConcluidas / totalAcoes) * 100).toFixed(1)) : 0;
 
-    // Ações por ciclo/ano
-    const [cicloResult]: any = await db.execute(sql`
-      SELECT YEAR(c.dataInicio) as ano, COUNT(a.id) as total
+    // Ações por Tipo de PDI (Certificação, Consolidação 2025, Integração)
+    const [pdiResult]: any = await db.execute(sql`
+      SELECT 
+        p.titulo as tipo_pdi,
+        COUNT(a.id) as total_acoes,
+        SUM(CASE WHEN a.status = 'concluida' THEN 1 ELSE 0 END) as concluidas
       FROM actions a
-      LEFT JOIN pdis p ON a.pdiId = p.id
-      LEFT JOIN ciclos c ON p.cicloId = c.id
-      WHERE c.dataInicio IS NOT NULL
-      GROUP BY YEAR(c.dataInicio) ORDER BY ano ASC`);
-    const porAno = cicloResult.map((r: any) => ({ ano: Number(r.ano), total: Number(r.total) }));
+      JOIN pdis p ON a.pdiId = p.id
+      GROUP BY p.titulo
+    `);
+    
+    let pdiCertificacao = { total: 0, concluidas: 0, percentual: 0 };
+    let pdiConsolidacao2025 = { total: 0, concluidas: 0, percentual: 0 };
+    let pdiIntegracao = { total: 0, concluidas: 0, percentual: 0 };
+
+    for (const row of pdiResult) {
+      const titulo = row.tipo_pdi || '';
+      const total = Number(row.total_acoes) || 0;
+      const concluidas = Number(row.concluidas) || 0;
+      
+      if (titulo.includes('CERTIFICAÇÃO') || titulo.includes('Certificação')) {
+        pdiCertificacao.total += total;
+        pdiCertificacao.concluidas += concluidas;
+      } else if (titulo.includes('Consolidação') || titulo.includes('2025')) {
+        pdiConsolidacao2025.total += total;
+        pdiConsolidacao2025.concluidas += concluidas;
+      } else if (titulo.includes('INTEGRAÇÃO') || titulo.includes('ONBOARDING') || titulo.includes('CROSSBOARDING')) {
+        pdiIntegracao.total += total;
+        pdiIntegracao.concluidas += concluidas;
+      }
+    }
+
+    pdiCertificacao.percentual = pdiCertificacao.total > 0 ? parseFloat(((pdiCertificacao.concluidas / pdiCertificacao.total) * 100).toFixed(1)) : 0;
+    pdiConsolidacao2025.percentual = pdiConsolidacao2025.total > 0 ? parseFloat(((pdiConsolidacao2025.concluidas / pdiConsolidacao2025.total) * 100).toFixed(1)) : 0;
+    pdiIntegracao.percentual = pdiIntegracao.total > 0 ? parseFloat(((pdiIntegracao.concluidas / pdiIntegracao.total) * 100).toFixed(1)) : 0;
 
     // Evidências
     const [evidResult]: any = await db.execute(sql`SELECT status, COUNT(*) as total FROM evidences GROUP BY status`);
@@ -4230,9 +4256,10 @@ export async function getVisaoExecutiva() {
 
     return {
       totalAcoes, acoesConcluidas, acoesAprovadas, acoesVencidas, aguardandoLider,
-      percentualConcluido, porAno, evidenciasPendentes, evidenciasDevolvidas,
+      percentualConcluido, evidenciasPendentes, evidenciasDevolvidas,
       solicitacoesTotal, solicitacoesAprovadas, solicitacoesReprovadas, solicitacoesEmAndamento,
       aguardandoCkm, aguardandoGestor, aguardandoRh, ajustesPendentes, iip,
+      pdiCertificacao, pdiConsolidacao2025, pdiIntegracao
     };
   } catch (error) {
     console.error('[getVisaoExecutiva] Erro:', error);
