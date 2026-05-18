@@ -4144,3 +4144,82 @@ export async function deleteNormaRegra(id: number) {
   await db.delete(normasRegras).where(eq(normasRegras.id, id));
   return { success: true };
 }
+
+// ============= VISÃO EXECUTIVA =============
+export async function getVisaoExecutiva() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Total de ações
+    const [totalResult]: any = await db.execute(sql`SELECT COUNT(*) as total FROM actions`);
+    const totalAcoes = Number(totalResult[0]?.total) || 0;
+
+    // Ações por status
+    const [statusResult]: any = await db.execute(sql`SELECT status, COUNT(*) as total FROM actions GROUP BY status`);
+    const statusMap: Record<string, number> = {};
+    for (const row of statusResult) { statusMap[row.status] = Number(row.total) || 0; }
+
+    const acoesConcluidas = statusMap['concluida'] || 0;
+    const acoesAprovadas = (
+      (statusMap['aprovada_lider'] || 0) + (statusMap['em_andamento'] || 0) +
+      (statusMap['em_discussao'] || 0) + (statusMap['evidencia_enviada'] || 0) +
+      (statusMap['evidencia_aprovada'] || 0) + (statusMap['evidencia_reprovada'] || 0) +
+      (statusMap['correcao_solicitada'] || 0) + (statusMap['concluida'] || 0)
+    );
+    const acoesVencidas = statusMap['vencida'] || 0;
+    const aguardandoLider = statusMap['pendente_aprovacao_lider'] || 0;
+    const percentualConcluido = totalAcoes > 0 ? parseFloat(((acoesConcluidas / totalAcoes) * 100).toFixed(1)) : 0;
+
+    // Ações por ciclo/ano
+    const [cicloResult]: any = await db.execute(sql`
+      SELECT YEAR(c.dataInicio) as ano, COUNT(a.id) as total
+      FROM actions a
+      LEFT JOIN pdis p ON a.pdiId = p.id
+      LEFT JOIN ciclos c ON p.cicloId = c.id
+      WHERE c.dataInicio IS NOT NULL
+      GROUP BY YEAR(c.dataInicio) ORDER BY ano ASC`);
+    const porAno = cicloResult.map((r: any) => ({ ano: Number(r.ano), total: Number(r.total) }));
+
+    // Evidências
+    const [evidResult]: any = await db.execute(sql`SELECT status, COUNT(*) as total FROM evidences GROUP BY status`);
+    const evidMap: Record<string, number> = {};
+    for (const row of evidResult) { evidMap[row.status] = Number(row.total) || 0; }
+    const evidenciasPendentes = (evidMap['aguardando_avaliacao'] || 0) + (evidMap['pending'] || 0) + (evidMap['pendente'] || 0);
+    const evidenciasDevolvidas = evidMap['reprovada'] || 0;
+
+    // Solicitações de inserção
+    const [solResult]: any = await db.execute(sql`SELECT statusGeral, COUNT(*) as total FROM solicitacoes_acoes GROUP BY statusGeral`);
+    const solMap: Record<string, number> = {};
+    for (const row of solResult) { solMap[row.statusGeral] = Number(row.total) || 0; }
+    const solicitacoesTotal = Object.values(solMap).reduce((a: number, b: number) => a + b, 0);
+    const solicitacoesAprovadas = solMap['aprovada'] || 0;
+    const solicitacoesReprovadas = (solMap['vetada_gestor'] || 0) + (solMap['vetada_rh'] || 0);
+    const solicitacoesEmAndamento = (solMap['aguardando_ckm'] || 0) + (solMap['aguardando_gestor'] || 0) + (solMap['aguardando_rh'] || 0) + (solMap['em_revisao'] || 0) + (solMap['aguardando_solicitante'] || 0);
+    const aguardandoCkm = solMap['aguardando_ckm'] || 0;
+    const aguardandoGestor = solMap['aguardando_gestor'] || 0;
+    const aguardandoRh = solMap['aguardando_rh'] || 0;
+
+    // Ajustes pendentes
+    const [ajusteResult]: any = await db.execute(sql`SELECT COUNT(*) as total FROM adjustmentRequests WHERE status = 'pendente'`);
+    const ajustesPendentes = Number(ajusteResult[0]?.total) || 0;
+
+    // IIP
+    const [iipResult]: any = await db.execute(sql`
+      SELECT AVG(e.impactoEmpregado) as mediaEmpregado, AVG(e.impactoAdmin) as mediaAdmin
+      FROM evidences e WHERE e.status = 'aprovada' AND e.impactoEmpregado IS NOT NULL AND e.impactoAdmin IS NOT NULL`);
+    const mediaEmpregado = Number(iipResult[0]?.mediaEmpregado) || 0;
+    const mediaAdmin = Number(iipResult[0]?.mediaAdmin) || 0;
+    const iip = mediaEmpregado > 0 && mediaAdmin > 0 ? parseFloat(((mediaEmpregado + mediaAdmin) / 2).toFixed(2)) : 0;
+
+    return {
+      totalAcoes, acoesConcluidas, acoesAprovadas, acoesVencidas, aguardandoLider,
+      percentualConcluido, porAno, evidenciasPendentes, evidenciasDevolvidas,
+      solicitacoesTotal, solicitacoesAprovadas, solicitacoesReprovadas, solicitacoesEmAndamento,
+      aguardandoCkm, aguardandoGestor, aguardandoRh, ajustesPendentes, iip,
+    };
+  } catch (error) {
+    console.error('[getVisaoExecutiva] Erro:', error);
+    throw error;
+  }
+}

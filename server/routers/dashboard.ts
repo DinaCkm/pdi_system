@@ -413,4 +413,11 @@ export const dashboardRouter = router({
     const { getLeadershipAnalysis } = await import("../db");
     return await getLeadershipAnalysis();
   }),
+  /**
+   * Visão Executiva — painel didático para reuniões de gestão
+   */
+  getVisaoExecutiva: adminOrGerenteProcedure.query(async () => {
+    const { getVisaoExecutiva } = await import("../db");
+    return await getVisaoExecutiva();
+  }),
 });
