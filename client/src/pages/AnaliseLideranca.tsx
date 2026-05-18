@@ -25,7 +25,29 @@ import {
   BarChart3,
   Award,
   UserCheck,
+  HelpCircle,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+function InfoTooltip({ text }: { text: string }) {
+  return (
+    <TooltipProvider delayDuration={100}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <HelpCircle className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 cursor-help shrink-0" />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+          {text}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 import { Link } from "wouter";
 
 interface LeaderData {
@@ -171,7 +193,10 @@ function LeaderCard({ leader, index, isExpanded, onToggle }: {
                 {/* PDIs */}
                 {leader.totalPdisSubordinados > 0 && (
                   <div className="text-center">
-                    <p className="text-xs text-muted-foreground">PDIs</p>
+                    <div className="flex items-center justify-center gap-1">
+                      <p className="text-xs text-muted-foreground">PDIs</p>
+                      <InfoTooltip text="Mostra quantos PDIs da equipe este líder já aprovou. O número à esquerda são os PDIs aprovados; o da direita é o total. 'Pend.' indica PDIs que ainda aguardam aprovação do líder — enquanto não aprovados, os colaboradores não podem iniciar suas ações." />
+                    </div>
                     <div className="flex items-center gap-1">
                       <CheckCircle className="h-3.5 w-3.5 text-green-500" />
                       <span className="text-sm font-medium">{leader.pdisValidados}/{leader.totalPdisSubordinados}</span>
@@ -186,7 +211,10 @@ function LeaderCard({ leader, index, isExpanded, onToggle }: {
 
                 {/* Líder pessoal */}
                 <div className="text-center min-w-[70px]">
-                  <p className="text-xs text-muted-foreground">Líder</p>
+                  <div className="flex items-center justify-center gap-1">
+                    <p className="text-xs text-muted-foreground">Líder</p>
+                    <InfoTooltip text="Percentual de conclusão das ações do próprio líder no seu PDI pessoal. Mede o exemplo: um líder que conclui suas próprias ações tende a engajar melhor a equipe." />
+                  </div>
                   <p className={`text-lg font-bold ${getPerformanceColor(leader.liderTaxaConclusao)}`}>
                     {leader.liderTaxaConclusao}%
                   </p>
@@ -194,7 +222,10 @@ function LeaderCard({ leader, index, isExpanded, onToggle }: {
 
                 {/* Equipe */}
                 <div className="text-center min-w-[70px]">
-                  <p className="text-xs text-muted-foreground">Equipe</p>
+                  <div className="flex items-center justify-center gap-1">
+                    <p className="text-xs text-muted-foreground">Equipe</p>
+                    <InfoTooltip text="Percentual de conclusão das ações de todos os colaboradores da equipe deste líder. ≥ 70% = meta atingida (verde), 40-69% = atenção (amarelo), abaixo de 40% = crítico (vermelho)." />
+                  </div>
                   <p className={`text-lg font-bold ${getPerformanceColor(leader.equipeTaxaConclusao)}`}>
                     {leader.equipeTaxaConclusao}%
                   </p>
@@ -224,7 +255,7 @@ function LeaderCard({ leader, index, isExpanded, onToggle }: {
             <div className="hidden md:block mt-3">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 flex-1">
-                  <span className="text-xs w-12 text-right text-blue-600 font-medium shrink-0">Líder</span>
+                  <span className="text-xs w-12 text-right text-blue-600 font-medium shrink-0 flex items-center justify-end gap-1">Líder <InfoTooltip text="Ações concluídas pelo próprio líder no seu PDI pessoal." /></span>
                   <div className="flex-1">
                     <ProgressBar value={leader.liderTaxaConclusao} color="bg-blue-500" height="h-2.5" />
                   </div>
@@ -233,7 +264,7 @@ function LeaderCard({ leader, index, isExpanded, onToggle }: {
                   </span>
                 </div>
                 <div className="flex items-center gap-2 flex-1">
-                  <span className="text-xs w-12 text-right text-emerald-600 font-medium shrink-0">Equipe</span>
+                  <span className="text-xs w-12 text-right text-emerald-600 font-medium shrink-0 flex items-center justify-end gap-1">Equipe <InfoTooltip text="Ações concluídas pelos colaboradores da equipe." /></span>
                   <div className="flex-1">
                     <ProgressBar value={leader.equipeTaxaConclusao} color="bg-emerald-500" height="h-2.5" />
                   </div>
@@ -423,7 +454,10 @@ export default function AnaliseLideranca() {
                   <Award className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Líderes</p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground">Líderes</p>
+                    <InfoTooltip text="Total de líderes ativos que possuem ao menos um colaborador na equipe." />
+                  </div>
                   <p className="text-2xl font-bold text-gray-900">{rankingData.length}</p>
                 </div>
               </div>
@@ -437,7 +471,10 @@ export default function AnaliseLideranca() {
                   <Users className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Colaboradores</p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground">Colaboradores</p>
+                    <InfoTooltip text="Total de colaboradores ativos vinculados a um líder no sistema." />
+                  </div>
                   <p className="text-2xl font-bold text-gray-900">{totalColaboradores}</p>
                 </div>
               </div>
@@ -451,7 +488,10 @@ export default function AnaliseLideranca() {
                   <UserCheck className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Média Líderes</p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground">Média Líderes</p>
+                    <InfoTooltip text="Média do percentual de conclusão das ações pessoais de todos os líderes. Indica o nível de engajamento dos líderes com seu próprio desenvolvimento." />
+                  </div>
                   <p className={`text-2xl font-bold ${getPerformanceColor(mediaLideres)}`}>{mediaLideres}%</p>
                 </div>
               </div>
@@ -465,7 +505,10 @@ export default function AnaliseLideranca() {
                   <TrendingUp className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Média Equipes</p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground">Média Equipes</p>
+                    <InfoTooltip text="Média geral do percentual de conclusão das equipes. Indica o nível de execução do PDI em toda a organização." />
+                  </div>
                   <p className={`text-2xl font-bold ${getPerformanceColor(mediaGeral)}`}>{mediaGeral}%</p>
                 </div>
               </div>
