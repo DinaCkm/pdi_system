@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { CheckCircle, XCircle, Clock, MessageSquare, Edit2, Filter, TrendingUp, ArrowRight, Building2, User, Calendar, Timer, Bell, Eye, FileCheck, FileX, Search, ExternalLink, FileText, Gauge, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
+import { VisaoExecutiva } from "@/components/VisaoExecutiva";
 
 function ReenviarNotificacaoButton({ adjustmentId, liderNome }: { adjustmentId: number; liderNome: string }) {
   const reenviar = trpc.pdiAjustes.reenviarNotificacaoLider.useMutation({
@@ -432,6 +433,9 @@ export default function AdminDashboard() {
         <h1 className="text-3xl font-bold text-blue-600">Dashboard do Admin</h1>
         <p className="text-gray-600 mt-2">Gerencie evidências e solicitações de ajuste</p>
       </div>
+
+      {/* Visão Executiva */}
+      <VisaoExecutiva />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setEvidenceTab('pendentes')}>
