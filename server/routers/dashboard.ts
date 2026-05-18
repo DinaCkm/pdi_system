@@ -419,4 +419,9 @@ export const dashboardRouter = router({
   getVisaoExecutiva: adminOrGerenteProcedure.query(async () => {
     return await getVisaoExecutiva();
   }),
+
+  getAlertasPDI: protectedProcedure.query(async ({ ctx }) => {
+    const { getAlertasPDI } = await import("../db");
+    return await getAlertasPDI(ctx.user.id, ctx.user.role);
+  }),
 });

@@ -4180,7 +4180,7 @@ export async function getAlertasPDI(userId: number, role: string) {
         FROM pdis p
         JOIN users u ON p.colaboradorId = u.id
         LEFT JOIN pdi_validacoes pv ON p.id = pv.pdiId
-        WHERE u.liderId = ${userId}
+        WHERE u.leaderId = ${userId}
         AND pv.id IS NULL
       `);
       

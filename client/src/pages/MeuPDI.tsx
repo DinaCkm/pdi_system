@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useLocation } from "wouter";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/_core/hooks/useAuth";
+import AlertaPDIPendente from "@/components/AlertaPDIPendente";
 
 export default function MeuPDI() {
   const { user } = useAuth();
@@ -51,6 +52,7 @@ export default function MeuPDI() {
 
   return (
     <div className="container mx-auto py-8">
+      <AlertaPDIPendente />
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">
           Meu PDI

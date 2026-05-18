@@ -11,6 +11,7 @@ import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IIPDashboard } from "@/components/IIPDashboard";
 import { VisaoExecutiva } from "@/components/VisaoExecutiva";
+import AlertaPDIPendente from "@/components/AlertaPDIPendente";
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -110,6 +111,7 @@ export function Dashboard() {
 
   return (
     <div className="p-6 space-y-6">
+      <AlertaPDIPendente />
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Dashboard Estratégico</h1>
         <Button onClick={handleExportCSV} disabled={!stats} variant="outline">
