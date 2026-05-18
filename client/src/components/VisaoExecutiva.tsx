@@ -182,7 +182,7 @@ export function VisaoExecutiva() {
                     titulo="Ações Planejadas no Ciclo 2026"
                     numero={ano2026}
                     descricao="Atividades de desenvolvimento planejadas e vinculadas ao ciclo de 2026."
-                    detalhe="Estas ações são mais recentes e muitas ainda estão em fase inicial de execução pelos empregados."
+                    detalhe="Estas ações foram planejadas com foco nos Relatórios da Certificação realizada em 12/2025."
                   />
                 </div>
               </div>
