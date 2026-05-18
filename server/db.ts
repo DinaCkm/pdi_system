@@ -4215,13 +4215,18 @@ export async function getVisaoExecutiva() {
     const [ajusteResult]: any = await db.execute(sql`SELECT COUNT(*) as total FROM adjustmentRequests WHERE status = 'pendente'`);
     const ajustesPendentes = Number(ajusteResult[0]?.total) || 0;
 
-    // IIP
-    const [iipResult]: any = await db.execute(sql`
-      SELECT AVG(e.impactoEmpregado) as mediaEmpregado, AVG(e.impactoAdmin) as mediaAdmin
-      FROM evidences e WHERE e.status = 'aprovada' AND e.impactoEmpregado IS NOT NULL AND e.impactoAdmin IS NOT NULL`);
-    const mediaEmpregado = Number(iipResult[0]?.mediaEmpregado) || 0;
-    const mediaAdmin = Number(iipResult[0]?.mediaAdmin) || 0;
-    const iip = mediaEmpregado > 0 && mediaAdmin > 0 ? parseFloat(((mediaEmpregado + mediaAdmin) / 2).toFixed(2)) : 0;
+    // IIP — colunas reais: impactoPercentual (empregado) e impactoValidadoAdmin (admin)
+    let iip = 0;
+    try {
+      const [iipResult]: any = await db.execute(sql`
+        SELECT AVG(e.impactoPercentual) as mediaEmpregado, AVG(e.impactoValidadoAdmin) as mediaAdmin
+        FROM evidences e WHERE e.status = 'aprovada' AND e.impactoPercentual IS NOT NULL AND e.impactoValidadoAdmin IS NOT NULL`);
+      const mediaEmpregado = Number(iipResult[0]?.mediaEmpregado) || 0;
+      const mediaAdmin = Number(iipResult[0]?.mediaAdmin) || 0;
+      iip = mediaEmpregado > 0 && mediaAdmin > 0 ? parseFloat(((mediaEmpregado + mediaAdmin) / 2).toFixed(2)) : 0;
+    } catch (iipError) {
+      console.error('[getVisaoExecutiva] Erro ao calcular IIP:', iipError);
+    }
 
     return {
       totalAcoes, acoesConcluidas, acoesAprovadas, acoesVencidas, aguardandoLider,
