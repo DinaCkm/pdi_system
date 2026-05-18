@@ -174,7 +174,7 @@ export function VisaoExecutiva() {
                     titulo="Ações Planejadas no Ciclo 2025"
                     numero={ano2025}
                     descricao="Atividades de desenvolvimento planejadas e vinculadas ao ciclo de 2025."
-                    detalhe="Ciclo é o período em que o plano de desenvolvimento foi criado. Cada empregado tem um plano vinculado a um ciclo específico."
+                    detalhe="Estas ações são remanescentes do ciclo do PDI de 2025."
                   />
                   <KpiCard
                     icon="🗓️" cor="ciano"
