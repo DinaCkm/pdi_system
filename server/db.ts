@@ -3287,6 +3287,9 @@ export async function getLeadershipAnalysis() {
         `);
 
         // Contar PDIs dos subordinados e quantos foram validados pelo líder
+        // Correção: A validação do PDI pode ter sido feita por outro líder (ex: admin ou líder anterior),
+        // então não devemos exigir que pv.liderId seja igual ao lider.liderId atual.
+        // Basta que exista um registro na tabela pdi_validacoes para aquele PDI.
         const [pdisSubordinados]: any = await db.execute(sql`
           SELECT 
             p.id as pdiId,
@@ -3294,7 +3297,7 @@ export async function getLeadershipAnalysis() {
             CASE WHEN pv.id IS NOT NULL THEN 1 ELSE 0 END as validado
           FROM pdis p
           INNER JOIN users u ON p.colaboradorId = u.id
-          LEFT JOIN pdi_validacoes pv ON pv.pdiId = p.id AND pv.liderId = ${lider.liderId}
+          LEFT JOIN pdi_validacoes pv ON pv.pdiId = p.id
           WHERE u.leaderId = ${lider.liderId}
           AND u.status = 'ativo'
           AND p.status != 'cancelado'
@@ -4146,6 +4149,57 @@ export async function deleteNormaRegra(id: number) {
 }
 
 // ============= VISÃO EXECUTIVA =============
+export async function getAlertasPDI(userId: number, role: string) {
+  try {
+    const alertas = {
+      empregado: [] as { id: number; titulo: string }[],
+      lider: [] as { id: number; titulo: string; colaboradorNome: string }[]
+    };
+
+    // 1. Alertas para o Empregado (PDIs próprios não aprovados pelo líder)
+    // Um PDI não está aprovado se não existir registro na tabela pdi_validacoes
+    const pdisEmpregado: any = await db.execute(sql`
+      SELECT p.id, p.titulo 
+      FROM pdis p
+      LEFT JOIN pdi_validacoes pv ON p.id = pv.pdiId
+      WHERE p.colaboradorId = ${userId}
+      AND pv.id IS NULL
+    `);
+    
+    if (pdisEmpregado && pdisEmpregado[0]) {
+      alertas.empregado = pdisEmpregado[0].map((row: any) => ({
+        id: row.id,
+        titulo: row.titulo
+      }));
+    }
+
+    // 2. Alertas para o Líder (PDIs da equipe não aprovados por ele)
+    if (role === 'lider' || role === 'gerente' || role === 'admin') {
+      const pdisEquipe: any = await db.execute(sql`
+        SELECT p.id, p.titulo, u.name as colaboradorNome
+        FROM pdis p
+        JOIN users u ON p.colaboradorId = u.id
+        LEFT JOIN pdi_validacoes pv ON p.id = pv.pdiId
+        WHERE u.liderId = ${userId}
+        AND pv.id IS NULL
+      `);
+      
+      if (pdisEquipe && pdisEquipe[0]) {
+        alertas.lider = pdisEquipe[0].map((row: any) => ({
+          id: row.id,
+          titulo: row.titulo,
+          colaboradorNome: row.colaboradorNome
+        }));
+      }
+    }
+
+    return alertas;
+  } catch (error) {
+    console.error('[getAlertasPDI] Erro:', error);
+    return { empregado: [], lider: [] };
+  }
+}
+
 export async function getVisaoExecutiva() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
