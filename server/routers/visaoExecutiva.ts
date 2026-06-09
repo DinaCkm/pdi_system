@@ -13,7 +13,7 @@ async function fetchProgressoGeral(departamentoId?: number) {
     .select({
       totalAcoes: count(actions.id),
       acoesConcluidas: count(
-        sql`CASE WHEN ${actions.status} = 'concluido' THEN 1 END`
+        sql`CASE WHEN ${actions.status} = 'concluida' THEN 1 END`
       ),
     })
     .from(actions)
@@ -52,7 +52,7 @@ async function fetchProgressoGeral(departamentoId?: number) {
   // Lógica de categorização baseada no título do PDI
   acoesParaCategorizar.forEach((item) => {
     const titulo = (item.tituloPdi || "").toLowerCase();
-    const concluida = item.statusAcao === "concluido";
+    const concluida = item.statusAcao === "concluida";
     
     let cat: "certificacao" | "herdeiras" | "onboarding";
     
