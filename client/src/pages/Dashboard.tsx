@@ -10,6 +10,7 @@ import { Download, TrendingUp, ArrowRight, Gauge } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IIPDashboard } from "@/components/IIPDashboard";
+import { VisaoExecutiva } from "@/components/VisaoExecutiva";
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -177,6 +178,9 @@ export function Dashboard() {
         </div>
       ) : stats ? (
         <>
+          {/* Visão Executiva */}
+          <VisaoExecutiva departamentoId={selectedDepartamento && selectedDepartamento !== 'todos' ? parseInt(selectedDepartamento) : undefined} />
+
           {/* Widget Exclusivo de Admin: Direcionamento Estratégico */}
           <DirecionamentoEstrategico />
           

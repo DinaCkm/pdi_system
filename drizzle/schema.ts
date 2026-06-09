@@ -169,6 +169,7 @@ export const pdis = mysqlTable("pdis", {
 	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
 	createdBy: int().notNull(),
+	type: mysqlEnum([`certificacao`,`herdeiras`,`onboarding`]).default(`certificacao`).notNull(),
 });
 
 export const userDepartmentRoles = mysqlTable("user_department_roles", {

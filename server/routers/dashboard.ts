@@ -10,6 +10,92 @@ import { getDb } from "../db";
  */
 export const dashboardRouter = router({
   /**
+   * Obter estatísticas para a Visão Executiva
+   * Inclui progresso geral e cards de PDI por tipo
+   */
+  getVisaoExecutivaStats: protectedProcedure
+    .input(
+      z.object({
+        departamentoId: z.number().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const { user } = ctx;
+      const { departamentoId } = input;
+
+      let filterCondition = sql`1=1`; // Condição padrão para não filtrar
+
+      if (departamentoId) {
+        filterCondition = eq(users.departamentoId, departamentoId);
+      } else if (user.role === "lider") {
+        filterCondition = eq(users.leaderId, user.id);
+      } else if (user.role === "colaborador") {
+        const userData = await db.select({ departamentoId: users.departamentoId }).from(users).where(eq(users.id, user.id)).limit(1);
+        if (userData.length > 0 && userData[0].departamentoId) {
+          filterCondition = eq(users.departamentoId, userData[0].departamentoId);
+        }
+      }
+
+      // Progresso Geral de Execução do PDI
+      const totalActionsResult = await db
+        .select({
+          total: count(actions.id),
+          concluidas: count(sql`CASE WHEN ${actions.status} = 'concluida' THEN 1 END`),
+        })
+        .from(actions)
+        .leftJoin(pdis, eq(actions.pdiId, pdis.id))
+        .leftJoin(users, eq(pdis.colaboradorId, users.id))
+        .where(filterCondition);
+
+      const totalActions = totalActionsResult[0]?.total || 0;
+      const concludedActions = totalActionsResult[0]?.concluidas || 0;
+      const progress = totalActions > 0 ? Math.round((concludedActions / totalActions) * 100) : 0;
+
+      // Ações por Tipo de PDI (Certificação, Herdeiras, Onboarding)
+      const pdiTypesStats = await db
+        .select({
+          pdiType: pdis.type,
+          planned: count(actions.id),
+          concluded: count(sql`CASE WHEN ${actions.status} = 'concluida' THEN 1 END`),
+        })
+        .from(pdis)
+        .leftJoin(actions, eq(actions.pdiId, pdis.id))
+        .leftJoin(users, eq(pdis.colaboradorId, users.id))
+        .where(filterCondition)
+        .groupBy(pdis.type);
+
+      const pdiCertificacao = pdiTypesStats.find(s => s.pdiType === 'certificacao') || { pdiType: 'certificacao', planned: 0, concluded: 0 };
+      const acoesHerdeiras = pdiTypesStats.find(s => s.pdiType === 'herdeiras') || { pdiType: 'herdeiras', planned: 0, concluded: 0 };
+      const pdiOnboarding = pdiTypesStats.find(s => s.pdiType === 'onboarding') || { pdiType: 'onboarding', planned: 0, concluded: 0 };
+
+      return {
+        progress: progress,
+        concludedActions: concludedActions,
+        totalActions: totalActions,
+        pdiCertificacao: {
+          planned: pdiCertificacao.planned,
+          concluded: pdiCertificacao.concluded,
+          open: pdiCertificacao.planned - pdiCertificacao.concluded,
+          percentage: pdiCertificacao.planned > 0 ? Math.round((pdiCertificacao.concluded / pdiCertificacao.planned) * 100) : 0,
+        },
+        acoesHerdeiras: {
+          planned: acoesHerdeiras.planned,
+          concluded: acoesHerdeiras.concluded,
+          open: acoesHerdeiras.planned - acoesHerdeiras.concluded,
+          percentage: acoesHerdeiras.planned > 0 ? Math.round((acoesHerdeiras.concluded / acoesHerdeiras.planned) * 100) : 0,
+        },
+        pdiOnboarding: {
+          planned: pdiOnboarding.planned,
+          concluded: pdiOnboarding.concluded,
+          open: pdiOnboarding.planned - pdiOnboarding.concluded,
+          percentage: pdiOnboarding.planned > 0 ? Math.round((pdiOnboarding.concluded / pdiOnboarding.planned) * 100) : 0,
+        },
+      };
+    }),
+  /**
    * Obter estatísticas gerais do dashboard
    * Retorna 4 blocos de informação com hierarquia de acesso
    */

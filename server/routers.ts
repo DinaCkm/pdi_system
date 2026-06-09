@@ -9,6 +9,7 @@ import { actionsRouter } from "./modules/actionsRouter";
 import { adjustmentRequestsRouter } from "./modules/adjustmentRequestsRouter";
 import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
+import { visaoExecutivaRouter } from "./routers/visaoExecutiva";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { invokeLLM } from "./_core/llm";
 import { generatePasswordResetToken, generateTemporaryPassword, hashPassword } from "./_core/password";
@@ -25,6 +26,7 @@ export const appRouter = router({
   pdiAjustes: pdiAjustesRouter,
   notifications: notificationsRouter,
   dashboard: dashboardRouter,
+  visaoExecutiva: visaoExecutivaRouter,
   actions: actionsRouter,
   adjustmentRequests: adjustmentRequestsRouter,
 
