@@ -14,7 +14,11 @@ export function VisaoExecutiva({ departamentoId }: VisaoExecutivaProps) {
   // Buscar dados da Visão Executiva
   const { data, isLoading, isError } = trpc.visaoExecutiva.getVisaoExecutivaCompleta.useQuery(
     { departamentoId },
-    { enabled: true }
+    { 
+      enabled: true,
+      retry: 1,
+      refetchOnWindowFocus: false
+    }
   );
 
   if (isError) {
@@ -52,12 +56,21 @@ export function VisaoExecutiva({ departamentoId }: VisaoExecutivaProps) {
     ? Math.round((data.progresso.progressoGeral.acoesConcluidas / data.progresso.progressoGeral.totalAcoes) * 100)
     : 0;
 
-  // Classificação do impacto prático
-  const classificarImpacto = (percentual: number) => {
-    if (percentual >= 70) return "BOM";
-    if (percentual >= 50) return "REGULAR";
-    return "PRECISA MELHORAR";
+  // Função para buscar dados de um tipo específico de PDI
+  const getDadosTipo = (tipo: string) => {
+    const item = data.progresso.progressoPorTipo.find((p: any) => p.tipo === tipo);
+    if (!item) return { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0, percentual: 0 };
+    
+    const percentual = item.totalAcoes > 0 
+      ? Math.round((item.acoesConcluidas / item.totalAcoes) * 1000) / 10 
+      : 0;
+      
+    return { ...item, percentual };
   };
+
+  const certificacao = getDadosTipo('certificacao');
+  const herdeiras = getDadosTipo('herdeiras');
+  const onboarding = getDadosTipo('onboarding');
 
   return (
     <div className="space-y-6">
@@ -136,15 +149,15 @@ export function VisaoExecutiva({ departamentoId }: VisaoExecutivaProps) {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-purple-600">549</p>
+                    <p className="text-3xl font-bold text-purple-600">{certificacao.totalAcoes}</p>
                     <p className="text-xs text-gray-600">ações planejadas</p>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-purple-600 h-2 rounded-full" style={{ width: "35.2%" }}></div>
+                      <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${certificacao.percentual}%` }}></div>
                     </div>
-                    <p className="text-xs font-semibold text-purple-600">35.2%</p>
+                    <p className="text-xs font-semibold text-purple-600">{certificacao.percentual}%</p>
                     <div className="flex justify-between text-xs text-gray-600 pt-2">
-                      <span>193 concluídas</span>
-                      <span>356 em aberto</span>
+                      <span>{certificacao.acoesConcluidas} concluídas</span>
+                      <span>{certificacao.acoesEmAberto} em aberto</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -161,15 +174,15 @@ export function VisaoExecutiva({ departamentoId }: VisaoExecutivaProps) {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-cyan-600">450</p>
+                    <p className="text-3xl font-bold text-cyan-600">{herdeiras.totalAcoes}</p>
                     <p className="text-xs text-gray-600">ações planejadas</p>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-cyan-600 h-2 rounded-full" style={{ width: "53.3%" }}></div>
+                      <div className="bg-cyan-600 h-2 rounded-full" style={{ width: `${herdeiras.percentual}%` }}></div>
                     </div>
-                    <p className="text-xs font-semibold text-cyan-600">53.3%</p>
+                    <p className="text-xs font-semibold text-cyan-600">{herdeiras.percentual}%</p>
                     <div className="flex justify-between text-xs text-gray-600 pt-2">
-                      <span>240 concluídas</span>
-                      <span>210 em aberto</span>
+                      <span>{herdeiras.acoesConcluidas} concluídas</span>
+                      <span>{herdeiras.acoesEmAberto} em aberto</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -180,21 +193,21 @@ export function VisaoExecutiva({ departamentoId }: VisaoExecutivaProps) {
                     <div className="flex items-center gap-2">
                       <span className="text-2xl">👥</span>
                       <div>
-                        <p className="text-xs font-semibold text-teal-600 uppercase">PDI DE INTEGRAÇÃO (ONBOARDING / CROSSBOARDING)</p>
+                        <p className="text-xs font-semibold text-teal-600 uppercase">PDI DE INTEGRAÇÃO</p>
                         <p className="text-sm text-gray-600">PDI Integração — Novos Empregados</p>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-teal-600">84</p>
+                    <p className="text-3xl font-bold text-teal-600">{onboarding.totalAcoes}</p>
                     <p className="text-xs text-gray-600">ações planejadas</p>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-teal-600 h-2 rounded-full" style={{ width: "78.6%" }}></div>
+                      <div className="bg-teal-600 h-2 rounded-full" style={{ width: `${onboarding.percentual}%` }}></div>
                     </div>
-                    <p className="text-xs font-semibold text-teal-600">78.6%</p>
+                    <p className="text-xs font-semibold text-teal-600">{onboarding.percentual}%</p>
                     <div className="flex justify-between text-xs text-gray-600 pt-2">
-                      <span>66 concluídas</span>
-                      <span>18 em aberto</span>
+                      <span>{onboarding.acoesConcluidas} concluídas</span>
+                      <span>{onboarding.acoesEmAberto} em aberto</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -213,26 +226,16 @@ export function VisaoExecutiva({ departamentoId }: VisaoExecutivaProps) {
               <span className="text-xs font-semibold text-blue-600 uppercase">MÉDIA DE AÇÕES POR EMPREGADO</span>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-blue-600">{data.media.totalEmpregados}</p>
-                  <p className="text-xs text-gray-600 mt-1">Total de Empregados</p>
-                  <p className="text-xs text-gray-500">com PDI ativo</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-blue-100">
+                  <p className="text-4xl font-bold text-blue-600">{data.media.totalEmpregados}</p>
+                  <p className="text-sm font-semibold text-gray-700 mt-2">Total de Empregados</p>
+                  <p className="text-xs text-gray-500">com PDI ativo no sistema</p>
                 </div>
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-blue-600">{data.media.mediaGeral}</p>
-                  <p className="text-xs text-gray-600 mt-1">Média Geral</p>
-                  <p className="text-xs text-gray-500">ações por empregado</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-blue-600">3.8</p>
-                  <p className="text-xs text-gray-600 mt-1">PDI Certificação</p>
-                  <p className="text-xs text-gray-500">ações por empregado</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-blue-600">4.4</p>
-                  <p className="text-xs text-gray-600 mt-1">PDI Consolidação 2025</p>
-                  <p className="text-xs text-gray-500">ações por empregado</p>
+                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-blue-100">
+                  <p className="text-4xl font-bold text-blue-600">{data.media.mediaGeral}</p>
+                  <p className="text-sm font-semibold text-gray-700 mt-2">Média Geral</p>
+                  <p className="text-xs text-gray-500">ações planejadas por empregado</p>
                 </div>
               </div>
             </CardContent>
@@ -250,7 +253,7 @@ export function VisaoExecutiva({ departamentoId }: VisaoExecutivaProps) {
                   <CardHeader className="pb-2">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
-                      <p className="text-xs font-semibold text-green-600 uppercase">QUANTAS AÇÕES FORAM APROVADAS?</p>
+                      <p className="text-xs font-semibold text-green-600 uppercase">AÇÕES APROVADAS</p>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
@@ -265,12 +268,12 @@ export function VisaoExecutiva({ departamentoId }: VisaoExecutivaProps) {
                   <CardHeader className="pb-2">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="h-5 w-5 text-blue-600" />
-                      <p className="text-xs font-semibold text-blue-600 uppercase">QUANTAS AÇÕES FORAM EXECUTADAS?</p>
+                      <p className="text-xs font-semibold text-blue-600 uppercase">AÇÕES EXECUTADAS</p>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <p className="text-3xl font-bold text-blue-600">{data.situacao.acoesExecutadas}</p>
-                    <p className="text-sm text-gray-600">Ações Executadas e Concluídas com Sucesso</p>
+                    <p className="text-sm text-gray-600">Ações Concluídas com Sucesso</p>
                     <p className="text-xs text-gray-500 mt-3">O empregado realizou a ação, enviou a comprovação e o avaliador confirmou a conclusão.</p>
                   </CardContent>
                 </Card>
@@ -280,12 +283,12 @@ export function VisaoExecutiva({ departamentoId }: VisaoExecutivaProps) {
                   <CardHeader className="pb-2">
                     <div className="flex items-center gap-2">
                       <AlertCircle className="h-5 w-5 text-red-600" />
-                      <p className="text-xs font-semibold text-red-600 uppercase">QUANTAS AÇÕES ESTÃO VENCIDAS?</p>
+                      <p className="text-xs font-semibold text-red-600 uppercase">AÇÕES VENCIDAS</p>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <p className="text-3xl font-bold text-red-600">{data.situacao.acoesVencidas}</p>
-                    <p className="text-sm text-gray-600">Ações com Prazo Vencido — Requerem Atenção</p>
+                    <p className="text-sm text-gray-600">Ações com Prazo Vencido</p>
                     <p className="text-xs text-gray-500 mt-3">O prazo dessas ações já passou e elas ainda não foram concluídas pelos empregados.</p>
                   </CardContent>
                 </Card>
@@ -296,110 +299,51 @@ export function VisaoExecutiva({ departamentoId }: VisaoExecutivaProps) {
           {/* BLOCO 4: Situação das Comprovações e Impacto Prático */}
           <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-yellow-50">
             <CardHeader>
-              <span className="text-xs font-semibold text-orange-600 uppercase">SITUAÇÃO DAS COMPROVAÇÕES E IMPACTO PRÁTICO</span>
+              <span className="text-xs font-semibold text-orange-600 uppercase">COMPROVAÇÕES E IMPACTO PRÁTICO</span>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Card Aguardando Avaliação */}
-                <Card className="border-orange-200 bg-white">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-orange-600" />
-                      <p className="text-xs font-semibold text-orange-600 uppercase">QUANTAS COMPROVAÇÕES AGUARDAM AVALIAÇÃO?</p>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-orange-600">{data.comprovacoes.comprovacoeAguardando}</p>
-                    <p className="text-sm text-gray-600">Comprovações Enviadas — Aguardando Avaliação do RH</p>
-                    <p className="text-xs text-gray-500 mt-3">O empregado já enviou o comprovante de que realizou a ação, mas o avaliador ainda não analisou.</p>
-                  </CardContent>
-                </Card>
-
-                {/* Card Devolvidas */}
-                <Card className="border-red-200 bg-white">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-5 w-5 text-red-600" />
-                      <p className="text-xs font-semibold text-red-600 uppercase">QUANTAS COMPROVAÇÕES FORAM DEVOLVIDAS?</p>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-red-600">{data.comprovacoes.comprovacoeDevolvidas}</p>
-                    <p className="text-sm text-gray-600">Comprovações Devolvidas — Empregado Precisa Refazer</p>
-                    <p className="text-xs text-gray-500 mt-3">O avaliador analisou e devolveu porque a comprovação não atende aos critérios. O empregado ainda pode corrigir e enviar novamente.</p>
-                  </CardContent>
-                </Card>
-
-                {/* Card Impacto Prático */}
-                <Card className="border-cyan-200 bg-white">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-cyan-600" />
-                      <p className="text-xs font-semibold text-cyan-600 uppercase">AS AÇÕES ESTÃO GERANDO RESULTADO PRÁTICO?</p>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-cyan-600">{data.comprovacoes.impactoPratico}%</p>
-                    <p className="text-sm text-gray-600">Impacto Prático das Ações no Trabalho Diário</p>
-                    <p className="text-xs font-semibold text-cyan-600 mt-2">Classificado como {classificarImpacto(data.comprovacoes.impactoPratico)}</p>
-                    <p className="text-xs text-gray-500 mt-2">Mede o quanto as ações realizadas estão gerando resultado real no trabalho diário.</p>
-                  </CardContent>
-                </Card>
+                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-orange-100">
+                  <p className="text-3xl font-bold text-orange-600">{data.comprovacoes.comprovacoeAguardando}</p>
+                  <p className="text-xs font-semibold text-gray-700 mt-2 uppercase">AGUARDANDO AVALIAÇÃO</p>
+                  <p className="text-xs text-gray-500">comprovações enviadas</p>
+                </div>
+                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-orange-100">
+                  <p className="text-3xl font-bold text-orange-600">{data.comprovacoes.comprovacoeDevolvidas}</p>
+                  <p className="text-xs font-semibold text-gray-700 mt-2 uppercase">DEVOLVIDAS PARA AJUSTE</p>
+                  <p className="text-xs text-gray-500">correção solicitada</p>
+                </div>
+                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-orange-100">
+                  <p className="text-3xl font-bold text-orange-600">{data.comprovacoes.impactoPratico}%</p>
+                  <p className="text-xs font-semibold text-gray-700 mt-2 uppercase">IMPACTO PRÁTICO MÉDIO</p>
+                  <p className="text-xs text-gray-500">das ações concluídas</p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* BLOCO 5: Solicitações de Inserção de Novas Ações no PDI */}
-          <Card className="border-cyan-200 bg-gradient-to-br from-cyan-50 to-blue-50">
+          {/* BLOCO 5: Solicitações de Inserção de Novas Ações */}
+          <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50">
             <CardHeader>
-              <span className="text-xs font-semibold text-cyan-600 uppercase">SOLICITAÇÕES DE INSERÇÃO DE NOVAS AÇÕES NO PDI</span>
+              <span className="text-xs font-semibold text-indigo-600 uppercase">SOLICITAÇÕES DE NOVAS AÇÕES</span>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Card Solicitações Feitas */}
-                <Card className="border-cyan-200 bg-white">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-cyan-600" />
-                      <p className="text-xs font-semibold text-cyan-600 uppercase">QUANTAS SOLICITAÇÕES FORAM FEITAS?</p>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-cyan-600">{data.solicitacoes.totalSolicitacoes}</p>
-                    <p className="text-sm text-gray-600">Solicitações de Inserção de Novas Ações</p>
-                    <p className="text-xs text-gray-500 mt-3">Empregados solicitaram a inclusão de novas ações no seu plano de desenvolvimento.</p>
-                  </CardContent>
-                </Card>
-
-                {/* Card Aprovadas e Incluídas */}
-                <Card className="border-green-200 bg-white">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-green-600" />
-                      <p className="text-xs font-semibold text-green-600 uppercase">QUANTAS FORAM VALIDADAS E INCLUÍDAS?</p>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-green-600">{data.solicitacoes.solicitacoesAprovadas}</p>
-                    <p className="text-sm text-gray-600">Solicitações Aprovadas e Incluídas no PDI</p>
-                    <p className="text-xs text-gray-500 mt-3">Estas solicitações passaram por todo o fluxo de aprovação e a nova ação foi incluída no PDI do empregado.</p>
-                  </CardContent>
-                </Card>
-
-                {/* Card Reprovadas */}
-                <Card className="border-red-200 bg-white">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-5 w-5 text-red-600" />
-                      <p className="text-xs font-semibold text-red-600 uppercase">QUANTAS FORAM REPROVADAS?</p>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-red-600">{data.solicitacoes.solicitacoesReprovadas}</p>
-                    <p className="text-sm text-gray-600">Solicitações Reprovadas — Não Incluídas no PDI</p>
-                    <p className="text-xs text-gray-500 mt-3">Estas solicitações foram analisadas e não foram aprovadas pelo líder ou pelo RH.</p>
-                  </CardContent>
-                </Card>
+                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-indigo-100">
+                  <p className="text-3xl font-bold text-indigo-600">{data.solicitacoes.totalSolicitacoes}</p>
+                  <p className="text-xs font-semibold text-gray-700 mt-2 uppercase">TOTAL SOLICITADO</p>
+                  <p className="text-xs text-gray-500">novas ações propostas</p>
+                </div>
+                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-indigo-100">
+                  <p className="text-3xl font-bold text-green-600">{data.solicitacoes.solicitacoesAprovadas}</p>
+                  <p className="text-xs font-semibold text-gray-700 mt-2 uppercase">APROVADAS</p>
+                  <p className="text-xs text-gray-500">incluídas no PDI</p>
+                </div>
+                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-indigo-100">
+                  <p className="text-3xl font-bold text-red-600">{data.solicitacoes.solicitacoesReprovadas}</p>
+                  <p className="text-xs font-semibold text-gray-700 mt-2 uppercase">REPROVADAS</p>
+                  <p className="text-xs text-gray-500">pelo gestor ou RH</p>
+                </div>
               </div>
             </CardContent>
           </Card>
