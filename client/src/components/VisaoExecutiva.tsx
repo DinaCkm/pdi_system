@@ -1,5 +1,5 @@
 import React from "react";
-import { trpc } from "../utils/trpc";
+import { trpc } from "@/lib/trpc";
 import { 
   BarChart3, 
   Users, 
