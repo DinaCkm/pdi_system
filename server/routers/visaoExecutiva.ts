@@ -35,10 +35,10 @@ export const visaoExecutivaRouter = router({
 
         const progressoGeral = await query;
 
-        // Progresso por tipo de PDI
+        // Progresso por tipo de PDI usando a coluna 'type' recém-criada
         const progressoPorTipo = await db
           .select({
-            tipo: sql`'certificacao'`,
+            tipo: pdis.type,
             totalAcoes: count(actions.id),
             acoesConcluidas: count(
               sql`CASE WHEN ${actions.status} = 'concluido' THEN 1 END`
@@ -50,14 +50,8 @@ export const visaoExecutivaRouter = router({
           .from(actions)
           .innerJoin(pdis, eq(actions.pdiId, pdis.id))
           .innerJoin(users, eq(pdis.colaboradorId, users.id))
-          .where(
-            departamentoId
-              ? and(
-                  eq(users.departamentoId, departamentoId),
-                  eq(pdis.titulo, sql`'PDI 01/2026 — Base: Certificação'`)
-                )
-              : eq(pdis.titulo, sql`'PDI 01/2026 — Base: Certificação'`)
-          );
+          .where(departamentoId ? eq(users.departamentoId, departamentoId) : undefined)
+          .groupBy(pdis.type);
 
         return {
           progressoGeral: progressoGeral[0] || {
@@ -85,13 +79,18 @@ export const visaoExecutivaRouter = router({
         if (!db) throw new Error("Database not available");
         const { departamentoId } = input;
 
-        // Total de empregados
+        // Total de empregados (colaboradores ativos)
         let queryEmpregados = db
           .select({
             total: count(users.id),
           })
           .from(users)
-          .where(eq(users.role, "colaborador"));
+          .where(
+            and(
+              eq(users.role, "colaborador"),
+              eq(users.status, "ativo")
+            )
+          );
 
         if (departamentoId) {
           queryEmpregados = queryEmpregados.where(
@@ -144,7 +143,7 @@ export const visaoExecutivaRouter = router({
         if (!db) throw new Error("Database not available");
         const { departamentoId } = input;
 
-        // Ações aprovadas pelo líder
+        // Ações aprovadas pelo líder (em_andamento ou concluido)
         let queryAprovadas = db
           .select({
             total: count(actions.id),
@@ -155,7 +154,7 @@ export const visaoExecutivaRouter = router({
           .where(
             and(
               sql`${actions.status} IN ('concluido', 'em_andamento')`,
-              departamentoId ? eq(users.departamentoId, departamentoId) : undefined
+              departamentoId ? eq(users.departamentoId, departamentoId) : sql`1=1`
             )
           );
 
@@ -172,13 +171,13 @@ export const visaoExecutivaRouter = router({
           .where(
             and(
               eq(actions.status, "concluido"),
-              departamentoId ? eq(users.departamentoId, departamentoId) : undefined
+              departamentoId ? eq(users.departamentoId, departamentoId) : sql`1=1`
             )
           );
 
         const executadas = await queryExecutadas;
 
-        // Ações com prazo vencido
+        // Ações com prazo vencido (não concluídas e prazo < hoje)
         let queryVencidas = db
           .select({
             total: count(actions.id),
@@ -190,7 +189,7 @@ export const visaoExecutivaRouter = router({
             and(
               sql`${actions.prazo} < CURDATE()`,
               sql`${actions.status} != 'concluido'`,
-              departamentoId ? eq(users.departamentoId, departamentoId) : undefined
+              departamentoId ? eq(users.departamentoId, departamentoId) : sql`1=1`
             )
           );
 
@@ -232,13 +231,13 @@ export const visaoExecutivaRouter = router({
           .where(
             and(
               eq(evidences.status, "aguardando_avaliacao"),
-              departamentoId ? eq(users.departamentoId, departamentoId) : undefined
+              departamentoId ? eq(users.departamentoId, departamentoId) : sql`1=1`
             )
           );
 
         const aguardando = await queryAguardando;
 
-        // Comprovações devolvidas
+        // Comprovações devolvidas (correcao_solicitada)
         let queryDevolvidas = db
           .select({
             total: count(evidences.id),
@@ -250,13 +249,13 @@ export const visaoExecutivaRouter = router({
           .where(
             and(
               eq(evidences.status, "correcao_solicitada"),
-              departamentoId ? eq(users.departamentoId, departamentoId) : undefined
+              departamentoId ? eq(users.departamentoId, departamentoId) : sql`1=1`
             )
           );
 
         const devolvidas = await queryDevolvidas;
 
-        // Impacto prático das ações (média de impactoPercentual)
+        // Impacto prático das ações (média de impactoPercentual das aprovadas)
         let queryImpacto = db
           .select({
             mediaImpacto: avg(evidences.impactoPercentual),
@@ -268,7 +267,7 @@ export const visaoExecutivaRouter = router({
           .where(
             and(
               eq(evidences.status, "aprovada"),
-              departamentoId ? eq(users.departamentoId, departamentoId) : undefined
+              departamentoId ? eq(users.departamentoId, departamentoId) : sql`1=1`
             )
           );
 
@@ -278,7 +277,7 @@ export const visaoExecutivaRouter = router({
           comprovacoeAguardando: aguardando[0]?.total || 0,
           comprovacoeDevolvidas: devolvidas[0]?.total || 0,
           impactoPratico: impacto[0]?.mediaImpacto
-            ? parseFloat(Number(impacto[0].mediaImpacto).toFixed(2))
+            ? parseFloat(Number(impacto[0].mediaImpacto).toFixed(1))
             : 0,
         };
       } catch (error) {
@@ -324,13 +323,13 @@ export const visaoExecutivaRouter = router({
           .where(
             and(
               eq(solicitacoesAcoes.statusGeral, "aprovada"),
-              departamentoId ? eq(users.departamentoId, departamentoId) : undefined
+              departamentoId ? eq(users.departamentoId, departamentoId) : sql`1=1`
             )
           );
 
         const aprovadas = await queryAprovadas;
 
-        // Solicitações reprovadas
+        // Solicitações reprovadas (vetadas)
         let queryReprovadas = db
           .select({
             total: count(solicitacoesAcoes.id),
@@ -340,7 +339,7 @@ export const visaoExecutivaRouter = router({
           .where(
             and(
               sql`${solicitacoesAcoes.statusGeral} IN ('vetada_gestor', 'vetada_rh')`,
-              departamentoId ? eq(users.departamentoId, departamentoId) : undefined
+              departamentoId ? eq(users.departamentoId, departamentoId) : sql`1=1`
             )
           );
 
@@ -366,7 +365,8 @@ export const visaoExecutivaRouter = router({
     }))
     .query(async ({ input, ctx }) => {
       try {
-        // @ts-ignore
+        // Criar o caller para chamadas internas de procedures
+        // @ts-ignore - TRPC createCaller types can be complex
         const caller = ctx.createCaller({});
         
         const [progresso, media, situacao, comprovacoes, solicitacoes] =
