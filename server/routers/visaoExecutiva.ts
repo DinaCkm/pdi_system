@@ -8,8 +8,8 @@ async function fetchProgressoGeral(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Query consolidada
-  let query = db
+  // Query consolidada para o progresso geral
+  let queryGeral = db
     .select({
       totalAcoes: count(actions.id),
       acoesConcluidas: count(
@@ -21,16 +21,69 @@ async function fetchProgressoGeral(departamentoId?: number) {
     .innerJoin(users, eq(pdis.colaboradorId, users.id));
 
   if (departamentoId) {
-    query = query.where(eq(users.departamentoId, departamentoId));
+    queryGeral = queryGeral.where(eq(users.departamentoId, departamentoId));
   }
 
-  const progressoGeral = await query;
+  const progressoGeralResult = await queryGeral;
 
-  // Como a coluna 'type' não existe no banco, retornamos uma lista vazia ou mockada
-  // para evitar erro de SQL, mantendo a compatibilidade com o frontend
+  // Query para buscar todas as ações e categorizá-las via código (já que a coluna 'type' não existe)
+  let queryCategorizacao = db
+    .select({
+      tituloPdi: pdis.titulo,
+      statusAcao: actions.status,
+    })
+    .from(actions)
+    .innerJoin(pdis, eq(actions.pdiId, pdis.id))
+    .innerJoin(users, eq(pdis.colaboradorId, users.id));
+
+  if (departamentoId) {
+    queryCategorizacao = queryCategorizacao.where(eq(users.departamentoId, departamentoId));
+  }
+
+  const acoesParaCategorizar = await queryCategorizacao;
+
+  // Inicializar contadores
+  const categorias = {
+    certificacao: { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0 },
+    herdeiras: { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0 },
+    onboarding: { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0 },
+  };
+
+  // Lógica de categorização baseada no título do PDI
+  acoesParaCategorizar.forEach((item) => {
+    const titulo = (item.tituloPdi || "").toLowerCase();
+    const concluida = item.statusAcao === "concluido";
+    
+    let cat: "certificacao" | "herdeiras" | "onboarding";
+    
+    if (titulo.includes("certificacao") || titulo.includes("certificação") || titulo.includes("01/2026")) {
+      cat = "certificacao";
+    } else if (titulo.includes("herdeiras") || titulo.includes("2025") || titulo.includes("pendentes") || titulo.includes("consolidação")) {
+      cat = "herdeiras";
+    } else if (titulo.includes("onboarding") || titulo.includes("integração") || titulo.includes("novos")) {
+      cat = "onboarding";
+    } else {
+      // Default para certificação se não houver match claro
+      cat = "certificacao";
+    }
+
+    categorias[cat].totalAcoes++;
+    if (concluida) {
+      categorias[cat].acoesConcluidas++;
+    } else {
+      categorias[cat].acoesEmAberto++;
+    }
+  });
+
+  // Converter para o formato esperado pelo frontend
+  const progressoPorTipo = Object.entries(categorias).map(([tipo, dados]) => ({
+    tipo,
+    ...dados
+  }));
+
   return {
-    progressoGeral: progressoGeral[0] || { totalAcoes: 0, acoesConcluidas: 0 },
-    progressoPorTipo: [], // Retorna vazio para evitar erro de 'Unknown column type'
+    progressoGeral: progressoGeralResult[0] || { totalAcoes: 0, acoesConcluidas: 0 },
+    progressoPorTipo,
   };
 }
 

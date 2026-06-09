@@ -1,354 +1,307 @@
-import React, { useState } from "react";
-import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Clock, FileText, TrendingUp } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import React from "react";
+import { trpc } from "../utils/trpc";
+import { 
+  BarChart3, 
+  Users, 
+  CheckCircle2, 
+  Clock, 
+  AlertCircle, 
+  FileCheck, 
+  PlusCircle,
+  ChevronDown,
+  ChevronUp,
+  Target,
+  GraduationCap,
+  RefreshCw,
+  UserPlus,
+  TrendingUp
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { cn } from "../lib/utils";
 
 interface VisaoExecutivaProps {
   departamentoId?: number;
 }
 
-export function VisaoExecutiva({ departamentoId }: VisaoExecutivaProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  // Buscar dados da Visão Executiva
-  const { data, isLoading, isError } = trpc.visaoExecutiva.getVisaoExecutivaCompleta.useQuery(
+export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }) => {
+  const [isOpen, setIsOpen] = React.useState(true);
+  
+  const { data, isLoading, error } = trpc.visaoExecutiva.getVisaoExecutivaCompleta.useQuery(
     { departamentoId },
     { 
-      enabled: true,
-      retry: 1,
-      refetchOnWindowFocus: false
+      refetchOnWindowFocus: false,
+      retry: 1
     }
   );
 
-  if (isError) {
-    return (
-      <Card className="border-red-200 bg-red-50">
-        <CardHeader>
-          <CardTitle className="text-red-800">Erro ao Carregar Visão Executiva</CardTitle>
-        </CardHeader>
-        <CardContent className="text-red-700">
-          Não foi possível carregar os dados da Visão Executiva. Por favor, tente novamente.
-        </CardContent>
-      </Card>
-    );
-  }
-
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-48" />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
-        </CardContent>
-      </Card>
+      <div className="w-full h-48 flex items-center justify-center bg-white rounded-xl border border-slate-100 shadow-sm">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-500 font-medium animate-pulse text-sm">Carregando indicadores estratégicos...</p>
+        </div>
+      </div>
     );
   }
 
-  if (!data) {
-    return null;
+  if (error) {
+    return (
+      <div className="w-full p-8 bg-red-50 rounded-xl border border-red-100 flex flex-col items-center text-center gap-3">
+        <AlertCircle className="w-12 h-12 text-red-500" />
+        <h3 className="text-lg font-bold text-red-900">Erro ao Carregar Visão Executiva</h3>
+        <p className="text-red-700 max-w-md">Não foi possível carregar os dados da Visão Executiva. Por favor, tente novamente.</p>
+      </div>
+    );
   }
 
-  const progressoPercentual = data.progresso.progressoGeral.totalAcoes > 0
-    ? Math.round((data.progresso.progressoGeral.acoesConcluidas / data.progresso.progressoGeral.totalAcoes) * 100)
-    : 0;
+  const { progresso, media, situacao, comprovacoes, solicitacoes } = data!;
 
-  // Função para buscar dados de um tipo específico de PDI
-  const getDadosTipo = (tipo: string) => {
-    const item = data.progresso.progressoPorTipo.find((p: any) => p.tipo === tipo);
-    if (!item) return { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0, percentual: 0 };
-    
-    const percentual = item.totalAcoes > 0 
-      ? Math.round((item.acoesConcluidas / item.totalAcoes) * 1000) / 10 
-      : 0;
-      
-    return { ...item, percentual };
+  // Mapeamento de nomes para os cards de PDI
+  const pdiLabels: Record<string, { title: string; subtitle: string; icon: any; color: string; bgColor: string; borderColor: string }> = {
+    certificacao: { 
+      title: "PDI DA CERTIFICAÇÃO 2026", 
+      subtitle: "PDI 01/2026 — Base: Certificação", 
+      icon: GraduationCap,
+      color: "text-purple-600",
+      bgColor: "bg-white",
+      borderColor: "border-purple-200"
+    },
+    herdeiras: { 
+      title: "AÇÕES HERDADAS DE 2025", 
+      subtitle: "PDI — Consolidação de Ações Pendentes de 2025", 
+      icon: RefreshCw,
+      color: "text-blue-600",
+      bgColor: "bg-white",
+      borderColor: "border-blue-200"
+    },
+    onboarding: { 
+      title: "PDI DE INTEGRAÇÃO (ONBOARDING / CROSSBOARDING)", 
+      subtitle: "PDI Integração — Novos Empregados", 
+      icon: UserPlus,
+      color: "text-teal-600",
+      bgColor: "bg-white",
+      borderColor: "border-teal-200"
+    }
   };
 
-  const certificacao = getDadosTipo('certificacao');
-  const herdeiras = getDadosTipo('herdeiras');
-  const onboarding = getDadosTipo('onboarding');
+  const totalAcoesGeral = progresso.progressoGeral.totalAcoes;
+  const concluidasGeral = progresso.progressoGeral.acoesConcluidas;
+  const percentualGeral = totalAcoesGeral > 0 ? Math.round((concluidasGeral / totalAcoesGeral) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Cabeçalho Expansível */}
-      <div
-        className="bg-gradient-to-r from-purple-600 to-blue-500 rounded-2xl p-4 cursor-pointer hover:shadow-lg transition-all"
-        onClick={() => setIsExpanded(!isExpanded)}
+    <div className="space-y-6 mb-8">
+      {/* Header com Toggle */}
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-gradient-to-r from-purple-700 to-indigo-600 text-white p-4 rounded-xl shadow-md flex items-center justify-between cursor-pointer hover:shadow-lg transition-all duration-300"
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2 rounded-lg">
-              <FileText className="h-5 w-5 text-white" />
-            </div>
-            <h2 className="text-white font-bold text-lg">Visão Executiva — Painel de Gestão do PDI</h2>
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+            <BarChart3 className="w-6 h-6" />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-white text-sm">Clique para {isExpanded ? "fechar" : "abrir"}</span>
-            {isExpanded ? (
-              <ChevronUp className="h-5 w-5 text-white" />
-            ) : (
-              <ChevronDown className="h-5 w-5 text-white" />
-            )}
-          </div>
+          <h2 className="text-xl font-bold tracking-tight">Visão Executiva — Painel de Gestão do PDI</h2>
+        </div>
+        <div className="flex items-center gap-2 text-white/90 font-medium">
+          <span>{isOpen ? "Clique para fechar" : "Clique para expandir"}</span>
+          {isOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
         </div>
       </div>
 
-      {isExpanded && (
-        <>
-          {/* BLOCO 1: Progresso Geral de Execução do PDI */}
-          <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-purple-600" />
-                <span className="text-xs font-semibold text-purple-600 uppercase">QUANTO DO PDI JÁ FOI EXECUTADO?</span>
-              </div>
-              <CardTitle className="text-xl text-gray-800 mt-2">Progresso Geral de Execução do PDI no Sebrae TO</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Barra de Progresso */}
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="w-full bg-gray-200 rounded-full h-8 overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-purple-600 to-blue-500 h-full flex items-center justify-center text-white font-bold text-sm transition-all duration-500"
-                      style={{ width: `${progressoPercentual}%` }}
-                    >
-                      {progressoPercentual}% concluído
+      {isOpen && (
+        <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-6">
+          {/* BLOCO 1: PROGRESSO GERAL */}
+          <Card className="border-purple-100 shadow-sm overflow-hidden bg-gradient-to-br from-purple-50/50 to-blue-50/50">
+            <CardContent className="p-8">
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-purple-600 font-bold text-xs uppercase tracking-widest">
+                    <TrendingUp className="w-4 h-4" />
+                    <span>Quanto do PDI já foi executado?</span>
+                  </div>
+                  <h3 className="text-2xl font-extrabold text-slate-800">
+                    Progresso Geral de Execução do PDI no Sebrae TO
+                  </h3>
+                  
+                  <div className="relative pt-6">
+                    <div className="h-10 w-full bg-slate-200 rounded-full overflow-hidden shadow-inner">
+                      <div 
+                        className="h-full bg-gradient-to-r from-purple-700 to-blue-500 flex items-center justify-center transition-all duration-1000 ease-out relative"
+                        style={{ width: `${percentualGeral}%` }}
+                      >
+                        <span className="text-white font-black text-sm drop-shadow-md z-10">
+                          {percentualGeral}% concluído
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-center text-slate-600 font-medium">
+                    <p className="text-sm">
+                      De cada <span className="font-bold text-purple-700">{totalAcoesGeral} ações planejadas</span>, 
+                      <span className="font-bold text-purple-700"> {concluidasGeral} já foram concluídas</span> com sucesso pelos empregados.
+                    </p>
+                    <div className="text-purple-700 font-bold text-sm">
+                      <span className="text-purple-600">{concluidasGeral} concluídas</span> / <span className="text-slate-400">{totalAcoesGeral} planejadas</span>
                     </div>
                   </div>
                 </div>
+
+                {/* Cards por Tipo de PDI */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+                  {progresso.progressoPorTipo.map((pdi: any) => {
+                    const info = pdiLabels[pdi.tipo] || pdiLabels.certificacao;
+                    const Icon = info.icon;
+                    const percent = pdi.totalAcoes > 0 ? Math.round((pdi.acoesConcluidas / pdi.totalAcoes) * 100) : 0;
+                    
+                    return (
+                      <Card key={pdi.tipo} className={cn("p-6 rounded-2xl border-2 transition-all duration-300 hover:shadow-md", info.bgColor, info.borderColor)}>
+                        <div className="flex items-start gap-3 mb-4">
+                          <div className={cn("p-2 rounded-lg bg-slate-50", info.color)}>
+                            <Icon className="w-5 h-5" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <p className={cn("text-[10px] font-black uppercase tracking-tight", info.color)}>
+                              {info.title}
+                            </p>
+                            <h4 className="text-xs font-bold text-slate-500 line-clamp-1">
+                              {info.subtitle}
+                            </h4>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div className="flex flex-col">
+                            <span className={cn("text-4xl font-black", info.color)}>{pdi.totalAcoes}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">ações planejadas</span>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                              <div 
+                                className={cn("h-full transition-all duration-1000", info.color.replace('text', 'bg'))}
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] font-bold">
+                              <span className={cn(info.color)}>{percent}%</span>
+                              <div className="flex gap-3 text-slate-400">
+                                <span>{pdi.acoesConcluidas} concluídas</span>
+                                <span>{pdi.acoesEmAberto} em aberto</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                {/* Rodapé Informativo */}
+                <div className="pt-6 border-t border-purple-100 text-[10px] text-slate-500 leading-relaxed">
+                  <p>
+                    <span className="font-bold text-slate-700">ℹ️ Entenda os PDIs:</span> O PDI da Certificação contém ações novas planejadas com base nos Relatórios da Certificação realizada em 12/2025. O PDI de Consolidação reúne ações que foram iniciadas em 2025 e transferidas para conclusão em 2026. O PDI de Integração é destinado a empregados que ingressaram recentemente na organização.
+                  </p>
+                </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Texto Explicativo */}
-              <p className="text-sm text-gray-700">
-                De cada <span className="font-bold text-purple-600">{data.progresso.progressoGeral.totalAcoes} ações planejadas</span>, <span className="font-bold text-purple-600">{data.progresso.progressoGeral.acoesConcluidas} já foram concluídas</span> com sucesso pelos empregados.
-              </p>
-
-              {/* Resumo à Direita */}
-              <div className="text-right">
-                <p className="text-xs text-gray-600">
-                  <span className="font-bold text-purple-600">{data.progresso.progressoGeral.acoesConcluidas} concluídas</span> / <span className="font-bold text-purple-600">{data.progresso.progressoGeral.totalAcoes} planejadas</span>
+          {/* OUTROS BLOCOS EM GRID */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* BLOCO 2: MÉDIA DE AÇÕES */}
+            <Card className="border-blue-100 shadow-sm hover:shadow-md transition-all bg-gradient-to-br from-blue-50 to-white">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-black text-blue-600 uppercase tracking-widest flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Média de Ações
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-black text-slate-800">{media.mediaGeral}</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">ações / emp.</span>
+                </div>
+                <p className="text-[11px] text-slate-600 mt-2 font-medium leading-tight">
+                  Baseado em <span className="font-bold">{media.totalEmpregados}</span> empregados ativos e <span className="font-bold">{media.totalAcoes}</span> ações totais.
                 </p>
-              </div>
+              </CardContent>
+            </Card>
 
-              {/* Cards por Tipo de PDI */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                {/* Card Certificação */}
-                <Card className="border-purple-200 bg-white">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">📚</span>
-                      <div>
-                        <p className="text-xs font-semibold text-purple-600 uppercase">PDI DA CERTIFICAÇÃO 2026</p>
-                        <p className="text-sm text-gray-600">PDI 01/2026 — Base: Certificação</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-purple-600">{certificacao.totalAcoes}</p>
-                    <p className="text-xs text-gray-600">ações planejadas</p>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${certificacao.percentual}%` }}></div>
-                    </div>
-                    <p className="text-xs font-semibold text-purple-600">{certificacao.percentual}%</p>
-                    <div className="flex justify-between text-xs text-gray-600 pt-2">
-                      <span>{certificacao.acoesConcluidas} concluídas</span>
-                      <span>{certificacao.acoesEmAberto} em aberto</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Card Ações Herdadas */}
-                <Card className="border-cyan-200 bg-white">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">🔄</span>
-                      <div>
-                        <p className="text-xs font-semibold text-cyan-600 uppercase">AÇÕES HERDADAS DE 2025</p>
-                        <p className="text-sm text-gray-600">PDI — Consolidação de Ações Pendentes de 2025</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-cyan-600">{herdeiras.totalAcoes}</p>
-                    <p className="text-xs text-gray-600">ações planejadas</p>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-cyan-600 h-2 rounded-full" style={{ width: `${herdeiras.percentual}%` }}></div>
-                    </div>
-                    <p className="text-xs font-semibold text-cyan-600">{herdeiras.percentual}%</p>
-                    <div className="flex justify-between text-xs text-gray-600 pt-2">
-                      <span>{herdeiras.acoesConcluidas} concluídas</span>
-                      <span>{herdeiras.acoesEmAberto} em aberto</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Card Onboarding */}
-                <Card className="border-teal-200 bg-white">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">👥</span>
-                      <div>
-                        <p className="text-xs font-semibold text-teal-600 uppercase">PDI DE INTEGRAÇÃO</p>
-                        <p className="text-sm text-gray-600">PDI Integração — Novos Empregados</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-teal-600">{onboarding.totalAcoes}</p>
-                    <p className="text-xs text-gray-600">ações planejadas</p>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-teal-600 h-2 rounded-full" style={{ width: `${onboarding.percentual}%` }}></div>
-                    </div>
-                    <p className="text-xs font-semibold text-teal-600">{onboarding.percentual}%</p>
-                    <div className="flex justify-between text-xs text-gray-600 pt-2">
-                      <span>{onboarding.acoesConcluidas} concluídas</span>
-                      <span>{onboarding.acoesEmAberto} em aberto</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Rodapé Explicativo */}
-              <p className="text-xs text-gray-600 border-t pt-3 mt-4">
-                <strong>ℹ️ Entenda os PDIs:</strong> O PDI da Certificação contém ações novas planejadas com base nos Relatórios da Certificação realizada em 12/2025. O PDI de Consolidação reúne ações que foram iniciadas em 2025 e transferidas para conclusão em 2026. O PDI de Integração é destinado a empregados que ingressaram recentemente na organização.
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* BLOCO 2: Média de Ações por Empregado */}
-          <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50">
-            <CardHeader>
-              <span className="text-xs font-semibold text-blue-600 uppercase">MÉDIA DE AÇÕES POR EMPREGADO</span>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-blue-100">
-                  <p className="text-4xl font-bold text-blue-600">{data.media.totalEmpregados}</p>
-                  <p className="text-sm font-semibold text-gray-700 mt-2">Total de Empregados</p>
-                  <p className="text-xs text-gray-500">com PDI ativo no sistema</p>
+            {/* BLOCO 3: SITUAÇÃO ATUAL */}
+            <Card className="border-emerald-100 shadow-sm hover:shadow-md transition-all bg-gradient-to-br from-emerald-50 to-white">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Situação das Ações
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-600">Aprovadas</span>
+                  <span className="text-sm font-black text-emerald-600">{situacao.acoesAprovadas}</span>
                 </div>
-                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-blue-100">
-                  <p className="text-4xl font-bold text-blue-600">{data.media.mediaGeral}</p>
-                  <p className="text-sm font-semibold text-gray-700 mt-2">Média Geral</p>
-                  <p className="text-xs text-gray-500">ações planejadas por empregado</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-600">Executadas</span>
+                  <span className="text-sm font-black text-blue-600">{situacao.acoesExecutadas}</span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-600">Vencidas</span>
+                  <span className="text-sm font-black text-red-600">{situacao.acoesVencidas}</span>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* BLOCO 3: Situação Atual das Ações */}
-          <Card className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
-            <CardHeader>
-              <span className="text-xs font-semibold text-green-600 uppercase">SITUAÇÃO ATUAL DAS AÇÕES</span>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Card Aprovadas */}
-                <Card className="border-green-200 bg-white">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-green-600" />
-                      <p className="text-xs font-semibold text-green-600 uppercase">AÇÕES APROVADAS</p>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-green-600">{data.situacao.acoesAprovadas}</p>
-                    <p className="text-sm text-gray-600">Ações Aprovadas pelo Líder</p>
-                    <p className="text-xs text-gray-500 mt-3">O líder já analisou e aprovou estas ações. O empregado está autorizado a executá-las.</p>
-                  </CardContent>
-                </Card>
+            {/* BLOCO 4: COMPROVAÇÕES */}
+            <Card className="border-amber-100 shadow-sm hover:shadow-md transition-all bg-gradient-to-br from-amber-50 to-white">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                  <FileCheck className="w-4 h-4" />
+                  Comprovações e IIP
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-600">Aguardando</span>
+                  <span className="text-sm font-black text-amber-600">{comprovacoes.comprovacoeAguardando}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-600">Devolvidas</span>
+                  <span className="text-sm font-black text-orange-600">{comprovacoes.comprovacoeDevolvidas}</span>
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-amber-100">
+                  <span className="text-xs font-bold text-slate-800">Impacto Prático (IIP)</span>
+                  <span className="text-sm font-black text-indigo-700">{comprovacoes.impactoPratico}%</span>
+                </div>
+              </CardContent>
+            </Card>
 
-                {/* Card Executadas */}
-                <Card className="border-blue-200 bg-white">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-blue-600" />
-                      <p className="text-xs font-semibold text-blue-600 uppercase">AÇÕES EXECUTADAS</p>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-blue-600">{data.situacao.acoesExecutadas}</p>
-                    <p className="text-sm text-gray-600">Ações Concluídas com Sucesso</p>
-                    <p className="text-xs text-gray-500 mt-3">O empregado realizou a ação, enviou a comprovação e o avaliador confirmou a conclusão.</p>
-                  </CardContent>
-                </Card>
-
-                {/* Card Vencidas */}
-                <Card className="border-red-200 bg-white">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-2">
-                      <AlertCircle className="h-5 w-5 text-red-600" />
-                      <p className="text-xs font-semibold text-red-600 uppercase">AÇÕES VENCIDAS</p>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-3xl font-bold text-red-600">{data.situacao.acoesVencidas}</p>
-                    <p className="text-sm text-gray-600">Ações com Prazo Vencido</p>
-                    <p className="text-xs text-gray-500 mt-3">O prazo dessas ações já passou e elas ainda não foram concluídas pelos empregados.</p>
-                  </CardContent>
-                </Card>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* BLOCO 4: Situação das Comprovações e Impacto Prático */}
-          <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-yellow-50">
-            <CardHeader>
-              <span className="text-xs font-semibold text-orange-600 uppercase">COMPROVAÇÕES E IMPACTO PRÁTICO</span>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-orange-100">
-                  <p className="text-3xl font-bold text-orange-600">{data.comprovacoes.comprovacoeAguardando}</p>
-                  <p className="text-xs font-semibold text-gray-700 mt-2 uppercase">AGUARDANDO AVALIAÇÃO</p>
-                  <p className="text-xs text-gray-500">comprovações enviadas</p>
+            {/* BLOCO 5: SOLICITAÇÕES */}
+            <Card className="border-slate-200 shadow-sm hover:shadow-md transition-all bg-gradient-to-br from-slate-50 to-white">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-xs font-black text-slate-600 uppercase tracking-widest flex items-center gap-2">
+                  <PlusCircle className="w-4 h-4" />
+                  Novas Solicitações
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-600">Total Solicitadas</span>
+                  <span className="text-sm font-black text-slate-800">{solicitacoes.totalSolicitacoes}</span>
                 </div>
-                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-orange-100">
-                  <p className="text-3xl font-bold text-orange-600">{data.comprovacoes.comprovacoeDevolvidas}</p>
-                  <p className="text-xs font-semibold text-gray-700 mt-2 uppercase">DEVOLVIDAS PARA AJUSTE</p>
-                  <p className="text-xs text-gray-500">correção solicitada</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-600">Aprovadas</span>
+                  <span className="text-sm font-black text-teal-600">{solicitacoes.solicitacoesAprovadas}</span>
                 </div>
-                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-orange-100">
-                  <p className="text-3xl font-bold text-orange-600">{data.comprovacoes.impactoPratico}%</p>
-                  <p className="text-xs font-semibold text-gray-700 mt-2 uppercase">IMPACTO PRÁTICO MÉDIO</p>
-                  <p className="text-xs text-gray-500">das ações concluídas</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-slate-600">Reprovadas</span>
+                  <span className="text-sm font-black text-red-500">{solicitacoes.solicitacoesReprovadas}</span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* BLOCO 5: Solicitações de Inserção de Novas Ações */}
-          <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50">
-            <CardHeader>
-              <span className="text-xs font-semibold text-indigo-600 uppercase">SOLICITAÇÕES DE NOVAS AÇÕES</span>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-indigo-100">
-                  <p className="text-3xl font-bold text-indigo-600">{data.solicitacoes.totalSolicitacoes}</p>
-                  <p className="text-xs font-semibold text-gray-700 mt-2 uppercase">TOTAL SOLICITADO</p>
-                  <p className="text-xs text-gray-500">novas ações propostas</p>
-                </div>
-                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-indigo-100">
-                  <p className="text-3xl font-bold text-green-600">{data.solicitacoes.solicitacoesAprovadas}</p>
-                  <p className="text-xs font-semibold text-gray-700 mt-2 uppercase">APROVADAS</p>
-                  <p className="text-xs text-gray-500">incluídas no PDI</p>
-                </div>
-                <div className="text-center bg-white p-4 rounded-xl shadow-sm border border-indigo-100">
-                  <p className="text-3xl font-bold text-red-600">{data.solicitacoes.solicitacoesReprovadas}</p>
-                  <p className="text-xs font-semibold text-gray-700 mt-2 uppercase">REPROVADAS</p>
-                  <p className="text-xs text-gray-500">pelo gestor ou RH</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       )}
     </div>
   );
-}
+};
