@@ -3,11 +3,12 @@ import { getDb } from "../db";
 import { pdis, actions, users, evidences, solicitacoesAcoes } from "../../drizzle/schema";
 import { eq, and, sql, count, avg } from "drizzle-orm";
 
-// Funções auxiliares para buscar os dados (evita o uso de createCaller)
+// Funções auxiliares para buscar os dados
 async function fetchProgressoGeral(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Query consolidada
   let query = db
     .select({
       totalAcoes: count(actions.id),
@@ -25,26 +26,11 @@ async function fetchProgressoGeral(departamentoId?: number) {
 
   const progressoGeral = await query;
 
-  const progressoPorTipo = await db
-    .select({
-      tipo: pdis.type,
-      totalAcoes: count(actions.id),
-      acoesConcluidas: count(
-        sql`CASE WHEN ${actions.status} = 'concluido' THEN 1 END`
-      ),
-      acoesEmAberto: count(
-        sql`CASE WHEN ${actions.status} != 'concluido' THEN 1 END`
-      ),
-    })
-    .from(actions)
-    .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id))
-    .where(departamentoId ? eq(users.departamentoId, departamentoId) : undefined)
-    .groupBy(pdis.type);
-
+  // Como a coluna 'type' não existe no banco, retornamos uma lista vazia ou mockada
+  // para evitar erro de SQL, mantendo a compatibilidade com o frontend
   return {
     progressoGeral: progressoGeral[0] || { totalAcoes: 0, acoesConcluidas: 0 },
-    progressoPorTipo: progressoPorTipo || [],
+    progressoPorTipo: [], // Retorna vazio para evitar erro de 'Unknown column type'
   };
 }
 
