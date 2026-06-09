@@ -1,4 +1,4 @@
-import { router, adminOrGerenteProcedure } from "./_base";
+import { router, adminOrGerenteProcedure } from "../_core/customTrpc";
 import { db } from "@/server/db";
 import { pdis, actions, users, departamentos, evidences, solicitacoes_acoes } from "@/drizzle/schema";
 import { eq, and, sql, count, sum, avg, gte, lte } from "drizzle-orm";
