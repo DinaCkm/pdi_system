@@ -239,7 +239,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                           
                           <div className="space-y-6">
                             <div className="flex flex-col">
-                              <span className={cn("text-5xl font-black tracking-tighter", info.color)}>{pdi.totalAcoes}</span>
+                              <span className={cn("text-3xl font-black tracking-tighter", info.color)}>{pdi.totalAcoes}</span>
                               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ações planejadas</span>
                             </div>
                             
@@ -289,7 +289,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   </div>
                 </div>
                 <div className="space-y-6">
-                  <span className="text-6xl font-black text-slate-900 tracking-tighter">{situacao.acoesAprovadas}</span>
+                  <span className="text-4xl font-black text-slate-900 tracking-tighter">{situacao.acoesAprovadas}</span>
                   <p className="text-xs font-medium text-slate-500 leading-relaxed border-l-2 border-teal-200 pl-4 italic">
                     O empregado está autorizado a executar estas ações.
                   </p>
@@ -310,7 +310,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   </div>
                 </div>
                 <div className="space-y-6">
-                  <span className="text-6xl font-black text-emerald-600 tracking-tighter">{situacao.acoesExecutadas}</span>
+                  <span className="text-4xl font-black text-emerald-600 tracking-tighter">{situacao.acoesExecutadas}</span>
                   <p className="text-xs font-medium text-slate-500 leading-relaxed border-l-2 border-emerald-200 pl-4 italic">
                     Evidências aprovadas e ciclo de desenvolvimento fechado.
                   </p>
@@ -331,7 +331,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   </div>
                 </div>
                 <div className="space-y-6">
-                  <span className="text-6xl font-black text-rose-600 tracking-tighter">{situacao.acoesVencidas}</span>
+                  <span className="text-4xl font-black text-rose-600 tracking-tighter">{situacao.acoesVencidas}</span>
                   <p className="text-xs font-medium text-slate-500 leading-relaxed border-l-2 border-rose-200 pl-4 italic">
                     Requerem decisão: prorrogar prazo ou cancelar.
                   </p>
@@ -361,7 +361,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   </div>
                 </div>
                 <div className="space-y-6">
-                  <span className="text-6xl font-black text-slate-900 tracking-tighter">{comprovacoes.comprovacoesAguardando}</span>
+                  <span className="text-4xl font-black text-slate-900 tracking-tighter">{comprovacoes.comprovacoesAguardando}</span>
                   <p className="text-xs font-medium text-slate-500 leading-relaxed border-l-2 border-amber-200 pl-4 italic">
                     Comprovantes em fila para análise de conformidade.
                   </p>
@@ -382,7 +382,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   </div>
                 </div>
                 <div className="space-y-6">
-                  <span className="text-6xl font-black text-orange-700 tracking-tighter">{comprovacoes.comprovacoesDevolvidas}</span>
+                  <span className="text-4xl font-black text-orange-700 tracking-tighter">{comprovacoes.comprovacoesDevolvidas}</span>
                   <p className="text-xs font-medium text-slate-500 leading-relaxed border-l-2 border-orange-200 pl-4 italic">
                     O colaborador precisa reenviar o comprovante adequado.
                   </p>
@@ -405,7 +405,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                 </div>
                 <div className="space-y-6">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-6xl font-black text-cyan-700 tracking-tighter">{comprovacoes.impactoPratico}%</span>
+                    <span className="text-4xl font-black text-cyan-700 tracking-tighter">{comprovacoes.impactoPratico}%</span>
                   </div>
                   <div className="flex items-center gap-2 text-[10px] font-black text-emerald-700 bg-emerald-100/50 px-3 py-1.5 rounded-full w-fit uppercase tracking-wider">
                     Desempenho: BOM <CheckCircle className="w-3.5 h-3.5" />
@@ -436,7 +436,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   </div>
                 </div>
                 <div className="space-y-6">
-                  <span className="text-6xl font-black text-slate-900 tracking-tighter">{solicitacoes.totalSolicitacoes}</span>
+                  <span className="text-4xl font-black text-slate-900 tracking-tighter">{solicitacoes.totalSolicitacoes}</span>
                   <p className="text-xs font-medium text-slate-500 leading-relaxed border-l-2 border-sky-200 pl-4 italic">
                     Pedidos de novos cursos ou treinamentos.
                   </p>
@@ -457,7 +457,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   </div>
                 </div>
                 <div className="space-y-6">
-                  <span className="text-6xl font-black text-green-700 tracking-tighter">{solicitacoes.solicitacoesAprovadas}</span>
+                  <span className="text-4xl font-black text-green-700 tracking-tighter">{solicitacoes.solicitacoesAprovadas}</span>
                   <p className="text-xs font-medium text-slate-500 leading-relaxed border-l-2 border-green-200 pl-4 italic">
                     Já incorporadas ao plano de desenvolvimento.
                   </p>
@@ -478,7 +478,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   </div>
                 </div>
                 <div className="space-y-6">
-                  <span className="text-6xl font-black text-pink-600 tracking-tighter">{solicitacoes.totalSolicitacoes - solicitacoes.solicitacoesAprovadas}</span>
+                  <span className="text-4xl font-black text-pink-600 tracking-tighter">{solicitacoes.totalSolicitacoes - solicitacoes.solicitacoesAprovadas}</span>
                   <div className="flex flex-col gap-2 pt-2">
                     <div className="flex items-center justify-between text-[10px] font-black uppercase bg-pink-50/50 p-2 rounded-lg">
                       <span className="text-pink-600">Reprovadas/Outras:</span>
@@ -515,7 +515,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   </div>
                 </div>
                 <div className="space-y-6">
-                  <span className="text-6xl font-black text-slate-900 tracking-tighter">{pendencias.acoesVencidas}</span>
+                  <span className="text-4xl font-black text-slate-900 tracking-tighter">{pendencias.acoesVencidas}</span>
                   <p className="text-xs font-medium text-slate-500 leading-relaxed italic">
                     O líder deve decidir o destino destas ações agora.
                   </p>
@@ -536,7 +536,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   </div>
                 </div>
                 <div className="space-y-5">
-                  <span className="text-6xl font-black text-slate-900 tracking-tighter">{pendencias.solicitacoesAndamento.total}</span>
+                  <span className="text-4xl font-black text-slate-900 tracking-tighter">{pendencias.solicitacoesAndamento.total}</span>
                   <div className="space-y-2 pt-2 border-t border-slate-100">
                     <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
                       <span>Análise Técnica (CKM):</span> <span className="text-slate-900 font-black">{pendencias.solicitacoesAndamento.aguardandoCkm}</span>
@@ -565,7 +565,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   </div>
                 </div>
                 <div className="space-y-5">
-                  <span className="text-6xl font-black text-slate-900 tracking-tighter">{pendencias.ajustesPendentes.total}</span>
+                  <span className="text-4xl font-black text-slate-900 tracking-tighter">{pendencias.ajustesPendentes.total}</span>
                   <div className="space-y-2 pt-2 border-t border-slate-100">
                     <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
                       <span>Com o Líder:</span> <span className="text-orange-600 font-black">{pendencias.ajustesPendentes.aguardandoLider}</span>
