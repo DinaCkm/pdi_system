@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { toPng } from "html-to-image";
 import { 
   BarChart3, 
   Users, 
@@ -28,7 +29,9 @@ import {
   Search,
   Eye,
   Info,
-  HelpCircle
+  HelpCircle,
+  Send,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { 
@@ -63,6 +66,8 @@ const InfoTooltip = ({ title, content }: { title: string, content: string }) => 
 
 export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }) => {
   const [isOpen, setIsOpen] = React.useState(true);
+  const [isSending, setIsSending] = useState(false);
+  const dashboardRef = useRef<HTMLDivElement>(null);
   
   const { data, isLoading, error } = trpc.visaoExecutiva.getVisaoExecutivaCompleta.useQuery(
     { departamentoId },
@@ -71,6 +76,47 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
       retry: 1
     }
   );
+
+  const enviarRelatorioMutation = trpc.visaoExecutiva.enviarRelatorioLider.useMutation({
+    onSuccess: () => {
+      alert("Relatório enviado com sucesso para o líder do departamento!");
+      setIsSending(false);
+    },
+    onError: (err) => {
+      alert("Erro ao enviar relatório: " + err.message);
+      setIsSending(false);
+    }
+  });
+
+  const handleEnviarRelatorio = async () => {
+    if (!dashboardRef.current || !departamentoId) {
+      alert("Por favor, selecione um departamento primeiro.");
+      return;
+    }
+
+    setIsSending(true);
+    try {
+      // Capturar o dashboard como imagem
+      const dataUrl = await toPng(dashboardRef.current, {
+        cacheBust: true,
+        backgroundColor: "#f8fafc",
+        style: {
+          padding: "20px",
+          borderRadius: "0"
+        }
+      });
+
+      // Enviar para o backend
+      enviarRelatorioMutation.mutate({
+        departamentoId,
+        dashboardImage: dataUrl
+      });
+    } catch (err) {
+      console.error("Erro ao capturar dashboard:", err);
+      alert("Erro ao gerar imagem do dashboard.");
+      setIsSending(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -156,7 +202,38 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
       </div>
 
       {isOpen && (
-        <div className="animate-in fade-in slide-in-from-top-4 duration-700 space-y-10">
+        <div ref={dashboardRef} className="animate-in fade-in slide-in-from-top-4 duration-700 space-y-10 bg-slate-50 p-4 rounded-3xl">
+          
+          {/* BOTÃO DE ENVIO - Visível apenas quando há departamento filtrado */}
+          {departamentoId && (
+            <div className="flex justify-end mb-2 no-print">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEnviarRelatorio();
+                }}
+                disabled={isSending}
+                className={cn(
+                  "flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-300 shadow-lg",
+                  isSending 
+                    ? "bg-slate-200 text-slate-400 cursor-not-allowed" 
+                    : "bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-105 active:scale-95 shadow-indigo-500/20"
+                )}
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Enviando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Enviar Dashboard para o Líder</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
           
           {/* BLOCO 1: PROGRESSO GERAL */}
           <div className="space-y-4">

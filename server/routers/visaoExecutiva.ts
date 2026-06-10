@@ -1,7 +1,8 @@
 import { router, adminOrGerenteProcedure } from "../_core/customTrpc";
 import { getDb } from "../db";
-import { pdis, actions, users, evidences, solicitacoesAcoes, adjustmentRequests } from "../../drizzle/schema";
+import { pdis, actions, users, evidences, solicitacoesAcoes, adjustmentRequests, departamentos } from "../../drizzle/schema";
 import { eq, and, sql, lt, ne } from "drizzle-orm";
+import { sendEmail } from "../_core/email";
 
 /**
  * VERSÃO DIAGNÓSTICO E CORREÇÃO
@@ -213,5 +214,86 @@ export const visaoExecutivaRouter = router({
           pendencias: { acoesVencidas: 0, solicitacoesAndamento: { total: 0, aguardandoCkm: 0, aguardandoGestor: 0, aguardandoRh: 0, outros: 0 }, ajustesPendentes: { total: 0, aguardandoLider: 0, aguardandoAdmin: 0, maisInformacoes: 0 } }
         };
       }
+    }),
+  enviarRelatorioLider: adminOrGerenteProcedure
+    .input((val: any) => ({ 
+      departamentoId: val?.departamentoId as number,
+      dashboardImage: val?.dashboardImage as string // Base64 da imagem
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const { departamentoId } = input;
+      if (!departamentoId) throw new Error("Departamento não selecionado");
+
+      // 1. Buscar o Líder do Departamento
+      const [deptInfo] = await db
+        .select({
+          deptNome: departamentos.nome,
+          leaderName: users.name,
+          leaderEmail: users.email
+        })
+        .from(departamentos)
+        .leftJoin(users, eq(departamentos.leaderId, users.id))
+        .where(eq(departamentos.id, departamentoId));
+
+      if (!deptInfo || !deptInfo.leaderEmail) {
+        throw new Error("Líder do departamento não encontrado ou sem e-mail cadastrado.");
+      }
+
+      // 2. Buscar dados para o relatório (reutilizando lógica simplificada)
+      const actionsRows = await db
+        .select({ status: actions.status, prazo: actions.prazo })
+        .from(actions)
+        .innerJoin(pdis, eq(actions.pdiId, pdis.id))
+        .innerJoin(users, eq(pdis.colaboradorId, users.id))
+        .where(eq(users.departamentoId, departamentoId));
+
+      const total = actionsRows.length;
+      const concluidas = actionsRows.filter(r => r.status === 'concluida').length;
+      const percent = total > 0 ? Math.round((concluidas / total) * 100) : 0;
+
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      const vencidas = actionsRows.filter(r => r.status !== 'concluida' && r.prazo && new Date(r.prazo) < hoje).length;
+
+      // 3. Montar e Enviar E-mail
+      const html = `
+        <div style="font-family: sans-serif; color: #334155; max-width: 800px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 24px; overflow: hidden; background-color: #ffffff;">
+          <div style="background-image: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 30px; color: #ffffff;">
+            <h2 style="margin: 0; font-size: 24px; font-weight: 900;">Relatório Estratégico de PDI</h2>
+            <p style="margin: 5px 0 0; opacity: 0.9; font-weight: 600;">Unidade: ${deptInfo.deptNome}</p>
+          </div>
+          
+          <div style="padding: 30px;">
+            <p style="font-size: 16px;">Olá <strong>${deptInfo.leaderName}</strong>,</p>
+            <p style="color: #64748b; line-height: 1.6;">Este é o dashboard estratégico atualizado da sua área. Veja abaixo o status completo das ações e indicadores:</p>
+            
+            <div style="margin: 25px 0; border: 1px solid #f1f5f9; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+              <img src="${input.dashboardImage}" alt="Dashboard Estratégico" style="width: 100%; display: block;" />
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+              <a href="https://pdi.ecodobem.com/dashboard" style="display: inline-block; background-color: #4f46e5; color: #ffffff; padding: 16px 32px; border-radius: 14px; text-decoration: none; font-weight: 800; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">ACESSAR SISTEMA PDI</a>
+            </div>
+          </div>
+          
+          <div style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #f1f5f9;">
+            <p style="margin: 0; font-size: 11px; color: #94a3b8; font-weight: 600;">
+              Este e-mail foi gerado pelo Administrador via Visão Executiva.
+            </p>
+          </div>
+        </div>
+      `;
+
+      await sendEmail({
+        to: deptInfo.leaderEmail,
+        subject: `[ESTRATÉGICO] Resumo do PDI - ${deptInfo.deptNome}`,
+        body: `Olá ${deptInfo.leaderName}, o progresso do PDI da sua área está em ${percent}%. Acesse o sistema para detalhes.`,
+        html: html
+      });
+
+      return { success: true };
     }),
 });
