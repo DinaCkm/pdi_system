@@ -215,10 +215,15 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                       </div>
 
                       <div className="flex flex-col justify-center bg-indigo-50 p-5 rounded-2xl border border-indigo-100">
-                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Média de Engajamento</p>
-                        <p className="text-sm text-slate-600 font-medium">
-                          Cada empregado possui, em média, <span className="font-black text-indigo-600">{progresso.progressoGeral.mediaAcoesPorEmpregado} ações</span> em seu PDI.
-                        </p>
+                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">Média de Engajamento por PDI</p>
+                        <div className="space-y-1.5">
+                          {progresso.progressoPorTipo.map((cat: any) => (
+                            <div key={cat.tipo} className="flex items-center justify-between text-[11px] font-medium text-slate-600">
+                              <span className="capitalize">{cat.tipo}:</span>
+                              <span className="font-black text-indigo-600">{cat.mediaAcoes} ações/emp</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
