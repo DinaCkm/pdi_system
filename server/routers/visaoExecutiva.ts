@@ -59,11 +59,11 @@ export const visaoExecutivaRouter = router({
         const totalEmpregados = uniqueUsers.size;
         const mediaAcoesPorEmpregado = totalEmpregados > 0 ? parseFloat((totalAcoes / totalEmpregados).toFixed(1)) : 0;
 
-        // Categorização por Tipo
+        // Categorização por Tipo com Média por Empregado
         const categorias = {
-          certificacao: { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0 },
-          herdeiras: { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0 },
-          onboarding: { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0 },
+          certificacao: { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0, empregados: new Set<number>() },
+          herdeiras: { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0, empregados: new Set<number>() },
+          onboarding: { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0, empregados: new Set<number>() },
         };
 
         allActionsRows.forEach(row => {
@@ -79,6 +79,21 @@ export const visaoExecutivaRouter = router({
           categorias[cat].totalAcoes++;
           if (concluida) categorias[cat].acoesConcluidas++;
           else categorias[cat].acoesEmAberto++;
+          
+          if (row.userId) {
+            categorias[cat].empregados.add(row.userId);
+          }
+        });
+
+        const categoriasFinal = Object.entries(categorias).map(([tipo, dados]) => {
+          const totalEmp = dados.empregados.size;
+          return {
+            tipo,
+            totalAcoes: dados.totalAcoes,
+            acoesConcluidas: dados.acoesConcluidas,
+            acoesEmAberto: dados.acoesEmAberto,
+            mediaAcoes: totalEmp > 0 ? parseFloat((dados.totalAcoes / totalEmp).toFixed(1)) : 0
+          };
         });
 
         // 2. FETCH EVIDENCES (CORRIGIDO)
@@ -151,7 +166,7 @@ export const visaoExecutivaRouter = router({
         return {
           progresso: {
             progressoGeral: { totalAcoes, acoesConcluidas, totalEmpregados, mediaAcoesPorEmpregado },
-            progressoPorTipo: Object.entries(categorias).map(([tipo, dados]) => ({ tipo, ...dados })),
+            progressoPorTipo: categoriasFinal,
           },
           situacao: {
             acoesAprovadas: totalAcoes,

@@ -251,7 +251,12 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                           
                           <div className="space-y-6">
                             <div className="flex flex-col">
-                              <span className={cn("text-3xl font-black tracking-tighter", info.color)}>{pdi.totalAcoes}</span>
+                              <div className="flex items-baseline gap-2">
+                                <span className={cn("text-3xl font-black tracking-tighter", info.color)}>{pdi.totalAcoes}</span>
+                                <span className={cn("text-[10px] font-black bg-white px-2 py-0.5 rounded-md shadow-sm border border-slate-100", info.color)}>
+                                  Média: {pdi.mediaAcoes}
+                                </span>
+                              </div>
                               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ações planejadas</span>
                             </div>
                             
