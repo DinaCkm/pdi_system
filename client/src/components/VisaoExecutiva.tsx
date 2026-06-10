@@ -96,7 +96,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
     );
   }
 
-  const { progresso, media, situacao, comprovacoes, solicitacoes, pendencias } = data!;
+  const { progresso, situacao, comprovacoes, solicitacoes, pendencias } = data!;
 
   const pdiLabels: Record<string, { title: string; subtitle: string; icon: any; color: string; bgColor: string; borderColor: string; rule: string }> = {
     certificacao: { 
@@ -349,7 +349,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <Card className="border-slate-100 bg-white p-8 rounded-3xl shadow-lg relative">
                 <div className="absolute top-4 right-4">
-                  <InfoTooltip title="Cálculo" content="Evidências enviadas pelo colaborador que aguardam análise técnica do Administrador/RH." />
+                  <InfoTooltip title="Cálculo" content="Evidências enviadas pelo colaborador que aguardam análise técnica do Administrador." />
                 </div>
                 <div className="flex items-center gap-4 mb-8">
                   <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl shadow-sm">
@@ -357,7 +357,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   </div>
                   <div className="flex flex-col">
                     <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest leading-none mb-1">Triagem</p>
-                    <h4 className="text-xs font-black text-slate-800 uppercase">Aguardando Avaliação do RH</h4>
+                    <h4 className="text-xs font-black text-slate-800 uppercase">Aguardando Avaliação do Administrador</h4>
                   </div>
                 </div>
                 <div className="space-y-6">
@@ -539,13 +539,13 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   <span className="text-6xl font-black text-slate-900 tracking-tighter">{pendencias.solicitacoesAndamento.total}</span>
                   <div className="space-y-2 pt-2 border-t border-slate-100">
                     <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
-                      <span>Análise CKM:</span> <span className="text-slate-900 font-black">{pendencias.solicitacoesAndamento.aguardandoCkm}</span>
+                      <span>Análise Técnica (CKM):</span> <span className="text-slate-900 font-black">{pendencias.solicitacoesAndamento.aguardandoCkm}</span>
                     </div>
                     <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
-                      <span>Decisão Líder:</span> <span className="text-slate-900 font-black">{pendencias.solicitacoesAndamento.aguardandoGestor}</span>
+                      <span>Decisão do Líder:</span> <span className="text-slate-900 font-black">{pendencias.solicitacoesAndamento.aguardandoGestor}</span>
                     </div>
                     <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
-                      <span>Decisão RH:</span> <span className="text-slate-900 font-black">{pendencias.solicitacoesAndamento.aguardandoRh}</span>
+                      <span>Decisão do RH:</span> <span className="text-slate-900 font-black">{pendencias.solicitacoesAndamento.aguardandoRh}</span>
                     </div>
                   </div>
                 </div>
@@ -553,7 +553,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
 
               <Card className="border-slate-200 bg-white p-8 rounded-3xl shadow-lg relative">
                 <div className="absolute top-4 right-4">
-                  <InfoTooltip title="Cálculo" content="Pedidos de alteração em ações existentes que aguardam autorização do Líder direto ou análise final do RH." />
+                  <InfoTooltip title="Cálculo" content="Pedidos de alteração em ações existentes que aguardam autorização do Líder direto ou análise final do Administrador." />
                 </div>
                 <div className="flex items-center gap-4 mb-8">
                   <div className="p-3 bg-orange-50 text-orange-600 rounded-2xl shadow-sm">
@@ -571,7 +571,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                       <span>Com o Líder:</span> <span className="text-orange-600 font-black">{pendencias.ajustesPendentes.aguardandoLider}</span>
                     </div>
                     <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
-                      <span>Com o RH:</span> <span className="text-indigo-600 font-black">{pendencias.ajustesPendentes.aguardandoAdmin}</span>
+                      <span>Com o Administrador:</span> <span className="text-indigo-600 font-black">{pendencias.ajustesPendentes.aguardandoAdmin}</span>
                     </div>
                   </div>
                 </div>
