@@ -504,12 +504,17 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <span className="text-5xl font-black text-rose-600">{pendencias.ajustesPendentes}</span>
+                  <span className="text-5xl font-black text-rose-600">{pendencias.ajustesPendentes.total}</span>
                   <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Empregados ou líderes solicitaram alterações em ações já existentes (mudança de prazo, descrição, etc.) e aguardam análise do administrador.
+                    Empregados ou líderes solicitaram alterações em ações já existentes (prazo, descrição, etc.).
                   </p>
-                  <div className="pt-4 border-t border-rose-100 text-[9px] text-slate-400 italic">
-                    Enquanto o pedido de ajuste não for analisado, a ação permanece como está.
+                  <div className="space-y-1 py-3">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase">Responsabilidade atual:</p>
+                    <div className="grid grid-cols-1 gap-1 text-[10px] font-medium text-slate-500">
+                      <div className="flex justify-between"><span>• Aguardando autorização do Líder:</span> <span className="font-bold text-slate-700">{pendencias.ajustesPendentes.aguardandoLider}</span></div>
+                      <div className="flex justify-between"><span>• Aguardando análise do Administrador:</span> <span className="font-bold text-slate-700">{pendencias.ajustesPendentes.aguardandoAdmin}</span></div>
+                      <div className="flex justify-between"><span>• Aguardando mais informações:</span> <span className="font-bold text-slate-700">{pendencias.ajustesPendentes.maisInformacoes}</span></div>
+                    </div>
                   </div>
                 </div>
               </Card>

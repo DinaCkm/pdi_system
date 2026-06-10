@@ -230,11 +230,6 @@ async function fetchSolicitacoesInsercao(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Reconciliação Total de Solicitações:
-  // 1. Aprovadas: 'aprovada'
-  // 2. Em Análise: 'aguardando_ckm', 'aguardando_gestor', 'aguardando_rh', 'em_revisao', 'aguardando_solicitante'
-  // 3. Reprovadas / Outros: 'vetada_gestor', 'vetada_rh', 'encerrada_lider'
-
   let queryBase = db
     .select({ 
       total: count(solicitacoesAcoes.id),
@@ -254,8 +249,6 @@ async function fetchSolicitacoesInsercao(departamentoId?: number) {
   const total = result[0]?.total || 0;
   const aprovadas = Number(result[0]?.aprovadas || 0);
   const emAnalise = Number(result[0]?.emAnalise || 0);
-  
-  // Para fechar a conta exatamente, o que não é aprovado nem está em análise, é reprovado/outros
   const reprovadas = total - aprovadas - emAnalise;
 
   return {
@@ -305,12 +298,17 @@ async function fetchPendencias(departamentoId?: number) {
   const solicitacoesAndamento = await querySolicitacoesAndamento;
 
   let queryAjustes = db
-    .select({ total: count(adjustmentRequests.id) })
+    .select({ 
+      total: count(adjustmentRequests.id),
+      aguardandoLider: count(sql`CASE WHEN ${adjustmentRequests.status} = 'aguardando_lider' THEN 1 END`),
+      aguardandoAdmin: count(sql`CASE WHEN ${adjustmentRequests.status} = 'pendente' THEN 1 END`),
+      maisInformacoes: count(sql`CASE WHEN ${adjustmentRequests.status} = 'mais_informacoes' THEN 1 END`)
+    })
     .from(adjustmentRequests)
     .innerJoin(actions, eq(adjustmentRequests.actionId, actions.id))
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
     .innerJoin(users, eq(pdis.colaboradorId, users.id))
-    .where(eq(adjustmentRequests.status, "pendente"));
+    .where(inArray(adjustmentRequests.status, ["pendente", "aguardando_lider", "mais_informacoes"]));
 
   if (departamentoId) {
     queryAjustes = queryAjustes.where(eq(users.departamentoId, departamentoId));
@@ -327,7 +325,12 @@ async function fetchPendencias(departamentoId?: number) {
       aguardandoRh: Number(solicitacoesAndamento[0]?.aguardandoRh || 0),
       outros: Number(solicitacoesAndamento[0]?.outros || 0),
     },
-    ajustesPendentes: ajustes[0]?.total || 0,
+    ajustesPendentes: {
+      total: ajustes[0]?.total || 0,
+      aguardandoLider: Number(ajustes[0]?.aguardandoLider || 0),
+      aguardandoAdmin: Number(ajustes[0]?.aguardandoAdmin || 0),
+      maisInformacoes: Number(ajustes[0]?.maisInformacoes || 0),
+    },
   };
 }
 
