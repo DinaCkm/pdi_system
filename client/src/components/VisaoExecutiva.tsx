@@ -23,7 +23,8 @@ import {
   Bell,
   Edit3,
   Undo2,
-  Presentation
+  Presentation,
+  Search
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { cn } from "../lib/utils";
@@ -416,17 +417,21 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                     <Ban className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-pink-500 uppercase">Quantas foram reprovadas?</p>
-                    <h4 className="text-xs font-bold text-slate-700">Solicitações Reprovadas — Não Incluídas no PDI</h4>
+                    <p className="text-[9px] font-black text-pink-500 uppercase">Quantas foram reprovadas ou estão em análise?</p>
+                    <h4 className="text-xs font-bold text-slate-700">Solicitações Reprovadas ou em Andamento</h4>
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <span className="text-5xl font-black text-pink-600">{solicitacoes.solicitacoesReprovadas}</span>
+                  <span className="text-5xl font-black text-pink-600">{solicitacoes.totalSolicitacoes - solicitacoes.solicitacoesAprovadas}</span>
+                  <div className="flex flex-col gap-1 text-[10px] font-bold">
+                    <span className="text-pink-500">• {solicitacoes.solicitacoesReprovadas} Reprovadas / Outras</span>
+                    <span className="text-slate-400">• {solicitacoes.solicitacoesEmAndamento} Em Andamento</span>
+                  </div>
                   <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Estas solicitações foram analisadas e não foram aprovadas pelo líder ou pelo RH.
+                    Solicitações que não foram aprovadas ou que ainda estão percorrendo o fluxo de análise.
                   </p>
                   <div className="pt-4 border-t border-pink-100 text-[9px] text-slate-400 italic">
-                    A reprovação pode ocorrer por falta de aderência com as competências do cargo, justificativa inadequada ou decisão do gestor responsável.
+                    A soma deste card com as Aprovadas resulta exatamente no Total ({solicitacoes.totalSolicitacoes}), garantindo a transparência total dos dados.
                   </div>
                 </div>
               </Card>
@@ -464,7 +469,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
               <Card className="border-rose-200 bg-rose-50/10 p-6 rounded-2xl">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-sky-100 text-sky-600 rounded-lg">
-                    <RefreshCw className="w-5 h-5" />
+                    <Search className="w-5 h-5" />
                   </div>
                   <div>
                     <p className="text-[9px] font-black text-rose-600 uppercase">Solicitações de inserção em andamento</p>
@@ -482,6 +487,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                       <div className="flex justify-between"><span>• Aguardando análise técnica (CKM):</span> <span className="font-bold text-slate-700">{pendencias.solicitacoesAndamento.aguardandoCkm}</span></div>
                       <div className="flex justify-between"><span>• Aguardando decisão do líder:</span> <span className="font-bold text-slate-700">{pendencias.solicitacoesAndamento.aguardandoGestor}</span></div>
                       <div className="flex justify-between"><span>• Aguardando decisão do RH:</span> <span className="font-bold text-slate-700">{pendencias.solicitacoesAndamento.aguardandoRh}</span></div>
+                      <div className="flex justify-between"><span>• Em revisão / Aguardando solicitante:</span> <span className="font-bold text-slate-700">{pendencias.solicitacoesAndamento.outros}</span></div>
                     </div>
                   </div>
                 </div>

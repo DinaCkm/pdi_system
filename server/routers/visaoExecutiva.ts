@@ -8,7 +8,6 @@ async function fetchProgressoGeral(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Query consolidada para o progresso geral
   let queryGeral = db
     .select({
       totalAcoes: count(actions.id),
@@ -26,7 +25,6 @@ async function fetchProgressoGeral(departamentoId?: number) {
 
   const progressoGeralResult = await queryGeral;
 
-  // Query para buscar todas as ações e categorizá-las via código
   let queryCategorizacao = db
     .select({
       tituloPdi: pdis.titulo,
@@ -125,7 +123,6 @@ async function fetchSituacaoAtualAcoes(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Ações Aprovadas: Todas as ações que estão no PDI (pois já passaram por aprovação)
   let queryAprovadas = db
     .select({ total: count(actions.id) })
     .from(actions)
@@ -138,7 +135,6 @@ async function fetchSituacaoAtualAcoes(departamentoId?: number) {
 
   const aprovadas = await queryAprovadas;
 
-  // Ações Executadas: status = 'concluida'
   let queryExecutadas = db
     .select({ total: count(actions.id) })
     .from(actions)
@@ -152,7 +148,6 @@ async function fetchSituacaoAtualAcoes(departamentoId?: number) {
 
   const executadas = await queryExecutadas;
 
-  // Ações Vencidas: prazo < hoje e status != 'concluida'
   let queryVencidas = db
     .select({ total: count(actions.id) })
     .from(actions)
@@ -235,45 +230,39 @@ async function fetchSolicitacoesInsercao(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  let queryTotal = db
-    .select({ total: count(solicitacoesAcoes.id) })
+  // Reconciliação Total de Solicitações:
+  // 1. Aprovadas: 'aprovada'
+  // 2. Em Análise: 'aguardando_ckm', 'aguardando_gestor', 'aguardando_rh', 'em_revisao', 'aguardando_solicitante'
+  // 3. Reprovadas / Outros: 'vetada_gestor', 'vetada_rh', 'encerrada_lider'
+
+  let queryBase = db
+    .select({ 
+      total: count(solicitacoesAcoes.id),
+      aprovadas: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} = 'aprovada' THEN 1 END`),
+      emAnalise: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} IN ('aguardando_ckm', 'aguardando_gestor', 'aguardando_rh', 'em_revisao', 'aguardando_solicitante') THEN 1 END`),
+      reprovadas: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} IN ('vetada_gestor', 'vetada_rh', 'encerrada_lider') THEN 1 END`)
+    })
     .from(solicitacoesAcoes)
     .innerJoin(users, eq(solicitacoesAcoes.solicitanteId, users.id));
 
   if (departamentoId) {
-    queryTotal = queryTotal.where(eq(users.departamentoId, departamentoId));
+    queryBase = queryBase.where(eq(users.departamentoId, departamentoId));
   }
 
-  const total = await queryTotal;
+  const result = await queryBase;
 
-  let queryAprovadas = db
-    .select({ total: count(solicitacoesAcoes.id) })
-    .from(solicitacoesAcoes)
-    .innerJoin(users, eq(solicitacoesAcoes.solicitanteId, users.id))
-    .where(eq(solicitacoesAcoes.statusGeral, "aprovada"));
-
-  if (departamentoId) {
-    queryAprovadas = queryAprovadas.where(eq(users.departamentoId, departamentoId));
-  }
-
-  const aprovadas = await queryAprovadas;
-
-  let queryReprovadas = db
-    .select({ total: count(solicitacoesAcoes.id) })
-    .from(solicitacoesAcoes)
-    .innerJoin(users, eq(solicitacoesAcoes.solicitanteId, users.id))
-    .where(inArray(solicitacoesAcoes.statusGeral, ["vetada_gestor", "vetada_rh"]));
-
-  if (departamentoId) {
-    queryReprovadas = queryReprovadas.where(eq(users.departamentoId, departamentoId));
-  }
-
-  const reprovadas = await queryReprovadas;
+  const total = result[0]?.total || 0;
+  const aprovadas = Number(result[0]?.aprovadas || 0);
+  const emAnalise = Number(result[0]?.emAnalise || 0);
+  
+  // Para fechar a conta exatamente, o que não é aprovado nem está em análise, é reprovado/outros
+  const reprovadas = total - aprovadas - emAnalise;
 
   return {
-    totalSolicitacoes: total[0]?.total || 0,
-    solicitacoesAprovadas: aprovadas[0]?.total || 0,
-    solicitacoesReprovadas: reprovadas[0]?.total || 0,
+    totalSolicitacoes: total,
+    solicitacoesAprovadas: aprovadas,
+    solicitacoesReprovadas: reprovadas,
+    solicitacoesEmAndamento: emAnalise,
   };
 }
 
@@ -281,7 +270,6 @@ async function fetchPendencias(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // 1. Ações Vencidas sem Conclusão
   let queryVencidas = db
     .select({ total: count(actions.id) })
     .from(actions)
@@ -298,17 +286,17 @@ async function fetchPendencias(departamentoId?: number) {
 
   const vencidas = await queryVencidas;
 
-  // 2. Solicitações de Inserção em Andamento
   let querySolicitacoesAndamento = db
     .select({ 
       total: count(solicitacoesAcoes.id),
       aguardandoCkm: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} = 'aguardando_ckm' THEN 1 END`),
       aguardandoGestor: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} = 'aguardando_gestor' THEN 1 END`),
-      aguardandoRh: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} = 'aguardando_rh' THEN 1 END`)
+      aguardandoRh: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} = 'aguardando_rh' THEN 1 END`),
+      outros: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} IN ('em_revisao', 'aguardando_solicitante') THEN 1 END`)
     })
     .from(solicitacoesAcoes)
     .innerJoin(users, eq(solicitacoesAcoes.solicitanteId, users.id))
-    .where(inArray(solicitacoesAcoes.statusGeral, ["aguardando_ckm", "aguardando_gestor", "aguardando_rh", "em_revisao"]));
+    .where(inArray(solicitacoesAcoes.statusGeral, ["aguardando_ckm", "aguardando_gestor", "aguardando_rh", "em_revisao", "aguardando_solicitante"]));
 
   if (departamentoId) {
     querySolicitacoesAndamento = querySolicitacoesAndamento.where(eq(users.departamentoId, departamentoId));
@@ -316,7 +304,6 @@ async function fetchPendencias(departamentoId?: number) {
 
   const solicitacoesAndamento = await querySolicitacoesAndamento;
 
-  // 3. Pedidos de Alteração Pendentes
   let queryAjustes = db
     .select({ total: count(adjustmentRequests.id) })
     .from(adjustmentRequests)
@@ -338,6 +325,7 @@ async function fetchPendencias(departamentoId?: number) {
       aguardandoCkm: Number(solicitacoesAndamento[0]?.aguardandoCkm || 0),
       aguardandoGestor: Number(solicitacoesAndamento[0]?.aguardandoGestor || 0),
       aguardandoRh: Number(solicitacoesAndamento[0]?.aguardandoRh || 0),
+      outros: Number(solicitacoesAndamento[0]?.outros || 0),
     },
     ajustesPendentes: ajustes[0]?.total || 0,
   };
