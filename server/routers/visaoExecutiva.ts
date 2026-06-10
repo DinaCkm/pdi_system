@@ -4,10 +4,9 @@ import { pdis, actions, users, evidences, solicitacoesAcoes, adjustmentRequests 
 import { eq, and, sql, lt, ne } from "drizzle-orm";
 
 /**
- * VERSÃO ULTRA-ESTÁVEL DO DASHBOARD
- * - Queries simplificadas para evitar erros de JOIN complexos
- * - Tratamento de erros robusto em cada etapa
- * - Garantia de retorno de objeto válido mesmo em caso de falha parcial
+ * VERSÃO COM MÉTRICAS DE ENGAJAMENTO
+ * - Adicionada contagem de empregados únicos
+ * - Adicionado cálculo de média de ações por empregado
  */
 
 export const visaoExecutivaRouter = router({
@@ -27,6 +26,7 @@ export const visaoExecutivaRouter = router({
             actionStatus: actions.status,
             actionPrazo: actions.prazo,
             pdiTitulo: pdis.titulo,
+            userId: users.id,
             userDeptoId: users.departamentoId
           })
           .from(actions)
@@ -51,6 +51,11 @@ export const visaoExecutivaRouter = router({
           const dataPrazo = new Date(r.actionPrazo);
           return dataPrazo < hoje;
         }).length;
+
+        // Métricas de Engajamento
+        const uniqueUsers = new Set(allActionsRows.map(r => r.userId));
+        const totalEmpregados = uniqueUsers.size;
+        const mediaAcoesPorEmpregado = totalEmpregados > 0 ? parseFloat((totalAcoes / totalEmpregados).toFixed(1)) : 0;
 
         // Categorização por Tipo
         const categorias = {
@@ -131,7 +136,12 @@ export const visaoExecutivaRouter = router({
         // FINAL RESULT
         return {
           progresso: {
-            progressoGeral: { totalAcoes, acoesConcluidas },
+            progressoGeral: { 
+              totalAcoes, 
+              acoesConcluidas,
+              totalEmpregados,
+              mediaAcoesPorEmpregado
+            },
             progressoPorTipo: Object.entries(categorias).map(([tipo, dados]) => ({ tipo, ...dados })),
           },
           situacao: {
@@ -170,9 +180,8 @@ export const visaoExecutivaRouter = router({
 
       } catch (error) {
         console.error("ERRO CRÍTICO NO DASHBOARD:", error);
-        // Retorno de emergência para evitar erro de conexão no frontend
         return {
-          progresso: { progressoGeral: { totalAcoes: 0, acoesConcluidas: 0 }, progressoPorTipo: [] },
+          progresso: { progressoGeral: { totalAcoes: 0, acoesConcluidas: 0, totalEmpregados: 0, mediaAcoesPorEmpregado: 0 }, progressoPorTipo: [] },
           situacao: { acoesAprovadas: 0, acoesExecutadas: 0, acoesVencidas: 0 },
           comprovacoes: { comprovacoesAguardando: 0, comprovacoesDevolvidas: 0, impactoPratico: 0 },
           solicitacoes: { totalSolicitacoes: 0, solicitacoesAprovadas: 0, solicitacoesReprovadas: 0, solicitacoesEmAndamento: 0 },

@@ -198,14 +198,26 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                       </div>
                     </div>
                     
-                    <div className="flex justify-between items-center bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                      <p className="text-sm text-slate-600 font-medium">
-                        Total de <span className="font-black text-slate-900">{totalAcoesGeral} ações planejadas</span>, das quais 
-                        <span className="font-black text-indigo-600"> {concluidasGeral} já foram finalizadas</span>.
-                      </p>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-2xl font-black text-indigo-600">{concluidasGeral}</span>
-                        <span className="text-slate-400 font-bold text-xs">/ {totalAcoesGeral}</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="flex flex-col justify-center bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status de Conclusão</p>
+                        <p className="text-sm text-slate-600 font-medium">
+                          <span className="font-black text-indigo-600">{percentualGeral}% das ações</span> já foram finalizadas com sucesso.
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col justify-center bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Volume de Ações</p>
+                        <p className="text-sm text-slate-600 font-medium">
+                          Total de <span className="font-black text-slate-900">{totalAcoesGeral} ações</span> planejadas para <span className="font-black text-slate-900">{progresso.progressoGeral.totalEmpregados} empregados</span>.
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col justify-center bg-indigo-50 p-5 rounded-2xl border border-indigo-100">
+                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Média de Engajamento</p>
+                        <p className="text-sm text-slate-600 font-medium">
+                          Cada empregado possui, em média, <span className="font-black text-indigo-600">{progresso.progressoGeral.mediaAcoesPorEmpregado} ações</span> em seu PDI.
+                        </p>
                       </div>
                     </div>
                   </div>
