@@ -3,60 +3,51 @@ import { getDb } from "../db";
 import { pdis, actions, users, evidences, solicitacoesAcoes, adjustmentRequests } from "../../drizzle/schema";
 import { eq, and, sql, count, avg, inArray, lt, ne, or } from "drizzle-orm";
 
-// Funções auxiliares para buscar os dados
+/**
+ * REVISÃO ESTRUTURAL DOS CÁLCULOS DO DASHBOARD
+ * Esta versão utiliza queries independentes e explícitas para garantir que os filtros de departamento
+ * não interfiram indevidamente nos status das ações.
+ */
+
 async function fetchProgressoGeral(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  let conditionsGeral = [];
-  if (departamentoId) {
-    conditionsGeral.push(eq(users.departamentoId, departamentoId));
-  }
-
-  let queryGeral = db
-    .select({
-      totalAcoes: count(actions.id),
-      acoesConcluidas: count(
-        sql`CASE WHEN ${actions.status} = 'concluida' THEN 1 END`
-      ),
-    })
+  // Base para todas as queries de ações
+  const baseQuery = () => db
+    .select()
     .from(actions)
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
     .innerJoin(users, eq(pdis.colaboradorId, users.id));
 
-  if (conditionsGeral.length > 0) {
-    queryGeral = queryGeral.where(and(...conditionsGeral));
-  }
+  // 1. Total de Ações
+  let qTotal = baseQuery();
+  if (departamentoId) qTotal = qTotal.where(eq(users.departamentoId, departamentoId));
+  const totalRes = await qTotal;
+  const totalAcoes = totalRes.length;
 
-  const progressoGeralResult = await queryGeral;
+  // 2. Ações Concluídas
+  let qConcluidas = baseQuery();
+  const condConcluidas = [eq(actions.status, "concluida")];
+  if (departamentoId) condConcluidas.push(eq(users.departamentoId, departamentoId));
+  qConcluidas = qConcluidas.where(and(...condConcluidas));
+  const concluidasRes = await qConcluidas;
+  const acoesConcluidas = concluidasRes.length;
 
-  let queryCategorizacao = db
-    .select({
-      tituloPdi: pdis.titulo,
-      statusAcao: actions.status,
-    })
-    .from(actions)
-    .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id));
-
-  if (conditionsGeral.length > 0) {
-    queryCategorizacao = queryCategorizacao.where(and(...conditionsGeral));
-  }
-
-  const acoesParaCategorizar = await queryCategorizacao;
-
+  // 3. Categorização por Tipo de PDI
   const categorias = {
     certificacao: { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0 },
     herdeiras: { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0 },
     onboarding: { totalAcoes: 0, acoesConcluidas: 0, acoesEmAberto: 0 },
   };
 
-  acoesParaCategorizar.forEach((item) => {
-    const titulo = (item.tituloPdi || "").toLowerCase();
-    const concluida = item.statusAcao === "concluida";
+  totalRes.forEach((row) => {
+    const item = row.actions;
+    const pdi = row.pdis;
+    const titulo = (pdi.titulo || "").toLowerCase();
+    const concluida = item.status === "concluida";
     
     let cat: "certificacao" | "herdeiras" | "onboarding";
-    
     if (titulo.includes("certificacao") || titulo.includes("certificação") || titulo.includes("01/2026")) {
       cat = "certificacao";
     } else if (titulo.includes("herdeiras") || titulo.includes("2025") || titulo.includes("pendentes") || titulo.includes("consolidação")) {
@@ -68,21 +59,13 @@ async function fetchProgressoGeral(departamentoId?: number) {
     }
 
     categorias[cat].totalAcoes++;
-    if (concluida) {
-      categorias[cat].acoesConcluidas++;
-    } else {
-      categorias[cat].acoesEmAberto++;
-    }
+    if (concluida) categorias[cat].acoesConcluidas++;
+    else categorias[cat].acoesEmAberto++;
   });
 
-  const progressoPorTipo = Object.entries(categorias).map(([tipo, dados]) => ({
-    tipo,
-    ...dados
-  }));
-
   return {
-    progressoGeral: progressoGeralResult[0] || { totalAcoes: 0, acoesConcluidas: 0 },
-    progressoPorTipo,
+    progressoGeral: { totalAcoes, acoesConcluidas },
+    progressoPorTipo: Object.entries(categorias).map(([tipo, dados]) => ({ tipo, ...dados })),
   };
 }
 
@@ -90,98 +73,70 @@ async function fetchSituacaoAtualAcoes(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Filtro de Departamento base
-  const deptFilter = departamentoId ? eq(users.departamentoId, departamentoId) : undefined;
-
-  // Ações Aprovadas: Todas as ações da unidade (já que para estar no PDI devem estar aprovadas ou em fluxo, mas aqui consideramos o total planejado/validado)
-  let queryAprovadas = db
-    .select({ total: count(actions.id) })
-    .from(actions)
-    .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id));
-  if (deptFilter) queryAprovadas = queryAprovadas.where(deptFilter);
-  const aprovadas = await queryAprovadas;
-
-  // Ações Executadas: Somente as concluídas
-  let queryExecutadas = db
-    .select({ total: count(actions.id) })
-    .from(actions)
-    .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id));
-  
-  const execConditions = [eq(actions.status, "concluida")];
-  if (departamentoId) execConditions.push(eq(users.departamentoId, departamentoId));
-  queryExecutadas = queryExecutadas.where(and(...execConditions));
-  const executadas = await queryExecutadas;
-
-  // Ações Vencidas: Prazo menor que hoje E não concluída
-  let queryVencidas = db
-    .select({ total: count(actions.id) })
+  const baseQuery = () => db
+    .select()
     .from(actions)
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
     .innerJoin(users, eq(pdis.colaboradorId, users.id));
 
-  const vencConditions = [
-    lt(actions.prazo, sql`CURDATE()`),
-    ne(actions.status, "concluida")
-  ];
-  if (departamentoId) vencConditions.push(eq(users.departamentoId, departamentoId));
-  queryVencidas = queryVencidas.where(and(...vencConditions));
-  const vencidas = await queryVencidas;
+  // Aprovadas (Total no PDI)
+  let qAprovadas = baseQuery();
+  if (departamentoId) qAprovadas = qAprovadas.where(eq(users.departamentoId, departamentoId));
+  const aprovadas = (await qAprovadas).length;
 
-  return {
-    acoesAprovadas: aprovadas[0]?.total || 0,
-    acoesExecutadas: executadas[0]?.total || 0,
-    acoesVencidas: vencidas[0]?.total || 0,
-  };
+  // Executadas (Concluídas)
+  let qExec = baseQuery();
+  const condExec = [eq(actions.status, "concluida")];
+  if (departamentoId) condExec.push(eq(users.departamentoId, departamentoId));
+  qExec = qExec.where(and(...condExec));
+  const executadas = (await qExec).length;
+
+  // Vencidas (Prazo < Hoje AND status != concluida)
+  let qVenc = baseQuery();
+  const condVenc = [lt(actions.prazo, sql`CURDATE()`), ne(actions.status, "concluida")];
+  if (departamentoId) condVenc.push(eq(users.departamentoId, departamentoId));
+  qVenc = qVenc.where(and(...condVenc));
+  const vencidas = (await qVenc).length;
+
+  return { acoesAprovadas: aprovadas, acoesExecutadas: executadas, acoesVencidas: vencidas };
 }
 
 async function fetchSituacaoComprovacoes(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Aguardando
-  let queryAguardando = db
-    .select({ total: count(evidences.id) })
+  const baseQuery = () => db
+    .select()
     .from(evidences)
     .innerJoin(actions, eq(evidences.actionId, actions.id))
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
     .innerJoin(users, eq(pdis.colaboradorId, users.id));
-  const aguardandoCond = [eq(evidences.status, "aguardando_avaliacao")];
-  if (departamentoId) aguardandoCond.push(eq(users.departamentoId, departamentoId));
-  queryAguardando = queryAguardando.where(and(...aguardandoCond));
-  const aguardando = await queryAguardando;
+
+  // Aguardando
+  let qAg = baseQuery();
+  const condAg = [eq(evidences.status, "aguardando_avaliacao")];
+  if (departamentoId) condAg.push(eq(users.departamentoId, departamentoId));
+  const aguardando = (await qAg.where(and(...condAg))).length;
 
   // Devolvidas
-  let queryDevolvidas = db
-    .select({ total: count(evidences.id) })
-    .from(evidences)
-    .innerJoin(actions, eq(evidences.actionId, actions.id))
-    .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id));
-  const devolvidasCond = [eq(evidences.status, "correcao_solicitada")];
-  if (departamentoId) devolvidasCond.push(eq(users.departamentoId, departamentoId));
-  queryDevolvidas = queryDevolvidas.where(and(...devolvidasCond));
-  const devolvidas = await queryDevolvidas;
+  let qDev = baseQuery();
+  const condDev = [eq(evidences.status, "correcao_solicitada")];
+  if (departamentoId) condDev.push(eq(users.departamentoId, departamentoId));
+  const devolvidas = (await qDev.where(and(...condDev))).length;
 
   // Impacto
-  let queryImpacto = db
-    .select({ mediaImpacto: avg(evidences.impactoPercentual) })
-    .from(evidences)
-    .innerJoin(actions, eq(evidences.actionId, actions.id))
-    .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id));
-  const impactoCond = [eq(evidences.status, "aprovada")];
-  if (departamentoId) impactoCond.push(eq(users.departamentoId, departamentoId));
-  queryImpacto = queryImpacto.where(and(...impactoCond));
-  const impacto = await queryImpacto;
+  let qImp = baseQuery();
+  const condImp = [eq(evidences.status, "aprovada")];
+  if (departamentoId) condImp.push(eq(users.departamentoId, departamentoId));
+  const impRes = await qImp.where(and(...condImp));
+  const mediaImpacto = impRes.length > 0 
+    ? impRes.reduce((acc, curr) => acc + (Number(curr.evidences.impactoPercentual) || 0), 0) / impRes.length 
+    : 0;
 
   return {
-    comprovacoesAguardando: aguardando[0]?.total || 0,
-    comprovacoesDevolvidas: devolvidas[0]?.total || 0,
-    impactoPratico: impacto[0]?.mediaImpacto
-      ? parseFloat(Number(impacto[0].mediaImpacto).toFixed(2))
-      : 0,
+    comprovacoesAguardando: aguardando,
+    comprovacoesDevolvidas: devolvidas,
+    impactoPratico: parseFloat(mediaImpacto.toFixed(2)),
   };
 }
 
@@ -189,31 +144,24 @@ async function fetchSolicitacoesInsercao(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  let queryBase = db
-    .select({ 
-      total: count(solicitacoesAcoes.id),
-      aprovadas: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} = 'aprovada' THEN 1 END`),
-      emAnalise: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} IN ('aguardando_ckm', 'aguardando_gestor', 'aguardando_rh', 'em_revisao', 'aguardando_solicitante') THEN 1 END`),
-      reprovadas: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} IN ('vetada_gestor', 'vetada_rh', 'encerrada_lider') THEN 1 END`)
-    })
+  let qBase = db
+    .select()
     .from(solicitacoesAcoes)
     .innerJoin(users, eq(solicitacoesAcoes.solicitanteId, users.id));
+  
+  if (departamentoId) qBase = qBase.where(eq(users.departamentoId, departamentoId));
+  const allSolicitacoes = await qBase;
 
-  if (departamentoId) {
-    queryBase = queryBase.where(eq(users.departamentoId, departamentoId));
-  }
-
-  const result = await queryBase;
-  const total = result[0]?.total || 0;
-  const aprovadas = Number(result[0]?.aprovadas || 0);
-  const emAnalise = Number(result[0]?.emAnalise || 0);
-  const reprovadas = total - aprovadas - emAnalise;
+  const total = allSolicitacoes.length;
+  const aprovadas = allSolicitacoes.filter(s => s.solicitacoes_acoes.statusGeral === 'aprovada').length;
+  const emAndamento = allSolicitacoes.filter(s => ['aguardando_ckm', 'aguardando_gestor', 'aguardando_rh', 'em_revisao', 'aguardando_solicitante'].includes(s.solicitacoes_acoes.statusGeral || '')).length;
+  const reprovadas = total - aprovadas - emAndamento;
 
   return {
     totalSolicitacoes: total,
     solicitacoesAprovadas: aprovadas,
     solicitacoesReprovadas: reprovadas,
-    solicitacoesEmAndamento: emAnalise,
+    solicitacoesEmAndamento: emAndamento,
   };
 }
 
@@ -221,64 +169,42 @@ async function fetchPendencias(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Vencidas
-  let queryVencidas = db
-    .select({ total: count(actions.id) })
-    .from(actions)
-    .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id));
-  const vencCond = [lt(actions.prazo, sql`CURDATE()`), ne(actions.status, "concluida")];
-  if (departamentoId) vencCond.push(eq(users.departamentoId, departamentoId));
-  queryVencidas = queryVencidas.where(and(...vencCond));
-  const vencidas = await queryVencidas;
+  // Vencidas (reuso da lógica anterior para consistência)
+  const situacao = await fetchSituacaoAtualAcoes(departamentoId);
 
-  // Em andamento
-  let querySolicitacoesAndamento = db
-    .select({ 
-      total: count(solicitacoesAcoes.id),
-      aguardandoCkm: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} = 'aguardando_ckm' THEN 1 END`),
-      aguardandoGestor: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} = 'aguardando_gestor' THEN 1 END`),
-      aguardandoRh: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} = 'aguardando_rh' THEN 1 END`),
-      outros: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} IN ('em_revisao', 'aguardando_solicitante') THEN 1 END`)
-    })
+  // Solicitações em andamento detalhadas
+  let qSol = db
+    .select()
     .from(solicitacoesAcoes)
     .innerJoin(users, eq(solicitacoesAcoes.solicitanteId, users.id));
-  const andamentoCond = [inArray(solicitacoesAcoes.statusGeral, ["aguardando_ckm", "aguardando_gestor", "aguardando_rh", "em_revisao", "aguardando_solicitante"])];
-  if (departamentoId) andamentoCond.push(eq(users.departamentoId, departamentoId));
-  querySolicitacoesAndamento = querySolicitacoesAndamento.where(and(...andamentoCond));
-  const solicitacoesAndamento = await querySolicitacoesAndamento;
+  if (departamentoId) qSol = qSol.where(eq(users.departamentoId, departamentoId));
+  const sols = await qSol;
+  const andamento = sols.filter(s => ['aguardando_ckm', 'aguardando_gestor', 'aguardando_rh', 'em_revisao', 'aguardando_solicitante'].includes(s.solicitacoes_acoes.statusGeral || ''));
 
-  // Ajustes
-  let queryAjustes = db
-    .select({ 
-      total: count(adjustmentRequests.id),
-      aguardandoLider: count(sql`CASE WHEN ${adjustmentRequests.status} = 'aguardando_lider' THEN 1 END`),
-      aguardandoAdmin: count(sql`CASE WHEN ${adjustmentRequests.status} = 'pendente' THEN 1 END`),
-      maisInformacoes: count(sql`CASE WHEN ${adjustmentRequests.status} = 'mais_informacoes' THEN 1 END`)
-    })
+  // Ajustes detalhados
+  let qAj = db
+    .select()
     .from(adjustmentRequests)
     .innerJoin(actions, eq(adjustmentRequests.actionId, actions.id))
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
     .innerJoin(users, eq(pdis.colaboradorId, users.id));
-  const ajustesCond = [inArray(adjustmentRequests.status, ["pendente", "aguardando_lider", "mais_informacoes"])];
-  if (departamentoId) ajustesCond.push(eq(users.departamentoId, departamentoId));
-  queryAjustes = queryAjustes.where(and(...ajustesCond));
-  const ajustes = await queryAjustes;
+  if (departamentoId) qAj = qAj.where(eq(users.departamentoId, departamentoId));
+  const ajustes = (await qAj).filter(a => ['pendente', 'aguardando_lider', 'mais_informacoes'].includes(a.adjustment_requests.status || ''));
 
   return {
-    acoesVencidas: vencidas[0]?.total || 0,
+    acoesVencidas: situacao.acoesVencidas,
     solicitacoesAndamento: {
-      total: solicitacoesAndamento[0]?.total || 0,
-      aguardandoCkm: Number(solicitacoesAndamento[0]?.aguardandoCkm || 0),
-      aguardandoGestor: Number(solicitacoesAndamento[0]?.aguardandoGestor || 0),
-      aguardandoRh: Number(solicitacoesAndamento[0]?.aguardandoRh || 0),
-      outros: Number(solicitacoesAndamento[0]?.outros || 0),
+      total: andamento.length,
+      aguardandoCkm: andamento.filter(s => s.solicitacoes_acoes.statusGeral === 'aguardando_ckm').length,
+      aguardandoGestor: andamento.filter(s => s.solicitacoes_acoes.statusGeral === 'aguardando_gestor').length,
+      aguardandoRh: andamento.filter(s => s.solicitacoes_acoes.statusGeral === 'aguardando_rh').length,
+      outros: andamento.filter(s => ['em_revisao', 'aguardando_solicitante'].includes(s.solicitacoes_acoes.statusGeral || '')).length,
     },
     ajustesPendentes: {
-      total: ajustes[0]?.total || 0,
-      aguardandoLider: Number(ajustes[0]?.aguardandoLider || 0),
-      aguardandoAdmin: Number(ajustes[0]?.aguardandoAdmin || 0),
-      maisInformacoes: Number(ajustes[0]?.maisInformacoes || 0),
+      total: ajustes.length,
+      aguardandoLider: ajustes.filter(a => a.adjustment_requests.status === 'aguardando_lider').length,
+      aguardandoAdmin: ajustes.filter(a => a.adjustment_requests.status === 'pendente').length,
+      maisInformacoes: ajustes.filter(a => a.adjustment_requests.status === 'mais_informacoes').length,
     },
   };
 }
