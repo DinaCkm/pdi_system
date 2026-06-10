@@ -4,9 +4,10 @@ import { pdis, actions, users, evidences, solicitacoesAcoes, adjustmentRequests 
 import { eq, and, sql, lt, ne } from "drizzle-orm";
 
 /**
- * VERSÃO COM MÉTRICAS DE ENGAJAMENTO
- * - Adicionada contagem de empregados únicos
- * - Adicionado cálculo de média de ações por empregado
+ * VERSÃO DIAGNÓSTICO E CORREÇÃO
+ * - Restaurando contagem de evidências (Aguardando/Devolvidas)
+ * - Restaurando contagem de solicitações
+ * - Ajustando IIP para ignorar nulos
  */
 
 export const visaoExecutivaRouter = router({
@@ -52,7 +53,6 @@ export const visaoExecutivaRouter = router({
           return dataPrazo < hoje;
         }).length;
 
-        // Métricas de Engajamento
         const uniqueUsers = new Set(allActionsRows.map(r => r.userId));
         const totalEmpregados = uniqueUsers.size;
         const mediaAcoesPorEmpregado = totalEmpregados > 0 ? parseFloat((totalAcoes / totalEmpregados).toFixed(1)) : 0;
@@ -79,7 +79,7 @@ export const visaoExecutivaRouter = router({
           else categorias[cat].acoesEmAberto++;
         });
 
-        // 2. FETCH EVIDENCES
+        // 2. FETCH EVIDENCES (CORRIGIDO)
         let evidenceQuery = db
           .select({
             status: evidences.status,
@@ -95,22 +95,25 @@ export const visaoExecutivaRouter = router({
         }
 
         const evidenceRows = await evidenceQuery;
-        const aguardandoEv = evidenceRows.filter(r => r.status === 'aguardando_avaliacao').length;
-        const devolvidasEv = evidenceRows.filter(r => r.status === 'correcao_solicitada').length;
         
-        // CORREÇÃO IIP: Filtrar apenas evidências aprovadas que POSSUEM nota de impacto (não nula e > 0)
+        // Status reais observados em logs anteriores: 'aguardando_avaliacao' ou 'aguardando_rh'
+        const aguardandoEv = evidenceRows.filter(r => 
+          r.status === 'aguardando_avaliacao' || r.status === 'aguardando_rh'
+        ).length;
+        
+        const devolvidasEv = evidenceRows.filter(r => 
+          r.status === 'correcao_solicitada' || r.status === 'devolvida'
+        ).length;
+
         const aprovadasComNota = evidenceRows.filter(r => 
-          r.status === 'aprovada' && 
-          r.impacto !== null && 
-          r.impacto !== undefined && 
-          Number(r.impacto) > 0
+          r.status === 'aprovada' && r.impacto !== null && Number(r.impacto) > 0
         );
         
         const mediaImpacto = aprovadasComNota.length > 0
           ? aprovadasComNota.reduce((acc, curr) => acc + (Number(curr.impacto) || 0), 0) / aprovadasComNota.length
           : 0;
 
-        // 3. FETCH SOLICITAÇÕES
+        // 3. FETCH SOLICITAÇÕES (CORRIGIDO)
         let solQuery = db
           .select({ statusGeral: solicitacoesAcoes.statusGeral })
           .from(solicitacoesAcoes)
@@ -123,7 +126,9 @@ export const visaoExecutivaRouter = router({
         const solRows = await solQuery;
         const totalSol = solRows.length;
         const aprovadasSol = solRows.filter(r => r.statusGeral === 'aprovada').length;
-        const emAndamentoSol = solRows.filter(r => ['aguardando_ckm', 'aguardando_gestor', 'aguardando_rh', 'em_revisao', 'aguardando_solicitante'].includes(r.statusGeral || '')).length;
+        const emAndamentoSol = solRows.filter(r => 
+          ['aguardando_ckm', 'aguardando_gestor', 'aguardando_rh', 'em_revisao', 'aguardando_solicitante', 'pendente'].includes(r.statusGeral || '')
+        ).length;
         const reprovadasSol = totalSol - aprovadasSol - emAndamentoSol;
 
         // 4. FETCH AJUSTES
@@ -139,17 +144,11 @@ export const visaoExecutivaRouter = router({
         }
 
         const ajRows = await ajQuery;
-        const ajustesPendentes = ajRows.filter(a => ['pendente', 'aguardando_lider', 'mais_informacoes'].includes(a.status || ''));
+        const ajustesPendentes = ajRows.filter(a => ['pendente', 'aguardando_lider', 'mais_informacoes', 'aguardando_admin'].includes(a.status || ''));
 
-        // FINAL RESULT
         return {
           progresso: {
-            progressoGeral: { 
-              totalAcoes, 
-              acoesConcluidas,
-              totalEmpregados,
-              mediaAcoesPorEmpregado
-            },
+            progressoGeral: { totalAcoes, acoesConcluidas, totalEmpregados, mediaAcoesPorEmpregado },
             progressoPorTipo: Object.entries(categorias).map(([tipo, dados]) => ({ tipo, ...dados })),
           },
           situacao: {
@@ -175,19 +174,19 @@ export const visaoExecutivaRouter = router({
               aguardandoCkm: solRows.filter(s => s.statusGeral === 'aguardando_ckm').length,
               aguardandoGestor: solRows.filter(s => s.statusGeral === 'aguardando_gestor').length,
               aguardandoRh: solRows.filter(s => s.statusGeral === 'aguardando_rh').length,
-              outros: solRows.filter(s => ['em_revisao', 'aguardando_solicitante'].includes(s.statusGeral || '')).length,
+              outros: solRows.filter(s => ['em_revisao', 'aguardando_solicitante', 'pendente'].includes(s.statusGeral || '')).length,
             },
             ajustesPendentes: {
               total: ajustesPendentes.length,
               aguardandoLider: ajustesPendentes.filter(a => a.status === 'aguardando_lider').length,
-              aguardandoAdmin: ajustesPendentes.filter(a => a.status === 'pendente').length,
+              aguardandoAdmin: ajustesPendentes.filter(a => a.status === 'pendente' || a.status === 'aguardando_admin').length,
               maisInformacoes: ajustesPendentes.filter(a => a.status === 'mais_informacoes').length,
             }
           }
         };
 
       } catch (error) {
-        console.error("ERRO CRÍTICO NO DASHBOARD:", error);
+        console.error("ERRO NO DASHBOARD:", error);
         return {
           progresso: { progressoGeral: { totalAcoes: 0, acoesConcluidas: 0, totalEmpregados: 0, mediaAcoesPorEmpregado: 0 }, progressoPorTipo: [] },
           situacao: { acoesAprovadas: 0, acoesExecutadas: 0, acoesVencidas: 0 },
