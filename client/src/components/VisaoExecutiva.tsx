@@ -16,7 +16,7 @@ import {
   UserPlus,
   TrendingUp,
   Trophy,
-  Activity,
+  Activity as ActivityIcon,
   AlertTriangle,
   Mail,
   CheckCircle,
@@ -341,7 +341,7 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                 </div>
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl shadow-sm">
-                    <Activity className="w-5 h-5" />
+                    <ActivityIcon className="w-5 h-5" />
                   </div>
                   <div className="flex flex-col">
                     <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Execução</p>
