@@ -97,9 +97,17 @@ export const visaoExecutivaRouter = router({
         const evidenceRows = await evidenceQuery;
         const aguardandoEv = evidenceRows.filter(r => r.status === 'aguardando_avaliacao').length;
         const devolvidasEv = evidenceRows.filter(r => r.status === 'correcao_solicitada').length;
-        const aprovadasEv = evidenceRows.filter(r => r.status === 'aprovada');
-        const mediaImpacto = aprovadasEv.length > 0
-          ? aprovadasEv.reduce((acc, curr) => acc + (Number(curr.impacto) || 0), 0) / aprovadasEv.length
+        
+        // CORREÇÃO IIP: Filtrar apenas evidências aprovadas que POSSUEM nota de impacto (não nula e > 0)
+        const aprovadasComNota = evidenceRows.filter(r => 
+          r.status === 'aprovada' && 
+          r.impacto !== null && 
+          r.impacto !== undefined && 
+          Number(r.impacto) > 0
+        );
+        
+        const mediaImpacto = aprovadasComNota.length > 0
+          ? aprovadasComNota.reduce((acc, curr) => acc + (Number(curr.impacto) || 0), 0) / aprovadasComNota.length
           : 0;
 
         // 3. FETCH SOLICITAÇÕES
