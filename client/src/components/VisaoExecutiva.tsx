@@ -344,9 +344,15 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
                 </div>
                 <div className="space-y-6">
                   <span className="text-4xl font-black text-rose-600 tracking-tighter">{situacao.acoesVencidas}</span>
-                  <p className="text-xs font-medium text-slate-500 leading-relaxed border-l-2 border-rose-200 pl-4 italic">
-                    Requerem decisão: prorrogar prazo ou cancelar.
-                  </p>
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-slate-500 leading-relaxed border-l-2 border-rose-200 pl-4 italic">
+                      Requerem decisão: prorrogar prazo ou cancelar.
+                    </p>
+                    <div className="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Em Andamento (No Prazo):</span>
+                      <span className="text-[11px] font-black text-slate-600">{situacao.acoesEmAndamento}</span>
+                    </div>
+                  </div>
                 </div>
               </Card>
             </div>

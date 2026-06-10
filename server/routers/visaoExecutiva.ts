@@ -53,6 +53,8 @@ export const visaoExecutivaRouter = router({
           return dataPrazo < hoje;
         }).length;
 
+        const acoesEmAndamentoNoPrazo = totalAcoes - acoesConcluidas - acoesVencidas;
+
         const uniqueUsers = new Set(allActionsRows.map(r => r.userId));
         const totalEmpregados = uniqueUsers.size;
         const mediaAcoesPorEmpregado = totalEmpregados > 0 ? parseFloat((totalAcoes / totalEmpregados).toFixed(1)) : 0;
@@ -154,7 +156,8 @@ export const visaoExecutivaRouter = router({
           situacao: {
             acoesAprovadas: totalAcoes,
             acoesExecutadas: acoesConcluidas,
-            acoesVencidas: acoesVencidas
+            acoesVencidas: acoesVencidas,
+            acoesEmAndamento: acoesEmAndamentoNoPrazo
           },
           comprovacoes: {
             comprovacoesAguardando: aguardandoEv,
