@@ -291,73 +291,88 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
               <CheckCircle className="w-4 h-4 text-emerald-500" />
               <span>Status das Ações no Fluxo</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <Card className="border-slate-100 bg-white p-8 rounded-3xl shadow-lg hover:shadow-xl transition-shadow relative">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <Card className="border-slate-100 bg-white p-6 rounded-3xl shadow-lg hover:shadow-xl transition-shadow relative">
                 <div className="absolute top-4 right-4">
                   <InfoTooltip title="Cálculo" content="Total de ações que já passaram pela validação do líder e estão autorizadas para execução." />
                 </div>
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-3 bg-teal-50 text-teal-600 rounded-2xl shadow-sm">
-                    <CheckCircle className="w-6 h-6" />
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2.5 bg-teal-50 text-teal-600 rounded-xl shadow-sm">
+                    <CheckCircle className="w-5 h-5" />
                   </div>
                   <div className="flex flex-col">
-                    <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest leading-none mb-1">Validadas</p>
-                    <h4 className="text-xs font-black text-slate-800 uppercase">Ações Aprovadas pelo Líder</h4>
+                    <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest leading-none mb-1">Validadas</p>
+                    <h4 className="text-[10px] font-black text-slate-800 uppercase">Aprovadas pelo Líder</h4>
                   </div>
                 </div>
-                <div className="space-y-6">
-                  <span className="text-4xl font-black text-slate-900 tracking-tighter">{situacao.acoesAprovadas}</span>
-                  <p className="text-xs font-medium text-slate-500 leading-relaxed border-l-2 border-teal-200 pl-4 italic">
-                    O empregado está autorizado a executar estas ações.
+                <div className="space-y-4">
+                  <span className="text-3xl font-black text-slate-900 tracking-tighter">{situacao.acoesAprovadas}</span>
+                  <p className="text-[10px] font-medium text-slate-500 leading-relaxed border-l-2 border-teal-200 pl-3 italic">
+                    Total de ações autorizadas.
                   </p>
                 </div>
               </Card>
 
-              <Card className="border-slate-100 bg-white p-8 rounded-3xl shadow-lg hover:shadow-xl transition-shadow relative">
+              <Card className="border-slate-100 bg-white p-6 rounded-3xl shadow-lg hover:shadow-xl transition-shadow relative">
                 <div className="absolute top-4 right-4">
                   <InfoTooltip title="Cálculo" content="Ações que tiveram evidência enviada pelo colaborador e aprovada pelo avaliador final." />
                 </div>
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl shadow-sm">
-                    <Trophy className="w-6 h-6" />
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl shadow-sm">
+                    <Trophy className="w-5 h-5" />
                   </div>
                   <div className="flex flex-col">
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">Finalizadas</p>
-                    <h4 className="text-xs font-black text-slate-800 uppercase">Executadas e Concluídas</h4>
+                    <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none mb-1">Finalizadas</p>
+                    <h4 className="text-[10px] font-black text-slate-800 uppercase">Executadas e Concluídas</h4>
                   </div>
                 </div>
-                <div className="space-y-6">
-                  <span className="text-4xl font-black text-emerald-600 tracking-tighter">{situacao.acoesExecutadas}</span>
-                  <p className="text-xs font-medium text-slate-500 leading-relaxed border-l-2 border-emerald-200 pl-4 italic">
-                    Evidências aprovadas e ciclo de desenvolvimento fechado.
+                <div className="space-y-4">
+                  <span className="text-3xl font-black text-emerald-600 tracking-tighter">{situacao.acoesExecutadas}</span>
+                  <p className="text-[10px] font-medium text-slate-500 leading-relaxed border-l-2 border-emerald-200 pl-3 italic">
+                    Ciclo de desenvolvimento fechado.
                   </p>
                 </div>
               </Card>
 
-              <Card className="border-slate-100 bg-white p-8 rounded-3xl shadow-lg hover:shadow-xl transition-shadow relative border-b-4 border-b-rose-500">
+              <Card className="border-slate-100 bg-white p-6 rounded-3xl shadow-lg hover:shadow-xl transition-shadow relative">
+                <div className="absolute top-4 right-4">
+                  <InfoTooltip title="Cálculo" content="Ações que estão dentro do prazo de execução e ainda não foram finalizadas." />
+                </div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl shadow-sm">
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Execução</p>
+                    <h4 className="text-[10px] font-black text-slate-800 uppercase">Em Andamento (No Prazo)</h4>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <span className="text-3xl font-black text-blue-600 tracking-tighter">{situacao.acoesEmAndamento}</span>
+                  <p className="text-[10px] font-medium text-slate-500 leading-relaxed border-l-2 border-blue-200 pl-3 italic">
+                    Ações sendo realizadas dentro do cronograma.
+                  </p>
+                </div>
+              </Card>
+
+              <Card className="border-slate-100 bg-white p-6 rounded-3xl shadow-lg hover:shadow-xl transition-shadow relative border-b-4 border-b-rose-500">
                 <div className="absolute top-4 right-4">
                   <InfoTooltip title="Cálculo" content="Ações cujo prazo final de execução é anterior à data de hoje e que ainda não possuem status 'Concluída'." />
                 </div>
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-3 bg-rose-50 text-rose-500 rounded-2xl shadow-sm">
-                    <Clock className="w-6 h-6" />
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2.5 bg-rose-50 text-rose-500 rounded-xl shadow-sm">
+                    <Clock className="w-5 h-5" />
                   </div>
                   <div className="flex flex-col">
-                    <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none mb-1">Atrasadas</p>
-                    <h4 className="text-xs font-black text-slate-800 uppercase">Prazo Vencido</h4>
+                    <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest leading-none mb-1">Atrasadas</p>
+                    <h4 className="text-[10px] font-black text-slate-800 uppercase">Prazo Vencido</h4>
                   </div>
                 </div>
-                <div className="space-y-6">
-                  <span className="text-4xl font-black text-rose-600 tracking-tighter">{situacao.acoesVencidas}</span>
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-slate-500 leading-relaxed border-l-2 border-rose-200 pl-4 italic">
-                      Requerem decisão: prorrogar prazo ou cancelar.
-                    </p>
-                    <div className="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Em Andamento (No Prazo):</span>
-                      <span className="text-[11px] font-black text-slate-600">{situacao.acoesEmAndamento}</span>
-                    </div>
-                  </div>
+                <div className="space-y-4">
+                  <span className="text-3xl font-black text-rose-600 tracking-tighter">{situacao.acoesVencidas}</span>
+                  <p className="text-[10px] font-medium text-slate-500 leading-relaxed border-l-2 border-rose-200 pl-3 italic">
+                    Requerem decisão: prorrogar ou cancelar.
+                  </p>
                 </div>
               </Card>
             </div>
