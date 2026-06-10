@@ -8,6 +8,11 @@ async function fetchProgressoGeral(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  let conditionsGeral = [];
+  if (departamentoId) {
+    conditionsGeral.push(eq(users.departamentoId, departamentoId));
+  }
+
   let queryGeral = db
     .select({
       totalAcoes: count(actions.id),
@@ -19,8 +24,8 @@ async function fetchProgressoGeral(departamentoId?: number) {
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
     .innerJoin(users, eq(pdis.colaboradorId, users.id));
 
-  if (departamentoId) {
-    queryGeral = queryGeral.where(eq(users.departamentoId, departamentoId));
+  if (conditionsGeral.length > 0) {
+    queryGeral = queryGeral.where(and(...conditionsGeral));
   }
 
   const progressoGeralResult = await queryGeral;
@@ -34,8 +39,8 @@ async function fetchProgressoGeral(departamentoId?: number) {
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
     .innerJoin(users, eq(pdis.colaboradorId, users.id));
 
-  if (departamentoId) {
-    queryCategorizacao = queryCategorizacao.where(eq(users.departamentoId, departamentoId));
+  if (conditionsGeral.length > 0) {
+    queryCategorizacao = queryCategorizacao.where(and(...conditionsGeral));
   }
 
   const acoesParaCategorizar = await queryCategorizacao;
@@ -81,87 +86,47 @@ async function fetchProgressoGeral(departamentoId?: number) {
   };
 }
 
-async function fetchMediaAcoesPorEmpregado(departamentoId?: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  let queryEmpregados = db
-    .select({ total: count(users.id) })
-    .from(users)
-    .where(and(eq(users.role, "colaborador"), eq(users.status, "ativo")));
-
-  if (departamentoId) {
-    queryEmpregados = queryEmpregados.where(eq(users.departamentoId, departamentoId));
-  }
-
-  const empregados = await queryEmpregados;
-
-  let queryAcoes = db
-    .select({ total: count(actions.id) })
-    .from(actions)
-    .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id));
-
-  if (departamentoId) {
-    queryAcoes = queryAcoes.where(eq(users.departamentoId, departamentoId));
-  }
-
-  const acoes = await queryAcoes;
-
-  const totalEmpregados = empregados[0]?.total || 0;
-  const totalAcoes = acoes[0]?.total || 0;
-  const mediaGeral = totalEmpregados > 0 ? totalAcoes / totalEmpregados : 0;
-
-  return {
-    totalEmpregados,
-    mediaGeral: parseFloat(mediaGeral.toFixed(1)),
-    totalAcoes,
-  };
-}
-
 async function fetchSituacaoAtualAcoes(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Filtro de Departamento base
+  const deptFilter = departamentoId ? eq(users.departamentoId, departamentoId) : undefined;
+
+  // Ações Aprovadas: Todas as ações da unidade (já que para estar no PDI devem estar aprovadas ou em fluxo, mas aqui consideramos o total planejado/validado)
   let queryAprovadas = db
     .select({ total: count(actions.id) })
     .from(actions)
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
     .innerJoin(users, eq(pdis.colaboradorId, users.id));
-
-  if (departamentoId) {
-    queryAprovadas = queryAprovadas.where(eq(users.departamentoId, departamentoId));
-  }
-
+  if (deptFilter) queryAprovadas = queryAprovadas.where(deptFilter);
   const aprovadas = await queryAprovadas;
 
+  // Ações Executadas: Somente as concluídas
   let queryExecutadas = db
     .select({ total: count(actions.id) })
     .from(actions)
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id))
-    .where(eq(actions.status, "concluida"));
-
-  if (departamentoId) {
-    queryExecutadas = queryExecutadas.where(eq(users.departamentoId, departamentoId));
-  }
-
+    .innerJoin(users, eq(pdis.colaboradorId, users.id));
+  
+  const execConditions = [eq(actions.status, "concluida")];
+  if (departamentoId) execConditions.push(eq(users.departamentoId, departamentoId));
+  queryExecutadas = queryExecutadas.where(and(...execConditions));
   const executadas = await queryExecutadas;
 
+  // Ações Vencidas: Prazo menor que hoje E não concluída
   let queryVencidas = db
     .select({ total: count(actions.id) })
     .from(actions)
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id))
-    .where(and(
-      lt(actions.prazo, sql`CURDATE()`),
-      ne(actions.status, "concluida")
-    ));
+    .innerJoin(users, eq(pdis.colaboradorId, users.id));
 
-  if (departamentoId) {
-    queryVencidas = queryVencidas.where(eq(users.departamentoId, departamentoId));
-  }
-
+  const vencConditions = [
+    lt(actions.prazo, sql`CURDATE()`),
+    ne(actions.status, "concluida")
+  ];
+  if (departamentoId) vencConditions.push(eq(users.departamentoId, departamentoId));
+  queryVencidas = queryVencidas.where(and(...vencConditions));
   const vencidas = await queryVencidas;
 
   return {
@@ -175,46 +140,40 @@ async function fetchSituacaoComprovacoes(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Aguardando
   let queryAguardando = db
     .select({ total: count(evidences.id) })
     .from(evidences)
     .innerJoin(actions, eq(evidences.actionId, actions.id))
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id))
-    .where(eq(evidences.status, "aguardando_avaliacao"));
-
-  if (departamentoId) {
-    queryAguardando = queryAguardando.where(eq(users.departamentoId, departamentoId));
-  }
-
+    .innerJoin(users, eq(pdis.colaboradorId, users.id));
+  const aguardandoCond = [eq(evidences.status, "aguardando_avaliacao")];
+  if (departamentoId) aguardandoCond.push(eq(users.departamentoId, departamentoId));
+  queryAguardando = queryAguardando.where(and(...aguardandoCond));
   const aguardando = await queryAguardando;
 
+  // Devolvidas
   let queryDevolvidas = db
     .select({ total: count(evidences.id) })
     .from(evidences)
     .innerJoin(actions, eq(evidences.actionId, actions.id))
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id))
-    .where(eq(evidences.status, "correcao_solicitada"));
-
-  if (departamentoId) {
-    queryDevolvidas = queryDevolvidas.where(eq(users.departamentoId, departamentoId));
-  }
-
+    .innerJoin(users, eq(pdis.colaboradorId, users.id));
+  const devolvidasCond = [eq(evidences.status, "correcao_solicitada")];
+  if (departamentoId) devolvidasCond.push(eq(users.departamentoId, departamentoId));
+  queryDevolvidas = queryDevolvidas.where(and(...devolvidasCond));
   const devolvidas = await queryDevolvidas;
 
+  // Impacto
   let queryImpacto = db
     .select({ mediaImpacto: avg(evidences.impactoPercentual) })
     .from(evidences)
     .innerJoin(actions, eq(evidences.actionId, actions.id))
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id))
-    .where(eq(evidences.status, "aprovada"));
-
-  if (departamentoId) {
-    queryImpacto = queryImpacto.where(eq(users.departamentoId, departamentoId));
-  }
-
+    .innerJoin(users, eq(pdis.colaboradorId, users.id));
+  const impactoCond = [eq(evidences.status, "aprovada")];
+  if (departamentoId) impactoCond.push(eq(users.departamentoId, departamentoId));
+  queryImpacto = queryImpacto.where(and(...impactoCond));
   const impacto = await queryImpacto;
 
   return {
@@ -245,7 +204,6 @@ async function fetchSolicitacoesInsercao(departamentoId?: number) {
   }
 
   const result = await queryBase;
-
   const total = result[0]?.total || 0;
   const aprovadas = Number(result[0]?.aprovadas || 0);
   const emAnalise = Number(result[0]?.emAnalise || 0);
@@ -263,22 +221,18 @@ async function fetchPendencias(departamentoId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // Vencidas
   let queryVencidas = db
     .select({ total: count(actions.id) })
     .from(actions)
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id))
-    .where(and(
-      lt(actions.prazo, sql`CURDATE()`),
-      ne(actions.status, "concluida")
-    ));
-
-  if (departamentoId) {
-    queryVencidas = queryVencidas.where(eq(users.departamentoId, departamentoId));
-  }
-
+    .innerJoin(users, eq(pdis.colaboradorId, users.id));
+  const vencCond = [lt(actions.prazo, sql`CURDATE()`), ne(actions.status, "concluida")];
+  if (departamentoId) vencCond.push(eq(users.departamentoId, departamentoId));
+  queryVencidas = queryVencidas.where(and(...vencCond));
   const vencidas = await queryVencidas;
 
+  // Em andamento
   let querySolicitacoesAndamento = db
     .select({ 
       total: count(solicitacoesAcoes.id),
@@ -288,15 +242,13 @@ async function fetchPendencias(departamentoId?: number) {
       outros: count(sql`CASE WHEN ${solicitacoesAcoes.statusGeral} IN ('em_revisao', 'aguardando_solicitante') THEN 1 END`)
     })
     .from(solicitacoesAcoes)
-    .innerJoin(users, eq(solicitacoesAcoes.solicitanteId, users.id))
-    .where(inArray(solicitacoesAcoes.statusGeral, ["aguardando_ckm", "aguardando_gestor", "aguardando_rh", "em_revisao", "aguardando_solicitante"]));
-
-  if (departamentoId) {
-    querySolicitacoesAndamento = querySolicitacoesAndamento.where(eq(users.departamentoId, departamentoId));
-  }
-
+    .innerJoin(users, eq(solicitacoesAcoes.solicitanteId, users.id));
+  const andamentoCond = [inArray(solicitacoesAcoes.statusGeral, ["aguardando_ckm", "aguardando_gestor", "aguardando_rh", "em_revisao", "aguardando_solicitante"])];
+  if (departamentoId) andamentoCond.push(eq(users.departamentoId, departamentoId));
+  querySolicitacoesAndamento = querySolicitacoesAndamento.where(and(...andamentoCond));
   const solicitacoesAndamento = await querySolicitacoesAndamento;
 
+  // Ajustes
   let queryAjustes = db
     .select({ 
       total: count(adjustmentRequests.id),
@@ -307,13 +259,10 @@ async function fetchPendencias(departamentoId?: number) {
     .from(adjustmentRequests)
     .innerJoin(actions, eq(adjustmentRequests.actionId, actions.id))
     .innerJoin(pdis, eq(actions.pdiId, pdis.id))
-    .innerJoin(users, eq(pdis.colaboradorId, users.id))
-    .where(inArray(adjustmentRequests.status, ["pendente", "aguardando_lider", "mais_informacoes"]));
-
-  if (departamentoId) {
-    queryAjustes = queryAjustes.where(eq(users.departamentoId, departamentoId));
-  }
-
+    .innerJoin(users, eq(pdis.colaboradorId, users.id));
+  const ajustesCond = [inArray(adjustmentRequests.status, ["pendente", "aguardando_lider", "mais_informacoes"])];
+  if (departamentoId) ajustesCond.push(eq(users.departamentoId, departamentoId));
+  queryAjustes = queryAjustes.where(and(...ajustesCond));
   const ajustes = await queryAjustes;
 
   return {
@@ -338,15 +287,14 @@ export const visaoExecutivaRouter = router({
   getVisaoExecutivaCompleta: adminOrGerenteProcedure
     .input((val: any) => ({ departamentoId: val?.departamentoId as number | undefined }))
     .query(async ({ input }) => {
-      const [progresso, media, situacao, comprovacoes, solicitacoes, pendencias] = await Promise.all([
+      const [progresso, situacao, comprovacoes, solicitacoes, pendencias] = await Promise.all([
         fetchProgressoGeral(input.departamentoId),
-        fetchMediaAcoesPorEmpregado(input.departamentoId),
         fetchSituacaoAtualAcoes(input.departamentoId),
         fetchSituacaoComprovacoes(input.departamentoId),
         fetchSolicitacoesInsercao(input.departamentoId),
         fetchPendencias(input.departamentoId),
       ]);
 
-      return { progresso, media, situacao, comprovacoes, solicitacoes, pendencias };
+      return { progresso, situacao, comprovacoes, solicitacoes, pendencias };
     }),
 });
