@@ -16,6 +16,7 @@ import {
   UserPlus,
   TrendingUp,
   Trophy,
+  Activity,
   AlertTriangle,
   Mail,
   CheckCircle,
