@@ -322,15 +322,23 @@ generateTemporaryPassword: adminProcedure
       });
     }),
     teamPDIs: protectedProcedure.query(async ({ ctx }) => {
-      // Buscar subordinados diretos do Líder (usuários que têm leaderId = id do líder logado)
+      // 1. Buscar subordinados (diretos + por departamento liderado)
       const subordinates = await db.getSubordinates(Number(ctx.user.id));
       const teamUserIds = subordinates.map((u: { id: number }) => u.id);
       
       if (teamUserIds.length === 0) return [];
       
-      // Retornar PDIs dos subordinados diretos
+      // 2. Buscar todos os PDIs dos membros da equipe
+      // Nota: Usamos getAllPDIs para aproveitar o enriquecimento de dados (nomes, contagem de ações, etc.)
       const allPDIs = await db.getAllPDIs();
-      return allPDIs.filter(pdi => teamUserIds.includes(Number(pdi.colaboradorId)));
+      
+      // 3. Filtrar PDIs da equipe
+      const teamPDIs = allPDIs.filter(pdi => teamUserIds.includes(Number(pdi.colaboradorId)));
+
+      // 4. Log para depuração
+      console.log(`[teamPDIs] Líder ${ctx.user.id} encontrou ${teamPDIs.length} PDIs para sua equipe de ${teamUserIds.length} membros.`);
+      
+      return teamPDIs;
     }),
     validate: protectedProcedure.input(z.object({ pdiId: z.number() })).mutation(async ({ input, ctx }) => {
       const pdi = await db.getPDIById(input.pdiId);

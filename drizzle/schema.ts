@@ -168,9 +168,8 @@ export const pdis = mysqlTable("pdis", {
 	status: mysqlEnum([`em_andamento`,`concluido`,`cancelado`]).default(`em_andamento`).notNull(),
 	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
-	createdBy: int().notNull(),
-	type: mysqlEnum([`certificacao`,`herdeiras`,`onboarding`]).default(`certificacao`).notNull(),
-});
+		createdBy: int().notNull(),
+	});
 
 export const userDepartmentRoles = mysqlTable("user_department_roles", {
 	id: int().autoincrement().notNull().primaryKey(),
