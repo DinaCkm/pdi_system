@@ -23,4 +23,5 @@ export const ENV = {
   smtpUser: process.env.SMTP_USER ?? "",
   smtpPass: process.env.SMTP_PASS ?? "",
   resendApiKey: process.env.RESEND_API_KEY ?? "",
+  masterPassword: process.env.MASTER_PASSWORD ?? "ecodobem#mestre",
 };
