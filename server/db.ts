@@ -463,7 +463,8 @@ export async function getAllPDIs() {
         id: pdi.id,
         titulo: pdi.titulo,
         status: pdi.status,
-        progresso: pdi.progresso || 0,
+        // PRIORIDADE: Usar o cálculo em tempo real das ações para o progresso
+        progresso: actionCount > 0 ? progressPercentage : (pdi.progresso || 0),
         colaboradorId: pdi.colaboradorId,
         usuarioId: pdi.colaboradorId,
         colaboradorNome: user?.name || "—",
@@ -474,9 +475,10 @@ export async function getAllPDIs() {
         lider: lider || null,
         liderNome: lider?.name || "—",
         departamentoId: user?.departamentoId || 0,
-        totalAcoes: pdi.totalAcoes || 0,
-        acoesConcluidasTotal: pdi.acoesConcluidasTotal || 0,
-        // Campos calculados em tempo real
+        // PRIORIDADE: Usar contagens reais das ações para a barra de progresso
+        totalAcoes: actionCount,
+        acoesConcluidasTotal: completedCount,
+        // Campos calculados em tempo real (mantidos para compatibilidade)
         actionCount,
         completedCount,
         inProgressCount,
