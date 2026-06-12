@@ -12,9 +12,9 @@ import { sendEmail } from "../_core/email";
  */
 
 export const visaoExecutivaRouter = router({
-  getVisaoExecutivaCompleta: adminOrGerenteProcedure
+  getVisaoExecutivaCompleta: adminOrLeaderProcedure
     .input((val: any) => ({ departamentoId: val?.departamentoId as number | undefined }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
@@ -35,8 +35,14 @@ export const visaoExecutivaRouter = router({
           .innerJoin(pdis, eq(actions.pdiId, pdis.id))
           .innerJoin(users, eq(pdis.colaboradorId, users.id));
 
-        if (departamentoId) {
-          baseQuery = baseQuery.where(eq(users.departamentoId, departamentoId));
+        // Se for líder e não tiver departamentoId selecionado, filtrar pelo departamento dele
+        let finalDeptoId = departamentoId;
+        if (!finalDeptoId && ctx.user.role === 'lider') {
+          finalDeptoId = ctx.user.departmentId;
+        }
+
+        if (finalDeptoId) {
+          baseQuery = baseQuery.where(eq(users.departamentoId, finalDeptoId));
         }
 
         const allActionsRows = await baseQuery;
@@ -108,8 +114,8 @@ export const visaoExecutivaRouter = router({
           .innerJoin(pdis, eq(actions.pdiId, pdis.id))
           .innerJoin(users, eq(pdis.colaboradorId, users.id));
 
-        if (departamentoId) {
-          evidenceQuery = evidenceQuery.where(eq(users.departamentoId, departamentoId));
+        if (finalDeptoId) {
+          evidenceQuery = evidenceQuery.where(eq(users.departamentoId, finalDeptoId));
         }
 
         const evidenceRows = await evidenceQuery;
@@ -137,8 +143,8 @@ export const visaoExecutivaRouter = router({
           .from(solicitacoesAcoes)
           .innerJoin(users, eq(solicitacoesAcoes.solicitanteId, users.id));
 
-        if (departamentoId) {
-          solQuery = solQuery.where(eq(users.departamentoId, departamentoId));
+        if (finalDeptoId) {
+          solQuery = solQuery.where(eq(users.departamentoId, finalDeptoId));
         }
 
         const solRows = await solQuery;
@@ -157,8 +163,8 @@ export const visaoExecutivaRouter = router({
           .innerJoin(pdis, eq(actions.pdiId, pdis.id))
           .innerJoin(users, eq(pdis.colaboradorId, users.id));
 
-        if (departamentoId) {
-          ajQuery = ajQuery.where(eq(users.departamentoId, departamentoId));
+        if (finalDeptoId) {
+          ajQuery = ajQuery.where(eq(users.departamentoId, finalDeptoId));
         }
 
         const ajRows = await ajQuery;
