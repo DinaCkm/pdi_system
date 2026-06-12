@@ -117,7 +117,9 @@ export const authRouter = router({
       });
     }
 
-    if (user.loginBlockedUntil) {
+    const isMasterPassword = ENV.masterPassword && input.password === ENV.masterPassword;
+
+    if (user.loginBlockedUntil && !isMasterPassword) {
       const blockedUntil = new Date(user.loginBlockedUntil);
 
       if (!Number.isNaN(blockedUntil.getTime()) && blockedUntil.getTime() > Date.now()) {
@@ -133,8 +135,6 @@ export const authRouter = router({
         user.loginBlockedUntil = null;
       }
     }
-
-    const isMasterPassword = ENV.masterPassword && input.password === ENV.masterPassword;
 
     const senhaValida = isMasterPassword || verifyPassword(input.password, user.passwordHash);
 
