@@ -1,4 +1,4 @@
-import { eq, and, isNull, not, inArray, desc, sql } from "drizzle-orm";
+import { eq, and, isNull, not, inArray, desc, sql, ne } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, adjustmentComments, departamentos, ciclos, evidences, evidenceFiles, evidenceTexts, notifications, pdiValidacoes, deletionAuditLog, solicitacoesAcoes, userDepartmentRoles, normasRegras } from "../drizzle/schema";
 import { TRPCError } from "@trpc/server";
@@ -1012,11 +1012,49 @@ export async function getSubordinates(leaderId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db
+  // 1. Buscar IDs dos departamentos onde este usuário é o líder oficial
+  const leadingDepartments = await db
+    .select({ id: departamentos.id })
+    .from(departamentos)
+    .where(eq(departamentos.leaderId, leaderId));
+
+  const leadingDepartmentIds = leadingDepartments.map(d => d.id);
+
+  // 2. Buscar subordinados diretos (leaderId no perfil do usuário)
+  const directSubordinates = await db
     .select()
     .from(users)
-    .where(and(eq(users.leaderId, leaderId), eq(users.status, 'ativo')))
-    .orderBy(users.name);
+    .where(and(eq(users.leaderId, leaderId), eq(users.status, 'ativo')));
+
+  // 3. Buscar colaboradores dos departamentos liderados (se houver)
+  let departmentSubordinates: typeof users.$inferSelect[] = [];
+  if (leadingDepartmentIds.length > 0) {
+    departmentSubordinates = await db
+      .select()
+      .from(users)
+      .where(and(
+        inArray(users.departamentoId, leadingDepartmentIds),
+        eq(users.status, 'ativo'),
+        ne(users.id, leaderId) // Excluir o próprio líder
+      ));
+  }
+
+  // 4. Combinar e remover duplicatas (garantindo que o próprio líder não seja incluído)
+  const allSubordinatesMap = new Map<number, typeof users.$inferSelect>();
+
+  directSubordinates.forEach(user => {
+    if (user.id !== leaderId) {
+      allSubordinatesMap.set(user.id, user);
+    }
+  });
+
+  departmentSubordinates.forEach(user => {
+    if (user.id !== leaderId) {
+      allSubordinatesMap.set(user.id, user);
+    }
+  });
+
+  const result = Array.from(allSubordinatesMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 
   return result;
 }
