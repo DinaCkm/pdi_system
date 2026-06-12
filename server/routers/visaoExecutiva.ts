@@ -12,7 +12,7 @@ import { sendEmail } from "../_core/email";
  */
 
 export const visaoExecutivaRouter = router({
-  getVisaoExecutivaCompleta: adminOrLeaderProcedure
+  getVisaoExecutivaCompleta: adminOrGerenteProcedure
     .input((val: any) => ({ departamentoId: val?.departamentoId as number | undefined }))
     .query(async ({ input, ctx }) => {
       const db = await getDb();

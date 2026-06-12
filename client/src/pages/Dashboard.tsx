@@ -178,8 +178,10 @@ export function Dashboard() {
         </div>
       ) : stats ? (
         <>
-          {/* Visão Executiva */}
-          <VisaoExecutiva departamentoId={selectedDepartamento && selectedDepartamento !== 'todos' ? parseInt(selectedDepartamento) : undefined} />
+	          {/* Visão Executiva - Apenas Admin e Gerente */}
+	          {(user?.role === "admin" || user?.role === "gerente") && (
+	            <VisaoExecutiva departamentoId={selectedDepartamento && selectedDepartamento !== 'todos' ? parseInt(selectedDepartamento) : undefined} />
+	          )}
 
           {/* Widget Exclusivo de Admin: Direcionamento Estratégico */}
           <DirecionamentoEstrategico />
