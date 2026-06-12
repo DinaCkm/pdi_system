@@ -108,10 +108,7 @@ export default function PDIsEquipe() {
     if (!pdis) return [];
     
     return pdis.filter((pdi: any) => {
-      // Esconder PDIs completamente vazios (sem ações E sem relatório/laudo)
-      const hasActions = (pdi.actionCount || 0) > 0;
-      const hasRelatorio = !!(pdi.relatorioAnalise || pdi.relatorioArquivoUrl);
-      if (!hasActions && !hasRelatorio) return false;
+      // REMOVIDO: Trava que escondia PDIs vazios. Agora o líder vê todos para saber quem não preencheu.
 
       // Filtro de busca (título ou nome do colaborador)
       const matchesSearch = 
@@ -157,9 +154,9 @@ export default function PDIsEquipe() {
           <p className="text-muted-foreground mt-1">
           Visualize e acompanhe os Planos de Desenvolvimento Individual dos seus subordinados
         </p>
-        <div className="mt-3 flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-          <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <span>PDIs que ainda não possuem ações cadastradas ou relatórios/laudos anexados não são exibidos nesta lista.</span>
+        <div className="mt-3 flex items-start gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-700">
+          <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <span>Agora você visualiza todos os PDIs da sua equipe, incluindo os que ainda não possuem ações cadastradas.</span>
         </div>
           {pdis && pdis.length > 0 && pdis[0]?.departamentoNome && (
             <div className="mt-3 inline-block">
