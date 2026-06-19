@@ -9,11 +9,8 @@ interface CertificateData {
   pdiTitulo?: string;
 }
 
-/**
- * Quebra texto em múltiplas linhas baseado em caracteres por linha estimados.
- */
 function wrapTextSVG(text: string, maxCharsPerLine: number, maxLines = 3): string[] {
-  const words = text.split(" ").filter(Boolean);
+  const words = (text || "").split(" ").filter(Boolean);
   const lines: string[] = [];
   let currentLine = "";
 
@@ -32,11 +29,8 @@ function wrapTextSVG(text: string, maxCharsPerLine: number, maxLines = 3): strin
   return lines;
 }
 
-/**
- * Escapa caracteres especiais para SVG.
- */
 function escapeXml(str: string): string {
-  return str
+  return (str || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -44,109 +38,80 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function buildTextLines(lines: string[], startY: number, fontSize: number, lineHeight: number, extraClass = ""): string {
-  return lines.map((line, index) => (
-    `<text x="540" y="${startY + index * lineHeight}" text-anchor="middle" class="txt ${extraClass}" font-size="${fontSize}" font-weight="700">${escapeXml(line)}</text>`
-  )).join("\n");
+function svgText(text: string, y: number, size: number, color: string, weight = "700") {
+  return `<text x="540" y="${y}" text-anchor="middle" fill="${color}" font-size="${size}" font-weight="${weight}" font-family="Arial, Helvetica, sans-serif">${escapeXml(text)}</text>`;
+}
+
+function svgLines(lines: string[], startY: number, size: number, lineHeight: number, color: string, weight = "700") {
+  return lines.map((line, idx) => svgText(line, startY + idx * lineHeight, size, color, weight)).join("\n");
 }
 
 /**
- * Gera um card de conquista motivacional como imagem PNG.
- *
- * Observação técnica: o card anterior dependia de imagem remota e de emojis/fontes que
- * podem não renderizar corretamente no ambiente do Railway. Esta versão usa texto e
- * formas SVG simples, com fonte padrão de sistema, para evitar cards vazios.
+ * Gera um card de conquista como PNG.
+ * Evita imagem externa, emojis e CSS em classes, pois esses pontos podem falhar na conversão SVG > PNG.
  */
 export async function generateCertificate(data: CertificateData): Promise<{ url: string; key: string }> {
   const WIDTH = 1080;
   const HEIGHT = 1080;
 
-  const nomeDisplay = data.nomeColaborador.length > 34
+  const nomeDisplay = data.nomeColaborador?.length > 34
     ? data.nomeColaborador.substring(0, 32) + "..."
-    : data.nomeColaborador;
+    : data.nomeColaborador || "Colaborador";
 
-  const tituloLines = wrapTextSVG(data.tituloAcao, 36, 3);
-  const pdiLines = data.pdiTitulo ? wrapTextSVG(data.pdiTitulo, 44, 2) : [];
+  const tituloLines = wrapTextSVG(data.tituloAcao || "Ação concluída", 38, 3);
+  const pdiLines = data.pdiTitulo ? wrapTextSVG(data.pdiTitulo, 48, 2) : [];
   const competenciaDisplay = data.competencia
-    ? (data.competencia.length > 56 ? data.competencia.substring(0, 54) + "..." : data.competencia)
-    : "";
-
-  const tituloSVG = buildTextLines(tituloLines, 520, 32, 42, "white");
-  const pdiSVG = pdiLines.length > 0
-    ? buildTextLines(pdiLines, 406, 20, 28, "muted")
-    : "";
-
-  const competenciaSVG = competenciaDisplay
-    ? `<text x="540" y="675" text-anchor="middle" class="txt muted" font-size="22">Competência: ${escapeXml(competenciaDisplay)}</text>`
+    ? (data.competencia.length > 58 ? data.competencia.substring(0, 56) + "..." : data.competencia)
     : "";
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="32%" stop-color="#1e1b4b"/>
-      <stop offset="66%" stop-color="#312e81"/>
+      <stop offset="45%" stop-color="#312e81"/>
       <stop offset="100%" stop-color="#1e3a5f"/>
     </linearGradient>
-    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#f97316"/>
       <stop offset="100%" stop-color="#ea580c"/>
     </linearGradient>
-    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#6366f1"/>
-      <stop offset="100%" stop-color="#a855f7"/>
-    </linearGradient>
-    <radialGradient id="glowTop" cx="82%" cy="12%" r="30%">
-      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.30"/>
+    <radialGradient id="glow1" cx="82%" cy="12%" r="30%">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.35"/>
       <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="glowBottom" cx="16%" cy="82%" r="26%">
-      <stop offset="0%" stop-color="#f97316" stop-opacity="0.22"/>
+    <radialGradient id="glow2" cx="16%" cy="82%" r="28%">
+      <stop offset="0%" stop-color="#f97316" stop-opacity="0.24"/>
       <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
     </radialGradient>
-    <style>
-      .txt { font-family: DejaVu Sans, Liberation Sans, Arial, Helvetica, sans-serif; }
-      .white { fill: #ffffff; }
-      .muted { fill: #cbd5e1; }
-      .soft { fill: #94a3b8; }
-      .orange { fill: #fb923c; }
-      .green { fill: #34d399; }
-    </style>
   </defs>
 
   <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#bgGrad)"/>
-  <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#glowTop)"/>
-  <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#glowBottom)"/>
+  <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#glow1)"/>
+  <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#glow2)"/>
+  <rect x="34" y="34" width="1012" height="1012" rx="28" ry="28" fill="none" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="2"/>
 
-  <rect x="34" y="34" width="${WIDTH - 68}" height="${HEIGHT - 68}" rx="28" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+  <rect x="330" y="82" width="420" height="62" rx="31" ry="31" fill="url(#badgeGrad)"/>
+  ${svgText("DESAFIO CONCLUÍDO", 122, 28, "#FFFFFF", "800")}
 
-  <rect x="340" y="82" width="400" height="58" rx="29" fill="url(#orangeGrad)"/>
-  <text x="540" y="119" text-anchor="middle" class="txt white" font-size="24" font-weight="800">DESAFIO CONCLUÍDO</text>
+  <rect x="365" y="180" width="350" height="112" rx="18" ry="18" fill="#FFFFFF" fill-opacity="0.96"/>
+  ${svgText("eco do bem", 225, 34, "#312e81", "800")}
+  ${svgText("Programa Evoluir", 260, 20, "#f97316", "700")}
 
-  <rect x="390" y="172" width="300" height="102" rx="18" fill="#ffffff" fill-opacity="0.96"/>
-  <text x="540" y="214" text-anchor="middle" class="txt" fill="#312e81" font-size="26" font-weight="800">eco do bem</text>
-  <text x="540" y="244" text-anchor="middle" class="txt" fill="#f97316" font-size="17" font-weight="700">desenvolvimento humano</text>
+  <line x1="310" y1="330" x2="770" y2="330" stroke="#f97316" stroke-opacity="0.75" stroke-width="3"/>
 
-  <line x1="350" y1="314" x2="730" y2="314" stroke="url(#orangeGrad)" stroke-width="3" stroke-opacity="0.65"/>
+  ${svgText("Mais um passo na jornada de", 378, 25, "#cbd5e1", "500")}
+  ${svgText(nomeDisplay, 445, 46, "#FFFFFF", "800")}
+  ${pdiLines.length ? svgLines(pdiLines, 492, 22, 30, "#cbd5e1", "600") : ""}
 
-  <text x="540" y="362" text-anchor="middle" class="txt muted" font-size="23">Mais um passo na jornada de</text>
-  <text x="540" y="452" text-anchor="middle" class="txt white" font-size="44" font-weight="800">${escapeXml(nomeDisplay)}</text>
-  ${pdiSVG}
+  <rect x="86" y="555" width="908" height="245" rx="26" ry="26" fill="#FFFFFF" fill-opacity="0.10" stroke="#FFFFFF" stroke-opacity="0.20" stroke-width="2"/>
+  ${svgText("AÇÃO SUPERADA", 605, 20, "#34d399", "800")}
+  ${svgLines(tituloLines, 662, 34, 44, "#FFFFFF", "800")}
+  ${competenciaDisplay ? svgText(`Competência: ${competenciaDisplay}`, 760, 22, "#cbd5e1", "500") : ""}
 
-  <rect x="92" y="480" width="896" height="260" rx="24" fill="#ffffff" fill-opacity="0.09" stroke="#ffffff" stroke-opacity="0.16" stroke-width="2"/>
-  <text x="540" y="478" text-anchor="middle" class="txt green" font-size="18" font-weight="800">AÇÃO SUPERADA</text>
-  ${tituloSVG}
-  ${competenciaSVG}
-  <text x="540" y="710" text-anchor="middle" class="txt soft" font-size="19">Concluída em ${escapeXml(data.dataConclusao)}</text>
-
-  <text x="540" y="805" text-anchor="middle" class="txt white" font-size="25" font-style="italic">Cada desafio superado é combustível</text>
-  <text x="540" y="840" text-anchor="middle" class="txt white" font-size="25" font-style="italic">para a sua carreira. Continue evoluindo!</text>
-
-  <line x1="150" y1="884" x2="930" y2="884" stroke="#ffffff" stroke-opacity="0.18" stroke-width="2"/>
-
-  <text x="540" y="930" text-anchor="middle" class="txt orange" font-size="25" font-weight="800">PROGRAMA EVOLUIR</text>
-  <text x="540" y="962" text-anchor="middle" class="txt muted" font-size="18">Ecossistema de Desenvolvimento do B.E.M</text>
-  <text x="540" y="1002" text-anchor="middle" class="txt soft" font-size="16">#DesenvolvimentoProfissional  #PDI  #EcoDoBem  #EVOLUIR</text>
+  ${svgText(`Concluída em ${data.dataConclusao}`, 846, 22, "#94a3b8", "500")}
+  ${svgText("Cada desafio superado impulsiona", 905, 27, "#FFFFFF", "600")}
+  ${svgText("a sua carreira. Continue evoluindo!", 942, 27, "#FFFFFF", "600")}
+  ${svgText("#DesenvolvimentoProfissional  #PDI  #EcoDoBem  #EVOLUIR", 1000, 18, "#fb923c", "700")}
 </svg>`;
 
   const resvg = new Resvg(svg, {
@@ -156,7 +121,7 @@ export async function generateCertificate(data: CertificateData): Promise<{ url:
     },
     font: {
       loadSystemFonts: true,
-      defaultFontFamily: "DejaVu Sans",
+      defaultFontFamily: "Arial",
     },
   });
 
