@@ -39,10 +39,6 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function escapeHtml(str: string): string {
-  return escapeXml(str).replace(/`/g, "&#96;");
-}
-
 function svgText(text: string, y: number, size: number, color: string, weight = "700") {
   return `<text x="540" y="${y}" text-anchor="middle" fill="${color}" font-size="${size}" font-weight="${weight}" font-family="Arial, Helvetica, sans-serif">${escapeXml(text)}</text>`;
 }
@@ -137,8 +133,8 @@ function buildDownloadPage(svg: string, fileName: string): string {
     <p>Se o download não começar automaticamente, clique no botão acima.</p>
   </main>
   <script>
-    const svgText = `${escapeHtml(svg)}`;
-    const fileName = "${escapeHtml(fileName)}";
+    const svgText = ${JSON.stringify(svg)};
+    const fileName = ${JSON.stringify(fileName)};
     const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
     const svgUrl = URL.createObjectURL(svgBlob);
     const preview = document.getElementById("preview");
