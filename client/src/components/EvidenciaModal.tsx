@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Loader2, CheckCircle, AlertTriangle, Upload, X, FileText, Link2, ChevronRight, ChevronLeft, Trophy, Sparkles, Info } from "lucide-react";
+import { Loader2, CheckCircle, Upload, X, FileText, Link2, ChevronRight, ChevronLeft, Trophy, Sparkles, Info, AlertTriangle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
 
 interface EvidenciaModalProps {
   open: boolean;
@@ -43,7 +42,12 @@ function getImpactoFaixa(valor: number): { cor: string; label: string; descricao
   return { cor: 'text-green-600', label: 'Muito Alto', descricao: 'Transformou significativamente minha atuação e gerou resultados mensuráveis.' };
 }
 
-export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macrocompetencia, descricao, prazo, onSuccess }: EvidenciaModalProps) {
+function limitarPercentual(valor: number) {
+  if (Number.isNaN(valor)) return 0;
+  return Math.max(0, Math.min(100, Math.round(valor)));
+}
+
+export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuccess }: EvidenciaModalProps) {
   const [etapa, setEtapa] = useState(1);
   const [tipoEvidencia, setTipoEvidencia] = useState<TipoEvidencia | ''>('');
   const [dataRealizacao, setDataRealizacao] = useState('');
@@ -59,7 +63,6 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [evidenceId, setEvidenceId] = useState<number | null>(null);
-  const { user } = useAuth();
 
   const uploadFileMutation = trpc.evidences.uploadFile.useMutation();
   const createEvidenceMutation = trpc.evidences.create.useMutation();
@@ -85,6 +88,15 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
   useEffect(() => {
     if (open) resetForm();
   }, [actionId, open, resetForm]);
+
+  const handleImpactoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valorDigitado = e.target.value;
+    if (valorDigitado === '') {
+      setImpactoPercentual(0);
+      return;
+    }
+    setImpactoPercentual(limitarPercentual(Number(valorDigitado)));
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -143,7 +155,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
         oQueRealizou: oQueRealizou.trim(),
         comoAplicou: comoAplicou.trim(),
         resultadoPratico: resultadoPratico.trim() || undefined,
-        impactoPercentual,
+        impactoPercentual: limitarPercentual(impactoPercentual),
         principalAprendizado: principalAprendizado.trim(),
         linkExterno: linkExterno.trim() || undefined,
         files: uploadedFiles.length > 0 ? uploadedFiles : [],
@@ -185,7 +197,6 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
               <X className="h-5 w-5" />
             </button>
           </div>
-          {/* Progress bar */}
           {!success && (
             <div className="flex gap-2 mt-3">
               {[1, 2, 3].map(step => (
@@ -200,10 +211,8 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
           )}
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto p-6">
           {success ? (
-            /* Tela de Sucesso */
             <div className="text-center py-8 space-y-6">
               <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full">
                 <CheckCircle className="h-12 w-12 text-green-600" />
@@ -233,9 +242,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
               </button>
             </div>
           ) : etapa === 1 ? (
-            /* Etapa 1: O que realizou */
             <div className="space-y-5">
-              {/* Tipo de Evidência */}
               <div>
                 <label className="text-sm font-semibold text-gray-800 block mb-2">
                   Tipo de Evidência <span className="text-red-500">*</span>
@@ -258,7 +265,6 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                 </div>
               </div>
 
-              {/* Data e Carga Horária */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-semibold text-gray-800 block mb-1">Data de Realização</label>
@@ -285,7 +291,6 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                 </div>
               </div>
 
-              {/* O que realizou */}
               <div>
                 <label className="text-sm font-semibold text-gray-800 block mb-1">
                   O que você realizou? <span className="text-red-500">*</span>
@@ -294,7 +299,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                   <p className="text-xs text-amber-800 flex items-start gap-1.5">
                     <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
                     <span>
-                      Descreva detalhadamente o que fez: nome do curso/evento, instituição, conteúdo abordado, atividades realizadas. 
+                      Descreva detalhadamente o que fez: nome do curso/evento, instituição, conteúdo abordado, atividades realizadas.
                       Quanto mais detalhes, melhor será a avaliação.
                     </span>
                   </p>
@@ -309,9 +314,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
               </div>
             </div>
           ) : etapa === 2 ? (
-            /* Etapa 2: Impacto Prático */
             <div className="space-y-5">
-              {/* Como aplicou */}
               <div>
                 <label className="text-sm font-semibold text-gray-800 block mb-1">
                   Como você aplicou na prática? <span className="text-red-500">*</span>
@@ -320,7 +323,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                   <p className="text-xs text-amber-800 flex items-start gap-1.5">
                     <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
                     <span>
-                      Descreva situações reais em que aplicou o aprendizado no seu dia a dia de trabalho. 
+                      Descreva situações reais em que aplicou o aprendizado no seu dia a dia de trabalho.
                       Cite exemplos concretos: reuniões, projetos, interações com a equipe.
                     </span>
                   </p>
@@ -334,14 +337,13 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                 />
               </div>
 
-              {/* Resultado prático */}
               <div>
                 <label className="text-sm font-semibold text-gray-800 block mb-1">Resultado prático observado</label>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
                   <p className="text-xs text-amber-800 flex items-start gap-1.5">
                     <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
                     <span>
-                      Quais mudanças ou melhorias você percebeu após aplicar o aprendizado? 
+                      Quais mudanças ou melhorias você percebeu após aplicar o aprendizado?
                       Pode ser qualitativo (melhor comunicação) ou quantitativo (aumento de X%).
                     </span>
                   </p>
@@ -355,42 +357,50 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                 />
               </div>
 
-              {/* Slider de Impacto */}
               <div>
                 <label className="text-sm font-semibold text-gray-800 block mb-1">
                   Nível de Impacto Prático <span className="text-red-500">*</span>
                 </label>
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`text-2xl font-bold ${impactoFaixa.cor}`}>{impactoPercentual}%</span>
-                    <span className={`text-sm font-semibold ${impactoFaixa.cor}`}>{impactoFaixa.label}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Percentual informado pelo aluno</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={1}
+                          inputMode="numeric"
+                          value={impactoPercentual}
+                          onChange={handleImpactoChange}
+                          onBlur={() => setImpactoPercentual(limitarPercentual(impactoPercentual))}
+                          className="w-24 p-2.5 border border-gray-300 rounded-lg text-center text-xl font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          aria-label="Nível de impacto prático de 0 a 100"
+                        />
+                        <span className={`text-xl font-bold ${impactoFaixa.cor}`}>%</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Digite apenas números de 0 a 100.</p>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <p className={`text-lg font-bold ${impactoFaixa.cor}`}>{impactoPercentual}%</p>
+                      <p className={`text-sm font-semibold ${impactoFaixa.cor}`}>{impactoFaixa.label}</p>
+                    </div>
                   </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={100}
-                    step={5}
-                    value={impactoPercentual}
-                    onChange={e => setImpactoPercentual(Number(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  />
-                  <div className="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>0%</span>
-                    <span>25%</span>
-                    <span>50%</span>
-                    <span>75%</span>
-                    <span>100%</span>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-2 italic">{impactoFaixa.descricao}</p>
-                  <div className="mt-3 bg-blue-50 border border-blue-100 rounded p-2">
-                    <p className="text-xs text-blue-700">
-                      <strong>Importante:</strong> Este é o impacto que <em>você</em> percebe. O administrador fará sua própria avaliação do impacto, que será usada no cálculo do IIP (Índice de Impacto Prático).
+
+                  <p className="text-xs text-gray-600 italic mb-3">{impactoFaixa.descricao}</p>
+
+                  <div className="bg-red-50 border-2 border-red-300 rounded-lg p-3 shadow-sm">
+                    <p className="text-xs text-red-800 flex items-start gap-2 leading-relaxed">
+                      <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-red-600" />
+                      <span>
+                        <strong className="uppercase">Importante:</strong> o Nível de Impacto Prático é o percentual, de 0 a 100, que representa o quanto você percebe que esta atividade impactou sua rotina de trabalho depois que o aprendizado foi aplicado. Considere mudanças reais na sua forma de trabalhar, nos resultados entregues, na produtividade, na qualidade, na comunicação, no relacionamento com a equipe, na autonomia ou na solução de problemas. Este campo é a sua percepção sobre o impacto prático; a validação oficial continuará sendo feita pelo administrador na análise da evidência.
+                      </span>
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Principal Aprendizado */}
               <div>
                 <label className="text-sm font-semibold text-gray-800 block mb-1">
                   Principal Aprendizado <span className="text-red-500">*</span>
@@ -405,9 +415,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
               </div>
             </div>
           ) : (
-            /* Etapa 3: Anexos e Confirmação */
             <div className="space-y-5">
-              {/* Upload de Arquivos */}
               <div>
                 <label className="text-sm font-semibold text-gray-800 block mb-2">
                   Anexar Comprovantes <span className="text-gray-400 font-normal">(opcional)</span>
@@ -416,13 +424,12 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                   <p className="text-xs text-amber-800 flex items-start gap-1.5">
                     <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
                     <span>
-                      Anexe certificados, relatórios, prints, fotos ou qualquer documento que comprove a realização. 
+                      Anexe certificados, relatórios, prints, fotos ou qualquer documento que comprove a realização.
                       Formatos aceitos: PDF, imagens, documentos. Máximo 10MB por arquivo.
                     </span>
                   </p>
                 </div>
 
-                {/* Lista de arquivos */}
                 {uploadedFiles.length > 0 && (
                   <div className="space-y-2 mb-3">
                     {uploadedFiles.map((file, idx) => (
@@ -448,7 +455,6 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                 </label>
               </div>
 
-              {/* Link Externo */}
               <div>
                 <label className="text-sm font-semibold text-gray-800 block mb-1">
                   Link Externo <span className="text-gray-400 font-normal">(opcional)</span>
@@ -466,7 +472,6 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
                 <p className="text-xs text-gray-400 mt-0.5">Link para certificado online, portfólio, vídeo, etc.</p>
               </div>
 
-              {/* Resumo */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-1.5">
                   <Sparkles className="h-4 w-4 text-blue-500" />
@@ -507,7 +512,6 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, macro
           )}
         </div>
 
-        {/* Footer */}
         {!success && (
           <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0 bg-gray-50">
             <div>
