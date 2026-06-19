@@ -55,7 +55,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
   const [oQueRealizou, setOQueRealizou] = useState('');
   const [comoAplicou, setComoAplicou] = useState('');
   const [resultadoPratico, setResultadoPratico] = useState('');
-  const [impactoPercentual, setImpactoPercentual] = useState(50);
+  const [impactoPercentual, setImpactoPercentual] = useState<number | ''>('');
   const [principalAprendizado, setPrincipalAprendizado] = useState('');
   const [linkExterno, setLinkExterno] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -75,7 +75,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
     setOQueRealizou('');
     setComoAplicou('');
     setResultadoPratico('');
-    setImpactoPercentual(50);
+    setImpactoPercentual('');
     setPrincipalAprendizado('');
     setLinkExterno('');
     setUploadedFiles([]);
@@ -92,7 +92,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
   const handleImpactoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const valorDigitado = e.target.value;
     if (valorDigitado === '') {
-      setImpactoPercentual(0);
+      setImpactoPercentual('');
       return;
     }
     setImpactoPercentual(limitarPercentual(Number(valorDigitado)));
@@ -143,6 +143,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
   const handleSubmit = async () => {
     if (!oQueRealizou.trim()) { toast.error('Descreva o que realizou'); return; }
     if (!comoAplicou.trim()) { toast.error('Descreva como aplicou na prática'); return; }
+    if (impactoPercentual === '') { toast.error('Informe o nível de impacto prático de 0 a 100'); return; }
     if (!principalAprendizado.trim()) { toast.error('Descreva seu principal aprendizado'); return; }
 
     setSubmitting(true);
@@ -155,7 +156,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
         oQueRealizou: oQueRealizou.trim(),
         comoAplicou: comoAplicou.trim(),
         resultadoPratico: resultadoPratico.trim() || undefined,
-        impactoPercentual: limitarPercentual(impactoPercentual),
+        impactoPercentual: limitarPercentual(Number(impactoPercentual)),
         principalAprendizado: principalAprendizado.trim(),
         linkExterno: linkExterno.trim() || undefined,
         files: uploadedFiles.length > 0 ? uploadedFiles : [],
@@ -172,11 +173,11 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
   };
 
   const canAdvanceEtapa1 = tipoEvidencia !== '' && oQueRealizou.trim().length > 0;
-  const canAdvanceEtapa2 = comoAplicou.trim().length > 0 && principalAprendizado.trim().length > 0;
+  const canAdvanceEtapa2 = comoAplicou.trim().length > 0 && impactoPercentual !== '' && principalAprendizado.trim().length > 0;
 
   if (!open) return null;
 
-  const impactoFaixa = getImpactoFaixa(impactoPercentual);
+  const impactoFaixa = getImpactoFaixa(impactoPercentual === '' ? 0 : impactoPercentual);
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
@@ -374,21 +375,26 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
                           inputMode="numeric"
                           value={impactoPercentual}
                           onChange={handleImpactoChange}
-                          onBlur={() => setImpactoPercentual(limitarPercentual(impactoPercentual))}
+                          onBlur={() => {
+                            if (impactoPercentual !== '') setImpactoPercentual(limitarPercentual(impactoPercentual));
+                          }}
+                          placeholder=""
                           className="w-24 p-2.5 border border-gray-300 rounded-lg text-center text-xl font-bold focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                           aria-label="Nível de impacto prático de 0 a 100"
                         />
-                        <span className={`text-xl font-bold ${impactoFaixa.cor}`}>%</span>
+                        <span className={`text-xl font-bold ${impactoPercentual === '' ? 'text-gray-400' : impactoFaixa.cor}`}>%</span>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">Digite apenas números de 0 a 100.</p>
                     </div>
                     <div className="text-left sm:text-right">
-                      <p className={`text-lg font-bold ${impactoFaixa.cor}`}>{impactoPercentual}%</p>
-                      <p className={`text-sm font-semibold ${impactoFaixa.cor}`}>{impactoFaixa.label}</p>
+                      <p className={`text-lg font-bold ${impactoPercentual === '' ? 'text-gray-400' : impactoFaixa.cor}`}>{impactoPercentual === '' ? '--%' : `${impactoPercentual}%`}</p>
+                      <p className={`text-sm font-semibold ${impactoPercentual === '' ? 'text-gray-400' : impactoFaixa.cor}`}>{impactoPercentual === '' ? 'Aguardando preenchimento' : impactoFaixa.label}</p>
                     </div>
                   </div>
 
-                  <p className="text-xs text-gray-600 italic mb-3">{impactoFaixa.descricao}</p>
+                  {impactoPercentual !== '' && (
+                    <p className="text-xs text-gray-600 italic mb-3">{impactoFaixa.descricao}</p>
+                  )}
 
                   <div className="bg-red-50 border-2 border-red-300 rounded-lg p-3 shadow-sm">
                     <p className="text-xs text-red-800 flex items-start gap-2 leading-relaxed">
@@ -496,7 +502,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
                   )}
                   <div className="flex gap-2">
                     <span className="text-gray-500 w-28 flex-shrink-0">Impacto:</span>
-                    <span className={`font-bold ${impactoFaixa.cor}`}>{impactoPercentual}% ({impactoFaixa.label})</span>
+                    <span className={`font-bold ${impactoPercentual === '' ? 'text-gray-400' : impactoFaixa.cor}`}>{impactoPercentual === '' ? 'Não informado' : `${impactoPercentual}% (${impactoFaixa.label})`}</span>
                   </div>
                   <div className="flex gap-2">
                     <span className="text-gray-500 w-28 flex-shrink-0">Arquivos:</span>
