@@ -1,4 +1,3 @@
-import { Resvg } from "@resvg/resvg-js";
 import { storagePut } from "../storage";
 
 interface CertificateData {
@@ -47,8 +46,11 @@ function svgLines(lines: string[], startY: number, size: number, lineHeight: num
 }
 
 /**
- * Gera um card de conquista como PNG.
- * Evita imagem externa, emojis e CSS em classes, pois esses pontos podem falhar na conversão SVG > PNG.
+ * Gera um card de conquista como SVG.
+ *
+ * Motivo: no Railway, a conversão SVG > PNG via renderizador do servidor está
+ * preservando fundo/formas, mas não está renderizando texto. Por isso, nesta versão
+ * de teste, o servidor entrega o SVG diretamente para o navegador renderizar os textos.
  */
 export async function generateCertificate(data: CertificateData): Promise<{ url: string; key: string }> {
   const WIDTH = 1080;
@@ -114,24 +116,10 @@ export async function generateCertificate(data: CertificateData): Promise<{ url:
   ${svgText("#DesenvolvimentoProfissional  #PDI  #EcoDoBem  #EVOLUIR", 1000, 18, "#fb923c", "700")}
 </svg>`;
 
-  const resvg = new Resvg(svg, {
-    fitTo: {
-      mode: "width",
-      value: WIDTH,
-    },
-    font: {
-      loadSystemFonts: true,
-      defaultFontFamily: "Arial",
-    },
-  });
-
-  const pngData = resvg.render();
-  const pngBuffer = pngData.asPng();
-
   const timestamp = Date.now();
   const randomSuffix = Math.random().toString(36).substring(2, 8);
-  const fileKey = `certificados/conquista-${timestamp}-${randomSuffix}.png`;
+  const fileKey = `certificados/conquista-${timestamp}-${randomSuffix}.svg`;
 
-  const { url, key } = await storagePut(fileKey, Buffer.from(pngBuffer), "image/png");
+  const { url, key } = await storagePut(fileKey, Buffer.from(svg, "utf-8"), "image/svg+xml");
   return { url, key };
 }
