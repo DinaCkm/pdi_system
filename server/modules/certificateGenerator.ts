@@ -1,22 +1,17 @@
-import { Resvg } from "@resvg/resvg-js";
 import { storagePut } from "../storage";
 
-// Logo URL
-const LOGO_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663192322263/Uksxtg83ZJDkZPJL3fCmwT/eco-do-bem-logo-cropped_564da75a.png";
+const LOGO_URL = "https://iili.io/B7NgXwB.png";
 
 interface CertificateData {
   nomeColaborador: string;
   tituloAcao: string;
   competencia?: string;
-  dataConclusao: string; // formato dd/mm/yyyy
+  dataConclusao: string;
   pdiTitulo?: string;
 }
 
-/**
- * Quebra texto em múltiplas linhas baseado em caracteres por linha estimados
- */
-function wrapTextSVG(text: string, maxCharsPerLine: number): string[] {
-  const words = text.split(" ");
+function wrapTextSVG(text: string, maxCharsPerLine: number, maxLines = 3): string[] {
+  const words = (text || "").split(" ").filter(Boolean);
   const lines: string[] = [];
   let currentLine = "";
 
@@ -25,19 +20,18 @@ function wrapTextSVG(text: string, maxCharsPerLine: number): string[] {
     if (testLine.length > maxCharsPerLine && currentLine) {
       lines.push(currentLine);
       currentLine = word;
+      if (lines.length >= maxLines) break;
     } else {
       currentLine = testLine;
     }
   }
-  if (currentLine) lines.push(currentLine);
-  return lines.slice(0, 3); // Máximo 3 linhas
+
+  if (currentLine && lines.length < maxLines) lines.push(currentLine);
+  return lines;
 }
 
-/**
- * Escapa caracteres especiais para SVG
- */
 function escapeXml(str: string): string {
-  return str
+  return (str || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -45,178 +39,145 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
-/**
- * Gera um card de conquista motivacional como imagem PNG
- * usando SVG + resvg-js (sem dependências nativas como canvas).
- */
-export async function generateCertificate(data: CertificateData): Promise<{ url: string; key: string }> {
+function svgText(text: string, y: number, size: number, color: string, weight = "700") {
+  return `<text x="540" y="${y}" text-anchor="middle" fill="${color}" font-size="${size}" font-weight="${weight}" font-family="Arial, Helvetica, sans-serif">${escapeXml(text)}</text>`;
+}
+
+function svgLines(lines: string[], startY: number, size: number, lineHeight: number, color: string, weight = "700") {
+  return lines.map((line, idx) => svgText(line, startY + idx * lineHeight, size, color, weight)).join("\n");
+}
+
+function buildCertificateSvg(data: CertificateData): string {
   const WIDTH = 1080;
   const HEIGHT = 1080;
 
-  const nomeDisplay = data.nomeColaborador.length > 30
-    ? data.nomeColaborador.substring(0, 28) + "..."
-    : data.nomeColaborador;
+  const nomeDisplay = data.nomeColaborador?.length > 34
+    ? data.nomeColaborador.substring(0, 32) + "..."
+    : data.nomeColaborador || "Colaborador";
 
-  const tituloLines = wrapTextSVG(`"${data.tituloAcao}"`, 40);
+  const tituloLines = wrapTextSVG(data.tituloAcao || "Ação concluída", 38, 3);
+  const pdiLines = data.pdiTitulo ? wrapTextSVG(data.pdiTitulo, 48, 2) : [];
   const competenciaDisplay = data.competencia
-    ? (data.competencia.length > 50 ? data.competencia.substring(0, 48) + "..." : data.competencia)
+    ? (data.competencia.length > 58 ? data.competencia.substring(0, 56) + "..." : data.competencia)
     : "";
 
-  // Gerar linhas de título da ação
-  let tituloSVG = "";
-  let tituloY = 555;
-  for (const line of tituloLines) {
-    tituloSVG += `<text x="540" y="${tituloY}" text-anchor="middle" fill="#FFFFFF" font-size="24" font-weight="bold" font-family="Arial, Helvetica, sans-serif">${escapeXml(line)}</text>\n`;
-    tituloY += 34;
-  }
-
-  // Competência (posição dinâmica baseada nas linhas do título)
-  const compY = tituloY + 20;
-  const competenciaSVG = competenciaDisplay
-    ? `<text x="540" y="${compY}" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="16" font-family="Arial, Helvetica, sans-serif">Compet&#234;ncia: ${escapeXml(competenciaDisplay)}</text>`
-    : "";
-
-  // Data de conclusão
-  const dataY = competenciaDisplay ? compY + 30 : compY + 5;
-  const dataSVG = `<text x="540" y="${dataY}" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="14" font-family="Arial, Helvetica, sans-serif">Conclu&#237;da em ${escapeXml(data.dataConclusao)}</text>`;
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <defs>
-    <!-- Gradiente de fundo -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0f172a"/>
-      <stop offset="30%" stop-color="#1e1b4b"/>
-      <stop offset="60%" stop-color="#312e81"/>
+      <stop offset="45%" stop-color="#312e81"/>
       <stop offset="100%" stop-color="#1e3a5f"/>
     </linearGradient>
-    <!-- Gradiente do badge -->
     <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#f97316"/>
       <stop offset="100%" stop-color="#ea580c"/>
     </linearGradient>
-    <!-- Gradiente da linha separadora inferior -->
-    <linearGradient id="sepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="rgba(249,115,22,0)" />
-      <stop offset="30%" stop-color="rgba(249,115,22,0.4)" />
-      <stop offset="70%" stop-color="rgba(99,102,241,0.4)" />
-      <stop offset="100%" stop-color="rgba(99,102,241,0)" />
-    </linearGradient>
-    <!-- Gradiente da linha decorativa -->
-    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="rgba(249,115,22,0)" />
-      <stop offset="50%" stop-color="rgba(249,115,22,0.6)" />
-      <stop offset="100%" stop-color="rgba(249,115,22,0)" />
-    </linearGradient>
-    <!-- Gradiente da linha abaixo do nome -->
-    <linearGradient id="lineGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="rgba(255,255,255,0)" />
-      <stop offset="50%" stop-color="rgba(255,255,255,0.3)" />
-      <stop offset="100%" stop-color="rgba(255,255,255,0)" />
-    </linearGradient>
-    <!-- Brilho circular superior direito -->
-    <radialGradient id="glow1" cx="83%" cy="11%" r="23%">
-      <stop offset="0%" stop-color="rgba(99,102,241,0.25)"/>
-      <stop offset="100%" stop-color="rgba(99,102,241,0)"/>
+    <radialGradient id="glow1" cx="82%" cy="12%" r="30%">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0"/>
     </radialGradient>
-    <!-- Brilho circular inferior esquerdo -->
-    <radialGradient id="glow2" cx="14%" cy="83%" r="19%">
-      <stop offset="0%" stop-color="rgba(249,115,22,0.2)"/>
-      <stop offset="100%" stop-color="rgba(249,115,22,0)"/>
-    </radialGradient>
-    <!-- Brilho central sutil -->
-    <radialGradient id="glow3" cx="50%" cy="46%" r="32%">
-      <stop offset="0%" stop-color="rgba(139,92,246,0.08)"/>
-      <stop offset="100%" stop-color="rgba(139,92,246,0)"/>
+    <radialGradient id="glow2" cx="16%" cy="82%" r="28%">
+      <stop offset="0%" stop-color="#f97316" stop-opacity="0.24"/>
+      <stop offset="100%" stop-color="#f97316" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
-  <!-- Fundo com gradiente -->
   <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#bgGrad)"/>
-
-  <!-- Efeitos de brilho -->
   <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#glow1)"/>
   <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#glow2)"/>
-  <rect width="${WIDTH}" height="${HEIGHT}" fill="url(#glow3)"/>
+  <rect x="34" y="34" width="1012" height="1012" rx="28" ry="28" fill="none" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="2"/>
 
-  <!-- Borda sutil -->
-  <rect x="30" y="30" width="${WIDTH - 60}" height="${HEIGHT - 60}" rx="20" ry="20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <rect x="330" y="72" width="420" height="62" rx="31" ry="31" fill="url(#badgeGrad)"/>
+  ${svgText("DESAFIO CONCLUÍDO", 112, 28, "#FFFFFF", "800")}
 
-  <!-- Emojis decorativos -->
-  <text x="100" y="130" font-size="48" font-family="Arial, sans-serif" text-anchor="middle">&#x1F680;</text>
-  <text x="${WIDTH - 100}" y="180" font-size="48" font-family="Arial, sans-serif" text-anchor="middle">&#x2B50;</text>
-  <text x="160" y="${HEIGHT - 150}" font-size="48" font-family="Arial, sans-serif" text-anchor="middle">&#x2728;</text>
-  <text x="${WIDTH - 140}" y="${HEIGHT - 130}" font-size="48" font-family="Arial, sans-serif" text-anchor="middle">&#x1F3AF;</text>
+  <rect x="342" y="165" width="396" height="130" rx="20" ry="20" fill="#FFFFFF" fill-opacity="0.96"/>
+  <image href="${LOGO_URL}" x="390" y="182" width="300" height="96" preserveAspectRatio="xMidYMid meet"/>
 
-  <!-- Badge "DESAFIO CONCLUÍDO" -->
-  <rect x="350" y="80" width="380" height="50" rx="25" ry="25" fill="url(#badgeGrad)"/>
-  <text x="540" y="113" text-anchor="middle" fill="#FFFFFF" font-size="22" font-weight="bold" font-family="Arial, Helvetica, sans-serif">&#x1F3C6;  DESAFIO CONCLU&#205;DO!</text>
+  <line x1="310" y1="338" x2="770" y2="338" stroke="#f97316" stroke-opacity="0.75" stroke-width="3"/>
 
-  <!-- Logo com fundo branco arredondado -->
-  <rect x="430" y="155" width="220" height="95" rx="12" ry="12" fill="rgba(255,255,255,0.95)"/>
-  <image href="${LOGO_URL}" x="445" y="165" width="190" height="75" preserveAspectRatio="xMidYMid meet"/>
+  ${svgText("Mais um passo na jornada de", 386, 25, "#cbd5e1", "500")}
+  ${svgText(nomeDisplay, 453, 46, "#FFFFFF", "800")}
+  ${pdiLines.length ? svgLines(pdiLines, 500, 22, 30, "#cbd5e1", "600") : ""}
 
-  <!-- Linha decorativa -->
-  <line x1="390" y1="285" x2="690" y2="285" stroke="url(#lineGrad)" stroke-width="1.5"/>
+  <rect x="86" y="560" width="908" height="245" rx="26" ry="26" fill="#FFFFFF" fill-opacity="0.10" stroke="#FFFFFF" stroke-opacity="0.20" stroke-width="2"/>
+  ${svgText("AÇÃO SUPERADA", 610, 20, "#34d399", "800")}
+  ${svgLines(tituloLines, 667, 34, 44, "#FFFFFF", "800")}
+  ${competenciaDisplay ? svgText(`Competência: ${competenciaDisplay}`, 765, 22, "#cbd5e1", "500") : ""}
 
-  <!-- "Mais um passo na jornada de" -->
-  <text x="540" y="325" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="20" font-family="Arial, Helvetica, sans-serif">Mais um passo na jornada de</text>
-
-  <!-- Nome do colaborador -->
-  <text x="540" y="375" text-anchor="middle" fill="#FFFFFF" font-size="38" font-weight="bold" font-family="Arial, Helvetica, sans-serif">${escapeXml(nomeDisplay)}</text>
-
-  <!-- Linha decorativa abaixo do nome -->
-  <line x1="420" y1="392" x2="660" y2="392" stroke="url(#lineGrad2)" stroke-width="1"/>
-
-  <!-- Card da ação (Glassmorphism) -->
-  <rect x="70" y="420" width="${WIDTH - 140}" height="240" rx="16" ry="16" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
-
-  <!-- Label "AÇÃO SUPERADA" -->
-  <text x="540" y="460" text-anchor="middle" fill="#34d399" font-size="14" font-weight="bold" font-family="Arial, Helvetica, sans-serif">&#x2705;  A&#199;&#195;O SUPERADA</text>
-
-  <!-- Título da ação (dinâmico) -->
-  ${tituloSVG}
-
-  <!-- Competência -->
-  ${competenciaSVG}
-
-  <!-- Data -->
-  ${dataSVG}
-
-  <!-- Frase motivacional -->
-  <text x="540" y="720" text-anchor="middle" fill="#FFFFFF" font-size="20" font-style="italic" font-family="Arial, Helvetica, sans-serif">"Cada desafio superado &#233; combust&#237;vel</text>
-  <text x="540" y="750" text-anchor="middle" fill="#FFFFFF" font-size="20" font-style="italic" font-family="Arial, Helvetica, sans-serif">para a sua carreira. Continue evoluindo!"</text>
-
-  <!-- Linha separadora inferior -->
-  <line x1="100" y1="800" x2="${WIDTH - 100}" y2="800" stroke="url(#sepGrad)" stroke-width="1.5"/>
-
-  <!-- Programa EVOLUIR -->
-  <text x="540" y="840" text-anchor="middle" fill="#f97316" font-size="18" font-weight="bold" font-family="Arial, Helvetica, sans-serif">PROGRAMA EVOLUIR</text>
-  <text x="540" y="868" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="15" font-family="Arial, Helvetica, sans-serif">Ecossistema de Desenvolvimento do B.E.M</text>
-
-  <!-- Menções -->
-  <text x="540" y="900" text-anchor="middle" fill="rgba(255,255,255,0.45)" font-size="14" font-family="Arial, Helvetica, sans-serif">@compet&#234;nciasdobem  &#8226;  @ecobem</text>
-
-  <!-- Hashtags -->
-  <text x="540" y="930" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="13" font-family="Arial, Helvetica, sans-serif">#DesenvolvimentoProfissional  #PDI  #EcoDoBem  #EVOLUIR</text>
-
+  ${svgText(`Concluída em ${data.dataConclusao}`, 848, 22, "#94a3b8", "500")}
+  ${svgText("Cada desafio superado impulsiona", 905, 27, "#FFFFFF", "600")}
+  ${svgText("a sua carreira. Continue evoluindo!", 942, 27, "#FFFFFF", "600")}
+  ${svgText("#DesenvolvimentoProfissional  #PDI  #EcoDoBem  #EVOLUIR", 1000, 18, "#fb923c", "700")}
 </svg>`;
+}
 
-  // Converter SVG para PNG usando resvg-js
-  const resvg = new Resvg(svg, {
-    fitTo: {
-      mode: "width",
-      value: WIDTH,
-    },
-  });
+function buildDownloadPage(svg: string, fileName: string): string {
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Card de Conquista</title>
+  <style>
+    body { margin: 0; min-height: 100vh; background: #0b1020; color: white; font-family: Arial, Helvetica, sans-serif; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; }
+    main { width: min(760px, 100%); text-align: center; }
+    .preview { display: block; width: min(520px, 92vw); height: auto; margin: 0 auto 18px; border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+    button { border: 0; border-radius: 12px; padding: 14px 22px; color: #fff; font-weight: 700; background: linear-gradient(90deg, #4f46e5, #9333ea); cursor: pointer; font-size: 15px; }
+    p { color: #cbd5e1; font-size: 13px; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <img id="preview" class="preview" alt="Card de Conquista" />
+    <button id="downloadBtn" type="button">Baixar card em PNG</button>
+    <p>Se o download não começar automaticamente, clique no botão acima.</p>
+  </main>
+  <script>
+    const svgText = ${JSON.stringify(svg)};
+    const fileName = ${JSON.stringify(fileName)};
+    const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    const preview = document.getElementById("preview");
+    preview.src = svgUrl;
 
-  const pngData = resvg.render();
-  const pngBuffer = pngData.asPng();
+    function downloadPng() {
+      const image = new Image();
+      image.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1080;
+        canvas.height = 1080;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(image, 0, 0, 1080, 1080);
+        canvas.toBlob(function (blob) {
+          if (!blob) return;
+          const pngUrl = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = pngUrl;
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(pngUrl), 1000);
+        }, "image/png");
+      };
+      image.src = svgUrl;
+    }
 
-  // Upload para S3
+    document.getElementById("downloadBtn").addEventListener("click", downloadPng);
+    setTimeout(downloadPng, 500);
+  </script>
+</body>
+</html>`;
+}
+
+export async function generateCertificate(data: CertificateData): Promise<{ url: string; key: string }> {
+  const svg = buildCertificateSvg(data);
   const timestamp = Date.now();
   const randomSuffix = Math.random().toString(36).substring(2, 8);
-  const fileKey = `certificados/conquista-${timestamp}-${randomSuffix}.png`;
+  const fileName = `card-conquista-${timestamp}-${randomSuffix}.png`;
+  const fileKey = `certificados/conquista-${timestamp}-${randomSuffix}.html`;
+  const html = buildDownloadPage(svg, fileName);
 
-  const { url, key } = await storagePut(fileKey, Buffer.from(pngBuffer), "image/png");
+  const { url, key } = await storagePut(fileKey, Buffer.from(html, "utf-8"), "text/html; charset=utf-8");
   return { url, key };
 }
