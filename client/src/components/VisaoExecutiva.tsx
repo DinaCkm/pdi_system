@@ -31,7 +31,9 @@ import {
   Info,
   HelpCircle,
   Send,
-  Loader2
+  Loader2,
+  FileDown,
+  ImageDown
 } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { 
@@ -67,7 +69,95 @@ const InfoTooltip = ({ title, content }: { title: string, content: string }) => 
 export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }) => {
   const [isOpen, setIsOpen] = React.useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const dashboardRef = useRef<HTMLDivElement>(null);
+
+  const handleBaixarPDF = async () => {
+    if (!dashboardRef.current) return;
+    setIsDownloading(true);
+    try {
+      // Capturar o painel exatamente como está na tela, em alta resolução
+      const dataUrl = await toPng(dashboardRef.current, {
+        cacheBust: true,
+        backgroundColor: "#f8fafc",
+        pixelRatio: 2,
+      });
+
+      // Descobrir dimensões reais da imagem capturada
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise<void>((resolve) => { img.onload = () => resolve(); });
+
+      const imgWidthPx = img.naturalWidth;
+      const imgHeightPx = img.naturalHeight;
+
+      // Converter px → mm (96 dpi: 1mm = 3.7795px; com pixelRatio=2 → 7.559px/mm)
+      const PX_PER_MM = 7.559;
+      const widthMm  = Math.round(imgWidthPx  / PX_PER_MM);
+      const heightMm = Math.round(imgHeightPx / PX_PER_MM);
+
+      const nomeArquivo = `visao-executiva-pdi-${new Date().toISOString().slice(0, 10)}`;
+
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        // Fallback se pop-ups bloqueados: baixar como PNG
+        const link = document.createElement("a");
+        link.download = `${nomeArquivo}.png`;
+        link.href = dataUrl;
+        link.click();
+        setIsDownloading(false);
+        return;
+      }
+
+      // Página com o tamanho exato da imagem → sem cortes, sem margens, fiel ao visual
+      printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>${nomeArquivo}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: ${widthMm}mm;
+      height: ${heightMm}mm;
+      background: #f8fafc;
+      overflow: hidden;
+    }
+    img {
+      width: ${widthMm}mm;
+      height: ${heightMm}mm;
+      display: block;
+      object-fit: contain;
+    }
+    @media print {
+      @page {
+        size: ${widthMm}mm ${heightMm}mm;
+        margin: 0;
+      }
+      html, body { width: ${widthMm}mm; height: ${heightMm}mm; }
+    }
+  </style>
+</head>
+<body>
+  <img src="${dataUrl}" alt="Visão Executiva PDI"/>
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+        window.onafterprint = function() { window.close(); };
+      }, 600);
+    };
+  <\/script>
+</body>
+</html>`);
+      printWindow.document.close();
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
+      alert("Erro ao gerar o relatório. Tente novamente.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
   
   const { data, isLoading, error } = trpc.visaoExecutiva.getVisaoExecutivaCompleta.useQuery(
     { departamentoId },
@@ -183,10 +273,12 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
     <div className="space-y-8 mb-12">
       {/* Header com Toggle - Estilo Premium */}
       <div 
-        onClick={() => setIsOpen(!isOpen)}
-        className="group w-full bg-slate-900 text-white p-5 rounded-2xl shadow-xl flex items-center justify-between cursor-pointer hover:bg-slate-800 transition-all duration-300 border border-slate-700/50"
+        className="group w-full bg-slate-900 text-white p-5 rounded-2xl shadow-xl flex items-center justify-between border border-slate-700/50"
       >
-        <div className="flex items-center gap-4">
+        <div
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-4 cursor-pointer flex-1"
+        >
           <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
             <BarChart3 className="w-6 h-6 text-white" />
           </div>
@@ -195,9 +287,43 @@ export const VisaoExecutiva: React.FC<VisaoExecutivaProps> = ({ departamentoId }
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1.5">Painel de Gestão Estratégica do PDI</span>
           </div>
         </div>
-        <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-full border border-white/10 group-hover:bg-white/10 transition-colors">
-          <span className="text-[11px] font-black uppercase tracking-wider">{isOpen ? "Recolher Painel" : "Expandir Painel"}</span>
-          {isOpen ? <ChevronUp className="w-4 h-4 text-indigo-400" /> : <ChevronDown className="w-4 h-4 text-indigo-400" />}
+        <div className="flex items-center gap-3">
+          {/* Botão Baixar PDF */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isOpen) setIsOpen(true);
+              setTimeout(() => handleBaixarPDF(), 300);
+            }}
+            disabled={isDownloading}
+            title="Baixar Visão Executiva como PDF"
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-full font-black text-[11px] uppercase tracking-wider transition-all duration-300 border no-print",
+              isDownloading
+                ? "bg-white/5 text-slate-400 cursor-not-allowed border-white/5"
+                : "bg-emerald-600 text-white hover:bg-emerald-500 hover:scale-105 active:scale-95 border-emerald-500/50 shadow-lg shadow-emerald-900/30"
+            )}
+          >
+            {isDownloading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Gerando...</span>
+              </>
+            ) : (
+              <>
+                <FileDown className="w-4 h-4" />
+                <span>Baixar PDF</span>
+              </>
+            )}
+          </button>
+          {/* Toggle Recolher/Expandir */}
+          <div
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-full border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
+          >
+            <span className="text-[11px] font-black uppercase tracking-wider">{isOpen ? "Recolher Painel" : "Expandir Painel"}</span>
+            {isOpen ? <ChevronUp className="w-4 h-4 text-indigo-400" /> : <ChevronDown className="w-4 h-4 text-indigo-400" />}
+          </div>
         </div>
       </div>
 
