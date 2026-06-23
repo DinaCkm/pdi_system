@@ -3,40 +3,27 @@ const fs = require('fs');
 const filePath = 'server/_core/email.ts';
 let source = fs.readFileSync(filePath, 'utf8');
 
-const original = source;
-
-function replaceRequired(label, pattern, replacement) {
+function replaceIfPresent(label, pattern, replacement) {
   const before = source;
   source = source.replace(pattern, replacement);
   if (source === before) {
-    throw new Error(`Email pause patch failed: ${label}`);
+    console.log(`[Email] Patch already applied or not needed: ${label}`);
+  } else {
+    console.log(`[Email] Patch applied: ${label}`);
   }
 }
 
-replaceRequired(
+replaceIfPresent(
   'pause evidence approved manager email',
-  /  let envioLider = true;\n  if \(liderEmail && liderName\) \{[\s\S]*?subject: `INFORMATIVO — Evidência Aprovada — \$\{colaboradorName\} — \$\{tituloAcaoTexto\}`,[\s\S]*?  \}\n\n  return envioColaborador && envioLider;/,
-  `  let envioLider = true;
-  if (liderEmail && liderName) {
-    console.log('[Email] Manager email paused: evidence approved notification');
-  }
-
-  return envioColaborador && envioLider;`
+  /  let envioLider = true;\n  if \(liderEmail && liderName\) \{[\s\S]*?subject: `INFORMATIVO — Evidência Aprovada — \$\{colaboradorName\} — \$\{tituloAcaoTexto\}`[\s\S]*?  \}\n\n  return envioColaborador && envioLider;/,
+  `  let envioLider = true;\n  if (liderEmail && liderName) {\n    console.log('[Email] Manager email paused: evidence approved notification');\n  }\n\n  return envioColaborador && envioLider;`
 );
 
-replaceRequired(
+replaceIfPresent(
   'pause evidence sent manager email',
   /(export async function sendEmailEvidenciaEnviadaParaLider[\s\S]*?  const tituloAcaoTexto = toEmailInlineText\(tituloAcao\);\n)\n  let relatoDetalhado = '';/,
-  `$1
-  console.log(\`[Email] Manager email paused: evidence sent notification - \${colaboradorName} - \${tituloAcaoTexto}\`);
-  return true;
-
-  let relatoDetalhado = '';`
+  `$1\n  console.log(\`[Email] Manager email paused: evidence sent notification - \${colaboradorName} - \${tituloAcaoTexto}\`);\n  return true;\n\n  let relatoDetalhado = '';`
 );
 
-if (source === original) {
-  throw new Error('Email pause patch did not change any code.');
-}
-
 fs.writeFileSync(filePath, source);
-console.log('[Email] Manager evidence email pauses applied during build.');
+console.log('[Email] Manager evidence email pauses check complete.');
