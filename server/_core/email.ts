@@ -995,32 +995,13 @@ ${ASSINATURA}
 
   let envioLider = true;
   if (liderEmail && liderName) {
-    const bodyLider = `
-Prezado(a) ${liderName},
-
-Gostaríamos de informar que foi incluído o Relatório de Performance no PDI "${tituloPdi}" do(a) colaborador(a) ${colaboradorName}.
-
-Acesse o link https://pdi.ecodobem.com para ter acesso.
-
-${AVISO_NAO_RESPONDA}
-${ASSINATURA}
-    `.trim();
-
-    envioLider = await sendEmail({
-      to: liderEmail,
-      subject: `INFORMATIVO — Relatório de Performance Incluído no PDI — ${colaboradorName} — ${tituloPdi}`,
-      body: bodyLider,
-    });
+    console.log('[Email] Manager email paused: evidence approved notification');
   }
 
   return envioColaborador && envioLider;
 }
 
 
-/**
- * Envia e-mail de parabéns ao empregado quando sua evidência é aprovada pelo administrador.
- * Inclui incentivo para publicar a conquista no LinkedIn.
- */
 export async function sendEmailParabensEvidenciaAprovada(params: {
   colaboradorEmail: string;
   colaboradorName: string;
@@ -1029,7 +1010,15 @@ export async function sendEmailParabensEvidenciaAprovada(params: {
   liderEmail?: string;
   liderName?: string;
 }): Promise<boolean> {
-  const { colaboradorEmail, colaboradorName, tituloAcao, tituloPdi, liderEmail, liderName } = params;
+  const {
+    colaboradorEmail,
+    colaboradorName,
+    tituloAcao,
+    tituloPdi,
+    liderEmail,
+    liderName,
+  } = params;
+
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
 
   const bodyColaborador = `
@@ -1041,45 +1030,44 @@ A evidência da ação "${tituloAcaoTexto}" do seu PDI "${tituloPdi}" foi aprova
 
 Cada meta alcançada é um passo a mais na construção da sua trajetória profissional. Continue com essa dedicação e comprometimento!
 
-💼 PUBLIQUE SUA CONQUISTA NO LINKEDIN!
-
-O LinkedIn é a vitrine dos profissionais de alta performance. Compartilhe essa conquista com a sua rede! Mostre ao mercado que você investe no seu desenvolvimento contínuo e que está sempre evoluindo.
-
-Dica: Ao publicar, mencione a competência desenvolvida e como ela contribui para o seu crescimento profissional. Profissionais que compartilham suas conquistas no LinkedIn têm até 3x mais visibilidade para novas oportunidades.
-
-👉 Acesse agora: https://www.linkedin.com
-
-Continue evoluindo! 🚀
-
 ${AVISO_NAO_RESPONDA}
 ${ASSINATURA}
   `.trim();
 
+  const extraHtmlColaborador = [
+    buildNoticeBox(
+      "Parabéns",
+      "Sua evidência foi aprovada e mais uma etapa do seu desenvolvimento foi concluída com sucesso."
+    ),
+  ].join("");
+
+  const htmlColaborador = buildStandardNotificationEmail({
+    preheader: `Sua evidência foi aprovada.`,
+    title: "Parabéns! Sua evidência foi aprovada",
+    greeting: `Prezado(a) ${colaboradorName},`,
+    intro:
+      "A evidência enviada foi aprovada e agora consta como mais uma etapa concluída em seu Plano de Desenvolvimento Individual.",
+    dataItems: [
+      { label: "Ação", value: tituloAcaoTexto },
+      { label: "PDI", value: tituloPdi },
+      { label: "Status", value: "Evidência aprovada" },
+    ],
+    extraHtml: extraHtmlColaborador,
+    ctaLabel: "Ver no sistema",
+    ctaUrl: getSystemUrl(),
+    footerNote: "Mensagem enviada automaticamente pela plataforma.",
+  });
+
   const envioColaborador = await sendEmail({
     to: colaboradorEmail,
-    subject: `🎉 PARABÉNS — Evidência Aprovada — ${tituloAcaoTexto}`,
+    subject: "Parabéns! | Sua evidência foi aprovada",
     body: bodyColaborador,
+    html: htmlColaborador,
   });
 
   let envioLider = true;
-  if (liderEmail && liderName) {
-    const bodyLider = `
-Prezado(a) ${liderName},
-
-Informamos que a evidência da ação "${tituloAcaoTexto}" do PDI "${tituloPdi}" do(a) colaborador(a) ${colaboradorName} foi APROVADA pelo administrador.
-
-O(A) colaborador(a) concluiu mais uma etapa do seu Plano de Desenvolvimento Individual. Parabenize-o(a) pela conquista!
-
-${AVISO_NAO_RESPONDA}
-${ASSINATURA}
-    `.trim();
-
-    envioLider = await sendEmail({
-      to: liderEmail,
-      subject: `INFORMATIVO — Evidência Aprovada — ${colaboradorName} — ${tituloAcaoTexto}`,
-      body: bodyLider,
-    });
-  }
+  // Email ao líder pausado conforme configuração
+  console.log('[Email] Manager email paused: evidence approved notification');
 
   return envioColaborador && envioLider;
 }
@@ -1293,6 +1281,9 @@ export async function sendEmailEvidenciaEnviadaParaLider(params: {
     oQueRealizou, comoAplicou, resultadoPratico, impactoPercentual, principalAprendizado } = params;
 
   const tituloAcaoTexto = toEmailInlineText(tituloAcao);
+
+  console.log(`[Email] Manager email paused: evidence sent notification - ${colaboradorName} - ${tituloAcaoTexto}`);
+  return true;
 
   let relatoDetalhado = '';
   if (oQueRealizou) relatoDetalhado += `\n📋 O QUE REALIZOU:\n${oQueRealizou}\n`;
