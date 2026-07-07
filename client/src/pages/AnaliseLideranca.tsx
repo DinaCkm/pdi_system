@@ -149,12 +149,10 @@ function LeaderCard({ leader, index, isExpanded, onToggle, canSendEmail }: {
   onToggle: () => void;
   canSendEmail: boolean;
 }) {
-  // Referência ao cabeçalho resumido do card (não ao card inteiro).
-  // O relatório enviado por e-mail captura só esse resumo, mesmo que o
-  // admin esteja com o card expandido na tela — assim a barra Líder/Equipe
-  // fica em destaque, em vez de diluída em meio à lista de colaboradores,
-  // competências e insights do conteúdo expandido.
-  const headerRef = useRef<HTMLDivElement>(null);
+  // Referência ao card completo (incluindo o conteúdo expandido: competências,
+  // colaboradores e insights). O relatório enviado por e-mail sempre captura
+  // a versão expandida, mesmo que o admin esteja com o card fechado na tela.
+  const cardRef = useRef<HTMLDivElement>(null);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -162,24 +160,38 @@ function LeaderCard({ leader, index, isExpanded, onToggle, canSendEmail }: {
   const sendReportMutation = trpc.dashboard.sendLeadershipReport.useMutation();
 
   // Aguarda o navegador repintar a tela (2 frames) antes de prosseguir.
-  // Necessário porque, ao ativar/desativar classes ou fechar o modal,
-  // o navegador pode não ter aplicado/pintado o layout final ainda.
+  // Necessário porque, ao ativar/desativar classes, expandir o card ou
+  // fechar o modal, o navegador pode não ter aplicado/pintado o layout
+  // final ainda no momento seguinte do código.
   const waitForPaint = () =>
     new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
 
   const handleConfirmSend = async () => {
-    if (!headerRef.current) return;
+    if (!cardRef.current) return;
     setIsSending(true);
+
+    // Se o card estiver fechado, expande temporariamente para capturar o
+    // conteúdo completo (competências, colaboradores, insights) e restaura
+    // o estado original ao final, para não alterar a navegação do admin.
+    const wasCollapsed = !isExpanded;
+    if (wasCollapsed) {
+      onToggle();
+    }
+
     try {
       // Desativa transições (ex.: animação da barra de progresso) e espera
       // o navegador pintar o estado final antes de capturar a imagem,
       // evitando que a barra saia parcialmente preenchida no relatório.
       setIsCapturing(true);
       await waitForPaint();
+      if (wasCollapsed) {
+        // Espera extra para o conteúdo recém-expandido terminar de montar.
+        await waitForPaint();
+      }
 
-      const dataUrl = await toPng(headerRef.current, {
+      const dataUrl = await toPng(cardRef.current, {
         cacheBust: true,
         backgroundColor: "#ffffff",
         pixelRatio: 2,
@@ -211,16 +223,21 @@ function LeaderCard({ leader, index, isExpanded, onToggle, canSendEmail }: {
     } finally {
       setIsCapturing(false);
       setIsSending(false);
+      // Restaura o card ao estado original (fechado), caso tenha sido
+      // expandido apenas para fins de captura.
+      if (wasCollapsed) {
+        onToggle();
+      }
     }
   };
 
   return (
-    <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+    <Card
+      className={`overflow-hidden border shadow-sm hover:shadow-md transition-shadow${isCapturing ? " capture-mode-active" : ""}`}
+      ref={cardRef}
+    >
       <Collapsible open={isExpanded} onOpenChange={onToggle}>
-        <CardHeader
-          className={`py-4 px-5 bg-white${isCapturing ? " capture-mode-active" : ""}`}
-          ref={headerRef}
-        >
+        <CardHeader className="py-4 px-5 bg-white">
           <div className="flex items-center gap-4">
             <CollapsibleTrigger asChild>
               <div className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer">
