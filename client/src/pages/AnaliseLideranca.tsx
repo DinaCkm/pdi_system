@@ -545,9 +545,9 @@ function LeaderCard({ leader, index, isExpanded, onToggle, canSendEmail }: {
 export default function AnaliseLideranca() {
   const [expandedLeader, setExpandedLeader] = useState<number | null>(null);
   const { user } = useAuth();
-  // O envio por e-mail é uma ação administrativa (a mutation no backend também exige admin);
+  // O envio por e-mail é uma ação administrativa disponível para admin e gerente;
   // o botão só aparece para quem realmente pode usá-lo.
-  const canSendEmail = user?.role === "admin";
+  const canSendEmail = user?.role === "admin" || user?.role === "gerente";
 
   const { data: leadershipData, isLoading } = trpc.dashboard.getLeadershipAnalysis.useQuery();
   

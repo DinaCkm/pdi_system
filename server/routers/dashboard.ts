@@ -515,7 +515,7 @@ export const dashboardRouter = router({
    * A imagem chega como anexo inline (CID), não em base64 embutido no HTML,
    * para evitar bloqueio de exibição em clientes como Gmail/Outlook.
    */
-  sendLeadershipReport: adminProcedure
+  sendLeadershipReport: adminOrGerenteProcedure
     .input(
       z.object({
         leaderId: z.number(),

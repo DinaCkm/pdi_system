@@ -81,6 +81,7 @@ const getMenuItems = (userRole: string) => {
     items.push(
       { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+      { icon: TrendingUp, label: "Análise de Liderança", path: "/analise-lideranca" },
       { icon: FileText, label: "PDIs", path: "/pdis" },
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
       { icon: ClipboardCheck, label: "Gestão de Ações e Evidências", path: "/gestao-gerente" },
