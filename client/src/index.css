@@ -175,3 +175,13 @@
     }
   }
 }
+
+/* Usado ao capturar cards para envio de relatório por e-mail (html-to-image).
+   Desativa transições/animações para garantir que o estado final (ex.: largura
+   das barras de progresso) já esteja pintado no momento da captura, evitando
+   que a imagem saia com a barra parcialmente preenchida. */
+.capture-mode-active,
+.capture-mode-active * {
+  transition: none !important;
+  animation: none !important;
+}
