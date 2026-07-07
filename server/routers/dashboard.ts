@@ -7,6 +7,7 @@ import { TRPCError } from "@trpc/server";
 import { sendEmail } from "../_core/email";
 
 const CC_RELACIONAMENTO = "relacionamento@ckmtalents.net";
+const CC_FIXOS = [CC_RELACIONAMENTO, "elisangela.varanda@to.sebrae.com.br"];
 
 // Limite de segurança para o payload da imagem em base64 (~5MB de imagem real)
 const MAX_IMAGE_BASE64_LENGTH = 7_000_000;
@@ -560,7 +561,7 @@ export const dashboardRouter = router({
         .filter((g: { status?: string; email?: string | null }) => g.status === "ativo" && g.email)
         .map((g: { email: string }) => g.email);
 
-      const ccList = Array.from(new Set([...gerentesEmails, CC_RELACIONAMENTO]));
+      const ccList = Array.from(new Set([...gerentesEmails, ...CC_FIXOS]));
       const ccString = ccList.join(", ");
 
       // 5. Montar HTML seguindo o mesmo padrão visual do relatório da Visão Executiva

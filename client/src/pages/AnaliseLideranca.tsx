@@ -509,7 +509,7 @@ function LeaderCard({ leader, index, isExpanded, onToggle, canSendEmail }: {
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1">Cópia (Cc)</p>
               <p className="text-sm bg-gray-50 border rounded-md px-3 py-2 text-muted-foreground">
-                Gerentes ativos do sistema + relacionamento@ckmtalents.net
+                Gerentes ativos do sistema + relacionamento@ckmtalents.net + elisangela.varanda@to.sebrae.com.br
               </p>
             </div>
           </div>
