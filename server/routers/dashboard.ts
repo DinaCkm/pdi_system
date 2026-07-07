@@ -3,6 +3,13 @@ import { z } from "zod";
 import { eq, and, sql, desc, count } from "drizzle-orm";
 import { pdis, actions, users, departamentos } from "../../drizzle/schema";
 import { getDb } from "../db";
+import { TRPCError } from "@trpc/server";
+import { sendEmail } from "../_core/email";
+
+const CC_RELACIONAMENTO = "relacionamento@ckmtalents.net";
+
+// Limite de segurança para o payload da imagem em base64 (~5MB de imagem real)
+const MAX_IMAGE_BASE64_LENGTH = 7_000_000;
 
 /**
  * Dashboard Router
@@ -499,4 +506,118 @@ export const dashboardRouter = router({
     const { getLeadershipAnalysis } = await import("../db");
     return await getLeadershipAnalysis();
   }),
+
+  /**
+   * Envia por e-mail o card de Análise de Liderança de um líder específico.
+   * Destinatário: o próprio líder.
+   * Cópia: todos os usuários com perfil "gerente" + relacionamento@ckmtalents.net.
+   * A imagem chega como anexo inline (CID), não em base64 embutido no HTML,
+   * para evitar bloqueio de exibição em clientes como Gmail/Outlook.
+   */
+  sendLeadershipReport: adminProcedure
+    .input(
+      z.object({
+        leaderId: z.number(),
+        cardImage: z.string().min(1, "Imagem do card é obrigatória"),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { getUserById, getUsersByRole } = await import("../db");
+
+      // 1. Validar tamanho do payload antes de processar
+      if (input.cardImage.length > MAX_IMAGE_BASE64_LENGTH) {
+        throw new TRPCError({
+          code: "PAYLOAD_TOO_LARGE",
+          message: "A imagem do relatório é muito grande para ser enviada por e-mail.",
+        });
+      }
+
+      // 2. Validar formato esperado (data URL de PNG)
+      const match = input.cardImage.match(/^data:image\/png;base64,(.+)$/);
+      if (!match) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Formato de imagem inválido. Esperado PNG em base64.",
+        });
+      }
+      const imageBuffer = Buffer.from(match[1], "base64");
+
+      // 3. Buscar o líder
+      const leader = await getUserById(input.leaderId);
+      if (!leader) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Líder não encontrado." });
+      }
+      if (!leader.email) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Este líder não possui e-mail cadastrado.",
+        });
+      }
+
+      // 4. Resolver destinatários em cópia: gerentes ativos + relacionamento
+      const gerentes = await getUsersByRole("gerente");
+      const gerentesEmails = gerentes
+        .filter((g: { status?: string; email?: string | null }) => g.status === "ativo" && g.email)
+        .map((g: { email: string }) => g.email);
+
+      const ccList = Array.from(new Set([...gerentesEmails, CC_RELACIONAMENTO]));
+      const ccString = ccList.join(", ");
+
+      // 5. Montar HTML seguindo o mesmo padrão visual do relatório da Visão Executiva
+      const cid = "leadership-report-card";
+      const html = `
+        <div style="font-family: sans-serif; color: #334155; max-width: 800px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 24px; overflow: hidden; background-color: #ffffff;">
+          <div style="background-image: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 30px; color: #ffffff;">
+            <h2 style="margin: 0; font-size: 24px; font-weight: 900;">Análise de Liderança</h2>
+            <p style="margin: 5px 0 0; opacity: 0.9; font-weight: 600;">${leader.cargo ? `${leader.cargo} · ` : ""}Relatório de Desempenho</p>
+          </div>
+
+          <div style="padding: 30px;">
+            <p style="font-size: 16px;">Olá <strong>${leader.name}</strong>,</p>
+            <p style="color: #64748b; line-height: 1.6;">Segue o resumo de desempenho da sua liderança no ciclo atual, com base nos indicadores de conclusão de PDI.</p>
+
+            <div style="margin: 25px 0; border: 1px solid #f1f5f9; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+              <img src="cid:${cid}" alt="Card de Análise de Liderança" style="width: 100%; display: block;" />
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+              <a href="https://pdi.ecodobem.com/analise-lideranca" style="display: inline-block; background-color: #4f46e5; color: #ffffff; padding: 16px 32px; border-radius: 14px; text-decoration: none; font-weight: 800; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">ACESSAR SISTEMA PDI</a>
+            </div>
+          </div>
+
+          <div style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #f1f5f9;">
+            <p style="margin: 0; font-size: 11px; color: #94a3b8; font-weight: 600;">
+              Este e-mail foi gerado pelo Administrador via Análise de Liderança.<br />
+              ⚠️ NÃO RESPONDA ESTE EMAIL — O FLUXO É VIA SISTEMA ⚠️
+            </p>
+          </div>
+        </div>
+      `;
+
+      // 6. Enviar
+      const sent = await sendEmail({
+        to: leader.email,
+        cc: ccString,
+        subject: `[Análise de Liderança] Relatório de ${leader.name}`,
+        body: `Olá ${leader.name}, segue o resumo de desempenho da sua liderança. Acesse o sistema para mais detalhes.`,
+        html,
+        attachments: [
+          {
+            filename: "analise-lideranca.png",
+            content: imageBuffer,
+            cid,
+            contentType: "image/png",
+          },
+        ],
+      });
+
+      if (!sent) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Não foi possível enviar o e-mail. Verifique a configuração de SMTP.",
+        });
+      }
+
+      return { success: true, sentTo: leader.email, cc: ccList };
+    }),
 });

@@ -1,11 +1,22 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { toPng } from "html-to-image";
+import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Collapsible,
   CollapsibleContent,
@@ -25,6 +36,8 @@ import {
   BarChart3,
   Award,
   UserCheck,
+  Mail,
+  Loader2,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -129,96 +142,160 @@ function getPerformanceBadge(value: number) {
   return "bg-red-100 text-red-700 border-red-200";
 }
 
-function LeaderCard({ leader, index, isExpanded, onToggle }: { 
+function LeaderCard({ leader, index, isExpanded, onToggle, canSendEmail }: { 
   leader: LeaderData; 
   index: number;
   isExpanded: boolean;
   onToggle: () => void;
+  canSendEmail: boolean;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+
+  const sendReportMutation = trpc.dashboard.sendLeadershipReport.useMutation();
+
+  const handleConfirmSend = async () => {
+    if (!cardRef.current) return;
+    setIsSending(true);
+    try {
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        backgroundColor: "#ffffff",
+        pixelRatio: 2,
+        filter: (node) => {
+          // Exclui da captura elementos marcados com data-capture-ignore
+          // (ex.: o próprio botão "Enviar por e-mail")
+          if (node instanceof HTMLElement && node.dataset?.captureIgnore === "true") {
+            return false;
+          }
+          return true;
+        },
+      });
+
+      await sendReportMutation.mutateAsync({
+        leaderId: leader.liderId,
+        cardImage: dataUrl,
+      });
+
+      toast.success("E-mail enviado com sucesso", {
+        description: `Relatório enviado para ${leader.liderNome}, com cópia para os gerentes.`,
+      });
+      setIsEmailModalOpen(false);
+    } catch (error: any) {
+      toast.error("Falha ao enviar e-mail", {
+        description: error?.message || "Não foi possível gerar ou enviar o relatório. Tente novamente.",
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
-    <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow">
+    <Card className="overflow-hidden border shadow-sm hover:shadow-md transition-shadow" ref={cardRef}>
       <Collapsible open={isExpanded} onOpenChange={onToggle}>
-        <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-gray-50/50 transition-colors py-4 px-5">
-            <div className="flex items-center gap-4">
-              {/* Posição no ranking */}
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full shrink-0 text-sm font-bold ${
-                index === 0 ? "bg-amber-100 text-amber-700" :
-                index === 1 ? "bg-gray-200 text-gray-700" :
-                index === 2 ? "bg-orange-100 text-orange-700" :
-                "bg-gray-100 text-gray-500"
-              }`}>
-                {index + 1}
-              </div>
+        <CardHeader className="py-4 px-5">
+          <div className="flex items-center gap-4">
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer">
+                {/* Posição no ranking */}
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full shrink-0 text-sm font-bold ${
+                  index === 0 ? "bg-amber-100 text-amber-700" :
+                  index === 1 ? "bg-gray-200 text-gray-700" :
+                  index === 2 ? "bg-orange-100 text-orange-700" :
+                  "bg-gray-100 text-gray-500"
+                }`}>
+                  {index + 1}
+                </div>
 
-              {/* Chevron */}
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
-              )}
-
-              {/* Nome e departamento */}
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900 truncate">{leader.liderNome}</p>
-                <p className="text-sm text-muted-foreground truncate">
-                  {leader.departamentoNome} &middot; {leader.equipeTotalColaboradores} colaborador{leader.equipeTotalColaboradores !== 1 ? "es" : ""}
-                </p>
-              </div>
-
-              {/* Métricas resumidas */}
-              <div className="hidden md:flex items-center gap-6">
-                {/* PDIs */}
-                {leader.totalPdisSubordinados > 0 && (
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground">PDIs</p>
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                      <span className="text-sm font-medium">{leader.pdisValidados}/{leader.totalPdisSubordinados}</span>
-                      {leader.pdisPendentesValidacao > 0 && (
-                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 ml-1">
-                          {leader.pdisPendentesValidacao} pend.
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+                {/* Chevron */}
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
                 )}
 
-                {/* Líder pessoal */}
-                <div className="text-center min-w-[70px]">
-                  <p className="text-xs text-muted-foreground">Líder</p>
-                  <p className={`text-lg font-bold ${getPerformanceColor(leader.liderTaxaConclusao)}`}>
-                    {leader.liderTaxaConclusao}%
+                {/* Nome e departamento */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-gray-900 truncate">{leader.liderNome}</p>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {leader.departamentoNome} &middot; {leader.equipeTotalColaboradores} colaborador{leader.equipeTotalColaboradores !== 1 ? "es" : ""}
                   </p>
                 </div>
 
-                {/* Equipe */}
-                <div className="text-center min-w-[70px]">
-                  <p className="text-xs text-muted-foreground">Equipe</p>
-                  <p className={`text-lg font-bold ${getPerformanceColor(leader.equipeTaxaConclusao)}`}>
-                    {leader.equipeTaxaConclusao}%
-                  </p>
-                </div>
-              </div>
+                {/* Métricas resumidas */}
+                <div className="hidden md:flex items-center gap-6">
+                  {/* PDIs */}
+                  {leader.totalPdisSubordinados > 0 && (
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">PDIs</p>
+                      <div className="flex items-center gap-1">
+                        <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                        <span className="text-sm font-medium">{leader.pdisValidados}/{leader.totalPdisSubordinados}</span>
+                        {leader.pdisPendentesValidacao > 0 && (
+                          <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 ml-1">
+                            {leader.pdisPendentesValidacao} pend.
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-              {/* Barras de progresso compactas (visíveis em mobile) */}
-              <div className="flex md:hidden flex-col gap-1 min-w-[80px]">
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] w-6 text-blue-600">L</span>
-                  <div className="flex-1">
-                    <ProgressBar value={leader.liderTaxaConclusao} color="bg-blue-500" height="h-2" />
+                  {/* Líder pessoal */}
+                  <div className="text-center min-w-[70px]">
+                    <p className="text-xs text-muted-foreground">Líder</p>
+                    <p className={`text-lg font-bold ${getPerformanceColor(leader.liderTaxaConclusao)}`}>
+                      {leader.liderTaxaConclusao}%
+                    </p>
                   </div>
-                  <span className="text-[10px] w-8 text-right">{leader.liderTaxaConclusao}%</span>
+
+                  {/* Equipe */}
+                  <div className="text-center min-w-[70px]">
+                    <p className="text-xs text-muted-foreground">Equipe</p>
+                    <p className={`text-lg font-bold ${getPerformanceColor(leader.equipeTaxaConclusao)}`}>
+                      {leader.equipeTaxaConclusao}%
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] w-6 text-emerald-600">E</span>
-                  <div className="flex-1">
-                    <ProgressBar value={leader.equipeTaxaConclusao} color="bg-emerald-500" height="h-2" />
+
+                {/* Barras de progresso compactas (visíveis em mobile) */}
+                <div className="flex md:hidden flex-col gap-1 min-w-[80px]">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] w-6 text-blue-600">L</span>
+                    <div className="flex-1">
+                      <ProgressBar value={leader.liderTaxaConclusao} color="bg-blue-500" height="h-2" />
+                    </div>
+                    <span className="text-[10px] w-8 text-right">{leader.liderTaxaConclusao}%</span>
                   </div>
-                  <span className="text-[10px] w-8 text-right">{leader.equipeTaxaConclusao}%</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] w-6 text-emerald-600">E</span>
+                    <div className="flex-1">
+                      <ProgressBar value={leader.equipeTaxaConclusao} color="bg-emerald-500" height="h-2" />
+                    </div>
+                    <span className="text-[10px] w-8 text-right">{leader.equipeTaxaConclusao}%</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            </CollapsibleTrigger>
+
+            {/* Botão de envio por e-mail - visível apenas para quem pode enviar (admin); fora do trigger para não expandir o card ao clicar.
+                data-capture-ignore evita que o próprio botão apareça na imagem capturada do card. */}
+            {canSendEmail && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 gap-1.5 text-xs"
+                data-capture-ignore="true"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEmailModalOpen(true);
+                }}
+              >
+                <Mail className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Enviar por e-mail</span>
+              </Button>
+            )}
+          </div>
 
             {/* Barras de progresso desktop */}
             <div className="hidden md:block mt-3">
@@ -244,7 +321,6 @@ function LeaderCard({ leader, index, isExpanded, onToggle }: {
               </div>
             </div>
           </CardHeader>
-        </CollapsibleTrigger>
         
         <CollapsibleContent>
           <CardContent className="border-t bg-gray-50/30 pt-6 px-5 pb-6">
@@ -369,13 +445,67 @@ function LeaderCard({ leader, index, isExpanded, onToggle }: {
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
+
+      {/* Modal de confirmação de envio - apenas confirmação, sem campos digitáveis, para eliminar erro de digitação */}
+      <Dialog open={isEmailModalOpen} onOpenChange={(open) => !isSending && setIsEmailModalOpen(open)}>
+        <DialogContent data-capture-ignore="true">
+          <DialogHeader>
+            <DialogTitle>Enviar relatório por e-mail</DialogTitle>
+            <DialogDescription>
+              Confirme os destinatários antes de enviar o card de {leader.liderNome}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Para</p>
+              <p className="text-sm bg-gray-50 border rounded-md px-3 py-2">
+                {leader.liderNome} &lt;{leader.liderEmail}&gt;
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">Cópia (Cc)</p>
+              <p className="text-sm bg-gray-50 border rounded-md px-3 py-2 text-muted-foreground">
+                Gerentes ativos do sistema + relacionamento@ckmtalents.net
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEmailModalOpen(false)}
+              disabled={isSending}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmSend} disabled={isSending} className="gap-2">
+              {isSending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4" />
+                  Confirmar envio
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
 
 export default function AnaliseLideranca() {
   const [expandedLeader, setExpandedLeader] = useState<number | null>(null);
-  
+  const { user } = useAuth();
+  // O envio por e-mail é uma ação administrativa (a mutation no backend também exige admin);
+  // o botão só aparece para quem realmente pode usá-lo.
+  const canSendEmail = user?.role === "admin";
+
   const { data: leadershipData, isLoading } = trpc.dashboard.getLeadershipAnalysis.useQuery();
   
   const rankingData = leadershipData || [];
@@ -537,6 +667,7 @@ export default function AnaliseLideranca() {
                 onToggle={() => setExpandedLeader(
                   expandedLeader === leader.liderId ? null : leader.liderId
                 )}
+                canSendEmail={canSendEmail}
               />
             ))}
           </div>

@@ -1,12 +1,20 @@
 import { ENV } from "./env";
 import nodemailer from "nodemailer";
 
+export type EmailAttachment = {
+  filename: string;
+  content: Buffer;
+  cid: string; // referenciado no HTML como src="cid:{cid}"
+  contentType?: string;
+};
+
 export type EmailPayload = {
   to: string;
   subject: string;
   body: string;
   cc?: string;
   html?: string;
+  attachments?: EmailAttachment[];
 };
 
 type BrandedEmailTemplateParams = {
@@ -422,6 +430,16 @@ export async function sendEmail(payload: EmailPayload): Promise<boolean> {
       subject,
       text: stripHtmlForEmail(body),
       html: htmlBody,
+      ...(payload.attachments && payload.attachments.length > 0
+        ? {
+            attachments: payload.attachments.map((att) => ({
+              filename: att.filename,
+              content: att.content,
+              cid: att.cid,
+              contentType: att.contentType || "image/png",
+            })),
+          }
+        : {}),
     });
 
     console.log(`[Email] Email enviado com sucesso para ${to} (messageId: ${info.messageId})`);
