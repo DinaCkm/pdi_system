@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
+import { useSystemLock } from '@/_core/hooks/useSystemLock';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { toast } from 'sonner';
 import { useSearch } from 'wouter';
@@ -285,6 +286,8 @@ function FormularioSolicitacao({ onClose, onSuccess }: { onClose: () => void; on
     onError: (err) => toast.error(err.message),
   });
 
+  const { locked: systemLocked, message: lockMessage } = useSystemLock();
+
   const filteredPdis = useMemo(() => {
     if (!pdiSearchTerm.trim()) return meusPdis;
     const term = pdiSearchTerm.toLowerCase();
@@ -335,6 +338,7 @@ function FormularioSolicitacao({ onClose, onSuccess }: { onClose: () => void; on
 
   function handleSubmit(ev: React.FormEvent) {
     ev.preventDefault();
+    if (systemLocked) { toast.error(lockMessage); return; }
     if (!validate()) return;
     criarMutation.mutate({
       pdiId: Number(formData.pdiId),
@@ -608,7 +612,8 @@ function FormularioSolicitacao({ onClose, onSuccess }: { onClose: () => void; on
         <div className="flex gap-3 pt-2">
           <button
             type="submit"
-            disabled={criarMutation.isPending}
+            disabled={criarMutation.isPending || systemLocked}
+            title={systemLocked ? lockMessage : undefined}
             className="flex-1 bg-blue-600 text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {criarMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -1605,6 +1610,7 @@ export default function SolicitacoesAcoes() {
   const { user } = useAuth();
   const userRole = user?.role || 'colaborador';
   const userId = user?.id || 0;
+  const { locked: systemLocked, message: lockMessage } = useSystemLock();
   const [showForm, setShowForm] = useState(false);
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [busca, setBusca] = useState('');
@@ -1744,7 +1750,9 @@ export default function SolicitacoesAcoes() {
           {canCreateSolicitacao && !showForm && (userRole === 'colaborador' || abaLider === 'minhas') && (
             <button
               onClick={() => setShowForm(true)}
-              className="bg-blue-600 text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-blue-700 flex items-center gap-2 shrink-0"
+              disabled={systemLocked}
+              title={systemLocked ? lockMessage : undefined}
+              className="bg-blue-600 text-white rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-blue-700 flex items-center gap-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
             >
               <Plus className="h-4 w-4" />
               Nova Solicitação
