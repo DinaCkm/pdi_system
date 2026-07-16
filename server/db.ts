@@ -4184,3 +4184,108 @@ export async function deleteNormaRegra(id: number) {
   await db.delete(normasRegras).where(eq(normasRegras.id, id));
   return { success: true };
 }
+
+// ============= SYSTEM SETTINGS (BLOQUEIO DE EXECUÇÃO DO PDI) =============
+
+let systemSettingsEnsured = false;
+
+/**
+ * Garante que a tabela system_settings exista e tenha a linha padrão (id=1).
+ * Executado em runtime para funcionar mesmo sem migration aplicada no deploy.
+ */
+async function ensureSystemSettingsTable(db: any) {
+  if (systemSettingsEnsured) return;
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS system_settings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      pdi_execution_locked BOOLEAN NOT NULL DEFAULT false,
+      lock_scheduled_at DATETIME NULL,
+      lock_message TEXT NULL,
+      updated_by INT NULL,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+  await db.execute(sql`INSERT IGNORE INTO system_settings (id, pdi_execution_locked) VALUES (1, false)`);
+  systemSettingsEnsured = true;
+}
+
+export type SystemSettings = {
+  pdiExecutionLocked: boolean;
+  lockScheduledAt: Date | null;
+  lockMessage: string | null;
+  updatedBy: number | null;
+  updatedAt: Date | null;
+};
+
+const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
+  pdiExecutionLocked: false,
+  lockScheduledAt: null,
+  lockMessage: null,
+  updatedBy: null,
+  updatedAt: null,
+};
+
+export async function getSystemSettings(): Promise<SystemSettings> {
+  const db = await getDb();
+  if (!db) return { ...DEFAULT_SYSTEM_SETTINGS };
+  try {
+    await ensureSystemSettingsTable(db);
+    const [rows]: any = await db.execute(sql`SELECT * FROM system_settings WHERE id = 1 LIMIT 1`);
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    if (!row) return { ...DEFAULT_SYSTEM_SETTINGS };
+    return {
+      pdiExecutionLocked: Boolean(row.pdi_execution_locked),
+      lockScheduledAt: row.lock_scheduled_at ? new Date(row.lock_scheduled_at) : null,
+      lockMessage: row.lock_message ?? null,
+      updatedBy: row.updated_by ?? null,
+      updatedAt: row.updated_at ? new Date(row.updated_at) : null,
+    };
+  } catch (error) {
+    console.error("[getSystemSettings] erro ao ler configurações do sistema:", error);
+    return { ...DEFAULT_SYSTEM_SETTINGS };
+  }
+}
+
+/**
+ * Retorna true se o período de execução do PDI está encerrado:
+ * - bloqueio manual ativo, OU
+ * - data de encerramento agendada já atingida.
+ */
+export async function isPdiExecutionLocked(): Promise<boolean> {
+  const s = await getSystemSettings();
+  if (s.pdiExecutionLocked) return true;
+  if (s.lockScheduledAt && s.lockScheduledAt.getTime() <= Date.now()) return true;
+  return false;
+}
+
+export async function updateSystemSettings(input: {
+  pdiExecutionLocked?: boolean;
+  lockScheduledAt?: Date | null;
+  lockMessage?: string | null;
+  updatedBy?: number | null;
+}): Promise<SystemSettings> {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+  await ensureSystemSettingsTable(db);
+
+  const current = await getSystemSettings();
+  const next = {
+    pdiExecutionLocked:
+      input.pdiExecutionLocked !== undefined ? input.pdiExecutionLocked : current.pdiExecutionLocked,
+    lockScheduledAt:
+      input.lockScheduledAt !== undefined ? input.lockScheduledAt : current.lockScheduledAt,
+    lockMessage: input.lockMessage !== undefined ? input.lockMessage : current.lockMessage,
+    updatedBy: input.updatedBy !== undefined ? input.updatedBy : current.updatedBy,
+  };
+
+  await db.execute(sql`
+    UPDATE system_settings
+    SET pdi_execution_locked = ${next.pdiExecutionLocked},
+        lock_scheduled_at = ${next.lockScheduledAt},
+        lock_message = ${next.lockMessage},
+        updated_by = ${next.updatedBy}
+    WHERE id = 1
+  `);
+
+  return await getSystemSettings();
+}

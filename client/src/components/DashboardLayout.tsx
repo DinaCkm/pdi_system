@@ -20,7 +20,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2, CheckSquare, MessageSquarePlus, Upload, ClipboardCheck, History, Trash2, AlertTriangle, TrendingUp, ChevronDown, ChevronRight, User, Send, BookOpen, ExternalLink } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2, CheckSquare, MessageSquarePlus, Upload, ClipboardCheck, History, Trash2, AlertTriangle, TrendingUp, ChevronDown, ChevronRight, User, Send, BookOpen, ExternalLink, Lock } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -28,6 +28,7 @@ import { Button } from "./ui/button";
 import { trpc } from "@/lib/trpc";
 import { PendencyBadge } from "./PendencyBadge";
 import { ModalPrimeiroAcesso } from "./ModalPrimeiroAcesso";
+import { SystemLockBanner } from "./SystemLockBanner";
 
 const getMenuItems = (userRole: string) => {
   const items: Array<{ icon: any; label: string; path: string; section?: string; external?: boolean; tooltipText?: string }> = [];
@@ -58,6 +59,7 @@ const getMenuItems = (userRole: string) => {
       { icon: MessageSquarePlus, label: "Histórico de Alteração nas Ações", path: "/solicitacoes-admin", section: "operacional" },
       { icon: Upload, label: "Importação em Massa", path: "/importacao", section: "operacional" },
       { icon: Trash2, label: "Auditoria de Exclusões", path: "/auditoria-exclusoes", section: "operacional" },
+      { icon: Lock, label: "Controle de Execução do PDI", path: "/controle-execucao", section: "operacional" },
     );
     // Seção Solicitações
     items.push(
@@ -88,6 +90,7 @@ const getMenuItems = (userRole: string) => {
       { icon: History, label: "Histórico de Alterações", path: "/solicitacoes-admin" },
       { icon: AlertTriangle, label: "Relatório de Ações Vencidas", path: "/relatorio-acoes-vencidas" },
       { icon: FileText, label: "Ações Solicitadas por Empregados", path: "/solicitacoes-acoes" },
+      { icon: Lock, label: "Controle de Execução do PDI", path: "/controle-execucao" },
     );
   } else if (userRole === "colaborador") {
     items.push(
@@ -476,6 +479,7 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
+        <SystemLockBanner enabled={Boolean(user)} />
         <main className="flex-1 max-w-full overflow-x-hidden">{children}</main>
       </SidebarInset>
       <ModalPrimeiroAcesso />

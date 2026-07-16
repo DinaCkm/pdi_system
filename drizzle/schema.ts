@@ -293,6 +293,15 @@ export const solicitacoesAcoes = mysqlTable("solicitacoes_acoes", {
 	updatedAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
 });
 
+export const systemSettings = mysqlTable("system_settings", {
+	id: int().autoincrement().notNull().primaryKey(),
+	pdiExecutionLocked: boolean("pdi_execution_locked").default(false).notNull(),
+	lockScheduledAt: timestamp("lock_scheduled_at", { mode: 'string' }),
+	lockMessage: text("lock_message"),
+	updatedBy: int("updated_by"),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+});
+
 export const normasRegras = mysqlTable("normas_regras", {
 	id: int().autoincrement().notNull().primaryKey(),
 	titulo: varchar({ length: 255 }).notNull(),

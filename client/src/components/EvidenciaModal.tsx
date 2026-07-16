@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, Upload, X, FileText, Link2, ChevronRight, ChevronLeft, Trophy, Sparkles, Info, AlertTriangle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useSystemLock } from "@/_core/hooks/useSystemLock";
 
 interface EvidenciaModalProps {
   open: boolean;
@@ -48,6 +49,7 @@ function limitarPercentual(valor: number) {
 }
 
 export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuccess }: EvidenciaModalProps) {
+  const { locked: systemLocked, message: lockMessage } = useSystemLock(open);
   const [etapa, setEtapa] = useState(1);
   const [tipoEvidencia, setTipoEvidencia] = useState<TipoEvidencia | ''>('');
   const [dataRealizacao, setDataRealizacao] = useState('');
@@ -141,6 +143,7 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
   };
 
   const handleSubmit = async () => {
+    if (systemLocked) { toast.error(lockMessage); return; }
     if (!oQueRealizou.trim()) { toast.error('Descreva o que realizou'); return; }
     if (!comoAplicou.trim()) { toast.error('Descreva como aplicou na prática'); return; }
     if (impactoPercentual === '') { toast.error('Informe o nível de impacto prático de 0 a 100'); return; }
@@ -548,7 +551,8 @@ export function EvidenciaModal({ open, onOpenChange, actionId, actionNome, onSuc
               ) : (
                 <button
                   onClick={handleSubmit}
-                  disabled={submitting || uploading}
+                  disabled={submitting || uploading || systemLocked}
+                  title={systemLocked ? lockMessage : undefined}
                   className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-bold transition-colors shadow-sm"
                 >
                   {submitting ? (

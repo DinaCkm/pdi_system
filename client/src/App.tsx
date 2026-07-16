@@ -48,6 +48,7 @@ import SolicitacoesAcoes from './pages/SolicitacoesAcoes';
 import NormasRegras from './pages/NormasRegras';
 import AdminNormasRegras from './pages/AdminNormasRegras';
 import GestaoGerente from './pages/GestaoGerente';
+import ControleExecucao from './pages/ControleExecucao';
 
 function Router() {
   return (
@@ -284,6 +285,12 @@ function Router() {
       <Route path={"/gestao-gerente"}>
         <DashboardLayout>
           <GestaoGerente />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path={"/controle-execucao"}>
+        <DashboardLayout>
+          <ControleExecucao />
         </DashboardLayout>
       </Route>
       

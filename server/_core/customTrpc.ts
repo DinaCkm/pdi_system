@@ -4,6 +4,7 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 import { verifyAuthToken } from "./authToken";
 import * as db from "../db";
+import { PDI_LOCK_DEFAULT_MESSAGE } from "@shared/const";
 
 // 1. CONTEXTO COM VALIDAÇÃO DE TOKEN ASSINADO + VERSÃO DE SESSÃO
 export const createTRPCContext = async (opts: CreateExpressContextOptions) => {
@@ -65,7 +66,39 @@ const isAuthed = t.middleware(({ ctx, next }) => {
   return next({ ctx: { user: ctx.user } });
 });
 
-export const protectedProcedure = t.procedure.use(isAuthed);
+// Papéis isentos do bloqueio de execução (mantêm acesso total para administrar o ciclo)
+const EXECUTION_LOCK_EXEMPT_ROLES = new Set<string>(["admin", "Administrador", "gerente"]);
+
+// Mutations sempre permitidas, mesmo com o sistema encerrado (auto-atendimento essencial)
+const EXECUTION_LOCK_ALLOWLIST = new Set<string>([
+  "auth.logout",
+  "auth.changePassword",
+]);
+
+// Middleware: quando o período de execução do PDI está encerrado, líderes e colaboradores
+// ficam em modo somente-leitura — nenhuma escrita (enviar documento / solicitar alteração) é permitida.
+const enforceExecutionLock = t.middleware(async ({ ctx, type, path, next }) => {
+  if (
+    type === "mutation" &&
+    ctx.user &&
+    !EXECUTION_LOCK_EXEMPT_ROLES.has(ctx.user.role) &&
+    !EXECUTION_LOCK_ALLOWLIST.has(path)
+  ) {
+    const locked = await db.isPdiExecutionLocked();
+    if (locked) {
+      const settings = await db.getSystemSettings();
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: settings.lockMessage || PDI_LOCK_DEFAULT_MESSAGE,
+      });
+    }
+  }
+  return next();
+});
+
+export const protectedProcedure = t.procedure.use(isAuthed).use(enforceExecutionLock);
+
+
 
 // Middleware: Apenas Admin
 const isAdmin = t.middleware(({ ctx, next }) => {
@@ -87,7 +120,7 @@ const isAdminOrLeader = t.middleware(({ ctx, next }) => {
   return next({ ctx: { user: ctx.user } });
 });
 
-export const adminOrLeaderProcedure = t.procedure.use(isAuthed).use(isAdminOrLeader);
+export const adminOrLeaderProcedure = t.procedure.use(isAuthed).use(isAdminOrLeader).use(enforceExecutionLock);
 
 // Middleware: Admin ou Gerente
 const isAdminOrGerente = t.middleware(({ ctx, next }) => {

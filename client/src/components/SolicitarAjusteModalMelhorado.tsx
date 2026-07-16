@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle, CheckCircle2, Info } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useSystemLock } from "@/_core/hooks/useSystemLock";
 import { toast } from "sonner";
 import RichTextDisplay from '@/components/RichTextDisplay';
 
@@ -67,6 +68,7 @@ export function SolicitarAjusteModalMelhorado({
   }, [open, actionId]);
 
   const createMutation = trpc.adjustmentRequests.create.useMutation();
+  const { locked: systemLocked, message: lockMessage } = useSystemLock(open);
 
   const handleCheckboxChange = (campo: keyof typeof camposSelecionados) => {
     setCamposSelecionados(prev => ({
@@ -85,6 +87,7 @@ export function SolicitarAjusteModalMelhorado({
   };
 
   const handleSubmit = async () => {
+    if (systemLocked) { toast.error(lockMessage); return; }
     const camposArray = getCamposSelecionadosArray();
     
     if (camposArray.length === 0) {
