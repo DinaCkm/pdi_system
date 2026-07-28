@@ -549,7 +549,11 @@ export default function AnaliseLideranca() {
   // o botão só aparece para quem realmente pode usá-lo.
   const canSendEmail = user?.role === "admin" || user?.role === "gerente";
 
-  const { data: leadershipData, isLoading } = trpc.dashboard.getLeadershipAnalysis.useQuery();
+  const [pdiFiltro, setPdiFiltro] = useState<string>("");
+  const { data: pdiTitulos = [] } = trpc.dashboard.getPdiTitulos.useQuery();
+  const { data: leadershipData, isLoading } = trpc.dashboard.getLeadershipAnalysis.useQuery(
+    pdiFiltro ? { pdiTitulo: pdiFiltro } : undefined
+  );
   
   const rankingData = leadershipData || [];
   
@@ -586,6 +590,31 @@ export default function AnaliseLideranca() {
             </p>
           </div>
         </div>
+
+        {/* Seletor de tipo de PDI */}
+        <Card>
+          <CardContent className="py-4 px-5">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <label htmlFor="pdiFiltro" className="text-sm font-medium text-gray-700 shrink-0">
+                Filtrar por PDI:
+              </label>
+              <select
+                id="pdiFiltro"
+                value={pdiFiltro}
+                onChange={(e) => setPdiFiltro(e.target.value)}
+                className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Todos os PDIs</option>
+                {pdiTitulos.map((t: { titulo: string; total: number }) => (
+                  <option key={t.titulo} value={t.titulo}>{t.titulo}</option>
+                ))}
+              </select>
+              <span className="text-xs text-muted-foreground">
+                {pdiFiltro ? "Mostrando apenas este tipo de PDI" : "Somando as ações de todos os PDIs"}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Cards de resumo */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

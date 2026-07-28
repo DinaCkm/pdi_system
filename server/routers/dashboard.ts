@@ -503,9 +503,17 @@ export const dashboardRouter = router({
    * Obter análise de liderança
    * Retorna ranking de líderes com métricas de engajamento pessoal e da equipe
    */
-  getLeadershipAnalysis: adminOrGerenteProcedure.query(async () => {
-    const { getLeadershipAnalysis } = await import("../db");
-    return await getLeadershipAnalysis();
+  getLeadershipAnalysis: adminOrGerenteProcedure
+    .input(z.object({ pdiTitulo: z.string().optional() }).optional())
+    .query(async ({ input }) => {
+      const { getLeadershipAnalysis } = await import("../db");
+      return await getLeadershipAnalysis(input?.pdiTitulo);
+    }),
+
+  // Lista os tipos de PDI (por título) para o seletor da Análise de Liderança
+  getPdiTitulos: adminOrGerenteProcedure.query(async () => {
+    const { getPdiTitulos } = await import("../db");
+    return await getPdiTitulos();
   }),
 
   /**

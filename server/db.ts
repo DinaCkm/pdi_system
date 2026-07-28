@@ -3266,11 +3266,15 @@ export async function getRelatorioAcoesVencidas(filtros?: {
 
 // ============= FUNÇÕES DE ANÁLISE DE LIDERANÇA =============
 
-export async function getLeadershipAnalysis() {
+export async function getLeadershipAnalysis(pdiTitulo?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
+    // Filtro opcional por tipo de PDI (título). Vazio = considera todos os PDIs.
+    const tituloFilter = pdiTitulo && pdiTitulo.trim()
+      ? sql` AND p.titulo = ${pdiTitulo}`
+      : sql``;
     // Buscar todos os líderes ativos (usuários que têm subordinados)
     // Busca o departamento que o líder GERENCIA (via leaderId) em vez do departamento ao qual pertence
     const [lideres]: any = await db.execute(sql`
@@ -3292,31 +3296,18 @@ export async function getLeadershipAnalysis() {
 
     const resultado = await Promise.all(
       (lideres || []).map(async (lider: any) => {
-        // Buscar PDI do líder (como colaborador)
-        const [pdiLider]: any = await db.execute(sql`
-          SELECT p.id as pdiId
-          FROM pdis p
+        // Buscar ações do líder (suas próprias ações) em TODOS os seus PDIs, respeitando o filtro de PDI
+        const [acoesLiderRows]: any = await db.execute(sql`
+          SELECT a.id, a.status, a.macroId
+          FROM actions a
+          INNER JOIN pdis p ON a.pdiId = p.id
           WHERE p.colaboradorId = ${lider.liderId}
           AND p.status != 'cancelado'
-          ORDER BY p.createdAt DESC
-          LIMIT 1
+          ${tituloFilter}
         `);
-
-        // Buscar ações do líder (suas próprias ações)
-        let acoesLider: any[] = [];
-        let liderCompletedCount = 0;
-        let liderTotalCount = 0;
-        
-        if (pdiLider && pdiLider.length > 0) {
-          const [acoes]: any = await db.execute(sql`
-            SELECT a.id, a.status, a.macroId
-            FROM actions a
-            WHERE a.pdiId = ${pdiLider[0].pdiId}
-          `);
-          acoesLider = acoes || [];
-          liderTotalCount = acoesLider.length;
-          liderCompletedCount = acoesLider.filter((a: any) => a.status === 'concluida').length;
-        }
+        const acoesLider: any[] = acoesLiderRows || [];
+        const liderTotalCount = acoesLider.length;
+        const liderCompletedCount = acoesLider.filter((a: any) => a.status === 'concluida').length;
 
         // Buscar subordinados ativos do líder
         const [subordinados]: any = await db.execute(sql`
@@ -3338,6 +3329,7 @@ export async function getLeadershipAnalysis() {
           WHERE u.leaderId = ${lider.liderId}
           AND u.status = 'ativo'
           AND p.status != 'cancelado'
+          ${tituloFilter}
         `);
 
         const totalPdisSubordinados = (pdisSubordinados || []).length;
@@ -3357,6 +3349,7 @@ export async function getLeadershipAnalysis() {
           WHERE u.leaderId = ${lider.liderId}
           AND u.status = 'ativo'
           AND p.status != 'cancelado'
+          ${tituloFilter}
         `);
 
         const equipeTotalCount = (acoesEquipe || []).length;
@@ -3434,25 +3427,18 @@ export async function getLeadershipAnalysis() {
         // Buscar detalhes dos colaboradores da equipe
         const colaboradoresDetalhes = await Promise.all(
           (subordinados || []).map(async (sub: any) => {
-            const [pdiSub]: any = await db.execute(sql`
-              SELECT p.id as pdiId
-              FROM pdis p
+            // Conta as ações de TODOS os PDIs do colaborador (respeitando o filtro de PDI),
+            // igual ao total da equipe — evita subcontagem quando a pessoa tem mais de um PDI.
+            const [acoesSub]: any = await db.execute(sql`
+              SELECT a.status
+              FROM actions a
+              INNER JOIN pdis p ON a.pdiId = p.id
               WHERE p.colaboradorId = ${sub.id}
               AND p.status != 'cancelado'
-              ORDER BY p.createdAt DESC
-              LIMIT 1
+              ${tituloFilter}
             `);
-
-            let subTotal = 0;
-            let subConcluidas = 0;
-
-            if (pdiSub && pdiSub.length > 0) {
-              const [acoesSub]: any = await db.execute(sql`
-                SELECT status FROM actions WHERE pdiId = ${pdiSub[0].pdiId}
-              `);
-              subTotal = (acoesSub || []).length;
-              subConcluidas = (acoesSub || []).filter((a: any) => a.status === 'concluida').length;
-            }
+            const subTotal = (acoesSub || []).length;
+            const subConcluidas = (acoesSub || []).filter((a: any) => a.status === 'concluida').length;
 
             return {
               id: sub.id,
@@ -4288,4 +4274,27 @@ export async function updateSystemSettings(input: {
   `);
 
   return await getSystemSettings();
+}
+
+// ============= TÍTULOS DE PDI (para o seletor da Análise de Liderança) =============
+export async function getPdiTitulos() {
+  const db = await getDb();
+  if (!db) return [] as Array<{ titulo: string; total: number }>;
+  try {
+    const [rows]: any = await db.execute(sql`
+      SELECT p.titulo as titulo, COUNT(*) as total
+      FROM pdis p
+      INNER JOIN users u ON p.colaboradorId = u.id
+      WHERE u.status = 'ativo'
+        AND p.status != 'cancelado'
+        AND p.titulo IS NOT NULL
+        AND p.titulo <> ''
+      GROUP BY p.titulo
+      ORDER BY total DESC
+    `);
+    return (rows || []).map((r: any) => ({ titulo: String(r.titulo), total: Number(r.total) || 0 }));
+  } catch (error) {
+    console.error('[getPdiTitulos] Erro:', error);
+    return [] as Array<{ titulo: string; total: number }>;
+  }
 }
