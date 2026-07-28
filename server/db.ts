@@ -3296,6 +3296,11 @@ export async function getLeadershipAnalysis(pdiTitulo?: string) {
 
     const resultado = await Promise.all(
       (lideres || []).map(async (lider: any) => {
+        // Opção B (multi-liderança): cada card conta apenas os colaboradores do departamento gerenciado.
+        // Se o líder não gerencia um departamento específico, mantém todos os subordinados (via leaderId).
+        const deptFilter = lider.departamentoGerenciadoId
+          ? sql` AND u.departamentoId = ${lider.departamentoGerenciadoId}`
+          : sql``;
         // Buscar ações do líder (suas próprias ações) em TODOS os seus PDIs, respeitando o filtro de PDI
         const [acoesLiderRows]: any = await db.execute(sql`
           SELECT a.id, a.status, a.macroId
@@ -3315,6 +3320,7 @@ export async function getLeadershipAnalysis(pdiTitulo?: string) {
           FROM users u
           WHERE u.leaderId = ${lider.liderId}
           AND u.status = 'ativo'
+          ${deptFilter}
         `);
 
         // Contar PDIs dos subordinados e quantos foram validados pelo líder
@@ -3330,6 +3336,7 @@ export async function getLeadershipAnalysis(pdiTitulo?: string) {
           AND u.status = 'ativo'
           AND p.status != 'cancelado'
           ${tituloFilter}
+          ${deptFilter}
         `);
 
         const totalPdisSubordinados = (pdisSubordinados || []).length;
@@ -3350,6 +3357,7 @@ export async function getLeadershipAnalysis(pdiTitulo?: string) {
           AND u.status = 'ativo'
           AND p.status != 'cancelado'
           ${tituloFilter}
+          ${deptFilter}
         `);
 
         const equipeTotalCount = (acoesEquipe || []).length;
