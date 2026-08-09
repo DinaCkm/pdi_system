@@ -1,6 +1,6 @@
 import { eq, and, isNull, not, inArray, desc, sql, ne } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, adjustmentComments, departamentos, ciclos, evidences, evidenceFiles, evidenceTexts, notifications, pdiValidacoes, deletionAuditLog, solicitacoesAcoes, userDepartmentRoles, normasRegras } from "../drizzle/schema";
+import { users, pdis, competenciasMacros, actions, acoesHistorico, adjustmentRequests, adjustmentComments, departamentos, ciclos, evidences, evidenceFiles, evidenceTexts, notifications, pdiValidacoes, deletionAuditLog, solicitacoesAcoes, userDepartmentRoles, normasRegras, importBatches, importRows, performanceEvaluations, performanceEvaluationResults, certificationResults, competencyAliases } from "../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 import { ENV } from "./_core/env";
 
@@ -4284,7 +4284,367 @@ export async function updateSystemSettings(input: {
   return await getSystemSettings();
 }
 
-// ============= TÍTULOS DE PDI (para o seletor da Análise de Liderança) =============
+// ============= RELATÓRIO INDIVIDUAL DE EVOLUÇÃO (Etapa 5) =============
+// Camada de acesso a dados para import_batches, import_rows,
+// performance_evaluations(+results), certification_results e competency_aliases.
+// Nenhuma rota de API é exposta aqui ainda (isso é Etapa 6/7) - só as funções de base.
+
+// ---- import_batches ----
+
+export async function createImportBatch(data: {
+  cicloId: number;
+  tipo: "pdi_comportamental" | "certificacao_tecnica" | "avaliacao_desempenho";
+  nomeArquivo: string;
+  totalLinhas: number;
+  importadoPor: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const result = await db.insert(importBatches).values({
+    cicloId: data.cicloId,
+    tipo: data.tipo,
+    nomeArquivo: data.nomeArquivo,
+    status: "processando",
+    totalLinhas: data.totalLinhas,
+    importadoPor: data.importadoPor,
+  });
+
+  return result[0]?.insertId as number;
+}
+
+export async function updateImportBatchStatus(
+  id: number,
+  data: {
+    status: "processando" | "concluido" | "concluido_com_erros" | "erro";
+    linhasOk?: number;
+    linhasErro?: number;
+    linhasBloqueadas?: number;
+    concluidoEm?: Date;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  await db.update(importBatches).set(data).where(eq(importBatches.id, id));
+}
+
+export async function getImportBatchById(id: number) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const [result] = await db.select().from(importBatches).where(eq(importBatches.id, id));
+  return result;
+}
+
+export async function listImportBatches(filtro?: {
+  cicloId?: number;
+  tipo?: "pdi_comportamental" | "certificacao_tecnica" | "avaliacao_desempenho";
+}) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const conditions = [];
+  if (filtro?.cicloId) conditions.push(eq(importBatches.cicloId, filtro.cicloId));
+  if (filtro?.tipo) conditions.push(eq(importBatches.tipo, filtro.tipo));
+
+  const result = await db
+    .select()
+    .from(importBatches)
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(importBatches.createdAt));
+
+  return result;
+}
+
+// ---- import_rows ----
+
+export async function createImportRow(data: {
+  importBatchId: number;
+  numeroLinha: number;
+  dadosOriginais: string; // JSON.stringify da linha crua
+}) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const result = await db.insert(importRows).values({
+    importBatchId: data.importBatchId,
+    numeroLinha: data.numeroLinha,
+    status: "pendente",
+    dadosOriginais: data.dadosOriginais,
+  });
+
+  return result[0]?.insertId as number;
+}
+
+export async function updateImportRowStatus(
+  id: number,
+  data: {
+    status: "pendente" | "ok" | "erro" | "bloqueado_revisao";
+    erro?: string | null;
+    entidadeTipo?: string | null;
+    entidadeId?: number | null;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  await db.update(importRows).set(data).where(eq(importRows.id, id));
+}
+
+export async function getImportRowsByBatch(importBatchId: number, apenasComErro = false) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const conditions = [eq(importRows.importBatchId, importBatchId)];
+  if (apenasComErro) conditions.push(inArray(importRows.status, ["erro", "bloqueado_revisao"]));
+
+  const result = await db
+    .select()
+    .from(importRows)
+    .where(and(...conditions))
+    .orderBy(importRows.numeroLinha);
+
+  return result;
+}
+
+// ---- competency_aliases (resolução de grafias técnicas) ----
+
+/**
+ * Tenta resolver uma grafia de macrocompetência (vinda de planilha) para o
+ * catálogo canônico competencias_macros. Ordem: (1) match exato de nome,
+ * (2) alias já aprovado. Nunca cria alias sozinho e nunca promove
+ * automaticamente - isso é feito por findOrSuggestCompetencyAlias.
+ */
+export async function resolveMacrocompetenciaId(grafiaOriginal: string): Promise<number | null> {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const grafiaNormalizada = grafiaOriginal.trim();
+
+  const [porNomeExato] = await db
+    .select({ id: competenciasMacros.id })
+    .from(competenciasMacros)
+    .where(eq(competenciasMacros.nome, grafiaNormalizada));
+  if (porNomeExato) return porNomeExato.id;
+
+  const [porAliasAprovado] = await db
+    .select({ macrocompetenciaId: competencyAliases.macrocompetenciaId })
+    .from(competencyAliases)
+    .where(
+      and(
+        eq(competencyAliases.grafiaOriginal, grafiaNormalizada),
+        eq(competencyAliases.status, "aprovado")
+      )
+    );
+  if (porAliasAprovado) return porAliasAprovado.macrocompetenciaId;
+
+  return null;
+}
+
+/**
+ * Registra uma grafia não resolvida como sugestão pendente (status "sugerido"),
+ * associada à macrocompetência mais provável por similaridade textual.
+ * Não sobrescreve uma sugestão/aprovação já existente para a mesma grafia.
+ */
+export async function suggestCompetencyAlias(data: {
+  grafiaOriginal: string;
+  macrocompetenciaIdSugerida: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const grafiaNormalizada = data.grafiaOriginal.trim();
+
+  const [existente] = await db
+    .select({ id: competencyAliases.id })
+    .from(competencyAliases)
+    .where(eq(competencyAliases.grafiaOriginal, grafiaNormalizada));
+  if (existente) return existente.id;
+
+  const result = await db.insert(competencyAliases).values({
+    grafiaOriginal: grafiaNormalizada,
+    macrocompetenciaId: data.macrocompetenciaIdSugerida,
+    status: "sugerido",
+    sugeridoPorSimilaridade: true,
+  });
+
+  return result[0]?.insertId as number;
+}
+
+export async function listPendingCompetencyAliases() {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const result = await db
+    .select({
+      id: competencyAliases.id,
+      grafiaOriginal: competencyAliases.grafiaOriginal,
+      macrocompetenciaId: competencyAliases.macrocompetenciaId,
+      macrocompetenciaNome: competenciasMacros.nome,
+      createdAt: competencyAliases.createdAt,
+    })
+    .from(competencyAliases)
+    .leftJoin(competenciasMacros, eq(competencyAliases.macrocompetenciaId, competenciasMacros.id))
+    .where(eq(competencyAliases.status, "sugerido"))
+    .orderBy(competencyAliases.grafiaOriginal);
+
+  return result;
+}
+
+export async function approveCompetencyAlias(
+  id: number,
+  data: { macrocompetenciaId?: number; aprovadoPor: number }
+) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  await db
+    .update(competencyAliases)
+    .set({
+      status: "aprovado",
+      macrocompetenciaId: data.macrocompetenciaId,
+      aprovadoPor: data.aprovadoPor,
+      aprovadoEm: new Date(),
+    })
+    .where(eq(competencyAliases.id, id));
+}
+
+// ---- performance_evaluations / performance_evaluation_results ----
+
+export async function createPerformanceEvaluation(data: {
+  userId: number;
+  cicloId: number;
+  importBatchId?: number;
+  dataAvaliacao?: Date | null;
+  avaliador?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const result = await db.insert(performanceEvaluations).values({
+    userId: data.userId,
+    cicloId: data.cicloId,
+    importBatchId: data.importBatchId ?? null,
+    dataAvaliacao: data.dataAvaliacao ?? null,
+    avaliador: data.avaliador ?? null,
+  });
+
+  return result[0]?.insertId as number;
+}
+
+export async function addPerformanceEvaluationResult(data: {
+  performanceEvaluationId: number;
+  competencia: string;
+  competenciaMacroId?: number | null;
+  nota: number;
+  escala?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const result = await db.insert(performanceEvaluationResults).values({
+    performanceEvaluationId: data.performanceEvaluationId,
+    competencia: data.competencia,
+    competenciaMacroId: data.competenciaMacroId ?? null,
+    nota: String(data.nota),
+    escala: data.escala ?? "0-3",
+  });
+
+  return result[0]?.insertId as number;
+}
+
+/**
+ * Evolução comportamental de um usuário: uma linha por (ciclo, competência),
+ * já com a nota, pronta para a Tela 1/2 do relatório montarem a comparação
+ * entre ciclos. Não faz nenhum cálculo de variação aqui - isso fica na
+ * camada de apresentação (Etapa 12+), pra manter esta função só como leitura.
+ */
+export async function getPerformanceEvolutionByUser(userId: number) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const result = await db
+    .select({
+      cicloId: performanceEvaluations.cicloId,
+      cicloNome: ciclos.nome,
+      competencia: performanceEvaluationResults.competencia,
+      competenciaMacroId: performanceEvaluationResults.competenciaMacroId,
+      nota: performanceEvaluationResults.nota,
+      escala: performanceEvaluationResults.escala,
+      dataAvaliacao: performanceEvaluations.dataAvaliacao,
+    })
+    .from(performanceEvaluationResults)
+    .innerJoin(
+      performanceEvaluations,
+      eq(performanceEvaluationResults.performanceEvaluationId, performanceEvaluations.id)
+    )
+    .innerJoin(ciclos, eq(performanceEvaluations.cicloId, ciclos.id))
+    .where(eq(performanceEvaluations.userId, userId))
+    .orderBy(ciclos.dataInicio, performanceEvaluationResults.competencia);
+
+  return result;
+}
+
+// ---- certification_results ----
+
+export async function createCertificationResult(data: {
+  userId: number;
+  cicloId: number;
+  importBatchId?: number;
+  unidadeRegional?: string | null;
+  cargo?: string | null;
+  perfil?: string | null;
+  macrocompetenciaOriginal: string;
+  macrocompetenciaId?: number | null;
+  percentual: number;
+  leitura?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const result = await db.insert(certificationResults).values({
+    userId: data.userId,
+    cicloId: data.cicloId,
+    importBatchId: data.importBatchId ?? null,
+    unidadeRegional: data.unidadeRegional ?? null,
+    cargo: data.cargo ?? null,
+    perfil: data.perfil ?? null,
+    macrocompetenciaOriginal: data.macrocompetenciaOriginal,
+    macrocompetenciaId: data.macrocompetenciaId ?? null,
+    percentual: data.percentual,
+    leitura: data.leitura ?? null,
+  });
+
+  return result[0]?.insertId as number;
+}
+
+/**
+ * Evolução técnica de um usuário: uma linha por (ciclo, macrocompetência),
+ * mesma lógica de "só leitura, sem cálculo" da função comportamental acima.
+ */
+export async function getCertificationEvolutionByUser(userId: number) {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const result = await db
+    .select({
+      cicloId: certificationResults.cicloId,
+      cicloNome: ciclos.nome,
+      macrocompetenciaOriginal: certificationResults.macrocompetenciaOriginal,
+      macrocompetenciaId: certificationResults.macrocompetenciaId,
+      macrocompetenciaNome: competenciasMacros.nome,
+      percentual: certificationResults.percentual,
+      leitura: certificationResults.leitura,
+    })
+    .from(certificationResults)
+    .innerJoin(ciclos, eq(certificationResults.cicloId, ciclos.id))
+    .leftJoin(competenciasMacros, eq(certificationResults.macrocompetenciaId, competenciasMacros.id))
+    .where(eq(certificationResults.userId, userId))
+    .orderBy(ciclos.dataInicio, certificationResults.macrocompetenciaOriginal);
+
+  return result;
+}
 export async function getPdiTitulos() {
   const db = await getDb();
   if (!db) return [] as Array<{ titulo: string; total: number }>;
