@@ -46,8 +46,26 @@ async function main() {
   }
   console.log(`\n=== Padrões de erro nos últimos lotes (${bloqueadas.length} linhas analisadas) ===`);
   [...contagem.entries()]
+    .filter(([msg]) => msg.trim() !== "")
     .sort((a, b) => b[1] - a[1])
     .forEach(([msg, n]) => console.log(`  ${n}x  ${msg}`));
+
+  // Listas concretas e distintas (não só contagem) pra decisão humana
+  const macroaeasNaoResolvidas = new Set<string>();
+  const usuariosNaoEncontrados = new Set<string>();
+  for (const b of bloqueadas) {
+    const erro = String(b.erro ?? "");
+    const mMacro = erro.match(/^Macroárea "(.+)" sem correspondência/);
+    if (mMacro) macroaeasNaoResolvidas.add(mMacro[1]);
+    const mUser = erro.match(/^Usuário "(.+)" não encontrado/);
+    if (mUser) usuariosNaoEncontrados.add(mUser[1]);
+  }
+
+  console.log(`\n=== Macroáreas do PDI ainda sem correspondência (${macroaeasNaoResolvidas.size} distintas) ===`);
+  [...macroaeasNaoResolvidas].sort().forEach((m) => console.log(`  - "${m}"`));
+
+  console.log(`\n=== Usuários não encontrados (${usuariosNaoEncontrados.size} distintos) ===`);
+  [...usuariosNaoEncontrados].sort().forEach((u) => console.log(`  - "${u}"`));
 
   process.exit(0);
 }
