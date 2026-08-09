@@ -4416,17 +4416,57 @@ export async function getImportRowsByBatch(importBatchId: number, apenasComErro 
  * (2) alias já aprovado. Nunca cria alias sozinho e nunca promove
  * automaticamente - isso é feito por findOrSuggestCompetencyAlias.
  */
+/**
+ * Remove prefixos conhecidos ("COMPORTAMENTAL - ", "Macro Área: ",
+ * "Competência Técnica: " etc.) e normaliza (sem acento, minúsculo, sem
+ * espaços duplicados) para comparar o "miolo" do nome da competência,
+ * independente de qual das duas fontes (catálogo x planilha) usa qual
+ * convenção de prefixo.
+ */
+function normalizarNomeCompetencia(v: string): string {
+  let t = v
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+  const prefixos = [
+    "macro area do comportamento:",
+    "macro area tecnica:",
+    "macro area:",
+    "competencia comportamental:",
+    "competencia tecnica:",
+    "comportamental -",
+    "tecnica -",
+  ];
+  for (const p of prefixos) {
+    if (t.startsWith(p)) {
+      t = t.slice(p.length).trim();
+      break;
+    }
+  }
+  return t.replace(/\s+/g, " ").trim();
+}
+
 export async function resolveMacrocompetenciaId(grafiaOriginal: string): Promise<number | null> {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
 
   const grafiaNormalizada = grafiaOriginal.trim();
+  const grafiaMiolo = normalizarNomeCompetencia(grafiaOriginal);
 
   const [porNomeExato] = await db
     .select({ id: competenciasMacros.id })
     .from(competenciasMacros)
     .where(eq(competenciasMacros.nome, grafiaNormalizada));
   if (porNomeExato) return porNomeExato.id;
+
+  // Comparação normalizada (ignora prefixo "COMPORTAMENTAL - "/"Macro Área: "
+  // etc., acento, maiúscula/minúscula) - feita em memória pois o catálogo é
+  // pequeno (dezenas de linhas), não centenas de milhares.
+  const todasMacros = await db.select({ id: competenciasMacros.id, nome: competenciasMacros.nome }).from(competenciasMacros);
+  const porMiolo = todasMacros.find((m: any) => normalizarNomeCompetencia(m.nome) === grafiaMiolo);
+  if (porMiolo) return porMiolo.id;
 
   const [porAliasAprovado] = await db
     .select({ macrocompetenciaId: competencyAliases.macrocompetenciaId })
