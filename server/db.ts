@@ -4479,6 +4479,21 @@ export async function resolveMacrocompetenciaId(grafiaOriginal: string): Promise
     );
   if (porAliasAprovado) return porAliasAprovado.macrocompetenciaId;
 
+  // Último fallback: planilha às vezes traz uma versão mais curta do nome
+  // (ex.: "Gestão de Tempo" x catálogo "Gestão do Tempo, Organização e
+  // Disciplina"). Se o miolo do nome do catálogo COMEÇA com o miolo da
+  // planilha (por palavra inteira) e só há UMA correspondência assim, usa.
+  // Mais de uma correspondência = fica ambíguo, nunca escolhe sozinho.
+  const grafiaPalavras = grafiaMiolo.split(" ").filter(Boolean);
+  if (grafiaPalavras.length >= 2) {
+    const candidatos = todasMacros.filter((m: any) => {
+      const nomePalavras = normalizarNomeCompetencia(m.nome).split(" ").filter(Boolean);
+      if (nomePalavras.length < grafiaPalavras.length) return false;
+      return grafiaPalavras.every((p, i) => nomePalavras[i] === p);
+    });
+    if (candidatos.length === 1) return candidatos[0].id;
+  }
+
   return null;
 }
 
