@@ -162,8 +162,12 @@ export async function importCertificacaoTecnica(
         continue;
       }
 
-      const percentual = Math.round(Number(percentualBruto));
-      if (Number.isNaN(percentual) || percentual < 0 || percentual > 100) {
+      // Percentual pode vir como número puro, "70%", "71,4%" (vírgula
+      // decimal) - tudo isso é válido. Texto qualitativo ("Adequado",
+      // "Médio/Alto") não é percentual de verdade - fica como erro mesmo.
+      const percentualTexto = String(percentualBruto).trim().replace("%", "").replace(",", ".");
+      const percentual = Math.round(Number(percentualTexto));
+      if (percentualTexto === "" || Number.isNaN(percentual) || percentual < 0 || percentual > 100) {
         await updateImportRowStatus(importRowId, {
           status: "erro",
           erro: `Percentual inválido: ${percentualBruto}`,
