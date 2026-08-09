@@ -364,7 +364,7 @@ export const performanceEvaluations = mysqlTable("performance_evaluations", {
 	id: int().autoincrement().notNull().primaryKey(),
 	userId: int().notNull().references(() => users.id),
 	cicloId: int().notNull().references(() => ciclos.id),
-	importBatchId: int().references(() => importBatches.id),
+	importBatchId: int(),
 	dataAvaliacao: date("data_avaliacao"),
 	avaliador: varchar({ length: 255 }),
 	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -373,17 +373,36 @@ export const performanceEvaluations = mysqlTable("performance_evaluations", {
 	return {
 		performance_evaluations_userId_idx: index("performance_evaluations_userId_idx").on(table.userId),
 		performance_evaluations_cicloId_idx: index("performance_evaluations_cicloId_idx").on(table.cicloId),
+		perf_eval_batch_fk: foreignKey({
+			columns: [table.importBatchId],
+			foreignColumns: [importBatches.id],
+			name: "perf_eval_batch_fk",
+		}),
 	}
 });
 
 export const performanceEvaluationResults = mysqlTable("performance_evaluation_results", {
 	id: int().autoincrement().notNull().primaryKey(),
-	performanceEvaluationId: int().notNull().references(() => performanceEvaluations.id, { onDelete: "cascade" }),
+	performanceEvaluationId: int().notNull(),
 	competencia: varchar({ length: 255 }).notNull(),
-	competenciaMacroId: int().references(() => competenciasMacros.id),
+	competenciaMacroId: int(),
 	nota: decimal({ precision: 4, scale: 2 }).notNull(),
 	escala: varchar({ length: 20 }).default(`0-3`).notNull(),
 	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+},
+(table) => {
+	return {
+		per_eval_results_macro_fk: foreignKey({
+			columns: [table.competenciaMacroId],
+			foreignColumns: [competenciasMacros.id],
+			name: "per_eval_results_macro_fk",
+		}),
+		per_eval_results_eval_fk: foreignKey({
+			columns: [table.performanceEvaluationId],
+			foreignColumns: [performanceEvaluations.id],
+			name: "per_eval_results_eval_fk",
+		}).onDelete("cascade"),
+	}
 });
 
 export const certificationResults = mysqlTable("certification_results", {
@@ -395,7 +414,7 @@ export const certificationResults = mysqlTable("certification_results", {
 	cargo: varchar({ length: 255 }),
 	perfil: varchar({ length: 100 }),
 	macrocompetenciaOriginal: varchar({ length: 500 }).notNull(),
-	macrocompetenciaId: int().references(() => competenciasMacros.id),
+	macrocompetenciaId: int(),
 	percentual: int().notNull(),
 	leitura: varchar({ length: 255 }),
 	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
@@ -404,6 +423,11 @@ export const certificationResults = mysqlTable("certification_results", {
 	return {
 		certification_results_userId_idx: index("certification_results_userId_idx").on(table.userId),
 		certification_results_cicloId_idx: index("certification_results_cicloId_idx").on(table.cicloId),
+		cert_results_macro_fk: foreignKey({
+			columns: [table.macrocompetenciaId],
+			foreignColumns: [competenciasMacros.id],
+			name: "cert_results_macro_fk",
+		}),
 	}
 });
 
