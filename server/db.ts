@@ -4428,6 +4428,7 @@ function normalizarNomeCompetencia(v: string): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
+    .replace(/[,.;()/]/g, " ") // remove pontuação que atrapalha a comparação por palavra
     .trim();
 
   const prefixos = [
@@ -4479,19 +4480,48 @@ export async function resolveMacrocompetenciaId(grafiaOriginal: string): Promise
     );
   if (porAliasAprovado) return porAliasAprovado.macrocompetenciaId;
 
-  // Último fallback: planilha às vezes traz uma versão mais curta do nome
-  // (ex.: "Gestão de Tempo" x catálogo "Gestão do Tempo, Organização e
-  // Disciplina"). Se o miolo do nome do catálogo COMEÇA com o miolo da
-  // planilha (por palavra inteira) e só há UMA correspondência assim, usa.
-  // Mais de uma correspondência = fica ambíguo, nunca escolhe sozinho.
-  const grafiaPalavras = grafiaMiolo.split(" ").filter(Boolean);
+  // Último fallback: planilha às vezes traz uma versão mais curta/diferente
+  // do nome (ex.: "Gestão de Tempo" x catálogo "Gestão do Tempo,
+  // Organização e Disciplina"). Ignora conectores (de/do/da/e) e considera
+  // correspondência se todas as palavras significativas da planilha
+  // aparecem, na mesma ordem relativa, dentro do nome do catálogo. Só
+  // resolve sozinho se achar EXATAMENTE UMA correspondência assim - duas
+  // macrocompetências parecidas continuam bloqueadas (nunca escolhe sozinho
+  // entre duas opções plausíveis).
+  const PALAVRAS_IGNORADAS = new Set(["de", "do", "da", "dos", "das", "e", "com"]);
+  const palavrasSignificativas = (t: string) => t.split(/\s+/).filter(Boolean).filter((p) => !PALAVRAS_IGNORADAS.has(p));
+
+  const grafiaPalavras = palavrasSignificativas(grafiaMiolo);
   if (grafiaPalavras.length >= 2) {
     const candidatos = todasMacros.filter((m: any) => {
-      const nomePalavras = normalizarNomeCompetencia(m.nome).split(" ").filter(Boolean);
-      if (nomePalavras.length < grafiaPalavras.length) return false;
-      return grafiaPalavras.every((p, i) => nomePalavras[i] === p);
+      const nomePalavras = palavrasSignificativas(normalizarNomeCompetencia(m.nome));
+      let i = 0;
+      for (const p of nomePalavras) {
+        if (i < grafiaPalavras.length && p === grafiaPalavras[i]) i++;
+      }
+      return i === grafiaPalavras.length;
     });
     if (candidatos.length === 1) return candidatos[0].id;
+  }
+
+  // Fallback final: semelhança por sobreposição de palavras (Jaccard). Só
+  // aceita se a melhor pontuação for razoável (>= 0.2) E houver uma vencedora
+  // CLARA, sem empate com a segunda colocada - empate = fica bloqueado,
+  // nunca escolhe no chute entre duas macrocompetências plausíveis.
+  const grafiaSet = new Set(grafiaPalavras);
+  if (grafiaSet.size >= 2) {
+    const pontuados = todasMacros
+      .map((m: any) => {
+        const nomeSet = new Set(palavrasSignificativas(normalizarNomeCompetencia(m.nome)));
+        const inter = Array.from(grafiaSet).filter((p) => nomeSet.has(p)).length;
+        const uniao = new Set(Array.from(grafiaSet).concat(Array.from(nomeSet))).size;
+        return { id: m.id, score: uniao ? inter / uniao : 0 };
+      })
+      .sort((a: { score: number }, b: { score: number }) => b.score - a.score);
+    const [melhor, segunda] = pontuados;
+    if (melhor && melhor.score >= 0.2 && (!segunda || segunda.score < melhor.score)) {
+      return melhor.id;
+    }
   }
 
   return null;
