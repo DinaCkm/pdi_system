@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, varchar, text, timestamp, mysqlEnum, index, foreignKey, bigint, boolean } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, varchar, text, timestamp, mysqlEnum, index, foreignKey, bigint, boolean, decimal } from "drizzle-orm/mysql-core"
 import { sql } from "drizzle-orm"
 import { date } from "drizzle-orm/mysql-core"
 
@@ -21,10 +21,17 @@ export const actions = mysqlTable("actions", {
 	microcompetencia: varchar({ length: 255 }),
 	titulo: varchar({ length: 255 }).notNull(),
 	descricao: text(),
-	prazo: date("prazo").notNull(),
+	prazo: date("prazo"),
 	status: varchar({ length: 50 }).default("nao_iniciada").notNull(),
 	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+	// Campos novos - Relatorio Individual de Evolucao (Etapa 4)
+	cicloId: int().references(() => ciclos.id, { onDelete: "set null" }),
+	tipoCompetencia: mysqlEnum([`comportamental`, `tecnica`]),
+	competenciaOriginal: varchar({ length: 500 }),
+	categoriaDesenvolvimento: varchar({ length: 100 }),
+	dataConclusaoReal: date("data_conclusao_real"),
+	sourceImportRowId: int(),
 });
 
 export const adjustmentComments = mysqlTable("adjustment_comments", {
@@ -314,6 +321,101 @@ export const normasRegras = mysqlTable("normas_regras", {
 	ativo: boolean().default(true).notNull(),
 	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+});
+
+// ==========================================================
+// Relatorio Individual de Evolucao - Etapa 4 (modelagem MySQL)
+// Todas as tabelas abaixo sao aditivas, sem alterar nada existente.
+// ==========================================================
+
+export const importBatches = mysqlTable("import_batches", {
+	id: int().autoincrement().notNull().primaryKey(),
+	cicloId: int().notNull().references(() => ciclos.id),
+	tipo: mysqlEnum([`pdi_comportamental`, `certificacao_tecnica`, `avaliacao_desempenho`]).notNull(),
+	nomeArquivo: varchar({ length: 500 }).notNull(),
+	status: mysqlEnum([`processando`, `concluido`, `concluido_com_erros`, `erro`]).default(`processando`).notNull(),
+	totalLinhas: int().default(0).notNull(),
+	linhasOk: int().default(0).notNull(),
+	linhasErro: int().default(0).notNull(),
+	linhasBloqueadas: int().default(0).notNull(),
+	importadoPor: int().notNull().references(() => users.id),
+	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	concluidoEm: timestamp({ mode: 'string' }),
+});
+
+export const importRows = mysqlTable("import_rows", {
+	id: int().autoincrement().notNull().primaryKey(),
+	importBatchId: int().notNull().references(() => importBatches.id, { onDelete: "cascade" }),
+	numeroLinha: int().notNull(),
+	status: mysqlEnum([`pendente`, `ok`, `erro`, `bloqueado_revisao`]).default(`pendente`).notNull(),
+	erro: text(),
+	dadosOriginais: text().notNull(),
+	entidadeTipo: varchar({ length: 50 }),
+	entidadeId: int(),
+	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+},
+(table) => {
+	return {
+		import_rows_batchId_idx: index("import_rows_batchId_idx").on(table.importBatchId),
+	}
+});
+
+export const performanceEvaluations = mysqlTable("performance_evaluations", {
+	id: int().autoincrement().notNull().primaryKey(),
+	userId: int().notNull().references(() => users.id),
+	cicloId: int().notNull().references(() => ciclos.id),
+	importBatchId: int().references(() => importBatches.id),
+	dataAvaliacao: date("data_avaliacao"),
+	avaliador: varchar({ length: 255 }),
+	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+},
+(table) => {
+	return {
+		performance_evaluations_userId_idx: index("performance_evaluations_userId_idx").on(table.userId),
+		performance_evaluations_cicloId_idx: index("performance_evaluations_cicloId_idx").on(table.cicloId),
+	}
+});
+
+export const performanceEvaluationResults = mysqlTable("performance_evaluation_results", {
+	id: int().autoincrement().notNull().primaryKey(),
+	performanceEvaluationId: int().notNull().references(() => performanceEvaluations.id, { onDelete: "cascade" }),
+	competencia: varchar({ length: 255 }).notNull(),
+	competenciaMacroId: int().references(() => competenciasMacros.id),
+	nota: decimal({ precision: 4, scale: 2 }).notNull(),
+	escala: varchar({ length: 20 }).default(`0-3`).notNull(),
+	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const certificationResults = mysqlTable("certification_results", {
+	id: int().autoincrement().notNull().primaryKey(),
+	userId: int().notNull().references(() => users.id),
+	cicloId: int().notNull().references(() => ciclos.id),
+	importBatchId: int().references(() => importBatches.id),
+	unidadeRegional: varchar({ length: 255 }),
+	cargo: varchar({ length: 255 }),
+	perfil: varchar({ length: 100 }),
+	macrocompetenciaOriginal: varchar({ length: 500 }).notNull(),
+	macrocompetenciaId: int().references(() => competenciasMacros.id),
+	percentual: int().notNull(),
+	leitura: varchar({ length: 255 }),
+	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+},
+(table) => {
+	return {
+		certification_results_userId_idx: index("certification_results_userId_idx").on(table.userId),
+		certification_results_cicloId_idx: index("certification_results_cicloId_idx").on(table.cicloId),
+	}
+});
+
+export const competencyAliases = mysqlTable("competency_aliases", {
+	id: int().autoincrement().notNull().primaryKey(),
+	grafiaOriginal: varchar({ length: 500 }).notNull().unique(),
+	macrocompetenciaId: int().notNull().references(() => competenciasMacros.id),
+	status: mysqlEnum([`sugerido`, `aprovado`]).default(`sugerido`).notNull(),
+	sugeridoPorSimilaridade: boolean().default(false).notNull(),
+	aprovadoPor: int().references(() => users.id),
+	aprovadoEm: timestamp({ mode: 'string' }),
+	createdAt: timestamp({ mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 export type InsertUser = typeof users.$inferInsert;
