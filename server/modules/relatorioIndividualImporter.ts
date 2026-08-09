@@ -31,6 +31,16 @@ function normalizarTexto(v: unknown): string {
     .toLowerCase();
 }
 
+const PALAVRAS_IGNORADAS = new Set(["de", "do", "da", "dos", "das", "e"]);
+
+/** Divide em palavras, ignorando conectores (de/do/da/dos/das/e) e espaços duplicados. */
+function palavrasSignificativas(texto: string): string[] {
+  return texto
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((p) => !PALAVRAS_IGNORADAS.has(p));
+}
+
 function lerPlanilha(buffer: Buffer, nomeAba: string): Record<string, any>[] {
   const wb = XLSX.read(buffer, { type: "buffer" });
   const nomeReal = wb.SheetNames.find((n) => n.trim() === nomeAba.trim()) ?? nomeAba;
@@ -73,15 +83,19 @@ async function resolverUsuario(
     const exato = todos.find((u: any) => normalizarTexto(u.name) === alvo);
     if (exato) return exato.id;
 
-    // Fallback: planilha às vezes traz nome abreviado (só primeiro + segundo
-    // nome). Se o nome completo do usuário COMEÇA com o nome da planilha
-    // (por palavra inteira, não por substring solta) e só existe UMA pessoa
-    // assim, usa. Se houver mais de uma, fica ambíguo - nunca escolhe sozinho.
-    const alvoPalavras = alvo.split(" ").filter(Boolean);
+    // Fallback por semelhança: ignora conectores (de/do/da/e) e espaços
+    // duplicados, e considera correspondência se todas as palavras
+    // significativas do nome da planilha aparecem no nome cadastrado, na
+    // mesma ordem relativa. Só resolve sozinho se achar EXATAMENTE UMA
+    // pessoa assim - duas pessoas parecidas continuam bloqueadas.
+    const alvoPalavras = palavrasSignificativas(alvo);
     const candidatos = todos.filter((u: any) => {
-      const nomePalavras = normalizarTexto(u.name).split(" ").filter(Boolean);
-      if (nomePalavras.length < alvoPalavras.length) return false;
-      return alvoPalavras.every((p, i) => nomePalavras[i] === p);
+      const nomePalavras = palavrasSignificativas(normalizarTexto(u.name));
+      let i = 0;
+      for (const p of nomePalavras) {
+        if (i < alvoPalavras.length && p === alvoPalavras[i]) i++;
+      }
+      return i === alvoPalavras.length;
     });
     if (candidatos.length === 1) return candidatos[0].id;
   }
