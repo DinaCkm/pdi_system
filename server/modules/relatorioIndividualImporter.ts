@@ -69,8 +69,21 @@ async function resolverUsuario(
   if (dados.nome) {
     const alvo = normalizarTexto(dados.nome);
     const todos = await db.select({ id: users.id, name: users.name }).from(users);
-    const match = todos.find((u: any) => normalizarTexto(u.name) === alvo);
-    if (match) return match.id;
+
+    const exato = todos.find((u: any) => normalizarTexto(u.name) === alvo);
+    if (exato) return exato.id;
+
+    // Fallback: planilha às vezes traz nome abreviado (só primeiro + segundo
+    // nome). Se o nome completo do usuário COMEÇA com o nome da planilha
+    // (por palavra inteira, não por substring solta) e só existe UMA pessoa
+    // assim, usa. Se houver mais de uma, fica ambíguo - nunca escolhe sozinho.
+    const alvoPalavras = alvo.split(" ").filter(Boolean);
+    const candidatos = todos.filter((u: any) => {
+      const nomePalavras = normalizarTexto(u.name).split(" ").filter(Boolean);
+      if (nomePalavras.length < alvoPalavras.length) return false;
+      return alvoPalavras.every((p, i) => nomePalavras[i] === p);
+    });
+    if (candidatos.length === 1) return candidatos[0].id;
   }
 
   return null;
