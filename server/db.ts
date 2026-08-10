@@ -4449,6 +4449,47 @@ function normalizarNomeCompetencia(v: string): string {
   return t.replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Cria uma nova macrocompetência COMPORTAMENTAL no catálogo, com o
+ * prefixo "COMPORTAMENTAL - " padrão do sistema, preservando a grafia
+ * original (só tirando o prefixo "Macro Área: "/"Macro Área do
+ * Comportamento: " da planilha, sem mexer em acentuação/maiúsculas).
+ */
+export async function criarMacroComportamental(grafiaOriginal: string): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  let nomeBase = grafiaOriginal.trim();
+  const prefixosParaRemover = [
+    /^macro área do comportamento:\s*/i,
+    /^macro área:\s*/i,
+    /^competência comportamental:\s*/i,
+  ];
+  for (const re of prefixosParaRemover) {
+    if (re.test(nomeBase)) {
+      nomeBase = nomeBase.replace(re, "").trim();
+      break;
+    }
+  }
+
+  const nomeFinal = `COMPORTAMENTAL - ${nomeBase}`;
+
+  // Evita duplicar se, entre a checagem e a criação, já existir (corrida
+  // rara, mas seguro conferir de novo antes de inserir).
+  const [existente] = await db
+    .select({ id: competenciasMacros.id })
+    .from(competenciasMacros)
+    .where(eq(competenciasMacros.nome, nomeFinal));
+  if (existente) return existente.id;
+
+  const result = await db.insert(competenciasMacros).values({
+    nome: nomeFinal,
+    descricao: `Criada automaticamente a partir da planilha do Ciclo 2025 (comportamental) - fonte: "${grafiaOriginal}"`,
+    ativo: true,
+  });
+  return result[0].insertId as number;
+}
+
 export async function resolveMacrocompetenciaId(grafiaOriginal: string): Promise<number | null> {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
