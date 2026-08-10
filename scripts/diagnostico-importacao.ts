@@ -23,7 +23,7 @@ async function main() {
     .select()
     .from(importBatches)
     .orderBy(desc(importBatches.id))
-    .limit(5);
+    .limit(3);
   console.log(`\n=== Últimos ${lotesRecentes.length} lotes de importação ===`);
   lotesRecentes.forEach((l: any) =>
     console.log(`  batch ${l.id} | tipo=${l.tipo} | ok=${l.linhasOk} erro=${l.linhasErro} bloqueadas=${l.linhasBloqueadas}`)
@@ -66,6 +66,23 @@ async function main() {
 
   console.log(`\n=== Usuários não encontrados (${usuariosNaoEncontrados.size} distintos) ===`);
   [...usuariosNaoEncontrados].sort().forEach((u) => console.log(`  - "${u}"`));
+
+  // Macrocompetências técnicas da certificação sem alias (Etapa 9) e erros de percentual
+  const macrocompetenciasSemAlias = new Set<string>();
+  const percentuaisInvalidos = new Set<string>();
+  for (const b of bloqueadas) {
+    const erro = String(b.erro ?? "");
+    const mMacroComp = erro.match(/^Macrocompetência "(.+)" sem alias aprovado/);
+    if (mMacroComp) macrocompetenciasSemAlias.add(mMacroComp[1]);
+    const mPerc = erro.match(/^Percentual inválido: (.+)$/);
+    if (mPerc) percentuaisInvalidos.add(mPerc[1]);
+  }
+
+  console.log(`\n=== Macrocompetências técnicas sem alias - Etapa 9 (${macrocompetenciasSemAlias.size} distintas) ===`);
+  [...macrocompetenciasSemAlias].sort().forEach((m) => console.log(`  - "${m}"`));
+
+  console.log(`\n=== Valores de percentual rejeitados (${percentuaisInvalidos.size} distintos) ===`);
+  [...percentuaisInvalidos].sort().forEach((p) => console.log(`  - "${p}"`));
 
   process.exit(0);
 }
