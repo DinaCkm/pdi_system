@@ -4423,6 +4423,11 @@ export async function getImportRowsByBatch(importBatchId: number, apenasComErro 
  * independente de qual das duas fontes (catálogo x planilha) usa qual
  * convenção de prefixo.
  */
+/** Só minúsculas/sem acento, SEM remover o prefixo - usado pra checar de qual tipo (comportamental/técnica) é uma linha do catálogo. */
+function normalizarNomeCompetenciaBruto(v: string): string {
+  return v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
 function normalizarNomeCompetencia(v: string): string {
   let t = v
     .normalize("NFD")
@@ -4490,36 +4495,44 @@ export async function criarMacroComportamental(grafiaOriginal: string): Promise<
   return result[0].insertId as number;
 }
 
-export async function resolveMacrocompetenciaId(grafiaOriginal: string): Promise<number | null> {
+export async function resolveMacrocompetenciaId(
+  grafiaOriginal: string,
+  tipo?: "comportamental" | "tecnica"
+): Promise<number | null> {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB não conectado" });
+
+  const prefixoTipo = tipo === "comportamental" ? "comportamental -" : tipo === "tecnica" ? "tecnica -" : null;
+  const pertenceAoTipo = (nome: string) => !prefixoTipo || normalizarNomeCompetenciaBruto(nome).startsWith(prefixoTipo);
 
   const grafiaNormalizada = grafiaOriginal.trim();
   const grafiaMiolo = normalizarNomeCompetencia(grafiaOriginal);
 
   const [porNomeExato] = await db
-    .select({ id: competenciasMacros.id })
+    .select({ id: competenciasMacros.id, nome: competenciasMacros.nome })
     .from(competenciasMacros)
     .where(eq(competenciasMacros.nome, grafiaNormalizada));
-  if (porNomeExato) return porNomeExato.id;
+  if (porNomeExato && pertenceAoTipo(porNomeExato.nome)) return porNomeExato.id;
 
-  // Comparação normalizada (ignora prefixo "COMPORTAMENTAL - "/"Macro Área: "
-  // etc., acento, maiúscula/minúscula) - feita em memória pois o catálogo é
-  // pequeno (dezenas de linhas), não centenas de milhares.
-  const todasMacros = await db.select({ id: competenciasMacros.id, nome: competenciasMacros.nome }).from(competenciasMacros);
+  // Comparação normalizada, restrita ao mesmo tipo (comportamental x
+  // técnica) quando informado - nunca deixa um casar com o outro.
+  const todasMacrosTodas = await db.select({ id: competenciasMacros.id, nome: competenciasMacros.nome }).from(competenciasMacros);
+  const todasMacros = todasMacrosTodas.filter((m: any) => pertenceAoTipo(m.nome));
+
   const porMiolo = todasMacros.find((m: any) => normalizarNomeCompetencia(m.nome) === grafiaMiolo);
   if (porMiolo) return porMiolo.id;
 
   const [porAliasAprovado] = await db
-    .select({ macrocompetenciaId: competencyAliases.macrocompetenciaId })
+    .select({ macrocompetenciaId: competencyAliases.macrocompetenciaId, nomeMacro: competenciasMacros.nome })
     .from(competencyAliases)
+    .innerJoin(competenciasMacros, eq(competencyAliases.macrocompetenciaId, competenciasMacros.id))
     .where(
       and(
         eq(competencyAliases.grafiaOriginal, grafiaNormalizada),
         eq(competencyAliases.status, "aprovado")
       )
     );
-  if (porAliasAprovado) return porAliasAprovado.macrocompetenciaId;
+  if (porAliasAprovado && pertenceAoTipo(porAliasAprovado.nomeMacro)) return porAliasAprovado.macrocompetenciaId;
 
   // Último fallback: planilha às vezes traz uma versão mais curta/diferente
   // do nome (ex.: "Gestão de Tempo" x catálogo "Gestão do Tempo,
