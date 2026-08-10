@@ -208,7 +208,7 @@ export async function importCertificacaoTecnica(
       // da Dina: só trabalhamos com o que já está cadastrado no sistema -
       // sem correspondência = linha DESCARTADA (não é mais pendência de
       // Etapa 9, é definitivo).
-      const macrocompetenciaId = await resolveMacrocompetenciaId(String(macrocompetenciaOriginal));
+      const macrocompetenciaId = await resolveMacrocompetenciaId(String(macrocompetenciaOriginal), "tecnica");
       if (!macrocompetenciaId) {
         await updateImportRowStatus(importRowId, {
           status: "erro",
@@ -377,7 +377,7 @@ export async function importAvaliacaoDesempenho(
         avaliacaoPorEmail.set(chaveAvaliacao, performanceEvaluationId);
       }
 
-      const macrocompetenciaId = await resolveMacrocompetenciaId(String(competenciaNome));
+      const macrocompetenciaId = await resolveMacrocompetenciaId(String(competenciaNome), "comportamental");
 
       const resultId = await addPerformanceEvaluationResult({
         performanceEvaluationId,
@@ -513,9 +513,22 @@ export async function importPdiComportamental(
       // avaliação foi feita em outro sistema) - se não existir no catálogo,
       // CRIA a macrocompetência em vez de descartar. Diferente da
       // certificação técnica, onde só usamos o que já existe.
-      let macroId = await resolveMacrocompetenciaId(String(padronizacao));
+      // actions.macroId é NOT NULL. Decisão da Dina: eixo COMPORTAMENTAL usa
+      // a planilha do Ciclo 2025 como fonte de verdade - cria a
+      // macrocompetência se não existir. Eixo TÉCNICA segue a mesma regra
+      // da certificação: só usa o que já existe, senão descarta.
+      let macroId = await resolveMacrocompetenciaId(String(padronizacao), tipoCompetencia);
       if (!macroId) {
-        macroId = await criarMacroComportamental(String(padronizacao));
+        if (tipoCompetencia === "comportamental") {
+          macroId = await criarMacroComportamental(String(padronizacao));
+        } else {
+          await updateImportRowStatus(importRowId, {
+            status: "erro",
+            erro: `Descartada: macroárea técnica "${padronizacao}" não existe no catálogo do sistema`,
+          });
+          linhasErro++;
+          continue;
+        }
       }
 
       const pdiId = await garantirPdi(db, userId, cicloId, importadoPor);
