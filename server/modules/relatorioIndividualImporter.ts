@@ -8,6 +8,7 @@ import {
   createImportRow,
   updateImportRowStatus,
   resolveMacrocompetenciaId,
+  criarMacroComportamental,
   createPerformanceEvaluation,
   addPerformanceEvaluationResult,
   createCertificationResult,
@@ -203,17 +204,17 @@ export async function importCertificacaoTecnica(
         continue;
       }
 
-      // Resolve macrocompetência: nome exato -> alias aprovado.
-      // Sem correspondência: NÃO inventa/sugere sozinho. A linha bloqueada
-      // com o erro abaixo já serve de fila de pendências para a Etapa 9
-      // (onde a sugestão por similaridade será construída de verdade).
+      // Resolve macrocompetência: nome exato -> semelhança segura. Decisão
+      // da Dina: só trabalhamos com o que já está cadastrado no sistema -
+      // sem correspondência = linha DESCARTADA (não é mais pendência de
+      // Etapa 9, é definitivo).
       const macrocompetenciaId = await resolveMacrocompetenciaId(String(macrocompetenciaOriginal));
       if (!macrocompetenciaId) {
         await updateImportRowStatus(importRowId, {
-          status: "bloqueado_revisao",
-          erro: `Macrocompetência "${macrocompetenciaOriginal}" sem alias aprovado - aguardando resolução (Etapa 9)`,
+          status: "erro",
+          erro: `Descartada: macrocompetência "${macrocompetenciaOriginal}" não existe no catálogo do sistema`,
         });
-        linhasBloqueadas++;
+        linhasErro++;
         continue;
       }
 
@@ -507,17 +508,14 @@ export async function importPdiComportamental(
         continue;
       }
 
-      // actions.macroId é NOT NULL - resolve pelo catálogo real, nunca inventa.
-      // Se não resolver, a linha bloqueada com o erro abaixo fica como
-      // pendência para a Etapa 9, sem gravar nenhum alias fake.
-      const macroId = await resolveMacrocompetenciaId(String(padronizacao));
+      // actions.macroId é NOT NULL. Decisão da Dina: para o eixo
+      // COMPORTAMENTAL, a planilha do Ciclo 2025 é a fonte de verdade (a
+      // avaliação foi feita em outro sistema) - se não existir no catálogo,
+      // CRIA a macrocompetência em vez de descartar. Diferente da
+      // certificação técnica, onde só usamos o que já existe.
+      let macroId = await resolveMacrocompetenciaId(String(padronizacao));
       if (!macroId) {
-        await updateImportRowStatus(importRowId, {
-          status: "bloqueado_revisao",
-          erro: `Macroárea "${padronizacao}" sem correspondência no catálogo - aguardando resolução (Etapa 9)`,
-        });
-        linhasBloqueadas++;
-        continue;
+        macroId = await criarMacroComportamental(String(padronizacao));
       }
 
       const pdiId = await garantirPdi(db, userId, cicloId, importadoPor);
