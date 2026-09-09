@@ -4,7 +4,7 @@ import express from "express";
 import { createServer } from "http";
 import cookieParser from "cookie-parser";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { appRouter } from "../routers";
+import { rootRouter } from "../rootRouter";
 import { createTRPCContext } from "./customTrpc";
 import { serveStatic, setupVite } from "./vite";
 import { timingSafeEqual } from "crypto";
@@ -24,7 +24,7 @@ async function startServer() {
   app.use(
     "/api/trpc",
     createExpressMiddleware({
-      router: appRouter,
+      router: rootRouter,
       createContext: createTRPCContext,
     })
   );
@@ -54,9 +54,9 @@ app.post("/api/cron/acoes-vencidas", async (req, res) => {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    const { appRouter } = await import("../routers");
+    const { rootRouter } = await import("../rootRouter");
 
-    const caller = appRouter.createCaller({
+    const caller = rootRouter.createCaller({
       user: {
         id: 0,
         name: "CRON",
