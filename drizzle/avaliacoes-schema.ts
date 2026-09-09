@@ -8,6 +8,7 @@ import {
   mysqlTable,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
@@ -113,6 +114,9 @@ export const medicoesCompetencias = mysqlTable(
     medicoesColaboradorCompetenciaIdx: index(
       "medicoes_colaborador_competencia_idx",
     ).on(table.colaboradorId, table.competenciaMacroId),
+    medicoesUnicaPorAvaliacaoIdx: uniqueIndex(
+      "medicoes_unica_por_avaliacao_idx",
+    ).on(table.avaliacaoId, table.colaboradorId, table.competenciaMacroId),
   }),
 );
 
@@ -165,6 +169,11 @@ export const trilhaCompetencias = mysqlTable(
       table.cicloId,
     ),
     trilhaCompetenciaIdx: index("trilha_competencia_idx").on(
+      table.competenciaMacroId,
+    ),
+    trilhaUnicaPorCicloIdx: uniqueIndex("trilha_unica_por_ciclo_idx").on(
+      table.colaboradorId,
+      table.cicloId,
       table.competenciaMacroId,
     ),
   }),
