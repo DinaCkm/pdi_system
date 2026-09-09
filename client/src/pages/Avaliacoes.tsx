@@ -21,10 +21,26 @@ const tipoLabel: Record<string, string> = {
   TECNICA: "Avaliação Técnica",
 };
 
+type AvaliacaoListItem = {
+  id: number;
+  cicloId: number;
+  cicloNome: string | null;
+  tipo: string;
+  titulo: string;
+  departamentoNome: string | null;
+  dataReferencia: string;
+  status: string;
+};
+
 export default function Avaliacoes() {
-  const avaliacoesQuery = trpc.avaliacoes.listar.useQuery(undefined, {
+  const avaliacoesApi = (trpc as any).avaliacoes;
+  const avaliacoesQuery = avaliacoesApi.listar.useQuery(undefined, {
     refetchOnWindowFocus: false,
-  });
+  }) as {
+    isLoading: boolean;
+    isError: boolean;
+    data?: AvaliacaoListItem[];
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -133,7 +149,7 @@ export default function Avaliacoes() {
                   </tr>
                 </thead>
                 <tbody>
-                  {avaliacoesQuery.data?.map(avaliacao => (
+                  {avaliacoesQuery.data?.map((avaliacao: AvaliacaoListItem) => (
                     <tr key={avaliacao.id} className="border-b last:border-0">
                       <td className="py-3 pr-4 font-medium">{avaliacao.titulo}</td>
                       <td className="py-3 pr-4">{tipoLabel[avaliacao.tipo] ?? avaliacao.tipo}</td>
