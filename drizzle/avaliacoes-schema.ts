@@ -1,4 +1,5 @@
 import {
+  AnyMySqlColumn,
   boolean,
   date,
   decimal,
@@ -12,7 +13,13 @@ import {
   varchar,
 } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
-import { ciclos, competenciasMacros, departamentos, users } from "./schema";
+import {
+  actions,
+  ciclos,
+  competenciasMacros,
+  departamentos,
+  users,
+} from "./schema";
 
 /**
  * Base de dados do modulo Avaliacoes e Evolucao.
@@ -93,7 +100,10 @@ export const medicoesCompetencias = mysqlTable(
     escalaMax: decimal("escala_max", { precision: 10, scale: 4 }).notNull(),
     classificacao: varchar({ length: 255 }),
     observacao: text(),
-    medicaoAnteriorId: int("medicao_anterior_id"),
+    medicaoAnteriorId: int("medicao_anterior_id").references(
+      (): AnyMySqlColumn => medicoesCompetencias.id,
+      { onDelete: "set null" },
+    ),
     validada: boolean().default(false).notNull(),
     validadaPor: int("validada_por").references(() => users.id, {
       onDelete: "set null",
@@ -202,7 +212,9 @@ export const historicoDesenvolvimento = mysqlTable(
     transferidaParaPdiAtual: boolean("transferida_para_pdi_atual")
       .default(false)
       .notNull(),
-    actionAtualId: int("action_atual_id"),
+    actionAtualId: int("action_atual_id").references(() => actions.id, {
+      onDelete: "set null",
+    }),
     dadosOriginais: text("dados_originais"),
     createdAt: timestamp({ mode: "string" })
       .default(sql`CURRENT_TIMESTAMP`)
