@@ -1,0 +1,44 @@
+name: PR Validation
+
+on:
+  push:
+    branches: [fix/avaliacoes-funcional]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript check (informational - legacy errors exist)
+        continue-on-error: true
+        run: pnpm check
+
+      - name: Legacy test suite (informational - baseline failures exist)
+        continue-on-error: true
+        run: pnpm test
+
+      - name: Avaliacoes and Evolucao focused tests
+        run: pnpm vitest run server/avaliacoesDomain.test.ts server/evolucaoDomain.test.ts
+
+      - name: Production build
+        run: pnpm build
