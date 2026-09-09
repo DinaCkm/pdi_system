@@ -20,50 +20,75 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Target, Calendar, FileText, Bell, BarChart, Building2, CheckSquare, MessageSquarePlus, Upload, ClipboardCheck, History, Trash2, AlertTriangle, TrendingUp, ChevronDown, ChevronRight, User, Send, BookOpen, ExternalLink, Lock } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Target, FileText, BarChart, Building2, CheckSquare, MessageSquarePlus, Upload, ClipboardCheck, History, Trash2, AlertTriangle, TrendingUp, ChevronDown, ChevronRight, Send, BookOpen, ExternalLink, Lock } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 import { trpc } from "@/lib/trpc";
-import { PendencyBadge } from "./PendencyBadge";
 import { ModalPrimeiroAcesso } from "./ModalPrimeiroAcesso";
 import { SystemLockBanner } from "./SystemLockBanner";
 
+type MenuItem = {
+  icon: any;
+  label: string;
+  path: string;
+  section?: string;
+  external?: boolean;
+  tooltipText?: string;
+};
+
+const ADMIN_SECTION_LABELS: Record<string, string> = {
+  visao: "Visão Geral",
+  desenvolvimento: "Desenvolvimento e PDI",
+  pessoas: "Gestão de Pessoas e Estrutura",
+  acompanhamento: "Acompanhamento e Resultados",
+  solicitacoes: "Solicitações e Alterações",
+  administracao: "Administração do Sistema",
+  normas: "Normas e Governança",
+};
+
+const ADMIN_SECTION_ORDER = [
+  "visao",
+  "desenvolvimento",
+  "pessoas",
+  "acompanhamento",
+  "solicitacoes",
+  "administracao",
+  "normas",
+];
+
 const getMenuItems = (userRole: string) => {
-  const items: Array<{ icon: any; label: string; path: string; section?: string; external?: boolean; tooltipText?: string }> = [];
+  const items: MenuItem[] = [];
   
   if (userRole === "admin") {
-    // Normas e Regras - primeiro item
     items.push(
+      { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", section: "visao" },
+
+      { icon: Target, label: "Competências", path: "/competencias", section: "desenvolvimento" },
+      { icon: ClipboardCheck, label: "Avaliações", path: "/avaliacoes", section: "desenvolvimento" },
+      { icon: FileText, label: "PDIs", path: "/pdis", section: "desenvolvimento" },
+      { icon: CheckSquare, label: "Ações", path: "/acoes", section: "desenvolvimento" },
+      { icon: TrendingUp, label: "Evolução", path: "/evolucao", section: "desenvolvimento" },
+
+      { icon: Users, label: "Usuários", path: "/usuarios", section: "pessoas" },
+      { icon: Building2, label: "Departamentos", path: "/departamentos", section: "pessoas" },
+      { icon: Lock, label: "Controle de Execução do PDI", path: "/controle-execucao", section: "pessoas" },
+
+      { icon: TrendingUp, label: "Análise de Liderança", path: "/analise-lideranca", section: "acompanhamento" },
+      { icon: ClipboardCheck, label: "Admin Dashboard", path: "/admin-dashboard", section: "acompanhamento" },
+      { icon: BarChart, label: "Relatórios", path: "/relatorios", section: "acompanhamento" },
+      { icon: AlertTriangle, label: "Relatório de Ações Vencidas", path: "/relatorio-acoes-vencidas", section: "acompanhamento" },
+
+      { icon: MessageSquarePlus, label: "Ações Solicitadas por Empregados", path: "/solicitacoes-acoes", section: "solicitacoes" },
+      { icon: History, label: "Histórico de Alteração nas Ações", path: "/solicitacoes-admin", section: "solicitacoes" },
+
+      { icon: Building2, label: "Central de Comando", path: "/central-comando", section: "administracao" },
+      { icon: Upload, label: "Importação em Massa", path: "/importacao", section: "administracao" },
+      { icon: Trash2, label: "Auditoria de Exclusões", path: "/auditoria-exclusoes", section: "administracao" },
+
       { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras", section: "normas" },
       { icon: BookOpen, label: "Gerenciar Normas e Regras", path: "/admin-normas-regras", section: "normas" },
-    );
-    // Seção Estratégico
-    items.push(
-      { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", section: "estrategico" },
-      { icon: TrendingUp, label: "Análise de Liderança", path: "/analise-lideranca", section: "estrategico" },
-      { icon: BarChart, label: "Relatórios", path: "/relatorios", section: "estrategico" },
-      { icon: AlertTriangle, label: "Relatório de Ações Vencidas", path: "/relatorio-acoes-vencidas", section: "estrategico" },
-    );
-    // Seção Operacional
-    items.push(
-      { icon: Building2, label: "Central de Comando", path: "/central-comando", section: "operacional" },
-      { icon: ClipboardCheck, label: "Admin Dashboard", path: "/admin-dashboard", section: "operacional" },
-      { icon: Users, label: "Usuários", path: "/usuarios", section: "operacional" },
-      { icon: Building2, label: "Departamentos", path: "/departamentos", section: "operacional" },
-      { icon: Target, label: "Competências", path: "/competencias", section: "operacional" },
-      { icon: FileText, label: "PDIs", path: "/pdis", section: "operacional" },
-      { icon: CheckSquare, label: "Ações", path: "/acoes", section: "operacional" },
-      // { icon: ClipboardCheck, label: "Evidências Pendentes", path: "/evidencias-pendentes", section: "operacional" }, // REMOVIDO - consolidado no Admin Dashboard
-      { icon: MessageSquarePlus, label: "Histórico de Alteração nas Ações", path: "/solicitacoes-admin", section: "operacional" },
-      { icon: Upload, label: "Importação em Massa", path: "/importacao", section: "operacional" },
-      { icon: Trash2, label: "Auditoria de Exclusões", path: "/auditoria-exclusoes", section: "operacional" },
-      { icon: Lock, label: "Controle de Execução do PDI", path: "/controle-execucao", section: "operacional" },
-    );
-    // Seção Solicitações
-    items.push(
-      { icon: MessageSquarePlus, label: "Ações Solicitadas por Empregados", path: "/solicitacoes-acoes", section: "solicitacoes" },
     );
   } else if (userRole === "lider") {
     items.push(
@@ -79,7 +104,6 @@ const getMenuItems = (userRole: string) => {
       { icon: ExternalLink, label: "Ecossistema do Bem - Líderes e Sucessores", path: "https://ecolider.evoluirckm.com", external: true },
     );
   } else if (userRole === "gerente") {
-    // Gerente tem acesso de leitura: Dashboard, PDIs, Ações, Histórico, Relatório de Vencidas
     items.push(
       { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
@@ -122,43 +146,40 @@ export default function DashboardLayout({
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
   const { loading, user } = useAuth();
-  const [location] = useLocation();
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
-
-  // Cleanup de Portals removido - causava erro de removeChild
 
   if (loading) {
     return <DashboardLayoutSkeleton />
   }
 
   if (!user) {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-        <div className="flex flex-col items-center gap-6">
-          <h1 className="text-2xl font-semibold tracking-tight text-center">
-            Faça login para continuar
-          </h1>
-          <p className="text-sm text-muted-foreground text-center max-w-sm">
-            O acesso a esta área exige autenticação. Faça login para continuar.
-          </p>
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
+          <div className="flex flex-col items-center gap-6">
+            <h1 className="text-2xl font-semibold tracking-tight text-center">
+              Faça login para continuar
+            </h1>
+            <p className="text-sm text-muted-foreground text-center max-w-sm">
+              O acesso a esta área exige autenticação. Faça login para continuar.
+            </p>
+          </div>
+          <Button
+            onClick={() => {
+              window.location.href = "/";
+            }}
+            size="lg"
+            className="w-full shadow-lg hover:shadow-xl transition-all"
+          >
+            Ir para o login
+          </Button>
         </div>
-        <Button
-          onClick={() => {
-            window.location.href = "/";
-          }}
-          size="lg"
-          className="w-full shadow-lg hover:shadow-xl transition-all"
-        >
-          Ir para o login
-        </Button>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <SidebarProvider
@@ -184,7 +205,7 @@ function DashboardLayoutContent({
   children,
   setSidebarWidth,
 }: DashboardLayoutContentProps) {
-  const { user, logout, loading } = useAuth();
+  const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -192,35 +213,49 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const menuItems = getMenuItems(user?.role || "colaborador");
   const activeMenuItem = menuItems.find((item: any) => {
-    // Para itens com query params, comparar o pathname base + query
     if (item.path.includes('?')) {
       return (location + window.location.search) === item.path;
     }
     return item.path === location;
   });
   const isMobile = useIsMobile();
-  
-  // Estados para seções colapsáveis do menu Admin
-  const [estrategicoOpen, setEstrategicoOpen] = useState(true);
-  const [operacionalOpen, setOperacionalOpen] = useState(true);
 
-  // Cleanup de Portals removido - causava erro de removeChild
+  const activeAdminSection = user?.role === "admin"
+    ? menuItems.find((item) => item.path === location)?.section
+    : undefined;
+
+  const [adminSectionsOpen, setAdminSectionsOpen] = useState<Record<string, boolean>>({
+    visao: true,
+    desenvolvimento: false,
+    pessoas: false,
+    acompanhamento: false,
+    solicitacoes: false,
+    administracao: false,
+    normas: false,
+  });
+
+  useEffect(() => {
+    if (user?.role === "admin" && activeAdminSection) {
+      setAdminSectionsOpen((current) => ({
+        ...current,
+        [activeAdminSection]: true,
+      }));
+    }
+  }, [user?.role, activeAdminSection]);
   
-  // Carregar contagem de pendências (só se autenticado)
   const { data: pendenciesSummary } = trpc.notifications.getPendenciesSummary.useQuery(
     undefined,
     { 
-      refetchInterval: 30000, // Atualizar a cada 30 segundos
-      enabled: Boolean(user) // Só faz query se usuário está logado
+      refetchInterval: 30000,
+      enabled: Boolean(user)
     }
   );
 
-  // Carregar contadores nao lidos por role (só se autenticado)
   const { data: unreadCounts } = trpc.notifications.getUnreadCounts.useQuery(
     undefined,
     { 
-      refetchInterval: 30000, // Atualizar a cada 30 segundos
-      enabled: Boolean(user) // Só faz query se usuário está logado
+      refetchInterval: 30000,
+      enabled: Boolean(user)
     }
   );
 
@@ -260,6 +295,23 @@ function DashboardLayoutContent({
     };
   }, [isResizing, setSidebarWidth]);
 
+  const renderAdminItem = (item: MenuItem) => {
+    const isActive = location === item.path;
+    return (
+      <SidebarMenuItem key={item.path}>
+        <SidebarMenuButton
+          isActive={isActive}
+          onClick={() => setLocation(item.path)}
+          tooltip={item.label}
+          className="h-9 transition-all font-normal"
+        >
+          <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
+          <span className="text-sm">{item.label}</span>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  };
+
   return (
     <>
       <div className="relative" ref={sidebarRef}>
@@ -290,7 +342,6 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
-          {/* Informações do Usuário - Card Compacto */}
           {!isCollapsed && user && (
             <div className="mx-3 my-2 px-3 py-2 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-sm">
               <div className="flex items-center gap-2.5">
@@ -306,7 +357,6 @@ function DashboardLayoutContent({
                   </span>
                 </div>
               </div>
-              {/* Info compacta */}
               <div className="mt-1.5 pt-1.5 border-t border-blue-100 space-y-0.5">
                 <div className="flex items-center gap-1.5">
                   <Building2 className="h-3 w-3 text-blue-500 shrink-0" />
@@ -327,54 +377,46 @@ function DashboardLayoutContent({
           )}
 
           <SidebarContent className="gap-0 overflow-y-auto flex-1">
-            {/* Menu simples para Admin - lista direta sem separação */}
             {user?.role === "admin" && (
               <SidebarMenu className="px-2 py-1">
-                {menuItems.map((item: any) => {
-                  const isActive = location === item.path;
-                  let badgeCount = 0;
-                  
-                  if (item.path === "/evidencias-pendentes") {
-                    badgeCount = unreadCounts?.evidenciasPendentes || 0;
-                  }
-                  return (
-                    <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        onClick={() => setLocation(item.path)}
-                        tooltip={item.label}
-                        className="h-9 transition-all font-normal"
-                      >
-                        <item.icon
-                          className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                        />
-                        <span className="text-sm">{item.label}</span>
-                        {badgeCount > 0 && (
-                          <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full animate-pulse">
-                            {badgeCount}
-                          </span>
-                        )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                {isCollapsed
+                  ? menuItems.map(renderAdminItem)
+                  : ADMIN_SECTION_ORDER.map((section) => {
+                      const sectionItems = menuItems.filter((item) => item.section === section);
+                      if (sectionItems.length === 0) return null;
+                      const isOpen = adminSectionsOpen[section] ?? false;
+                      const sectionHasActive = sectionItems.some((item) => item.path === location);
+
+                      return (
+                        <div key={section} className="mb-1">
+                          <button
+                            type="button"
+                            onClick={() => setAdminSectionsOpen((current) => ({ ...current, [section]: !isOpen }))}
+                            className={`w-full flex items-center justify-between rounded-md px-2 py-2 text-left text-xs font-semibold transition-colors hover:bg-accent ${sectionHasActive ? "text-primary" : "text-muted-foreground"}`}
+                            aria-expanded={isOpen}
+                          >
+                            <span>{ADMIN_SECTION_LABELS[section]}</span>
+                            {isOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                          </button>
+                          {isOpen && (
+                            <div className="pl-1">
+                              {sectionItems.map(renderAdminItem)}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
               </SidebarMenu>
             )}
             
-            {/* Menu normal para outros roles */}
             {user?.role !== "admin" && (
               <SidebarMenu className="px-2 py-1">
                 {menuItems.map((item: any) => {
-                  // Para itens com query params, comparar pathname + search
                   const isActive = item.external ? false : item.path.includes('?')
                     ? (location + window.location.search) === item.path
                     : location === item.path;
                   let badgeCount = 0;
-                  
-                  if (item.path === "/evidencias-pendentes" && user?.role === "admin") {
-                    badgeCount = unreadCounts?.evidenciasPendentes || 0;
-                  }
-                  // Badge para solicitações da equipe pendentes (Líder, CKM, Admin)
+
                   if (item.path === "/solicitacoes-acoes?aba=equipe" || item.path === "/solicitacoes-acoes") {
                     badgeCount = unreadCounts?.solicitacoesEquipePendentes || 0;
                   }
@@ -389,12 +431,9 @@ function DashboardLayoutContent({
                           if (item.external) {
                             window.open(item.path, '_blank', 'noopener,noreferrer');
                           } else if (item.path.includes('?')) {
-                            // Para itens com query params, usar window.location para navegar
-                            const [pathname, search] = item.path.split('?');
+                            const [pathname] = item.path.split('?');
                             setLocation(pathname);
-                            // Atualizar query params via history API
                             window.history.replaceState(null, '', item.path);
-                            // Disparar evento para que a página detecte a mudança
                             window.dispatchEvent(new Event('popstate'));
                           } else {
                             setLocation(item.path);
@@ -442,14 +481,14 @@ function DashboardLayoutContent({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem
-  onClick={async () => {
-    await logout();
-  }}
-  className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
->
-  <LogOut className="mr-2 h-4 w-4" />
-  <span>Sair e Fechar</span>
-</DropdownMenuItem>
+                  onClick={async () => {
+                    await logout();
+                  }}
+                  className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sair e Fechar</span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarFooter>
