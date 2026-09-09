@@ -56,6 +56,7 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
 
 // 3. DEFINIÇÃO DE ROTAS E PROCEDIMENTOS
 export const router = t.router;
+export const mergeRouters = t.mergeRouters;
 export const publicProcedure = t.procedure;
 
 // Middleware: Verifica se está logado
