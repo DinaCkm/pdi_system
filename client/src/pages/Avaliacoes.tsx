@@ -33,7 +33,7 @@ type AvaliacaoListItem = {
   status: string;
 };
 
-type RelacaoEixo = "ESSENCIAL" | "TRANSVERSAL" | "A VALIDAR";
+type RelacaoEixo = "ESSENCIAL" | "TRANSVERSAL" | "NAO_APLICAVEL";
 
 type LinhaBaseUtic = {
   eixo: string;
@@ -58,7 +58,7 @@ const PILOTO_UTIC: EmpregadoUtic[] = [
       { eixo: "Governança e Gestão de TI", relacao: "ESSENCIAL", anterior: 62.5 },
       { eixo: "Infraestrutura de TI", relacao: "ESSENCIAL", anterior: 55.6 },
       { eixo: "Segurança da Informação", relacao: "ESSENCIAL", anterior: 50 },
-      { eixo: "Gestão de Incidentes e Continuidade", relacao: "A VALIDAR", anterior: null },
+      { eixo: "Gestão de Incidentes e Continuidade", relacao: "NAO_APLICAVEL", anterior: null },
       { eixo: "Sistemas Corporativos, Processos e Automação", relacao: "ESSENCIAL", anterior: 60 },
       { eixo: "Dados, BI e Inteligência Artificial", relacao: "ESSENCIAL", anterior: null },
       { eixo: "Suporte, Atendimento e Service Desk", relacao: "TRANSVERSAL", anterior: 83.3 },
@@ -71,10 +71,10 @@ const PILOTO_UTIC: EmpregadoUtic[] = [
     funcao:
       "Atuação técnico-operacional em sistemas corporativos, suporte, fluxos, SQL e infraestrutura.",
     eixos: [
-      { eixo: "Governança e Gestão de TI", relacao: "A VALIDAR", anterior: 37.5 },
+      { eixo: "Governança e Gestão de TI", relacao: "TRANSVERSAL", anterior: 37.5 },
       { eixo: "Infraestrutura de TI", relacao: "ESSENCIAL", anterior: 70 },
       { eixo: "Segurança da Informação", relacao: "TRANSVERSAL", anterior: 66.7 },
-      { eixo: "Gestão de Incidentes e Continuidade", relacao: "A VALIDAR", anterior: null },
+      { eixo: "Gestão de Incidentes e Continuidade", relacao: "NAO_APLICAVEL", anterior: null },
       { eixo: "Sistemas Corporativos, Processos e Automação", relacao: "ESSENCIAL", anterior: 60 },
       { eixo: "Dados, BI e Inteligência Artificial", relacao: "ESSENCIAL", anterior: null },
       { eixo: "Suporte, Atendimento e Service Desk", relacao: "ESSENCIAL", anterior: 66.7 },
@@ -90,7 +90,7 @@ const PILOTO_UTIC: EmpregadoUtic[] = [
       { eixo: "Governança e Gestão de TI", relacao: "TRANSVERSAL", anterior: 62 },
       { eixo: "Infraestrutura de TI", relacao: "ESSENCIAL", anterior: 70 },
       { eixo: "Segurança da Informação", relacao: "TRANSVERSAL", anterior: 67 },
-      { eixo: "Gestão de Incidentes e Continuidade", relacao: "A VALIDAR", anterior: null },
+      { eixo: "Gestão de Incidentes e Continuidade", relacao: "NAO_APLICAVEL", anterior: null },
       { eixo: "Sistemas Corporativos, Processos e Automação", relacao: "ESSENCIAL", anterior: 60 },
       { eixo: "Dados, BI e Inteligência Artificial", relacao: "TRANSVERSAL", anterior: null },
       { eixo: "Suporte, Atendimento e Service Desk", relacao: "ESSENCIAL", anterior: 80 },
@@ -119,17 +119,23 @@ const PILOTO_UTIC: EmpregadoUtic[] = [
     funcao:
       "Suporte a usuários, manutenção de computadores, configuração de softwares e apoio à infraestrutura.",
     eixos: [
-      { eixo: "Governança e Gestão de TI", relacao: "A VALIDAR", anterior: 65 },
+      { eixo: "Governança e Gestão de TI", relacao: "TRANSVERSAL", anterior: 65 },
       { eixo: "Infraestrutura de TI", relacao: "ESSENCIAL", anterior: 75 },
       { eixo: "Segurança da Informação", relacao: "TRANSVERSAL", anterior: 70 },
-      { eixo: "Gestão de Incidentes e Continuidade", relacao: "A VALIDAR", anterior: null },
+      { eixo: "Gestão de Incidentes e Continuidade", relacao: "NAO_APLICAVEL", anterior: null },
       { eixo: "Sistemas Corporativos, Processos e Automação", relacao: "ESSENCIAL", anterior: 67 },
       { eixo: "Dados, BI e Inteligência Artificial", relacao: "TRANSVERSAL", anterior: null },
       { eixo: "Suporte, Atendimento e Service Desk", relacao: "ESSENCIAL", anterior: 85 },
-      { eixo: "Liderança e Competências Transversais", relacao: "A VALIDAR", anterior: 70 },
+      { eixo: "Liderança e Competências Transversais", relacao: "TRANSVERSAL", anterior: 70 },
     ],
   },
 ];
+
+const relacaoLabel: Record<RelacaoEixo, string> = {
+  ESSENCIAL: "ESSENCIAL",
+  TRANSVERSAL: "TRANSVERSAL",
+  NAO_APLICAVEL: "NÃO APLICÁVEL À ATUAÇÃO ATUAL",
+};
 
 function relacaoVariant(relacao: RelacaoEixo): "default" | "secondary" | "outline" {
   if (relacao === "ESSENCIAL") return "default";
@@ -233,31 +239,19 @@ export default function Avaliacoes() {
 
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-md border bg-muted/20 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Avaliação anterior
-              </p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Avaliação anterior</p>
               <p className="mt-2 font-semibold">Linha de base histórica</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Percentuais já conhecidos por eixo para servir de referência comparativa.
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">Percentuais já conhecidos por eixo para servir de referência comparativa.</p>
             </div>
             <div className="rounded-md border bg-muted/20 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Nova avaliação
-              </p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Nova avaliação</p>
               <p className="mt-2 font-semibold">Aguardando aplicação</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                O sistema calculará os acertos da nova prova agrupados nos mesmos eixos.
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">O sistema calculará os acertos da nova prova agrupados nos mesmos eixos.</p>
             </div>
             <div className="rounded-md border bg-muted/20 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Evolução
-              </p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Evolução</p>
               <p className="mt-2 font-semibold">Aguardando nova medição</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Evolução = performance atual no eixo − performance histórica no mesmo eixo.
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">Evolução = performance atual no eixo − performance histórica no mesmo eixo.</p>
             </div>
           </div>
 
@@ -278,14 +272,16 @@ export default function Avaliacoes() {
                   <tr key={linha.eixo} className="border-b last:border-0">
                     <td className="px-4 py-3 font-medium">{linha.eixo}</td>
                     <td className="px-4 py-3">
-                      <Badge variant={relacaoVariant(linha.relacao)}>{linha.relacao}</Badge>
+                      <Badge variant={relacaoVariant(linha.relacao)}>{relacaoLabel[linha.relacao]}</Badge>
                     </td>
                     <td className="px-4 py-3">{formatarPercentual(linha.anterior)}</td>
                     <td className="px-4 py-3 text-muted-foreground">—</td>
                     <td className="px-4 py-3 text-muted-foreground">—</td>
                     <td className="px-4 py-3">
-                      {linha.anterior === null ? (
-                        <Badge variant="outline">Linha de base a reconstruir</Badge>
+                      {linha.relacao === "NAO_APLICAVEL" ? (
+                        <Badge variant="outline">Não participa do cálculo atual</Badge>
+                      ) : linha.anterior === null ? (
+                        <Badge variant="outline">Novo eixo — nova linha de base</Badge>
                       ) : (
                         <Badge variant="secondary">Aguardando nova avaliação</Badge>
                       )}
@@ -297,7 +293,7 @@ export default function Avaliacoes() {
           </div>
 
           <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-            Neste piloto, os percentuais históricos foram carregados apenas para visualização. As classificações Essencial / Transversal / A validar ainda serão conferidas antes de se tornarem regras definitivas do banco.
+            Neste piloto, a classificação dos eixos utiliza as informações históricas disponíveis do empregado. Ajustes excepcionais por recurso, mudança de atividade ou mudança de função serão tratados na página administrativa de eixos técnicos, sem apagar o histórico anterior.
           </div>
         </CardContent>
       </Card>
@@ -309,9 +305,7 @@ export default function Avaliacoes() {
               <FileUp className="h-6 w-6 text-blue-600" />
               <CardTitle>Avaliação de Desempenho</CardTitle>
             </div>
-            <CardDescription>
-              Importação da avaliação realizada fora do PDI-System.
-            </CardDescription>
+            <CardDescription>Importação da avaliação realizada fora do PDI-System.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p>Selecionar ciclo e importar o relatório.</p>
@@ -326,9 +320,7 @@ export default function Avaliacoes() {
               <ListChecks className="h-6 w-6 text-blue-600" />
               <CardTitle>Avaliação Técnica</CardTitle>
             </div>
-            <CardDescription>
-              Cadastro, publicação e aplicação da nova avaliação técnica.
-            </CardDescription>
+            <CardDescription>Cadastro, publicação e aplicação da nova avaliação técnica.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p>Criar avaliação por ciclo e departamento/unidade.</p>
@@ -343,14 +335,12 @@ export default function Avaliacoes() {
               <ClipboardCheck className="h-6 w-6 text-blue-600" />
               <CardTitle>Resultados das Avaliações</CardTitle>
             </div>
-            <CardDescription>
-              Acompanhamento das medições antes de entrarem no módulo Evolução.
-            </CardDescription>
+            <CardDescription>Acompanhamento das medições antes de entrarem no módulo Evolução.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
             <p>Acompanhar avaliações concluídas e pendentes.</p>
             <p>Consultar resultados por empregado e eixo técnico.</p>
-            <p>Validar a linha de base antes da comparação de evolução.</p>
+            <p>Conferir a linha de base antes da comparação de evolução.</p>
           </CardContent>
         </Card>
       </div>
@@ -358,9 +348,7 @@ export default function Avaliacoes() {
       <Card>
         <CardHeader>
           <CardTitle>Avaliações registradas</CardTitle>
-          <CardDescription>
-            Registros armazenados na nova base de Avaliações e Evolução.
-          </CardDescription>
+          <CardDescription>Registros armazenados na nova base de Avaliações e Evolução.</CardDescription>
         </CardHeader>
         <CardContent>
           {avaliacoesQuery.isLoading && (
@@ -403,9 +391,7 @@ export default function Avaliacoes() {
                       <td className="py-3 pr-4">{avaliacao.departamentoNome ?? "Todas / não informada"}</td>
                       <td className="py-3 pr-4">{String(avaliacao.dataReferencia)}</td>
                       <td className="py-3">
-                        <Badge variant="secondary">
-                          {statusLabel[avaliacao.status] ?? avaliacao.status}
-                        </Badge>
+                        <Badge variant="secondary">{statusLabel[avaliacao.status] ?? avaliacao.status}</Badge>
                       </td>
                     </tr>
                   ))}
@@ -419,9 +405,7 @@ export default function Avaliacoes() {
       <Card>
         <CardHeader>
           <CardTitle>Fluxo do módulo</CardTitle>
-          <CardDescription>
-            A evolução só será apresentada quando houver nova medição comparável do mesmo eixo de conhecimento.
-          </CardDescription>
+          <CardDescription>A evolução só será apresentada quando houver nova medição comparável do mesmo eixo de conhecimento.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center gap-2 text-sm">
