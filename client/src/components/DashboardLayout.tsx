@@ -85,6 +85,7 @@ const getMenuItems = (userRole: string) => {
 
       { icon: Building2, label: "Central de Comando", path: "/central-comando", section: "administracao" },
       { icon: Upload, label: "Importação em Massa", path: "/importacao", section: "administracao" },
+      { icon: Target, label: "Eixos Técnicos por Empregado", path: "/admin-eixos-tecnicos", section: "administracao" },
       { icon: Trash2, label: "Auditoria de Exclusões", path: "/auditoria-exclusoes", section: "administracao" },
 
       { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras", section: "normas" },
