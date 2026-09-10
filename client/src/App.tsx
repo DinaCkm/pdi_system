@@ -22,6 +22,7 @@ import MinhasPendencias from "./pages/MinhasPendencias";
 import Relatorios from "./pages/Relatorios";
 import Importacao from "./pages/Importacao";
 import Avaliacoes from "./pages/Avaliacoes";
+import AdminEixosTecnicos from "./pages/AdminEixosTecnicos";
 
 import PDIsEquipe from "./pages/PDIsEquipe";
 import MeuPDI from "./pages/MeuPDI";
@@ -59,268 +60,58 @@ function Router() {
       <Route path={"/reset-password"} component={ResetPassword} />
       <Route path={"/change-password"} component={ChangePassword} />
       <Route path={"/?"} component={Home} />
-      
-      <Route path={"/dashboard"}>
-        <DashboardLayout>
-          <Dashboard />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/central-comando"}>
-        <DashboardLayout>
-          <CentralComando />
-        </DashboardLayout>
-      </Route>
-      
+      <Route path={"/dashboard"}><DashboardLayout><Dashboard /></DashboardLayout></Route>
+      <Route path={"/central-comando"}><DashboardLayout><CentralComando /></DashboardLayout></Route>
       <Route path={"/404"} component={NotFound} />
-      
-      {/* Rotas protegidas com DashboardLayout */}
-      <Route path={"/usuarios"}>
-        <DashboardLayout>
-          <Users />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/usuarios/:id/configurar"}>
-        {(params) => (
-          <DashboardLayout>
-            <ConfigurarUsuario key={params.id} />
-          </DashboardLayout>
-        )}
-      </Route>
-      
-      <Route path={"/importar-usuarios"}>
-        <DashboardLayout>
-          <ImportarUsuarios />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/competencias"}>
-        <DashboardLayout>
-          <Competencias />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/importar-competencias"}>
-        <DashboardLayout>
-          <ImportarCompetencias />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/departamentos"}>
-        <DashboardLayout>
-          <Departamentos />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/ciclos"}>
-        <DashboardLayout>
-          <Ciclos />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/pdis"}>
-        <DashboardLayout>
-          <PDIs />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/pdis/:id"}>
-        {(params) => (
-          <DashboardLayout>
-            <PDIDetalhes key={params.id} />
-          </DashboardLayout>
-        )}
-      </Route>
-      
-      <Route path={"/meu-pdi"}>
-        <DashboardLayout>
-          <MeuPDI />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/pdis-equipe"}>
-        <DashboardLayout>
-          <PDIsEquipe />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/acoes-equipe"}>
-        <DashboardLayout>
-          <AcoesEquipe />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/acoes"}>
-        <DashboardLayout>
-          <Acoes />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/acoes/nova"}>
-        <DashboardLayout>
-          <AcoesNova />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/acoes/:id"}>
-        {(params) => (
-          <DashboardLayout>
-            <AcoesDetalhes key={params.id} />
-          </DashboardLayout>
-        )}
-      </Route>
-      
-      <Route path={"/acoes/editar/:id"}>
-        {(params) => (
-          <DashboardLayout>
-            <AcoesEditar key={params.id} />
-          </DashboardLayout>
-        )}
-      </Route>
-      
-      <Route path={"/minhas-pendencias"}>
-        <DashboardLayout>
-          <MinhasPendencias />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/minhas-acoes"}>
-        <DashboardLayout>
-          <MinhasPendencias />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/relatorios"}>
-        <DashboardLayout>
-          <Relatorios />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/importacao"}>
-        <DashboardLayout>
-          <Importacao />
-        </DashboardLayout>
-      </Route>
-
-      <Route path={"/avaliacoes"}>
-        <DashboardLayout>
-          <Avaliacoes />
-        </DashboardLayout>
-      </Route>
-      
-      {/* Rota evidencias-pendentes removida - funcionalidade consolidada no Admin Dashboard */}
-      
-      <Route path={"/evidencias-equipe"}>
-        <DashboardLayout>
-          <EvidenciasEquipe />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/solicitacoes-equipe"}>
-        <DashboardLayout>
-          <SolicitacoesEquipe />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/solicitacoes-admin"}>
-        <DashboardLayout>
-          <SolicitacoesAdmin />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/historico-alteracoes"}>
-        <DashboardLayout>
-          <HistoricoAlteracoes />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/minhas-solicitacoes"}>
-        <DashboardLayout>
-          <MinhasSolicitacoes />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/auditoria"}>
-        <DashboardLayout>
-          <Auditoria />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/auditoria-exclusoes"}>
-        <DashboardLayout>
-          <AuditoriaExclusoes />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/relatorio-acoes-vencidas"}>
-        <DashboardLayout>
-          <RelatorioAcoesVencidas />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/admin-dashboard"}>
-        <DashboardLayout>
-          <AdminDashboard />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/analise-lideranca"}>
-        <DashboardLayout>
-          <AnaliseLideranca />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/solicitacoes-acoes"}>
-        <DashboardLayout>
-          <SolicitacoesAcoes />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/normas-regras"}>
-        <DashboardLayout>
-          <NormasRegras />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/admin-normas-regras"}>
-        <DashboardLayout>
-          <AdminNormasRegras />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/gestao-gerente"}>
-        <DashboardLayout>
-          <GestaoGerente />
-        </DashboardLayout>
-      </Route>
-      
-      <Route path={"/controle-execucao"}>
-        <DashboardLayout>
-          <ControleExecucao />
-        </DashboardLayout>
-      </Route>
-      
+      <Route path={"/usuarios"}><DashboardLayout><Users /></DashboardLayout></Route>
+      <Route path={"/usuarios/:id/configurar"}>{(params) => (<DashboardLayout><ConfigurarUsuario key={params.id} /></DashboardLayout>)}</Route>
+      <Route path={"/importar-usuarios"}><DashboardLayout><ImportarUsuarios /></DashboardLayout></Route>
+      <Route path={"/competencias"}><DashboardLayout><Competencias /></DashboardLayout></Route>
+      <Route path={"/importar-competencias"}><DashboardLayout><ImportarCompetencias /></DashboardLayout></Route>
+      <Route path={"/departamentos"}><DashboardLayout><Departamentos /></DashboardLayout></Route>
+      <Route path={"/ciclos"}><DashboardLayout><Ciclos /></DashboardLayout></Route>
+      <Route path={"/pdis"}><DashboardLayout><PDIs /></DashboardLayout></Route>
+      <Route path={"/pdis/:id"}>{(params) => (<DashboardLayout><PDIDetalhes key={params.id} /></DashboardLayout>)}</Route>
+      <Route path={"/meu-pdi"}><DashboardLayout><MeuPDI /></DashboardLayout></Route>
+      <Route path={"/pdis-equipe"}><DashboardLayout><PDIsEquipe /></DashboardLayout></Route>
+      <Route path={"/acoes-equipe"}><DashboardLayout><AcoesEquipe /></DashboardLayout></Route>
+      <Route path={"/acoes"}><DashboardLayout><Acoes /></DashboardLayout></Route>
+      <Route path={"/acoes/nova"}><DashboardLayout><AcoesNova /></DashboardLayout></Route>
+      <Route path={"/acoes/:id"}>{(params) => (<DashboardLayout><AcoesDetalhes key={params.id} /></DashboardLayout>)}</Route>
+      <Route path={"/acoes/editar/:id"}>{(params) => (<DashboardLayout><AcoesEditar key={params.id} /></DashboardLayout>)}</Route>
+      <Route path={"/minhas-pendencias"}><DashboardLayout><MinhasPendencias /></DashboardLayout></Route>
+      <Route path={"/minhas-acoes"}><DashboardLayout><MinhasPendencias /></DashboardLayout></Route>
+      <Route path={"/relatorios"}><DashboardLayout><Relatorios /></DashboardLayout></Route>
+      <Route path={"/importacao"}><DashboardLayout><Importacao /></DashboardLayout></Route>
+      <Route path={"/avaliacoes"}><DashboardLayout><Avaliacoes /></DashboardLayout></Route>
+      <Route path={"/admin-eixos-tecnicos"}><DashboardLayout><AdminEixosTecnicos /></DashboardLayout></Route>
+      <Route path={"/evidencias-equipe"}><DashboardLayout><EvidenciasEquipe /></DashboardLayout></Route>
+      <Route path={"/solicitacoes-equipe"}><DashboardLayout><SolicitacoesEquipe /></DashboardLayout></Route>
+      <Route path={"/solicitacoes-admin"}><DashboardLayout><SolicitacoesAdmin /></DashboardLayout></Route>
+      <Route path={"/historico-alteracoes"}><DashboardLayout><HistoricoAlteracoes /></DashboardLayout></Route>
+      <Route path={"/minhas-solicitacoes"}><DashboardLayout><MinhasSolicitacoes /></DashboardLayout></Route>
+      <Route path={"/auditoria"}><DashboardLayout><Auditoria /></DashboardLayout></Route>
+      <Route path={"/auditoria-exclusoes"}><DashboardLayout><AuditoriaExclusoes /></DashboardLayout></Route>
+      <Route path={"/relatorio-acoes-vencidas"}><DashboardLayout><RelatorioAcoesVencidas /></DashboardLayout></Route>
+      <Route path={"/admin-dashboard"}><DashboardLayout><AdminDashboard /></DashboardLayout></Route>
+      <Route path={"/analise-lideranca"}><DashboardLayout><AnaliseLideranca /></DashboardLayout></Route>
+      <Route path={"/solicitacoes-acoes"}><DashboardLayout><SolicitacoesAcoes /></DashboardLayout></Route>
+      <Route path={"/normas-regras"}><DashboardLayout><NormasRegras /></DashboardLayout></Route>
+      <Route path={"/admin-normas-regras"}><DashboardLayout><AdminNormasRegras /></DashboardLayout></Route>
+      <Route path={"/gestao-gerente"}><DashboardLayout><GestaoGerente /></DashboardLayout></Route>
+      <Route path={"/controle-execucao"}><DashboardLayout><ControleExecucao /></DashboardLayout></Route>
       <Route component={NotFound} />
     </Switch>
   );
 }
 
 function App() {
-  // Garantir que pointer-events está sempre em 'auto' ao carregar páginas
   useEffect(() => {
     const ensurePointerEvents = () => {
-      if (document.body.style.pointerEvents !== "auto") {
-        document.body.style.pointerEvents = "auto";
-      }
+      if (document.body.style.pointerEvents !== "auto") document.body.style.pointerEvents = "auto";
     };
-
-    // Executar na montagem
     ensurePointerEvents();
-
-    // Executar periodicamente para garantir que nenhum outro código bloqueie
     const interval = setInterval(ensurePointerEvents, 1500);
-
     return () => clearInterval(interval);
   }, []);
 
