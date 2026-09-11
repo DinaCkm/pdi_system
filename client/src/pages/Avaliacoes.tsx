@@ -176,10 +176,10 @@ export default function Avaliacoes() {
   const statusTentativaUtic = tentativaUtic?.status as string | undefined;
   const tentativaUticEncerrada = ["FINALIZADA", "CONCLUIDA", "FINALIZADA_TEMPO"].includes(statusTentativaUtic ?? "");
   const mensagemEncerramentoUtic = statusTentativaUtic === "CONCLUIDA"
-    ? "Avaliação concluída com as 60 respostas confirmadas pelo servidor."
+    ? "Avaliação de Proficiência para a Função concluída com as 60 respostas confirmadas pelo servidor."
     : statusTentativaUtic === "FINALIZADA_TEMPO"
-      ? "Avaliação encerrada pelo término do tempo. As respostas gravadas foram preservadas."
-      : "Avaliação encerrada voluntariamente pelo participante. As respostas gravadas foram preservadas.";
+      ? "Avaliação de Proficiência para a Função encerrada pelo término do tempo. As respostas gravadas foram preservadas."
+      : "Avaliação de Proficiência para a Função encerrada voluntariamente pelo participante. As respostas gravadas foram preservadas.";
 
   const [empregadoSelecionado, setEmpregadoSelecionado] = useState(
     PILOTO_UTIC[0].nome,
@@ -236,7 +236,7 @@ export default function Avaliacoes() {
               {isTesteUtic ? (
                 <div className="rounded-md border-2 border-blue-300 bg-blue-50 p-4">
                   <p className="font-semibold text-blue-950">Daniel Caio Lemos Penno [TESTE UTIC]</p>
-                  <p className="mt-1 text-sm text-blue-900">Perfil de teste espelhado do empregado real para validar a comparação da nova avaliação.</p>
+                  <p className="mt-1 text-sm text-blue-900">Perfil de teste espelhado do empregado real para validar a comparação da nova Avaliação de Proficiência para a Função.</p>
                 </div>
               ) : (
                 <select
@@ -262,7 +262,7 @@ export default function Avaliacoes() {
                     <div className="flex items-start gap-3">
                       <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-green-700" />
                       <div>
-                        <p className="font-semibold">AVALIAÇÃO JÁ ENCERRADA</p>
+                        <p className="font-semibold">AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO JÁ ENCERRADA</p>
                         <p className="mt-1 text-sm">{mensagemEncerramentoUtic}</p>
                         <p className="mt-2 text-xs text-green-800">Não existe uma nova tentativa disponível para esta conta.</p>
                       </div>
@@ -275,7 +275,7 @@ export default function Avaliacoes() {
                     onClick={() => setLocation("/avaliacoes/utic/prova-segura")}
                   >
                     <PlayCircle className="mr-2 h-5 w-5" />
-                    {statusTentativaUtic ? "RETOMAR AVALIAÇÃO TÉCNICA UTIC" : "INICIAR AVALIAÇÃO TÉCNICA UTIC"}
+                    {statusTentativaUtic ? "RETOMAR AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO" : "INICIAR AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO"}
                   </Button>
                 )
               )}
@@ -302,7 +302,7 @@ export default function Avaliacoes() {
             <div className="rounded-md border bg-muted/20 p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Nova avaliação</p>
               <p className="mt-2 font-semibold">Aguardando aplicação</p>
-              <p className="mt-1 text-sm text-muted-foreground">O sistema calculará os acertos da nova prova agrupados nos mesmos eixos.</p>
+              <p className="mt-1 text-sm text-muted-foreground">O sistema calculará os acertos da nova Avaliação de Proficiência para a Função agrupados nos mesmos eixos.</p>
             </div>
             <div className="rounded-md border bg-muted/20 p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Evolução</p>
@@ -339,7 +339,7 @@ export default function Avaliacoes() {
                       ) : linha.anterior === null ? (
                         <Badge variant="outline">Novo eixo — nova linha de base</Badge>
                       ) : (
-                        <Badge variant="secondary">Aguardando nova avaliação</Badge>
+                        <Badge variant="secondary">Aguardando Avaliação de Proficiência para a Função</Badge>
                       )}
                     </td>
                   </tr>
@@ -350,7 +350,7 @@ export default function Avaliacoes() {
 
           <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
             {isTesteUtic
-              ? "Para o teste UTIC, o perfil espelha os dados de desenvolvimento do Daniel e utiliza sua linha de base histórica provisória. O resultado da nova prova será comparado eixo a eixo, sem alterar o cadastro do empregado real."
+              ? "Para o teste UTIC, o perfil espelha os dados de desenvolvimento do Daniel e utiliza sua linha de base histórica provisória. O resultado da Avaliação de Proficiência para a Função será comparado eixo a eixo, sem alterar o cadastro do empregado real."
               : "Neste piloto, a classificação dos eixos utiliza as informações históricas disponíveis do empregado. Ajustes excepcionais por recurso, mudança de atividade ou mudança de função serão tratados na página administrativa de eixos técnicos, sem apagar o histórico anterior."}
           </div>
         </CardContent>
