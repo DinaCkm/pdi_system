@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
-import { ClipboardCheck, FileUp, ListChecks, TrendingUp } from "lucide-react";
+import { ClipboardCheck, FileUp, ListChecks, PlayCircle, TrendingUp } from "lucide-react";
+import { useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,6 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+
+const EMAIL_TESTE_UTIC = "teste.utic@ckmtalents.net";
 
 const statusLabel: Record<string, string> = {
   RASCUNHO: "Rascunho",
@@ -71,14 +76,14 @@ const PILOTO_UTIC: EmpregadoUtic[] = [
     funcao:
       "Atuação técnico-operacional em sistemas corporativos, suporte, fluxos, SQL e infraestrutura.",
     eixos: [
-      { eixo: "Governança e Gestão de TI", relacao: "TRANSVERSAL", anterior: 37.5 },
-      { eixo: "Infraestrutura de TI", relacao: "ESSENCIAL", anterior: 70 },
-      { eixo: "Segurança da Informação", relacao: "TRANSVERSAL", anterior: 66.7 },
+      { eixo: "Governança e Gestão de TI", relacao: "TRANSVERSAL", anterior: 60 },
+      { eixo: "Infraestrutura de TI", relacao: "ESSENCIAL", anterior: 63 },
+      { eixo: "Segurança da Informação", relacao: "TRANSVERSAL", anterior: 58 },
       { eixo: "Gestão de Incidentes e Continuidade", relacao: "NAO_APLICAVEL", anterior: null },
-      { eixo: "Sistemas Corporativos, Processos e Automação", relacao: "ESSENCIAL", anterior: 60 },
-      { eixo: "Dados, BI e Inteligência Artificial", relacao: "ESSENCIAL", anterior: null },
-      { eixo: "Suporte, Atendimento e Service Desk", relacao: "ESSENCIAL", anterior: 66.7 },
-      { eixo: "Liderança e Competências Transversais", relacao: "TRANSVERSAL", anterior: 75 },
+      { eixo: "Sistemas Corporativos, Processos e Automação", relacao: "ESSENCIAL", anterior: 70 },
+      { eixo: "Dados, BI e Inteligência Artificial", relacao: "ESSENCIAL", anterior: 55 },
+      { eixo: "Suporte, Atendimento e Service Desk", relacao: "ESSENCIAL", anterior: 65 },
+      { eixo: "Liderança e Competências Transversais", relacao: "TRANSVERSAL", anterior: 50 },
     ],
   },
   {
@@ -149,6 +154,11 @@ function formatarPercentual(valor: number | null) {
 }
 
 export default function Avaliacoes() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  const isTesteUtic = user?.email === EMAIL_TESTE_UTIC;
+  const danielBase = PILOTO_UTIC.find((item) => item.nome === "Daniel Caio Lemos Penno") ?? PILOTO_UTIC[0];
+
   const avaliacoesApi = (trpc as any).avaliacoes;
   const avaliacoesQuery = avaliacoesApi.listar.useQuery(undefined, {
     refetchOnWindowFocus: false,
@@ -162,12 +172,15 @@ export default function Avaliacoes() {
     PILOTO_UTIC[0].nome,
   );
 
-  const empregado = useMemo(
-    () =>
-      PILOTO_UTIC.find((item) => item.nome === empregadoSelecionado) ??
-      PILOTO_UTIC[0],
-    [empregadoSelecionado],
-  );
+  const empregado = useMemo(() => {
+    if (isTesteUtic) {
+      return {
+        ...danielBase,
+        nome: "Daniel Caio Lemos Penno [TESTE UTIC]",
+      };
+    }
+    return PILOTO_UTIC.find((item) => item.nome === empregadoSelecionado) ?? PILOTO_UTIC[0];
+  }, [danielBase, empregadoSelecionado, isTesteUtic]);
 
   const eixosComLinhaBase = empregado.eixos.filter((item) => item.anterior !== null).length;
   const essenciais = empregado.eixos.filter((item) => item.relacao === "ESSENCIAL").length;
@@ -207,22 +220,35 @@ export default function Avaliacoes() {
               <label htmlFor="empregado-utic" className="text-sm font-medium">
                 Empregado
               </label>
-              <select
-                id="empregado-utic"
-                value={empregadoSelecionado}
-                onChange={(event) => setEmpregadoSelecionado(event.target.value)}
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-              >
-                {PILOTO_UTIC.map((item) => (
-                  <option key={item.nome} value={item.nome}>
-                    {item.nome}
-                  </option>
-                ))}
-              </select>
+              {isTesteUtic ? (
+                <div className="rounded-md border-2 border-blue-300 bg-blue-50 p-4">
+                  <p className="font-semibold text-blue-950">Daniel Caio Lemos Penno [TESTE UTIC]</p>
+                  <p className="mt-1 text-sm text-blue-900">Perfil de teste espelhado do empregado real para validar a comparação da nova avaliação.</p>
+                </div>
+              ) : (
+                <select
+                  id="empregado-utic"
+                  value={empregadoSelecionado}
+                  onChange={(event) => setEmpregadoSelecionado(event.target.value)}
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                >
+                  {PILOTO_UTIC.map((item) => (
+                    <option key={item.nome} value={item.nome}>
+                      {item.nome}
+                    </option>
+                  ))}
+                </select>
+              )}
               <div className="rounded-md border bg-muted/30 p-3 text-sm">
                 <p className="font-medium">{empregado.cargo}</p>
                 <p className="mt-1 text-muted-foreground">{empregado.funcao}</p>
               </div>
+              {isTesteUtic && (
+                <Button className="mt-2 font-semibold" onClick={() => setLocation("/avaliacoes/utic/prova-segura")}>
+                  <PlayCircle className="mr-2 h-5 w-5" />
+                  INICIAR AVALIAÇÃO TÉCNICA UTIC
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
@@ -293,114 +319,120 @@ export default function Avaliacoes() {
           </div>
 
           <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-            Neste piloto, a classificação dos eixos utiliza as informações históricas disponíveis do empregado. Ajustes excepcionais por recurso, mudança de atividade ou mudança de função serão tratados na página administrativa de eixos técnicos, sem apagar o histórico anterior.
+            {isTesteUtic
+              ? "Para o teste UTIC, o perfil espelha os dados de desenvolvimento do Daniel e utiliza sua linha de base histórica provisória. O resultado da nova prova será comparado eixo a eixo, sem alterar o cadastro do empregado real."
+              : "Neste piloto, a classificação dos eixos utiliza as informações históricas disponíveis do empregado. Ajustes excepcionais por recurso, mudança de atividade ou mudança de função serão tratados na página administrativa de eixos técnicos, sem apagar o histórico anterior."}
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <FileUp className="h-6 w-6 text-blue-600" />
-              <CardTitle>Avaliação de Desempenho</CardTitle>
-            </div>
-            <CardDescription>Importação da avaliação realizada fora do PDI-System.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>Selecionar ciclo e importar o relatório.</p>
-            <p>Conferir empregado, competência e resultado antes de salvar.</p>
-            <p>Associar competências equivalentes quando os nomes forem diferentes.</p>
-          </CardContent>
-        </Card>
+      {!isTesteUtic && (
+        <>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <FileUp className="h-6 w-6 text-blue-600" />
+                  <CardTitle>Avaliação de Desempenho</CardTitle>
+                </div>
+                <CardDescription>Importação da avaliação realizada fora do PDI-System.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p>Selecionar ciclo e importar o relatório.</p>
+                <p>Conferir empregado, competência e resultado antes de salvar.</p>
+                <p>Associar competências equivalentes quando os nomes forem diferentes.</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <ListChecks className="h-6 w-6 text-blue-600" />
-              <CardTitle>Avaliação Técnica</CardTitle>
-            </div>
-            <CardDescription>Cadastro, publicação e aplicação da nova avaliação técnica.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>Criar avaliação por ciclo e departamento/unidade.</p>
-            <p>Cadastrar questões e vinculá-las aos eixos técnicos.</p>
-            <p>Calcular performance por eixo sem penalizar conhecimentos não essenciais.</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <ListChecks className="h-6 w-6 text-blue-600" />
+                  <CardTitle>Avaliação Técnica</CardTitle>
+                </div>
+                <CardDescription>Cadastro, publicação e aplicação da nova avaliação técnica.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p>Criar avaliação por ciclo e departamento/unidade.</p>
+                <p>Cadastrar questões e vinculá-las aos eixos técnicos.</p>
+                <p>Calcular performance por eixo sem penalizar conhecimentos não essenciais.</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <ClipboardCheck className="h-6 w-6 text-blue-600" />
-              <CardTitle>Resultados das Avaliações</CardTitle>
-            </div>
-            <CardDescription>Acompanhamento das medições antes de entrarem no módulo Evolução.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>Acompanhar avaliações concluídas e pendentes.</p>
-            <p>Consultar resultados por empregado e eixo técnico.</p>
-            <p>Conferir a linha de base antes da comparação de evolução.</p>
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <ClipboardCheck className="h-6 w-6 text-blue-600" />
+                  <CardTitle>Resultados das Avaliações</CardTitle>
+                </div>
+                <CardDescription>Acompanhamento das medições antes de entrarem no módulo Evolução.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p>Acompanhar avaliações concluídas e pendentes.</p>
+                <p>Consultar resultados por empregado e eixo técnico.</p>
+                <p>Conferir a linha de base antes da comparação de evolução.</p>
+              </CardContent>
+            </Card>
+          </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Avaliações registradas</CardTitle>
-          <CardDescription>Registros armazenados na nova base de Avaliações e Evolução.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {avaliacoesQuery.isLoading && (
-            <p className="text-sm text-muted-foreground">Carregando avaliações...</p>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Avaliações registradas</CardTitle>
+              <CardDescription>Registros armazenados na nova base de Avaliações e Evolução.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {avaliacoesQuery.isLoading && (
+                <p className="text-sm text-muted-foreground">Carregando avaliações...</p>
+              )}
 
-          {avaliacoesQuery.isError && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm">
-              Não foi possível consultar a base de avaliações. Nenhum dado foi alterado.
-            </div>
-          )}
+              {avaliacoesQuery.isError && (
+                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm">
+                  Não foi possível consultar a base de avaliações. Nenhum dado foi alterado.
+                </div>
+              )}
 
-          {!avaliacoesQuery.isLoading &&
-            !avaliacoesQuery.isError &&
-            (avaliacoesQuery.data?.length ?? 0) === 0 && (
-              <div className="rounded-md border border-dashed p-5 text-sm text-muted-foreground">
-                Nenhuma avaliação cadastrada até o momento. A estrutura está pronta para receber a primeira nova medição.
-              </div>
-            )}
+              {!avaliacoesQuery.isLoading &&
+                !avaliacoesQuery.isError &&
+                (avaliacoesQuery.data?.length ?? 0) === 0 && (
+                  <div className="rounded-md border border-dashed p-5 text-sm text-muted-foreground">
+                    Nenhuma avaliação cadastrada até o momento. A estrutura está pronta para receber a primeira nova medição.
+                  </div>
+                )}
 
-          {(avaliacoesQuery.data?.length ?? 0) > 0 && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="py-3 pr-4 font-medium">Avaliação</th>
-                    <th className="py-3 pr-4 font-medium">Tipo</th>
-                    <th className="py-3 pr-4 font-medium">Ciclo</th>
-                    <th className="py-3 pr-4 font-medium">Unidade</th>
-                    <th className="py-3 pr-4 font-medium">Data de referência</th>
-                    <th className="py-3 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {avaliacoesQuery.data?.map((avaliacao: AvaliacaoListItem) => (
-                    <tr key={avaliacao.id} className="border-b last:border-0">
-                      <td className="py-3 pr-4 font-medium">{avaliacao.titulo}</td>
-                      <td className="py-3 pr-4">{tipoLabel[avaliacao.tipo] ?? avaliacao.tipo}</td>
-                      <td className="py-3 pr-4">{avaliacao.cicloNome ?? `Ciclo ${avaliacao.cicloId}`}</td>
-                      <td className="py-3 pr-4">{avaliacao.departamentoNome ?? "Todas / não informada"}</td>
-                      <td className="py-3 pr-4">{String(avaliacao.dataReferencia)}</td>
-                      <td className="py-3">
-                        <Badge variant="secondary">{statusLabel[avaliacao.status] ?? avaliacao.status}</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              {(avaliacoesQuery.data?.length ?? 0) > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th className="py-3 pr-4 font-medium">Avaliação</th>
+                        <th className="py-3 pr-4 font-medium">Tipo</th>
+                        <th className="py-3 pr-4 font-medium">Ciclo</th>
+                        <th className="py-3 pr-4 font-medium">Unidade</th>
+                        <th className="py-3 pr-4 font-medium">Data de referência</th>
+                        <th className="py-3 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {avaliacoesQuery.data?.map((avaliacao: AvaliacaoListItem) => (
+                        <tr key={avaliacao.id} className="border-b last:border-0">
+                          <td className="py-3 pr-4 font-medium">{avaliacao.titulo}</td>
+                          <td className="py-3 pr-4">{tipoLabel[avaliacao.tipo] ?? avaliacao.tipo}</td>
+                          <td className="py-3 pr-4">{avaliacao.cicloNome ?? `Ciclo ${avaliacao.cicloId}`}</td>
+                          <td className="py-3 pr-4">{avaliacao.departamentoNome ?? "Todas / não informada"}</td>
+                          <td className="py-3 pr-4">{String(avaliacao.dataReferencia)}</td>
+                          <td className="py-3">
+                            <Badge variant="secondary">{statusLabel[avaliacao.status] ?? avaliacao.status}</Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       <Card>
         <CardHeader>
