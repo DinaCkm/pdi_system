@@ -5,6 +5,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
+import ProvaUticRealtimeGuard from "./components/ProvaUticRealtimeGuard";
 import Home from "./pages/Home";
 import Setup from "./pages/Setup";
 import Login from "./pages/Login";
@@ -23,6 +24,7 @@ import Relatorios from "./pages/Relatorios";
 import Importacao from "./pages/Importacao";
 import Avaliacoes from "./pages/Avaliacoes";
 import AdminEixosTecnicos from "./pages/AdminEixosTecnicos";
+import AdminAvaliacoes from "./pages/AdminAvaliacoes";
 import ProvaSeguraUtic from "./pages/ProvaSeguraUtic";
 
 import PDIsEquipe from "./pages/PDIsEquipe";
@@ -61,7 +63,7 @@ function Router() {
       <Route path={"/reset-password"} component={ResetPassword} />
       <Route path={"/change-password"} component={ChangePassword} />
       <Route path={"/?"} component={Home} />
-      <Route path={"/avaliacoes/utic/prova-segura"} component={ProvaSeguraUtic} />
+      <Route path={"/avaliacoes/utic/prova-segura"}><ProvaUticRealtimeGuard><ProvaSeguraUtic /></ProvaUticRealtimeGuard></Route>
       <Route path={"/dashboard"}><DashboardLayout><Dashboard /></DashboardLayout></Route>
       <Route path={"/central-comando"}><DashboardLayout><CentralComando /></DashboardLayout></Route>
       <Route path={"/404"} component={NotFound} />
@@ -87,6 +89,7 @@ function Router() {
       <Route path={"/importacao"}><DashboardLayout><Importacao /></DashboardLayout></Route>
       <Route path={"/avaliacoes"}><DashboardLayout><Avaliacoes /></DashboardLayout></Route>
       <Route path={"/admin-eixos-tecnicos"}><DashboardLayout><AdminEixosTecnicos /></DashboardLayout></Route>
+      <Route path={"/admin-avaliacoes"}><DashboardLayout><AdminAvaliacoes /></DashboardLayout></Route>
       <Route path={"/evidencias-equipe"}><DashboardLayout><EvidenciasEquipe /></DashboardLayout></Route>
       <Route path={"/solicitacoes-equipe"}><DashboardLayout><SolicitacoesEquipe /></DashboardLayout></Route>
       <Route path={"/solicitacoes-admin"}><DashboardLayout><SolicitacoesAdmin /></DashboardLayout></Route>
