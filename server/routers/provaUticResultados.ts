@@ -4,7 +4,7 @@ import { z } from "zod";
 import { UTIC_QUESTOES, TOTAL_QUESTOES_UTIC, validarBancoUtic } from "../../shared/uticQuestoes";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
-import { UTIC_EIXOS, UTIC_GABARITO, UTIC_LINHA_BASE_DANIEL } from "../uticGabarito";
+import { UTIC_EIXOS, UTIC_GABARITO, UTIC_LINHA_BASE_DANIEL } from "../data/uticGabarito";
 
 function rowsOf<T>(result: any): T[] {
   if (Array.isArray(result?.[0])) return result[0] as T[];
