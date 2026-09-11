@@ -25,6 +25,16 @@ type UsuarioBase = {
   viuNormasVersao: number | null;
 };
 
+async function limparTentativasDeTeste(db: any, usuarioId: number) {
+  // Exclusivo para a conta fake administrada por este endpoint.
+  // As respostas e eventos são removidos por ON DELETE CASCADE.
+  try {
+    await db.execute(sql`DELETE FROM prova_utic_tentativas WHERE colaborador_id = ${usuarioId}`);
+  } catch {
+    // Na primeira utilização, a tabela ainda pode não ter sido criada pelo router da prova.
+  }
+}
+
 export const provaUticTesteRouter = router({
   prepararParticipante: adminProcedure.mutation(async () => {
     const db = await getDb();
@@ -97,6 +107,7 @@ export const provaUticTesteRouter = router({
                updatedAt = NOW()
          WHERE id = ${usuarioId}
       `);
+      await limparTentativasDeTeste(db, usuarioId);
     } else {
       const insertResult = await db.execute(sql`
         INSERT INTO users (
@@ -131,6 +142,7 @@ export const provaUticTesteRouter = router({
       senhaTemporaria,
       cargo: origem.cargo,
       departamentoId: origem.departamentoId,
+      tentativaAnteriorLimpa: !criadoAgora,
     };
   }),
 });
