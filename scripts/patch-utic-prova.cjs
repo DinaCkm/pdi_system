@@ -212,6 +212,16 @@ patchFile('client/src/pages/ProvaSeguraUtic.tsx', [
     before: "<CardDescription className=\"mt-2 text-base\">A ocorrência {violacoes} de {LIMITE_VIOLACOES} foi registrada. A questão ficará protegida até você retornar ao modo tela cheia.</CardDescription>",
     after: "<CardDescription className=\"mt-2 text-base\">A ocorrência crítica {violacoesCriticas} de {LIMITE_VIOLACOES} foi registrada. A questão ficará protegida até você retornar ao modo tela cheia.</CardDescription>",
   },
+  {
+    label: "cronometro da questao no topo",
+    before: "<div className=\"rounded-md bg-slate-950 px-4 py-2 font-mono text-white\">Total {formatarTempo(tempoTotalRestante)}</div>",
+    after: "<div className=\"flex overflow-hidden rounded-md border border-slate-800 font-mono text-white shadow-sm\">\n                <div className=\"bg-slate-950 px-4 py-2\">\n                  <span className=\"mr-2 text-xs uppercase text-slate-300\">Total</span>{formatarTempo(tempoTotalRestante)}\n                </div>\n                <div className={tempoQuestaoRestante <= 10 ? \"bg-red-700 px-4 py-2\" : \"bg-blue-700 px-4 py-2\"}>\n                  <span className=\"mr-2 text-xs uppercase text-blue-100\">Questão</span>{formatarTempo(tempoQuestaoRestante)}\n                </div>\n              </div>",
+  },
+  {
+    label: "remover cronometro duplicado abaixo das alternativas",
+    before: "              <div className={`rounded-md border p-4 ${tempoQuestaoRestante <= 10 ? \"border-red-300 bg-red-50\" : \"bg-slate-50\"}`}>\n                <p className=\"text-xs uppercase text-muted-foreground\">Tempo desta questão</p>\n                <p className=\"font-mono text-3xl font-bold\">{formatarTempo(tempoQuestaoRestante)}</p>\n                <p className=\"text-xs text-muted-foreground\">Ao zerar, a próxima questão será apresentada. Se estiver sem resposta, esta questão voltará somente depois da passagem pelas demais.</p>\n              </div>\n\n",
+    after: "",
+  },
 ]);
 
 patchFile('server/routers/provaUtic.ts', [
