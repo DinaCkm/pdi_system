@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Activity, Clock3, LockKeyhole, RefreshCw, ShieldCheck, Unlock } from "lucide-react";
+import { Activity, Clock3, LockKeyhole, RefreshCw, ShieldCheck, Unlock, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,16 @@ type AcaoConfirmacao = {
   tentativaId: number;
   colaboradorNome: string;
   status: string;
+} | null;
+
+type CredencialTeste = {
+  nome: string;
+  baseadoEm: string;
+  email: string;
+  senhaTemporaria: string;
+  cargo: string;
+  usuarioId: number;
+  criadoAgora: boolean;
 } | null;
 
 function formatarDuracao(total: number | string | null | undefined) {
@@ -75,12 +85,36 @@ export default function AdminAvaliacoes() {
   const [acao, setAcao] = useState<AcaoConfirmacao>(null);
   const [observacao, setObservacao] = useState("");
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [credencialTeste, setCredencialTeste] = useState<CredencialTeste>(null);
 
   const isAdmin = user?.role === "admin" || user?.role === "Administrador";
   const painelQuery = trpc.provaUtic.listarPainelAdministrativo.useQuery(undefined, {
     enabled: Boolean(user && isAdmin),
     refetchInterval: 2000,
     refetchOnWindowFocus: true,
+  });
+
+  const prepararTesteMutation = trpc.provaUticTeste.prepararParticipante.useMutation({
+    onSuccess: (data) => {
+      setCredencialTeste({
+        nome: data.nome,
+        baseadoEm: data.baseadoEm,
+        email: data.email,
+        senhaTemporaria: data.senhaTemporaria,
+        cargo: data.cargo,
+        usuarioId: data.usuarioId,
+        criadoAgora: data.criadoAgora,
+      });
+      setMensagem(
+        data.criadoAgora
+          ? "Funcionário de teste UTIC criado com sucesso."
+          : "Funcionário de teste UTIC atualizado e recebeu uma nova senha temporária."
+      );
+    },
+    onError: (error) => {
+      setCredencialTeste(null);
+      setMensagem(error.message);
+    },
   });
 
   const bloquearMutation = trpc.provaUtic.bloquearAdministrativamente.useMutation({
@@ -163,6 +197,40 @@ export default function AdminAvaliacoes() {
       </div>
 
       {mensagem && <div className="rounded-md border bg-slate-50 p-4 text-sm">{mensagem}</div>}
+
+      <Card className="border-blue-200 bg-blue-50/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5 text-blue-700" />Funcionário fake para teste da UTIC</CardTitle>
+          <CardDescription>
+            O sistema cria uma cópia identificada como teste, baseada no empregado real Daniel Caio Lemos Penno. Cargo, unidade e vínculo de liderança são copiados do cadastro existente; CPF e e-mail reais não são utilizados.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            onClick={() => { setMensagem(null); setCredencialTeste(null); prepararTesteMutation.mutate(); }}
+            disabled={prepararTesteMutation.isPending}
+            className="font-semibold"
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            {prepararTesteMutation.isPending ? "PREPARANDO..." : "PREPARAR FUNCIONÁRIO DE TESTE UTIC"}
+          </Button>
+
+          {credencialTeste && (
+            <div className="rounded-lg border-2 border-blue-300 bg-white p-5">
+              <p className="text-base font-bold text-blue-900">PARTICIPANTE DE TESTE PRONTO</p>
+              <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
+                <p><strong>Nome:</strong> {credencialTeste.nome}</p>
+                <p><strong>Cargo:</strong> {credencialTeste.cargo}</p>
+                <p><strong>E-mail de acesso:</strong> <span className="font-mono">{credencialTeste.email}</span></p>
+                <p><strong>Senha temporária:</strong> <span className="font-mono text-base font-bold">{credencialTeste.senhaTemporaria}</span></p>
+              </div>
+              <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+                Use estas credenciais em uma janela anônima/privativa do navegador para não encerrar sua sessão de administrador. Esta conta é somente para os testes da avaliação UTIC.
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
