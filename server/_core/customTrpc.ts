@@ -10,8 +10,8 @@ import { PDI_LOCK_DEFAULT_MESSAGE } from "@shared/const";
 export const createTRPCContext = async (opts: CreateExpressContextOptions) => {
   const { req, res } = opts;
   const authHeaderToken = req.headers.authorization?.split(" ")[1];
-const cookieToken = req.cookies?.auth_token;
-const token = cookieToken || authHeaderToken;
+  const cookieToken = req.cookies?.auth_token;
+  const token = cookieToken || authHeaderToken;
 
   let user = null;
 
@@ -67,6 +67,10 @@ const isAuthed = t.middleware(({ ctx, next }) => {
   return next({ ctx: { user: ctx.user } });
 });
 
+// Procedure autenticada sem o bloqueio do ciclo do PDI.
+// Avaliações possuem regras próprias de tentativa, tempo e bloqueio.
+export const assessmentProcedure = t.procedure.use(isAuthed);
+
 // Papéis isentos do bloqueio de execução (mantêm acesso total para administrar o ciclo)
 const EXECUTION_LOCK_EXEMPT_ROLES = new Set<string>(["admin", "Administrador", "gerente"]);
 
@@ -98,8 +102,6 @@ const enforceExecutionLock = t.middleware(async ({ ctx, type, path, next }) => {
 });
 
 export const protectedProcedure = t.procedure.use(isAuthed).use(enforceExecutionLock);
-
-
 
 // Middleware: Apenas Admin
 const isAdmin = t.middleware(({ ctx, next }) => {
