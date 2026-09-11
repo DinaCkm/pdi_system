@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { AlertTriangle, CheckCircle2, Clock3, LockKeyhole, MonitorUp, ShieldCheck, Shuffle, Video, Mic } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock3, Mic, MonitorUp, ShieldCheck, Shuffle, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 const DURACAO_TOTAL_SEGUNDOS = 3 * 60 * 60;
 const DURACAO_QUESTAO_SEGUNDOS = 2 * 60;
 const LIMITE_VIOLACOES = 3;
-const STORAGE_KEY = "piloto-utic-prova-segura-v3";
+const STORAGE_KEY = "piloto-utic-prova-segura-v4";
 
 type Fase = "preparacao" | "em_prova" | "finalizada" | "anulada";
 type EventoAuditoria = { data: string; tipo: string; detalhe: string };
@@ -54,7 +54,9 @@ export default function ProvaSeguraUtic() {
   const { loading, user } = useAuth();
   const [fase, setFase] = useState<Fase>("preparacao");
   const [mostrarComunicado, setMostrarComunicado] = useState(false);
+  const [mostrarAvisoTela, setMostrarAvisoTela] = useState(false);
   const [aceiteComunicado, setAceiteComunicado] = useState(false);
+  const [aceiteTela, setAceiteTela] = useState(false);
   const [tempoTotalRestante, setTempoTotalRestante] = useState(DURACAO_TOTAL_SEGUNDOS);
   const [tempoQuestaoRestante, setTempoQuestaoRestante] = useState(DURACAO_QUESTAO_SEGUNDOS);
   const [respostas, setRespostas] = useState<Record<number, string>>({});
@@ -243,27 +245,7 @@ export default function ProvaSeguraUtic() {
     setGravacaoAtiva(true);
   };
 
-  const abrirComunicado = () => {
-    setErroInicio(null);
-    setAceiteComunicado(false);
-    setMostrarComunicado(true);
-  };
-
-  const iniciarAposAceite = async () => {
-    if (!aceiteComunicado) return;
-    setErroInicio(null);
-    setMostrarComunicado(false);
-    try {
-      await validarCameraMicrofone();
-      await validarEGravarTela();
-      await document.documentElement.requestFullscreen();
-    } catch (error) {
-      pararMonitoramento();
-      if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined);
-      setErroInicio(error instanceof Error ? error.message : "Não foi possível validar o ambiente da avaliação.");
-      return;
-    }
-
+  const prepararTentativa = () => {
     const ordem = embaralhar(QUESTOES_DEMO.map((q) => q.id));
     const opcoes: Record<number, string[]> = {};
     QUESTOES_DEMO.forEach((q) => { opcoes[q.id] = embaralhar(q.opcoes); });
@@ -272,7 +254,42 @@ export default function ProvaSeguraUtic() {
     setTempoTotalRestante(DURACAO_TOTAL_SEGUNDOS); setTempoQuestaoRestante(DURACAO_QUESTAO_SEGUNDOS);
     faseRef.current = "em_prova";
     setFase("em_prova");
-    setTimeout(() => registrarEvento("inicio", "Avaliação iniciada após aceite do comunicado, validação de câmera/microfone e compartilhamento da tela inteira."), 0);
+    setTimeout(() => registrarEvento("inicio", "Avaliação iniciada após aceite das regras, validação de câmera/microfone e compartilhamento da tela inteira."), 0);
+  };
+
+  const abrirComunicado = () => {
+    setErroInicio(null);
+    setAceiteComunicado(false);
+    setAceiteTela(false);
+    setMostrarComunicado(true);
+  };
+
+  const concluirComunicado = async () => {
+    if (!aceiteComunicado) return;
+    setErroInicio(null);
+    setMostrarComunicado(false);
+    try {
+      await validarCameraMicrofone();
+      setMostrarAvisoTela(true);
+    } catch (error) {
+      pararMonitoramento();
+      setErroInicio(error instanceof Error ? error.message : "Não foi possível validar câmera e microfone.");
+    }
+  };
+
+  const abrirSeletorTela = async () => {
+    if (!aceiteTela) return;
+    setErroInicio(null);
+    setMostrarAvisoTela(false);
+    try {
+      await validarEGravarTela();
+      await document.documentElement.requestFullscreen();
+      prepararTentativa();
+    } catch (error) {
+      pararMonitoramento();
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined);
+      setErroInicio(error instanceof Error ? error.message : "Não foi possível validar o compartilhamento da tela.");
+    }
   };
 
   const responder = (questaoId: number, resposta: string) => {
@@ -280,22 +297,37 @@ export default function ProvaSeguraUtic() {
   };
 
   const reiniciar = () => {
-    pararMonitoramento(); localStorage.removeItem(STORAGE_KEY);
+    pararMonitoramento();
+    localStorage.removeItem(STORAGE_KEY);
     setRespostas({}); setEventos([]); setViolacoes(0); setOrdemQuestoes([]); setOrdemOpcoes({}); setFila([]); setIndiceAtual(0); setPassagem(1); setExibicoes({});
-    setTempoTotalRestante(DURACAO_TOTAL_SEGUNDOS); setTempoQuestaoRestante(DURACAO_QUESTAO_SEGUNDOS); setAceiteComunicado(false); setMostrarComunicado(false); setAviso(null); setErroInicio(null);
-    faseRef.current = "preparacao"; setFase("preparacao");
+    setTempoTotalRestante(DURACAO_TOTAL_SEGUNDOS); setTempoQuestaoRestante(DURACAO_QUESTAO_SEGUNDOS); setAceiteComunicado(false); setAceiteTela(false); setMostrarComunicado(false); setMostrarAvisoTela(false); setAviso(null); setErroInicio(null);
+    faseRef.current = "preparacao";
+    setFase("preparacao");
   };
 
   if (loading || !user) return <div className="min-h-screen grid place-items-center bg-slate-50 text-sm text-slate-600">Verificando acesso...</div>;
 
   if (fase === "anulada") return <div className="min-h-screen bg-slate-950 p-6 grid place-items-center"><Card className="max-w-xl w-full border-red-300"><CardHeader><CardTitle className="text-red-700">Teste encerrado por segurança</CardTitle><CardDescription>O limite de {LIMITE_VIOLACOES} ocorrências foi atingido.</CardDescription></CardHeader><CardContent><Button onClick={reiniciar}>Voltar ao início</Button></CardContent></Card></div>;
 
-  if (fase === "finalizada") return <div className="min-h-screen bg-slate-50 p-6"><div className="mx-auto max-w-4xl space-y-6"><Card className="border-emerald-200"><CardHeader><CardTitle>Teste concluído</CardTitle><CardDescription>Esta etapa valida o motor da prova segura.</CardDescription></CardHeader><CardContent className="grid gap-4 md:grid-cols-3"><div className="rounded-md border p-4">Respostas: <strong>{Object.keys(respostas).length}/{QUESTOES_DEMO.length}</strong></div><div className="rounded-md border p-4">Ocorrências: <strong>{violacoes}</strong></div><div className="rounded-md border p-4">Passagens: <strong>{passagem}</strong></div></CardContent></Card><Button onClick={reiniciar}>Testar novamente</Button></div></div>;
+  if (fase === "finalizada") return <div className="min-h-screen bg-slate-50 p-6"><div className="mx-auto max-w-4xl space-y-6"><Card className="border-emerald-200"><CardHeader><div className="flex items-center gap-3"><CheckCircle2 className="h-7 w-7 text-emerald-600" /><div><CardTitle>Teste concluído</CardTitle><CardDescription>Esta etapa valida o motor da prova segura.</CardDescription></div></div></CardHeader><CardContent className="grid gap-4 md:grid-cols-3"><div className="rounded-md border p-4">Respostas: <strong>{Object.keys(respostas).length}/{QUESTOES_DEMO.length}</strong></div><div className="rounded-md border p-4">Ocorrências: <strong>{violacoes}</strong></div><div className="rounded-md border p-4">Passagens: <strong>{passagem}</strong></div></CardContent></Card><Button onClick={reiniciar}>Testar novamente</Button></div></div>;
 
   if (fase === "em_prova" && questaoAtual) {
     const opcoesAtuais = ordemOpcoes[questaoAtual.id] ?? questaoAtual.opcoes;
     return <div className="prova-protegida min-h-screen bg-slate-100"><style>{`.prova-protegida,.prova-protegida *{-webkit-user-select:none!important;user-select:none!important}@media print{body *{visibility:hidden!important}}`}</style><header className="sticky top-0 z-40 border-b bg-white px-5 py-3"><div className="mx-auto max-w-5xl flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold">Avaliação Técnica UTIC — Modo Prova Segura</p><p className="text-xs text-muted-foreground">Questões demonstrativas.</p></div><div className="flex gap-2"><Badge variant={cameraMicAtivos ? "default" : "destructive"}><Video className="mr-1 h-3 w-3" />Câmera/Mic {cameraMicAtivos ? "ativos" : "inativos"}</Badge><Badge variant={gravacaoAtiva ? "default" : "destructive"}><MonitorUp className="mr-1 h-3 w-3" />{gravacaoAtiva ? "Tela compartilhada" : "Sem tela"}</Badge><Badge variant={violacoes ? "destructive" : "secondary"}>Ocorrências {violacoes}/{LIMITE_VIOLACOES}</Badge><div className="rounded-md bg-slate-950 px-4 py-2 font-mono text-white">Total {formatarTempo(tempoTotalRestante)}</div></div></div></header><main className="mx-auto max-w-4xl p-5 pb-28 space-y-4">{aviso && <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"><strong>Ocorrência registrada:</strong> {aviso}</div>}<div className="text-sm"><strong>Passagem {passagem}</strong> · {Object.keys(respostas).length} de {QUESTOES_DEMO.length} respondidas</div><Card><CardHeader><CardTitle>Questão {indiceAtual + 1} de {fila.length}</CardTitle><CardDescription className="text-base text-foreground">{questaoAtual.enunciado}</CardDescription></CardHeader><CardContent className="space-y-4">{opcoesAtuais.map((opcao, index) => <label key={opcao} className="flex items-center gap-3 rounded-md border p-3"><input type="radio" name={`q-${questaoAtual.id}`} checked={respostas[questaoAtual.id] === opcao} onChange={() => responder(questaoAtual.id, opcao)} /><span><strong>{String.fromCharCode(65 + index)}.</strong> {opcao}</span></label>)}<div className={`rounded-md border p-4 ${tempoQuestaoRestante <= 10 ? "border-red-300 bg-red-50" : "bg-slate-50"}`}><p className="text-xs uppercase text-muted-foreground">Tempo desta questão</p><p className="font-mono text-3xl font-bold">{formatarTempo(tempoQuestaoRestante)}</p><p className="text-xs text-muted-foreground">Ao zerar, a próxima questão será apresentada. Se não houver resposta, esta questão voltará depois.</p></div><div className="flex justify-end"><Button disabled={!respostas[questaoAtual.id]} onClick={() => avancarQuestao(false)}>Salvar e avançar</Button></div></CardContent></Card></main></div>;
   }
 
-  return <div className="min-h-screen bg-slate-50 p-6"><div className="mx-auto max-w-4xl space-y-6"><div><h1 className="text-2xl font-semibold flex items-center gap-2"><ShieldCheck className="h-8 w-8 text-blue-700" />Modo Prova Segura — Piloto UTIC</h1><p className="text-sm text-muted-foreground mt-2">Teste do ambiente seguro antes de carregar as 60 questões oficiais.</p></div><Card><CardHeader><CardTitle>Requisitos básicos</CardTitle></CardHeader><CardContent className="grid gap-3 md:grid-cols-2"><div className="rounded-md border p-4"><Video className="h-5 w-5 mb-2" /><strong>Computador com câmera</strong><p className="text-sm text-muted-foreground mt-1">A câmera deverá estar conectada, ligada e autorizada durante toda a prova.</p></div><div className="rounded-md border p-4"><Mic className="h-5 w-5 mb-2" /><strong>Microfone obrigatório</strong><p className="text-sm text-muted-foreground mt-1">O microfone deverá estar conectado, ligado e autorizado durante toda a prova.</p></div><div className="rounded-md border p-4"><MonitorUp className="h-5 w-5 mb-2" /><strong>Compartilhar Tela inteira</strong><p className="text-sm text-muted-foreground mt-1">Guia do Chrome ou Janela não serão aceitas.</p></div><div className="rounded-md border p-4"><Shuffle className="h-5 w-5 mb-2" /><strong>Questões aleatórias</strong><p className="text-sm text-muted-foreground mt-1">Questões e alternativas são embaralhadas por tentativa.</p></div></CardContent></Card>{erroInicio && <div className="rounded-md border border-red-300 bg-red-50 p-4 text-red-800"><strong>Não foi possível iniciar:</strong> {erroInicio}</div>}<Button size="lg" onClick={abrirComunicado}>Iniciar avaliação</Button></div>{mostrarComunicado && <div className="fixed inset-0 z-[100] bg-black/75 p-4 grid place-items-center"><div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-xl bg-white shadow-2xl"><div className="sticky top-0 bg-red-700 text-white p-6"><div className="flex items-center gap-3"><AlertTriangle className="h-9 w-9" /><div><p className="text-sm font-semibold uppercase tracking-wider">Comunicado obrigatório</p><h2 className="text-2xl font-bold">Leia todas as regras antes de iniciar a avaliação</h2></div></div></div><div className="p-6 space-y-5 text-sm leading-relaxed"><p className="text-base font-semibold">Ao prosseguir, você declara que está ciente das condições abaixo e concorda em realizar a prova em ambiente monitorado.</p><div className="space-y-3"><p><strong>1. Equipamento:</strong> utilize um computador com <strong>câmera e microfone conectados, ligados e autorizados</strong>. Ambos devem permanecer ativos durante toda a avaliação.</p><p><strong>2. Tela única:</strong> se você trabalha com mais de um monitor, mantenha apenas a tela usada na prova ativa. <strong>Feche as demais janelas e aplicativos antes de começar.</strong></p><p><strong>3. Compartilhamento:</strong> quando o navegador abrir a janela mostrada na sequência, selecione obrigatoriamente <strong>TELA INTEIRA</strong>. As opções <strong>Guia do Chrome</strong> e <strong>Janela</strong> não serão aceitas e a prova não será iniciada.</p><p><strong>4. Tela cheia:</strong> a prova será realizada em modo tela cheia. Troca de aba, saída da tela cheia, perda de foco ou interrupção do compartilhamento poderão ser registradas.</p><p><strong>5. Conteúdo protegido:</strong> é proibido selecionar, copiar, colar, imprimir, salvar, fotografar, capturar ou reproduzir questões e alternativas por qualquer meio. Tentativas tecnicamente detectáveis serão registradas.</p><p><strong>6. Tempo:</strong> cada questão terá <strong>2 minutos</strong>. Ao zerar, o sistema avançará automaticamente. Questões sem resposta retornarão após a primeira passagem. O tempo total máximo da prova é de <strong>3 horas</strong>.</p><p><strong>7. Ordem da prova:</strong> as questões e alternativas são apresentadas em ordem aleatória para cada participante.</p><p><strong>8. Monitoramento:</strong> ocorrências de segurança ficam registradas para análise. Caso uma violação seja confirmada, a avaliação poderá ser anulada.</p></div><div className="rounded-lg border-2 border-red-300 bg-red-50 p-4"><label className="flex items-start gap-3 cursor-pointer"><input className="mt-1 h-5 w-5" type="checkbox" checked={aceiteComunicado} onChange={(e) => setAceiteComunicado(e.target.checked)} /><span className="font-semibold text-red-900">LI TODAS AS REGRAS, ESTOU CIENTE DAS CONDIÇÕES DE REALIZAÇÃO E MONITORAMENTO DA AVALIAÇÃO E CONCORDO EM PROSSEGUIR.</span></label></div><div className="flex flex-wrap justify-end gap-3"><Button variant="outline" onClick={() => setMostrarComunicado(false)}>Cancelar</Button><Button disabled={!aceiteComunicado} className="bg-red-700 hover:bg-red-800" onClick={iniciarAposAceite}>ACEITO E ESTOU CIENTE — PROSSEGUIR</Button></div></div></div></div>}</div>;
+  return (
+    <div className="min-h-screen bg-slate-50 p-6">
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div><h1 className="text-2xl font-semibold flex items-center gap-2"><ShieldCheck className="h-8 w-8 text-blue-700" />Modo Prova Segura — Piloto UTIC</h1><p className="text-sm text-muted-foreground mt-2">Teste do ambiente seguro antes de carregar as 60 questões oficiais.</p></div>
+        <Card><CardHeader><CardTitle>Requisitos básicos</CardTitle></CardHeader><CardContent className="grid gap-3 md:grid-cols-2"><div className="rounded-md border p-4"><Video className="h-5 w-5 mb-2" /><strong>Computador com câmera</strong><p className="text-sm text-muted-foreground mt-1">A câmera deverá estar conectada, ligada e autorizada durante toda a prova.</p></div><div className="rounded-md border p-4"><Mic className="h-5 w-5 mb-2" /><strong>Microfone obrigatório</strong><p className="text-sm text-muted-foreground mt-1">O microfone deverá estar conectado, ligado e autorizado durante toda a prova.</p></div><div className="rounded-md border p-4"><MonitorUp className="h-5 w-5 mb-2" /><strong>Compartilhar Tela inteira</strong><p className="text-sm text-muted-foreground mt-1">Guia do Chrome ou Janela não serão aceitas.</p></div><div className="rounded-md border p-4"><Shuffle className="h-5 w-5 mb-2" /><strong>Questões aleatórias</strong><p className="text-sm text-muted-foreground mt-1">Questões e alternativas são embaralhadas por tentativa.</p></div></CardContent></Card>
+        {erroInicio && <div className="rounded-md border border-red-300 bg-red-50 p-4 text-red-800"><strong>Não foi possível iniciar:</strong> {erroInicio}</div>}
+        <Button size="lg" onClick={abrirComunicado}>Iniciar avaliação</Button>
+      </div>
+
+      {mostrarComunicado && <div className="fixed inset-0 z-[100] bg-black/75 p-4 grid place-items-center"><div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-xl bg-white shadow-2xl"><div className="sticky top-0 bg-red-700 text-white p-6"><div className="flex items-center gap-3"><AlertTriangle className="h-9 w-9" /><div><p className="text-sm font-semibold uppercase tracking-wider">Comunicado obrigatório</p><h2 className="text-2xl font-bold">Leia todas as regras antes de iniciar a avaliação</h2></div></div></div><div className="p-6 space-y-5 text-sm leading-relaxed"><p className="text-base font-semibold">Ao prosseguir, você declara que está ciente das condições abaixo e concorda em realizar a prova em ambiente monitorado.</p><div className="space-y-3"><p><strong>1. Equipamento:</strong> utilize um computador com <strong>câmera e microfone conectados, ligados e autorizados</strong>. Ambos devem permanecer ativos durante toda a avaliação.</p><p><strong>2. Tela única:</strong> se você trabalha com mais de um monitor, mantenha apenas a tela usada na prova ativa.</p><p><strong>3. Fechamento:</strong> feche abas, janelas, aplicativos e documentos que não sejam necessários antes de iniciar.</p><p><strong>4. Compartilhamento:</strong> quando o navegador solicitar, selecione exclusivamente <strong>TELA INTEIRA</strong>. Guia do Chrome ou Janela não serão aceitas.</p><p><strong>5. Tela cheia:</strong> troca de aba, saída da tela cheia, perda de foco ou interrupção do compartilhamento poderão ser registradas.</p><p><strong>6. Conteúdo protegido:</strong> é proibido selecionar, copiar, colar, imprimir, salvar, fotografar, capturar ou reproduzir questões e alternativas.</p><p><strong>7. Tempo:</strong> cada questão terá <strong>2 minutos</strong>; o tempo total máximo será de <strong>3 horas</strong>.</p><p><strong>8. Ordem:</strong> questões e alternativas são aleatórias.</p><p><strong>9. Monitoramento:</strong> ocorrências de segurança ficam registradas e, se confirmada violação, a avaliação poderá ser anulada.</p></div><div className="rounded-lg border-2 border-red-300 bg-red-50 p-4"><label className="flex items-start gap-3 cursor-pointer"><input className="mt-1 h-5 w-5" type="checkbox" checked={aceiteComunicado} onChange={(e) => setAceiteComunicado(e.target.checked)} /><span className="font-semibold text-red-900">LI TODAS AS REGRAS, ESTOU CIENTE DAS CONDIÇÕES DE REALIZAÇÃO E MONITORAMENTO DA AVALIAÇÃO E CONCORDO EM PROSSEGUIR.</span></label></div><div className="flex flex-wrap justify-end gap-3"><Button variant="outline" onClick={() => setMostrarComunicado(false)}>Cancelar</Button><Button disabled={!aceiteComunicado} className="bg-red-700 hover:bg-red-800" onClick={concluirComunicado}>ACEITO E ESTOU CIENTE — PROSSEGUIR</Button></div></div></div></div>}
+
+      {mostrarAvisoTela && <div className="fixed inset-0 z-[120] bg-black/85 p-4 grid place-items-center"><div className="w-full max-w-2xl rounded-2xl border-4 border-amber-400 bg-white shadow-2xl"><div className="bg-amber-400 px-6 py-5 text-slate-950"><div className="flex items-center gap-3"><MonitorUp className="h-10 w-10" /><div><p className="text-sm font-black uppercase tracking-widest">Atenção antes de compartilhar</p><h2 className="text-3xl font-black">USE SOMENTE TELA INTEIRA</h2></div></div></div><div className="p-7 space-y-5"><div className="rounded-xl border-2 border-red-300 bg-red-50 p-5 text-red-950"><p className="text-xl font-black">ANTES DE CLICAR EM “ESCOLHER TELA”:</p><div className="mt-4 space-y-3 text-base font-semibold"><p>1. Feche todas as outras abas do navegador que não serão utilizadas.</p><p>2. Feche outras janelas, aplicativos, documentos, mensagens e sistemas abertos.</p><p>3. Se utiliza dois ou mais monitores, mantenha somente a tela da prova ativa.</p><p>4. Na janela do Chrome que abrirá em seguida, clique na opção <strong>TELA INTEIRA</strong>.</p><p>5. NÃO escolha <strong>Guia do Chrome</strong> e NÃO escolha <strong>Janela</strong>.</p></div></div><p className="text-sm text-slate-700">Se o sistema identificar que foi compartilhada apenas uma guia ou uma janela, a avaliação não será iniciada. Saídas da prova e interrupções de compartilhamento poderão ser registradas.</p><label className="flex items-start gap-3 rounded-xl border-2 border-slate-300 p-4 cursor-pointer"><input className="mt-1 h-5 w-5" type="checkbox" checked={aceiteTela} onChange={(e) => setAceiteTela(e.target.checked)} /><span className="font-bold">Já fechei as abas, janelas e aplicativos desnecessários, estou usando apenas a tela destinada à prova e estou ciente de que devo selecionar TELA INTEIRA.</span></label><div className="flex justify-end gap-3"><Button variant="outline" onClick={() => { pararMonitoramento(); setMostrarAvisoTela(false); }}>Cancelar</Button><Button disabled={!aceiteTela} size="lg" className="bg-amber-500 text-slate-950 hover:bg-amber-600 font-black" onClick={abrirSeletorTela}>ESTOU PRONTO — ESCOLHER TELA INTEIRA</Button></div></div></div></div>}
+    </div>
+  );
 }
