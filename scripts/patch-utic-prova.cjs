@@ -20,7 +20,7 @@ patchFile('client/src/pages/ProvaSeguraUtic.tsx', [
   {
     label: 'duracao por questao',
     before: 'const DURACAO_QUESTAO_SEGUNDOS = 2 * 60;',
-    after: 'const DURACAO_QUESTAO_SEGUNDOS = 90;',
+    after: 'const DURACAO_QUESTAO_SEGUNDOS = 2 * 60;',
   },
   {
     label: 'alerta de inatividade',
@@ -115,7 +115,7 @@ patchFile('client/src/pages/ProvaSeguraUtic.tsx', [
   {
     label: 'texto topo tempo',
     before: '60 questões oficiais · 2 minutos por questão · até 3 horas.',
-    after: '60 questões oficiais · 1 minuto e 30 segundos por questão · até 3 horas.',
+    after: '60 questões oficiais · 2 minutos por questão · até 3 horas.',
   },
   {
     label: 'texto alerta inatividade',
@@ -125,7 +125,7 @@ patchFile('client/src/pages/ProvaSeguraUtic.tsx', [
   {
     label: 'texto regra tempo',
     before: '<p><strong>4. Tempo:</strong> cada questão terá até 2 minutos e o tempo total máximo será de 3 horas. Questões sem resposta voltarão em nova passagem dentro do tempo restante.</p>',
-    after: '<p><strong>4. Tempo:</strong> cada questão terá até 1 minuto e 30 segundos e o tempo total máximo será de 3 horas. Questões sem resposta voltarão em nova passagem dentro do tempo restante.</p>',
+    after: '<p><strong>4. Tempo:</strong> cada questão terá até 2 minutos e o tempo total máximo será de 3 horas. Questões sem resposta voltarão em nova passagem dentro do tempo restante.</p>',
   },
   {
     label: 'texto regra inatividade',
