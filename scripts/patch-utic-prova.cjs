@@ -192,6 +192,26 @@ patchFile('client/src/pages/ProvaSeguraUtic.tsx', [
     before: "<Badge variant={violacoes ? \"destructive\" : \"secondary\"}>Ocorrências de segurança {violacoes}/{LIMITE_VIOLACOES}</Badge>",
     after: "<Badge variant={violacoes ? \"destructive\" : \"secondary\"}>Ocorrências {violacoes}/{LIMITE_VIOLACOES}</Badge>",
   },
+  {
+    label: "contador separado de ocorrencias criticas",
+    before: "  const [violacoes, setViolacoes] = useState(0);",
+    after: "  const [violacoes, setViolacoes] = useState(0);\n  const [violacoesCriticas, setViolacoesCriticas] = useState(0);",
+  },
+  {
+    label: "acoes impedidas nao bloqueiam prova",
+    before: "  const registrarViolacao = (tipo: \"troca_aba\" | \"saida_tela_cheia\" | \"interrupcao_compartilhamento\" | \"tentativa_conteudo_protegido\" | \"tentativa_print_screen\") => {\n    if (faseRef.current !== \"em_prova\") return;\n    setViolacoes((atual) => {\n      const novo = atual + 1;\n      const detalhe = tipo === \"troca_aba\"\n        ? \"A página da prova perdeu visibilidade.\"\n        : tipo === \"saida_tela_cheia\"\n          ? \"O modo tela cheia foi encerrado.\"\n          : tipo === \"interrupcao_compartilhamento\"\n            ? \"O compartilhamento da tela foi interrompido.\"\n            : tipo === \"tentativa_print_screen\"\n              ? \"Tentativa de captura de tela detectada pelo navegador.\"\n              : \"Tentativa de selecionar, copiar, colar, imprimir, salvar ou reproduzir conteúdo bloqueada.\";\n      setAviso(`${detalhe} Ocorrência ${novo} de ${LIMITE_VIOLACOES}.`);\n      registrarEvento(tipo, detalhe);\n      if (novo >= LIMITE_VIOLACOES) window.setTimeout(() => void bloquearSessao(\"SEGURANCA\"), 0);\n      return novo;\n    });\n  };",
+    after: "  const registrarViolacao = (tipo: \"troca_aba\" | \"saida_tela_cheia\" | \"interrupcao_compartilhamento\" | \"tentativa_conteudo_protegido\" | \"tentativa_print_screen\") => {\n    if (faseRef.current !== \"em_prova\") return;\n    const critica = [\"troca_aba\", \"saida_tela_cheia\", \"interrupcao_compartilhamento\"].includes(tipo);\n    setViolacoes((atual) => {\n      const novo = atual + 1;\n      const detalhe = tipo === \"troca_aba\"\n        ? \"A página da prova perdeu visibilidade.\"\n        : tipo === \"saida_tela_cheia\"\n          ? \"O modo tela cheia foi encerrado.\"\n          : tipo === \"interrupcao_compartilhamento\"\n            ? \"O compartilhamento da tela foi interrompido.\"\n            : tipo === \"tentativa_print_screen\"\n              ? \"Tentativa de captura de tela detectada pelo navegador.\"\n              : \"Tentativa de selecionar, copiar, colar, imprimir, salvar ou reproduzir conteúdo bloqueada.\";\n      setAviso(`${detalhe} Ocorrência ${novo} registrada.`);\n      registrarEvento(tipo, detalhe);\n      return novo;\n    });\n    if (critica) {\n      setViolacoesCriticas((atual) => {\n        const novo = atual + 1;\n        if (novo >= LIMITE_VIOLACOES) window.setTimeout(() => void bloquearSessao(\"SEGURANCA\"), 0);\n        return novo;\n      });\n    }\n  };",
+  },
+  {
+    label: "exibir total e limite critico",
+    before: "<Badge variant={violacoes ? \"destructive\" : \"secondary\"}>Ocorrências {violacoes}/{LIMITE_VIOLACOES}</Badge>",
+    after: "<Badge variant={violacoes ? \"destructive\" : \"secondary\"}>Ocorrências {violacoes}</Badge>\n              <Badge variant={violacoesCriticas ? \"destructive\" : \"secondary\"}>Críticas {violacoesCriticas}/{LIMITE_VIOLACOES}</Badge>",
+  },
+  {
+    label: "mensagem retorno mostra contador critico",
+    before: "<CardDescription className=\"mt-2 text-base\">A ocorrência {violacoes} de {LIMITE_VIOLACOES} foi registrada. A questão ficará protegida até você retornar ao modo tela cheia.</CardDescription>",
+    after: "<CardDescription className=\"mt-2 text-base\">A ocorrência crítica {violacoesCriticas} de {LIMITE_VIOLACOES} foi registrada. A questão ficará protegida até você retornar ao modo tela cheia.</CardDescription>",
+  },
 ]);
 
 patchFile('server/routers/provaUtic.ts', [
