@@ -132,39 +132,6 @@ patchFile('client/src/pages/ProvaSeguraUtic.tsx', [
     before: '<p><strong>5. Inatividade:</strong> após 2 minutos e 30 segundos sem atividade será exibido um aviso. Ao completar 3 minutos, a avaliação será bloqueada.</p>',
     after: '<p><strong>5. Inatividade:</strong> após 3 minutos sem interação será exibido um aviso. Ao completar 5 minutos sem atividade, a avaliação será bloqueada.</p>',
   },
-]);
-
-patchFile('server/routers/provaUtic.ts', [
-  {
-    label: 'limite servidor inatividade',
-    before: 'const LIMITE_INATIVIDADE_SEGUNDOS = 3 * 60;',
-    after: 'const LIMITE_INATIVIDADE_SEGUNDOS = 5 * 60;',
-  },
-  {
-    label: 'motivo servidor inatividade',
-    before: "SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'INATIVIDADE_3_MIN'",
-    after: "SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'INATIVIDADE_5_MIN'",
-  },
-  {
-    label: 'evento servidor inatividade',
-    before: 'Avaliação bloqueada após 3 minutos sem atividade.',
-    after: 'Avaliação bloqueada após 5 minutos sem atividade.',
-  },
-  {
-    label: 'enum bloqueio compatibilidade',
-    before: 'z.enum(["INATIVIDADE_3_MIN", "FECHAMENTO", "INTERRUPCAO_TECNICA", "SEGURANCA"])',
-    after: 'z.enum(["INATIVIDADE_5_MIN", "INATIVIDADE_90_SEG", "INATIVIDADE_3_MIN", "FECHAMENTO", "INTERRUPCAO_TECNICA", "SEGURANCA"])',
-  },
-  {
-    label: 'validar inatividade diretamente no banco',
-    before: "  const now = Date.now();\n  const expira = new Date(tentativa.expires_at).getTime();\n  const ultimaAtividade = new Date(tentativa.last_activity_at).getTime();\n\n  if (Number.isFinite(expira) && now >= expira) {\n    await db.execute(sql`\n      UPDATE prova_utic_tentativas\n         SET status = 'FINALIZADA_TEMPO', finished_at = NOW(), block_reason = 'TEMPO_TOTAL'\n       WHERE id = ${tentativa.id} AND status = 'EM_ANDAMENTO'\n    `);\n    await registrarEvento(tentativa.id, \"finalizada_tempo\", \"Tempo total de 3 horas encerrado.\");\n    return await obterUltimaTentativa(tentativa.colaborador_id);\n  }\n\n  if (Number.isFinite(ultimaAtividade) && now - ultimaAtividade >= LIMITE_INATIVIDADE_SEGUNDOS * 1000) {\n    await db.execute(sql`\n      UPDATE prova_utic_tentativas\n         SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'INATIVIDADE_5_MIN'\n       WHERE id = ${tentativa.id} AND status = 'EM_ANDAMENTO'\n    `);\n    await registrarEvento(tentativa.id, \"bloqueada_inatividade\", \"Avaliação bloqueada após 5 minutos sem atividade.\");\n    return await obterUltimaTentativa(tentativa.colaborador_id);\n  }",
-    after: "  const expiracaoResult = await db.execute(sql`\n    UPDATE prova_utic_tentativas\n       SET status = 'FINALIZADA_TEMPO', finished_at = NOW(), block_reason = 'TEMPO_TOTAL'\n     WHERE id = ${tentativa.id}\n       AND status = 'EM_ANDAMENTO'\n       AND expires_at <= NOW()\n  `);\n  const expiracaoInfo: any = Array.isArray(expiracaoResult) ? expiracaoResult[0] : expiracaoResult;\n  if (Number(expiracaoInfo?.affectedRows ?? 0) > 0) {\n    await registrarEvento(tentativa.id, \"finalizada_tempo\", \"Tempo total de 3 horas encerrado.\");\n    return await obterUltimaTentativa(tentativa.colaborador_id);\n  }\n\n  const inatividadeResult = await db.execute(sql`\n    UPDATE prova_utic_tentativas\n       SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'INATIVIDADE_5_MIN'\n     WHERE id = ${tentativa.id}\n       AND status = 'EM_ANDAMENTO'\n       AND last_activity_at <= DATE_SUB(NOW(), INTERVAL ${LIMITE_INATIVIDADE_SEGUNDOS} SECOND)\n  `);\n  const inatividadeInfo: any = Array.isArray(inatividadeResult) ? inatividadeResult[0] : inatividadeResult;\n  if (Number(inatividadeInfo?.affectedRows ?? 0) > 0) {\n    await registrarEvento(tentativa.id, \"bloqueada_inatividade\", \"Avaliação bloqueada após 5 minutos sem atividade.\");\n    return await obterUltimaTentativa(tentativa.colaborador_id);\n  }",
-  },
-  {
-    label: 'validar 60 respostas antes de concluir',
-    before: `      if (!tentativa || tentativa.status !== "EM_ANDAMENTO") {\n        throw new TRPCError({ code: "FORBIDDEN", message: "Esta tentativa não pode ser finalizada pelo participante." });\n      }\n      const novoStatus = input.motivo === "CONCLUIDA" ? "CONCLUIDA" : input.motivo === "TEMPO" ? "FINALIZADA_TEMPO" : "FINALIZADA";`,
-    after: `      if (!tentativa || tentativa.status !== "EM_ANDAMENTO") {\n        throw new TRPCError({ code: "FORBIDDEN", message: "Esta tentativa não pode ser finalizada pelo participante." });\n      }\n      if (input.motivo === "CONCLUIDA") {\n        const respostasResult = await db.execute(sql\`\n          SELECT COUNT(DISTINCT questao_id) AS total\n            FROM prova_utic_respostas\n           WHERE tentativa_id = \${input.tentativaId}\n        \`);\n        const totalRespondidas = Number(rowsOf<{ total: number | string }>(respostasResult)[0]?.total ?? 0);\n        if (totalRespondidas < 60) {\n          throw new TRPCError({\n            code: "CONFLICT",\n            message: \`Ainda existem \${60 - totalRespondidas} questão(ões) sem resposta confirmada no servidor. A avaliação continuará aberta para conclusão.\`,\n          });\n        }\n      }\n      const novoStatus = input.motivo === "CONCLUIDA" ? "CONCLUIDA" : input.motivo === "TEMPO" ? "FINALIZADA_TEMPO" : "FINALIZADA";`,
-  },
   {
     label: "estado ausencia tela cheia",
     before: "  const [avisoInatividade, setAvisoInatividade] = useState(false);",
@@ -199,6 +166,39 @@ patchFile('server/routers/provaUtic.ts', [
     label: "bloqueio visual ate retorno tela cheia",
     before: "        <main className=\"mx-auto max-w-4xl p-5 pb-32 space-y-4\">",
     after: "        {telaCheiaAusente && fase === \"em_prova\" && (\n          <div className=\"fixed inset-0 z-[100] grid place-items-center bg-slate-950/95 p-6\">\n            <Card className=\"w-full max-w-xl border-red-400 shadow-2xl\">\n              <CardHeader>\n                <div className=\"flex items-start gap-3\">\n                  <AlertTriangle className=\"h-9 w-9 shrink-0 text-red-600\" />\n                  <div>\n                    <CardTitle>Modo tela cheia interrompido</CardTitle>\n                    <CardDescription className=\"mt-2 text-base\">A ocorrência {violacoes} de {LIMITE_VIOLACOES} foi registrada. A questão ficará protegida até você retornar ao modo tela cheia.</CardDescription>\n                  </div>\n                </div>\n              </CardHeader>\n              <CardContent className=\"space-y-4\">\n                <p className=\"text-sm text-slate-700\">O tempo total da avaliação continua correndo. Clique no botão abaixo para retomar com segurança.</p>\n                <Button className=\"w-full\" size=\"lg\" onClick={() => void retornarTelaCheia()}>\n                  <MonitorUp className=\"mr-2 h-5 w-5\" />Voltar para tela cheia\n                </Button>\n              </CardContent>\n            </Card>\n          </div>\n        )}\n\n        <main className=\"mx-auto max-w-4xl p-5 pb-32 space-y-4\">",
+  },
+]);
+
+patchFile('server/routers/provaUtic.ts', [
+  {
+    label: 'limite servidor inatividade',
+    before: 'const LIMITE_INATIVIDADE_SEGUNDOS = 3 * 60;',
+    after: 'const LIMITE_INATIVIDADE_SEGUNDOS = 5 * 60;',
+  },
+  {
+    label: 'motivo servidor inatividade',
+    before: "SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'INATIVIDADE_3_MIN'",
+    after: "SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'INATIVIDADE_5_MIN'",
+  },
+  {
+    label: 'evento servidor inatividade',
+    before: 'Avaliação bloqueada após 3 minutos sem atividade.',
+    after: 'Avaliação bloqueada após 5 minutos sem atividade.',
+  },
+  {
+    label: 'enum bloqueio compatibilidade',
+    before: 'z.enum(["INATIVIDADE_3_MIN", "FECHAMENTO", "INTERRUPCAO_TECNICA", "SEGURANCA"])',
+    after: 'z.enum(["INATIVIDADE_5_MIN", "INATIVIDADE_90_SEG", "INATIVIDADE_3_MIN", "FECHAMENTO", "INTERRUPCAO_TECNICA", "SEGURANCA"])',
+  },
+  {
+    label: 'validar inatividade diretamente no banco',
+    before: "  const now = Date.now();\n  const expira = new Date(tentativa.expires_at).getTime();\n  const ultimaAtividade = new Date(tentativa.last_activity_at).getTime();\n\n  if (Number.isFinite(expira) && now >= expira) {\n    await db.execute(sql`\n      UPDATE prova_utic_tentativas\n         SET status = 'FINALIZADA_TEMPO', finished_at = NOW(), block_reason = 'TEMPO_TOTAL'\n       WHERE id = ${tentativa.id} AND status = 'EM_ANDAMENTO'\n    `);\n    await registrarEvento(tentativa.id, \"finalizada_tempo\", \"Tempo total de 3 horas encerrado.\");\n    return await obterUltimaTentativa(tentativa.colaborador_id);\n  }\n\n  if (Number.isFinite(ultimaAtividade) && now - ultimaAtividade >= LIMITE_INATIVIDADE_SEGUNDOS * 1000) {\n    await db.execute(sql`\n      UPDATE prova_utic_tentativas\n         SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'INATIVIDADE_5_MIN'\n       WHERE id = ${tentativa.id} AND status = 'EM_ANDAMENTO'\n    `);\n    await registrarEvento(tentativa.id, \"bloqueada_inatividade\", \"Avaliação bloqueada após 5 minutos sem atividade.\");\n    return await obterUltimaTentativa(tentativa.colaborador_id);\n  }",
+    after: "  const expiracaoResult = await db.execute(sql`\n    UPDATE prova_utic_tentativas\n       SET status = 'FINALIZADA_TEMPO', finished_at = NOW(), block_reason = 'TEMPO_TOTAL'\n     WHERE id = ${tentativa.id}\n       AND status = 'EM_ANDAMENTO'\n       AND expires_at <= NOW()\n  `);\n  const expiracaoInfo: any = Array.isArray(expiracaoResult) ? expiracaoResult[0] : expiracaoResult;\n  if (Number(expiracaoInfo?.affectedRows ?? 0) > 0) {\n    await registrarEvento(tentativa.id, \"finalizada_tempo\", \"Tempo total de 3 horas encerrado.\");\n    return await obterUltimaTentativa(tentativa.colaborador_id);\n  }\n\n  const inatividadeResult = await db.execute(sql`\n    UPDATE prova_utic_tentativas\n       SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'INATIVIDADE_5_MIN'\n     WHERE id = ${tentativa.id}\n       AND status = 'EM_ANDAMENTO'\n       AND last_activity_at <= DATE_SUB(NOW(), INTERVAL ${LIMITE_INATIVIDADE_SEGUNDOS} SECOND)\n  `);\n  const inatividadeInfo: any = Array.isArray(inatividadeResult) ? inatividadeResult[0] : inatividadeResult;\n  if (Number(inatividadeInfo?.affectedRows ?? 0) > 0) {\n    await registrarEvento(tentativa.id, \"bloqueada_inatividade\", \"Avaliação bloqueada após 5 minutos sem atividade.\");\n    return await obterUltimaTentativa(tentativa.colaborador_id);\n  }",
+  },
+  {
+    label: 'validar 60 respostas antes de concluir',
+    before: `      if (!tentativa || tentativa.status !== "EM_ANDAMENTO") {\n        throw new TRPCError({ code: "FORBIDDEN", message: "Esta tentativa não pode ser finalizada pelo participante." });\n      }\n      const novoStatus = input.motivo === "CONCLUIDA" ? "CONCLUIDA" : input.motivo === "TEMPO" ? "FINALIZADA_TEMPO" : "FINALIZADA";`,
+    after: `      if (!tentativa || tentativa.status !== "EM_ANDAMENTO") {\n        throw new TRPCError({ code: "FORBIDDEN", message: "Esta tentativa não pode ser finalizada pelo participante." });\n      }\n      if (input.motivo === "CONCLUIDA") {\n        const respostasResult = await db.execute(sql\`\n          SELECT COUNT(DISTINCT questao_id) AS total\n            FROM prova_utic_respostas\n           WHERE tentativa_id = \${input.tentativaId}\n        \`);\n        const totalRespondidas = Number(rowsOf<{ total: number | string }>(respostasResult)[0]?.total ?? 0);\n        if (totalRespondidas < 60) {\n          throw new TRPCError({\n            code: "CONFLICT",\n            message: \`Ainda existem \${60 - totalRespondidas} questão(ões) sem resposta confirmada no servidor. A avaliação continuará aberta para conclusão.\`,\n          });\n        }\n      }\n      const novoStatus = input.motivo === "CONCLUIDA" ? "CONCLUIDA" : input.motivo === "TEMPO" ? "FINALIZADA_TEMPO" : "FINALIZADA";`,
   },
 ]);
 
