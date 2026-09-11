@@ -79,7 +79,7 @@ function rotuloMotivo(motivo: string | null | undefined) {
   const rotulos: Record<string, string> = {
     ADMINISTRADOR: "Bloqueio pelo administrador",
     INATIVIDADE_3_MIN: "Inatividade de 3 minutos",
-    FECHAMENTO: "Fechamento ou saída da prova",
+    FECHAMENTO: "Fechamento ou saída da aplicação",
     INTERRUPCAO_TECNICA: "Interrupção técnica",
     SEGURANCA: "Ocorrência de segurança",
     FINALIZADA_PELO_PARTICIPANTE: "Finalizada pelo participante",
@@ -129,7 +129,7 @@ export default function AdminAvaliacoes() {
 
   const bloquearMutation = trpc.provaUtic.bloquearAdministrativamente.useMutation({
     onSuccess: async () => {
-      setMensagem("Avaliação bloqueada pelo administrador.");
+      setMensagem("Avaliação de Proficiência para a Função bloqueada pelo administrador.");
       setAcao(null);
       setObservacao("");
       await painelQuery.refetch();
@@ -197,8 +197,8 @@ export default function AdminAvaliacoes() {
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-8 w-8 text-blue-700" />
             <div>
-              <h1 className="text-2xl font-semibold">Administração das Avaliações</h1>
-              <p className="text-sm text-muted-foreground">Controle das tentativas da Avaliação Técnica UTIC.</p>
+              <h1 className="text-2xl font-semibold">Administração da Avaliação de Proficiência para a Função</h1>
+              <p className="text-sm text-muted-foreground">Controle das tentativas da Avaliação de Proficiência para a Função — UTIC.</p>
             </div>
           </div>
         </div>
@@ -246,7 +246,7 @@ export default function AdminAvaliacoes() {
                 <p><strong>Senha temporária:</strong> <span className="font-mono text-base font-bold">{credencialTeste.senhaTemporaria}</span></p>
               </div>
               <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
-                Use estas credenciais em uma janela anônima/privativa do navegador para não encerrar sua sessão de administrador. Esta conta é somente para os testes da avaliação UTIC.
+                Use estas credenciais em uma janela anônima/privativa do navegador para não encerrar sua sessão de administrador. Esta conta é somente para os testes da Avaliação de Proficiência para a Função — UTIC.
               </div>
             </div>
           )}
@@ -256,7 +256,7 @@ export default function AdminAvaliacoes() {
       <Card>
         <CardHeader>
           <CardTitle>Monitoramento das tentativas</CardTitle>
-          <CardDescription>O bloqueio administrativo impede novas respostas imediatamente. Enquanto a prova estiver bloqueada pelo administrador, o relógio fica pausado. O tempo volta a contar quando o administrador confirma a liberação.</CardDescription>
+          <CardDescription>O bloqueio administrativo impede novas respostas imediatamente. Enquanto a Avaliação de Proficiência para a Função estiver bloqueada pelo administrador, o relógio fica pausado. O tempo volta a contar quando o administrador confirma a liberação.</CardDescription>
         </CardHeader>
         <CardContent>
           {painelQuery.isLoading ? (
@@ -351,9 +351,9 @@ export default function AdminAvaliacoes() {
             <div className="flex items-start gap-3">
               {acao.tipo === "bloquear" ? <LockKeyhole className="h-8 w-8 shrink-0 text-red-700" /> : <Unlock className="h-8 w-8 shrink-0 text-blue-700" />}
               <div>
-                <h2 className="text-xl font-bold">{acao.tipo === "bloquear" ? "Bloquear avaliação agora?" : "Liberar continuidade?"}</h2>
+                <h2 className="text-xl font-bold">{acao.tipo === "bloquear" ? "Bloquear a Avaliação de Proficiência para a Função agora?" : "Liberar continuidade?"}</h2>
                 {acao.tipo === "bloquear" ? (
-                  <p className="mt-2 text-sm leading-relaxed">Você está prestes a bloquear a avaliação de <strong>{acao.colaboradorNome}</strong>. O participante não poderá continuar respondendo até nova liberação do administrador. O tempo da prova ficará pausado durante este bloqueio administrativo.</p>
+                  <p className="mt-2 text-sm leading-relaxed">Você está prestes a bloquear a Avaliação de Proficiência para a Função de <strong>{acao.colaboradorNome}</strong>. O participante não poderá continuar respondendo até nova liberação do administrador. O tempo da Avaliação de Proficiência para a Função ficará pausado durante este bloqueio administrativo.</p>
                 ) : (
                   <p className="mt-2 text-sm leading-relaxed">A mesma tentativa de <strong>{acao.colaboradorNome}</strong> será liberada. As respostas e o histórico permanecem preservados. Se o bloqueio foi administrativo, todo o período bloqueado será devolvido ao tempo restante e o relógio voltará a contar assim que esta liberação for confirmada.</p>
                 )}
@@ -391,7 +391,7 @@ export default function AdminAvaliacoes() {
               <div className="flex items-start gap-3">
                 <UserCheck className="h-8 w-8 shrink-0 text-blue-700" />
                 <div>
-                  <h2 className="text-xl font-bold">Identidade visual da avaliação</h2>
+                  <h2 className="text-xl font-bold">Identidade visual da Avaliação de Proficiência para a Função</h2>
                   <p className="mt-1 text-sm text-muted-foreground">Conferência visual manual para eventual auditoria. Não há reconhecimento facial automático.</p>
                 </div>
               </div>
@@ -400,7 +400,7 @@ export default function AdminAvaliacoes() {
 
             <div className="mt-5 grid gap-5 md:grid-cols-[280px_minmax(0,1fr)]">
               <div className="overflow-hidden rounded-lg border bg-slate-100">
-                <img src={identidadeAuditoria.fotoUrl} alt="Fotografia de identidade capturada antes da avaliação" className="aspect-[4/3] w-full object-cover" />
+                <img src={identidadeAuditoria.fotoUrl} alt="Fotografia de identidade capturada antes da Avaliação de Proficiência para a Função" className="aspect-[4/3] w-full object-cover" />
               </div>
               <div className="space-y-3 text-sm">
                 <p><strong>Participante:</strong> {identidadeAuditoria.nome}</p>

@@ -283,4 +283,284 @@ patchFile('client/src/pages/AdminAvaliacoes.tsx', [
   },
 ]);
 
+
+patchFile("client/src/pages/ProvaSeguraUtic.tsx", [
+  {
+    label: "titulo superior",
+    before: "Avaliação Técnica UTIC — Modo Prova Segura",
+    after: "Avaliação de Proficiência para a Função — UTIC — Modo Seguro",
+  },
+  {
+    label: "titulo inicial",
+    before: "Modo Prova Segura — Avaliação Técnica UTIC",
+    after: "Modo Seguro — Avaliação de Proficiência para a Função — UTIC",
+  },
+  {
+    label: "ambiente inicial",
+    before: "Ambiente de produção para validação controlada da prova completa da UTIC.",
+    after: "Ambiente de produção para aplicação controlada da Avaliação de Proficiência para a Função da UTIC.",
+  },
+  {
+    label: "pagina perdeu visibilidade",
+    before: "A página da prova perdeu visibilidade.",
+    after: "A página da Avaliação de Proficiência para a Função perdeu visibilidade.",
+  },
+  {
+    label: "erro multiplas telas",
+    before: "Para realizar a avaliação, mantenha somente uma tela ativa e tente novamente.",
+    after: "Para realizar a Avaliação de Proficiência para a Função, mantenha somente uma tela ativa e tente novamente.",
+  },
+  {
+    label: "erro compartilhamento",
+    before: "compartilhamento de tela exigido pela avaliação.",
+    after: "compartilhamento de tela exigido pela Avaliação de Proficiência para a Função.",
+  },
+  {
+    label: "erro tela inteira",
+    before: "Para realizar esta avaliação é obrigatório compartilhar TELA INTEIRA.",
+    after: "Para realizar a Avaliação de Proficiência para a Função é obrigatório compartilhar TELA INTEIRA.",
+  },
+  {
+    label: "erro modo seguro",
+    before: "modo tela cheia é obrigatório para iniciar a avaliação.",
+    after: "modo tela cheia é obrigatório para iniciar a Avaliação de Proficiência para a Função.",
+  },
+  {
+    label: "erro ambiente seguro",
+    before: "ambiente seguro da avaliação.",
+    after: "ambiente seguro da Avaliação de Proficiência para a Função.",
+  },
+  {
+    label: "titulo bloqueada",
+    before: "Avaliação interrompida e bloqueada",
+    after: "Avaliação de Proficiência para a Função interrompida e bloqueada",
+  },
+  {
+    label: "retorno bloqueado",
+    before: "Você não pode retornar à avaliação automaticamente.",
+    after: "Você não pode retornar à Avaliação de Proficiência para a Função automaticamente.",
+  },
+  {
+    label: "encerrada seguranca",
+    before: "Avaliação encerrada por segurança",
+    after: "Avaliação de Proficiência para a Função encerrada por segurança",
+  },
+  {
+    label: "concluida",
+    before: "AVALIAÇÃO CONCLUÍDA",
+    after: "AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO CONCLUÍDA",
+  },
+  {
+    label: "tempo encerrado",
+    before: "O tempo total da avaliação foi encerrado.",
+    after: "O tempo total da Avaliação de Proficiência para a Função foi encerrado.",
+  },
+  {
+    label: "sucesso concluida",
+    before: "Avaliação concluída com sucesso. Suas respostas foram registradas.",
+    after: "Avaliação de Proficiência para a Função concluída com sucesso. Suas respostas foram registradas.",
+  },
+  {
+    label: "encerramento automatico",
+    before: "A avaliação será encerrada automaticamente quando o tempo total chegar a zero.",
+    after: "A Avaliação de Proficiência para a Função será encerrada automaticamente quando o tempo total chegar a zero.",
+  },
+  {
+    label: "inatividade bloqueio",
+    before: "a prova será bloqueada.",
+    after: "a Avaliação de Proficiência para a Função será bloqueada.",
+  },
+  {
+    label: "botao finalizar",
+    before: "FINALIZAR AVALIAÇÃO",
+    after: "FINALIZAR AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO",
+  },
+  {
+    label: "continuar",
+    before: "Continuar avaliação",
+    after: "Continuar Avaliação de Proficiência para a Função",
+  },
+  {
+    label: "retomar",
+    before: "RETOMAR AVALIAÇÃO LIBERADA",
+    after: "RETOMAR AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO",
+  },
+  {
+    label: "requisitos",
+    before: "Requisitos da avaliação",
+    after: "Requisitos da Avaliação de Proficiência para a Função",
+  },
+  {
+    label: "botao iniciar",
+    before: "Iniciar avaliação",
+    after: "Iniciar Avaliação de Proficiência para a Função",
+  },
+  {
+    label: "regras titulo",
+    before: "antes de iniciar a avaliação",
+    after: "antes de iniciar a Avaliação de Proficiência para a Função",
+  },
+  {
+    label: "declaracao ambiente",
+    before: "realizar a prova em ambiente monitorado.",
+    after: "realizar a Avaliação de Proficiência para a Função em ambiente monitorado.",
+  },
+  {
+    label: "equipamento",
+    before: "durante toda a avaliação.",
+    after: "durante toda a Avaliação de Proficiência para a Função.",
+  },
+  {
+    label: "tela unica",
+    before: "utilize somente a tela da prova.",
+    after: "utilize somente a tela da Avaliação de Proficiência para a Função.",
+  },
+  {
+    label: "regra finalizacao",
+    before: "a avaliação pode ser finalizada voluntariamente",
+    after: "a Avaliação de Proficiência para a Função pode ser finalizada voluntariamente",
+  },
+  {
+    label: "aceite",
+    before: "REALIZAÇÃO DA AVALIAÇÃO.",
+    after: "REALIZAÇÃO DA AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO.",
+  },
+  {
+    label: "monitor",
+    before: "monitor desta avaliação ativo.",
+    after: "monitor desta Avaliação de Proficiência para a Função ativo.",
+  },
+  {
+    label: "tela necessaria",
+    before: "tela necessária para a avaliação",
+    after: "tela necessária para a Avaliação de Proficiência para a Função",
+  },
+]);
+
+patchFile("client/src/components/ProvaUticRealtimeGuard.tsx", [
+  {
+    label: "admin bloqueio",
+    before: "A avaliação foi bloqueada pelo administrador.",
+    after: "A Avaliação de Proficiência para a Função foi bloqueada pelo administrador.",
+  },
+  {
+    label: "inatividade cinco",
+    before: "A avaliação foi bloqueada após 5 minutos de inatividade.",
+    after: "A Avaliação de Proficiência para a Função foi bloqueada após 5 minutos de inatividade.",
+  },
+  {
+    label: "inatividade noventa",
+    before: "A avaliação foi bloqueada após 1 minuto e 30 segundos de inatividade.",
+    after: "A Avaliação de Proficiência para a Função foi bloqueada após 1 minuto e 30 segundos de inatividade.",
+  },
+  {
+    label: "inatividade tres",
+    before: "A avaliação foi bloqueada após 3 minutos de inatividade.",
+    after: "A Avaliação de Proficiência para a Função foi bloqueada após 3 minutos de inatividade.",
+  },
+  {
+    label: "fechamento",
+    before: "A avaliação foi bloqueada após fechamento ou interrupção da sessão.",
+    after: "A Avaliação de Proficiência para a Função foi bloqueada após fechamento ou interrupção da sessão.",
+  },
+  {
+    label: "interrupcao",
+    before: "A avaliação foi bloqueada devido a uma interrupção técnica.",
+    after: "A Avaliação de Proficiência para a Função foi bloqueada devido a uma interrupção técnica.",
+  },
+  {
+    label: "seguranca",
+    before: "A avaliação foi bloqueada devido a uma ocorrência de segurança.",
+    after: "A Avaliação de Proficiência para a Função foi bloqueada devido a uma ocorrência de segurança.",
+  },
+  {
+    label: "generica",
+    before: "A avaliação está bloqueada.",
+    after: "A Avaliação de Proficiência para a Função está bloqueada.",
+  },
+  {
+    label: "status",
+    before: "Verificando status da avaliação...",
+    after: "Verificando status da Avaliação de Proficiência para a Função...",
+  },
+  {
+    label: "titulo administrador",
+    before: "AVALIAÇÃO BLOQUEADA PELO ADMINISTRADOR",
+    after: "AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO BLOQUEADA PELO ADMINISTRADOR",
+  },
+  {
+    label: "titulo bloqueada",
+    before: ": \"AVALIAÇÃO BLOQUEADA\"}</CardTitle>",
+    after: ": \"AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO BLOQUEADA\"}</CardTitle>",
+  },
+  {
+    label: "nova avaliacao",
+    before: "Não tente iniciar uma nova avaliação.",
+    after: "Não tente iniciar uma nova Avaliação de Proficiência para a Função.",
+  },
+]);
+
+patchFile("server/routers/provaUtic.ts", [
+  {
+    label: "declaracao servidor",
+    before: "pessoa que realizará esta avaliação. Confirmo que esta fotografia foi capturada por mim imediatamente antes do início da prova",
+    after: "pessoa que realizará esta Avaliação de Proficiência para a Função. Confirmo que esta fotografia foi capturada por mim imediatamente antes do início da Avaliação de Proficiência para a Função",
+  },
+  {
+    label: "continuidade liberada",
+    before: "Existe uma avaliação liberada para continuidade. Use Retomar avaliação.",
+    after: "Existe uma Avaliação de Proficiência para a Função liberada para continuidade. Use Retomar.",
+  },
+  {
+    label: "identidade previa",
+    before: "Antes de iniciar a avaliação, tire sua fotografia pela câmera",
+    after: "Antes de iniciar a Avaliação de Proficiência para a Função, tire sua fotografia pela câmera",
+  },
+  {
+    label: "vincular identidade",
+    before: "confirmação de identidade à avaliação.",
+    after: "confirmação de identidade à Avaliação de Proficiência para a Função.",
+  },
+  {
+    label: "indisponivel respostas",
+    before: "Esta avaliação não está disponível para respostas.",
+    after: "Esta Avaliação de Proficiência para a Função não está disponível para respostas.",
+  },
+  {
+    label: "finalizacao evento",
+    before: "Avaliação finalizada:",
+    after: "Avaliação de Proficiência para a Função finalizada:",
+  },
+  {
+    label: "continuidade nao liberada",
+    before: "continuidade desta avaliação ainda não foi liberada",
+    after: "continuidade desta Avaliação de Proficiência para a Função ainda não foi liberada",
+  },
+  {
+    label: "tempo usuario",
+    before: "tempo total desta avaliação já terminou.",
+    after: "tempo total desta Avaliação de Proficiência para a Função já terminou.",
+  },
+  {
+    label: "bloqueio admin requisito",
+    before: "Somente uma avaliação em andamento ou liberada pode ser bloqueada",
+    after: "Somente uma Avaliação de Proficiência para a Função em andamento ou liberada pode ser bloqueada",
+  },
+  {
+    label: "bloqueada administrador",
+    before: "Avaliação bloqueada pelo administrador",
+    after: "Avaliação de Proficiência para a Função bloqueada pelo administrador",
+  },
+  {
+    label: "tempo admin",
+    before: "tempo total da avaliação já terminou",
+    after: "tempo total da Avaliação de Proficiência para a Função já terminou",
+  },
+  {
+    label: "tempo devolvido",
+    before: "tempo restante da prova.",
+    after: "tempo restante da Avaliação de Proficiência para a Função.",
+  },
+]);
+
 console.log('[UTIC] Patch de temporizacao, inatividade, persistencia e conclusao aplicado.');

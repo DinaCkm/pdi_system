@@ -124,7 +124,7 @@ export default function ProvaUticIdentityGuard({ children }: Props) {
   if (!precisaConfirmar) return <>{children}</>;
 
   const nome = String(user.name || "Participante").trim();
-  const declaracao = `Declaro que sou ${nome}, participante identificado(a) nesta plataforma, e que sou a pessoa que realizará esta avaliação. Confirmo que esta fotografia foi capturada por mim imediatamente antes do início da prova e poderá ser utilizada exclusivamente para conferência da minha identidade em eventual auditoria do processo avaliativo.`;
+  const declaracao = `Declaro que sou ${nome}, participante identificado(a) nesta plataforma, e que sou a pessoa que realizará esta Avaliação de Proficiência para a Função. Confirmo que esta fotografia foi capturada por mim imediatamente antes do início da Avaliação de Proficiência para a Função e poderá ser utilizada exclusivamente para conferência da minha identidade em eventual auditoria do processo avaliativo.`;
 
   return (
     <div className="min-h-screen bg-slate-100 p-6">
