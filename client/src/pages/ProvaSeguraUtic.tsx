@@ -112,6 +112,12 @@ export default function ProvaSeguraUtic() {
     });
   };
 
+  const registrarTentativaProtegida = (tipo: string, detalhe: string) => {
+    if (faseRef.current !== "em_prova") return;
+    registrarEvento(tipo, detalhe);
+    setAviso("Ação não permitida. Esta avaliação possui conteúdo protegido. A ocorrência foi registrada.");
+  };
+
   const pararGravacao = () => {
     if (recorderRef.current && recorderRef.current.state !== "inactive") recorderRef.current.stop();
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -173,6 +179,70 @@ export default function ProvaSeguraUtic() {
       if (gravacaoUrl) URL.revokeObjectURL(gravacaoUrl);
     };
   }, [gravacaoUrl]);
+
+  useEffect(() => {
+    if (fase !== "em_prova") return;
+
+    const bloquearSelecao = (event: Event) => {
+      event.preventDefault();
+      registrarTentativaProtegida("tentativa_selecao", "Tentativa de selecionar conteúdo da avaliação bloqueada.");
+    };
+    const bloquearContexto = (event: MouseEvent) => {
+      event.preventDefault();
+      registrarTentativaProtegida("tentativa_menu_contexto", "Tentativa de abrir o menu de contexto bloqueada.");
+    };
+    const bloquearCopia = (event: ClipboardEvent) => {
+      event.preventDefault();
+      registrarTentativaProtegida("tentativa_copia", "Tentativa de copiar ou recortar conteúdo da avaliação bloqueada.");
+    };
+    const bloquearColagem = (event: ClipboardEvent) => {
+      event.preventDefault();
+      registrarTentativaProtegida("tentativa_colagem", "Tentativa de colar conteúdo durante a avaliação bloqueada.");
+    };
+    const bloquearArraste = (event: DragEvent) => {
+      event.preventDefault();
+      registrarTentativaProtegida("tentativa_arraste", "Tentativa de arrastar conteúdo da avaliação bloqueada.");
+    };
+    const bloquearAtalhos = (event: KeyboardEvent) => {
+      const tecla = event.key.toLowerCase();
+      const comModificador = event.ctrlKey || event.metaKey;
+      const atalhosProtegidos = comModificador && ["c", "x", "v", "p", "s", "u"].includes(tecla);
+
+      if (atalhosProtegidos) {
+        event.preventDefault();
+        const acao = tecla === "p" ? "impressao" : tecla === "s" ? "salvar_pagina" : tecla === "u" ? "codigo_fonte" : "copia_colagem";
+        registrarTentativaProtegida(`tentativa_${acao}`, `Atalho protegido (${event.ctrlKey ? "Ctrl" : "Command"}+${event.key.toUpperCase()}) bloqueado durante a avaliação.`);
+        return;
+      }
+
+      if (event.key === "PrintScreen") {
+        registrarTentativaProtegida("tentativa_print_screen", "Tecla Print Screen detectada. O navegador não consegue impedir todas as capturas do sistema operacional, mas a ocorrência foi registrada.");
+      }
+    };
+    const registrarImpressao = () => {
+      registrarTentativaProtegida("tentativa_impressao", "Tentativa de imprimir a avaliação detectada. O conteúdo de impressão foi protegido.");
+    };
+
+    document.addEventListener("selectstart", bloquearSelecao);
+    document.addEventListener("contextmenu", bloquearContexto);
+    document.addEventListener("copy", bloquearCopia);
+    document.addEventListener("cut", bloquearCopia);
+    document.addEventListener("paste", bloquearColagem);
+    document.addEventListener("dragstart", bloquearArraste);
+    document.addEventListener("keydown", bloquearAtalhos);
+    window.addEventListener("beforeprint", registrarImpressao);
+
+    return () => {
+      document.removeEventListener("selectstart", bloquearSelecao);
+      document.removeEventListener("contextmenu", bloquearContexto);
+      document.removeEventListener("copy", bloquearCopia);
+      document.removeEventListener("cut", bloquearCopia);
+      document.removeEventListener("paste", bloquearColagem);
+      document.removeEventListener("dragstart", bloquearArraste);
+      document.removeEventListener("keydown", bloquearAtalhos);
+      window.removeEventListener("beforeprint", registrarImpressao);
+    };
+  }, [fase, respostas, eventos, violacoes]);
 
   useEffect(() => {
     if (fase !== "em_prova") return;
@@ -351,7 +421,30 @@ export default function ProvaSeguraUtic() {
 
   if (fase === "em_prova") {
     return (
-      <div className="min-h-screen bg-slate-100">
+      <div className="prova-protegida min-h-screen bg-slate-100">
+        <style>{`
+          .prova-protegida, .prova-protegida * {
+            -webkit-user-select: none !important;
+            user-select: none !important;
+            -webkit-touch-callout: none !important;
+          }
+          @media print {
+            body * { visibility: hidden !important; }
+            body::before {
+              content: "Conteúdo protegido. A impressão desta avaliação não é permitida.";
+              visibility: visible !important;
+              position: fixed;
+              inset: 0;
+              display: grid;
+              place-items: center;
+              font: 600 20px/1.4 sans-serif;
+              padding: 40px;
+              text-align: center;
+              background: white;
+              color: black;
+            }
+          }
+        `}</style>
         <header className="sticky top-0 z-40 border-b bg-white px-5 py-3 shadow-sm">
           <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -420,6 +513,16 @@ export default function ProvaSeguraUtic() {
             <div className="rounded-md border p-4"><Clock3 className="mb-2 h-5 w-5 text-blue-700" /><p className="font-medium">Cronômetro real</p><p className="mt-1 text-sm text-muted-foreground">Para o piloto, o tempo é de 10 minutos. No cadastro oficial será configurável.</p></div>
             <div className="rounded-md border p-4"><AlertTriangle className="mb-2 h-5 w-5 text-blue-700" /><p className="font-medium">Limite de ocorrências</p><p className="mt-1 text-sm text-muted-foreground">Neste piloto, a 3ª ocorrência encerra o teste automaticamente.</p></div>
             <div className="rounded-md border p-4"><MonitorUp className="mb-2 h-5 w-5 text-blue-700" /><p className="font-medium">Gravação da tela</p><p className="mt-1 text-sm text-muted-foreground">O navegador pedirá autorização explícita para compartilhar e gravar a tela.</p></div>
+            <div className="rounded-md border p-4 md:col-span-2"><ShieldCheck className="mb-2 h-5 w-5 text-blue-700" /><p className="font-medium">Proteção do conteúdo</p><p className="mt-1 text-sm text-muted-foreground">Não é permitido selecionar, copiar, recortar, colar, imprimir, salvar ou reproduzir o conteúdo da avaliação. Tentativas detectáveis pelo navegador são bloqueadas e registradas para análise.</p></div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-amber-300 bg-amber-50">
+          <CardHeader><CardTitle className="text-amber-900">Atenção — conteúdo protegido</CardTitle></CardHeader>
+          <CardContent className="space-y-2 text-sm text-amber-900">
+            <p>É proibido copiar, selecionar, imprimir, fotografar, capturar ou reproduzir as questões e alternativas da avaliação por qualquer meio.</p>
+            <p>O sistema poderá registrar tentativas de cópia, impressão, saída da tela da prova e outras ocorrências tecnicamente identificáveis.</p>
+            <p className="font-medium">Caso seja identificada e confirmada uma violação das regras de segurança, a avaliação poderá ser anulada.</p>
           </CardContent>
         </Card>
 
@@ -432,7 +535,7 @@ export default function ProvaSeguraUtic() {
             </label>
             <label className="flex items-start gap-3 rounded-md border p-4 cursor-pointer">
               <input className="mt-1" type="checkbox" checked={aceite} onChange={(event) => setAceite(event.target.checked)} />
-              <div><p className="font-medium">Li e compreendi as regras deste teste</p><p className="text-sm text-muted-foreground">Ao iniciar, o sistema solicitará tela cheia e, se selecionado acima, compartilhamento da tela.</p></div>
+              <div><p className="font-medium">Li, compreendi e concordo com as regras de monitoramento e proteção do conteúdo</p><p className="text-sm text-muted-foreground">Ao iniciar, o sistema solicitará tela cheia e, se selecionado acima, compartilhamento da tela. Durante a prova, ações de cópia, impressão, seleção e reprodução serão bloqueadas quando tecnicamente possível e registradas para análise.</p></div>
             </label>
             {erroGravacao && <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{erroGravacao}</div>}
             {aviso && <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{aviso}</div>}
