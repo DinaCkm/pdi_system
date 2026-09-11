@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ClipboardCheck, FileUp, ListChecks, PlayCircle, TrendingUp } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, FileUp, ListChecks, PlayCircle, TrendingUp } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -168,6 +168,19 @@ export default function Avaliacoes() {
     data?: AvaliacaoListItem[];
   };
 
+  const estadoUticQuery = trpc.provaUtic.estado.useQuery(undefined, {
+    enabled: Boolean(user) && isTesteUtic,
+    refetchOnWindowFocus: true,
+  });
+  const tentativaUtic = estadoUticQuery.data?.tentativa as any;
+  const statusTentativaUtic = tentativaUtic?.status as string | undefined;
+  const tentativaUticEncerrada = ["FINALIZADA", "CONCLUIDA", "FINALIZADA_TEMPO"].includes(statusTentativaUtic ?? "");
+  const mensagemEncerramentoUtic = statusTentativaUtic === "CONCLUIDA"
+    ? "Avaliação concluída com as 60 respostas confirmadas pelo servidor."
+    : statusTentativaUtic === "FINALIZADA_TEMPO"
+      ? "Avaliação encerrada pelo término do tempo. As respostas gravadas foram preservadas."
+      : "Avaliação encerrada voluntariamente pelo participante. As respostas gravadas foram preservadas.";
+
   const [empregadoSelecionado, setEmpregadoSelecionado] = useState(
     PILOTO_UTIC[0].nome,
   );
@@ -244,10 +257,27 @@ export default function Avaliacoes() {
                 <p className="mt-1 text-muted-foreground">{empregado.funcao}</p>
               </div>
               {isTesteUtic && (
-                <Button className="mt-2 font-semibold" onClick={() => setLocation("/avaliacoes/utic/prova-segura")}>
-                  <PlayCircle className="mr-2 h-5 w-5" />
-                  INICIAR AVALIAÇÃO TÉCNICA UTIC
-                </Button>
+                tentativaUticEncerrada ? (
+                  <div className="mt-2 rounded-md border-2 border-green-300 bg-green-50 p-4 text-green-950">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-green-700" />
+                      <div>
+                        <p className="font-semibold">AVALIAÇÃO JÁ ENCERRADA</p>
+                        <p className="mt-1 text-sm">{mensagemEncerramentoUtic}</p>
+                        <p className="mt-2 text-xs text-green-800">Não existe uma nova tentativa disponível para esta conta.</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    className="mt-2 font-semibold"
+                    disabled={estadoUticQuery.isLoading}
+                    onClick={() => setLocation("/avaliacoes/utic/prova-segura")}
+                  >
+                    <PlayCircle className="mr-2 h-5 w-5" />
+                    {statusTentativaUtic ? "RETOMAR AVALIAÇÃO TÉCNICA UTIC" : "INICIAR AVALIAÇÃO TÉCNICA UTIC"}
+                  </Button>
+                )
               )}
             </div>
 
