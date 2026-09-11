@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { LockKeyhole } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 function mensagemMotivo(motivo?: string | null) {
@@ -25,6 +26,7 @@ export default function ProvaUticRealtimeGuard({ children }: { children: React.R
 
   const tentativa = estadoQuery.data?.tentativa as any;
   const bloqueada = tentativa?.status === "BLOQUEADA";
+  const finalizada = ["FINALIZADA", "CONCLUIDA", "FINALIZADA_TEMPO"].includes(tentativa?.status ?? "");
   const bloqueioKey = tentativa?.id && tentativa?.blocked_at
     ? `prova-utic-bloqueio-${tentativa.id}-${String(tentativa.blocked_at)}`
     : null;
@@ -70,5 +72,20 @@ export default function ProvaUticRealtimeGuard({ children }: { children: React.R
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {finalizada && (
+        <div className="fixed bottom-8 left-1/2 z-[180] -translate-x-1/2">
+          <Button
+            size="lg"
+            className="min-w-72 shadow-xl"
+            onClick={() => { window.location.href = "/dashboard"; }}
+          >
+            FECHAR E RETORNAR AO SISTEMA
+          </Button>
+        </div>
+      )}
+    </>
+  );
 }

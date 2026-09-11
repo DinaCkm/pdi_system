@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
 import ProvaUticRealtimeGuard from "./components/ProvaUticRealtimeGuard";
+import AdminAvaliacoesShortcut from "./components/AdminAvaliacoesShortcut";
 import Home from "./pages/Home";
 import Setup from "./pages/Setup";
 import Login from "./pages/Login";
@@ -124,6 +125,7 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <Toaster />
+        <AdminAvaliacoesShortcut />
         <Router />
       </ThemeProvider>
     </ErrorBoundary>
