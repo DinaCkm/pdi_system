@@ -68,9 +68,39 @@ patchFile('client/src/pages/ProvaSeguraUtic.tsx', [
     after: 'Tempo de 1 minuto e 30 segundos encerrado para a questão de banco ${questaoAtual.id}.',
   },
   {
-    label: 'reverter resposta nao salva',
-    before: `    salvarRespostaMutation.mutate(\n      { tentativaId, questaoId, resposta: opcaoId },\n      { onError: (error) => setAviso(\`Não foi possível salvar a resposta no servidor: \${error.message}\`) }\n    );`,
-    after: `    salvarRespostaMutation.mutate(\n      { tentativaId, questaoId, resposta: opcaoId },\n      {\n        onError: (error) => {\n          if (respostasRef.current[questaoId] === opcaoId) {\n            const corrigidas = { ...respostasRef.current };\n            delete corrigidas[questaoId];\n            respostasRef.current = corrigidas;\n            setRespostas(corrigidas);\n          }\n          setAviso(\`A resposta desta questão não foi confirmada no servidor. Selecione novamente antes de avançar. Detalhe: \${error.message}\`);\n        },\n      }\n    );`,
+    label: 'estado da alternativa selecionada',
+    before: '  const [respostas, setRespostas] = useState<Record<number, string>>({});\n  const [eventos, setEventos] = useState<EventoAuditoria[]>([]);',
+    after: '  const [respostas, setRespostas] = useState<Record<number, string>>({});\n  const [respostaSelecionada, setRespostaSelecionada] = useState<string | null>(null);\n  const [eventos, setEventos] = useState<EventoAuditoria[]>([]);',
+  },
+  {
+    label: 'sincronizar selecao ao trocar questao',
+    before: '  useEffect(() => { respostasRef.current = respostas; }, [respostas]);\n  useEffect(() => { if (!loading && !user) window.location.href = "/login"; }, [loading, user]);',
+    after: '  useEffect(() => { respostasRef.current = respostas; }, [respostas]);\n  useEffect(() => { setRespostaSelecionada(questaoAtualId ? (respostasRef.current[questaoAtualId] ?? null) : null); }, [questaoAtualId]);\n  useEffect(() => { if (!loading && !user) window.location.href = "/login"; }, [loading, user]);',
+  },
+  {
+    label: 'confirmar salvamento antes de avancar',
+    before: `  const responder = (questaoId: number, opcaoId: string) => {\n    if (!tentativaId) return;\n    const proximo = { ...respostasRef.current, [questaoId]: opcaoId };\n    respostasRef.current = proximo;\n    setRespostas(proximo);\n    salvarRespostaMutation.mutate(\n      { tentativaId, questaoId, resposta: opcaoId },\n      { onError: (error) => setAviso(\`Não foi possível salvar a resposta no servidor: \${error.message}\`) }\n    );\n  };`,
+    after: `  const responder = (_questaoId: number, opcaoId: string) => {\n    if (salvarRespostaMutation.isPending) return;\n    setRespostaSelecionada(opcaoId);\n    setAviso(null);\n  };\n\n  const salvarEAvancar = async () => {\n    if (!tentativaId || !questaoAtual || !respostaSelecionada || salvarRespostaMutation.isPending) return;\n    setAviso("Salvando resposta...");\n    try {\n      const resultado = await salvarRespostaMutation.mutateAsync({\n        tentativaId,\n        questaoId: questaoAtual.id,\n        resposta: respostaSelecionada,\n      });\n      if (!resultado.salvo) throw new Error("O servidor não confirmou o salvamento.");\n      const confirmadas = { ...respostasRef.current, [questaoAtual.id]: respostaSelecionada };\n      respostasRef.current = confirmadas;\n      setRespostas(confirmadas);\n      setRespostaSelecionada(null);\n      setAviso(null);\n      avancarQuestao(false);\n    } catch (error: any) {\n      setAviso(\`Sua resposta não foi gravada. Tente novamente antes de continuar. Detalhe: \${error?.message ?? "falha de comunicação com o servidor"}\`);\n    }\n  };`,
+  },
+  {
+    label: 'recarregar pendentes do servidor antes de finalizar',
+    before: `  const finalizar = async (motivo: "MANUAL" | "TEMPO" | "CONCLUIDA") => {\n    if (faseRef.current !== "em_prova" || !tentativaIdRef.current) return;\n    try {\n      await finalizarMutation.mutateAsync({ tentativaId: tentativaIdRef.current, motivo });`,
+    after: `  const finalizar = async (motivo: "MANUAL" | "TEMPO" | "CONCLUIDA") => {\n    if (faseRef.current !== "em_prova" || !tentativaIdRef.current) return;\n    try {\n      if (motivo !== "TEMPO") {\n        const consulta = await estadoQuery.refetch();\n        const confirmadasServidor: Record<number, string> = {};\n        for (const item of consulta.data?.respostas ?? []) confirmadasServidor[Number(item.questaoId)] = String(item.resposta);\n        respostasRef.current = confirmadasServidor;\n        setRespostas(confirmadasServidor);\n        const pendentesServidor = ordemQuestoes.filter((id) => !confirmadasServidor[id]);\n        if (pendentesServidor.length > 0) {\n          const novaPassagem = passagem + 1;\n          setFila(pendentesServidor);\n          setIndiceAtual(0);\n          setPassagem(novaPassagem);\n          setTempoQuestaoRestante(DURACAO_QUESTAO_SEGUNDOS);\n          setRespostaSelecionada(null);\n          persistirNavegacao({ fila: pendentesServidor, indiceAtual: 0, passagem: novaPassagem });\n          setAviso(\`A avaliação não foi finalizada. O servidor identificou \${pendentesServidor.length} questão(ões) pendente(s), que serão reapresentadas agora.\`);\n          return;\n        }\n      }\n      await finalizarMutation.mutateAsync({ tentativaId: tentativaIdRef.current, motivo });`,
+  },
+  {
+    label: 'radio usa selecao ainda nao confirmada',
+    before: '                    checked={respostas[questaoAtual.id] === opcao.id}\n                    onChange={() => responder(questaoAtual.id, opcao.id)}',
+    after: '                    checked={respostaSelecionada === opcao.id}\n                    disabled={salvarRespostaMutation.isPending}\n                    onChange={() => responder(questaoAtual.id, opcao.id)}',
+  },
+  {
+    label: 'botao salva aguarda e avanca',
+    before: '<Button disabled={!respostas[questaoAtual.id] || salvarRespostaMutation.isPending} onClick={() => avancarQuestao(false)}>\n                  Salvar e avançar\n                </Button>',
+    after: '<Button disabled={!respostaSelecionada || salvarRespostaMutation.isPending} onClick={() => void salvarEAvancar()}>\n                  {salvarRespostaMutation.isPending ? "Salvando resposta..." : "Salvar e avançar"}\n                </Button>',
+  },
+  {
+    label: 'texto salvamento confirmado',
+    before: 'A resposta é salva no servidor no momento da marcação.',
+    after: 'A resposta somente conta após a confirmação do servidor.',
   },
   {
     label: 'encerramento ao receber status concluido',
@@ -123,7 +153,7 @@ patchFile('server/routers/provaUtic.ts', [
   {
     label: 'validar 60 respostas antes de concluir',
     before: `      if (!tentativa || tentativa.status !== "EM_ANDAMENTO") {\n        throw new TRPCError({ code: "FORBIDDEN", message: "Esta tentativa não pode ser finalizada pelo participante." });\n      }\n      const novoStatus = input.motivo === "CONCLUIDA" ? "CONCLUIDA" : input.motivo === "TEMPO" ? "FINALIZADA_TEMPO" : "FINALIZADA";`,
-    after: `      if (!tentativa || tentativa.status !== "EM_ANDAMENTO") {\n        throw new TRPCError({ code: "FORBIDDEN", message: "Esta tentativa não pode ser finalizada pelo participante." });\n      }\n      if (input.motivo === "CONCLUIDA") {\n        const respostasResult = await db.execute(sql\`\n          SELECT COUNT(DISTINCT questao_id) AS total\n            FROM prova_utic_respostas\n           WHERE tentativa_id = \${input.tentativaId}\n        \`);\n        const totalRespondidas = Number(rowsOf<{ total: number | string }>(respostasResult)[0]?.total ?? 0);\n        if (totalRespondidas < 60) {\n          throw new TRPCError({\n            code: "CONFLICT",\n            message: \`Ainda existem \${60 - totalRespondidas} questão(ões) sem resposta confirmada no servidor. A avaliação continuará aberta para conclusão.\`,\n          });\n        }\n      }\n      const novoStatus = input.motivo === "CONCLUIDA" ? "CONCLUIDA" : input.motivo === "TEMPO" ? "FINALIZADA_TEMPO" : "FINALIZADA";`,
+    after: `      if (!tentativa || tentativa.status !== "EM_ANDAMENTO") {\n        throw new TRPCError({ code: "FORBIDDEN", message: "Esta tentativa não pode ser finalizada pelo participante." });\n      }\n      if (input.motivo !== "TEMPO") {\n        const respostasResult = await db.execute(sql\`\n          SELECT COUNT(DISTINCT questao_id) AS total\n            FROM prova_utic_respostas\n           WHERE tentativa_id = \${input.tentativaId}\n        \`);\n        const totalRespondidas = Number(rowsOf<{ total: number | string }>(respostasResult)[0]?.total ?? 0);\n        if (totalRespondidas < 60) {\n          throw new TRPCError({\n            code: "CONFLICT",\n            message: \`Ainda existem \${60 - totalRespondidas} questão(ões) sem resposta confirmada no servidor. A avaliação continuará aberta para conclusão.\`,\n          });\n        }\n      }\n      const novoStatus = input.motivo === "CONCLUIDA" ? "CONCLUIDA" : input.motivo === "TEMPO" ? "FINALIZADA_TEMPO" : "FINALIZADA";`,
   },
 ]);
 
