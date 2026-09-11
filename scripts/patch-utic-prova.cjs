@@ -25,12 +25,12 @@ patchFile('client/src/pages/ProvaSeguraUtic.tsx', [
   {
     label: 'alerta de inatividade',
     before: 'const INATIVIDADE_ALERTA_MS = 150 * 1000;',
-    after: 'const INATIVIDADE_ALERTA_MS = 60 * 1000;',
+    after: 'const INATIVIDADE_ALERTA_MS = 3 * 60 * 1000;',
   },
   {
     label: 'bloqueio de inatividade',
     before: 'const INATIVIDADE_BLOQUEIO_MS = 180 * 1000;',
-    after: 'const INATIVIDADE_BLOQUEIO_MS = 90 * 1000;',
+    after: 'const INATIVIDADE_BLOQUEIO_MS = 5 * 60 * 1000;',
   },
   {
     label: 'retry salvamento',
@@ -45,7 +45,7 @@ patchFile('client/src/pages/ProvaSeguraUtic.tsx', [
   {
     label: 'motivo inatividade tipo',
     before: 'const bloquearSessao = async (motivo: "INATIVIDADE_3_MIN" | "FECHAMENTO" | "INTERRUPCAO_TECNICA" | "SEGURANCA") => {',
-    after: 'const bloquearSessao = async (motivo: "INATIVIDADE_90_SEG" | "INATIVIDADE_3_MIN" | "FECHAMENTO" | "INTERRUPCAO_TECNICA" | "SEGURANCA") => {',
+    after: 'const bloquearSessao = async (motivo: "INATIVIDADE_5_MIN" | "INATIVIDADE_90_SEG" | "INATIVIDADE_3_MIN" | "FECHAMENTO" | "INTERRUPCAO_TECNICA" | "SEGURANCA") => {',
   },
   {
     label: 'detector local de inatividade',
@@ -53,9 +53,9 @@ patchFile('client/src/pages/ProvaSeguraUtic.tsx', [
     after: `    const atividade = () => {\n      ultimaAtividadeLocalRef.current = Date.now();\n      setAvisoInatividade(false);\n      const agora = Date.now();\n      if (agora - ultimoPingRef.current >= 20_000) {\n        ultimoPingRef.current = agora;\n        atividadeMutation.mutate({ tentativaId });\n      }\n    };\n    const atividadePonteiro = (event: PointerEvent) => {\n      const anterior = ultimaPosicaoPonteiroRef.current;\n      const atual = { x: event.clientX, y: event.clientY };\n      if (!anterior || Math.hypot(atual.x - anterior.x, atual.y - anterior.y) >= 12) {\n        ultimaPosicaoPonteiroRef.current = atual;\n        atividade();\n      }\n    };\n    const eventosAtividade = ["mousedown", "keydown", "touchstart", "scroll"] as const;\n    eventosAtividade.forEach((nome) => window.addEventListener(nome, atividade, { passive: true }));\n    window.addEventListener("pointermove", atividadePonteiro, { passive: true });`,
   },
   {
-    label: 'bloqueio local 90 segundos',
+    label: 'bloqueio local 5 minutos',
     before: 'window.setTimeout(() => void bloquearSessao("INATIVIDADE_3_MIN"), 800);',
-    after: 'window.setTimeout(() => void bloquearSessao("INATIVIDADE_90_SEG"), 800);',
+    after: 'window.setTimeout(() => void bloquearSessao("INATIVIDADE_5_MIN"), 800);',
   },
   {
     label: 'cleanup ponteiro',
@@ -120,7 +120,7 @@ patchFile('client/src/pages/ProvaSeguraUtic.tsx', [
   {
     label: 'texto alerta inatividade',
     before: 'Movimente o mouse ou pressione uma tecla. Ao completar 3 minutos sem atividade, a prova será bloqueada.',
-    after: 'Movimente o mouse, role a tela ou pressione uma tecla. Ao completar 1 minuto e 30 segundos sem atividade, a prova será bloqueada.',
+    after: 'Movimente o mouse, role a tela ou pressione uma tecla. Ao completar 5 minutos sem atividade, a prova será bloqueada.',
   },
   {
     label: 'texto regra tempo',
@@ -130,7 +130,7 @@ patchFile('client/src/pages/ProvaSeguraUtic.tsx', [
   {
     label: 'texto regra inatividade',
     before: '<p><strong>5. Inatividade:</strong> após 2 minutos e 30 segundos sem atividade será exibido um aviso. Ao completar 3 minutos, a avaliação será bloqueada.</p>',
-    after: '<p><strong>5. Inatividade:</strong> após 1 minuto sem interação será exibido um aviso. Ao completar 1 minuto e 30 segundos sem atividade, a avaliação será bloqueada.</p>',
+    after: '<p><strong>5. Inatividade:</strong> após 3 minutos sem interação será exibido um aviso. Ao completar 5 minutos sem atividade, a avaliação será bloqueada.</p>',
   },
 ]);
 
@@ -138,22 +138,27 @@ patchFile('server/routers/provaUtic.ts', [
   {
     label: 'limite servidor inatividade',
     before: 'const LIMITE_INATIVIDADE_SEGUNDOS = 3 * 60;',
-    after: 'const LIMITE_INATIVIDADE_SEGUNDOS = 90;',
+    after: 'const LIMITE_INATIVIDADE_SEGUNDOS = 5 * 60;',
   },
   {
     label: 'motivo servidor inatividade',
     before: "SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'INATIVIDADE_3_MIN'",
-    after: "SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'INATIVIDADE_90_SEG'",
+    after: "SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'INATIVIDADE_5_MIN'",
   },
   {
     label: 'evento servidor inatividade',
     before: 'Avaliação bloqueada após 3 minutos sem atividade.',
-    after: 'Avaliação bloqueada após 1 minuto e 30 segundos sem atividade.',
+    after: 'Avaliação bloqueada após 5 minutos sem atividade.',
   },
   {
     label: 'enum bloqueio compatibilidade',
     before: 'z.enum(["INATIVIDADE_3_MIN", "FECHAMENTO", "INTERRUPCAO_TECNICA", "SEGURANCA"])',
-    after: 'z.enum(["INATIVIDADE_90_SEG", "INATIVIDADE_3_MIN", "FECHAMENTO", "INTERRUPCAO_TECNICA", "SEGURANCA"])',
+    after: 'z.enum(["INATIVIDADE_5_MIN", "INATIVIDADE_90_SEG", "INATIVIDADE_3_MIN", "FECHAMENTO", "INTERRUPCAO_TECNICA", "SEGURANCA"])',
+  },
+  {
+    label: 'validar inatividade diretamente no banco',
+    before: "  const now = Date.now();\n  const expira = new Date(tentativa.expires_at).getTime();\n  const ultimaAtividade = new Date(tentativa.last_activity_at).getTime();\n\n  if (Number.isFinite(expira) && now >= expira) {\n    await db.execute(sql`\n      UPDATE prova_utic_tentativas\n         SET status = 'FINALIZADA_TEMPO', finished_at = NOW(), block_reason = 'TEMPO_TOTAL'\n       WHERE id = ${tentativa.id} AND status = 'EM_ANDAMENTO'\n    `);\n    await registrarEvento(tentativa.id, \"finalizada_tempo\", \"Tempo total de 3 horas encerrado.\");\n    return await obterUltimaTentativa(tentativa.colaborador_id);\n  }\n\n  if (Number.isFinite(ultimaAtividade) && now - ultimaAtividade >= LIMITE_INATIVIDADE_SEGUNDOS * 1000) {\n    await db.execute(sql`\n      UPDATE prova_utic_tentativas\n         SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'INATIVIDADE_5_MIN'\n       WHERE id = ${tentativa.id} AND status = 'EM_ANDAMENTO'\n    `);\n    await registrarEvento(tentativa.id, \"bloqueada_inatividade\", \"Avaliação bloqueada após 5 minutos sem atividade.\");\n    return await obterUltimaTentativa(tentativa.colaborador_id);\n  }",
+    after: "  const expiracaoResult = await db.execute(sql`\n    UPDATE prova_utic_tentativas\n       SET status = 'FINALIZADA_TEMPO', finished_at = NOW(), block_reason = 'TEMPO_TOTAL'\n     WHERE id = ${tentativa.id}\n       AND status = 'EM_ANDAMENTO'\n       AND expires_at <= NOW()\n  `);\n  const expiracaoInfo: any = Array.isArray(expiracaoResult) ? expiracaoResult[0] : expiracaoResult;\n  if (Number(expiracaoInfo?.affectedRows ?? 0) > 0) {\n    await registrarEvento(tentativa.id, \"finalizada_tempo\", \"Tempo total de 3 horas encerrado.\");\n    return await obterUltimaTentativa(tentativa.colaborador_id);\n  }\n\n  const inatividadeResult = await db.execute(sql`\n    UPDATE prova_utic_tentativas\n       SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'INATIVIDADE_5_MIN'\n     WHERE id = ${tentativa.id}\n       AND status = 'EM_ANDAMENTO'\n       AND last_activity_at <= DATE_SUB(NOW(), INTERVAL ${LIMITE_INATIVIDADE_SEGUNDOS} SECOND)\n  `);\n  const inatividadeInfo: any = Array.isArray(inatividadeResult) ? inatividadeResult[0] : inatividadeResult;\n  if (Number(inatividadeInfo?.affectedRows ?? 0) > 0) {\n    await registrarEvento(tentativa.id, \"bloqueada_inatividade\", \"Avaliação bloqueada após 5 minutos sem atividade.\");\n    return await obterUltimaTentativa(tentativa.colaborador_id);\n  }",
   },
   {
     label: 'validar 60 respostas antes de concluir',
@@ -166,7 +171,7 @@ patchFile('client/src/components/ProvaUticRealtimeGuard.tsx', [
   {
     label: 'mensagem nova inatividade',
     before: 'INATIVIDADE_3_MIN: "A avaliação foi bloqueada após 3 minutos de inatividade.",',
-    after: 'INATIVIDADE_90_SEG: "A avaliação foi bloqueada após 1 minuto e 30 segundos de inatividade.",\n    INATIVIDADE_3_MIN: "A avaliação foi bloqueada após 3 minutos de inatividade.",',
+    after: 'INATIVIDADE_5_MIN: "A avaliação foi bloqueada após 5 minutos de inatividade.",\n    INATIVIDADE_90_SEG: "A avaliação foi bloqueada após 1 minuto e 30 segundos de inatividade.",\n    INATIVIDADE_3_MIN: "A avaliação foi bloqueada após 3 minutos de inatividade.",',
   },
   {
     label: 'mutation finalizacao automatica',
@@ -184,7 +189,7 @@ patchFile('client/src/pages/AdminAvaliacoes.tsx', [
   {
     label: 'rotulo novo motivo inatividade',
     before: 'INATIVIDADE_3_MIN: "Inatividade de 3 minutos",',
-    after: 'INATIVIDADE_90_SEG: "Inatividade de 1min30",\n    INATIVIDADE_3_MIN: "Inatividade de 3 minutos",',
+    after: 'INATIVIDADE_5_MIN: "Inatividade de 5 minutos",\n    INATIVIDADE_90_SEG: "Inatividade de 1min30",\n    INATIVIDADE_3_MIN: "Inatividade de 3 minutos",',
   },
 ]);
 
