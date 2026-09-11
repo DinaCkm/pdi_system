@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../db";
 import { adminProcedure, assessmentProcedure, router } from "../_core/customTrpc";
-import { storageGet, storagePut } from "../storage";
+import { storageDelete, storageGet, storagePut } from "../storage";
 
 const DURACAO_TOTAL_SEGUNDOS = 3 * 60 * 60;
 const LIMITE_INATIVIDADE_SEGUNDOS = 3 * 60;
@@ -302,19 +302,39 @@ export const provaUticRouter = router({
         });
       }
 
+      const anterioresResult = await db.execute(sql`
+        SELECT id, foto_key AS fotoKey
+          FROM prova_utic_identidades
+         WHERE colaborador_id = ${ctx.user.id}
+           AND tentativa_id IS NULL
+      `);
+      for (const anterior of rowsOf<{ id: number; fotoKey: string }>(anterioresResult)) {
+        await storageDelete(anterior.fotoKey).catch(() => undefined);
+      }
+      await db.execute(sql`
+        DELETE FROM prova_utic_identidades
+         WHERE colaborador_id = ${ctx.user.id}
+           AND tentativa_id IS NULL
+      `);
+
       const nome = String(ctx.user.name || "Participante").trim();
       const foto = extrairFotoJpeg(input.fotoDataUrl);
       const chave = `prova-utic/identidade/${ctx.user.id}/${Date.now()}-${randomUUID()}.jpg`;
       const armazenada = await storagePut(chave, foto, "image/jpeg");
       const declaracao = declaracaoIdentidade(nome);
 
-      await db.execute(sql`
-        INSERT INTO prova_utic_identidades (
-          colaborador_id, tentativa_id, nome_snapshot, foto_key, declaracao, confirmado_em
-        ) VALUES (
-          ${ctx.user.id}, NULL, ${nome}, ${armazenada.key}, ${declaracao}, NOW()
-        )
-      `);
+      try {
+        await db.execute(sql`
+          INSERT INTO prova_utic_identidades (
+            colaborador_id, tentativa_id, nome_snapshot, foto_key, declaracao, confirmado_em
+          ) VALUES (
+            ${ctx.user.id}, NULL, ${nome}, ${armazenada.key}, ${declaracao}, NOW()
+          )
+        `);
+      } catch (error) {
+        await storageDelete(armazenada.key).catch(() => undefined);
+        throw error;
+      }
 
       return {
         confirmada: true,
