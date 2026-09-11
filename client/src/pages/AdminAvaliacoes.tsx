@@ -167,7 +167,7 @@ export default function AdminAvaliacoes() {
       <Card>
         <CardHeader>
           <CardTitle>Monitoramento das tentativas</CardTitle>
-          <CardDescription>O bloqueio administrativo impede novas respostas imediatamente. Quando o administrador bloqueia uma prova, o tempo fica pausado até o participante efetivamente retomar após a liberação.</CardDescription>
+          <CardDescription>O bloqueio administrativo impede novas respostas imediatamente. Enquanto a prova estiver bloqueada pelo administrador, o relógio fica pausado. O tempo volta a contar quando o administrador confirma a liberação.</CardDescription>
         </CardHeader>
         <CardContent>
           {painelQuery.isLoading ? (
@@ -248,7 +248,7 @@ export default function AdminAvaliacoes() {
                 {acao.tipo === "bloquear" ? (
                   <p className="mt-2 text-sm leading-relaxed">Você está prestes a bloquear a avaliação de <strong>{acao.colaboradorNome}</strong>. O participante não poderá continuar respondendo até nova liberação do administrador. O tempo da prova ficará pausado durante este bloqueio administrativo.</p>
                 ) : (
-                  <p className="mt-2 text-sm leading-relaxed">A mesma tentativa de <strong>{acao.colaboradorNome}</strong> será liberada. As respostas e o histórico permanecem preservados. Se o bloqueio foi administrativo, o relógio voltará a contar quando o participante retomar a avaliação.</p>
+                  <p className="mt-2 text-sm leading-relaxed">A mesma tentativa de <strong>{acao.colaboradorNome}</strong> será liberada. As respostas e o histórico permanecem preservados. Se o bloqueio foi administrativo, todo o período bloqueado será devolvido ao tempo restante e o relógio voltará a contar assim que esta liberação for confirmada.</p>
                 )}
               </div>
             </div>
