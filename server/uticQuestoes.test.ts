@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TOTAL_QUESTOES_UTIC, UTIC_QUESTOES, validarBancoUtic } from "../shared/uticQuestoes";
-import { UTIC_GABARITO } from "./uticGabarito";
+import { UTIC_GABARITO } from "./data/uticGabarito";
 
 describe("banco oficial UTIC", () => {
   it("possui exatamente 60 questões únicas numeradas de 1 a 60", () => {
