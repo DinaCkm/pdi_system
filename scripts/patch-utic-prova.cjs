@@ -165,6 +165,41 @@ patchFile('server/routers/provaUtic.ts', [
     before: `      if (!tentativa || tentativa.status !== "EM_ANDAMENTO") {\n        throw new TRPCError({ code: "FORBIDDEN", message: "Esta tentativa não pode ser finalizada pelo participante." });\n      }\n      const novoStatus = input.motivo === "CONCLUIDA" ? "CONCLUIDA" : input.motivo === "TEMPO" ? "FINALIZADA_TEMPO" : "FINALIZADA";`,
     after: `      if (!tentativa || tentativa.status !== "EM_ANDAMENTO") {\n        throw new TRPCError({ code: "FORBIDDEN", message: "Esta tentativa não pode ser finalizada pelo participante." });\n      }\n      if (input.motivo === "CONCLUIDA") {\n        const respostasResult = await db.execute(sql\`\n          SELECT COUNT(DISTINCT questao_id) AS total\n            FROM prova_utic_respostas\n           WHERE tentativa_id = \${input.tentativaId}\n        \`);\n        const totalRespondidas = Number(rowsOf<{ total: number | string }>(respostasResult)[0]?.total ?? 0);\n        if (totalRespondidas < 60) {\n          throw new TRPCError({\n            code: "CONFLICT",\n            message: \`Ainda existem \${60 - totalRespondidas} questão(ões) sem resposta confirmada no servidor. A avaliação continuará aberta para conclusão.\`,\n          });\n        }\n      }\n      const novoStatus = input.motivo === "CONCLUIDA" ? "CONCLUIDA" : input.motivo === "TEMPO" ? "FINALIZADA_TEMPO" : "FINALIZADA";`,
   },
+  {
+    label: "estado ausencia tela cheia",
+    before: "  const [avisoInatividade, setAvisoInatividade] = useState(false);",
+    after: "  const [avisoInatividade, setAvisoInatividade] = useState(false);\n  const [telaCheiaAusente, setTelaCheiaAusente] = useState(false);",
+  },
+  {
+    label: "detectar saida e retorno tela cheia",
+    before: "    const onFullscreen = () => { if (!document.fullscreenElement) registrarViolacao(\"saida_tela_cheia\"); };",
+    after: "    const onFullscreen = () => {\n      if (document.fullscreenElement) {\n        setTelaCheiaAusente(false);\n        return;\n      }\n      if (faseRef.current === \"em_prova\") {\n        setTelaCheiaAusente(true);\n        registrarViolacao(\"saida_tela_cheia\");\n      }\n    };",
+  },
+  {
+    label: "acao retorno tela cheia",
+    before: "  useEffect(() => {\n    const onVisibility = () => { if (document.hidden) registrarViolacao(\"troca_aba\"); };",
+    after: "  const retornarTelaCheia = async () => {\n    try {\n      await document.documentElement.requestFullscreen();\n      if (!document.fullscreenElement) throw new Error(\"O navegador não confirmou o modo tela cheia.\");\n      setTelaCheiaAusente(false);\n      setAviso(\"Modo tela cheia restaurado. Você pode continuar a avaliação.\");\n    } catch (error: any) {\n      setAviso(error?.message ?? \"Não foi possível retornar ao modo tela cheia. Use o botão novamente.\");\n    }\n  };\n\n  useEffect(() => {\n    const onVisibility = () => { if (document.hidden) registrarViolacao(\"troca_aba\"); };",
+  },
+  {
+    label: "contador identifica ocorrencias seguranca",
+    before: "<Badge variant={violacoes ? \"destructive\" : \"secondary\"}>Ocorrências {violacoes}/{LIMITE_VIOLACOES}</Badge>",
+    after: "<Badge variant={violacoes ? \"destructive\" : \"secondary\"}>Ocorrências de segurança {violacoes}/{LIMITE_VIOLACOES}</Badge>",
+  },
+  {
+    label: "aviso clique protegido sem falsa ocorrencia",
+    before: "setAviso(\"Ação não permitida. Esta avaliação possui conteúdo protegido. A ocorrência foi registrada.\");",
+    after: "setAviso(\"Ação não permitida. O conteúdo da avaliação é protegido; a ação foi impedida.\");",
+  },
+  {
+    label: "rotulo aviso coerente",
+    before: "{aviso && <div className=\"rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900\"><strong>Ocorrência:</strong> {aviso}</div>}",
+    after: "{aviso && <div className=\"rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900\"><strong>Aviso:</strong> {aviso}</div>}",
+  },
+  {
+    label: "bloqueio visual ate retorno tela cheia",
+    before: "        <main className=\"mx-auto max-w-4xl p-5 pb-32 space-y-4\">",
+    after: "        {telaCheiaAusente && fase === \"em_prova\" && (\n          <div className=\"fixed inset-0 z-[100] grid place-items-center bg-slate-950/95 p-6\">\n            <Card className=\"w-full max-w-xl border-red-400 shadow-2xl\">\n              <CardHeader>\n                <div className=\"flex items-start gap-3\">\n                  <AlertTriangle className=\"h-9 w-9 shrink-0 text-red-600\" />\n                  <div>\n                    <CardTitle>Modo tela cheia interrompido</CardTitle>\n                    <CardDescription className=\"mt-2 text-base\">A ocorrência {violacoes} de {LIMITE_VIOLACOES} foi registrada. A questão ficará protegida até você retornar ao modo tela cheia.</CardDescription>\n                  </div>\n                </div>\n              </CardHeader>\n              <CardContent className=\"space-y-4\">\n                <p className=\"text-sm text-slate-700\">O tempo total da avaliação continua correndo. Clique no botão abaixo para retomar com segurança.</p>\n                <Button className=\"w-full\" size=\"lg\" onClick={() => void retornarTelaCheia()}>\n                  <MonitorUp className=\"mr-2 h-5 w-5\" />Voltar para tela cheia\n                </Button>\n              </CardContent>\n            </Card>\n          </div>\n        )}\n\n        <main className=\"mx-auto max-w-4xl p-5 pb-32 space-y-4\">",
+  },
 ]);
 
 patchFile('client/src/components/ProvaUticRealtimeGuard.tsx', [
