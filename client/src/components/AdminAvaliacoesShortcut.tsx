@@ -27,10 +27,10 @@ export default function AdminAvaliacoesShortcut() {
           size="lg"
           className="shadow-xl"
           onClick={() => setLocation("/admin-avaliacoes/utic/resultados")}
-          title="Abrir os resultados da Avaliação Técnica UTIC"
+          title="Abrir os resultados da Avaliação de Proficiência para a Função"
         >
           <BarChart3 className="mr-2 h-5 w-5" />
-          RESULTADOS UTIC
+          RESULTADOS DA PROFICIÊNCIA
         </Button>
       </div>
     );
@@ -42,10 +42,10 @@ export default function AdminAvaliacoesShortcut() {
         size="lg"
         className="shadow-xl"
         onClick={() => setLocation("/admin-avaliacoes")}
-        title="Abrir o painel de controle das avaliações em andamento"
+        title="Abrir o painel da Avaliação de Proficiência para a Função"
       >
         <ClipboardCheck className="mr-2 h-5 w-5" />
-        {emResultados ? "VOLTAR À ADMINISTRAÇÃO DAS AVALIAÇÕES" : "ADMINISTRAÇÃO DAS AVALIAÇÕES"}
+        {emResultados ? "VOLTAR À ADMINISTRAÇÃO DA PROFICIÊNCIA" : "ADMINISTRAÇÃO DA PROFICIÊNCIA"}
       </Button>
     </div>
   );
