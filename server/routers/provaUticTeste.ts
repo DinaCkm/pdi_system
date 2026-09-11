@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { generateTemporaryPassword, hashPassword } from "../_core/password";
+import { storageDelete } from "../storage";
 
 const NOME_BASE = "Daniel Caio Lemos Penno";
 const NOME_TESTE = `${NOME_BASE} [TESTE UTIC]`;
@@ -109,7 +110,21 @@ type HistoricoBase = {
 
 async function limparTentativasDeTeste(db: any, usuarioId: number) {
   // Exclusivo para a conta fake administrada por este endpoint.
-  // As respostas e eventos são removidos por ON DELETE CASCADE.
+  // Cada nova preparação deve exigir uma nova foto de identidade.
+  try {
+    const identidadesResult = await db.execute(sql`
+      SELECT foto_key AS fotoKey
+        FROM prova_utic_identidades
+       WHERE colaborador_id = ${usuarioId}
+    `);
+    for (const identidade of rowsOf<{ fotoKey: string }>(identidadesResult)) {
+      if (identidade.fotoKey) await storageDelete(identidade.fotoKey).catch(() => undefined);
+    }
+    await db.execute(sql`DELETE FROM prova_utic_identidades WHERE colaborador_id = ${usuarioId}`);
+  } catch {
+    // Compatibilidade com uma implantação anterior à tabela de identidade visual.
+  }
+
   try {
     await db.execute(sql`DELETE FROM prova_utic_tentativas WHERE colaborador_id = ${usuarioId}`);
   } catch {

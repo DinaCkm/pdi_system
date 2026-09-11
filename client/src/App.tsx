@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
 import ProvaUticRealtimeGuard from "./components/ProvaUticRealtimeGuard";
+import ProvaUticIdentityGuard from "./components/ProvaUticIdentityGuard";
 import AdminAvaliacoesShortcut from "./components/AdminAvaliacoesShortcut";
 import Home from "./pages/Home";
 import Setup from "./pages/Setup";
@@ -65,7 +66,13 @@ function Router() {
       <Route path={"/reset-password"} component={ResetPassword} />
       <Route path={"/change-password"} component={ChangePassword} />
       <Route path={"/?"} component={Home} />
-      <Route path={"/avaliacoes/utic/prova-segura"}><ProvaUticRealtimeGuard><ProvaSeguraUtic /></ProvaUticRealtimeGuard></Route>
+      <Route path={"/avaliacoes/utic/prova-segura"}>
+        <ProvaUticRealtimeGuard>
+          <ProvaUticIdentityGuard>
+            <ProvaSeguraUtic />
+          </ProvaUticIdentityGuard>
+        </ProvaUticRealtimeGuard>
+      </Route>
       <Route path={"/dashboard"}><DashboardLayout><Dashboard /></DashboardLayout></Route>
       <Route path={"/central-comando"}><DashboardLayout><CentralComando /></DashboardLayout></Route>
       <Route path={"/404"} component={NotFound} />

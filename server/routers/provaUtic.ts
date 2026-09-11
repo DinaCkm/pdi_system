@@ -1,11 +1,15 @@
+import { randomUUID } from "crypto";
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../db";
 import { adminProcedure, assessmentProcedure, router } from "../_core/customTrpc";
+import { storageDelete, storageGet, storagePut } from "../storage";
 
 const DURACAO_TOTAL_SEGUNDOS = 3 * 60 * 60;
 const LIMITE_INATIVIDADE_SEGUNDOS = 3 * 60;
+const VALIDADE_IDENTIDADE_MINUTOS = 30;
+const TAMANHO_MAX_FOTO_IDENTIDADE_BYTES = 1024 * 1024;
 
 type TentativaStatus =
   | "EM_ANDAMENTO"
@@ -30,10 +34,46 @@ type TentativaRow = {
   released_by: number | null;
 };
 
+type IdentidadeRow = {
+  id: number;
+  colaborador_id: number;
+  tentativa_id: number | null;
+  nome_snapshot: string;
+  foto_key: string;
+  declaracao: string;
+  confirmado_em: string;
+};
+
 function rowsOf<T>(result: any): T[] {
   if (Array.isArray(result?.[0])) return result[0] as T[];
   if (Array.isArray(result)) return result as T[];
   return [];
+}
+
+function declaracaoIdentidade(nome: string) {
+  return `Declaro que sou ${nome}, participante identificado(a) nesta plataforma, e que sou a pessoa que realizará esta avaliação. Confirmo que esta fotografia foi capturada por mim imediatamente antes do início da prova e poderá ser utilizada exclusivamente para conferência da minha identidade em eventual auditoria do processo avaliativo.`;
+}
+
+function extrairFotoJpeg(dataUrl: string) {
+  const match = dataUrl.match(/^data:image\/jpeg;base64,([A-Za-z0-9+/=]+)$/);
+  if (!match) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "A fotografia de identidade deve ser capturada diretamente pela câmera no formato permitido.",
+    });
+  }
+
+  const buffer = Buffer.from(match[1], "base64");
+  if (buffer.length < 1000 || buffer.length > TAMANHO_MAX_FOTO_IDENTIDADE_BYTES) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "A fotografia capturada é inválida ou excede o tamanho permitido.",
+    });
+  }
+  if (buffer[0] !== 0xff || buffer[1] !== 0xd8 || buffer[2] !== 0xff) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "A imagem capturada não é um JPEG válido." });
+  }
+  return buffer;
 }
 
 async function ensureTables() {
@@ -88,6 +128,25 @@ async function ensureTables() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `));
 
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS prova_utic_identidades (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      colaborador_id INT NOT NULL,
+      tentativa_id INT NULL,
+      nome_snapshot VARCHAR(255) NOT NULL,
+      foto_key VARCHAR(700) NOT NULL,
+      declaracao TEXT NOT NULL,
+      confirmado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_prova_utic_identidade_tentativa (tentativa_id),
+      INDEX idx_prova_utic_identidade_colaborador (colaborador_id),
+      INDEX idx_prova_utic_identidade_confirmado (confirmado_em),
+      CONSTRAINT fk_prova_utic_identidade_colaborador FOREIGN KEY (colaborador_id) REFERENCES users(id) ON DELETE RESTRICT,
+      CONSTRAINT fk_prova_utic_identidade_tentativa FOREIGN KEY (tentativa_id) REFERENCES prova_utic_tentativas(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `));
+
   return db;
 }
 
@@ -114,6 +173,20 @@ async function obterTentativaPorId(tentativaId: number) {
      LIMIT 1
   `);
   return rowsOf<TentativaRow>(result)[0] ?? null;
+}
+
+async function obterIdentidadePendente(colaboradorId: number) {
+  const db = await ensureTables();
+  const result = await db.execute(sql`
+    SELECT id, colaborador_id, tentativa_id, nome_snapshot, foto_key, declaracao, confirmado_em
+      FROM prova_utic_identidades
+     WHERE colaborador_id = ${colaboradorId}
+       AND tentativa_id IS NULL
+       AND confirmado_em >= DATE_SUB(NOW(), INTERVAL ${VALIDADE_IDENTIDADE_MINUTOS} MINUTE)
+     ORDER BY confirmado_em DESC, id DESC
+     LIMIT 1
+  `);
+  return rowsOf<IdentidadeRow>(result)[0] ?? null;
 }
 
 async function registrarEvento(tentativaId: number, tipo: string, detalhe?: string | null) {
@@ -184,6 +257,93 @@ export const provaUticRouter = router({
     return { tentativa, respostas: rowsOf<{ questaoId: number; resposta: string }>(respostasResult) };
   }),
 
+  estadoIdentidade: assessmentProcedure.query(async ({ ctx }) => {
+    const db = await ensureTables();
+    const tentativa = await obterUltimaTentativa(ctx.user.id);
+
+    if (tentativa) {
+      const vinculadaResult = await db.execute(sql`
+        SELECT id, confirmado_em AS confirmadoEm
+          FROM prova_utic_identidades
+         WHERE tentativa_id = ${tentativa.id}
+         LIMIT 1
+      `);
+      const vinculada = rowsOf<{ id: number; confirmadoEm: string }>(vinculadaResult)[0];
+      return {
+        necessaria: false,
+        tentativaExistente: true,
+        identidadeConfirmada: Boolean(vinculada),
+        confirmadoEm: vinculada?.confirmadoEm ?? null,
+      };
+    }
+
+    const pendente = await obterIdentidadePendente(ctx.user.id);
+    return {
+      necessaria: !pendente,
+      tentativaExistente: false,
+      identidadeConfirmada: Boolean(pendente),
+      confirmadoEm: pendente?.confirmado_em ?? null,
+      validadeMinutos: VALIDADE_IDENTIDADE_MINUTOS,
+    };
+  }),
+
+  registrarIdentidade: assessmentProcedure
+    .input(z.object({
+      fotoDataUrl: z.string().min(1000).max(1_600_000),
+      aceiteDeclaracao: z.literal(true),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await ensureTables();
+      const tentativa = await obterUltimaTentativa(ctx.user.id);
+      if (tentativa) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Já existe uma tentativa registrada. A identificação inicial não pode ser substituída pelo participante.",
+        });
+      }
+
+      const anterioresResult = await db.execute(sql`
+        SELECT id, foto_key AS fotoKey
+          FROM prova_utic_identidades
+         WHERE colaborador_id = ${ctx.user.id}
+           AND tentativa_id IS NULL
+      `);
+      for (const anterior of rowsOf<{ id: number; fotoKey: string }>(anterioresResult)) {
+        await storageDelete(anterior.fotoKey).catch(() => undefined);
+      }
+      await db.execute(sql`
+        DELETE FROM prova_utic_identidades
+         WHERE colaborador_id = ${ctx.user.id}
+           AND tentativa_id IS NULL
+      `);
+
+      const nome = String(ctx.user.name || "Participante").trim();
+      const foto = extrairFotoJpeg(input.fotoDataUrl);
+      const chave = `prova-utic/identidade/${ctx.user.id}/${Date.now()}-${randomUUID()}.jpg`;
+      const armazenada = await storagePut(chave, foto, "image/jpeg");
+      const declaracao = declaracaoIdentidade(nome);
+
+      try {
+        await db.execute(sql`
+          INSERT INTO prova_utic_identidades (
+            colaborador_id, tentativa_id, nome_snapshot, foto_key, declaracao, confirmado_em
+          ) VALUES (
+            ${ctx.user.id}, NULL, ${nome}, ${armazenada.key}, ${declaracao}, NOW()
+          )
+        `);
+      } catch (error) {
+        await storageDelete(armazenada.key).catch(() => undefined);
+        throw error;
+      }
+
+      return {
+        confirmada: true,
+        nome,
+        declaracao,
+        validadeMinutos: VALIDADE_IDENTIDADE_MINUTOS,
+      };
+    }),
+
   iniciar: assessmentProcedure.mutation(async ({ ctx }) => {
     const db = await ensureTables();
     let existente = await obterUltimaTentativa(ctx.user.id);
@@ -195,12 +355,44 @@ export const provaUticRouter = router({
       throw new TRPCError({ code: "CONFLICT", message: "Já existe uma tentativa registrada. Uma nova tentativa não pode ser iniciada pelo participante." });
     }
 
+    const identidade = await obterIdentidadePendente(ctx.user.id);
+    if (!identidade) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Antes de iniciar a avaliação, tire sua fotografia pela câmera e confirme a declaração de identidade.",
+      });
+    }
+
     const result = await db.execute(sql`
       INSERT INTO prova_utic_tentativas (colaborador_id, status, started_at, expires_at, last_activity_at)
       VALUES (${ctx.user.id}, 'EM_ANDAMENTO', NOW(), DATE_ADD(NOW(), INTERVAL ${DURACAO_TOTAL_SEGUNDOS} SECOND), NOW())
     `);
     const insertInfo: any = Array.isArray(result) ? result[0] : result;
     const id = Number(insertInfo?.insertId ?? 0);
+
+    if (!id) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível iniciar a tentativa." });
+    }
+
+    try {
+      const vinculoResult = await db.execute(sql`
+        UPDATE prova_utic_identidades
+           SET tentativa_id = ${id}, updated_at = NOW()
+         WHERE id = ${identidade.id}
+           AND colaborador_id = ${ctx.user.id}
+           AND tentativa_id IS NULL
+      `);
+      const info: any = Array.isArray(vinculoResult) ? vinculoResult[0] : vinculoResult;
+      if (Number(info?.affectedRows ?? 0) !== 1) throw new Error("Falha ao vincular identidade.");
+    } catch {
+      await db.execute(sql`DELETE FROM prova_utic_tentativas WHERE id = ${id} AND colaborador_id = ${ctx.user.id}`);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Não foi possível vincular a confirmação de identidade à avaliação. Tente novamente.",
+      });
+    }
+
+    await registrarEvento(id, "identidade_confirmada", "Fotografia capturada pela webcam e declaração de identidade vinculadas à tentativa.");
     await registrarEvento(id, "inicio", "Tentativa iniciada. Tempo total: 3 horas.");
     return { id, duracaoTotalSegundos: DURACAO_TOTAL_SEGUNDOS };
   }),
@@ -283,6 +475,43 @@ export const provaUticRouter = router({
       return { retomada: true, expiresAt: atualizada?.expires_at ?? tentativa.expires_at };
     }),
 
+  consultarIdentidade: adminProcedure
+    .input(z.object({ tentativaId: z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await ensureTables();
+      const result = await db.execute(sql`
+        SELECT i.nome_snapshot AS nome,
+               i.foto_key AS fotoKey,
+               i.declaracao,
+               i.confirmado_em AS confirmadoEm,
+               u.email AS email
+          FROM prova_utic_identidades i
+          JOIN users u ON u.id = i.colaborador_id
+         WHERE i.tentativa_id = ${input.tentativaId}
+         LIMIT 1
+      `);
+      const identidade = rowsOf<any>(result)[0];
+      if (!identidade) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Esta tentativa não possui registro de identidade visual." });
+      }
+
+      const foto = await storageGet(identidade.fotoKey);
+      await registrarEvento(
+        input.tentativaId,
+        "identidade_consultada_admin",
+        `Registro de identidade visual consultado pelo administrador ${ctx.user.id}.`
+      );
+
+      return {
+        nome: identidade.nome,
+        email: identidade.email,
+        declaracao: identidade.declaracao,
+        confirmadoEm: identidade.confirmadoEm,
+        fotoUrl: foto.url,
+        conferencia: "VISUAL_MANUAL" as const,
+      };
+    }),
+
   listarBloqueadas: adminProcedure.query(async () => {
     const db = await ensureTables();
     const result = await db.execute(sql`
@@ -323,6 +552,7 @@ export const provaUticRouter = router({
              t.block_reason AS blockReason,
              t.finished_at AS finishedAt,
              t.released_at AS releasedAt,
+             EXISTS(SELECT 1 FROM prova_utic_identidades i WHERE i.tentativa_id = t.id) AS identidadeConfirmada,
              COUNT(r.id) AS respostasSalvas,
              CASE
                WHEN t.status = 'BLOQUEADA' AND t.block_reason = 'ADMINISTRADOR' AND t.blocked_at IS NOT NULL

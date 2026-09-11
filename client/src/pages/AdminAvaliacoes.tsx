@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Activity, Clock3, LockKeyhole, RefreshCw, ShieldCheck, Unlock, UserPlus } from "lucide-react";
+import { Activity, Clock3, Eye, LockKeyhole, RefreshCw, ShieldCheck, Unlock, UserCheck, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,15 @@ type CredencialTeste = {
   cargo: string;
   usuarioId: number;
   criadoAgora: boolean;
+} | null;
+
+type IdentidadeAuditoria = {
+  nome: string;
+  email: string | null;
+  declaracao: string;
+  confirmadoEm: unknown;
+  fotoUrl: string;
+  conferencia: "VISUAL_MANUAL";
 } | null;
 
 function formatarDuracao(total: number | string | null | undefined) {
@@ -86,6 +95,7 @@ export default function AdminAvaliacoes() {
   const [observacao, setObservacao] = useState("");
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [credencialTeste, setCredencialTeste] = useState<CredencialTeste>(null);
+  const [identidadeAuditoria, setIdentidadeAuditoria] = useState<IdentidadeAuditoria>(null);
 
   const isAdmin = user?.role === "admin" || user?.role === "Administrador";
   const painelQuery = trpc.provaUtic.listarPainelAdministrativo.useQuery(undefined, {
@@ -135,6 +145,17 @@ export default function AdminAvaliacoes() {
       await painelQuery.refetch();
     },
     onError: (error) => setMensagem(error.message),
+  });
+
+  const consultarIdentidadeMutation = trpc.provaUtic.consultarIdentidade.useMutation({
+    onSuccess: (data) => {
+      setMensagem(null);
+      setIdentidadeAuditoria(data as IdentidadeAuditoria);
+    },
+    onError: (error) => {
+      setIdentidadeAuditoria(null);
+      setMensagem(error.message);
+    },
   });
 
   const itens = painelQuery.data ?? [];
@@ -244,10 +265,11 @@ export default function AdminAvaliacoes() {
             <p className="text-sm text-muted-foreground">Nenhuma tentativa registrada no piloto UTIC.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[980px] text-sm">
+              <table className="w-full min-w-[1080px] text-sm">
                 <thead>
                   <tr className="border-b text-left text-muted-foreground">
                     <th className="px-3 py-3 font-medium">Empregado</th>
+                    <th className="px-3 py-3 font-medium">Identidade</th>
                     <th className="px-3 py-3 font-medium">Status</th>
                     <th className="px-3 py-3 font-medium">Questões</th>
                     <th className="px-3 py-3 font-medium">Tempo restante</th>
@@ -263,6 +285,23 @@ export default function AdminAvaliacoes() {
                         <p className="font-medium">{item.colaboradorNome}</p>
                         <p className="text-xs text-muted-foreground">Tentativa #{item.id}</p>
                         {item.colaboradorEmail && <p className="text-xs text-muted-foreground">{item.colaboradorEmail}</p>}
+                      </td>
+                      <td className="px-3 py-4">
+                        {Boolean(item.identidadeConfirmada) ? (
+                          <div className="space-y-2">
+                            <Badge variant="outline"><UserCheck className="mr-1 h-3.5 w-3.5" />Confirmada</Badge>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={consultarIdentidadeMutation.isPending}
+                              onClick={() => consultarIdentidadeMutation.mutate({ tentativaId: Number(item.id) })}
+                            >
+                              <Eye className="mr-1 h-4 w-4" />VER IDENTIDADE
+                            </Button>
+                          </div>
+                        ) : (
+                          <Badge variant="secondary">Sem registro</Badge>
+                        )}
                       </td>
                       <td className="px-3 py-4"><Badge variant={varianteStatus(item.status)}>{rotuloStatus(item.status)}</Badge></td>
                       <td className="px-3 py-4"><strong>{Number(item.respostasSalvas ?? 0)}</strong> de 60</td>
@@ -340,6 +379,44 @@ export default function AdminAvaliacoes() {
               >
                 {acao.tipo === "bloquear" ? "CONFIRMAR BLOQUEIO" : "CONFIRMAR LIBERAÇÃO"}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {identidadeAuditoria && (
+        <div className="fixed inset-0 z-[220] grid place-items-center overflow-y-auto bg-black/75 p-4">
+          <div className="my-6 w-full max-w-3xl rounded-xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <UserCheck className="h-8 w-8 shrink-0 text-blue-700" />
+                <div>
+                  <h2 className="text-xl font-bold">Identidade visual da avaliação</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">Conferência visual manual para eventual auditoria. Não há reconhecimento facial automático.</p>
+                </div>
+              </div>
+              <Button variant="outline" onClick={() => setIdentidadeAuditoria(null)}>Fechar</Button>
+            </div>
+
+            <div className="mt-5 grid gap-5 md:grid-cols-[280px_minmax(0,1fr)]">
+              <div className="overflow-hidden rounded-lg border bg-slate-100">
+                <img src={identidadeAuditoria.fotoUrl} alt="Fotografia de identidade capturada antes da avaliação" className="aspect-[4/3] w-full object-cover" />
+              </div>
+              <div className="space-y-3 text-sm">
+                <p><strong>Participante:</strong> {identidadeAuditoria.nome}</p>
+                {identidadeAuditoria.email && <p><strong>E-mail:</strong> {identidadeAuditoria.email}</p>}
+                <p><strong>Confirmação registrada em:</strong> {formatarData(identidadeAuditoria.confirmadoEm)}</p>
+                <Badge variant="outline">Conferência visual manual</Badge>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-lg border bg-slate-50 p-5 text-sm leading-7">
+              <p className="mb-2 font-semibold">Declaração registrada pelo participante</p>
+              <p>{identidadeAuditoria.declaracao}</p>
+            </div>
+
+            <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+              Esta área é restrita à administração. A abertura deste registro é registrada no histórico da tentativa para fins de auditoria.
             </div>
           </div>
         </div>
