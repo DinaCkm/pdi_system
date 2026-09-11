@@ -54,7 +54,7 @@ export default function AdminResultadosUtic() {
         <div className="flex items-start gap-3">
           <BarChart3 className="mt-1 h-8 w-8 text-blue-700" />
           <div>
-            <h1 className="text-2xl font-semibold">Resultados da Avaliação Técnica UTIC</h1>
+            <h1 className="text-2xl font-semibold">Resultados da Avaliação de Proficiência para a Função — UTIC</h1>
             <p className="text-sm text-muted-foreground">Correção no servidor e comparação por eixo técnico.</p>
           </div>
         </div>
@@ -113,8 +113,8 @@ export default function AdminResultadosUtic() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-3 md:grid-cols-3">
-                  <div className="rounded-lg border p-4"><p className="text-xs uppercase text-muted-foreground">Acertos na avaliação</p><p className="mt-1 text-3xl font-bold">{detalhe.resultado.totalAcertos}/60</p></div>
-                  <div className="rounded-lg border p-4"><p className="text-xs uppercase text-muted-foreground">Percentual geral</p><p className="mt-1 text-3xl font-bold">{detalhe.resultado.percentualGeral.toFixed(1)}%</p><p className="mt-1 text-xs text-muted-foreground">Indicador da prova completa; não substitui Performance na Função.</p></div>
+                  <div className="rounded-lg border p-4"><p className="text-xs uppercase text-muted-foreground">Acertos na Avaliação de Proficiência para a Função</p><p className="mt-1 text-3xl font-bold">{detalhe.resultado.totalAcertos}/60</p></div>
+                  <div className="rounded-lg border p-4"><p className="text-xs uppercase text-muted-foreground">Percentual geral</p><p className="mt-1 text-3xl font-bold">{detalhe.resultado.percentualGeral.toFixed(1)}%</p><p className="mt-1 text-xs text-muted-foreground">Indicador completo da Avaliação de Proficiência para a Função; não substitui a análise de Performance na Função.</p></div>
                   <div className="rounded-lg border p-4"><p className="text-xs uppercase text-muted-foreground">Respondidas</p><p className="mt-1 text-3xl font-bold">{detalhe.resultado.totalRespondidas}/60</p><p className="mt-1 text-xs text-muted-foreground">Não respondidas: {detalhe.resultado.totalNaoRespondidas}</p></div>
                 </div>
               </CardContent>
