@@ -490,8 +490,8 @@ patchFile("client/src/components/ProvaUticRealtimeGuard.tsx", [
   },
   {
     label: "titulo bloqueada",
-    before: "AVALIAÇÃO BLOQUEADA",
-    after: "AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO BLOQUEADA",
+    before: ": \"AVALIAÇÃO BLOQUEADA\"}</CardTitle>",
+    after: ": \"AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO BLOQUEADA\"}</CardTitle>",
   },
   {
     label: "nova avaliacao",
