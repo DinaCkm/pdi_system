@@ -121,6 +121,7 @@ const getMenuItems = (userRole: string) => {
     items.push(
       { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+      { icon: ClipboardCheck, label: "Avaliações", path: "/avaliacoes" },
       { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
       { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
       { icon: History, label: "Minhas Solicitações", path: "/minhas-solicitacoes" },
