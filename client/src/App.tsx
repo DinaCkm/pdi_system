@@ -23,6 +23,7 @@ import Relatorios from "./pages/Relatorios";
 import Importacao from "./pages/Importacao";
 import Avaliacoes from "./pages/Avaliacoes";
 import AdminEixosTecnicos from "./pages/AdminEixosTecnicos";
+import ProvaSeguraUtic from "./pages/ProvaSeguraUtic";
 
 import PDIsEquipe from "./pages/PDIsEquipe";
 import MeuPDI from "./pages/MeuPDI";
@@ -60,6 +61,7 @@ function Router() {
       <Route path={"/reset-password"} component={ResetPassword} />
       <Route path={"/change-password"} component={ChangePassword} />
       <Route path={"/?"} component={Home} />
+      <Route path={"/avaliacoes/utic/prova-segura"} component={ProvaSeguraUtic} />
       <Route path={"/dashboard"}><DashboardLayout><Dashboard /></DashboardLayout></Route>
       <Route path={"/central-comando"}><DashboardLayout><CentralComando /></DashboardLayout></Route>
       <Route path={"/404"} component={NotFound} />
