@@ -185,3 +185,45 @@
   transition: none !important;
   animation: none !important;
 }
+
+/* Prova UTIC: mantém a ação destrutiva de finalização afastada do botão de avanço.
+   A barra de finalização fica fixa no topo e o cabeçalho da prova começa abaixo dela. */
+.prova-protegida > footer {
+  top: 0 !important;
+  bottom: auto !important;
+  border-top: 0 !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.08) !important;
+}
+
+.prova-protegida > footer > div {
+  justify-content: flex-end !important;
+}
+
+.prova-protegida > footer p {
+  display: none !important;
+}
+
+.prova-protegida > header {
+  margin-top: 4.5rem;
+  top: 4.5rem !important;
+}
+
+.prova-protegida > main {
+  padding-bottom: 2rem !important;
+}
+
+@media (max-width: 640px) {
+  .prova-protegida > footer {
+    padding: 0.75rem 1rem !important;
+  }
+
+  .prova-protegida > footer button {
+    width: 100%;
+  }
+
+  .prova-protegida > header {
+    margin-top: 4rem;
+    top: 4rem !important;
+  }
+}
