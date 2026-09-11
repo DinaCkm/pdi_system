@@ -7,10 +7,19 @@ import { adminProcedure, assessmentProcedure, router } from "../_core/customTrpc
 const DURACAO_TOTAL_SEGUNDOS = 3 * 60 * 60;
 const LIMITE_INATIVIDADE_SEGUNDOS = 3 * 60;
 
+type TentativaStatus =
+  | "EM_ANDAMENTO"
+  | "BLOQUEADA"
+  | "LIBERADA"
+  | "FINALIZADA"
+  | "CONCLUIDA"
+  | "FINALIZADA_TEMPO"
+  | "ANULADA";
+
 type TentativaRow = {
   id: number;
   colaborador_id: number;
-  status: "EM_ANDAMENTO" | "BLOQUEADA" | "LIBERADA" | "FINALIZADA" | "CONCLUIDA" | "FINALIZADA_TEMPO" | "ANULADA";
+  status: TentativaStatus;
   started_at: string;
   expires_at: string;
   last_activity_at: string;
@@ -90,6 +99,18 @@ async function obterUltimaTentativa(colaboradorId: number) {
       FROM prova_utic_tentativas
      WHERE colaborador_id = ${colaboradorId}
      ORDER BY id DESC
+     LIMIT 1
+  `);
+  return rowsOf<TentativaRow>(result)[0] ?? null;
+}
+
+async function obterTentativaPorId(tentativaId: number) {
+  const db = await ensureTables();
+  const result = await db.execute(sql`
+    SELECT id, colaborador_id, status, started_at, expires_at, last_activity_at,
+           blocked_at, block_reason, finished_at, released_at, released_by
+      FROM prova_utic_tentativas
+     WHERE id = ${tentativaId}
      LIMIT 1
   `);
   return rowsOf<TentativaRow>(result)[0] ?? null;
@@ -248,17 +269,34 @@ export const provaUticRouter = router({
       if (!tentativa || tentativa.status !== "LIBERADA") {
         throw new TRPCError({ code: "FORBIDDEN", message: "A continuidade desta avaliação ainda não foi liberada pelo administrador." });
       }
-      if (Date.now() >= new Date(tentativa.expires_at).getTime()) {
+
+      const bloqueioAdministrativo = tentativa.block_reason === "ADMINISTRADOR" && Boolean(tentativa.blocked_at);
+      if (!bloqueioAdministrativo && Date.now() >= new Date(tentativa.expires_at).getTime()) {
         await db.execute(sql`UPDATE prova_utic_tentativas SET status = 'FINALIZADA_TEMPO', finished_at = NOW(), block_reason = 'TEMPO_TOTAL' WHERE id = ${input.tentativaId}`);
         throw new TRPCError({ code: "FORBIDDEN", message: "O tempo total desta avaliação já terminou." });
       }
-      await db.execute(sql`
-        UPDATE prova_utic_tentativas
-           SET status = 'EM_ANDAMENTO', last_activity_at = NOW(), blocked_at = NULL, block_reason = NULL
-         WHERE id = ${input.tentativaId} AND colaborador_id = ${ctx.user.id} AND status = 'LIBERADA'
-      `);
-      await registrarEvento(input.tentativaId, "retomada", "Continuidade iniciada após liberação administrativa.");
-      return { retomada: true };
+
+      if (bloqueioAdministrativo) {
+        await db.execute(sql`
+          UPDATE prova_utic_tentativas
+             SET status = 'EM_ANDAMENTO',
+                 expires_at = TIMESTAMPADD(SECOND, TIMESTAMPDIFF(SECOND, blocked_at, NOW()), expires_at),
+                 last_activity_at = NOW(), blocked_at = NULL, block_reason = NULL
+           WHERE id = ${input.tentativaId} AND colaborador_id = ${ctx.user.id} AND status = 'LIBERADA'
+        `);
+      } else {
+        await db.execute(sql`
+          UPDATE prova_utic_tentativas
+             SET status = 'EM_ANDAMENTO', last_activity_at = NOW(), blocked_at = NULL, block_reason = NULL
+           WHERE id = ${input.tentativaId} AND colaborador_id = ${ctx.user.id} AND status = 'LIBERADA'
+        `);
+      }
+
+      const atualizada = await obterTentativaPorId(input.tentativaId);
+      await registrarEvento(input.tentativaId, "retomada", bloqueioAdministrativo
+        ? "Continuidade iniciada após liberação administrativa; tempo do bloqueio administrativo desconsiderado."
+        : "Continuidade iniciada após liberação administrativa.");
+      return { retomada: true, expiresAt: atualizada?.expires_at ?? tentativa.expires_at };
     }),
 
   listarBloqueadas: adminProcedure.query(async () => {
@@ -275,21 +313,108 @@ export const provaUticRouter = router({
     return rowsOf<any>(result);
   }),
 
-  liberarContinuacao: adminProcedure
-    .input(z.object({ tentativaId: z.number().int().positive() }))
+  listarPainelAdministrativo: adminProcedure.query(async () => {
+    const db = await ensureTables();
+
+    const andamentoResult = await db.execute(sql`
+      SELECT id, colaborador_id, status, started_at, expires_at, last_activity_at,
+             blocked_at, block_reason, finished_at, released_at, released_by
+        FROM prova_utic_tentativas
+       WHERE status = 'EM_ANDAMENTO'
+    `);
+    for (const tentativa of rowsOf<TentativaRow>(andamentoResult)) {
+      await normalizarExpiracaoEInatividade(tentativa);
+    }
+
+    const result = await db.execute(sql`
+      SELECT t.id,
+             t.colaborador_id AS colaboradorId,
+             COALESCE(u.name, CONCAT('Empregado ', t.colaborador_id)) AS colaboradorNome,
+             u.email AS colaboradorEmail,
+             t.status,
+             t.started_at AS startedAt,
+             t.expires_at AS expiresAt,
+             t.last_activity_at AS lastActivityAt,
+             t.blocked_at AS blockedAt,
+             t.block_reason AS blockReason,
+             t.finished_at AS finishedAt,
+             t.released_at AS releasedAt,
+             COUNT(r.id) AS respostasSalvas,
+             CASE
+               WHEN t.status IN ('BLOQUEADA','LIBERADA') AND t.block_reason = 'ADMINISTRADOR' AND t.blocked_at IS NOT NULL
+                 THEN GREATEST(0, TIMESTAMPDIFF(SECOND, t.blocked_at, t.expires_at))
+               WHEN t.status IN ('EM_ANDAMENTO','BLOQUEADA','LIBERADA')
+                 THEN GREATEST(0, TIMESTAMPDIFF(SECOND, NOW(), t.expires_at))
+               ELSE 0
+             END AS segundosRestantes,
+             GREATEST(0, TIMESTAMPDIFF(SECOND, t.last_activity_at, NOW())) AS segundosSemAtividade
+        FROM prova_utic_tentativas t
+        LEFT JOIN users u ON u.id = t.colaborador_id
+        LEFT JOIN prova_utic_respostas r ON r.tentativa_id = t.id
+       GROUP BY t.id, t.colaborador_id, u.name, u.email, t.status, t.started_at, t.expires_at,
+                t.last_activity_at, t.blocked_at, t.block_reason, t.finished_at, t.released_at
+       ORDER BY
+         CASE t.status
+           WHEN 'EM_ANDAMENTO' THEN 1
+           WHEN 'BLOQUEADA' THEN 2
+           WHEN 'LIBERADA' THEN 3
+           WHEN 'CONCLUIDA' THEN 4
+           WHEN 'FINALIZADA' THEN 5
+           WHEN 'FINALIZADA_TEMPO' THEN 6
+           WHEN 'ANULADA' THEN 7
+           ELSE 8
+         END,
+         t.updated_at DESC
+       LIMIT 200
+    `);
+    return rowsOf<any>(result);
+  }),
+
+  bloquearAdministrativamente: adminProcedure
+    .input(z.object({ tentativaId: z.number().int().positive(), observacao: z.string().trim().max(300).optional() }))
     .mutation(async ({ input, ctx }) => {
       const db = await ensureTables();
-      const result = await db.execute(sql`SELECT id, status, expires_at FROM prova_utic_tentativas WHERE id = ${input.tentativaId} LIMIT 1`);
-      const tentativa = rowsOf<any>(result)[0];
+      const tentativa = await obterTentativaPorId(input.tentativaId);
+      if (!tentativa) throw new TRPCError({ code: "NOT_FOUND", message: "Tentativa não encontrada." });
+      if (!['EM_ANDAMENTO', 'LIBERADA'].includes(tentativa.status)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Somente uma avaliação em andamento ou liberada pode ser bloqueada pelo administrador." });
+      }
+
+      await db.execute(sql`
+        UPDATE prova_utic_tentativas
+           SET status = 'BLOQUEADA', blocked_at = NOW(), block_reason = 'ADMINISTRADOR',
+               released_at = NULL, released_by = NULL
+         WHERE id = ${input.tentativaId} AND status IN ('EM_ANDAMENTO','LIBERADA')
+      `);
+      const detalhe = input.observacao
+        ? `Avaliação bloqueada pelo administrador ${ctx.user.id}. Observação: ${input.observacao}`
+        : `Avaliação bloqueada pelo administrador ${ctx.user.id}.`;
+      await registrarEvento(input.tentativaId, "bloqueada_admin", detalhe);
+      return { bloqueada: true };
+    }),
+
+  liberarContinuacao: adminProcedure
+    .input(z.object({ tentativaId: z.number().int().positive(), observacao: z.string().trim().max(300).optional() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await ensureTables();
+      const tentativa = await obterTentativaPorId(input.tentativaId);
       if (!tentativa) throw new TRPCError({ code: "NOT_FOUND", message: "Tentativa não encontrada." });
       if (tentativa.status !== "BLOQUEADA") throw new TRPCError({ code: "BAD_REQUEST", message: "Somente tentativas bloqueadas podem ser liberadas." });
-      if (Date.now() >= new Date(tentativa.expires_at).getTime()) throw new TRPCError({ code: "BAD_REQUEST", message: "O tempo total da avaliação já terminou; a continuidade não pode ser liberada." });
+
+      const bloqueioAdministrativo = tentativa.block_reason === "ADMINISTRADOR" && Boolean(tentativa.blocked_at);
+      if (!bloqueioAdministrativo && Date.now() >= new Date(tentativa.expires_at).getTime()) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "O tempo total da avaliação já terminou; a continuidade não pode ser liberada." });
+      }
+
       await db.execute(sql`
         UPDATE prova_utic_tentativas
            SET status = 'LIBERADA', released_at = NOW(), released_by = ${ctx.user.id}
          WHERE id = ${input.tentativaId} AND status = 'BLOQUEADA'
       `);
-      await registrarEvento(input.tentativaId, "liberada_admin", `Continuidade liberada pelo administrador ${ctx.user.id}.`);
-      return { liberada: true };
+      const detalhe = input.observacao
+        ? `Continuidade liberada pelo administrador ${ctx.user.id}. Observação: ${input.observacao}`
+        : `Continuidade liberada pelo administrador ${ctx.user.id}.`;
+      await registrarEvento(input.tentativaId, "liberada_admin", detalhe);
+      return { liberada: true, tempoPausadoPorAdmin: bloqueioAdministrativo };
     }),
 });
