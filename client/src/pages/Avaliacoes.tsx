@@ -157,6 +157,8 @@ export default function Avaliacoes() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const isTesteUtic = user?.email === EMAIL_TESTE_UTIC;
+  const isAdmin = user?.role === "admin" || user?.role === "Administrador";
+  const [buscaLiberacao, setBuscaLiberacao] = useState("");
   const danielBase = PILOTO_UTIC.find((item) => item.nome === "Daniel Caio Lemos Penno") ?? PILOTO_UTIC[0];
 
   const avaliacoesApi = (trpc as any).avaliacoes;
@@ -169,12 +171,32 @@ export default function Avaliacoes() {
   };
 
   const estadoUticQuery = trpc.provaUtic.estado.useQuery(undefined, {
-    enabled: Boolean(user) && isTesteUtic,
+    enabled: Boolean(user) && !isAdmin,
     refetchOnWindowFocus: true,
   });
   const tentativaUtic = estadoUticQuery.data?.tentativa as any;
   const statusTentativaUtic = tentativaUtic?.status as string | undefined;
   const tentativaUticEncerrada = ["FINALIZADA", "CONCLUIDA", "FINALIZADA_TEMPO"].includes(statusTentativaUtic ?? "");
+  const avaliacaoUticLiberada = Boolean((estadoUticQuery.data as any)?.liberada) || Boolean(tentativaUtic);
+  const liberacoesQuery = (trpc.provaUtic as any).listarLiberacoes.useQuery(undefined, {
+    enabled: Boolean(user && isAdmin),
+    refetchOnWindowFocus: true,
+  });
+  const liberarMutation = (trpc.provaUtic as any).liberarParticipante.useMutation({
+    onSuccess: () => liberacoesQuery.refetch(),
+  });
+  const revogarMutation = (trpc.provaUtic as any).revogarLiberacao.useMutation({
+    onSuccess: () => liberacoesQuery.refetch(),
+  });
+  const empregadosLiberacao = useMemo(() => {
+    const termo = buscaLiberacao.trim().toLocaleLowerCase("pt-BR");
+    const itens = (liberacoesQuery.data ?? []) as any[];
+    if (!termo) return itens;
+    return itens.filter((item) =>
+      [item.name, item.email, item.cargo, item.departamentoNome]
+        .some((valor) => String(valor ?? "").toLocaleLowerCase("pt-BR").includes(termo))
+    );
+  }, [buscaLiberacao, liberacoesQuery.data]);
   const mensagemEncerramentoUtic = statusTentativaUtic === "CONCLUIDA"
     ? "Avaliação de Proficiência para a Função concluída com as 60 respostas confirmadas pelo servidor."
     : statusTentativaUtic === "FINALIZADA_TEMPO"
@@ -223,35 +245,98 @@ export default function Avaliacoes() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isTesteUtic ? (
-            tentativaUticEncerrada ? (
-              <div className="rounded-md border-2 border-green-300 bg-green-50 p-4 text-green-950">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-green-700" />
-                  <div>
-                    <p className="font-semibold">AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO JÁ ENCERRADA</p>
-                    <p className="mt-1 text-sm">{mensagemEncerramentoUtic}</p>
-                    <p className="mt-2 text-xs text-green-800">Não existe uma nova tentativa disponível para esta conta.</p>
-                  </div>
+          {isAdmin ? (
+            <p className="text-sm text-muted-foreground">
+              Selecione abaixo os empregados que poderão realizar esta Avaliação de Proficiência.
+            </p>
+          ) : estadoUticQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">Verificando disponibilidade...</p>
+          ) : tentativaUticEncerrada ? (
+            <div className="rounded-md border-2 border-green-300 bg-green-50 p-4 text-green-950">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-green-700" />
+                <div>
+                  <p className="font-semibold">AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO JÁ ENCERRADA</p>
+                  <p className="mt-1 text-sm">{mensagemEncerramentoUtic}</p>
+                  <p className="mt-2 text-xs text-green-800">Não existe uma nova tentativa disponível para esta conta.</p>
                 </div>
               </div>
-            ) : (
-              <Button
-                className="font-semibold"
-                disabled={estadoUticQuery.isLoading}
-                onClick={() => setLocation("/avaliacoes/utic/prova-segura")}
-              >
-                <PlayCircle className="mr-2 h-5 w-5" />
-                {statusTentativaUtic ? "RETOMAR AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO" : "INICIAR AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO"}
-              </Button>
-            )
+            </div>
+          ) : !avaliacaoUticLiberada ? (
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+              A Avaliação de Proficiência para a Função ainda não foi liberada para você.
+            </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              O empregado acessa esta página com sua própria conta para iniciar a avaliação disponível.
-            </p>
+            <Button
+              className="font-semibold"
+              onClick={() => setLocation("/avaliacoes/utic/prova-segura")}
+            >
+              <PlayCircle className="mr-2 h-5 w-5" />
+              {statusTentativaUtic ? "RETOMAR AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO" : "INICIAR AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO"}
+            </Button>
           )}
         </CardContent>
       </Card>
+
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Liberação individual da avaliação</CardTitle>
+            <CardDescription>Pesquise o empregado e defina quem poderá iniciar a Avaliação de Proficiência para a Função.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <input
+              type="search"
+              value={buscaLiberacao}
+              onChange={(event) => setBuscaLiberacao(event.target.value)}
+              placeholder="Pesquisar por nome, e-mail, cargo ou departamento"
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+            />
+            {liberacoesQuery.isLoading ? (
+              <p className="text-sm text-muted-foreground">Carregando empregados...</p>
+            ) : (
+              <div className="max-h-[520px] overflow-auto rounded-md border">
+                <table className="w-full min-w-[850px] text-sm">
+                  <thead className="sticky top-0 bg-background">
+                    <tr className="border-b text-left">
+                      <th className="px-4 py-3">Empregado</th>
+                      <th className="px-4 py-3">Departamento</th>
+                      <th className="px-4 py-3">Situação</th>
+                      <th className="px-4 py-3 text-right">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {empregadosLiberacao.map((item: any) => {
+                      const liberada = item.liberacaoStatus === "LIBERADA";
+                      const iniciada = Boolean(item.tentativaStatus);
+                      return (
+                        <tr key={item.id} className="border-b last:border-0">
+                          <td className="px-4 py-3"><p className="font-medium">{item.name}</p><p className="text-xs text-muted-foreground">{item.email || item.cargo || "—"}</p></td>
+                          <td className="px-4 py-3">{item.departamentoNome || "Sem departamento"}</td>
+                          <td className="px-4 py-3">
+                            <Badge variant={liberada ? "default" : "outline"}>
+                              {iniciada ? "Avaliação já iniciada" : liberada ? "Liberada" : "Não liberada"}
+                            </Badge>
+                            {liberada && item.liberadaEm && <p className="mt-1 text-xs text-muted-foreground">Por {item.liberadaPorNome || "administrador"} em {new Date(String(item.liberadaEm)).toLocaleString("pt-BR")}</p>}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {liberada ? (
+                              <Button size="sm" variant="outline" disabled={iniciada || revogarMutation.isPending} onClick={() => revogarMutation.mutate({ colaboradorId: Number(item.id) })}>Revogar</Button>
+                            ) : (
+                              <Button size="sm" disabled={iniciada || liberarMutation.isPending} onClick={() => liberarMutation.mutate({ colaboradorId: Number(item.id) })}>Liberar avaliação</Button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {empregadosLiberacao.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">Nenhum empregado encontrado.</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {!isTesteUtic && (
         <>
