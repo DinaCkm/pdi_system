@@ -19,6 +19,42 @@ function formatarPp(valor: number | null) {
   return `${valor.toFixed(1)} p.p.`;
 }
 
+type SituacaoEixo = "EVOLUCAO" | "ESTABILIDADE" | "REDUCAO" | "NOVA_BASE";
+
+function classificarEixo(evolucaoPp: number | null): SituacaoEixo {
+  if (evolucaoPp === null) return "NOVA_BASE";
+  if (evolucaoPp > 0) return "EVOLUCAO";
+  if (evolucaoPp < 0) return "REDUCAO";
+  return "ESTABILIDADE";
+}
+
+function rotuloSituacao(situacao: SituacaoEixo) {
+  const rotulos: Record<SituacaoEixo, string> = {
+    EVOLUCAO: "Evolução",
+    ESTABILIDADE: "Estabilidade",
+    REDUCAO: "Redução",
+    NOVA_BASE: "Nova linha de base",
+  };
+  return rotulos[situacao];
+}
+
+function varianteSituacao(situacao: SituacaoEixo): "default" | "secondary" | "destructive" | "outline" {
+  if (situacao === "EVOLUCAO") return "default";
+  if (situacao === "REDUCAO") return "destructive";
+  if (situacao === "ESTABILIDADE") return "secondary";
+  return "outline";
+}
+
+function direcionamentoPdi(situacao: SituacaoEixo) {
+  const textos: Record<SituacaoEixo, string> = {
+    EVOLUCAO: "Consolid e ampliar o desenvolvimento",
+    ESTABILIDADE: "Manter acompanhamento do eixo",
+    REDUCAO: "Priorizar análise no próximo PDI",
+    NOVA_BASE: "Adotar o resultado atual como referência",
+  };
+  return textos[situacao];
+}
+
 export default function AdminResultadosUtic() {
   const { loading, user } = useAuth();
   const [tentativaSelecionada, setTentativaSelecionada] = useState<number | null>(null);
@@ -47,6 +83,13 @@ export default function AdminResultadosUtic() {
   }
 
   const detalhe = resultadoQuery.data;
+  const eixosResultado = detalhe?.resultado?.porEixo ?? [];
+  const resumoComparativo = {
+    evolucao: eixosResultado.filter((eixo: any) => Number(eixo.evolucaoPp) > 0).length,
+    estabilidade: eixosResultado.filter((eixo: any) => eixo.evolucaoPp !== null && Number(eixo.evolucaoPp) === 0).length,
+    reducao: eixosResultado.filter((eixo: any) => Number(eixo.evolucaoPp) < 0).length,
+    novaBase: eixosResultado.filter((eixo: any) => eixo.evolucaoPp === null).length,
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -128,11 +171,24 @@ export default function AdminResultadosUtic() {
 
             <Card>
               <CardHeader>
+                <CardTitle>Resumo da evolução por eixo</CardTitle>
+                <CardDescription>Leitura executiva da comparação entre a linha de base anterior e o resultado atual.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs font-medium uppercase text-emerald-800">Em evolução</p><p className="mt-1 text-3xl font-bold text-emerald-800">{resumoComparativo.evolucao}</p><p className="mt-1 text-xs text-emerald-700">Resultado atual superior ao anterior</p></div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-medium uppercase text-slate-700">Estáveis</p><p className="mt-1 text-3xl font-bold text-slate-800">{resumoComparativo.estabilidade}</p><p className="mt-1 text-xs text-slate-600">Mesmo percentual da linha de base</p></div>
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4"><p className="text-xs font-medium uppercase text-red-800">Com redução</p><p className="mt-1 text-3xl font-bold text-red-800">{resumoComparativo.reducao}</p><p className="mt-1 text-xs text-red-700">Exigem análise para o próximo PDI</p></div>
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4"><p className="text-xs font-medium uppercase text-blue-800">Nova linha de base</p><p className="mt-1 text-3xl font-bold text-blue-800">{resumoComparativo.novaBase}</p><p className="mt-1 text-xs text-blue-700">Eixos ainda sem histórico comparável</p></div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle>Resultado por eixo técnico</CardTitle>
                 <CardDescription>A comparação é feita somente dentro do mesmo eixo e na mesma escala. Eixos sem histórico comparável não recebem evolução numérica.</CardDescription>
               </CardHeader>
               <CardContent className="overflow-x-auto">
-                <table className="w-full min-w-[900px] text-sm">
+                <table className="w-full min-w-[1180px] text-sm">
                   <thead>
                     <tr className="border-b text-left text-muted-foreground">
                       <th className="px-3 py-3">Eixo</th>
@@ -141,6 +197,8 @@ export default function AdminResultadosUtic() {
                       <th className="px-3 py-3 text-right">Atual</th>
                       <th className="px-3 py-3 text-right">Linha de base</th>
                       <th className="px-3 py-3 text-right">Evolução</th>
+                      <th className="px-3 py-3">Situação</th>
+                      <th className="px-3 py-3">Direcionamento para o próximo PDI</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -152,10 +210,36 @@ export default function AdminResultadosUtic() {
                         <td className="px-3 py-4 text-right font-semibold">{Number(eixo.percentualAtual).toFixed(1)}%</td>
                         <td className="px-3 py-4 text-right">{eixo.linhaBase === null ? "Sem base" : `${Number(eixo.linhaBase).toFixed(1)}%`}</td>
                         <td className={`px-3 py-4 text-right font-semibold ${eixo.evolucaoPp > 0 ? "text-emerald-700" : eixo.evolucaoPp < 0 ? "text-red-700" : ""}`}>{formatarPp(eixo.evolucaoPp)}</td>
+                        {(() => {
+                          const situacao = classificarEixo(eixo.evolucaoPp);
+                          return (
+                            <>
+                              <td className="px-3 py-4"><Badge variant={varianteSituacao(situacao)}>{rotuloSituacao(situacao)}</Badge></td>
+                              <td className="px-3 py-4 text-muted-foreground">{direcionamentoPdi(situacao)}</td>
+                            </>
+                          );
+                        })()}
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </CardContent>
+            </Card>
+
+            <Card className="border-blue-200">
+              <CardHeader>
+                <CardTitle>Leitura para o próximo PDI</CardTitle>
+                <CardDescription>O resultado orienta a decisão, mas não substitui a análise conjunta da função, das entregas e do contexto de trabalho.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {resumoComparativo.reducao > 0 ? (
+                  <p><strong>Prioridade:</strong> analisar primeiro os eixos com redução, verificando se o resultado representa lacuna de conhecimento, dificuldade de aplicação ou mudança nas exigências da função.</p>
+                ) : (
+                  <p><strong>Prioridade:</strong> não foram identificados eixos com redução em relação à linha de base disponível.</p>
+                )}
+                {resumoComparativo.estabilidade > 0 && <p><strong>Acompanhamento:</strong> os eixos estáveis devem permanecer monitorados antes de definir novas ações de desenvolvimento.</p>}
+                {resumoComparativo.evolucao > 0 && <p><strong>Consolidação:</strong> os eixos em evolução demonstram avanço e podem receber ações de aprofundamento ou aplicação prática.</p>}
+                {resumoComparativo.novaBase > 0 && <p><strong>Novo histórico:</strong> nos eixos sem base anterior, o resultado atual será a referência para a próxima medição.</p>}
               </CardContent>
             </Card>
 
