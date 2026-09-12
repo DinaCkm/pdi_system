@@ -47,7 +47,7 @@ function varianteSituacao(situacao: SituacaoEixo): "default" | "secondary" | "de
 
 function direcionamentoPdi(situacao: SituacaoEixo) {
   const textos: Record<SituacaoEixo, string> = {
-    EVOLUCAO: "Consolid e ampliar o desenvolvimento",
+    EVOLUCAO: "Consolidar e ampliar o desenvolvimento",
     ESTABILIDADE: "Manter acompanhamento do eixo",
     REDUCAO: "Priorizar análise no próximo PDI",
     NOVA_BASE: "Adotar o resultado atual como referência",
