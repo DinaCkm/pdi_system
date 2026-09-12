@@ -53,6 +53,42 @@ export const actionsRouter = router({
     }
   }),
 
+  // Biblioteca dinâmica: modelos consolidados a partir das ações já existentes
+  library: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "admin" && ctx.user.role !== "lider" && ctx.user.role !== "gerente") {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Sem permissão para consultar a biblioteca de ações." });
+    }
+
+    const actions = await db.getAllActions();
+    const modelos = new Map<string, any>();
+
+    for (const action of actions as any[]) {
+      const titulo = String(action.titulo ?? "").trim();
+      if (!titulo) continue;
+      const descricao = String(action.descricao ?? "").trim();
+      const microcompetencia = String(action.microcompetencia ?? "").trim();
+      const macroId = Number(action.macroId ?? 0) || null;
+      const chave = [titulo.toLocaleLowerCase("pt-BR"), descricao.toLocaleLowerCase("pt-BR"), macroId ?? "", microcompetencia.toLocaleLowerCase("pt-BR")].join("|");
+      const existente = modelos.get(chave);
+      if (existente) {
+        existente.utilizacoes += 1;
+        continue;
+      }
+      modelos.set(chave, {
+        modeloId: Number(action.id),
+        titulo,
+        descricao,
+        macroId,
+        microcompetencia,
+        utilizacoes: 1,
+      });
+    }
+
+    return Array.from(modelos.values()).sort((a, b) =>
+      b.utilizacoes - a.utilizacoes || a.titulo.localeCompare(b.titulo, "pt-BR")
+    );
+  }),
+
   // Obter ação por ID
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
