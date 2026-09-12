@@ -17,6 +17,10 @@ export function AcoesNova() {
     prazo: '',
   });
 
+  const [modoCriacao, setModoCriacao] = useState<"nova" | "biblioteca">("nova");
+  const [buscaBiblioteca, setBuscaBiblioteca] = useState("");
+  const [macroBiblioteca, setMacroBiblioteca] = useState("");
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSuggesting, setIsSuggesting] = useState(false);
   
@@ -33,6 +37,29 @@ export function AcoesNova() {
   // Buscando dados
   const { data: pdis = [], isLoading: loadingPdis } = trpc.pdis.list.useQuery();
   const { data: macros = [], isLoading: loadingMacros } = trpc.competencias.listAllMacros.useQuery();
+  const { data: biblioteca = [], isLoading: loadingBiblioteca } = trpc.actions.library.useQuery();
+
+  const modelosBiblioteca = useMemo(() => {
+    const termo = buscaBiblioteca.trim().toLocaleLowerCase("pt-BR");
+    return (biblioteca as any[]).filter((modelo) => {
+      const atendeMacro = !macroBiblioteca || String(modelo.macroId ?? "") === macroBiblioteca;
+      const atendeBusca = !termo || [modelo.titulo, modelo.descricao, modelo.microcompetencia]
+        .some((valor) => String(valor ?? "").toLocaleLowerCase("pt-BR").includes(termo));
+      return atendeMacro && atendeBusca;
+    });
+  }, [biblioteca, buscaBiblioteca, macroBiblioteca]);
+
+  const usarModeloBiblioteca = (modelo: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      macroId: modelo.macroId ? String(modelo.macroId) : "",
+      microcompetencia: modelo.microcompetencia || "",
+      titulo: modelo.titulo || "",
+      descricao: modelo.descricao || "",
+    }));
+    setModoCriacao("nova");
+    setErrors({});
+  };
   
   // Filtrar PDIs baseado na busca
   const filteredPdis = useMemo(() => {
@@ -218,6 +245,68 @@ export function AcoesNova() {
           <h1 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '8px' }}>Nova Ação</h1>
           <p style={{ color: '#666' }}>Preencha os dados da ação de desenvolvimento</p>
         </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+          <button
+            type="button"
+            onClick={() => setModoCriacao("nova")}
+            style={{ padding: '14px', borderRadius: '8px', border: modoCriacao === "nova" ? '2px solid #2563eb' : '1px solid #d1d5db', background: modoCriacao === "nova" ? '#eff6ff' : 'white', fontWeight: 600, cursor: 'pointer' }}
+          >
+            Criar uma ação nova
+          </button>
+          <button
+            type="button"
+            onClick={() => setModoCriacao("biblioteca")}
+            style={{ padding: '14px', borderRadius: '8px', border: modoCriacao === "biblioteca" ? '2px solid #2563eb' : '1px solid #d1d5db', background: modoCriacao === "biblioteca" ? '#eff6ff' : 'white', fontWeight: 600, cursor: 'pointer' }}
+          >
+            Buscar na biblioteca
+          </button>
+        </div>
+
+        {modoCriacao === "biblioteca" && (
+          <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '20px', marginBottom: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>Biblioteca de ações</h2>
+              <p style={{ color: '#666', marginTop: '4px' }}>Selecione uma ação existente para utilizar como modelo. Empregado, PDI, prazo, status e evidências não serão copiados.</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(220px, 0.6fr)', gap: '12px' }}>
+              <input
+                type="search"
+                value={buscaBiblioteca}
+                onChange={(event) => setBuscaBiblioteca(event.target.value)}
+                placeholder="Pesquisar título, descrição ou competência específica"
+                style={{ padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
+              />
+              <select
+                value={macroBiblioteca}
+                onChange={(event) => setMacroBiblioteca(event.target.value)}
+                style={{ padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white' }}
+              >
+                <option value="">Todas as competências</option>
+                {macros.map((macro: any) => <option key={macro.id} value={String(macro.id)}>{macro.nome}</option>)}
+              </select>
+            </div>
+            <div style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+              {loadingBiblioteca ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>Carregando biblioteca...</div>
+              ) : modelosBiblioteca.length === 0 ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>Nenhuma ação encontrada para os filtros selecionados.</div>
+              ) : modelosBiblioteca.map((modelo: any) => {
+                const macro = macros.find((item: any) => Number(item.id) === Number(modelo.macroId));
+                return (
+                  <div key={modelo.modeloId} style={{ padding: '16px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontWeight: 600 }}>{modelo.titulo}</div>
+                      <div style={{ marginTop: '4px', fontSize: '13px', color: '#6b7280' }}>{macro?.nome || "Sem competência classificada"}{modelo.microcompetencia ? ` · ${modelo.microcompetencia}` : ""}</div>
+                      <div style={{ marginTop: '6px', fontSize: '12px', color: '#6b7280' }}>Utilizada {modelo.utilizacoes} vez(es)</div>
+                    </div>
+                    <button type="button" onClick={() => usarModeloBiblioteca(modelo)} style={{ flexShrink: 0, padding: '9px 14px', border: 'none', borderRadius: '6px', background: '#2563eb', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Usar como modelo</button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} style={{ backgroundColor: 'white', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           
