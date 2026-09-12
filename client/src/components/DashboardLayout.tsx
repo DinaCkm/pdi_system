@@ -20,7 +20,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users, Target, FileText, BarChart, Building2, CheckSquare, MessageSquarePlus, Upload, ClipboardCheck, History, Trash2, AlertTriangle, TrendingUp, ChevronDown, ChevronRight, Send, BookOpen, ExternalLink, Lock } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, Target, FileText, BarChart, BarChart3, Building2, CheckSquare, MessageSquarePlus, Upload, ClipboardCheck, History, Trash2, AlertTriangle, TrendingUp, ChevronDown, ChevronRight, Send, BookOpen, ExternalLink, Lock } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -76,6 +76,7 @@ const getMenuItems = (userRole: string) => {
       { icon: Lock, label: "Controle de Execução do PDI", path: "/controle-execucao", section: "pessoas" },
 
       { icon: TrendingUp, label: "Análise de Liderança", path: "/analise-lideranca", section: "acompanhamento" },
+      { icon: BarChart3, label: "Resultados da Proficiência", path: "/admin-avaliacoes/utic/resultados", section: "acompanhamento" },
       { icon: ClipboardCheck, label: "Admin Dashboard", path: "/admin-dashboard", section: "acompanhamento" },
       { icon: BarChart, label: "Relatórios", path: "/relatorios", section: "acompanhamento" },
       { icon: AlertTriangle, label: "Relatório de Ações Vencidas", path: "/relatorio-acoes-vencidas", section: "acompanhamento" },
