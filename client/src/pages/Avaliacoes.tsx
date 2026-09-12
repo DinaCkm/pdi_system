@@ -253,7 +253,10 @@ export default function Avaliacoes() {
         </CardContent>
       </Card>
 
-      <Card>
+      {!isTesteUtic && (
+        <>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <FileUp className="h-6 w-6 text-blue-600" />
