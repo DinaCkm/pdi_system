@@ -214,145 +214,42 @@ export default function Avaliacoes() {
 
       <Card className="border-blue-200">
         <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
-                <CardTitle>Piloto UTIC — Linha de Base de Evolução Técnica</CardTitle>
-              </div>
-              <CardDescription className="mt-2 max-w-3xl">
-                Visualização de como o sistema deverá guardar a avaliação anterior por eixo e, após a nova aplicação, calcular a evolução do conhecimento técnico.
-              </CardDescription>
-            </div>
-            <Badge variant="outline">Protótipo para validação</Badge>
+          <div className="flex items-center gap-2">
+            <ClipboardCheck className="h-6 w-6 text-blue-600" />
+            <CardTitle>Avaliação de Proficiência para a Função — UTIC</CardTitle>
           </div>
+          <CardDescription>
+            Nesta área o empregado inicia ou retoma sua avaliação. Resultados técnicos ficam em Resultados da Proficiência e comparações ficam exclusivamente em Evolução.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
-            <div className="space-y-2">
-              <label htmlFor="empregado-utic" className="text-sm font-medium">
-                Empregado
-              </label>
-              {isTesteUtic ? (
-                <div className="rounded-md border-2 border-blue-300 bg-blue-50 p-4">
-                  <p className="font-semibold text-blue-950">Daniel Caio Lemos Penno [TESTE UTIC]</p>
-                  <p className="mt-1 text-sm text-blue-900">Perfil de teste espelhado do empregado real para validar a comparação da nova Avaliação de Proficiência para a Função.</p>
-                </div>
-              ) : (
-                <select
-                  id="empregado-utic"
-                  value={empregadoSelecionado}
-                  onChange={(event) => setEmpregadoSelecionado(event.target.value)}
-                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-                >
-                  {PILOTO_UTIC.map((item) => (
-                    <option key={item.nome} value={item.nome}>
-                      {item.nome}
-                    </option>
-                  ))}
-                </select>
-              )}
-              <div className="rounded-md border bg-muted/30 p-3 text-sm">
-                <p className="font-medium">{empregado.cargo}</p>
-                <p className="mt-1 text-muted-foreground">{empregado.funcao}</p>
-              </div>
-              {isTesteUtic && (
-                tentativaUticEncerrada ? (
-                  <div className="mt-2 rounded-md border-2 border-green-300 bg-green-50 p-4 text-green-950">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-green-700" />
-                      <div>
-                        <p className="font-semibold">AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO JÁ ENCERRADA</p>
-                        <p className="mt-1 text-sm">{mensagemEncerramentoUtic}</p>
-                        <p className="mt-2 text-xs text-green-800">Não existe uma nova tentativa disponível para esta conta.</p>
-                      </div>
-                    </div>
+        <CardContent>
+          {isTesteUtic ? (
+            tentativaUticEncerrada ? (
+              <div className="rounded-md border-2 border-green-300 bg-green-50 p-4 text-green-950">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-green-700" />
+                  <div>
+                    <p className="font-semibold">AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO JÁ ENCERRADA</p>
+                    <p className="mt-1 text-sm">{mensagemEncerramentoUtic}</p>
+                    <p className="mt-2 text-xs text-green-800">Não existe uma nova tentativa disponível para esta conta.</p>
                   </div>
-                ) : (
-                  <Button
-                    className="mt-2 font-semibold"
-                    disabled={estadoUticQuery.isLoading}
-                    onClick={() => setLocation("/avaliacoes/utic/prova-segura")}
-                  >
-                    <PlayCircle className="mr-2 h-5 w-5" />
-                    {statusTentativaUtic ? "RETOMAR AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO" : "INICIAR AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO"}
-                  </Button>
-                )
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-1">
-              <div className="rounded-md border p-3">
-                <p className="text-xs text-muted-foreground">Eixos essenciais</p>
-                <p className="mt-1 text-2xl font-semibold">{essenciais}</p>
+                </div>
               </div>
-              <div className="rounded-md border p-3">
-                <p className="text-xs text-muted-foreground">Eixos com linha de base histórica</p>
-                <p className="mt-1 text-2xl font-semibold">{eixosComLinhaBase}/8</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-md border bg-muted/20 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Avaliação anterior</p>
-              <p className="mt-2 font-semibold">Linha de base histórica</p>
-              <p className="mt-1 text-sm text-muted-foreground">Percentuais já conhecidos por eixo para servir de referência comparativa.</p>
-            </div>
-            <div className="rounded-md border bg-muted/20 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Nova avaliação</p>
-              <p className="mt-2 font-semibold">Aguardando aplicação</p>
-              <p className="mt-1 text-sm text-muted-foreground">O sistema calculará os acertos da nova Avaliação de Proficiência para a Função agrupados nos mesmos eixos.</p>
-            </div>
-            <div className="rounded-md border bg-muted/20 p-4">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Evolução</p>
-              <p className="mt-2 font-semibold">Aguardando nova medição</p>
-              <p className="mt-1 text-sm text-muted-foreground">Evolução = performance atual no eixo − performance histórica no mesmo eixo.</p>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto rounded-md border">
-            <table className="w-full min-w-[920px] text-sm">
-              <thead className="bg-muted/40">
-                <tr className="border-b text-left">
-                  <th className="px-4 py-3 font-medium">Eixo de conhecimento</th>
-                  <th className="px-4 py-3 font-medium">Relação com o empregado</th>
-                  <th className="px-4 py-3 font-medium">Avaliação anterior</th>
-                  <th className="px-4 py-3 font-medium">Nova avaliação</th>
-                  <th className="px-4 py-3 font-medium">Evolução</th>
-                  <th className="px-4 py-3 font-medium">Situação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {empregado.eixos.map((linha) => (
-                  <tr key={linha.eixo} className="border-b last:border-0">
-                    <td className="px-4 py-3 font-medium">{linha.eixo}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant={relacaoVariant(linha.relacao)}>{relacaoLabel[linha.relacao]}</Badge>
-                    </td>
-                    <td className="px-4 py-3">{formatarPercentual(linha.anterior)}</td>
-                    <td className="px-4 py-3 text-muted-foreground">—</td>
-                    <td className="px-4 py-3 text-muted-foreground">—</td>
-                    <td className="px-4 py-3">
-                      {linha.relacao === "NAO_APLICAVEL" ? (
-                        <Badge variant="outline">Não participa do cálculo atual</Badge>
-                      ) : linha.anterior === null ? (
-                        <Badge variant="outline">Novo eixo — nova linha de base</Badge>
-                      ) : (
-                        <Badge variant="secondary">Aguardando Avaliação de Proficiência para a Função</Badge>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-            {isTesteUtic
-              ? "Para o teste UTIC, o perfil espelha os dados de desenvolvimento do Daniel e utiliza sua linha de base histórica provisória. O resultado da Avaliação de Proficiência para a Função será comparado eixo a eixo, sem alterar o cadastro do empregado real."
-              : "Neste piloto, a classificação dos eixos utiliza as informações históricas disponíveis do empregado. Ajustes excepcionais por recurso, mudança de atividade ou mudança de função serão tratados na página administrativa de eixos técnicos, sem apagar o histórico anterior."}
-          </div>
+            ) : (
+              <Button
+                className="font-semibold"
+                disabled={estadoUticQuery.isLoading}
+                onClick={() => setLocation("/avaliacoes/utic/prova-segura")}
+              >
+                <PlayCircle className="mr-2 h-5 w-5" />
+                {statusTentativaUtic ? "RETOMAR AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO" : "INICIAR AVALIAÇÃO DE PROFICIÊNCIA PARA A FUNÇÃO"}
+              </Button>
+            )
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              O empregado acessa esta página com sua própria conta para iniciar a avaliação disponível.
+            </p>
+          )}
         </CardContent>
       </Card>
 
