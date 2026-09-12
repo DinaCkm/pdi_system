@@ -105,8 +105,8 @@ export default function Evolucao() {
         </p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
-        <Card className="h-fit">
+      <div className="space-y-5">
+        <Card>
           <CardHeader>
             <CardTitle>Selecione o empregado</CardTitle>
             <CardDescription>Escolha quem deseja consultar. O resultado mais recente é aberto automaticamente.</CardDescription>
