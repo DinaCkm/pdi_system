@@ -68,7 +68,13 @@ export const provaUticResultadosRouter = router({
       const tentativaResult = await db.execute(sql`
         SELECT t.id, t.colaborador_id AS colaboradorId, t.status,
                t.started_at AS startedAt, t.finished_at AS finishedAt,
-               u.name AS colaboradorNome, u.email AS colaboradorEmail, u.cargo
+               u.name AS colaboradorNome, u.email AS colaboradorEmail, u.cargo,
+               (
+                 SELECT COUNT(*)
+                   FROM prova_utic_eventos e
+                  WHERE e.tentativa_id = t.id
+                    AND e.tipo NOT IN ('monitoramento_iniciado', 'ordem_aleatoria', 'retomada_pendentes')
+               ) AS totalOcorrencias
           FROM prova_utic_tentativas t
           JOIN users u ON u.id = t.colaborador_id
          WHERE t.id = ${input.tentativaId}

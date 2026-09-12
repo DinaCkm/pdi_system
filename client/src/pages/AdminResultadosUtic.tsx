@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { BarChart3, CheckCircle2, ChevronRight, ShieldCheck } from "lucide-react";
+import { BarChart3, CheckCircle2, ChevronRight, Clock3, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,46 +13,23 @@ function formatarData(valor: unknown) {
   return data.toLocaleString("pt-BR");
 }
 
-function formatarPp(valor: number | null) {
-  if (valor === null) return "Sem base comparável";
-  if (valor > 0) return `+${valor.toFixed(1)} p.p.`;
-  return `${valor.toFixed(1)} p.p.`;
+function formatarDuracao(inicio: unknown, fim: unknown) {
+  if (!inicio || !fim) return "—";
+  const segundos = Math.max(0, Math.floor((new Date(String(fim)).getTime() - new Date(String(inicio)).getTime()) / 1000));
+  if (!Number.isFinite(segundos)) return "—";
+  const horas = Math.floor(segundos / 3600);
+  const minutos = Math.floor((segundos % 3600) / 60).toString().padStart(2, "0");
+  const segundosFinais = (segundos % 60).toString().padStart(2, "0");
+  return `${horas}:${minutos}:${segundosFinais}`;
 }
 
-type SituacaoEixo = "EVOLUCAO" | "ESTABILIDADE" | "REDUCAO" | "NOVA_BASE";
-
-function classificarEixo(evolucaoPp: number | null): SituacaoEixo {
-  if (evolucaoPp === null) return "NOVA_BASE";
-  if (evolucaoPp > 0) return "EVOLUCAO";
-  if (evolucaoPp < 0) return "REDUCAO";
-  return "ESTABILIDADE";
-}
-
-function rotuloSituacao(situacao: SituacaoEixo) {
-  const rotulos: Record<SituacaoEixo, string> = {
-    EVOLUCAO: "Evolução",
-    ESTABILIDADE: "Estabilidade",
-    REDUCAO: "Redução",
-    NOVA_BASE: "Nova linha de base",
+function rotuloStatus(status: string) {
+  const rotulos: Record<string, string> = {
+    CONCLUIDA: "Concluída com todas as respostas",
+    FINALIZADA: "Encerrada pelo participante",
+    FINALIZADA_TEMPO: "Encerrada por tempo",
   };
-  return rotulos[situacao];
-}
-
-function varianteSituacao(situacao: SituacaoEixo): "default" | "secondary" | "destructive" | "outline" {
-  if (situacao === "EVOLUCAO") return "default";
-  if (situacao === "REDUCAO") return "destructive";
-  if (situacao === "ESTABILIDADE") return "secondary";
-  return "outline";
-}
-
-function direcionamentoPdi(situacao: SituacaoEixo) {
-  const textos: Record<SituacaoEixo, string> = {
-    EVOLUCAO: "Consolidar e ampliar o desenvolvimento",
-    ESTABILIDADE: "Manter acompanhamento do eixo",
-    REDUCAO: "Priorizar análise no próximo PDI",
-    NOVA_BASE: "Adotar o resultado atual como referência",
-  };
-  return textos[situacao];
+  return rotulos[status] ?? status;
 }
 
 export default function AdminResultadosUtic() {
@@ -73,7 +50,9 @@ export default function AdminResultadosUtic() {
   );
 
   const tentativas = useMemo(
-    () => (painelQuery.data ?? []).filter((item: any) => ["FINALIZADA", "CONCLUIDA", "FINALIZADA_TEMPO"].includes(item.status)),
+    () => (painelQuery.data ?? []).filter((item: any) =>
+      ["FINALIZADA", "CONCLUIDA", "FINALIZADA_TEMPO"].includes(item.status)
+    ),
     [painelQuery.data]
   );
 
@@ -89,13 +68,6 @@ export default function AdminResultadosUtic() {
   }
 
   const detalhe = resultadoQuery.data;
-  const eixosResultado = detalhe?.resultado?.porEixo ?? [];
-  const resumoComparativo = {
-    evolucao: eixosResultado.filter((eixo: any) => Number(eixo.evolucaoPp) > 0).length,
-    estabilidade: eixosResultado.filter((eixo: any) => eixo.evolucaoPp !== null && Number(eixo.evolucaoPp) === 0).length,
-    reducao: eixosResultado.filter((eixo: any) => Number(eixo.evolucaoPp) < 0).length,
-    novaBase: eixosResultado.filter((eixo: any) => eixo.evolucaoPp === null).length,
-  };
 
   return (
     <div className="space-y-6 p-6">
@@ -103,8 +75,8 @@ export default function AdminResultadosUtic() {
         <div className="flex items-start gap-3">
           <BarChart3 className="mt-1 h-8 w-8 text-blue-700" />
           <div>
-            <h1 className="text-2xl font-semibold">Resultados da Avaliação de Proficiência para a Função — UTIC</h1>
-            <p className="text-sm text-muted-foreground">Correção no servidor e comparação por eixo técnico.</p>
+            <h1 className="text-2xl font-semibold">Resultado da Avaliação de Proficiência para a Função — UTIC</h1>
+            <p className="text-sm text-muted-foreground">Dados técnicos da aplicação e da tentativa realizada.</p>
           </div>
         </div>
         {bancoQuery.data && (
@@ -126,27 +98,23 @@ export default function AdminResultadosUtic() {
               <p className="text-sm text-muted-foreground">Carregando...</p>
             ) : tentativas.length === 0 ? (
               <p className="text-sm text-muted-foreground">Ainda não há empregado com resultado finalizado.</p>
-            ) : (
-              tentativas.map((item: any) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setTentativaSelecionada(Number(item.id))}
-                  className={`w-full rounded-lg border p-3 text-left transition hover:bg-slate-50 ${tentativaSelecionada === Number(item.id) ? "border-blue-500 bg-blue-50" : ""}`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="font-medium">{item.colaboradorNome}</p>
-                      <p className="text-xs text-muted-foreground">Tentativa #{item.id} · {item.respostasSalvas ?? 0}/60 respostas</p>
-                      <p className="mt-1 text-xs font-medium text-emerald-700">
-                        {item.status === "FINALIZADA_TEMPO" ? "Encerrada por tempo" : "Concluída"}
-                      </p>
-                    </div>
-                    <ChevronRight className="h-4 w-4" />
+            ) : tentativas.map((item: any) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTentativaSelecionada(Number(item.id))}
+                className={`w-full rounded-lg border p-3 text-left transition hover:bg-slate-50 ${tentativaSelecionada === Number(item.id) ? "border-blue-500 bg-blue-50" : ""}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="font-medium">{item.colaboradorNome}</p>
+                    <p className="text-xs text-muted-foreground">Tentativa #{item.id} · {item.respostasSalvas ?? 0}/60 respostas</p>
+                    <p className="mt-1 text-xs font-medium text-emerald-700">{rotuloStatus(item.status)}</p>
                   </div>
-                </button>
-              ))
-            )}
+                  <ChevronRight className="h-4 w-4" />
+                </div>
+              </button>
+            ))}
           </CardContent>
         </Card>
 
@@ -161,98 +129,29 @@ export default function AdminResultadosUtic() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-emerald-600" />{detalhe.tentativa.colaboradorNome}</CardTitle>
-                <CardDescription>Tentativa #{detalhe.tentativa.id} · {detalhe.tentativa.cargo || "cargo não informado"} · início {formatarData(detalhe.tentativa.startedAt)}</CardDescription>
+                <CardDescription>Tentativa #{detalhe.tentativa.id} · {detalhe.tentativa.cargo || "cargo não informado"}</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="grid gap-3 md:grid-cols-3">
-                  <div className="rounded-lg border p-4"><p className="text-xs uppercase text-muted-foreground">Acertos na Avaliação de Proficiência para a Função</p><p className="mt-1 text-3xl font-bold">{detalhe.resultado.totalAcertos}/60</p></div>
-                  <div className="rounded-lg border p-4"><p className="text-xs uppercase text-muted-foreground">Percentual geral</p><p className="mt-1 text-3xl font-bold">{detalhe.resultado.percentualGeral.toFixed(1)}%</p><p className="mt-1 text-xs text-muted-foreground">Indicador completo da Avaliação de Proficiência para a Função; não substitui a análise de Performance na Função.</p></div>
+              <CardContent className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                  <div className="rounded-lg border p-4"><p className="text-xs uppercase text-muted-foreground">Acertos</p><p className="mt-1 text-3xl font-bold">{detalhe.resultado.totalAcertos}/60</p></div>
+                  <div className="rounded-lg border p-4"><p className="text-xs uppercase text-muted-foreground">Percentual</p><p className="mt-1 text-3xl font-bold">{detalhe.resultado.percentualGeral.toFixed(1)}%</p></div>
                   <div className="rounded-lg border p-4"><p className="text-xs uppercase text-muted-foreground">Respondidas</p><p className="mt-1 text-3xl font-bold">{detalhe.resultado.totalRespondidas}/60</p><p className="mt-1 text-xs text-muted-foreground">Não respondidas: {detalhe.resultado.totalNaoRespondidas}</p></div>
+                  <div className="rounded-lg border p-4"><p className="flex items-center gap-1 text-xs uppercase text-muted-foreground"><Clock3 className="h-3.5 w-3.5" />Tempo de execução</p><p className="mt-1 text-3xl font-bold">{formatarDuracao(detalhe.tentativa.startedAt, detalhe.tentativa.finishedAt)}</p></div>
+                  <div className="rounded-lg border p-4"><p className="flex items-center gap-1 text-xs uppercase text-muted-foreground"><ShieldAlert className="h-3.5 w-3.5" />Ocorrências</p><p className="mt-1 text-3xl font-bold">{Number(detalhe.tentativa.totalOcorrencias ?? 0)}</p></div>
+                </div>
+                <div className="grid gap-3 text-sm md:grid-cols-3">
+                  <div><span className="text-muted-foreground">Situação:</span><p className="font-medium">{rotuloStatus(detalhe.tentativa.status)}</p></div>
+                  <div><span className="text-muted-foreground">Início:</span><p className="font-medium">{formatarData(detalhe.tentativa.startedAt)}</p></div>
+                  <div><span className="text-muted-foreground">Encerramento:</span><p className="font-medium">{formatarData(detalhe.tentativa.finishedAt)}</p></div>
                 </div>
               </CardContent>
             </Card>
 
-            {detalhe.linhaBase && (
-              <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
-                <strong>Linha de base provisória:</strong> {detalhe.linhaBase.fonte}. {detalhe.linhaBase.observacao}
-              </div>
-            )}
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-950">
+              A comparação entre a avaliação anterior e a nova medição por eixo está disponível na página <strong>Evolução</strong>.
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Resumo da evolução por eixo</CardTitle>
-                <CardDescription>Leitura executiva da comparação entre a linha de base anterior e o resultado atual.</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs font-medium uppercase text-emerald-800">Em evolução</p><p className="mt-1 text-3xl font-bold text-emerald-800">{resumoComparativo.evolucao}</p><p className="mt-1 text-xs text-emerald-700">Resultado atual superior ao anterior</p></div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-medium uppercase text-slate-700">Estáveis</p><p className="mt-1 text-3xl font-bold text-slate-800">{resumoComparativo.estabilidade}</p><p className="mt-1 text-xs text-slate-600">Mesmo percentual da linha de base</p></div>
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4"><p className="text-xs font-medium uppercase text-red-800">Com redução</p><p className="mt-1 text-3xl font-bold text-red-800">{resumoComparativo.reducao}</p><p className="mt-1 text-xs text-red-700">Exigem análise para o próximo PDI</p></div>
-                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4"><p className="text-xs font-medium uppercase text-blue-800">Nova linha de base</p><p className="mt-1 text-3xl font-bold text-blue-800">{resumoComparativo.novaBase}</p><p className="mt-1 text-xs text-blue-700">Eixos ainda sem histórico comparável</p></div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Resultado por eixo técnico</CardTitle>
-                <CardDescription>A comparação é feita somente dentro do mesmo eixo e na mesma escala. Eixos sem histórico comparável não recebem evolução numérica.</CardDescription>
-              </CardHeader>
-              <CardContent className="overflow-x-auto">
-                <table className="w-full min-w-[1180px] text-sm">
-                  <thead>
-                    <tr className="border-b text-left text-muted-foreground">
-                      <th className="px-3 py-3">Eixo</th>
-                      <th className="px-3 py-3 text-right">Questões</th>
-                      <th className="px-3 py-3 text-right">Acertos</th>
-                      <th className="px-3 py-3 text-right">Atual</th>
-                      <th className="px-3 py-3 text-right">Linha de base</th>
-                      <th className="px-3 py-3 text-right">Evolução</th>
-                      <th className="px-3 py-3">Situação</th>
-                      <th className="px-3 py-3">Direcionamento para o próximo PDI</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {detalhe.resultado.porEixo.map((eixo: any) => (
-                      <tr key={eixo.eixoId} className="border-b last:border-0">
-                        <td className="px-3 py-4"><p className="font-medium">{eixo.eixo}</p><p className="text-xs text-muted-foreground">{eixo.eixoId} · Não sei: {eixo.naoSei}</p></td>
-                        <td className="px-3 py-4 text-right">{eixo.respondidas}/{eixo.totalQuestoes}</td>
-                        <td className="px-3 py-4 text-right font-medium">{eixo.acertos}</td>
-                        <td className="px-3 py-4 text-right font-semibold">{Number(eixo.percentualAtual).toFixed(1)}%</td>
-                        <td className="px-3 py-4 text-right">{eixo.linhaBase === null ? "Sem base" : `${Number(eixo.linhaBase).toFixed(1)}%`}</td>
-                        <td className={`px-3 py-4 text-right font-semibold ${eixo.evolucaoPp > 0 ? "text-emerald-700" : eixo.evolucaoPp < 0 ? "text-red-700" : ""}`}>{formatarPp(eixo.evolucaoPp)}</td>
-                        {(() => {
-                          const situacao = classificarEixo(eixo.evolucaoPp);
-                          return (
-                            <>
-                              <td className="px-3 py-4"><Badge variant={varianteSituacao(situacao)}>{rotuloSituacao(situacao)}</Badge></td>
-                              <td className="px-3 py-4 text-muted-foreground">{direcionamentoPdi(situacao)}</td>
-                            </>
-                          );
-                        })()}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-
-            <Card className="border-blue-200">
-              <CardHeader>
-                <CardTitle>Leitura para o próximo PDI</CardTitle>
-                <CardDescription>O resultado orienta a decisão, mas não substitui a análise conjunta da função, das entregas e do contexto de trabalho.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                {resumoComparativo.reducao > 0 ? (
-                  <p><strong>Prioridade:</strong> analisar primeiro os eixos com redução, verificando se o resultado representa lacuna de conhecimento, dificuldade de aplicação ou mudança nas exigências da função.</p>
-                ) : (
-                  <p><strong>Prioridade:</strong> não foram identificados eixos com redução em relação à linha de base disponível.</p>
-                )}
-                {resumoComparativo.estabilidade > 0 && <p><strong>Acompanhamento:</strong> os eixos estáveis devem permanecer monitorados antes de definir novas ações de desenvolvimento.</p>}
-                {resumoComparativo.evolucao > 0 && <p><strong>Consolidação:</strong> os eixos em evolução demonstram avanço e podem receber ações de aprofundamento ou aplicação prática.</p>}
-                {resumoComparativo.novaBase > 0 && <p><strong>Novo histórico:</strong> nos eixos sem base anterior, o resultado atual será a referência para a próxima medição.</p>}
-              </CardContent>
-            </Card>
-
-            <div className="flex justify-end"><Button variant="outline" onClick={() => resultadoQuery.refetch()}>Recalcular resultado</Button></div>
+            <div className="flex justify-end"><Button variant="outline" onClick={() => resultadoQuery.refetch()}>Atualizar resultado</Button></div>
           </div>
         ) : null}
       </div>
