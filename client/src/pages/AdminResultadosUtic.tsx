@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { BarChart3, CheckCircle2, ChevronRight, ShieldCheck } from "lucide-react";
@@ -77,6 +77,12 @@ export default function AdminResultadosUtic() {
     [painelQuery.data]
   );
 
+  useEffect(() => {
+    if (tentativaSelecionada === null && tentativas.length > 0) {
+      setTentativaSelecionada(Number(tentativas[0].id));
+    }
+  }, [tentativaSelecionada, tentativas]);
+
   if (loading) return <div className="p-6 text-sm text-muted-foreground">Verificando acesso...</div>;
   if (!isAdmin) {
     return <div className="p-6"><Card className="border-red-200"><CardHeader><CardTitle>Acesso restrito</CardTitle></CardHeader><CardContent>Esta área é exclusiva do administrador.</CardContent></Card></div>;
@@ -112,14 +118,14 @@ export default function AdminResultadosUtic() {
       <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
         <Card className="h-fit">
           <CardHeader>
-            <CardTitle>Tentativas finalizadas</CardTitle>
-            <CardDescription>Selecione uma tentativa para visualizar a correção.</CardDescription>
+            <CardTitle>Selecione o empregado</CardTitle>
+            <CardDescription>Escolha quem deseja consultar. O resultado mais recente é aberto automaticamente.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             {painelQuery.isLoading ? (
               <p className="text-sm text-muted-foreground">Carregando...</p>
             ) : tentativas.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Ainda não há tentativa finalizada.</p>
+              <p className="text-sm text-muted-foreground">Ainda não há empregado com resultado finalizado.</p>
             ) : (
               tentativas.map((item: any) => (
                 <button
@@ -132,6 +138,9 @@ export default function AdminResultadosUtic() {
                     <div>
                       <p className="font-medium">{item.colaboradorNome}</p>
                       <p className="text-xs text-muted-foreground">Tentativa #{item.id} · {item.respostasSalvas ?? 0}/60 respostas</p>
+                      <p className="mt-1 text-xs font-medium text-emerald-700">
+                        {item.status === "FINALIZADA_TEMPO" ? "Encerrada por tempo" : "Concluída"}
+                      </p>
                     </div>
                     <ChevronRight className="h-4 w-4" />
                   </div>
@@ -142,7 +151,7 @@ export default function AdminResultadosUtic() {
         </Card>
 
         {!tentativaSelecionada ? (
-          <Card><CardContent className="grid min-h-64 place-items-center text-center text-muted-foreground">Selecione uma tentativa finalizada para visualizar o resultado.</CardContent></Card>
+          <Card><CardContent className="grid min-h-64 place-items-center text-center text-muted-foreground">Selecione um empregado para visualizar o resultado.</CardContent></Card>
         ) : resultadoQuery.isLoading ? (
           <Card><CardContent className="p-8 text-sm text-muted-foreground">Calculando resultado...</CardContent></Card>
         ) : resultadoQuery.error ? (
