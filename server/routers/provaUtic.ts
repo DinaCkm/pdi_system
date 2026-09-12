@@ -103,6 +103,24 @@ async function ensureTables() {
   `));
 
   await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS prova_utic_liberacoes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      colaborador_id INT NOT NULL,
+      status ENUM('LIBERADA','REVOGADA') NOT NULL DEFAULT 'LIBERADA',
+      liberada_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      liberada_por INT NOT NULL,
+      revogada_em DATETIME NULL,
+      revogada_por INT NULL,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_prova_utic_liberacao_colaborador (colaborador_id),
+      INDEX idx_prova_utic_liberacoes_status (status),
+      CONSTRAINT fk_prova_utic_liberacoes_colaborador FOREIGN KEY (colaborador_id) REFERENCES users(id) ON DELETE CASCADE,
+      CONSTRAINT fk_prova_utic_liberacoes_liberada_por FOREIGN KEY (liberada_por) REFERENCES users(id) ON DELETE RESTRICT,
+      CONSTRAINT fk_prova_utic_liberacoes_revogada_por FOREIGN KEY (revogada_por) REFERENCES users(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `));
+
+  await db.execute(sql.raw(`
     CREATE TABLE IF NOT EXISTS prova_utic_respostas (
       id INT AUTO_INCREMENT PRIMARY KEY,
       tentativa_id INT NOT NULL,
@@ -241,12 +259,27 @@ async function validarTentativaDoUsuario(tentativaId: number, colaboradorId: num
   return await normalizarExpiracaoEInatividade(tentativa);
 }
 
+async function obterLiberacaoAtiva(colaboradorId: number) {
+  const db = await ensureTables();
+  const result = await db.execute(sql`
+    SELECT id, liberada_em AS liberadaEm, liberada_por AS liberadaPor
+      FROM prova_utic_liberacoes
+     WHERE colaborador_id = ${colaboradorId}
+       AND status = 'LIBERADA'
+     LIMIT 1
+  `);
+  return rowsOf<{ id: number; liberadaEm: string; liberadaPor: number }>(result)[0] ?? null;
+}
+
 export const provaUticRouter = router({
   estado: assessmentProcedure.query(async ({ ctx }) => {
     const db = await ensureTables();
     let tentativa = await obterUltimaTentativa(ctx.user.id);
     tentativa = await normalizarExpiracaoEInatividade(tentativa);
-    if (!tentativa) return { tentativa: null, respostas: [] as Array<{ questaoId: number; resposta: string }> };
+    if (!tentativa) {
+      const liberacao = await obterLiberacaoAtiva(ctx.user.id);
+      return { tentativa: null, respostas: [] as Array<{ questaoId: number; resposta: string }>, liberada: Boolean(liberacao), liberacao };
+    }
 
     const respostasResult = await db.execute(sql`
       SELECT questao_id AS questaoId, resposta
@@ -260,6 +293,18 @@ export const provaUticRouter = router({
   estadoIdentidade: assessmentProcedure.query(async ({ ctx }) => {
     const db = await ensureTables();
     const tentativa = await obterUltimaTentativa(ctx.user.id);
+    const liberacao = await obterLiberacaoAtiva(ctx.user.id);
+
+    if (!tentativa && !liberacao) {
+      return {
+        necessaria: false,
+        tentativaExistente: false,
+        identidadeConfirmada: false,
+        liberada: false,
+        confirmadoEm: null,
+        validadeMinutos: VALIDADE_IDENTIDADE_MINUTOS,
+      };
+    }
 
     if (tentativa) {
       const vinculadaResult = await db.execute(sql`
@@ -294,6 +339,10 @@ export const provaUticRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const db = await ensureTables();
+      const liberacao = await obterLiberacaoAtiva(ctx.user.id);
+      if (!liberacao) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "A Avaliação de Proficiência ainda não foi liberada para você." });
+      }
       const tentativa = await obterUltimaTentativa(ctx.user.id);
       if (tentativa) {
         throw new TRPCError({
@@ -346,6 +395,10 @@ export const provaUticRouter = router({
 
   iniciar: assessmentProcedure.mutation(async ({ ctx }) => {
     const db = await ensureTables();
+    const liberacao = await obterLiberacaoAtiva(ctx.user.id);
+    if (!liberacao) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "A Avaliação de Proficiência ainda não foi liberada para você." });
+    }
     let existente = await obterUltimaTentativa(ctx.user.id);
     existente = await normalizarExpiracaoEInatividade(existente);
     if (existente) {
@@ -525,6 +578,69 @@ export const provaUticRouter = router({
     `);
     return rowsOf<any>(result);
   }),
+
+  listarLiberacoes: adminProcedure.query(async () => {
+    const db = await ensureTables();
+    const result = await db.execute(sql`
+      SELECT u.id, u.name, u.email, u.cargo, u.role, u.status AS usuarioStatus,
+             d.nome AS departamentoNome,
+             l.status AS liberacaoStatus, l.liberada_em AS liberadaEm,
+             liberador.name AS liberadaPorNome,
+             (SELECT t.status FROM prova_utic_tentativas t WHERE t.colaborador_id = u.id ORDER BY t.id DESC LIMIT 1) AS tentativaStatus
+        FROM users u
+        LEFT JOIN departamentos d ON d.id = u.departamentoId
+        LEFT JOIN prova_utic_liberacoes l ON l.colaborador_id = u.id
+        LEFT JOIN users liberador ON liberador.id = l.liberada_por
+       WHERE u.status = 'ativo'
+         AND u.role IN ('colaborador','lider','gerente')
+       ORDER BY d.nome, u.name
+    `);
+    return rowsOf<any>(result);
+  }),
+
+  liberarParticipante: adminProcedure
+    .input(z.object({ colaboradorId: z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await ensureTables();
+      const usuarioResult = await db.execute(sql`
+        SELECT id FROM users
+         WHERE id = ${input.colaboradorId}
+           AND status = 'ativo'
+           AND role IN ('colaborador','lider','gerente')
+         LIMIT 1
+      `);
+      if (!rowsOf<{ id: number }>(usuarioResult)[0]) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Empregado ativo não encontrado." });
+      }
+      await db.execute(sql`
+        INSERT INTO prova_utic_liberacoes (colaborador_id, status, liberada_em, liberada_por, revogada_em, revogada_por)
+        VALUES (${input.colaboradorId}, 'LIBERADA', NOW(), ${ctx.user.id}, NULL, NULL)
+        ON DUPLICATE KEY UPDATE status = 'LIBERADA', liberada_em = NOW(), liberada_por = VALUES(liberada_por),
+                                revogada_em = NULL, revogada_por = NULL, updated_at = NOW()
+      `);
+      return { liberada: true };
+    }),
+
+  revogarLiberacao: adminProcedure
+    .input(z.object({ colaboradorId: z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await ensureTables();
+      const ativaResult = await db.execute(sql`
+        SELECT id FROM prova_utic_tentativas
+         WHERE colaborador_id = ${input.colaboradorId}
+           AND status IN ('EM_ANDAMENTO','BLOQUEADA','LIBERADA')
+         LIMIT 1
+      `);
+      if (rowsOf<{ id: number }>(ativaResult)[0]) {
+        throw new TRPCError({ code: "CONFLICT", message: "A liberação não pode ser revogada porque a avaliação já foi iniciada." });
+      }
+      await db.execute(sql`
+        UPDATE prova_utic_liberacoes
+           SET status = 'REVOGADA', revogada_em = NOW(), revogada_por = ${ctx.user.id}, updated_at = NOW()
+         WHERE colaborador_id = ${input.colaboradorId}
+      `);
+      return { revogada: true };
+    }),
 
   listarPainelAdministrativo: adminProcedure.query(async () => {
     const db = await ensureTables();
