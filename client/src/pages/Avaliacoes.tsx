@@ -158,7 +158,7 @@ export default function Avaliacoes() {
   const [, setLocation] = useLocation();
   const isTesteUtic = user?.email === EMAIL_TESTE_UTIC;
   const isAdmin = user?.role === "admin" || user?.role === "Administrador";
-  const [tipoUnidade, setTipoUnidade] = useState<"" | "REGIONAL" | "OUTRAS">("");
+  const [tipoUnidade, setTipoUnidade] = useState("");
   const [regionalSelecionada, setRegionalSelecionada] = useState("");
   const [buscaLiberacao, setBuscaLiberacao] = useState("");
   const [erroLiberacao, setErroLiberacao] = useState("");
@@ -202,6 +202,13 @@ export default function Avaliacoes() {
     return Array.from(new Set(nomes)).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [liberacoesQuery.data]);
 
+  const departamentosDisponiveis = useMemo(() => {
+    const nomes = ((liberacoesQuery.data ?? []) as any[])
+      .map((item) => String(item.departamentoNome ?? "").trim())
+      .filter((nome) => nome && !/\bREGIONAL\b/i.test(nome));
+    return Array.from(new Set(nomes)).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [liberacoesQuery.data]);
+
   const empregadosLiberacao = useMemo(() => {
     const termo = buscaLiberacao.trim().toLocaleLowerCase("pt-BR");
     let itens = (liberacoesQuery.data ?? []) as any[];
@@ -209,8 +216,9 @@ export default function Avaliacoes() {
     if (tipoUnidade === "REGIONAL") {
       if (!regionalSelecionada) return [];
       itens = itens.filter((item) => String(item.departamentoNome ?? "") === regionalSelecionada);
-    } else if (tipoUnidade === "OUTRAS") {
-      itens = itens.filter((item) => !/\bREGIONAL\b/i.test(String(item.departamentoNome ?? "")));
+    } else if (tipoUnidade.startsWith("DEPARTAMENTO::")) {
+      const departamento = tipoUnidade.slice("DEPARTAMENTO::".length);
+      itens = itens.filter((item) => String(item.departamentoNome ?? "") === departamento);
     } else {
       return [];
     }
@@ -315,7 +323,7 @@ export default function Avaliacoes() {
                 <select
                   value={tipoUnidade}
                   onChange={(event) => {
-                    const valor = event.target.value as "" | "REGIONAL" | "OUTRAS";
+                    const valor = event.target.value;
                     setTipoUnidade(valor);
                     setRegionalSelecionada("");
                     setBuscaLiberacao("");
@@ -324,7 +332,11 @@ export default function Avaliacoes() {
                 >
                   <option value="">Selecione o tipo de unidade</option>
                   <option value="REGIONAL">Regional</option>
-                  <option value="OUTRAS">Outras unidades</option>
+                  {departamentosDisponiveis.map((departamento) => (
+                    <option key={departamento} value={`DEPARTAMENTO::${departamento}`}>
+                      {departamento}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="space-y-1.5 text-sm font-medium">
