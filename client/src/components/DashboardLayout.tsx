@@ -36,6 +36,7 @@ type MenuItem = {
   section?: string;
   external?: boolean;
   tooltipText?: string;
+  parentPath?: string;
 };
 
 const ADMIN_SECTION_LABELS: Record<string, string> = {
@@ -67,6 +68,8 @@ const getMenuItems = (userRole: string) => {
 
       { icon: Target, label: "Competências", path: "/competencias", section: "desenvolvimento" },
       { icon: ClipboardCheck, label: "Avaliações", path: "/avaliacoes", section: "desenvolvimento" },
+      { icon: ClipboardCheck, label: "Administração da Proficiência", path: "/admin-avaliacoes", section: "desenvolvimento", parentPath: "/avaliacoes" },
+      { icon: BarChart3, label: "Resultados da Proficiência", path: "/admin-avaliacoes/utic/resultados", section: "desenvolvimento", parentPath: "/avaliacoes" },
       { icon: FileText, label: "PDIs", path: "/pdis", section: "desenvolvimento" },
       { icon: CheckSquare, label: "Ações", path: "/acoes", section: "desenvolvimento" },
       { icon: TrendingUp, label: "Evolução", path: "/evolucao", section: "desenvolvimento" },
@@ -76,7 +79,6 @@ const getMenuItems = (userRole: string) => {
       { icon: Lock, label: "Controle de Execução do PDI", path: "/controle-execucao", section: "pessoas" },
 
       { icon: TrendingUp, label: "Análise de Liderança", path: "/analise-lideranca", section: "acompanhamento" },
-      { icon: BarChart3, label: "Resultados da Proficiência", path: "/admin-avaliacoes/utic/resultados", section: "acompanhamento" },
       { icon: ClipboardCheck, label: "Admin Dashboard", path: "/admin-dashboard", section: "acompanhamento" },
       { icon: BarChart, label: "Relatórios", path: "/relatorios", section: "acompanhamento" },
       { icon: AlertTriangle, label: "Relatório de Ações Vencidas", path: "/relatorio-acoes-vencidas", section: "acompanhamento" },
@@ -301,14 +303,17 @@ function DashboardLayoutContent({
   const renderAdminItem = (item: MenuItem) => {
     const isActive = location === item.path;
     return (
-      <SidebarMenuItem key={item.path}>
+      <SidebarMenuItem
+        key={item.path}
+        className={item.parentPath ? "ml-5 border-l border-border pl-1" : undefined}
+      >
         <SidebarMenuButton
           isActive={isActive}
           onClick={() => setLocation(item.path)}
           tooltip={item.label}
-          className="h-9 transition-all font-normal"
+          className={`h-9 transition-all font-normal ${item.parentPath ? "text-muted-foreground" : ""}`}
         >
-          <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : ""}`} />
+          <item.icon className={`${item.parentPath ? "h-3.5 w-3.5" : "h-4 w-4"} ${isActive ? "text-primary" : ""}`} />
           <span className="text-sm">{item.label}</span>
         </SidebarMenuButton>
       </SidebarMenuItem>
