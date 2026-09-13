@@ -586,11 +586,19 @@ export const provaUticRouter = router({
              d.nome AS departamentoNome,
              l.status AS liberacaoStatus, l.liberada_em AS liberadaEm,
              liberador.name AS liberadaPorNome,
+             m.status AS matrizStatus,
+             (SELECT COUNT(*) FROM prova_utic_matriz_eixos me WHERE me.matriz_id = m.id) AS totalEixosMatriz,
+             CASE
+               WHEN m.status IN ('VALIDADA_PROVISORIA','VALIDADA_DEFINITIVA')
+                AND (SELECT COUNT(*) FROM prova_utic_matriz_eixos me WHERE me.matriz_id = m.id) = 8
+               THEN 1 ELSE 0
+             END AS matrizApta,
              (SELECT t.status FROM prova_utic_tentativas t WHERE t.colaborador_id = u.id ORDER BY t.id DESC LIMIT 1) AS tentativaStatus
         FROM users u
         LEFT JOIN departamentos d ON d.id = u.departamentoId
         LEFT JOIN prova_utic_liberacoes l ON l.colaborador_id = u.id
         LEFT JOIN users liberador ON liberador.id = l.liberada_por
+        LEFT JOIN prova_utic_matrizes m ON m.colaborador_id = u.id
        WHERE u.status = 'ativo'
          AND u.role IN ('colaborador','lider','gerente')
        ORDER BY d.nome, u.name
@@ -612,6 +620,26 @@ export const provaUticRouter = router({
       if (!rowsOf<{ id: number }>(usuarioResult)[0]) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Empregado ativo não encontrado." });
       }
+
+      const matrizResult = await db.execute(sql`
+        SELECT m.id, m.status, COUNT(e.id) AS totalEixos
+          FROM prova_utic_matrizes m
+          LEFT JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
+         WHERE m.colaborador_id = ${input.colaboradorId}
+         GROUP BY m.id, m.status
+         LIMIT 1
+      `);
+      const matriz = rowsOf<{ id: number; status: string; totalEixos: number }>(matrizResult)[0];
+      const matrizValidada = matriz && ["VALIDADA_PROVISORIA", "VALIDADA_DEFINITIVA"].includes(matriz.status);
+      if (!matrizValidada || Number(matriz?.totalEixos ?? 0) !== 8) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: matriz?.status === "PENDENTE_HISTORICO"
+            ? "Liberação bloqueada: os eixos históricos deste empregado ainda precisam ser localizados e validados."
+            : "Liberação bloqueada: o empregado precisa possuir os oito eixos de conhecimento validados.",
+        });
+      }
+
       await db.execute(sql`
         INSERT INTO prova_utic_liberacoes (colaborador_id, status, liberada_em, liberada_por, revogada_em, revogada_por)
         VALUES (${input.colaboradorId}, 'LIBERADA', NOW(), ${ctx.user.id}, NULL, NULL)

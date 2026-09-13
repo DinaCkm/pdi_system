@@ -159,6 +159,7 @@ export default function Avaliacoes() {
   const isTesteUtic = user?.email === EMAIL_TESTE_UTIC;
   const isAdmin = user?.role === "admin" || user?.role === "Administrador";
   const [buscaLiberacao, setBuscaLiberacao] = useState("");
+  const [erroLiberacao, setErroLiberacao] = useState("");
   const danielBase = PILOTO_UTIC.find((item) => item.nome === "Daniel Caio Lemos Penno") ?? PILOTO_UTIC[0];
 
   const avaliacoesApi = (trpc as any).avaliacoes;
@@ -183,7 +184,11 @@ export default function Avaliacoes() {
     refetchOnWindowFocus: true,
   });
   const liberarMutation = (trpc.provaUtic as any).liberarParticipante.useMutation({
-    onSuccess: () => liberacoesQuery.refetch(),
+    onSuccess: () => {
+      setErroLiberacao("");
+      liberacoesQuery.refetch();
+    },
+    onError: (error: any) => setErroLiberacao(error.message || "Não foi possível liberar a avaliação."),
   });
   const revogarMutation = (trpc.provaUtic as any).revogarLiberacao.useMutation({
     onSuccess: () => liberacoesQuery.refetch(),
@@ -292,6 +297,11 @@ export default function Avaliacoes() {
               placeholder="Pesquisar por nome, e-mail, cargo ou departamento"
               className="h-10 w-full rounded-md border bg-background px-3 text-sm"
             />
+            {erroLiberacao && (
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                {erroLiberacao}
+              </div>
+            )}
             {liberacoesQuery.isLoading ? (
               <p className="text-sm text-muted-foreground">Carregando empregados...</p>
             ) : (
@@ -301,6 +311,7 @@ export default function Avaliacoes() {
                     <tr className="border-b text-left">
                       <th className="px-4 py-3">Empregado</th>
                       <th className="px-4 py-3">Departamento</th>
+                      <th className="px-4 py-3">Matriz de conhecimentos</th>
                       <th className="px-4 py-3">Situação</th>
                       <th className="px-4 py-3 text-right">Ação</th>
                     </tr>
@@ -309,10 +320,28 @@ export default function Avaliacoes() {
                     {empregadosLiberacao.map((item: any) => {
                       const liberada = item.liberacaoStatus === "LIBERADA";
                       const iniciada = Boolean(item.tentativaStatus);
+                      const matrizApta = Number(item.matrizApta) === 1;
+                      const matrizPendente = item.matrizStatus === "PENDENTE_HISTORICO";
                       return (
                         <tr key={item.id} className="border-b last:border-0">
                           <td className="px-4 py-3"><p className="font-medium">{item.name}</p><p className="text-xs text-muted-foreground">{item.email || item.cargo || "—"}</p></td>
                           <td className="px-4 py-3">{item.departamentoNome || "Sem departamento"}</td>
+                          <td className="px-4 py-3">
+                            <Badge variant={matrizApta ? "default" : matrizPendente ? "secondary" : "outline"}>
+                              {matrizApta
+                                ? `Apta · ${Number(item.totalEixosMatriz)} de 8 eixos`
+                                : matrizPendente
+                                  ? "Pendente de histórico"
+                                  : "Matriz não cadastrada"}
+                            </Badge>
+                            {!matrizApta && (
+                              <p className="mt-1 max-w-xs text-xs text-muted-foreground">
+                                {matrizPendente
+                                  ? "Aguardando inclusão e validação dos eixos históricos."
+                                  : "A avaliação não pode ser liberada sem os oito eixos validados."}
+                              </p>
+                            )}
+                          </td>
                           <td className="px-4 py-3">
                             <Badge variant={liberada ? "default" : "outline"}>
                               {iniciada ? "Avaliação já iniciada" : liberada ? "Liberada" : "Não liberada"}
@@ -323,13 +352,20 @@ export default function Avaliacoes() {
                             {liberada ? (
                               <Button size="sm" variant="outline" disabled={iniciada || revogarMutation.isPending} onClick={() => revogarMutation.mutate({ colaboradorId: Number(item.id) })}>Revogar</Button>
                             ) : (
-                              <Button size="sm" disabled={iniciada || liberarMutation.isPending} onClick={() => liberarMutation.mutate({ colaboradorId: Number(item.id) })}>Liberar avaliação</Button>
+                              <Button
+                                size="sm"
+                                disabled={iniciada || !matrizApta || liberarMutation.isPending}
+                                title={!matrizApta ? "Cadastre e valide os oito eixos antes da liberação." : undefined}
+                                onClick={() => liberarMutation.mutate({ colaboradorId: Number(item.id) })}
+                              >
+                                {matrizPendente ? "Aguardando eixos" : "Liberar avaliação"}
+                              </Button>
                             )}
                           </td>
                         </tr>
                       );
                     })}
-                    {empregadosLiberacao.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">Nenhum empregado encontrado.</td></tr>}
+                    {empregadosLiberacao.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Nenhum empregado encontrado.</td></tr>}
                   </tbody>
                 </table>
               </div>
