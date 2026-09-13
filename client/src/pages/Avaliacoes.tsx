@@ -198,7 +198,7 @@ export default function Avaliacoes() {
   const regionaisDisponiveis = useMemo(() => {
     const nomes = ((liberacoesQuery.data ?? []) as any[])
       .map((item) => String(item.departamentoNome ?? "").trim())
-      .filter((nome) => /\\bREGIONAL\\b/i.test(nome));
+      .filter((nome) => /\bREGIONAL\b/i.test(nome));
     return Array.from(new Set(nomes)).sort((a, b) => a.localeCompare(b, "pt-BR"));
   }, [liberacoesQuery.data]);
 
@@ -210,7 +210,7 @@ export default function Avaliacoes() {
       if (!regionalSelecionada) return [];
       itens = itens.filter((item) => String(item.departamentoNome ?? "") === regionalSelecionada);
     } else if (tipoUnidade === "OUTRAS") {
-      itens = itens.filter((item) => !/\\bREGIONAL\\b/i.test(String(item.departamentoNome ?? "")));
+      itens = itens.filter((item) => !/\bREGIONAL\b/i.test(String(item.departamentoNome ?? "")));
     } else {
       return [];
     }
