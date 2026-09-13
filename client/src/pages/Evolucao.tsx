@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Activity, Award, Sparkles, TrendingUp } from "lucide-react";
+import { Activity, Award, Building2, Sparkles, TrendingUp } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
@@ -89,6 +89,9 @@ export default function Evolucao() {
   const { loading, user } = useAuth();
   const [, setLocation] = useLocation();
   const [empregadoSelecionado, setEmpregadoSelecionado] = useState<number | null>(null);
+  const [tipoUnidade, setTipoUnidade] = useState<"" | "ADMINISTRATIVA" | "REGIONAL">("");
+  const [unidadeSelecionada, setUnidadeSelecionada] = useState("");
+  const [tipoVisao, setTipoVisao] = useState<"UNIDADE" | "EMPREGADO">("UNIDADE");
   const isAdmin = user?.role === "admin" || user?.role === "Administrador";
 
   const painelQuery = trpc.provaUtic.listarPainelAdministrativo.useQuery(undefined, {
@@ -104,6 +107,23 @@ export default function Evolucao() {
       String(a.name ?? "").localeCompare(String(b.name ?? ""), "pt-BR")
     ),
     [empregadosQuery.data]
+  );
+  const unidades = useMemo(() => {
+    const regionais = new Set<string>();
+    const administrativas = new Set<string>();
+    empregados.forEach((item: any) => {
+      const nome = String(item.departamentoNome ?? "").trim();
+      if (!nome) return;
+      if (/\bREGIONAL\b/i.test(nome)) regionais.add(nome);
+      else administrativas.add(nome);
+    });
+    const ordenar = (itens: Set<string>) => Array.from(itens).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    return { regionais: ordenar(regionais), administrativas: ordenar(administrativas) };
+  }, [empregados]);
+  const unidadesDisponiveis = tipoUnidade === "REGIONAL" ? unidades.regionais : tipoUnidade === "ADMINISTRATIVA" ? unidades.administrativas : [];
+  const empregadosDaUnidade = useMemo(
+    () => empregados.filter((item: any) => String(item.departamentoNome ?? "") === unidadeSelecionada),
+    [empregados, unidadeSelecionada]
   );
   const empregadoAtual = useMemo(
     () => empregados.find((item: any) => Number(item.id) === empregadoSelecionado) ?? null,
@@ -123,6 +143,10 @@ export default function Evolucao() {
   const resultadoQuery = trpc.provaUticResultados.resultadoTentativa.useQuery(
     { tentativaId: tentativaSelecionada ?? 1 },
     { enabled: Boolean(user && isAdmin && tentativaSelecionada) }
+  );
+  const consolidadoQuery = (trpc.provaUticResultados as any).consolidadoUnidade.useQuery(
+    { departamentoNome: unidadeSelecionada || "PENDENTE" },
+    { enabled: Boolean(user && isAdmin && tipoVisao === "UNIDADE" && unidadeSelecionada) }
   );
 
   if (loading) return <div className="p-6 text-sm text-muted-foreground">Verificando acesso...</div>;
@@ -165,6 +189,18 @@ export default function Evolucao() {
         }))
         .sort((a: any, b: any) => b.percentual - a.percentual)
     : [];
+  const consolidado = consolidadoQuery.data as any;
+  const dadosConsolidados = (consolidado?.porEixo ?? []).map((eixo: any) => ({
+    eixo: abreviarEixo(String(eixo.eixo)),
+    anterior: Number(eixo.mediaAnterior),
+    atual: Number(eixo.mediaAtual),
+    evolucaoPp: Number(eixo.evolucaoPp),
+    comparaveis: Number(eixo.comparaveis),
+    evoluiram: Number(eixo.evoluiram),
+    estaveis: Number(eixo.estaveis),
+    reduziram: Number(eixo.reduziram),
+    percentualEvoluiram: eixo.percentualEvoluiram === null ? null : Number(eixo.percentualEvoluiram),
+  }));
 
   return (
     <div className="space-y-6 p-6">
@@ -181,18 +217,68 @@ export default function Evolucao() {
       <div className="space-y-5">
         <Card>
           <CardHeader>
-            <CardTitle>Selecione o empregado</CardTitle>
-            <CardDescription>Escolha quem deseja consultar. O resultado mais recente é aberto automaticamente.</CardDescription>
+            <CardTitle>Filtros da evolução</CardTitle>
+            <CardDescription>Escolha a unidade e consulte sua evolução consolidada ou um empregado específico.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             {empregadosQuery.isLoading || painelQuery.isLoading ? (
               <p className="text-sm text-muted-foreground">Carregando empregados...</p>
             ) : (
               <>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <label className="block space-y-1.5 text-sm font-medium">
+                    <span>Tipo de unidade</span>
+                    <select
+                      value={tipoUnidade}
+                      onChange={(event) => {
+                        setTipoUnidade(event.target.value as "" | "ADMINISTRATIVA" | "REGIONAL");
+                        setUnidadeSelecionada("");
+                        setEmpregadoSelecionado(null);
+                      }}
+                      className="h-11 w-full rounded-md border bg-background px-3 text-sm"
+                    >
+                      <option value="">Selecione</option>
+                      <option value="ADMINISTRATIVA">Unidade Administrativa</option>
+                      <option value="REGIONAL">Regional</option>
+                    </select>
+                  </label>
+                  <label className="block space-y-1.5 text-sm font-medium">
+                    <span>Nome da unidade</span>
+                    <select
+                      value={unidadeSelecionada}
+                      disabled={!tipoUnidade}
+                      onChange={(event) => {
+                        setUnidadeSelecionada(event.target.value);
+                        setEmpregadoSelecionado(null);
+                      }}
+                      className="h-11 w-full rounded-md border bg-background px-3 text-sm disabled:opacity-60"
+                    >
+                      <option value="">Selecione a unidade</option>
+                      {unidadesDisponiveis.map((unidade) => <option key={unidade} value={unidade}>{unidade}</option>)}
+                    </select>
+                  </label>
+                  <label className="block space-y-1.5 text-sm font-medium">
+                    <span>Tipo de visão</span>
+                    <select
+                      value={tipoVisao}
+                      disabled={!unidadeSelecionada}
+                      onChange={(event) => {
+                        setTipoVisao(event.target.value as "UNIDADE" | "EMPREGADO");
+                        setEmpregadoSelecionado(null);
+                      }}
+                      className="h-11 w-full rounded-md border bg-background px-3 text-sm disabled:opacity-60"
+                    >
+                      <option value="UNIDADE">Consolidado da unidade</option>
+                      <option value="EMPREGADO">Empregado específico</option>
+                    </select>
+                  </label>
+                </div>
+                {tipoVisao === "EMPREGADO" && (
                 <label className="block space-y-1.5 text-sm font-medium">
                   <span>Empregado</span>
                   <select
                     value={empregadoSelecionado ?? ""}
+                    disabled={!unidadeSelecionada}
                     onChange={(event) => {
                       const valor = event.target.value;
                       setEmpregadoSelecionado(valor ? Number(valor) : null);
@@ -200,22 +286,86 @@ export default function Evolucao() {
                     className="h-11 w-full rounded-md border bg-background px-3 text-sm"
                   >
                     <option value="">Selecione o empregado</option>
-                    {empregados.map((item: any) => (
+                    {empregadosDaUnidade.map((item: any) => (
                       <option key={item.id} value={Number(item.id)}>
                         {item.name}{item.departamentoNome ? ` — ${item.departamentoNome}` : ""}
                       </option>
                     ))}
                   </select>
                 </label>
+                )}
                 <p className="text-xs text-muted-foreground">
-                  Todos os empregados ativos podem ser consultados. A comparação será exibida quando houver uma Avaliação de Proficiência encerrada.
+                  O consolidado considera somente medições comparáveis e informa quantos empregados ficaram fora do cálculo.
                 </p>
               </>
             )}
           </CardContent>
         </Card>
 
-        {!empregadoSelecionado ? (
+        {tipoVisao === "UNIDADE" ? (
+          !unidadeSelecionada ? (
+            <Card><CardContent className="grid min-h-64 place-items-center text-center text-muted-foreground">Selecione o tipo e o nome da unidade para visualizar a evolução consolidada.</CardContent></Card>
+          ) : consolidadoQuery.isLoading ? (
+            <Card><CardContent className="p-8 text-sm text-muted-foreground">Calculando a evolução da unidade...</CardContent></Card>
+          ) : consolidadoQuery.error ? (
+            <Card className="border-red-200"><CardContent className="p-6 text-red-700">{consolidadoQuery.error.message}</CardContent></Card>
+          ) : (
+            <div className="space-y-5">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-3"><Building2 className="h-5 w-5 text-blue-600" /><CardTitle>{consolidado?.unidade}</CardTitle></div>
+                  <CardDescription>Evolução técnica consolidada da unidade, calculada somente com medições comparáveis.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-lg border bg-slate-50 p-4"><p className="text-xs font-medium uppercase text-slate-700">Empregados da unidade</p><p className="mt-1 text-3xl font-bold">{consolidado?.totalEmpregados ?? 0}</p></div>
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4"><p className="text-xs font-medium uppercase text-blue-800">Com avaliação atual</p><p className="mt-1 text-3xl font-bold text-blue-800">{consolidado?.comAvaliacaoAtual ?? 0}</p></div>
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4"><p className="text-xs font-medium uppercase text-emerald-800">Com comparativo</p><p className="mt-1 text-3xl font-bold text-emerald-800">{consolidado?.comComparativo ?? 0}</p></div>
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4"><p className="text-xs font-medium uppercase text-amber-800">Sem comparativo</p><p className="mt-1 text-3xl font-bold text-amber-800">{consolidado?.semComparativo ?? 0}</p></div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle>Evolução dos eixos de conhecimento técnico</CardTitle><CardDescription>Média anterior e atual dos empregados comparáveis em cada eixo.</CardDescription></CardHeader>
+                <CardContent>
+                  {dadosConsolidados.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-muted-foreground">A unidade ainda não possui duas medições técnicas comparáveis.</p>
+                  ) : (
+                    <div className="w-full overflow-x-auto"><div className="min-w-[720px]">
+                      <ResponsiveContainer width="100%" height={Math.max(340, dadosConsolidados.length * 58)}>
+                        <BarChart data={dadosConsolidados} layout="vertical" margin={{ top: 10, right: 35, left: 30, bottom: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                          <XAxis type="number" domain={[0, 100]} tickFormatter={(valor) => `${valor}%`} />
+                          <YAxis type="category" dataKey="eixo" width={190} tick={{ fontSize: 12 }} />
+                          <Tooltip formatter={(valor: number) => `${Number(valor).toFixed(1)}%`} />
+                          <Legend />
+                          <Bar dataKey="anterior" name="Média anterior" fill="#94a3b8" radius={[0, 4, 4, 0]} />
+                          <Bar dataKey="atual" name="Média atual" radius={[0, 4, 4, 0]}>
+                            {dadosConsolidados.map((item: any) => <Cell key={item.eixo} fill={item.evolucaoPp > 0 ? "#059669" : item.evolucaoPp < 0 ? "#dc2626" : "#d97706"} />)}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div></div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle>Leitura consolidada por eixo técnico</CardTitle><CardDescription>A média e a distribuição dos empregados devem ser analisadas em conjunto.</CardDescription></CardHeader>
+                <CardContent className="overflow-x-auto">
+                  <table className="w-full min-w-[950px] text-sm">
+                    <thead><tr className="border-b text-left text-muted-foreground"><th className="px-3 py-3">Eixo</th><th className="px-3 py-3 text-right">Média anterior</th><th className="px-3 py-3 text-right">Média atual</th><th className="px-3 py-3 text-right">Evolução</th><th className="px-3 py-3 text-right">Comparáveis</th><th className="px-3 py-3 text-right">Evoluíram</th><th className="px-3 py-3 text-right">Estáveis</th><th className="px-3 py-3 text-right">Reduziram</th></tr></thead>
+                    <tbody>{dadosConsolidados.map((item: any) => <tr key={item.eixo} className="border-b last:border-0"><td className="px-3 py-4 font-medium">{item.eixo}</td><td className="px-3 py-4 text-right">{item.anterior.toFixed(1)}%</td><td className="px-3 py-4 text-right font-semibold">{item.atual.toFixed(1)}%</td><td className={`px-3 py-4 text-right font-semibold ${item.evolucaoPp > 0 ? "text-emerald-700" : item.evolucaoPp < 0 ? "text-red-700" : "text-amber-700"}`}>{formatarPp(item.evolucaoPp)}</td><td className="px-3 py-4 text-right">{item.comparaveis}</td><td className="px-3 py-4 text-right text-emerald-700">{item.evoluiram}</td><td className="px-3 py-4 text-right text-amber-700">{item.estaveis}</td><td className="px-3 py-4 text-right text-red-700">{item.reduziram}</td></tr>)}</tbody>
+                  </table>
+                </CardContent>
+              </Card>
+
+              <Card className="border-violet-200">
+                <CardHeader><CardTitle>Evolução das competências comportamentais</CardTitle><CardDescription>Fonte: Avaliação de Desempenho.</CardDescription></CardHeader>
+                <CardContent><p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">A estrutura está preparada. Os resultados serão apresentados quando houver duas Avaliações de Desempenho comparáveis registradas para os empregados desta unidade.</p></CardContent>
+              </Card>
+            </div>
+          )
+        ) : !empregadoSelecionado ? (
           <Card><CardContent className="grid min-h-64 place-items-center text-center text-muted-foreground">Selecione um empregado para visualizar a evolução.</CardContent></Card>
         ) : !tentativaSelecionada ? (
           <Card>
