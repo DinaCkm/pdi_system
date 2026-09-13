@@ -76,6 +76,19 @@ async function obterLinhasBase(db: any, colaboradorId: number, colaboradorNome: 
   return /Daniel Caio Lemos Penno/i.test(colaboradorNome) ? UTIC_LINHA_BASE_DANIEL : {};
 }
 
+async function obterRelacoesEixos(db: any, colaboradorId: number) {
+  const result = await db.execute(sql`
+    SELECT e.eixo_id AS eixoId, e.relacao
+      FROM prova_utic_matrizes m
+      JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
+     WHERE m.colaborador_id = ${colaboradorId}
+       AND m.status IN ('VALIDADA_PROVISORIA','VALIDADA_DEFINITIVA')
+  `);
+  return Object.fromEntries(
+    rowsOf<{ eixoId: string; relacao: string }>(result).map((item) => [item.eixoId, item.relacao]),
+  ) as Record<string, string>;
+}
+
 export const provaUticResultadosRouter = router({
   validarBanco: adminProcedure.query(async () => validarBancoUtic()),
 
@@ -111,7 +124,13 @@ export const provaUticResultadosRouter = router({
       const respostas = rowsOf<{ questaoId: number; resposta: string }>(respostasResult);
       const nome = String(tentativa.colaboradorNome ?? "");
       const linhasBase = await obterLinhasBase(db, Number(tentativa.colaboradorId), nome);
+      const relacoesEixos = await obterRelacoesEixos(db, Number(tentativa.colaboradorId));
       const possuiLinhaBase = Object.values(linhasBase).some((valor) => valor !== null);
+      const resultado = calcularResultado(respostas, linhasBase);
+      resultado.porEixo = resultado.porEixo.map((eixo) => ({
+        ...eixo,
+        relacao: relacoesEixos[eixo.eixoId] ?? null,
+      }));
 
       return {
         tentativa,
@@ -122,7 +141,7 @@ export const provaUticResultadosRouter = router({
               observacao: "A linha de base definitiva será recalculada a partir das respostas históricas e do gabarito original quando essa validação estiver concluída.",
             }
           : null,
-        resultado: calcularResultado(respostas, linhasBase),
+        resultado,
       };
     }),
 
