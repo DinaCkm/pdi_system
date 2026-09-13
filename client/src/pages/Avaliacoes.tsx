@@ -158,6 +158,8 @@ export default function Avaliacoes() {
   const [, setLocation] = useLocation();
   const isTesteUtic = user?.email === EMAIL_TESTE_UTIC;
   const isAdmin = user?.role === "admin" || user?.role === "Administrador";
+  const [tipoUnidade, setTipoUnidade] = useState<"" | "REGIONAL" | "OUTRAS">("");
+  const [regionalSelecionada, setRegionalSelecionada] = useState("");
   const [buscaLiberacao, setBuscaLiberacao] = useState("");
   const [erroLiberacao, setErroLiberacao] = useState("");
   const danielBase = PILOTO_UTIC.find((item) => item.nome === "Daniel Caio Lemos Penno") ?? PILOTO_UTIC[0];
@@ -193,15 +195,32 @@ export default function Avaliacoes() {
   const revogarMutation = (trpc.provaUtic as any).revogarLiberacao.useMutation({
     onSuccess: () => liberacoesQuery.refetch(),
   });
+  const regionaisDisponiveis = useMemo(() => {
+    const nomes = ((liberacoesQuery.data ?? []) as any[])
+      .map((item) => String(item.departamentoNome ?? "").trim())
+      .filter((nome) => /\\bREGIONAL\\b/i.test(nome));
+    return Array.from(new Set(nomes)).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [liberacoesQuery.data]);
+
   const empregadosLiberacao = useMemo(() => {
     const termo = buscaLiberacao.trim().toLocaleLowerCase("pt-BR");
-    const itens = (liberacoesQuery.data ?? []) as any[];
+    let itens = (liberacoesQuery.data ?? []) as any[];
+
+    if (tipoUnidade === "REGIONAL") {
+      if (!regionalSelecionada) return [];
+      itens = itens.filter((item) => String(item.departamentoNome ?? "") === regionalSelecionada);
+    } else if (tipoUnidade === "OUTRAS") {
+      itens = itens.filter((item) => !/\\bREGIONAL\\b/i.test(String(item.departamentoNome ?? "")));
+    } else {
+      return [];
+    }
+
     if (!termo) return itens;
     return itens.filter((item) =>
       [item.name, item.email, item.cargo, item.departamentoNome]
         .some((valor) => String(valor ?? "").toLocaleLowerCase("pt-BR").includes(termo))
     );
-  }, [buscaLiberacao, liberacoesQuery.data]);
+  }, [buscaLiberacao, liberacoesQuery.data, regionalSelecionada, tipoUnidade]);
   const mensagemEncerramentoUtic = statusTentativaUtic === "CONCLUIDA"
     ? "Avaliação de Proficiência para a Função concluída com as 60 respostas confirmadas pelo servidor."
     : statusTentativaUtic === "FINALIZADA_TEMPO"
@@ -290,12 +309,51 @@ export default function Avaliacoes() {
             <CardDescription>Pesquise o empregado e defina quem poderá iniciar a Avaliação de Proficiência para a Função.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="space-y-1.5 text-sm font-medium">
+                <span>Tipo de unidade</span>
+                <select
+                  value={tipoUnidade}
+                  onChange={(event) => {
+                    const valor = event.target.value as "" | "REGIONAL" | "OUTRAS";
+                    setTipoUnidade(valor);
+                    setRegionalSelecionada("");
+                    setBuscaLiberacao("");
+                  }}
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="">Selecione o tipo de unidade</option>
+                  <option value="REGIONAL">Regional</option>
+                  <option value="OUTRAS">Outras unidades</option>
+                </select>
+              </label>
+              <label className="space-y-1.5 text-sm font-medium">
+                <span>Nome da Regional</span>
+                <select
+                  value={regionalSelecionada}
+                  onChange={(event) => {
+                    setRegionalSelecionada(event.target.value);
+                    setBuscaLiberacao("");
+                  }}
+                  disabled={tipoUnidade !== "REGIONAL"}
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="">
+                    {tipoUnidade === "REGIONAL" ? "Selecione a Regional" : "Disponível após selecionar Regional"}
+                  </option>
+                  {regionaisDisponiveis.map((regional) => (
+                    <option key={regional} value={regional}>{regional}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
             <input
               type="search"
               value={buscaLiberacao}
               onChange={(event) => setBuscaLiberacao(event.target.value)}
-              placeholder="Pesquisar por nome, e-mail, cargo ou departamento"
-              className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+              placeholder="Pesquisar empregado por nome, e-mail ou cargo"
+              disabled={!tipoUnidade || (tipoUnidade === "REGIONAL" && !regionalSelecionada)}
+              className="h-10 w-full rounded-md border bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
             />
             {erroLiberacao && (
               <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
@@ -365,7 +423,17 @@ export default function Avaliacoes() {
                         </tr>
                       );
                     })}
-                    {empregadosLiberacao.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">Nenhum empregado encontrado.</td></tr>}
+                    {empregadosLiberacao.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="p-6 text-center text-muted-foreground">
+                          {!tipoUnidade
+                            ? "Selecione o tipo de unidade para visualizar os empregados."
+                            : tipoUnidade === "REGIONAL" && !regionalSelecionada
+                              ? "Selecione o nome da Regional para visualizar os empregados daquela aplicação."
+                              : "Nenhum empregado encontrado para os filtros informados."}
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
