@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Activity, Award, Sparkles, TrendingUp } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
@@ -88,25 +88,37 @@ function varianteSituacao(situacao: SituacaoEixo): "default" | "secondary" | "de
 export default function Evolucao() {
   const { loading, user } = useAuth();
   const [, setLocation] = useLocation();
-  const [tentativaSelecionada, setTentativaSelecionada] = useState<number | null>(null);
+  const [empregadoSelecionado, setEmpregadoSelecionado] = useState<number | null>(null);
   const isAdmin = user?.role === "admin" || user?.role === "Administrador";
 
   const painelQuery = trpc.provaUtic.listarPainelAdministrativo.useQuery(undefined, {
     enabled: Boolean(user && isAdmin),
     refetchInterval: 5000,
   });
-  const tentativas = useMemo(
-    () => (painelQuery.data ?? []).filter((item: any) =>
-      ["FINALIZADA", "CONCLUIDA", "FINALIZADA_TEMPO"].includes(item.status)
+  const empregadosQuery = (trpc.provaUtic as any).listarLiberacoes.useQuery(undefined, {
+    enabled: Boolean(user && isAdmin),
+    refetchOnWindowFocus: true,
+  });
+  const empregados = useMemo(
+    () => [...((empregadosQuery.data ?? []) as any[])].sort((a, b) =>
+      String(a.name ?? "").localeCompare(String(b.name ?? ""), "pt-BR")
     ),
-    [painelQuery.data]
+    [empregadosQuery.data]
   );
-
-  useEffect(() => {
-    if (tentativaSelecionada === null && tentativas.length > 0) {
-      setTentativaSelecionada(Number(tentativas[0].id));
-    }
-  }, [tentativaSelecionada, tentativas]);
+  const empregadoAtual = useMemo(
+    () => empregados.find((item: any) => Number(item.id) === empregadoSelecionado) ?? null,
+    [empregadoSelecionado, empregados]
+  );
+  const tentativaSelecionada = useMemo(() => {
+    if (!empregadoSelecionado) return null;
+    const encerradas = (painelQuery.data ?? [])
+      .filter((item: any) =>
+        Number(item.colaboradorId) === empregadoSelecionado &&
+        ["FINALIZADA", "CONCLUIDA", "FINALIZADA_TEMPO"].includes(item.status)
+      )
+      .sort((a: any, b: any) => Number(b.id) - Number(a.id));
+    return encerradas.length > 0 ? Number(encerradas[0].id) : null;
+  }, [empregadoSelecionado, painelQuery.data]);
 
   const resultadoQuery = trpc.provaUticResultados.resultadoTentativa.useQuery(
     { tentativaId: tentativaSelecionada ?? 1 },
@@ -173,36 +185,47 @@ export default function Evolucao() {
             <CardDescription>Escolha quem deseja consultar. O resultado mais recente é aberto automaticamente.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {painelQuery.isLoading ? (
-              <p className="text-sm text-muted-foreground">Carregando...</p>
-            ) : tentativas.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Ainda não há empregado com Avaliação de Proficiência encerrada.</p>
+            {empregadosQuery.isLoading || painelQuery.isLoading ? (
+              <p className="text-sm text-muted-foreground">Carregando empregados...</p>
             ) : (
               <>
                 <label className="block space-y-1.5 text-sm font-medium">
-                  <span>Empregado com avaliação encerrada</span>
+                  <span>Empregado</span>
                   <select
-                    value={tentativaSelecionada ?? ""}
-                    onChange={(event) => setTentativaSelecionada(Number(event.target.value))}
+                    value={empregadoSelecionado ?? ""}
+                    onChange={(event) => {
+                      const valor = event.target.value;
+                      setEmpregadoSelecionado(valor ? Number(valor) : null);
+                    }}
                     className="h-11 w-full rounded-md border bg-background px-3 text-sm"
                   >
-                    {tentativas.map((item: any) => (
+                    <option value="">Selecione o empregado</option>
+                    {empregados.map((item: any) => (
                       <option key={item.id} value={Number(item.id)}>
-                        {item.colaboradorNome} — Tentativa #{item.id} · {item.respostasSalvas ?? 0}/60 respostas
+                        {item.name}{item.departamentoNome ? ` — ${item.departamentoNome}` : ""}
                       </option>
                     ))}
                   </select>
                 </label>
                 <p className="text-xs text-muted-foreground">
-                  A lista apresenta somente empregados que já encerraram a Avaliação de Proficiência. Novos resultados aparecem automaticamente após a conclusão.
+                  Todos os empregados ativos podem ser consultados. A comparação será exibida quando houver uma Avaliação de Proficiência encerrada.
                 </p>
               </>
             )}
           </CardContent>
         </Card>
 
-        {!tentativaSelecionada ? (
+        {!empregadoSelecionado ? (
           <Card><CardContent className="grid min-h-64 place-items-center text-center text-muted-foreground">Selecione um empregado para visualizar a evolução.</CardContent></Card>
+        ) : !tentativaSelecionada ? (
+          <Card>
+            <CardContent className="grid min-h-64 place-items-center p-8 text-center text-muted-foreground">
+              <div>
+                <p className="font-medium text-foreground">{empregadoAtual?.name ?? "Empregado selecionado"}</p>
+                <p className="mt-2 text-sm">Ainda não possui uma Avaliação de Proficiência encerrada para gerar o comparativo de evolução.</p>
+              </div>
+            </CardContent>
+          </Card>
         ) : resultadoQuery.isLoading ? (
           <Card><CardContent className="p-8 text-sm text-muted-foreground">Calculando evolução...</CardContent></Card>
         ) : resultadoQuery.error ? (
