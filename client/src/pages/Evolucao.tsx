@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Award, ChevronRight, Sparkles, TrendingUp } from "lucide-react";
+import { Activity, Award, Sparkles, TrendingUp } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
@@ -172,27 +172,32 @@ export default function Evolucao() {
             <CardTitle>Selecione o empregado</CardTitle>
             <CardDescription>Escolha quem deseja consultar. O resultado mais recente é aberto automaticamente.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
             {painelQuery.isLoading ? (
               <p className="text-sm text-muted-foreground">Carregando...</p>
             ) : tentativas.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Ainda não há empregado com medição finalizada.</p>
-            ) : tentativas.map((item: any) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setTentativaSelecionada(Number(item.id))}
-                className={`w-full rounded-lg border p-3 text-left transition hover:bg-slate-50 ${tentativaSelecionada === Number(item.id) ? "border-blue-500 bg-blue-50" : ""}`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="font-medium">{item.colaboradorNome}</p>
-                    <p className="text-xs text-muted-foreground">Tentativa #{item.id} · {item.respostasSalvas ?? 0}/60 respostas</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4" />
-                </div>
-              </button>
-            ))}
+              <p className="text-sm text-muted-foreground">Ainda não há empregado com Avaliação de Proficiência encerrada.</p>
+            ) : (
+              <>
+                <label className="block space-y-1.5 text-sm font-medium">
+                  <span>Empregado com avaliação encerrada</span>
+                  <select
+                    value={tentativaSelecionada ?? ""}
+                    onChange={(event) => setTentativaSelecionada(Number(event.target.value))}
+                    className="h-11 w-full rounded-md border bg-background px-3 text-sm"
+                  >
+                    {tentativas.map((item: any) => (
+                      <option key={item.id} value={Number(item.id)}>
+                        {item.colaboradorNome} — Tentativa #{item.id} · {item.respostasSalvas ?? 0}/60 respostas
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  A lista apresenta somente empregados que já encerraram a Avaliação de Proficiência. Novos resultados aparecem automaticamente após a conclusão.
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
