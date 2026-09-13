@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Settings2, History, RotateCcw, Save, AlertCircle } from "lucide-react";
+import { AlertCircle, Database, Save, Settings2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,371 +9,301 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { trpc } from "@/lib/trpc";
 
-const STORAGE_KEY = "piloto-utic-eixos-admin-v1";
-const HISTORY_KEY = "piloto-utic-eixos-admin-history-v1";
+type RelacaoEixo = "ESSENCIAL" | "TRANSVERSAL" | "NAO_APLICAVEL";
+type StatusMatriz = "VALIDADA_PROVISORIA" | "VALIDADA_DEFINITIVA" | "PENDENTE_HISTORICO";
 
-type StatusEixo = "ESSENCIAL" | "TRANSVERSAL" | "NAO_APLICAVEL";
-
-type EixoConfig = {
+type EixoEdicao = {
+  eixoId: string;
   eixo: string;
-  status: StatusEixo;
+  relacao: RelacaoEixo | "";
   anterior: number | null;
 };
 
-type EmpregadoConfig = {
-  nome: string;
-  cargo: string;
-  funcao: string;
-  eixos: EixoConfig[];
+const EIXOS_PADRAO = [
+  { eixoId: "GOVERNANCA", eixo: "Governança e Gestão de TI" },
+  { eixoId: "INFRAESTRUTURA", eixo: "Infraestrutura de TI" },
+  { eixoId: "SEGURANCA", eixo: "Segurança da Informação" },
+  { eixoId: "INCIDENTES", eixo: "Gestão de Incidentes e Continuidade" },
+  { eixoId: "SISTEMAS", eixo: "Sistemas Corporativos, Processos e Automação" },
+  { eixoId: "DADOS", eixo: "Dados, BI e Inteligência Artificial" },
+  { eixoId: "SUPORTE", eixo: "Suporte, Atendimento e Service Desk" },
+  { eixoId: "LIDERANCA", eixo: "Liderança e Competências Transversais" },
+] as const;
+
+const STATUS_LABEL: Record<StatusMatriz, string> = {
+  VALIDADA_PROVISORIA: "Validada provisoriamente",
+  VALIDADA_DEFINITIVA: "Validada definitivamente",
+  PENDENTE_HISTORICO: "Pendente de histórico",
 };
 
-type HistoricoItem = {
-  id: string;
-  empregado: string;
-  eixo: string;
-  anterior: StatusEixo;
-  novo: StatusEixo;
-  motivo: string;
-  observacao: string;
-  data: string;
-};
-
-const MOTIVOS = [
-  "Recurso do empregado",
-  "Mudança de atividade",
-  "Mudança de função",
-  "Correção cadastral",
-  "Decisão da UGP",
-];
-
-const STATUS_LABEL: Record<StatusEixo, string> = {
+const RELACAO_LABEL: Record<RelacaoEixo, string> = {
   ESSENCIAL: "Essencial",
   TRANSVERSAL: "Transversal",
   NAO_APLICAVEL: "Não aplicável à atuação atual",
 };
 
-const PILOTO_UTIC_INICIAL: EmpregadoConfig[] = [
-  {
-    nome: "Alorran de Freitas Barbosa",
-    cargo: "Gerente Interino",
-    funcao: "Gestão de contratos de TI, implantação de soluções, telefonia, análise de dados, inovação e gestão da unidade.",
-    eixos: [
-      { eixo: "Governança e Gestão de TI", status: "ESSENCIAL", anterior: 62.5 },
-      { eixo: "Infraestrutura de TI", status: "ESSENCIAL", anterior: 55.6 },
-      { eixo: "Segurança da Informação", status: "ESSENCIAL", anterior: 50 },
-      { eixo: "Gestão de Incidentes e Continuidade", status: "NAO_APLICAVEL", anterior: null },
-      { eixo: "Sistemas Corporativos, Processos e Automação", status: "ESSENCIAL", anterior: 60 },
-      { eixo: "Dados, BI e Inteligência Artificial", status: "ESSENCIAL", anterior: null },
-      { eixo: "Suporte, Atendimento e Service Desk", status: "TRANSVERSAL", anterior: 83.3 },
-      { eixo: "Liderança e Competências Transversais", status: "ESSENCIAL", anterior: 20 },
-    ],
-  },
-  {
-    nome: "Daniel Caio Lemos Penno",
-    cargo: "Assistente II",
-    funcao: "Atuação técnico-operacional em sistemas corporativos, suporte, fluxos, SQL e infraestrutura.",
-    eixos: [
-      { eixo: "Governança e Gestão de TI", status: "TRANSVERSAL", anterior: 37.5 },
-      { eixo: "Infraestrutura de TI", status: "ESSENCIAL", anterior: 70 },
-      { eixo: "Segurança da Informação", status: "TRANSVERSAL", anterior: 66.7 },
-      { eixo: "Gestão de Incidentes e Continuidade", status: "NAO_APLICAVEL", anterior: null },
-      { eixo: "Sistemas Corporativos, Processos e Automação", status: "ESSENCIAL", anterior: 60 },
-      { eixo: "Dados, BI e Inteligência Artificial", status: "ESSENCIAL", anterior: null },
-      { eixo: "Suporte, Atendimento e Service Desk", status: "ESSENCIAL", anterior: 66.7 },
-      { eixo: "Liderança e Competências Transversais", status: "TRANSVERSAL", anterior: 75 },
-    ],
-  },
-  {
-    nome: "Gabriel Borges Araújo",
-    cargo: "Assistente II",
-    funcao: "Suporte técnico, manutenção, configuração de softwares, rede e registros técnicos.",
-    eixos: [
-      { eixo: "Governança e Gestão de TI", status: "TRANSVERSAL", anterior: 62 },
-      { eixo: "Infraestrutura de TI", status: "ESSENCIAL", anterior: 70 },
-      { eixo: "Segurança da Informação", status: "TRANSVERSAL", anterior: 67 },
-      { eixo: "Gestão de Incidentes e Continuidade", status: "NAO_APLICAVEL", anterior: null },
-      { eixo: "Sistemas Corporativos, Processos e Automação", status: "ESSENCIAL", anterior: 60 },
-      { eixo: "Dados, BI e Inteligência Artificial", status: "TRANSVERSAL", anterior: null },
-      { eixo: "Suporte, Atendimento e Service Desk", status: "ESSENCIAL", anterior: 80 },
-      { eixo: "Liderança e Competências Transversais", status: "TRANSVERSAL", anterior: 75 },
-    ],
-  },
-  {
-    nome: "Jader Lincoln do Nascimento",
-    cargo: "Analista Técnico II",
-    funcao: "Infraestrutura de TI e segurança da informação, incluindo servidores, redes, data center, backups e continuidade.",
-    eixos: [
-      { eixo: "Governança e Gestão de TI", status: "ESSENCIAL", anterior: 50 },
-      { eixo: "Infraestrutura de TI", status: "ESSENCIAL", anterior: 60 },
-      { eixo: "Segurança da Informação", status: "ESSENCIAL", anterior: 55 },
-      { eixo: "Gestão de Incidentes e Continuidade", status: "ESSENCIAL", anterior: null },
-      { eixo: "Sistemas Corporativos, Processos e Automação", status: "TRANSVERSAL", anterior: 60 },
-      { eixo: "Dados, BI e Inteligência Artificial", status: "TRANSVERSAL", anterior: null },
-      { eixo: "Suporte, Atendimento e Service Desk", status: "ESSENCIAL", anterior: 65 },
-      { eixo: "Liderança e Competências Transversais", status: "TRANSVERSAL", anterior: 75 },
-    ],
-  },
-  {
-    nome: "Leonardo Campelo Leite Guedes",
-    cargo: "Assistente II - Gerente",
-    funcao: "Suporte a usuários, manutenção de computadores, configuração de softwares e apoio à infraestrutura.",
-    eixos: [
-      { eixo: "Governança e Gestão de TI", status: "TRANSVERSAL", anterior: 65 },
-      { eixo: "Infraestrutura de TI", status: "ESSENCIAL", anterior: 75 },
-      { eixo: "Segurança da Informação", status: "TRANSVERSAL", anterior: 70 },
-      { eixo: "Gestão de Incidentes e Continuidade", status: "NAO_APLICAVEL", anterior: null },
-      { eixo: "Sistemas Corporativos, Processos e Automação", status: "ESSENCIAL", anterior: 67 },
-      { eixo: "Dados, BI e Inteligência Artificial", status: "TRANSVERSAL", anterior: null },
-      { eixo: "Suporte, Atendimento e Service Desk", status: "ESSENCIAL", anterior: 85 },
-      { eixo: "Liderança e Competências Transversais", status: "TRANSVERSAL", anterior: 70 },
-    ],
-  },
-];
-
-function carregarConfiguracao(): EmpregadoConfig[] {
-  try {
-    const salvo = localStorage.getItem(STORAGE_KEY);
-    return salvo ? JSON.parse(salvo) : PILOTO_UTIC_INICIAL;
-  } catch {
-    return PILOTO_UTIC_INICIAL;
-  }
-}
-
-function carregarHistorico(): HistoricoItem[] {
-  try {
-    const salvo = localStorage.getItem(HISTORY_KEY);
-    return salvo ? JSON.parse(salvo) : [];
-  } catch {
-    return [];
-  }
-}
-
 export default function AdminEixosTecnicos() {
-  const [dados, setDados] = useState<EmpregadoConfig[]>(carregarConfiguracao);
-  const [historico, setHistorico] = useState<HistoricoItem[]>(carregarHistorico);
-  const [empregadoSelecionado, setEmpregadoSelecionado] = useState(dados[0]?.nome ?? "");
-  const [edicoes, setEdicoes] = useState<Record<string, StatusEixo>>({});
-  const [motivo, setMotivo] = useState(MOTIVOS[0]);
-  const [observacao, setObservacao] = useState("");
-  const [mensagem, setMensagem] = useState<string | null>(null);
+  const api = (trpc as any).provaUticMatriz;
+  const listaQuery = api.listar.useQuery(undefined, { refetchOnWindowFocus: false });
+  const inicializarMutation = api.inicializarOficial.useMutation();
+  const salvarEixoMutation = api.salvarEixo.useMutation();
+  const atualizarStatusMutation = api.atualizarStatus.useMutation();
 
-  const empregado = useMemo(
-    () => dados.find((item) => item.nome === empregadoSelecionado) ?? dados[0],
-    [dados, empregadoSelecionado],
+  const matrizes = listaQuery.data ?? [];
+  const [matrizSelecionada, setMatrizSelecionada] = useState<number | null>(null);
+  const [edicoes, setEdicoes] = useState<Record<string, EixoEdicao>>({});
+  const [motivo, setMotivo] = useState("Validação da matriz de conhecimentos");
+  const [fonte, setFonte] = useState("");
+  const [observacao, setObservacao] = useState("");
+  const [status, setStatus] = useState<StatusMatriz>("PENDENTE_HISTORICO");
+  const [mensagem, setMensagem] = useState("");
+
+  useEffect(() => {
+    if (matrizSelecionada === null && matrizes.length > 0) {
+      setMatrizSelecionada(Number(matrizes[0].id));
+    }
+  }, [matrizSelecionada, matrizes]);
+
+  const matriz = useMemo(
+    () => matrizes.find((item: any) => Number(item.id) === matrizSelecionada) ?? null,
+    [matrizes, matrizSelecionada]
   );
 
   useEffect(() => {
-    setEdicoes({});
-    setMensagem(null);
-  }, [empregadoSelecionado]);
-
-  if (!empregado) return null;
-
-  const statusAtual = (eixo: EixoConfig) => edicoes[eixo.eixo] ?? eixo.status;
-  const temAlteracao = Object.keys(edicoes).length > 0;
-
-  const salvar = () => {
-    if (!temAlteracao) return;
-
-    const novosHistoricos: HistoricoItem[] = [];
-    const novosDados = dados.map((pessoa) => {
-      if (pessoa.nome !== empregado.nome) return pessoa;
-      return {
-        ...pessoa,
-        eixos: pessoa.eixos.map((eixo) => {
-          const novo = edicoes[eixo.eixo];
-          if (!novo || novo === eixo.status) return eixo;
-          novosHistoricos.push({
-            id: `${Date.now()}-${eixo.eixo}`,
-            empregado: pessoa.nome,
-            eixo: eixo.eixo,
-            anterior: eixo.status,
-            novo,
-            motivo,
-            observacao,
-            data: new Date().toISOString(),
-          });
-          return { ...eixo, status: novo };
-        }),
+    if (!matriz) return;
+    const salvos = new Map((matriz.eixos ?? []).map((item: any) => [item.eixoId, item]));
+    const novos: Record<string, EixoEdicao> = {};
+    for (const eixo of EIXOS_PADRAO) {
+      const salvo: any = salvos.get(eixo.eixoId);
+      novos[eixo.eixoId] = {
+        eixoId: eixo.eixoId,
+        eixo: eixo.eixo,
+        relacao: salvo?.relacao ?? "",
+        anterior: salvo?.anterior === null || salvo?.anterior === undefined ? null : Number(salvo.anterior),
       };
+    }
+    setEdicoes(novos);
+    setFonte(matriz.fonte ?? "");
+    setObservacao(matriz.observacao ?? "");
+    setStatus(matriz.status as StatusMatriz);
+    setMensagem("");
+  }, [matriz]);
+
+  const inicializar = async () => {
+    setMensagem("");
+    const resultado = await inicializarMutation.mutateAsync();
+    await listaQuery.refetch();
+    setMensagem(
+      resultado.ausentes?.length
+        ? `Matrizes preparadas. Cadastros não localizados: ${resultado.ausentes.join(", ")}.`
+        : "As sete matrizes da UTIC foram preparadas no servidor."
+    );
+  };
+
+  const salvar = async () => {
+    if (!matriz) return;
+    const linhas = Object.values(edicoes);
+    if (linhas.some((item) => !item.relacao)) {
+      setMensagem("Classifique os oito eixos antes de validar a matriz.");
+      return;
+    }
+    setMensagem("");
+    for (const eixo of linhas) {
+      await salvarEixoMutation.mutateAsync({
+        matrizId: Number(matriz.id),
+        eixoId: eixo.eixoId,
+        eixo: eixo.eixo,
+        relacao: eixo.relacao,
+        anterior: eixo.anterior,
+        motivo,
+        observacao,
+      });
+    }
+    await atualizarStatusMutation.mutateAsync({
+      matrizId: Number(matriz.id),
+      status,
+      fonte: fonte.trim() || null,
+      observacao: observacao.trim() || null,
     });
-
-    const novoHistorico = [...novosHistoricos, ...historico];
-    setDados(novosDados);
-    setHistorico(novoHistorico);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(novosDados));
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(novoHistorico));
-    setEdicoes({});
-    setObservacao("");
-    setMensagem("Alteração aplicada no piloto. A leitura comparativa foi atualizada sem apagar o histórico anterior.");
+    await listaQuery.refetch();
+    setMensagem("Matriz salva no servidor e registrada para auditoria.");
   };
 
-  const restaurar = () => {
-    setDados(PILOTO_UTIC_INICIAL);
-    setHistorico([]);
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(HISTORY_KEY);
-    setEdicoes({});
-    setMensagem("Piloto restaurado para a configuração inicial da UTIC.");
-  };
+  const salvando =
+    inicializarMutation.isPending || salvarEixoMutation.isPending || atualizarStatusMutation.isPending;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-6">
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           <Settings2 className="h-7 w-7 text-blue-600" />
           <h1 className="text-2xl font-semibold tracking-tight">Administração dos Eixos Técnicos</h1>
         </div>
         <p className="max-w-4xl text-sm text-muted-foreground">
-          Página administrativa para ajustar a lista de conhecimentos aplicáveis a cada empregado sem alterar a fotografia histórica das avaliações anteriores.
+          Cadastro permanente da relação entre empregado, eixos de conhecimento e linha de base histórica.
         </p>
-        <Badge variant="outline">Piloto UTIC</Badge>
+        <Badge variant="outline">UTIC — dados armazenados no servidor</Badge>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Empregado</CardTitle>
-          <CardDescription>Selecione o empregado para consultar e administrar os eixos de conhecimento.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <select
-            value={empregadoSelecionado}
-            onChange={(event) => setEmpregadoSelecionado(event.target.value)}
-            className="h-10 w-full max-w-xl rounded-md border bg-background px-3 text-sm"
-          >
-            {dados.map((item) => (
-              <option key={item.nome} value={item.nome}>{item.nome}</option>
-            ))}
-          </select>
-          <div className="rounded-md border bg-muted/30 p-3 text-sm max-w-4xl">
-            <p className="font-medium">{empregado.cargo}</p>
-            <p className="mt-1 text-muted-foreground">{empregado.funcao}</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Eixos de conhecimento</CardTitle>
-          <CardDescription>
-            A avaliação anterior permanece congelada. A alteração abaixo muda somente a aplicabilidade atual e a forma como a próxima comparação será interpretada.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="overflow-x-auto rounded-md border">
-            <table className="w-full min-w-[980px] text-sm">
-              <thead className="bg-muted/40">
-                <tr className="border-b text-left">
-                  <th className="px-4 py-3 font-medium">Eixo de conhecimento</th>
-                  <th className="px-4 py-3 font-medium">Resultado anterior</th>
-                  <th className="px-4 py-3 font-medium">Situação atual</th>
-                  <th className="px-4 py-3 font-medium">Como ficará na comparação</th>
-                </tr>
-              </thead>
-              <tbody>
-                {empregado.eixos.map((eixo) => {
-                  const atual = statusAtual(eixo);
-                  let leitura = "Aguardando nova avaliação";
-                  if (atual === "NAO_APLICAVEL" && eixo.anterior !== null) leitura = "Sem correspondente na avaliação atual";
-                  if (atual !== "NAO_APLICAVEL" && eixo.anterior === null) leitura = "Novo eixo — nova linha de base";
-                  if (atual === "NAO_APLICAVEL" && eixo.anterior === null) leitura = "Não participa do cálculo atual";
-
-                  return (
-                    <tr key={eixo.eixo} className="border-b last:border-0 align-top">
-                      <td className="px-4 py-3 font-medium">{eixo.eixo}</td>
-                      <td className="px-4 py-3">
-                        {eixo.anterior === null ? "—" : `${eixo.anterior.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
-                      </td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={atual}
-                          onChange={(event) => setEdicoes((current) => ({ ...current, [eixo.eixo]: event.target.value as StatusEixo }))}
-                          className="h-9 min-w-[230px] rounded-md border bg-background px-2 text-sm"
-                        >
-                          <option value="ESSENCIAL">Essencial</option>
-                          <option value="TRANSVERSAL">Transversal</option>
-                          <option value="NAO_APLICAVEL">Não aplicável à atuação atual</option>
-                        </select>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={leitura.startsWith("Sem correspondente") ? "outline" : "secondary"}>{leitura}</Badge>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Motivo da alteração</label>
-              <select value={motivo} onChange={(event) => setMotivo(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                {MOTIVOS.map((item) => <option key={item}>{item}</option>)}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Observação</label>
-              <input
-                value={observacao}
-                onChange={(event) => setObservacao(event.target.value)}
-                placeholder="Ex.: recurso deferido; atividade não é mais executada pelo empregado"
-                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <Button onClick={salvar} disabled={!temAlteracao}>
-              <Save className="mr-2 h-4 w-4" /> Aplicar alteração e recalcular leitura
-            </Button>
-            <Button variant="outline" onClick={restaurar}>
-              <RotateCcw className="mr-2 h-4 w-4" /> Restaurar piloto
-            </Button>
-          </div>
-
-          {mensagem && <div className="rounded-md border bg-muted/30 p-3 text-sm">{mensagem}</div>}
-
-          <div className="flex gap-3 rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-            <div>
-              <p className="font-medium text-foreground">Regra preservada no piloto</p>
-              <p className="mt-1">
-                Retirar um eixo não apaga o resultado histórico. Se havia resultado anterior, ele permanece registrado e passa a aparecer como “Sem correspondente na avaliação atual”. Incluir um eixo sem resultado anterior cria uma nova linha de base quando a próxima avaliação for realizada.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
+      <Card className="border-blue-200">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <History className="h-5 w-5" />
-            <CardTitle>Histórico das alterações do piloto</CardTitle>
+            <Database className="h-5 w-5 text-blue-600" />
+            <CardTitle>Preparação das matrizes oficiais</CardTitle>
           </div>
-          <CardDescription>Cada ajuste fica registrado para auditoria da regra aplicada.</CardDescription>
+          <CardDescription>
+            A operação é idempotente: cria apenas o que ainda não existe e não substitui alterações já salvas.
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          {historico.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhuma alteração realizada neste piloto.</p>
-          ) : (
-            <div className="space-y-3">
-              {historico.slice(0, 20).map((item) => (
-                <div key={item.id} className="rounded-md border p-3 text-sm">
-                  <p className="font-medium">{item.empregado} — {item.eixo}</p>
-                  <p className="mt-1 text-muted-foreground">
-                    {STATUS_LABEL[item.anterior]} → {STATUS_LABEL[item.novo]} · {item.motivo}
-                  </p>
-                  {item.observacao && <p className="mt-1">{item.observacao}</p>}
-                  <p className="mt-1 text-xs text-muted-foreground">{new Date(item.data).toLocaleString("pt-BR")}</p>
-                </div>
-              ))}
-            </div>
-          )}
+        <CardContent className="space-y-3">
+          <Button onClick={inicializar} disabled={salvando}>
+            {inicializarMutation.isPending ? "Preparando..." : "Preparar matrizes oficiais da UTIC"}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Cinco empregados receberão os dados históricos provisórios. Ellen e Wescley permanecerão pendentes, sem eixos presumidos.
+          </p>
         </CardContent>
       </Card>
+
+      {listaQuery.isLoading ? (
+        <Card><CardContent className="p-6 text-sm text-muted-foreground">Carregando matrizes...</CardContent></Card>
+      ) : matrizes.length === 0 ? (
+        <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhuma matriz foi preparada.</CardContent></Card>
+      ) : (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Empregado</CardTitle>
+              <CardDescription>Selecione o empregado para consultar ou completar os oito eixos.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <select
+                value={matrizSelecionada ?? ""}
+                onChange={(event) => setMatrizSelecionada(Number(event.target.value))}
+                className="h-10 w-full max-w-2xl rounded-md border bg-background px-3 text-sm"
+              >
+                {matrizes.map((item: any) => (
+                  <option key={item.id} value={item.id}>
+                    {item.colaboradorNome} — {STATUS_LABEL[item.status as StatusMatriz]}
+                  </option>
+                ))}
+              </select>
+            </CardContent>
+          </Card>
+
+          {matriz && (
+            <Card>
+              <CardHeader>
+                <CardTitle>{matriz.colaboradorNome}</CardTitle>
+                <CardDescription>{matriz.cargo} · {matriz.email}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {matriz.status === "PENDENTE_HISTORICO" && (
+                  <div className="flex gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                    <div>
+                      <p className="font-semibold">Aguardando inclusão e validação dos eixos históricos</p>
+                      <p className="mt-1">
+                        Há evidência de avaliação anterior, mas o relatório ainda não foi localizado. A matriz não deve ser liberada para aplicação enquanto permanecer pendente.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="overflow-x-auto rounded-md border">
+                  <table className="w-full min-w-[900px] text-sm">
+                    <thead className="bg-muted/40">
+                      <tr className="border-b text-left">
+                        <th className="px-4 py-3">Eixo de conhecimento</th>
+                        <th className="px-4 py-3">Relação com a função</th>
+                        <th className="px-4 py-3">Resultado anterior (%)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {EIXOS_PADRAO.map((eixo) => {
+                        const edicao = edicoes[eixo.eixoId];
+                        return (
+                          <tr key={eixo.eixoId} className="border-b last:border-0">
+                            <td className="px-4 py-3 font-medium">{eixo.eixo}</td>
+                            <td className="px-4 py-3">
+                              <select
+                                value={edicao?.relacao ?? ""}
+                                onChange={(event) =>
+                                  setEdicoes((atual) => ({
+                                    ...atual,
+                                    [eixo.eixoId]: { ...atual[eixo.eixoId], relacao: event.target.value as RelacaoEixo },
+                                  }))
+                                }
+                                className="h-9 min-w-[250px] rounded-md border bg-background px-2"
+                              >
+                                <option value="">Selecione...</option>
+                                {Object.entries(RELACAO_LABEL).map(([valor, rotulo]) => (
+                                  <option key={valor} value={valor}>{rotulo}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                value={edicao?.anterior ?? ""}
+                                placeholder="Sem percentual localizado"
+                                onChange={(event) =>
+                                  setEdicoes((atual) => ({
+                                    ...atual,
+                                    [eixo.eixoId]: {
+                                      ...atual[eixo.eixoId],
+                                      anterior: event.target.value === "" ? null : Number(event.target.value),
+                                    },
+                                  }))
+                                }
+                                className="h-9 w-52 rounded-md border bg-background px-3"
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <label className="space-y-2 text-sm font-medium">
+                    Situação da matriz
+                    <select value={status} onChange={(event) => setStatus(event.target.value as StatusMatriz)} className="h-10 w-full rounded-md border bg-background px-3 font-normal">
+                      {Object.entries(STATUS_LABEL).map(([valor, rotulo]) => <option key={valor} value={valor}>{rotulo}</option>)}
+                    </select>
+                  </label>
+                  <label className="space-y-2 text-sm font-medium">
+                    Motivo do registro
+                    <input value={motivo} onChange={(event) => setMotivo(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 font-normal" />
+                  </label>
+                  <label className="space-y-2 text-sm font-medium">
+                    Fonte
+                    <textarea value={fonte} onChange={(event) => setFonte(event.target.value)} rows={3} className="w-full rounded-md border bg-background p-3 font-normal" />
+                  </label>
+                  <label className="space-y-2 text-sm font-medium">
+                    Observação
+                    <textarea value={observacao} onChange={(event) => setObservacao(event.target.value)} rows={3} className="w-full rounded-md border bg-background p-3 font-normal" />
+                  </label>
+                </div>
+
+                <Button onClick={salvar} disabled={salvando || motivo.trim().length < 3}>
+                  <Save className="mr-2 h-4 w-4" />
+                  {salvando ? "Salvando..." : "Salvar matriz no servidor"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      {mensagem && <div className="rounded-md border bg-muted/30 p-4 text-sm">{mensagem}</div>}
+      {listaQuery.error && <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{listaQuery.error.message}</div>}
     </div>
   );
 }
