@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, ChevronRight, TrendingUp } from "lucide-react";
+import { Activity, Award, ChevronRight, Sparkles, TrendingUp } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type SituacaoEixo = "EVOLUCAO" | "ESTABILIDADE" | "REDUCAO" | "NOVA_BASE";
 
@@ -33,6 +44,28 @@ function relacaoDaniel(eixo: string) {
   }
   if (eixo.includes("Incidentes")) return "NÃO APLICÁVEL À ATUAÇÃO ATUAL";
   return "TRANSVERSAL";
+}
+
+function abreviarEixo(eixo: string) {
+  return eixo
+    .replace("Governança e Gestão de TI", "Governança de TI")
+    .replace("Gestão de Incidentes e Continuidade", "Incidentes e Continuidade")
+    .replace("Sistemas Corporativos, Processos e Automação", "Sistemas e Automação")
+    .replace("Dados, BI e Inteligência Artificial", "Dados, BI e IA")
+    .replace("Suporte, Atendimento e Service Desk", "Suporte e Service Desk")
+    .replace("Liderança e Competências Transversais", "Liderança e Transversais");
+}
+
+function corResultado(percentual: number) {
+  if (percentual >= 70) return "#059669";
+  if (percentual >= 50) return "#d97706";
+  return "#dc2626";
+}
+
+function faixaResultado(percentual: number) {
+  if (percentual >= 70) return "Evidenciado";
+  if (percentual >= 50) return "Em desenvolvimento";
+  return "A desenvolver";
 }
 
 function rotuloSituacao(situacao: SituacaoEixo) {
@@ -94,6 +127,32 @@ export default function Evolucao() {
     novaBase: eixos.filter((eixo: any) => eixo.evolucaoPp === null).length,
   };
   const isDaniel = /Daniel Caio Lemos Penno/i.test(String(detalhe?.tentativa?.colaboradorNome ?? ""));
+  const dadosEvolucao = eixos
+    .filter((eixo: any) => eixo.linhaBase !== null)
+    .map((eixo: any) => ({
+      eixo: abreviarEixo(String(eixo.eixo)),
+      anterior: Number(eixo.linhaBase),
+      atual: Number(eixo.percentualAtual),
+      evolucaoPp: Number(eixo.evolucaoPp),
+    }));
+  const dadosTransversais = isDaniel
+    ? eixos
+        .filter((eixo: any) => relacaoDaniel(String(eixo.eixo)) === "TRANSVERSAL")
+        .map((eixo: any) => ({
+          eixo: abreviarEixo(String(eixo.eixo)),
+          percentual: Number(eixo.percentualAtual),
+        }))
+        .sort((a: any, b: any) => b.percentual - a.percentual)
+    : [];
+  const dadosOutrasAtividades = isDaniel
+    ? eixos
+        .filter((eixo: any) => relacaoDaniel(String(eixo.eixo)) === "NÃO APLICÁVEL À ATUAÇÃO ATUAL")
+        .map((eixo: any) => ({
+          eixo: abreviarEixo(String(eixo.eixo)),
+          percentual: Number(eixo.percentualAtual),
+        }))
+        .sort((a: any, b: any) => b.percentual - a.percentual)
+    : [];
 
   return (
     <div className="space-y-6 p-6">
@@ -163,6 +222,153 @@ export default function Evolucao() {
                 <strong>Linha de base provisória:</strong> {detalhe.linhaBase.fonte}. {detalhe.linhaBase.observacao}
               </div>
             )}
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                  <CardTitle>Gráfico de evolução por eixo</CardTitle>
+                </div>
+                <CardDescription>
+                  A barra cinza representa a medição anterior e a barra colorida representa o resultado atual.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {dadosEvolucao.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    Ainda não há medições anteriores comparáveis para gerar este gráfico.
+                  </p>
+                ) : (
+                  <div className="w-full overflow-x-auto">
+                    <div className="min-w-[720px]">
+                      <ResponsiveContainer width="100%" height={Math.max(340, dadosEvolucao.length * 58)}>
+                        <BarChart data={dadosEvolucao} layout="vertical" margin={{ top: 10, right: 35, left: 30, bottom: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                          <XAxis type="number" domain={[0, 100]} tickFormatter={(valor) => `${valor}%`} />
+                          <YAxis type="category" dataKey="eixo" width={190} tick={{ fontSize: 12 }} />
+                          <Tooltip formatter={(valor: number) => `${Number(valor).toFixed(1)}%`} />
+                          <Legend />
+                          <Bar dataKey="anterior" name="Avaliação anterior" fill="#94a3b8" radius={[0, 4, 4, 0]} />
+                          <Bar dataKey="atual" name="Avaliação atual" radius={[0, 4, 4, 0]}>
+                            {dadosEvolucao.map((item: any) => (
+                              <Cell
+                                key={item.eixo}
+                                fill={item.evolucaoPp > 0 ? "#059669" : item.evolucaoPp < 0 ? "#dc2626" : "#d97706"}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+                <div className="mt-3 flex flex-wrap gap-4 text-xs text-muted-foreground">
+                  <span><strong className="text-emerald-700">Verde:</strong> evolução</span>
+                  <span><strong className="text-amber-700">Laranja:</strong> estabilidade</span>
+                  <span><strong className="text-red-700">Vermelho:</strong> redução do resultado</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Sparkles className="h-5 w-5 text-violet-600" />
+                  <CardTitle>Conhecimentos transversais e potencialidades</CardTitle>
+                </div>
+                <CardDescription>
+                  Evidências de conhecimentos além dos eixos essenciais da função atual, para análise do gestor.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Award className="h-4 w-4 text-violet-600" />
+                    <h3 className="font-semibold">Conhecimentos transversais evidenciados</h3>
+                  </div>
+                  {dadosTransversais.length === 0 ? (
+                    <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                      Os eixos transversais deste empregado ainda precisam ser classificados.
+                    </p>
+                  ) : (
+                    <>
+                      <div className="w-full overflow-x-auto">
+                        <div className="min-w-[680px]">
+                          <ResponsiveContainer width="100%" height={Math.max(230, dadosTransversais.length * 58)}>
+                            <BarChart data={dadosTransversais} layout="vertical" margin={{ top: 5, right: 35, left: 30, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                              <XAxis type="number" domain={[0, 100]} tickFormatter={(valor) => `${valor}%`} />
+                              <YAxis type="category" dataKey="eixo" width={190} tick={{ fontSize: 12 }} />
+                              <Tooltip
+                                formatter={(valor: number) => [
+                                  `${Number(valor).toFixed(1)}% — ${faixaResultado(Number(valor))}`,
+                                  "Resultado",
+                                ]}
+                              />
+                              <Bar dataKey="percentual" name="Resultado atual" radius={[0, 4, 4, 0]}>
+                                {dadosTransversais.map((item: any) => (
+                                  <Cell key={item.eixo} fill={corResultado(item.percentual)} />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        {dadosTransversais.map((item: any) => (
+                          <div key={item.eixo} className="rounded-lg border p-3 text-sm">
+                            <p className="font-medium">{item.eixo}</p>
+                            <p className="mt-1" style={{ color: corResultado(item.percentual) }}>
+                              <strong>{item.percentual.toFixed(1)}%</strong> · {faixaResultado(item.percentual)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </section>
+
+                <section className="space-y-3 border-t pt-6">
+                  <h3 className="font-semibold">Potencialidades para outras atividades do departamento</h3>
+                  {dadosOutrasAtividades.length === 0 ? (
+                    <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                      Não há, nesta medição, eixo classificado como não aplicável à função atual.
+                    </p>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {dadosOutrasAtividades.map((item: any) => (
+                        <div key={item.eixo} className="rounded-lg border p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="font-medium">{item.eixo}</p>
+                            <Badge variant="outline">{item.percentual.toFixed(1)}%</Badge>
+                          </div>
+                          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${Math.min(100, item.percentual)}%`, backgroundColor: corResultado(item.percentual) }}
+                            />
+                          </div>
+                          <p className="mt-2 text-xs font-medium" style={{ color: corResultado(item.percentual) }}>
+                            {faixaResultado(item.percentual)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Estes resultados indicam conhecimentos que podem apoiar outras atividades da unidade. Não representam,
+                    isoladamente, recomendação de mudança de função; devem ser analisados pelo gestor com as evidências
+                    comportamentais e práticas do empregado.
+                  </p>
+                </section>
+
+                <div className="flex flex-wrap gap-4 rounded-lg bg-slate-50 p-3 text-xs text-muted-foreground">
+                  <span><strong className="text-emerald-700">70% ou mais:</strong> evidenciado</span>
+                  <span><strong className="text-amber-700">50% a 69,9%:</strong> em desenvolvimento</span>
+                  <span><strong className="text-red-700">Abaixo de 50%:</strong> a desenvolver</span>
+                </div>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader>
