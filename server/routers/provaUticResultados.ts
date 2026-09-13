@@ -16,7 +16,10 @@ function arredondar(valor: number) {
   return Math.round(valor * 10) / 10;
 }
 
-function calcularResultado(respostas: Array<{ questaoId: number; resposta: string }>, usarLinhaBaseDaniel: boolean) {
+function calcularResultado(
+  respostas: Array<{ questaoId: number; resposta: string }>,
+  linhasBase: Record<string, number | null> = {},
+) {
   const respostaPorQuestao = new Map(respostas.map((item) => [Number(item.questaoId), String(item.resposta)]));
   const porEixo = Object.entries(UTIC_EIXOS).map(([eixoId, eixo]) => {
     const questoes = UTIC_QUESTOES.filter((questao) => questao.eixoId === eixoId);
@@ -27,7 +30,7 @@ function calcularResultado(respostas: Array<{ questaoId: number; resposta: strin
       return Boolean(resposta && questao.opcoes.find((opcao) => opcao.id === resposta)?.naoSei);
     }).length;
     const percentualAtual = questoes.length > 0 ? arredondar((acertos / questoes.length) * 100) : 0;
-    const linhaBase = usarLinhaBaseDaniel ? UTIC_LINHA_BASE_DANIEL[eixoId] ?? null : null;
+    const linhaBase = linhasBase[eixoId] ?? null;
     const evolucaoPp = linhaBase === null ? null : arredondar(percentualAtual - linhaBase);
     return {
       eixoId,
@@ -54,6 +57,23 @@ function calcularResultado(respostas: Array<{ questaoId: number; resposta: strin
     percentualGeral: TOTAL_QUESTOES_UTIC > 0 ? arredondar((totalAcertos / TOTAL_QUESTOES_UTIC) * 100) : 0,
     porEixo,
   };
+}
+
+async function obterLinhasBase(db: any, colaboradorId: number, colaboradorNome: string) {
+  const result = await db.execute(sql`
+    SELECT e.eixo_id AS eixoId, e.percentual_anterior AS percentualAnterior
+      FROM prova_utic_matrizes m
+      JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
+     WHERE m.colaborador_id = ${colaboradorId}
+       AND m.status IN ('VALIDADA_PROVISORIA','VALIDADA_DEFINITIVA')
+  `);
+  const linhas = rowsOf<{ eixoId: string; percentualAnterior: number | string | null }>(result);
+  if (linhas.length > 0) {
+    return Object.fromEntries(
+      linhas.map((item) => [item.eixoId, item.percentualAnterior === null ? null : Number(item.percentualAnterior)]),
+    ) as Record<string, number | null>;
+  }
+  return /Daniel Caio Lemos Penno/i.test(colaboradorNome) ? UTIC_LINHA_BASE_DANIEL : {};
 }
 
 export const provaUticResultadosRouter = router({
@@ -90,18 +110,111 @@ export const provaUticResultadosRouter = router({
       `);
       const respostas = rowsOf<{ questaoId: number; resposta: string }>(respostasResult);
       const nome = String(tentativa.colaboradorNome ?? "");
-      const usarLinhaBaseDaniel = /Daniel Caio Lemos Penno/i.test(nome);
+      const linhasBase = await obterLinhasBase(db, Number(tentativa.colaboradorId), nome);
+      const possuiLinhaBase = Object.values(linhasBase).some((valor) => valor !== null);
 
       return {
         tentativa,
-        linhaBase: usarLinhaBaseDaniel
+        linhaBase: possuiLinhaBase
           ? {
               fonte: "UTIC_RESULTADO CONSOLIDADO.xlsx / item 5 dos relatórios individuais",
               natureza: "provisória",
               observacao: "A linha de base definitiva será recalculada a partir das respostas históricas e do gabarito original quando essa validação estiver concluída.",
             }
           : null,
-        resultado: calcularResultado(respostas, usarLinhaBaseDaniel),
+        resultado: calcularResultado(respostas, linhasBase),
+      };
+    }),
+
+  consolidadoUnidade: adminProcedure
+    .input(z.object({ departamentoNome: z.string().trim().min(1).max(255) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco de dados indisponível." });
+
+      const empregadosResult = await db.execute(sql`
+        SELECT u.id, u.name,
+               (SELECT t.id
+                  FROM prova_utic_tentativas t
+                 WHERE t.colaborador_id = u.id
+                   AND t.status IN ('FINALIZADA','CONCLUIDA','FINALIZADA_TEMPO')
+                 ORDER BY t.id DESC LIMIT 1) AS tentativaId
+          FROM users u
+          JOIN departamentos d ON d.id = u.departamentoId
+         WHERE u.status = 'ativo'
+           AND u.role IN ('colaborador','lider','gerente')
+           AND d.nome = ${input.departamentoNome}
+         ORDER BY u.name
+      `);
+      const empregados = rowsOf<{ id: number; name: string; tentativaId: number | null }>(empregadosResult);
+      const acumulado = new Map<string, {
+        eixoId: string; eixo: string; anteriores: number[]; atuais: number[];
+        evoluiram: number; estaveis: number; reduziram: number;
+      }>();
+
+      for (const empregado of empregados) {
+        if (!empregado.tentativaId) continue;
+        const respostasResult = await db.execute(sql`
+          SELECT questao_id AS questaoId, resposta
+            FROM prova_utic_respostas
+           WHERE tentativa_id = ${Number(empregado.tentativaId)}
+        `);
+        const linhasBase = await obterLinhasBase(db, Number(empregado.id), String(empregado.name ?? ""));
+        const resultado = calcularResultado(
+          rowsOf<{ questaoId: number; resposta: string }>(respostasResult),
+          linhasBase,
+        );
+        for (const eixo of resultado.porEixo) {
+          if (eixo.linhaBase === null) continue;
+          const item = acumulado.get(eixo.eixoId) ?? {
+            eixoId: eixo.eixoId, eixo: eixo.eixo, anteriores: [], atuais: [],
+            evoluiram: 0, estaveis: 0, reduziram: 0,
+          };
+          item.anteriores.push(Number(eixo.linhaBase));
+          item.atuais.push(Number(eixo.percentualAtual));
+          if (Number(eixo.evolucaoPp) > 0) item.evoluiram += 1;
+          else if (Number(eixo.evolucaoPp) < 0) item.reduziram += 1;
+          else item.estaveis += 1;
+          acumulado.set(eixo.eixoId, item);
+        }
+      }
+
+      const media = (valores: number[]) => valores.length
+        ? arredondar(valores.reduce((total, valor) => total + valor, 0) / valores.length)
+        : null;
+      const porEixo = Array.from(acumulado.values()).map((item) => {
+        const anterior = media(item.anteriores);
+        const atual = media(item.atuais);
+        const comparaveis = item.atuais.length;
+        return {
+          eixoId: item.eixoId,
+          eixo: item.eixo,
+          mediaAnterior: anterior,
+          mediaAtual: atual,
+          evolucaoPp: anterior === null || atual === null ? null : arredondar(atual - anterior),
+          comparaveis,
+          evoluiram: item.evoluiram,
+          estaveis: item.estaveis,
+          reduziram: item.reduziram,
+          percentualEvoluiram: comparaveis ? arredondar((item.evoluiram / comparaveis) * 100) : null,
+        };
+      });
+
+      const comTentativa = empregados.filter((item) => Boolean(item.tentativaId)).length;
+      const comComparativoIds = new Set<number>();
+      for (const empregado of empregados) {
+        if (!empregado.tentativaId) continue;
+        const linhas = await obterLinhasBase(db, Number(empregado.id), String(empregado.name ?? ""));
+        if (Object.values(linhas).some((valor) => valor !== null)) comComparativoIds.add(Number(empregado.id));
+      }
+
+      return {
+        unidade: input.departamentoNome,
+        totalEmpregados: empregados.length,
+        comAvaliacaoAtual: comTentativa,
+        comComparativo: comComparativoIds.size,
+        semComparativo: Math.max(0, empregados.length - comComparativoIds.size),
+        porEixo,
       };
     }),
 });
