@@ -38,14 +38,6 @@ function formatarPp(valor: number | null) {
   return `${valor.toFixed(1)} p.p.`;
 }
 
-function relacaoDaniel(eixo: string) {
-  if (eixo.includes("Infraestrutura") || eixo.includes("Sistemas") || eixo.includes("Dados") || eixo.includes("Suporte")) {
-    return "ESSENCIAL";
-  }
-  if (eixo.includes("Incidentes")) return "NÃO APLICÁVEL À ATUAÇÃO ATUAL";
-  return "TRANSVERSAL";
-}
-
 function abreviarEixo(eixo: string) {
   return eixo
     .replace("Governança e Gestão de TI", "Governança de TI")
@@ -162,7 +154,6 @@ export default function Evolucao() {
     reducao: eixos.filter((eixo: any) => Number(eixo.evolucaoPp) < 0).length,
     novaBase: eixos.filter((eixo: any) => eixo.evolucaoPp === null).length,
   };
-  const isDaniel = /Daniel Caio Lemos Penno/i.test(String(detalhe?.tentativa?.colaboradorNome ?? ""));
   const dadosEvolucao = eixos
     .filter((eixo: any) => eixo.linhaBase !== null)
     .map((eixo: any) => ({
@@ -171,24 +162,20 @@ export default function Evolucao() {
       atual: Number(eixo.percentualAtual),
       evolucaoPp: Number(eixo.evolucaoPp),
     }));
-  const dadosTransversais = isDaniel
-    ? eixos
-        .filter((eixo: any) => relacaoDaniel(String(eixo.eixo)) === "TRANSVERSAL")
+  const dadosTransversais = eixos
+        .filter((eixo: any) => eixo.relacao === "TRANSVERSAL")
         .map((eixo: any) => ({
           eixo: abreviarEixo(String(eixo.eixo)),
           percentual: Number(eixo.percentualAtual),
         }))
-        .sort((a: any, b: any) => b.percentual - a.percentual)
-    : [];
-  const dadosOutrasAtividades = isDaniel
-    ? eixos
-        .filter((eixo: any) => relacaoDaniel(String(eixo.eixo)) === "NÃO APLICÁVEL À ATUAÇÃO ATUAL")
+        .sort((a: any, b: any) => b.percentual - a.percentual);
+  const dadosOutrasAtividades = eixos
+        .filter((eixo: any) => eixo.relacao === "NAO_APLICAVEL")
         .map((eixo: any) => ({
           eixo: abreviarEixo(String(eixo.eixo)),
           percentual: Number(eixo.percentualAtual),
         }))
-        .sort((a: any, b: any) => b.percentual - a.percentual)
-    : [];
+        .sort((a: any, b: any) => b.percentual - a.percentual);
   const consolidado = consolidadoQuery.data as any;
   const dadosConsolidados = (consolidado?.porEixo ?? []).map((eixo: any) => ({
     eixo: abreviarEixo(String(eixo.eixo)),
@@ -569,7 +556,9 @@ export default function Evolucao() {
                   <tbody>
                     {eixos.map((eixo: any) => {
                       const situacao = classificarEixo(eixo.evolucaoPp);
-                      const relacao = isDaniel ? relacaoDaniel(eixo.eixo) : "A DEFINIR";
+                      const relacao = eixo.relacao === "NAO_APLICAVEL"
+                        ? "NÃO APLICÁVEL À ATUAÇÃO ATUAL"
+                        : eixo.relacao ?? "A DEFINIR";
                       return (
                         <tr key={eixo.eixoId} className="border-b last:border-0">
                           <td className="px-3 py-4 font-medium">{eixo.eixo}</td>
