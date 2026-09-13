@@ -132,8 +132,13 @@ export function AcoesNova() {
   useEffect(() => {
     const params = new URLSearchParams(searchString);
     const urlPdiId = params.get('pdiId');
-    if (urlPdiId) {
-      setFormData(prev => ({ ...prev, pdiId: urlPdiId }));
+    const eixo = params.get('eixo');
+    if (urlPdiId || eixo) {
+      setFormData(prev => ({
+        ...prev,
+        ...(urlPdiId ? { pdiId: urlPdiId } : {}),
+        ...(eixo ? { microcompetencia: eixo } : {}),
+      }));
     }
   }, [searchString]);
   
@@ -244,6 +249,11 @@ export function AcoesNova() {
         <div style={{ marginBottom: '32px' }}>
           <h1 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '8px' }}>Nova Ação</h1>
           <p style={{ color: '#666' }}>Preencha os dados da ação de desenvolvimento</p>
+          {new URLSearchParams(searchString).get('origem') === 'evolucao_proficiencia' && (
+            <div style={{ marginTop: '12px', padding: '12px 14px', border: '1px solid #93c5fd', borderRadius: '8px', background: '#eff6ff', color: '#1e3a8a', fontSize: '14px' }}>
+              Ação originada de um gap identificado na Evolução da Avaliação de Proficiência. Selecione o PDI de destino e revise os dados antes de salvar.
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>

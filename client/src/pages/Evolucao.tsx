@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Activity, ChevronRight, TrendingUp } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -53,6 +54,7 @@ function varianteSituacao(situacao: SituacaoEixo): "default" | "secondary" | "de
 
 export default function Evolucao() {
   const { loading, user } = useAuth();
+  const [, setLocation] = useLocation();
   const [tentativaSelecionada, setTentativaSelecionada] = useState<number | null>(null);
   const isAdmin = user?.role === "admin" || user?.role === "Administrador";
 
@@ -177,6 +179,7 @@ export default function Evolucao() {
                       <th className="px-3 py-3 text-right">Nova avaliação</th>
                       <th className="px-3 py-3 text-right">Evolução</th>
                       <th className="px-3 py-3">Situação</th>
+                      <th className="px-3 py-3 text-right">Próximo PDI</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -191,6 +194,27 @@ export default function Evolucao() {
                           <td className="px-3 py-4 text-right font-semibold">{Number(eixo.percentualAtual).toFixed(1)}%</td>
                           <td className={`px-3 py-4 text-right font-semibold ${eixo.evolucaoPp > 0 ? "text-emerald-700" : eixo.evolucaoPp < 0 ? "text-red-700" : ""}`}>{formatarPp(eixo.evolucaoPp)}</td>
                           <td className="px-3 py-4"><Badge variant={varianteSituacao(situacao)}>{rotuloSituacao(situacao)}</Badge></td>
+                          <td className="px-3 py-4 text-right">
+                            {(situacao === "REDUCAO" || situacao === "ESTABILIDADE") ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  sessionStorage.setItem("acoes_return_url", "/evolucao");
+                                  const params = new URLSearchParams({
+                                    eixo: String(eixo.eixo),
+                                    origem: "evolucao_proficiencia",
+                                    tentativaId: String(detalhe.tentativa.id),
+                                  });
+                                  setLocation(`/acoes/nova?${params.toString()}`);
+                                }}
+                                className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700"
+                              >
+                                Criar ação
+                              </button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Não aplicável</span>
+                            )}
+                          </td>
                         </tr>
                       );
                     })}
