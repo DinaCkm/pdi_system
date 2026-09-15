@@ -13,34 +13,42 @@ A prova oficial e os eixos cadastrados nela são sempre a referência.
 - Cada unidade administrativa pode possuir sua própria prova, quantidade de questões e estrutura de eixos.
 - As oito Regionais compartilham uma única prova e uma única estrutura de eixos, embora tenham aplicações e datas de liberação separadas.
 - Os termos `macroárea`, `macrocompetência`, `macro` e `eixo` devem ser interpretados como o eixo oficial ao qual a questão pertence.
+- Uma questão pode estar vinculada a um ou mais eixos quando seu conteúdo exigir conhecimentos de diferentes eixos.
 - Se um relatório individual omitir, reduzir, renomear, agrupar ou apresentar eixos diferentes da prova, essa estrutura do relatório deve ser ignorada.
 - Nunca criar um eixo a partir de variações de redação encontradas em relatórios consolidados.
 
-## 2. Cálculo do resultado por eixo
+## 2. Cálculo do percentual de conhecimento por eixo
+
+O indicador oficial do eixo é o **percentual de conhecimento demonstrado no eixo**. Quantidades de acertos podem ser utilizadas internamente para compor o cálculo e permitir auditoria, mas não representam o indicador principal apresentado ao usuário.
 
 O cálculo deve ser reconstruído questão a questão.
 
 1. Obter a prova oficial da unidade.
-2. Identificar o eixo oficial de cada questão.
+2. Identificar todos os eixos oficiais vinculados a cada questão.
 3. Obter a correção individual do empregado.
 4. Como as questões e alternativas podem ter sido embaralhadas, relacionar cada questão respondida ao texto da questão oficial — nunca apenas ao número exibido no relatório.
-5. Ler na correção individual o indicador de pontuação obtida em cada questão (`0 em 1` ou `1 em 1`).
-6. Somar, para cada eixo, os acertos e o total de questões oficiais vinculadas a ele.
-7. Calcular o percentual histórico do eixo:
+5. Ler na correção individual o indicador de resultado obtido em cada questão (`0 em 1` ou `1 em 1`).
+6. Para cada eixo, considerar todas as questões vinculadas a ele.
+7. Quando uma mesma questão estiver vinculada a dois ou mais eixos, seu resultado compõe integralmente o cálculo de cada um deles, sem rateio de pontuação.
+8. Calcular o percentual de conhecimento do eixo:
 
-   `percentual do eixo = quantidade de acertos no eixo ÷ quantidade de questões do eixo × 100`
+   `percentual de conhecimento do eixo = quantidade de questões vinculadas ao eixo respondidas corretamente ÷ quantidade total de questões vinculadas ao eixo × 100`
 
-8. Conferir se:
-   - todas as questões da prova foram relacionadas exatamente uma vez;
-   - não existem questões duplicadas;
-   - a soma dos acertos por eixo é igual à pontuação total oficial do empregado;
-   - a soma das quantidades de questões por eixo é igual ao total de questões da prova.
+9. Conferir se:
+   - todas as questões da prova foram relacionadas à questão oficial correta;
+   - não existem questões físicas duplicadas na prova;
+   - todos os vínculos questão-eixo estão documentados;
+   - o total de questões físicas da prova permanece independente do total de vínculos questão-eixo.
 
-O resultado deve registrar também a fração de acertos, por exemplo, `3/8`. Em eixos medidos por uma única questão, deve constar a observação de que o resultado de 0% ou 100% decorre de apenas uma questão.
+A soma das quantidades de questões por eixo **não precisa ser igual** ao total de questões físicas da prova, pois uma mesma questão pode participar de mais de um eixo. Da mesma forma, a soma das evidências corretas distribuídas entre eixos pode ser superior à quantidade física de questões respondidas corretamente, sem representar duplicidade ou erro de cálculo.
+
+Exemplo: uma prova pode possuir 20 questões físicas e 24 vínculos questão-eixo. Se uma questão estiver associada a Gestão de Projetos e Gestão de Riscos, uma resposta correta constitui evidência integral de conhecimento nos dois eixos.
+
+Em eixos medidos por uma única questão, deve constar a observação de que o resultado de 0% ou 100% decorre de apenas uma questão.
 
 ## 3. Classificação individual do eixo
 
-O percentual de acertos não determina se um eixo é Essencial ou Transversal.
+O percentual de conhecimento não determina se um eixo é Essencial ou Transversal.
 
 A classificação deve ser realizada somente depois do cálculo, utilizando exclusivamente as atividades descritas pelo empregado em seu questionário individual.
 
@@ -91,9 +99,9 @@ Cada registro deve conter:
 - empregado;
 - cargo, quando confirmado;
 - eixo oficial da prova;
-- acertos no eixo;
-- total de questões no eixo;
-- percentual histórico;
+- quantidade de questões vinculadas ao eixo;
+- quantidade de evidências corretas no eixo, para auditoria interna;
+- percentual histórico de conhecimento do eixo;
 - classificação: Essencial, Transversal ou Pendente;
 - justificativa da classificação;
 - status da validação;
