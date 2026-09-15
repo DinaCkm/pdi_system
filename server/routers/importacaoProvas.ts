@@ -30,7 +30,7 @@ const provaSchema = z.object({
   unidade: z.string().trim().min(1).max(255),
   ano: z.number().int().min(2020).max(2100),
   descricao: z.string().trim().max(5000).nullable().optional(),
-  numeroQuestoesDeclarado: z.number().int().positive().max(1000),
+  numeroQuestoesDeclarado: z.number().int().positive().max(1000).nullable().optional(),
   questoes: z.array(questaoSchema).min(1).max(1000),
 });
 
@@ -64,7 +64,7 @@ function validarEstrutura(prova: z.infer<typeof provaSchema>) {
   const erros: string[] = [];
   const avisos: string[] = [];
 
-  if (prova.numeroQuestoesDeclarado !== prova.questoes.length) {
+  if (prova.numeroQuestoesDeclarado && prova.numeroQuestoesDeclarado !== prova.questoes.length) {
     erros.push(`A aba PROVA informa ${prova.numeroQuestoesDeclarado} questão(ões), mas a aba QUESTÕES contém ${prova.questoes.length}.`);
   }
 
