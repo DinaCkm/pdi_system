@@ -69,6 +69,7 @@ const getMenuItems = (userRole: string) => {
       { icon: Target, label: "Competências", path: "/competencias", section: "desenvolvimento" },
       { icon: ClipboardCheck, label: "Avaliações", path: "/avaliacoes", section: "desenvolvimento" },
       { icon: Upload, label: "Upload de Eixos", path: "/importar-eixos-avaliacoes", section: "desenvolvimento", parentPath: "/avaliacoes" },
+      { icon: Target, label: "Eixos Técnicos por Empregado", path: "/admin-eixos-tecnicos", section: "desenvolvimento", parentPath: "/avaliacoes" },
       { icon: ClipboardCheck, label: "Administração da Proficiência", path: "/admin-avaliacoes", section: "desenvolvimento", parentPath: "/avaliacoes" },
       { icon: BarChart3, label: "Resultados da Proficiência", path: "/admin-avaliacoes/utic/resultados", section: "desenvolvimento", parentPath: "/avaliacoes" },
       { icon: FileText, label: "PDIs", path: "/pdis", section: "desenvolvimento" },
@@ -89,7 +90,6 @@ const getMenuItems = (userRole: string) => {
 
       { icon: Building2, label: "Central de Comando", path: "/central-comando", section: "administracao" },
       { icon: Upload, label: "Importação em Massa", path: "/importacao", section: "administracao" },
-      { icon: Target, label: "Eixos Técnicos por Empregado", path: "/admin-eixos-tecnicos", section: "administracao" },
       { icon: Trash2, label: "Auditoria de Exclusões", path: "/auditoria-exclusoes", section: "administracao" },
 
       { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras", section: "normas" },

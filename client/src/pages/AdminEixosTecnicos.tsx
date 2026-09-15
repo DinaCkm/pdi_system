@@ -85,12 +85,9 @@ export default function AdminEixosTecnicos() {
   }, [busca, matrizes, unidade]);
 
   useEffect(() => {
-    if (matrizesFiltradas.length === 0) {
-      setMatrizSelecionada(null);
-      return;
-    }
+    if (matrizSelecionada === null) return;
     const selecionadaVisivel = matrizesFiltradas.some((item: any) => Number(item.id) === matrizSelecionada);
-    if (!selecionadaVisivel) setMatrizSelecionada(Number(matrizesFiltradas[0].id));
+    if (!selecionadaVisivel) setMatrizSelecionada(null);
   }, [matrizSelecionada, matrizesFiltradas]);
 
   const matriz = useMemo(
@@ -210,7 +207,14 @@ export default function AdminEixosTecnicos() {
         <CardContent className="grid gap-4 lg:grid-cols-[minmax(220px,0.7fr)_minmax(320px,1.3fr)]">
           <label className="space-y-2 text-sm font-medium">
             Unidade
-            <select value={unidade} onChange={(event) => setUnidade(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 font-normal">
+            <select
+              value={unidade}
+              onChange={(event) => {
+                setUnidade(event.target.value);
+                setMatrizSelecionada(null);
+              }}
+              className="h-10 w-full rounded-md border bg-background px-3 font-normal"
+            >
               <option value="">Todas as unidades</option>
               {unidades.map((nome) => <option key={String(nome)} value={String(nome)}>{String(nome)}</option>)}
             </select>
@@ -226,11 +230,14 @@ export default function AdminEixosTecnicos() {
             Empregado
             <select
               value={matrizSelecionada ?? ""}
-              onChange={(event) => setMatrizSelecionada(Number(event.target.value))}
+              onChange={(event) => {
+                const valor = event.target.value;
+                setMatrizSelecionada(valor ? Number(valor) : null);
+              }}
               disabled={matrizesFiltradas.length === 0}
               className="h-10 w-full rounded-md border bg-background px-3 font-normal"
             >
-              {matrizesFiltradas.length === 0 && <option value="">Nenhum empregado localizado</option>}
+              <option value="">{matrizesFiltradas.length === 0 ? "Nenhum empregado localizado" : "Selecione um empregado"}</option>
               {matrizesFiltradas.map((item: any) => (
                 <option key={item.id} value={item.id}>
                   {item.colaboradorNome} — {item.unidadeNome || "Sem unidade"} — {STATUS_LABEL[item.status as StatusMatriz]}
