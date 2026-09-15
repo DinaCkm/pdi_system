@@ -68,6 +68,7 @@ const getMenuItems = (userRole: string) => {
 
       { icon: Target, label: "Competências", path: "/competencias", section: "desenvolvimento" },
       { icon: ClipboardCheck, label: "Avaliações", path: "/avaliacoes", section: "desenvolvimento" },
+      { icon: Upload, label: "Upload de Eixos", path: "/importar-eixos-avaliacoes", section: "desenvolvimento", parentPath: "/avaliacoes" },
       { icon: ClipboardCheck, label: "Administração da Proficiência", path: "/admin-avaliacoes", section: "desenvolvimento", parentPath: "/avaliacoes" },
       { icon: BarChart3, label: "Resultados da Proficiência", path: "/admin-avaliacoes/utic/resultados", section: "desenvolvimento", parentPath: "/avaliacoes" },
       { icon: FileText, label: "PDIs", path: "/pdis", section: "desenvolvimento" },

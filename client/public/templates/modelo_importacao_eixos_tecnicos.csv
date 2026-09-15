@@ -1,0 +1,3 @@
+Unidade,Empregado,Email,CPF,Eixo,Percentual histórico,Classificação,Justificativa da classificação para análise de recurso,Fonte da certificação,Fonte das atividades,Observações
+Unidade Fictícia,Pessoa Exemplo,pessoa@exemplo.invalid,,Gestão de Processos,0.67,Essencial,Dado sintético para demonstrar o formato,Fonte de teste,Fonte de teste,
+Unidade Fictícia,Pessoa Exemplo,pessoa@exemplo.invalid,,Análise de Dados,,Transversal,Dado sintético para demonstrar o formato,Fonte de teste,Fonte de teste,Pontuação pendente

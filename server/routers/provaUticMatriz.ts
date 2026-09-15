@@ -4,85 +4,6 @@ import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
 
-type RelacaoEixo = "ESSENCIAL" | "TRANSVERSAL" | "NAO_APLICAVEL";
-type StatusMatriz = "VALIDADA_PROVISORIA" | "VALIDADA_DEFINITIVA" | "PENDENTE_HISTORICO";
-
-type EixoInicial = {
-  eixoId: string;
-  eixo: string;
-  relacao: RelacaoEixo;
-  anterior: number | null;
-};
-
-const FONTE_PROVISORIA =
-  "Relatórios individuais da certificação anterior — item 5. Percentuais provisórios até validação das respostas e do gabarito histórico.";
-
-const EIXOS = {
-  GOVERNANCA: "Governança e Gestão de TI",
-  INFRAESTRUTURA: "Infraestrutura de TI",
-  SEGURANCA: "Segurança da Informação",
-  INCIDENTES: "Gestão de Incidentes e Continuidade",
-  SISTEMAS: "Sistemas Corporativos, Processos e Automação",
-  DADOS: "Dados, BI e Inteligência Artificial",
-  SUPORTE: "Suporte, Atendimento e Service Desk",
-  LIDERANCA: "Liderança e Competências Transversais",
-} as const;
-
-const MATRIZES_INICIAIS: Record<string, EixoInicial[]> = {
-  "Alorran de Freitas Barbosa": [
-    { eixoId: "GOVERNANCA", eixo: EIXOS.GOVERNANCA, relacao: "ESSENCIAL", anterior: 62.5 },
-    { eixoId: "INFRAESTRUTURA", eixo: EIXOS.INFRAESTRUTURA, relacao: "ESSENCIAL", anterior: 55.6 },
-    { eixoId: "SEGURANCA", eixo: EIXOS.SEGURANCA, relacao: "ESSENCIAL", anterior: 50 },
-    { eixoId: "INCIDENTES", eixo: EIXOS.INCIDENTES, relacao: "NAO_APLICAVEL", anterior: null },
-    { eixoId: "SISTEMAS", eixo: EIXOS.SISTEMAS, relacao: "ESSENCIAL", anterior: 60 },
-    { eixoId: "DADOS", eixo: EIXOS.DADOS, relacao: "ESSENCIAL", anterior: null },
-    { eixoId: "SUPORTE", eixo: EIXOS.SUPORTE, relacao: "TRANSVERSAL", anterior: 83.3 },
-    { eixoId: "LIDERANCA", eixo: EIXOS.LIDERANCA, relacao: "ESSENCIAL", anterior: 20 },
-  ],
-  "Daniel Caio Lemos Penno": [
-    { eixoId: "GOVERNANCA", eixo: EIXOS.GOVERNANCA, relacao: "TRANSVERSAL", anterior: 60 },
-    { eixoId: "INFRAESTRUTURA", eixo: EIXOS.INFRAESTRUTURA, relacao: "ESSENCIAL", anterior: 63 },
-    { eixoId: "SEGURANCA", eixo: EIXOS.SEGURANCA, relacao: "TRANSVERSAL", anterior: 58 },
-    { eixoId: "INCIDENTES", eixo: EIXOS.INCIDENTES, relacao: "NAO_APLICAVEL", anterior: null },
-    { eixoId: "SISTEMAS", eixo: EIXOS.SISTEMAS, relacao: "ESSENCIAL", anterior: 70 },
-    { eixoId: "DADOS", eixo: EIXOS.DADOS, relacao: "ESSENCIAL", anterior: 55 },
-    { eixoId: "SUPORTE", eixo: EIXOS.SUPORTE, relacao: "ESSENCIAL", anterior: 65 },
-    { eixoId: "LIDERANCA", eixo: EIXOS.LIDERANCA, relacao: "TRANSVERSAL", anterior: 50 },
-  ],
-  "Gabriel Borges Araújo": [
-    { eixoId: "GOVERNANCA", eixo: EIXOS.GOVERNANCA, relacao: "TRANSVERSAL", anterior: 62 },
-    { eixoId: "INFRAESTRUTURA", eixo: EIXOS.INFRAESTRUTURA, relacao: "ESSENCIAL", anterior: 70 },
-    { eixoId: "SEGURANCA", eixo: EIXOS.SEGURANCA, relacao: "TRANSVERSAL", anterior: 67 },
-    { eixoId: "INCIDENTES", eixo: EIXOS.INCIDENTES, relacao: "NAO_APLICAVEL", anterior: null },
-    { eixoId: "SISTEMAS", eixo: EIXOS.SISTEMAS, relacao: "ESSENCIAL", anterior: 60 },
-    { eixoId: "DADOS", eixo: EIXOS.DADOS, relacao: "TRANSVERSAL", anterior: null },
-    { eixoId: "SUPORTE", eixo: EIXOS.SUPORTE, relacao: "ESSENCIAL", anterior: 80 },
-    { eixoId: "LIDERANCA", eixo: EIXOS.LIDERANCA, relacao: "TRANSVERSAL", anterior: 75 },
-  ],
-  "Jader Lincoln do Nascimento": [
-    { eixoId: "GOVERNANCA", eixo: EIXOS.GOVERNANCA, relacao: "ESSENCIAL", anterior: 50 },
-    { eixoId: "INFRAESTRUTURA", eixo: EIXOS.INFRAESTRUTURA, relacao: "ESSENCIAL", anterior: 60 },
-    { eixoId: "SEGURANCA", eixo: EIXOS.SEGURANCA, relacao: "ESSENCIAL", anterior: 55 },
-    { eixoId: "INCIDENTES", eixo: EIXOS.INCIDENTES, relacao: "ESSENCIAL", anterior: null },
-    { eixoId: "SISTEMAS", eixo: EIXOS.SISTEMAS, relacao: "TRANSVERSAL", anterior: 60 },
-    { eixoId: "DADOS", eixo: EIXOS.DADOS, relacao: "TRANSVERSAL", anterior: null },
-    { eixoId: "SUPORTE", eixo: EIXOS.SUPORTE, relacao: "ESSENCIAL", anterior: 65 },
-    { eixoId: "LIDERANCA", eixo: EIXOS.LIDERANCA, relacao: "TRANSVERSAL", anterior: 75 },
-  ],
-  "Leonardo Campelo Leite Guedes": [
-    { eixoId: "GOVERNANCA", eixo: EIXOS.GOVERNANCA, relacao: "TRANSVERSAL", anterior: 65 },
-    { eixoId: "INFRAESTRUTURA", eixo: EIXOS.INFRAESTRUTURA, relacao: "ESSENCIAL", anterior: 75 },
-    { eixoId: "SEGURANCA", eixo: EIXOS.SEGURANCA, relacao: "TRANSVERSAL", anterior: 70 },
-    { eixoId: "INCIDENTES", eixo: EIXOS.INCIDENTES, relacao: "NAO_APLICAVEL", anterior: null },
-    { eixoId: "SISTEMAS", eixo: EIXOS.SISTEMAS, relacao: "ESSENCIAL", anterior: 67 },
-    { eixoId: "DADOS", eixo: EIXOS.DADOS, relacao: "TRANSVERSAL", anterior: null },
-    { eixoId: "SUPORTE", eixo: EIXOS.SUPORTE, relacao: "ESSENCIAL", anterior: 85 },
-    { eixoId: "LIDERANCA", eixo: EIXOS.LIDERANCA, relacao: "TRANSVERSAL", anterior: 70 },
-  ],
-};
-
-const PENDENTES = ["Ellen Cássia Carvalho Custódio", "Wescley Ribeiro Lemos Silva"];
-
 function rowsOf<T>(result: any): T[] {
   if (Array.isArray(result?.[0])) return result[0] as T[];
   if (Array.isArray(result)) return result as T[];
@@ -116,7 +37,7 @@ async function ensureTables() {
       matriz_id INT NOT NULL,
       eixo_id VARCHAR(40) NOT NULL,
       eixo_nome VARCHAR(255) NOT NULL,
-      relacao ENUM('ESSENCIAL','TRANSVERSAL','NAO_APLICAVEL') NOT NULL,
+      relacao ENUM('ESSENCIAL','TRANSVERSAL','NAO_APLICAVEL','PENDENTE') NOT NULL,
       percentual_anterior DECIMAL(5,2) NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -142,19 +63,22 @@ async function ensureTables() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `));
 
-  return db;
-}
-
-async function obterUsuarioPorNome(nome: string) {
-  const db = await ensureTables();
-  const result = await db.execute(sql`
-    SELECT id, name, email, cargo, status
-      FROM users
-     WHERE name = ${nome}
-       AND status = 'ativo'
+  const colunaRelacaoResult = await db.execute(sql`
+    SELECT COLUMN_TYPE AS columnType
+      FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'prova_utic_matriz_eixos'
+       AND COLUMN_NAME = 'relacao'
      LIMIT 1
   `);
-  return rowsOf<any>(result)[0] ?? null;
+  const colunaRelacao = rowsOf<any>(colunaRelacaoResult)[0];
+  if (colunaRelacao && !String(colunaRelacao.columnType ?? "").includes("'PENDENTE'")) {
+    await db.execute(sql.raw(
+      "ALTER TABLE prova_utic_matriz_eixos MODIFY COLUMN relacao ENUM('ESSENCIAL','TRANSVERSAL','NAO_APLICAVEL','PENDENTE') NOT NULL",
+    ));
+  }
+
+  return db;
 }
 
 export const provaUticMatrizRouter = router({
@@ -162,11 +86,14 @@ export const provaUticMatrizRouter = router({
     const db = await ensureTables();
     const matrizesResult = await db.execute(sql`
       SELECT m.id, m.colaborador_id AS colaboradorId, u.name AS colaboradorNome,
-             u.email, u.cargo, m.status, m.fonte, m.observacao,
+             u.email, u.cargo, u.departamentoId,
+             d.nome AS unidadeNome,
+             m.status, m.fonte, m.observacao,
              m.created_at AS createdAt, m.updated_at AS updatedAt
         FROM prova_utic_matrizes m
         JOIN users u ON u.id = m.colaborador_id
-       ORDER BY u.name
+        LEFT JOIN departamentos d ON d.id = u.departamentoId
+       ORDER BY COALESCE(d.nome, ''), u.name
     `);
     const matrizes = rowsOf<any>(matrizesResult);
     for (const matriz of matrizes) {
@@ -185,72 +112,47 @@ export const provaUticMatrizRouter = router({
     return matrizes;
   }),
 
-  inicializarOficial: adminProcedure.mutation(async ({ ctx }) => {
-    const db = await ensureTables();
-    const ausentes: string[] = [];
-    let matrizesCriadas = 0;
-    let eixosCriados = 0;
-
-    for (const [nome, eixos] of Object.entries(MATRIZES_INICIAIS)) {
-      const usuario = await obterUsuarioPorNome(nome);
-      if (!usuario) {
-        ausentes.push(nome);
-        continue;
-      }
-      await db.execute(sql`
-        INSERT INTO prova_utic_matrizes
-          (colaborador_id, status, fonte, observacao, atualizado_por)
-        VALUES
-          (${usuario.id}, 'VALIDADA_PROVISORIA', ${FONTE_PROVISORIA},
-           'Matriz preparada para a aplicação oficial da UTIC. A linha de base será substituída após validação histórica definitiva.',
-           ${ctx.user.id})
-        ON DUPLICATE KEY UPDATE colaborador_id = VALUES(colaborador_id)
+  listarHistorico: adminProcedure
+    .input(z.object({ matrizId: z.number().int().positive() }))
+    .query(async ({ input }) => {
+      const db = await ensureTables();
+      const result = await db.execute(sql`
+        SELECT h.id, h.eixo_id AS eixoId,
+               h.valor_anterior AS valorAnterior,
+               h.valor_novo AS valorNovo,
+               h.motivo, h.observacao,
+               h.created_at AS createdAt,
+               u.name AS alteradoPorNome
+          FROM prova_utic_matriz_historico h
+          JOIN users u ON u.id = h.alterado_por
+         WHERE h.matriz_id = ${input.matrizId}
+         ORDER BY h.created_at DESC, h.id DESC
       `);
-      const matrizResult = await db.execute(sql`
-        SELECT id FROM prova_utic_matrizes WHERE colaborador_id = ${usuario.id} LIMIT 1
-      `);
-      const matriz = rowsOf<{ id: number }>(matrizResult)[0];
-      if (!matriz) continue;
-      matrizesCriadas += 1;
 
-      for (const eixo of eixos) {
-        await db.execute(sql`
-          INSERT IGNORE INTO prova_utic_matriz_eixos
-            (matriz_id, eixo_id, eixo_nome, relacao, percentual_anterior)
-          VALUES
-            (${matriz.id}, ${eixo.eixoId}, ${eixo.eixo}, ${eixo.relacao}, ${eixo.anterior})
-        `);
-        eixosCriados += 1;
-      }
-    }
+      return rowsOf<any>(result).map((item) => {
+        const parseJson = (valor: string | null) => {
+          if (!valor) return null;
+          try {
+            return JSON.parse(valor);
+          } catch {
+            return valor;
+          }
+        };
 
-    for (const nome of PENDENTES) {
-      const usuario = await obterUsuarioPorNome(nome);
-      if (!usuario) {
-        ausentes.push(nome);
-        continue;
-      }
-      await db.execute(sql`
-        INSERT INTO prova_utic_matrizes
-          (colaborador_id, status, fonte, observacao, atualizado_por)
-        VALUES
-          (${usuario.id}, 'PENDENTE_HISTORICO', NULL,
-           'Há evidência de avaliação anterior, mas o relatório histórico ainda não foi localizado. Não liberar antes da inclusão e validação dos oito eixos.',
-           ${ctx.user.id})
-        ON DUPLICATE KEY UPDATE colaborador_id = VALUES(colaborador_id)
-      `);
-      matrizesCriadas += 1;
-    }
-
-    return { matrizesCriadas, eixosProcessados: eixosCriados, ausentes };
-  }),
+        return {
+          ...item,
+          valorAnterior: parseJson(item.valorAnterior),
+          valorNovo: parseJson(item.valorNovo),
+        };
+      });
+    }),
 
   salvarEixo: adminProcedure
     .input(z.object({
       matrizId: z.number().int().positive(),
       eixoId: z.string().min(1).max(40),
       eixo: z.string().min(1).max(255),
-      relacao: z.enum(["ESSENCIAL", "TRANSVERSAL", "NAO_APLICAVEL"]),
+      relacao: z.enum(["ESSENCIAL", "TRANSVERSAL", "NAO_APLICAVEL", "PENDENTE"]),
       anterior: z.number().min(0).max(100).nullable(),
       motivo: z.string().min(3).max(255),
       observacao: z.string().max(1000).optional(),
@@ -299,6 +201,29 @@ export const provaUticMatrizRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const db = await ensureTables();
+      const anteriorResult = await db.execute(sql`
+        SELECT status, fonte, observacao
+          FROM prova_utic_matrizes
+         WHERE id = ${input.matrizId}
+         LIMIT 1
+      `);
+      const anterior = rowsOf<any>(anteriorResult)[0];
+      if (!anterior) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Matriz do empregado não encontrada." });
+      }
+
+      const novo = {
+        status: input.status,
+        fonte: input.fonte ?? null,
+        observacao: input.observacao ?? null,
+      };
+      const semAlteracao =
+        anterior.status === novo.status &&
+        (anterior.fonte ?? null) === novo.fonte &&
+        (anterior.observacao ?? null) === novo.observacao;
+
+      if (semAlteracao) return { atualizado: false };
+
       await db.execute(sql`
         UPDATE prova_utic_matrizes
            SET status = ${input.status},
@@ -307,6 +232,13 @@ export const provaUticMatrizRouter = router({
                atualizado_por = ${ctx.user.id},
                updated_at = NOW()
          WHERE id = ${input.matrizId}
+      `);
+      await db.execute(sql`
+        INSERT INTO prova_utic_matriz_historico
+          (matriz_id, eixo_id, valor_anterior, valor_novo, motivo, observacao, alterado_por)
+        VALUES
+          (${input.matrizId}, NULL, ${JSON.stringify(anterior)}, ${JSON.stringify(novo)},
+           'Atualização da situação geral da matriz', ${input.observacao ?? null}, ${ctx.user.id})
       `);
       return { atualizado: true };
     }),
