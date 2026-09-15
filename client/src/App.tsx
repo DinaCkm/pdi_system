@@ -27,6 +27,7 @@ import Avaliacoes from "./pages/Avaliacoes";
 import Evolucao from "./pages/Evolucao";
 import AdminEixosTecnicos from "./pages/AdminEixosTecnicos";
 import ImportarEixosAvaliacoes from "./pages/ImportarEixosAvaliacoes";
+import ImportarProvas from "./pages/ImportarProvas";
 import AdminAvaliacoes from "./pages/AdminAvaliacoes";
 import AdminResultadosUtic from "./pages/AdminResultadosUtic";
 import ProvaSeguraUtic from "./pages/ProvaSeguraUtic";
@@ -101,6 +102,7 @@ function Router() {
       <Route path={"/evolucao"}><DashboardLayout><Evolucao /></DashboardLayout></Route>
       <Route path={"/admin-eixos-tecnicos"}><DashboardLayout><AdminEixosTecnicos /></DashboardLayout></Route>
       <Route path={"/importar-eixos-avaliacoes"}><DashboardLayout><ImportarEixosAvaliacoes /></DashboardLayout></Route>
+      <Route path={"/importar-provas"}><DashboardLayout><ImportarProvas /></DashboardLayout></Route>
       <Route path={"/admin-avaliacoes"}><DashboardLayout><AdminAvaliacoes /></DashboardLayout></Route>
       <Route path={"/admin-avaliacoes/utic/resultados"}><DashboardLayout><AdminResultadosUtic /></DashboardLayout></Route>
       <Route path={"/evidencias-equipe"}><DashboardLayout><EvidenciasEquipe /></DashboardLayout></Route>
