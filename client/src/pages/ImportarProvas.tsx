@@ -69,6 +69,22 @@ function pareceNaoSei(valor: string) {
   return normalizado.includes("nao sei") || normalizado.includes("nao tenho conhecimento") || normalizado.includes("desconheco");
 }
 
+function validarAlternativasReais(arquivoNome: string, linhaNumero: number, opcoes: Opcao[]) {
+  const reais = opcoes.filter(opcao => !opcao.naoSei);
+  const vistos = new Map<string, string>();
+  for (const opcao of reais) {
+    if (pareceNaoSei(opcao.texto)) {
+      throw new Error(`${arquivoNome}: linha ${linhaNumero}, a alternativa ${opcao.letra} foi tratada como alternativa real, mas contém texto de “Não sei”.`);
+    }
+    const chave = normalizar(opcao.texto);
+    const anterior = vistos.get(chave);
+    if (anterior) {
+      throw new Error(`${arquivoNome}: linha ${linhaNumero}, as alternativas ${anterior} e ${opcao.letra} têm o mesmo conteúdo.`);
+    }
+    vistos.set(chave, opcao.letra);
+  }
+}
+
 function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
   const workbook = XLSX.read(buffer, { type: "array" });
   const wsProva = abaPorNome(workbook, ["prova"]);
@@ -94,52 +110,66 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
   const linhas = XLSX.utils.sheet_to_json(wsQuestoes, { header: 1, raw: true, defval: "" }) as unknown[][];
   if (linhas.length < 2) throw new Error(`${arquivoNome}: a aba QUESTÕES não contém questões.`);
   const cabecalhos = linhas[0].map(normalizar);
-  const temFormatoNovo = cabecalhos.some(item => ["alternativa f", "alternativa f nao sei", "f nao sei", "nao sei"].includes(item));
   const questoes: Questao[] = [];
 
   for (let indice = 1; indice < linhas.length; indice += 1) {
     const linha = linhas[indice];
+    const numeroLinha = indice + 1;
     const idBruto = valorCabecalho(linha, cabecalhos, "ID da Questão");
     const enunciado = texto(valorCabecalho(linha, cabecalhos, "Enunciado"));
     if (!texto(idBruto) && !enunciado) continue;
-    if (!texto(idBruto)) throw new Error(`${arquivoNome}: linha ${indice + 1}, ID da questão não informado.`);
-    if (!enunciado) throw new Error(`${arquivoNome}: linha ${indice + 1}, enunciado não informado.`);
+    if (!texto(idBruto)) throw new Error(`${arquivoNome}: linha ${numeroLinha}, ID da questão não informado.`);
+    if (!enunciado) throw new Error(`${arquivoNome}: linha ${numeroLinha}, enunciado não informado.`);
 
     const opcoes: Opcao[] = [];
-    const letrasReais = temFormatoNovo ? (["A", "B", "C", "D", "E"] as const) : (["A", "B", "C", "D"] as const);
-
-    for (const letra of letrasReais) {
-      const nomesCabecalho = letra === "E"
-        ? ["Alternativa E", "Alternativa E real"]
-        : [`Alternativa ${letra}`];
-      const opcaoTexto = texto(valorPrimeiroCabecalho(linha, cabecalhos, nomesCabecalho));
-      if (!opcaoTexto) throw new Error(`${arquivoNome}: linha ${indice + 1}, alternativa ${letra} não informada.`);
+    for (const letra of ["A", "B", "C", "D"] as const) {
+      const opcaoTexto = texto(valorCabecalho(linha, cabecalhos, `Alternativa ${letra}`));
+      if (!opcaoTexto) throw new Error(`${arquivoNome}: linha ${numeroLinha}, alternativa ${letra} não informada.`);
+      if (pareceNaoSei(opcaoTexto)) throw new Error(`${arquivoNome}: linha ${numeroLinha}, a alternativa ${letra} não pode ser “Não sei”.`);
       opcoes.push({ letra, texto: opcaoTexto, naoSei: false });
     }
 
-    if (temFormatoNovo) {
-      const alternativaF = texto(valorPrimeiroCabecalho(linha, cabecalhos, ["Alternativa F / Não sei", "Alternativa F", "F / Não sei", "Não sei"]));
-      if (!alternativaF) throw new Error(`${arquivoNome}: linha ${indice + 1}, alternativa F / Não sei não informada.`);
-      if (!pareceNaoSei(alternativaF)) throw new Error(`${arquivoNome}: linha ${indice + 1}, a alternativa F deve ser a opção “Não sei”.`);
+    const alternativaE = texto(valorPrimeiroCabecalho(linha, cabecalhos, ["Alternativa E", "Alternativa E / Não sei", "Alternativa E real"]));
+    const alternativaF = texto(valorPrimeiroCabecalho(linha, cabecalhos, ["Alternativa F / Não sei", "Alternativa F", "F / Não sei", "Não sei"]));
+
+    if (!alternativaE) {
+      throw new Error(`${arquivoNome}: linha ${numeroLinha}, a alternativa E deve conter a 5ª alternativa real ou a única opção “Não sei”.`);
+    }
+
+    if (alternativaF) {
+      if (pareceNaoSei(alternativaE)) {
+        throw new Error(`${arquivoNome}: linha ${numeroLinha}, existe “Não sei” em E e também conteúdo em F. Deve existir apenas uma alternativa “Não sei”.`);
+      }
+      if (!pareceNaoSei(alternativaF)) {
+        throw new Error(`${arquivoNome}: linha ${numeroLinha}, quando F estiver preenchida ela deve ser a única opção “Não sei”.`);
+      }
+      opcoes.push({ letra: "E", texto: alternativaE, naoSei: false });
       opcoes.push({ letra: "F", texto: alternativaF, naoSei: true });
     } else {
-      const alternativaE = texto(valorPrimeiroCabecalho(linha, cabecalhos, ["Alternativa E / Não sei", "Alternativa E"]));
-      if (!alternativaE) throw new Error(`${arquivoNome}: linha ${indice + 1}, alternativa E / Não sei não informada.`);
-      if (!pareceNaoSei(alternativaE)) throw new Error(`${arquivoNome}: linha ${indice + 1}, no formato antigo a alternativa E deve ser a opção “Não sei”.`);
+      if (!pareceNaoSei(alternativaE)) {
+        throw new Error(`${arquivoNome}: linha ${numeroLinha}, questão com 4 alternativas reais deve usar E como a única opção “Não sei”; para 5 alternativas reais, preencha E com a alternativa real e F com “Não sei”.`);
+      }
       opcoes.push({ letra: "E", texto: alternativaE, naoSei: true });
     }
 
+    validarAlternativasReais(arquivoNome, numeroLinha, opcoes);
+
+    if (opcoes.filter(opcao => opcao.naoSei).length !== 1) {
+      throw new Error(`${arquivoNome}: linha ${numeroLinha}, deve existir exatamente uma alternativa “Não sei”.`);
+    }
+
     const gabarito = texto(valorCabecalho(linha, cabecalhos, "Gabarito")).toUpperCase();
-    const gabaritosPermitidos = temFormatoNovo ? ["A", "B", "C", "D", "E"] : ["A", "B", "C", "D"];
-    if (!gabaritosPermitidos.includes(gabarito)) {
-      throw new Error(`${arquivoNome}: linha ${indice + 1}, gabarito deve ser ${temFormatoNovo ? "A, B, C, D ou E" : "A, B, C ou D"}. A opção “Não sei” nunca pode ser gabarito.`);
+    const opcaoGabarito = opcoes.find(opcao => opcao.letra === gabarito);
+    if (!opcaoGabarito || opcaoGabarito.naoSei) {
+      const permitidos = opcoes.filter(opcao => !opcao.naoSei).map(opcao => opcao.letra).join(", ");
+      throw new Error(`${arquivoNome}: linha ${numeroLinha}, gabarito deve apontar para uma alternativa real existente (${permitidos}). “Não sei” nunca pode ser gabarito.`);
     }
 
     const eixos = [1, 2, 3, 4, 5]
       .map(numero => texto(valorCabecalho(linha, cabecalhos, `Eixo ${numero} da Questão`)))
       .filter(Boolean)
       .map(nomeEixo => ({ nome: nomeEixo }));
-    if (!eixos.length) throw new Error(`${arquivoNome}: linha ${indice + 1}, informe pelo menos o Eixo 1 da Questão.`);
+    if (!eixos.length) throw new Error(`${arquivoNome}: linha ${numeroLinha}, informe pelo menos o Eixo 1 da Questão.`);
 
     questoes.push({
       id: texto(idBruto),
@@ -231,7 +261,7 @@ export default function ImportarProvas() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>1. Selecione as provas</CardTitle><CardDescription>Use arquivos .xlsx no padrão com as abas PROVA e QUESTÕES. O formato atual aceita 5 alternativas reais (A–E) + F = Não sei e mantém compatibilidade com o modelo antigo de 4 alternativas + Não sei.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>1. Selecione as provas</CardTitle><CardDescription>Use arquivos .xlsx no padrão com as abas PROVA e QUESTÕES. Em cada questão, use A–D como alternativas reais. Se houver 4 alternativas reais, E deve ser a única opção “Não sei” e F fica vazia. Se houver 5 alternativas reais, E é a 5ª alternativa e F deve ser a única opção “Não sei”.</CardDescription></CardHeader>
         <CardContent className="space-y-4">
           <input type="file" accept=".xlsx" multiple onChange={selecionar} className="block w-full text-sm" />
           {arquivos.length > 0 && <div className="rounded-md border bg-muted/20 p-4 text-sm"><strong>{arquivos.length}</strong> prova(s) selecionada(s) · <strong>{totalQuestoes}</strong> questão(ões) no total.</div>}
