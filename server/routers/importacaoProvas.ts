@@ -57,6 +57,10 @@ async function ensureTables() {
   return db;
 }
 
+function normalizarTexto(valor: string) {
+  return valor.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+}
+
 function validarEstrutura(prova: z.infer<typeof provaSchema>) {
   const erros: string[] = [];
   const avisos: string[] = [];
@@ -69,12 +73,43 @@ function validarEstrutura(prova: z.infer<typeof provaSchema>) {
     const chave = questao.id.toLocaleLowerCase("pt-BR");
     if (ids.has(chave)) erros.push(`Questão ${questao.id}: ID duplicado.`);
     ids.add(chave);
+
     const letras = new Set(questao.opcoes.map(opcao => opcao.letra));
     for (const letra of ["A", "B", "C", "D", "E"] as const) {
       if (!letras.has(letra)) erros.push(`Linha ${linha}: alternativa ${letra} não informada.`);
     }
+
+    if (letras.size !== questao.opcoes.length) {
+      erros.push(`Questão ${questao.id}: há letra de alternativa repetida.`);
+    }
+
     const naoSei = questao.opcoes.filter(opcao => opcao.naoSei);
-    if (naoSei.length !== 1) avisos.push(`Questão ${questao.id}: recomenda-se exatamente uma alternativa marcada como “Não sei”.`);
+    if (naoSei.length !== 1) {
+      erros.push(`Questão ${questao.id}: deve existir exatamente uma única alternativa marcada como “Não sei”.`);
+    }
+
+    const reais = questao.opcoes.filter(opcao => !opcao.naoSei);
+    const textosReais = reais.map(opcao => normalizarTexto(opcao.texto));
+    if (new Set(textosReais).size !== textosReais.length) {
+      erros.push(`Questão ${questao.id}: existem alternativas reais com conteúdo duplicado.`);
+    }
+
+    const alternativaNaoSei = naoSei[0];
+    if (alternativaNaoSei) {
+      const letraNaoSei = alternativaNaoSei.letra;
+      const formatoValido =
+        (questao.opcoes.length === 5 && letraNaoSei === "E" && !letras.has("F")) ||
+        (questao.opcoes.length === 6 && letraNaoSei === "F");
+      if (!formatoValido) {
+        erros.push(`Questão ${questao.id}: com 4 alternativas reais, E deve ser “Não sei” e F não deve existir; com 5 alternativas reais, F deve ser “Não sei”.`);
+      }
+    }
+
+    const opcaoGabarito = questao.opcoes.find(opcao => opcao.letra === questao.gabarito);
+    if (!opcaoGabarito || opcaoGabarito.naoSei) {
+      erros.push(`Questão ${questao.id}: o gabarito deve apontar para uma alternativa real existente. “Não sei” nunca pode ser gabarito.`);
+    }
+
     const eixosNormalizados = questao.eixos.map(eixo => eixo.nome.trim().toLocaleLowerCase("pt-BR"));
     if (new Set(eixosNormalizados).size !== eixosNormalizados.length) {
       erros.push(`Questão ${questao.id}: o mesmo eixo foi informado mais de uma vez.`);
