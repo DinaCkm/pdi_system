@@ -56,6 +56,19 @@ function valorCabecalho(linha: unknown[], cabecalhos: string[], nome: string) {
   return indice >= 0 ? linha[indice] : undefined;
 }
 
+function valorPrimeiroCabecalho(linha: unknown[], cabecalhos: string[], nomes: string[]) {
+  for (const nome of nomes) {
+    const valor = valorCabecalho(linha, cabecalhos, nome);
+    if (valor !== undefined) return valor;
+  }
+  return undefined;
+}
+
+function pareceNaoSei(valor: string) {
+  const normalizado = normalizar(valor);
+  return normalizado.includes("nao sei") || normalizado.includes("nao tenho conhecimento") || normalizado.includes("desconheco");
+}
+
 function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
   const workbook = XLSX.read(buffer, { type: "array" });
   const wsProva = abaPorNome(workbook, ["prova"]);
@@ -81,6 +94,7 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
   const linhas = XLSX.utils.sheet_to_json(wsQuestoes, { header: 1, raw: true, defval: "" }) as unknown[][];
   if (linhas.length < 2) throw new Error(`${arquivoNome}: a aba QUESTÕES não contém questões.`);
   const cabecalhos = linhas[0].map(normalizar);
+  const temFormatoNovo = cabecalhos.some(item => ["alternativa f", "alternativa f nao sei", "f nao sei", "nao sei"].includes(item));
   const questoes: Questao[] = [];
 
   for (let indice = 1; indice < linhas.length; indice += 1) {
@@ -92,19 +106,33 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
     if (!enunciado) throw new Error(`${arquivoNome}: linha ${indice + 1}, enunciado não informado.`);
 
     const opcoes: Opcao[] = [];
-    for (const letra of ["A", "B", "C", "D"] as const) {
-      const opcaoTexto = texto(valorCabecalho(linha, cabecalhos, `Alternativa ${letra}`));
+    const letrasReais = temFormatoNovo ? (["A", "B", "C", "D", "E"] as const) : (["A", "B", "C", "D"] as const);
+
+    for (const letra of letrasReais) {
+      const nomesCabecalho = letra === "E"
+        ? ["Alternativa E", "Alternativa E real"]
+        : [`Alternativa ${letra}`];
+      const opcaoTexto = texto(valorPrimeiroCabecalho(linha, cabecalhos, nomesCabecalho));
       if (!opcaoTexto) throw new Error(`${arquivoNome}: linha ${indice + 1}, alternativa ${letra} não informada.`);
       opcoes.push({ letra, texto: opcaoTexto, naoSei: false });
     }
 
-    const alternativaE = texto(valorCabecalho(linha, cabecalhos, "Alternativa E / Não sei"));
-    if (!alternativaE) throw new Error(`${arquivoNome}: linha ${indice + 1}, alternativa E / Não sei não informada.`);
-    opcoes.push({ letra: "E", texto: alternativaE, naoSei: normalizar(alternativaE).includes("nao tenho conhecimento") || normalizar(alternativaE).includes("nao sei") });
+    if (temFormatoNovo) {
+      const alternativaF = texto(valorPrimeiroCabecalho(linha, cabecalhos, ["Alternativa F / Não sei", "Alternativa F", "F / Não sei", "Não sei"]));
+      if (!alternativaF) throw new Error(`${arquivoNome}: linha ${indice + 1}, alternativa F / Não sei não informada.`);
+      if (!pareceNaoSei(alternativaF)) throw new Error(`${arquivoNome}: linha ${indice + 1}, a alternativa F deve ser a opção “Não sei”.`);
+      opcoes.push({ letra: "F", texto: alternativaF, naoSei: true });
+    } else {
+      const alternativaE = texto(valorPrimeiroCabecalho(linha, cabecalhos, ["Alternativa E / Não sei", "Alternativa E"]));
+      if (!alternativaE) throw new Error(`${arquivoNome}: linha ${indice + 1}, alternativa E / Não sei não informada.`);
+      if (!pareceNaoSei(alternativaE)) throw new Error(`${arquivoNome}: linha ${indice + 1}, no formato antigo a alternativa E deve ser a opção “Não sei”.`);
+      opcoes.push({ letra: "E", texto: alternativaE, naoSei: true });
+    }
 
     const gabarito = texto(valorCabecalho(linha, cabecalhos, "Gabarito")).toUpperCase();
-    if (!["A", "B", "C", "D", "E"].includes(gabarito)) {
-      throw new Error(`${arquivoNome}: linha ${indice + 1}, gabarito deve ser A, B, C, D ou E.`);
+    const gabaritosPermitidos = temFormatoNovo ? ["A", "B", "C", "D", "E"] : ["A", "B", "C", "D"];
+    if (!gabaritosPermitidos.includes(gabarito)) {
+      throw new Error(`${arquivoNome}: linha ${indice + 1}, gabarito deve ser ${temFormatoNovo ? "A, B, C, D ou E" : "A, B, C ou D"}. A opção “Não sei” nunca pode ser gabarito.`);
     }
 
     const eixos = [1, 2, 3, 4, 5]
@@ -188,7 +216,7 @@ export default function ImportarProvas() {
       setResultado(resposta);
       await listaQuery.refetch();
     } catch (error: any) {
-      setErroLeitura(error?.message || "A importação foi cancelada. Nenhuma prova foi gravada.");
+      setErroLeitura(error?.message || "Não foi possível concluir a importação das provas válidas.");
     }
   };
 
@@ -199,11 +227,11 @@ export default function ImportarProvas() {
     <div className="space-y-6 p-6">
       <div className="space-y-2">
         <div className="flex items-center gap-3"><FileSpreadsheet className="h-7 w-7 text-blue-600" /><h1 className="text-2xl font-semibold">Upload de Avaliações</h1></div>
-        <p className="max-w-4xl text-sm text-muted-foreground">Envie uma ou várias provas em Excel. O sistema valida o lote inteiro antes de gravar qualquer prova.</p>
+        <p className="max-w-4xl text-sm text-muted-foreground">Envie uma ou várias provas em Excel. Cada prova é validada individualmente antes da gravação.</p>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>1. Selecione as provas</CardTitle><CardDescription>Use arquivos .xlsx no padrão com as abas PROVA e QUESTÕES. Cada prova pode ter uma quantidade diferente de questões.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>1. Selecione as provas</CardTitle><CardDescription>Use arquivos .xlsx no padrão com as abas PROVA e QUESTÕES. O formato atual aceita 5 alternativas reais (A–E) + F = Não sei e mantém compatibilidade com o modelo antigo de 4 alternativas + Não sei.</CardDescription></CardHeader>
         <CardContent className="space-y-4">
           <input type="file" accept=".xlsx" multiple onChange={selecionar} className="block w-full text-sm" />
           {arquivos.length > 0 && <div className="rounded-md border bg-muted/20 p-4 text-sm"><strong>{arquivos.length}</strong> prova(s) selecionada(s) · <strong>{totalQuestoes}</strong> questão(ões) no total.</div>}
@@ -215,7 +243,7 @@ export default function ImportarProvas() {
 
       {validacao && (
         <Card>
-          <CardHeader><CardTitle>2. Conferência antes da gravação</CardTitle><CardDescription>{validacao.valido ? "Todos os arquivos passaram pela validação estrutural." : "Existem erros. Nenhuma prova será gravada enquanto houver erro no lote."}</CardDescription></CardHeader>
+          <CardHeader><CardTitle>2. Conferência antes da gravação</CardTitle><CardDescription>{validacao.totalComErro > 0 ? `${validacao.totalValidos ?? 0} prova(s) válida(s) e ${validacao.totalComErro} com erro. As válidas poderão ser gravadas; as demais deverão ser corrigidas.` : "Todas as provas passaram pela validação estrutural."}</CardDescription></CardHeader>
           <CardContent className="space-y-4">
             {(validacao.resultados ?? []).map((item: any) => (
               <div key={`${item.arquivoNome}-${item.codigo}`} className="rounded-md border p-4 text-sm">
@@ -231,15 +259,15 @@ export default function ImportarProvas() {
 
             {validacao.valido && (
               <div className="space-y-3 rounded-md border p-4">
-                <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={confirmado} onChange={event => setConfirmado(event.target.checked)} className="mt-1" /><span>Conferi o resumo e autorizo a gravação de todas as provas deste lote como rascunho.</span></label>
-                <Button onClick={importar} disabled={!confirmado || carregando}>{carregando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Gravar avaliações</Button>
+                <label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={confirmado} onChange={event => setConfirmado(event.target.checked)} className="mt-1" /><span>Conferi o resumo e autorizo a gravação das provas válidas deste lote como rascunho. As provas com erro permanecerão fora da gravação.</span></label>
+                <Button onClick={importar} disabled={!confirmado || carregando}>{carregando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Gravar avaliações válidas</Button>
               </div>
             )}
           </CardContent>
         </Card>
       )}
 
-      {resultado?.sucesso && <Alert><CheckCircle2 className="h-4 w-4" /><AlertDescription>{resultado.totalProvas} prova(s) gravada(s) com sucesso como RASCUNHO, totalizando {resultado.totalQuestoes} questão(ões).</AlertDescription></Alert>}
+      {resultado?.sucesso && <Alert><CheckCircle2 className="h-4 w-4" /><AlertDescription>{resultado.totalGravadas ?? resultado.totalProvas} prova(s) gravada(s) com sucesso como RASCUNHO, totalizando {resultado.totalQuestoes} questão(ões). {resultado.totalComErro > 0 ? `${resultado.totalComErro} prova(s) ficaram de fora por erro.` : ""}</AlertDescription></Alert>}
 
       <Card>
         <CardHeader><CardTitle>Avaliações já importadas</CardTitle><CardDescription>Histórico das provas recebidas por este módulo.</CardDescription></CardHeader>
