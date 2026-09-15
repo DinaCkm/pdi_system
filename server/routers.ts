@@ -12,6 +12,7 @@ import { notificationsRouter } from "./routers/notifications";
 import { visaoExecutivaRouter } from "./routers/visaoExecutiva";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { systemLockRouter } from "./routers/systemLock";
+import { importacaoEixosRouter } from "./routers/importacaoEixos";
 import { invokeLLM } from "./_core/llm";
 import { generatePasswordResetToken, generateTemporaryPassword, hashPassword } from "./_core/password";
 import { ENV } from "./_core/env";
@@ -24,6 +25,7 @@ import { systemRouter } from "./_core/systemRouter";
 export const appRouter = router({
   system: systemRouter,
   systemLock: systemLockRouter,
+  importacaoEixos: importacaoEixosRouter,
   auth: authRouter, // <--- AQUI ESTÁ A MÁGICA DO LOGIN
   pdiAjustes: pdiAjustesRouter,
   notifications: notificationsRouter,
