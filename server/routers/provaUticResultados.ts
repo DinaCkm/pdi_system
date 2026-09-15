@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { UTIC_QUESTOES, TOTAL_QUESTOES_UTIC, validarBancoUtic } from "../../shared/uticQuestoes";
+import type { UticQuestao } from "../../shared/uticQuestoes";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
 import { UTIC_EIXOS, UTIC_GABARITO, UTIC_LINHA_BASE_DANIEL } from "../data/uticGabarito";
@@ -16,13 +17,23 @@ function arredondar(valor: number) {
   return Math.round(valor * 10) / 10;
 }
 
+/**
+ * Uma questão pode medir um ou mais eixos. Quando houver múltiplos vínculos,
+ * a evidência da resposta vale integralmente para cada eixo associado.
+ * Questões antigas, que possuem somente eixoId/eixo, continuam funcionando.
+ */
+function questaoPertenceAoEixo(questao: UticQuestao, eixoId: string) {
+  if (questao.eixos?.length) return questao.eixos.some((eixo) => eixo.id === eixoId);
+  return questao.eixoId === eixoId;
+}
+
 function calcularResultado(
   respostas: Array<{ questaoId: number; resposta: string }>,
   linhasBase: Record<string, number | null> = {},
 ) {
   const respostaPorQuestao = new Map(respostas.map((item) => [Number(item.questaoId), String(item.resposta)]));
   const porEixo = Object.entries(UTIC_EIXOS).map(([eixoId, eixo]) => {
-    const questoes = UTIC_QUESTOES.filter((questao) => questao.eixoId === eixoId);
+    const questoes = UTIC_QUESTOES.filter((questao) => questaoPertenceAoEixo(questao, eixoId));
     const respondidas = questoes.filter((questao) => respostaPorQuestao.has(questao.id));
     const acertos = questoes.filter((questao) => respostaPorQuestao.get(questao.id) === UTIC_GABARITO[questao.id]).length;
     const naoSei = questoes.filter((questao) => {
@@ -41,6 +52,7 @@ function calcularResultado(
       erros: Math.max(0, respondidas.length - acertos - naoSei),
       naoSei,
       percentualAtual,
+      percentualConhecimento: percentualAtual,
       linhaBase,
       evolucaoPp,
       comparavel: linhaBase !== null,
