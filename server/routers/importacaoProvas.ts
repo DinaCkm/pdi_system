@@ -107,49 +107,113 @@ export const importacaoProvasRouter = router({
       r.valido = r.erros.length === 0;
       return { arquivoNome: item.arquivoNome, codigo: item.prova.codigo, nome: item.prova.nome, unidade: item.prova.unidade, ano: item.prova.ano, ...r };
     });
-    return { valido: resultados.every(item => item.valido), totalArquivos: resultados.length, resultados };
+    return {
+      valido: resultados.some(item => item.valido),
+      totalArquivos: resultados.length,
+      totalValidos: resultados.filter(item => item.valido).length,
+      totalComErro: resultados.filter(item => !item.valido).length,
+      resultados,
+    };
   }),
 
   importarLote: adminProcedure.input(z.object({
     arquivos: z.array(arquivoProvaSchema).min(1).max(100),
     confirmado: z.literal(true),
   })).mutation(async ({ input, ctx }) => {
+    const db = await ensureTables();
     const chaves = new Set<string>();
+    const resultados: Array<{
+      arquivoNome: string;
+      codigo: string;
+      ano: number;
+      sucesso: boolean;
+      motivo?: string;
+      totalQuestoes?: number;
+    }> = [];
+
     for (const item of input.arquivos) {
       const validacao = validarEstrutura(item.prova);
-      if (validacao.erros.length) throw new Error(`${item.arquivoNome}: ${validacao.erros.join(" ")}`);
       const chave = `${item.prova.codigo.trim().toLocaleLowerCase("pt-BR")}::${item.prova.ano}`;
-      if (chaves.has(chave)) throw new Error(`O lote contém mais de uma prova com o código ${item.prova.codigo} e ano ${item.prova.ano}.`);
-      chaves.add(chave);
-    }
 
-    const db = await ensureTables();
-    await db.transaction(async (tx: any) => {
-      for (const item of input.arquivos) {
-        const existenteResult = await tx.execute(sql`
+      if (validacao.erros.length) {
+        resultados.push({
+          arquivoNome: item.arquivoNome,
+          codigo: item.prova.codigo,
+          ano: item.prova.ano,
+          sucesso: false,
+          motivo: validacao.erros.join(" "),
+        });
+        continue;
+      }
+
+      if (chaves.has(chave)) {
+        resultados.push({
+          arquivoNome: item.arquivoNome,
+          codigo: item.prova.codigo,
+          ano: item.prova.ano,
+          sucesso: false,
+          motivo: `Código ${item.prova.codigo} / ${item.prova.ano}: prova repetida dentro deste lote.`,
+        });
+        continue;
+      }
+      chaves.add(chave);
+
+      try {
+        const existenteResult = await db.execute(sql`
           SELECT id FROM provas_importadas WHERE codigo = ${item.prova.codigo} AND ano = ${item.prova.ano} LIMIT 1
         `);
         const existentes = Array.isArray(existenteResult) ? (existenteResult[0] as any[]) : [];
-        if (existentes.length) throw new Error(`Já existe uma prova importada com o código ${item.prova.codigo} e ano ${item.prova.ano}. Nenhuma prova do lote foi gravada.`);
-      }
+        if (existentes.length) {
+          resultados.push({
+            arquivoNome: item.arquivoNome,
+            codigo: item.prova.codigo,
+            ano: item.prova.ano,
+            sucesso: false,
+            motivo: `Já existe uma prova importada com o código ${item.prova.codigo} e ano ${item.prova.ano}.`,
+          });
+          continue;
+        }
 
-      for (const item of input.arquivos) {
-        await tx.execute(sql`
-          INSERT INTO provas_importadas
-            (codigo, nome, unidade, ano, descricao, total_questoes, questoes_json, arquivo_nome, status, criado_por)
-          VALUES
-            (${item.prova.codigo}, ${item.prova.nome}, ${item.prova.unidade}, ${item.prova.ano},
-             ${item.prova.descricao ?? null}, ${item.prova.questoes.length}, ${JSON.stringify(item.prova.questoes)},
-             ${item.arquivoNome}, 'RASCUNHO', ${ctx.user.id})
-        `);
+        await db.transaction(async (tx: any) => {
+          await tx.execute(sql`
+            INSERT INTO provas_importadas
+              (codigo, nome, unidade, ano, descricao, total_questoes, questoes_json, arquivo_nome, status, criado_por)
+            VALUES
+              (${item.prova.codigo}, ${item.prova.nome}, ${item.prova.unidade}, ${item.prova.ano},
+               ${item.prova.descricao ?? null}, ${item.prova.questoes.length}, ${JSON.stringify(item.prova.questoes)},
+               ${item.arquivoNome}, 'RASCUNHO', ${ctx.user.id})
+          `);
+        });
+
+        resultados.push({
+          arquivoNome: item.arquivoNome,
+          codigo: item.prova.codigo,
+          ano: item.prova.ano,
+          sucesso: true,
+          totalQuestoes: item.prova.questoes.length,
+        });
+      } catch (error: any) {
+        resultados.push({
+          arquivoNome: item.arquivoNome,
+          codigo: item.prova.codigo,
+          ano: item.prova.ano,
+          sucesso: false,
+          motivo: error?.message || "Não foi possível gravar esta prova.",
+        });
       }
-    });
+    }
+
+    const gravadas = resultados.filter(item => item.sucesso);
+    const comErro = resultados.filter(item => !item.sucesso);
 
     return {
-      sucesso: true,
+      sucesso: gravadas.length > 0,
       totalProvas: input.arquivos.length,
-      totalQuestoes: input.arquivos.reduce((soma, item) => soma + item.prova.questoes.length, 0),
+      totalGravadas: gravadas.length,
+      totalComErro: comErro.length,
+      totalQuestoes: gravadas.reduce((soma, item) => soma + (item.totalQuestoes ?? 0), 0),
       status: "RASCUNHO",
+      resultados,
     };
   }),
 
