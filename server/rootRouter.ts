@@ -5,6 +5,7 @@ import { provaUticTesteRouter } from "./routers/provaUticTeste";
 import { provaUticResultadosRouter } from "./routers/provaUticResultados";
 import { provaUticAuditoriaRouter } from "./routers/provaUticAuditoria";
 import { provaUticMatrizRouter } from "./routers/provaUticMatriz";
+import { importacaoProvasRouter } from "./routers/importacaoProvas";
 import { mergeRouters, router } from "./_core/customTrpc";
 
 const avaliacoesRootRouter = router({
@@ -14,6 +15,7 @@ const avaliacoesRootRouter = router({
   provaUticResultados: provaUticResultadosRouter,
   provaUticAuditoria: provaUticAuditoriaRouter,
   provaUticMatriz: provaUticMatrizRouter,
+  importacaoProvas: importacaoProvasRouter,
 });
 
 export const rootRouter = mergeRouters(appRouter, avaliacoesRootRouter);
