@@ -23,7 +23,7 @@ import Acoes from "./pages/Acoes";
 import MinhasPendencias from "./pages/MinhasPendencias";
 import Relatorios from "./pages/Relatorios";
 import Importacao from "./pages/Importacao";
-import Avaliacoes from "./pages/Avaliacoes";
+import AvaliacoesProficiencia from "./pages/AvaliacoesProficiencia";
 import Evolucao from "./pages/Evolucao";
 import AdminEixosTecnicos from "./pages/AdminEixosTecnicos";
 import ImportarEixosAvaliacoes from "./pages/ImportarEixosAvaliacoes";
@@ -103,7 +103,7 @@ function Router() {
       <Route path={"/minhas-acoes"}><DashboardLayout><MinhasPendencias /></DashboardLayout></Route>
       <Route path={"/relatorios"}><DashboardLayout><Relatorios /></DashboardLayout></Route>
       <Route path={"/importacao"}><DashboardLayout><Importacao /></DashboardLayout></Route>
-      <Route path={"/avaliacoes"}><DashboardLayout><Avaliacoes /></DashboardLayout></Route>
+      <Route path={"/avaliacoes"}><DashboardLayout><AvaliacoesProficiencia /></DashboardLayout></Route>
       <Route path={"/evolucao"}><DashboardLayout><Evolucao /></DashboardLayout></Route>
       <Route path={"/admin-eixos-tecnicos"}><DashboardLayout><AdminEixosTecnicos /></DashboardLayout></Route>
       <Route path={"/importar-eixos-avaliacoes"}><DashboardLayout><ImportarEixosAvaliacoes /></DashboardLayout></Route>
