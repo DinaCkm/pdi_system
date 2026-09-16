@@ -163,6 +163,7 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
 export default function ImportarProvas() {
   const api = (trpc as any).importacaoProvas;
   const validarLote = api.validarLote.useMutation();
+  const validarSalva = api.validarSalva.useMutation();
   const importarLote = api.importarLote.useMutation();
   const listaQuery = api.listar.useQuery(undefined, { refetchOnWindowFocus: false });
 
@@ -170,6 +171,8 @@ export default function ImportarProvas() {
   const [erroLeitura, setErroLeitura] = useState("");
   const [validacao, setValidacao] = useState<any>(null);
   const [resultado, setResultado] = useState<any>(null);
+  const [validacaoSalva, setValidacaoSalva] = useState<any>(null);
+  const [validandoId, setValidandoId] = useState<number | null>(null);
   const [inputKey, setInputKey] = useState(0);
 
   const limparFluxo = () => {
@@ -223,6 +226,21 @@ export default function ImportarProvas() {
     }
   };
 
+  const validarProvaSalva = async (id: number) => {
+    setErroLeitura("");
+    setValidacaoSalva(null);
+    setValidandoId(id);
+    try {
+      const resposta = await validarSalva.mutateAsync({ id });
+      setValidacaoSalva(resposta);
+      await listaQuery.refetch();
+    } catch (error: any) {
+      setErroLeitura(error?.message || "Não foi possível validar a prova salva.");
+    } finally {
+      setValidandoId(null);
+    }
+  };
+
   const totalQuestoes = useMemo(() => arquivos.reduce((soma, item) => soma + item.prova.questoes.length, 0), [arquivos]);
   const carregando = validarLote.isPending || importarLote.isPending;
 
@@ -266,11 +284,20 @@ export default function ImportarProvas() {
 
       {resultado?.sucesso && <Alert><CheckCircle2 className="h-4 w-4" /><AlertDescription><div className="space-y-3"><p>{resultado.totalGravadas ?? resultado.totalProvas} prova(s) gravada(s) como RASCUNHO, totalizando {resultado.totalQuestoes} questão(ões). A validação poderá ser feita posteriormente.</p><Button type="button" variant="outline" onClick={limparFluxo}>Nova importação</Button></div></AlertDescription></Alert>}
 
+      {validacaoSalva && (
+        <Alert variant={validacaoSalva.validada ? "default" : "destructive"}>
+          {validacaoSalva.validada ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+          <AlertDescription>
+            {validacaoSalva.validada ? `Prova ${validacaoSalva.codigo} validada com sucesso. Status alterado para VALIDADA.` : <div><p>A prova ${validacaoSalva.codigo} continua como RASCUNHO.</p>{(validacaoSalva.erros ?? []).map((erro: string) => <p key={erro}>• {erro}</p>)}</div>}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
-        <CardHeader><CardTitle>Avaliações já importadas</CardTitle><CardDescription>Rascunhos poderão ser revisados e validados posteriormente. Somente provas validadas poderão ser utilizadas em processos de avaliação após a implementação da etapa de atribuição.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>Avaliações já importadas</CardTitle><CardDescription>Valide cada rascunho quando estiver pronto. Somente provas com status VALIDADA poderão ser utilizadas em processos de avaliação.</CardDescription></CardHeader>
         <CardContent>
           {listaQuery.isLoading ? <p className="text-sm text-muted-foreground">Carregando...</p> : (listaQuery.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma avaliação importada ainda.</p> : (
-            <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead><tr className="border-b text-left"><th className="px-3 py-2">Código</th><th className="px-3 py-2">Avaliação</th><th className="px-3 py-2">Unidade</th><th className="px-3 py-2">Ano</th><th className="px-3 py-2">Questões</th><th className="px-3 py-2">Status</th></tr></thead><tbody>{(listaQuery.data ?? []).map((item: any) => <tr key={item.id} className="border-b last:border-0"><td className="px-3 py-2">{item.codigo}</td><td className="px-3 py-2">{item.nome}</td><td className="px-3 py-2">{item.unidade}</td><td className="px-3 py-2">{item.ano}</td><td className="px-3 py-2">{item.totalQuestoes}</td><td className="px-3 py-2">{item.status}</td></tr>)}</tbody></table></div>
+            <div className="overflow-x-auto"><table className="w-full min-w-[860px] text-sm"><thead><tr className="border-b text-left"><th className="px-3 py-2">Código</th><th className="px-3 py-2">Avaliação</th><th className="px-3 py-2">Unidade</th><th className="px-3 py-2">Ano</th><th className="px-3 py-2">Questões</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">Ação</th></tr></thead><tbody>{(listaQuery.data ?? []).map((item: any) => <tr key={item.id} className="border-b last:border-0"><td className="px-3 py-2">{item.codigo}</td><td className="px-3 py-2">{item.nome}</td><td className="px-3 py-2">{item.unidade}</td><td className="px-3 py-2">{item.ano}</td><td className="px-3 py-2">{item.totalQuestoes}</td><td className="px-3 py-2">{item.status}</td><td className="px-3 py-2">{item.status === "RASCUNHO" ? <Button size="sm" variant="outline" onClick={() => validarProvaSalva(Number(item.id))} disabled={validandoId === Number(item.id)}>{validandoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Validar</Button> : <span className="text-muted-foreground">Validada</span>}</td></tr>)}</tbody></table></div>
           )}
         </CardContent>
       </Card>
