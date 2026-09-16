@@ -94,27 +94,22 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
   const numeroDeclaradoBruto = campos.get("numero de questoes") ?? campos.get("número de questões");
   const numeroQuestoesDeclarado = texto(numeroDeclaradoBruto) ? Number(numeroDeclaradoBruto) : null;
   const linhas = XLSX.utils.sheet_to_json(wsQuestoes, { header: 1, raw: true, defval: "" }) as unknown[][];
-  if (linhas.length < 2) throw new Error(`${arquivoNome}: a aba QUESTÕES não contém questões.`);
-
-  const cabecalhosOriginais = linhas[0];
+  const cabecalhosOriginais = linhas[0] ?? [];
   const cabecalhos = cabecalhosOriginais.map(normalizar);
   const colunasAlternativas = localizarColunasAlternativas(cabecalhosOriginais);
-  if (colunasAlternativas.length < 2) throw new Error(`${arquivoNome}: a aba QUESTÕES deve ter pelo menos duas colunas de alternativas.`);
 
   const questoes: Questao[] = [];
   for (let indice = 1; indice < linhas.length; indice += 1) {
     const linha = linhas[indice];
+    const linhaTemConteudo = linha.some(valor => texto(valor));
+    if (!linhaTemConteudo) continue;
+
     const idBruto = valorCabecalho(linha, cabecalhos, "ID da Questão");
     const enunciado = texto(valorCabecalho(linha, cabecalhos, "Enunciado"));
-    if (!texto(idBruto) && !enunciado) continue;
 
     const alternativasDaLinha = colunasAlternativas
       .map(coluna => ({ letra: coluna.letra, texto: texto(linha[coluna.indice]) }))
       .filter(opcao => opcao.texto);
-
-    if (alternativasDaLinha.length < 2) {
-      throw new Error(`${arquivoNome}: questão ${texto(idBruto) || indice}, é necessário haver pelo menos duas alternativas preenchidas para armazenar o rascunho.`);
-    }
 
     const ultimoIndice = alternativasDaLinha.length - 1;
     const opcoes: Opcao[] = alternativasDaLinha.map((opcao, posicao) => ({
@@ -123,18 +118,15 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
       naoSei: posicao === ultimoIndice && pareceNaoSei(opcao.texto),
     }));
 
-    const gabaritoInformado = texto(valorCabecalho(linha, cabecalhos, "Gabarito")).toUpperCase();
-    const gabarito = gabaritoInformado || opcoes[0].letra;
-
-    const eixosInformados = [1, 2, 3, 4, 5]
+    const gabarito = texto(valorCabecalho(linha, cabecalhos, "Gabarito")).toUpperCase();
+    const eixos = [1, 2, 3, 4, 5]
       .map(numero => texto(valorCabecalho(linha, cabecalhos, `Eixo ${numero} da Questão`)))
       .filter(Boolean)
       .map(nomeEixo => ({ nome: nomeEixo }));
-    const eixos = eixosInformados.length ? eixosInformados : [{ nome: "PENDENTE DE CLASSIFICAÇÃO" }];
 
     questoes.push({
-      id: texto(idBruto) || `Q${indice}`,
-      enunciado: enunciado || "PENDENTE DE REVISÃO",
+      id: texto(idBruto),
+      enunciado,
       opcoes,
       gabarito,
       eixos,
@@ -143,8 +135,6 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
       tagFonte: texto(valorCabecalho(linha, cabecalhos, "Fonte / Tag")) || null,
     });
   }
-
-  if (!questoes.length) throw new Error(`${arquivoNome}: nenhuma questão preenchida foi localizada.`);
 
   return {
     arquivoNome,
@@ -407,13 +397,13 @@ export default function ImportarProvas() {
                     <div className="font-semibold">Questão {questaoIndex + 1}</div>
                     <div className="grid gap-3 md:grid-cols-2">
                       <label className="text-sm">ID<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.id} onChange={e => atualizarQuestao(questaoIndex, { id: e.target.value })} /></label>
-                      <label className="text-sm">Gabarito<select className="mt-1 w-full rounded-md border px-3 py-2" value={questao.gabarito} onChange={e => atualizarQuestao(questaoIndex, { gabarito: e.target.value })}>{questao.opcoes.filter(opcao => !opcao.naoSei).map(opcao => <option key={opcao.letra} value={opcao.letra}>{opcao.letra}</option>)}</select></label>
+                      <label className="text-sm">Gabarito<select className="mt-1 w-full rounded-md border px-3 py-2" value={questao.gabarito} onChange={e => atualizarQuestao(questaoIndex, { gabarito: e.target.value })}><option value="">Selecione</option>{questao.opcoes.filter(opcao => !opcao.naoSei).map(opcao => <option key={opcao.letra} value={opcao.letra}>{opcao.letra}</option>)}</select></label>
                       <label className="text-sm md:col-span-2">Enunciado<textarea className="mt-1 w-full rounded-md border px-3 py-2" rows={3} value={questao.enunciado} onChange={e => atualizarQuestao(questaoIndex, { enunciado: e.target.value })} /></label>
                     </div>
 
                     <div className="space-y-2">
                       <div className="text-sm font-medium">Alternativas</div>
-                      {questao.opcoes.map((opcao, opcaoIndex) => <label key={`${opcao.letra}-${opcaoIndex}`} className="grid gap-2 text-sm md:grid-cols-[48px_1fr]"><span className="pt-2 font-semibold">{opcao.letra}</span><textarea className="min-h-[42px] rounded-md border px-3 py-2" value={opcao.texto} onChange={e => atualizarOpcao(questaoIndex, opcaoIndex, e.target.value)} /></label>)}
+                      {questao.opcoes.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma alternativa cadastrada.</p> : questao.opcoes.map((opcao, opcaoIndex) => <label key={`${opcao.letra}-${opcaoIndex}`} className="grid gap-2 text-sm md:grid-cols-[48px_1fr]"><span className="pt-2 font-semibold">{opcao.letra}</span><textarea className="min-h-[42px] rounded-md border px-3 py-2" value={opcao.texto} onChange={e => atualizarOpcao(questaoIndex, opcaoIndex, e.target.value)} /></label>)}
                     </div>
 
                     <div className="grid gap-3 md:grid-cols-2">
