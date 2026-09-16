@@ -23,13 +23,14 @@ import Acoes from "./pages/Acoes";
 import MinhasPendencias from "./pages/MinhasPendencias";
 import Relatorios from "./pages/Relatorios";
 import Importacao from "./pages/Importacao";
-import Avaliacoes from "./pages/Avaliacoes";
-import Evolucao from "./pages/Evolucao";
+import AvaliacoesProficiencia from "./pages/AvaliacoesProficiencia";
+import EvolucaoProficiencia from "./pages/EvolucaoProficiencia";
 import AdminEixosTecnicos from "./pages/AdminEixosTecnicos";
 import ImportarEixosAvaliacoes from "./pages/ImportarEixosAvaliacoes";
 import ImportarProvas from "./pages/ImportarProvas";
-import AdminAvaliacoes from "./pages/AdminAvaliacoes";
-import AdminResultadosUtic from "./pages/AdminResultadosUtic";
+import AdminAplicacoesProficiencia from "./pages/AdminAplicacoesProficiencia";
+import ResultadosProficiencia from "./pages/ResultadosProficiencia";
+import ProvaProficiencia from "./pages/ProvaProficiencia";
 import ProvaSeguraUtic from "./pages/ProvaSeguraUtic";
 
 import PDIsEquipe from "./pages/PDIsEquipe";
@@ -75,6 +76,9 @@ function Router() {
           </ProvaUticIdentityGuard>
         </ProvaUticRealtimeGuard>
       </Route>
+      <Route path={"/avaliacoes/proficiencia/:id"}>
+        {(params) => <ProvaProficiencia key={params.id} aplicacaoId={Number(params.id)} />}
+      </Route>
       <Route path={"/dashboard"}><DashboardLayout><Dashboard /></DashboardLayout></Route>
       <Route path={"/central-comando"}><DashboardLayout><CentralComando /></DashboardLayout></Route>
       <Route path={"/404"} component={NotFound} />
@@ -98,13 +102,14 @@ function Router() {
       <Route path={"/minhas-acoes"}><DashboardLayout><MinhasPendencias /></DashboardLayout></Route>
       <Route path={"/relatorios"}><DashboardLayout><Relatorios /></DashboardLayout></Route>
       <Route path={"/importacao"}><DashboardLayout><Importacao /></DashboardLayout></Route>
-      <Route path={"/avaliacoes"}><DashboardLayout><Avaliacoes /></DashboardLayout></Route>
-      <Route path={"/evolucao"}><DashboardLayout><Evolucao /></DashboardLayout></Route>
+      <Route path={"/avaliacoes"}><DashboardLayout><AvaliacoesProficiencia /></DashboardLayout></Route>
+      <Route path={"/evolucao"}><DashboardLayout><EvolucaoProficiencia /></DashboardLayout></Route>
       <Route path={"/admin-eixos-tecnicos"}><DashboardLayout><AdminEixosTecnicos /></DashboardLayout></Route>
       <Route path={"/importar-eixos-avaliacoes"}><DashboardLayout><ImportarEixosAvaliacoes /></DashboardLayout></Route>
       <Route path={"/importar-provas"}><DashboardLayout><ImportarProvas /></DashboardLayout></Route>
-      <Route path={"/admin-avaliacoes"}><DashboardLayout><AdminAvaliacoes /></DashboardLayout></Route>
-      <Route path={"/admin-avaliacoes/utic/resultados"}><DashboardLayout><AdminResultadosUtic /></DashboardLayout></Route>
+      <Route path={"/admin-aplicacoes-proficiencia"}><DashboardLayout><AdminAplicacoesProficiencia /></DashboardLayout></Route>
+      <Route path={"/admin-avaliacoes"}><DashboardLayout><AdminAplicacoesProficiencia /></DashboardLayout></Route>
+      <Route path={"/admin-avaliacoes/utic/resultados"}><DashboardLayout><ResultadosProficiencia /></DashboardLayout></Route>
       <Route path={"/evidencias-equipe"}><DashboardLayout><EvidenciasEquipe /></DashboardLayout></Route>
       <Route path={"/solicitacoes-equipe"}><DashboardLayout><SolicitacoesEquipe /></DashboardLayout></Route>
       <Route path={"/solicitacoes-admin"}><DashboardLayout><SolicitacoesAdmin /></DashboardLayout></Route>
