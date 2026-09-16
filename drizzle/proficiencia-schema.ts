@@ -1,7 +1,7 @@
 import {
   index,
   int,
-  longtext,
+  json,
   mysqlEnum,
   mysqlTable,
   text,
@@ -15,9 +15,10 @@ import { users } from "./schema";
 /**
  * Novo fluxo genérico de aplicação de provas de proficiência.
  *
- * Importante:
+ * Regras de segurança:
  * - não altera nem reutiliza as tabelas históricas da UTIC;
  * - provaId referencia logicamente provas_importadas.id, validado pelo backend;
+ * - cada aplicação guarda um snapshot imutável da prova usada;
  * - a criação física destas tabelas só deve ocorrer após revisão e autorização explícita.
  */
 export const aplicacoesProficiencia = mysqlTable(
@@ -25,6 +26,7 @@ export const aplicacoesProficiencia = mysqlTable(
   {
     id: int().autoincrement().notNull().primaryKey(),
     provaId: int("prova_id").notNull(),
+    provaSnapshotJson: json("prova_snapshot_json").notNull(),
     titulo: varchar({ length: 255 }).notNull(),
     agendadaPara: timestamp("agendada_para", { mode: "string" }).notNull(),
     status: mysqlEnum(["AGENDADA", "LIBERADA", "ENCERRADA", "CALCULADA", "CANCELADA"])
@@ -146,7 +148,7 @@ export const resultadosProficiencia = mysqlTable(
       .notNull()
       .references(() => tentativasProficiencia.id, { onDelete: "restrict" }),
     percentualGeral: varchar("percentual_geral", { length: 20 }).notNull(),
-    resultadoJson: longtext("resultado_json").notNull(),
+    resultadoJson: text("resultado_json").notNull(),
     observacao: text(),
     calculadoEm: timestamp("calculado_em", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
   },
