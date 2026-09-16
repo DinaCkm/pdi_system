@@ -201,6 +201,47 @@ export const importacaoProvasRouter = router({
     };
   }),
 
+  reabrirParaEdicao: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input }) => {
+    const db = await ensureTables();
+    const result = await db.execute(sql`
+      SELECT id, codigo, status
+      FROM provas_importadas
+      WHERE id = ${input.id}
+      LIMIT 1
+    `);
+    const linhas = Array.isArray(result) ? (result[0] as any[]) : [];
+    if (!linhas.length) throw new Error("Prova não encontrada.");
+
+    const registro = linhas[0];
+    if (registro.status === "RASCUNHO") {
+      return {
+        id: registro.id,
+        codigo: registro.codigo,
+        status: "RASCUNHO",
+        reaberta: false,
+        mensagem: "A prova já está em modo de edição.",
+      };
+    }
+
+    if (registro.status !== "VALIDADA") {
+      throw new Error(`A prova está com status ${registro.status} e não pode ser reaberta para edição.`);
+    }
+
+    await db.execute(sql`
+      UPDATE provas_importadas
+      SET status = 'RASCUNHO'
+      WHERE id = ${input.id} AND status = 'VALIDADA'
+    `);
+
+    return {
+      id: registro.id,
+      codigo: registro.codigo,
+      status: "RASCUNHO",
+      reaberta: true,
+      mensagem: "Prova reaberta para edição. Será necessário validar novamente antes de utilizá-la em novos processos de avaliação.",
+    };
+  }),
+
   importarLote: adminProcedure.input(z.object({
     arquivos: z.array(arquivoProvaSchema).min(1).max(100),
     confirmado: z.literal(true),
