@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 
-type Opcao = { letra: "A" | "B" | "C" | "D" | "E" | "F"; texto: string; naoSei: boolean };
+type Opcao = { letra: string; texto: string; naoSei: boolean };
 type Questao = {
   id: string;
   enunciado: string;
   opcoes: Opcao[];
-  gabarito: "A" | "B" | "C" | "D" | "E";
+  gabarito: string;
   eixos: { nome: string }[];
   macroarea?: string | null;
   microarea?: string | null;
@@ -27,6 +27,8 @@ type Prova = {
   questoes: Questao[];
 };
 type ArquivoProva = { arquivoNome: string; prova: Prova };
+
+type ColunaAlternativa = { indice: number; letra: string };
 
 function texto(valor: unknown) {
   return String(valor ?? "").trim();
@@ -56,17 +58,20 @@ function valorCabecalho(linha: unknown[], cabecalhos: string[], nome: string) {
   return indice >= 0 ? linha[indice] : undefined;
 }
 
-function valorPrimeiroCabecalho(linha: unknown[], cabecalhos: string[], nomes: string[]) {
-  for (const nome of nomes) {
-    const valor = valorCabecalho(linha, cabecalhos, nome);
-    if (valor !== undefined) return valor;
-  }
-  return undefined;
-}
-
 function pareceNaoSei(valor: string) {
   const normalizado = normalizar(valor);
   return normalizado.includes("nao sei") || normalizado.includes("nao tenho conhecimento") || normalizado.includes("desconheco");
+}
+
+function localizarColunasAlternativas(cabecalhosOriginais: unknown[]): ColunaAlternativa[] {
+  return cabecalhosOriginais
+    .map((cabecalho, indice) => {
+      const normalizado = normalizar(cabecalho);
+      const match = normalizado.match(/^alternativa\s+([a-z]+)(?:\s*\/\s*nao sei)?$/i);
+      if (!match) return null;
+      return { indice, letra: match[1].toUpperCase() };
+    })
+    .filter((item): item is ColunaAlternativa => Boolean(item));
 }
 
 function validarAlternativasReais(arquivoNome: string, linhaNumero: number, opcoes: Opcao[]) {
@@ -74,7 +79,7 @@ function validarAlternativasReais(arquivoNome: string, linhaNumero: number, opco
   const vistos = new Map<string, string>();
   for (const opcao of reais) {
     if (pareceNaoSei(opcao.texto)) {
-      throw new Error(`${arquivoNome}: linha ${linhaNumero}, a alternativa ${opcao.letra} foi tratada como alternativa real, mas contém texto de “Não sei”.`);
+      throw new Error(`${arquivoNome}: linha ${linhaNumero}, a alternativa ${opcao.letra} contém texto de “Não sei”, mas não é a última alternativa preenchida.`);
     }
     const chave = normalizar(opcao.texto);
     const anterior = vistos.get(chave);
@@ -109,7 +114,12 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
 
   const linhas = XLSX.utils.sheet_to_json(wsQuestoes, { header: 1, raw: true, defval: "" }) as unknown[][];
   if (linhas.length < 2) throw new Error(`${arquivoNome}: a aba QUESTÕES não contém questões.`);
-  const cabecalhos = linhas[0].map(normalizar);
+  const cabecalhosOriginais = linhas[0];
+  const cabecalhos = cabecalhosOriginais.map(normalizar);
+  const colunasAlternativas = localizarColunasAlternativas(cabecalhosOriginais);
+  if (colunasAlternativas.length < 2) {
+    throw new Error(`${arquivoNome}: a aba QUESTÕES deve ter pelo menos duas colunas de alternativas (por exemplo, Alternativa A e Alternativa B).`);
+  }
   const questoes: Questao[] = [];
 
   for (let indice = 1; indice < linhas.length; indice += 1) {
@@ -121,41 +131,42 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
     if (!texto(idBruto)) throw new Error(`${arquivoNome}: linha ${numeroLinha}, ID da questão não informado.`);
     if (!enunciado) throw new Error(`${arquivoNome}: linha ${numeroLinha}, enunciado não informado.`);
 
-    const opcoes: Opcao[] = [];
-    for (const letra of ["A", "B", "C", "D"] as const) {
-      const opcaoTexto = texto(valorCabecalho(linha, cabecalhos, `Alternativa ${letra}`));
-      if (!opcaoTexto) throw new Error(`${arquivoNome}: linha ${numeroLinha}, alternativa ${letra} não informada.`);
-      if (pareceNaoSei(opcaoTexto)) throw new Error(`${arquivoNome}: linha ${numeroLinha}, a alternativa ${letra} não pode ser “Não sei”.`);
-      opcoes.push({ letra, texto: opcaoTexto, naoSei: false });
+    const alternativasDaLinha = colunasAlternativas.map(coluna => ({
+      letra: coluna.letra,
+      texto: texto(linha[coluna.indice]),
+    }));
+    const indicesPreenchidos = alternativasDaLinha
+      .map((opcao, posicao) => opcao.texto ? posicao : -1)
+      .filter(posicao => posicao >= 0);
+
+    if (indicesPreenchidos.length < 2) {
+      throw new Error(`${arquivoNome}: linha ${numeroLinha}, a questão deve ter pelo menos uma alternativa real e uma última alternativa “Não sei”.`);
     }
 
-    const alternativaE = texto(valorPrimeiroCabecalho(linha, cabecalhos, ["Alternativa E", "Alternativa E / Não sei", "Alternativa E real"]));
-    const alternativaF = texto(valorPrimeiroCabecalho(linha, cabecalhos, ["Alternativa F / Não sei", "Alternativa F", "F / Não sei", "Não sei"]));
-
-    if (!alternativaE) {
-      throw new Error(`${arquivoNome}: linha ${numeroLinha}, a alternativa E deve conter a 5ª alternativa real ou a única opção “Não sei”.`);
+    const ultimoIndicePreenchido = indicesPreenchidos[indicesPreenchidos.length - 1];
+    for (let posicao = 0; posicao <= ultimoIndicePreenchido; posicao += 1) {
+      if (!alternativasDaLinha[posicao].texto) {
+        throw new Error(`${arquivoNome}: linha ${numeroLinha}, há uma alternativa vazia entre alternativas preenchidas. As alternativas devem ser contínuas.`);
+      }
     }
 
-    if (alternativaF) {
-      if (pareceNaoSei(alternativaE)) {
-        throw new Error(`${arquivoNome}: linha ${numeroLinha}, existe “Não sei” em E e também conteúdo em F. Deve existir apenas uma alternativa “Não sei”.`);
-      }
-      if (!pareceNaoSei(alternativaF)) {
-        throw new Error(`${arquivoNome}: linha ${numeroLinha}, quando F estiver preenchida ela deve ser a única opção “Não sei”.`);
-      }
-      opcoes.push({ letra: "E", texto: alternativaE, naoSei: false });
-      opcoes.push({ letra: "F", texto: alternativaF, naoSei: true });
-    } else {
-      if (!pareceNaoSei(alternativaE)) {
-        throw new Error(`${arquivoNome}: linha ${numeroLinha}, questão com 4 alternativas reais deve usar E como a única opção “Não sei”; para 5 alternativas reais, preencha E com a alternativa real e F com “Não sei”.`);
-      }
-      opcoes.push({ letra: "E", texto: alternativaE, naoSei: true });
+    const preenchidas = alternativasDaLinha.slice(0, ultimoIndicePreenchido + 1);
+    const ultima = preenchidas[preenchidas.length - 1];
+    if (!pareceNaoSei(ultima.texto)) {
+      throw new Error(`${arquivoNome}: linha ${numeroLinha}, a última alternativa preenchida (${ultima.letra}) deve ser a opção “Não sei”.`);
     }
+
+    const opcoes: Opcao[] = preenchidas.map((opcao, posicao) => ({
+      letra: opcao.letra,
+      texto: opcao.texto,
+      naoSei: posicao === preenchidas.length - 1,
+    }));
 
     validarAlternativasReais(arquivoNome, numeroLinha, opcoes);
 
-    if (opcoes.filter(opcao => opcao.naoSei).length !== 1) {
-      throw new Error(`${arquivoNome}: linha ${numeroLinha}, deve existir exatamente uma alternativa “Não sei”.`);
+    const ocorrenciasNaoSei = opcoes.filter(opcao => pareceNaoSei(opcao.texto));
+    if (ocorrenciasNaoSei.length !== 1 || !opcoes[opcoes.length - 1].naoSei) {
+      throw new Error(`${arquivoNome}: linha ${numeroLinha}, deve existir exatamente uma única alternativa “Não sei”, sempre na última alternativa preenchida.`);
     }
 
     const gabarito = texto(valorCabecalho(linha, cabecalhos, "Gabarito")).toUpperCase();
@@ -175,7 +186,7 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
       id: texto(idBruto),
       enunciado,
       opcoes,
-      gabarito: gabarito as Questao["gabarito"],
+      gabarito,
       eixos,
       macroarea: texto(valorCabecalho(linha, cabecalhos, "Macroárea")) || null,
       microarea: texto(valorCabecalho(linha, cabecalhos, "Microárea")) || null,
@@ -261,7 +272,7 @@ export default function ImportarProvas() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>1. Selecione as provas</CardTitle><CardDescription>Use arquivos .xlsx no padrão com as abas PROVA e QUESTÕES. Em cada questão, use A–D como alternativas reais. Se houver 4 alternativas reais, E deve ser a única opção “Não sei” e F fica vazia. Se houver 5 alternativas reais, E é a 5ª alternativa e F deve ser a única opção “Não sei”.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>1. Selecione as provas</CardTitle><CardDescription>Use arquivos .xlsx no padrão com as abas PROVA e QUESTÕES. Cada questão pode ter uma quantidade variável de alternativas. A última alternativa preenchida deve ser sempre a única opção “Não sei”; todas as anteriores são alternativas reais.</CardDescription></CardHeader>
         <CardContent className="space-y-4">
           <input type="file" accept=".xlsx" multiple onChange={selecionar} className="block w-full text-sm" />
           {arquivos.length > 0 && <div className="rounded-md border bg-muted/20 p-4 text-sm"><strong>{arquivos.length}</strong> prova(s) selecionada(s) · <strong>{totalQuestoes}</strong> questão(ões) no total.</div>}
