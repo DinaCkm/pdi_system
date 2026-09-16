@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import * as XLSX from "xlsx";
-import { AlertCircle, CheckCircle2, FileSpreadsheet, Loader2, ShieldCheck, Upload } from "lucide-react";
+import { AlertCircle, CheckCircle2, FileSpreadsheet, Loader2, Pencil, ShieldCheck, Upload } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -164,6 +164,7 @@ export default function ImportarProvas() {
   const api = (trpc as any).importacaoProvas;
   const validarLote = api.validarLote.useMutation();
   const validarSalva = api.validarSalva.useMutation();
+  const reabrirParaEdicao = api.reabrirParaEdicao.useMutation();
   const importarLote = api.importarLote.useMutation();
   const listaQuery = api.listar.useQuery(undefined, { refetchOnWindowFocus: false });
 
@@ -173,6 +174,8 @@ export default function ImportarProvas() {
   const [resultado, setResultado] = useState<any>(null);
   const [validacaoSalva, setValidacaoSalva] = useState<any>(null);
   const [validandoId, setValidandoId] = useState<number | null>(null);
+  const [reabrindoId, setReabrindoId] = useState<number | null>(null);
+  const [mensagemAcao, setMensagemAcao] = useState("");
   const [inputKey, setInputKey] = useState(0);
 
   const limparFluxo = () => {
@@ -229,6 +232,7 @@ export default function ImportarProvas() {
   const validarProvaSalva = async (id: number) => {
     setErroLeitura("");
     setValidacaoSalva(null);
+    setMensagemAcao("");
     setValidandoId(id);
     try {
       const resposta = await validarSalva.mutateAsync({ id });
@@ -241,6 +245,22 @@ export default function ImportarProvas() {
     }
   };
 
+  const reabrirProva = async (id: number) => {
+    setErroLeitura("");
+    setValidacaoSalva(null);
+    setMensagemAcao("");
+    setReabrindoId(id);
+    try {
+      const resposta = await reabrirParaEdicao.mutateAsync({ id });
+      setMensagemAcao(resposta?.mensagem || "Prova reaberta para edição. O status voltou para RASCUNHO.");
+      await listaQuery.refetch();
+    } catch (error: any) {
+      setErroLeitura(error?.message || "Não foi possível reabrir a prova para edição.");
+    } finally {
+      setReabrindoId(null);
+    }
+  };
+
   const totalQuestoes = useMemo(() => arquivos.reduce((soma, item) => soma + item.prova.questoes.length, 0), [arquivos]);
   const carregando = validarLote.isPending || importarLote.isPending;
 
@@ -248,7 +268,7 @@ export default function ImportarProvas() {
     <div className="space-y-6 p-6">
       <div className="space-y-2">
         <div className="flex items-center gap-3"><FileSpreadsheet className="h-7 w-7 text-blue-600" /><h1 className="text-2xl font-semibold">Upload de Avaliações</h1></div>
-        <p className="max-w-4xl text-sm text-muted-foreground">As provas podem ser carregadas primeiro como RASCUNHO e validadas posteriormente, uma a uma, antes de serem utilizadas em um processo de avaliação.</p>
+        <p className="max-w-4xl text-sm text-muted-foreground">As provas podem ser carregadas primeiro como RASCUNHO e validadas posteriormente. Uma prova VALIDADA precisa ser reaberta para edição antes de qualquer alteração.</p>
       </div>
 
       <Card>
@@ -264,6 +284,7 @@ export default function ImportarProvas() {
       </Card>
 
       {erroLeitura && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{erroLeitura}</AlertDescription></Alert>}
+      {mensagemAcao && <Alert><Pencil className="h-4 w-4" /><AlertDescription>{mensagemAcao}</AlertDescription></Alert>}
 
       {validacao && (
         <Card>
@@ -294,10 +315,10 @@ export default function ImportarProvas() {
       )}
 
       <Card>
-        <CardHeader><CardTitle>Avaliações já importadas</CardTitle><CardDescription>Valide cada rascunho quando estiver pronto. Somente provas com status VALIDADA poderão ser utilizadas em processos de avaliação.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>Avaliações já importadas</CardTitle><CardDescription>Rascunhos podem ser validados. Provas validadas devem ser reabertas para edição antes de qualquer alteração.</CardDescription></CardHeader>
         <CardContent>
           {listaQuery.isLoading ? <p className="text-sm text-muted-foreground">Carregando...</p> : (listaQuery.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma avaliação importada ainda.</p> : (
-            <div className="overflow-x-auto"><table className="w-full min-w-[860px] text-sm"><thead><tr className="border-b text-left"><th className="px-3 py-2">Código</th><th className="px-3 py-2">Avaliação</th><th className="px-3 py-2">Unidade</th><th className="px-3 py-2">Ano</th><th className="px-3 py-2">Questões</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">Ação</th></tr></thead><tbody>{(listaQuery.data ?? []).map((item: any) => <tr key={item.id} className="border-b last:border-0"><td className="px-3 py-2">{item.codigo}</td><td className="px-3 py-2">{item.nome}</td><td className="px-3 py-2">{item.unidade}</td><td className="px-3 py-2">{item.ano}</td><td className="px-3 py-2">{item.totalQuestoes}</td><td className="px-3 py-2">{item.status}</td><td className="px-3 py-2">{item.status === "RASCUNHO" ? <Button size="sm" variant="outline" onClick={() => validarProvaSalva(Number(item.id))} disabled={validandoId === Number(item.id)}>{validandoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Validar</Button> : <span className="text-muted-foreground">Validada</span>}</td></tr>)}</tbody></table></div>
+            <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-sm"><thead><tr className="border-b text-left"><th className="px-3 py-2">Código</th><th className="px-3 py-2">Avaliação</th><th className="px-3 py-2">Unidade</th><th className="px-3 py-2">Ano</th><th className="px-3 py-2">Questões</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">Ação</th></tr></thead><tbody>{(listaQuery.data ?? []).map((item: any) => <tr key={item.id} className="border-b last:border-0"><td className="px-3 py-2">{item.codigo}</td><td className="px-3 py-2">{item.nome}</td><td className="px-3 py-2">{item.unidade}</td><td className="px-3 py-2">{item.ano}</td><td className="px-3 py-2">{item.totalQuestoes}</td><td className="px-3 py-2">{item.status}</td><td className="px-3 py-2">{item.status === "RASCUNHO" ? <Button size="sm" variant="outline" onClick={() => validarProvaSalva(Number(item.id))} disabled={validandoId === Number(item.id)}>{validandoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Validar</Button> : item.status === "VALIDADA" ? <Button size="sm" variant="outline" onClick={() => reabrirProva(Number(item.id))} disabled={reabrindoId === Number(item.id)}>{reabrindoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pencil className="mr-2 h-4 w-4" />}Reabrir para edição</Button> : <span className="text-muted-foreground">Sem ação disponível</span>}</td></tr>)}</tbody></table></div>
           )}
         </CardContent>
       </Card>
