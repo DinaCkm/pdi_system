@@ -145,6 +145,95 @@ export const importacaoProvasRouter = router({
     };
   }),
 
+  obter: adminProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
+    const db = await ensureTables();
+    const result = await db.execute(sql`
+      SELECT id, codigo, nome, unidade, ano, descricao, total_questoes AS totalQuestoes,
+             questoes_json AS questoesJson, arquivo_nome AS arquivoNome, status
+      FROM provas_importadas
+      WHERE id = ${input.id}
+      LIMIT 1
+    `);
+    const linhas = Array.isArray(result) ? (result[0] as any[]) : [];
+    if (!linhas.length) throw new Error("Prova não encontrada.");
+
+    const registro = linhas[0];
+    let questoes: unknown;
+    try {
+      questoes = JSON.parse(registro.questoesJson);
+    } catch {
+      throw new Error("Não foi possível ler as questões armazenadas desta prova.");
+    }
+
+    return {
+      id: Number(registro.id),
+      arquivoNome: registro.arquivoNome,
+      status: registro.status,
+      prova: {
+        codigo: registro.codigo,
+        nome: registro.nome,
+        unidade: registro.unidade,
+        ano: Number(registro.ano),
+        descricao: registro.descricao ?? null,
+        numeroQuestoesDeclarado: Number(registro.totalQuestoes),
+        questoes,
+      },
+    };
+  }),
+
+  salvarRascunho: adminProcedure.input(z.object({
+    id: z.number().int().positive(),
+    prova: provaSchema,
+  })).mutation(async ({ input }) => {
+    const db = await ensureTables();
+    const atualResult = await db.execute(sql`
+      SELECT id, codigo, ano, status
+      FROM provas_importadas
+      WHERE id = ${input.id}
+      LIMIT 1
+    `);
+    const atuais = Array.isArray(atualResult) ? (atualResult[0] as any[]) : [];
+    if (!atuais.length) throw new Error("Prova não encontrada.");
+
+    const atual = atuais[0];
+    if (atual.status !== "RASCUNHO") {
+      throw new Error("A prova precisa estar como RASCUNHO para ser editada.");
+    }
+
+    const duplicadaResult = await db.execute(sql`
+      SELECT id
+      FROM provas_importadas
+      WHERE codigo = ${input.prova.codigo} AND ano = ${input.prova.ano} AND id <> ${input.id}
+      LIMIT 1
+    `);
+    const duplicadas = Array.isArray(duplicadaResult) ? (duplicadaResult[0] as any[]) : [];
+    if (duplicadas.length) {
+      throw new Error(`Já existe outra prova com o código ${input.prova.codigo} e ano ${input.prova.ano}.`);
+    }
+
+    await db.execute(sql`
+      UPDATE provas_importadas
+      SET codigo = ${input.prova.codigo},
+          nome = ${input.prova.nome},
+          unidade = ${input.prova.unidade},
+          ano = ${input.prova.ano},
+          descricao = ${input.prova.descricao ?? null},
+          total_questoes = ${input.prova.questoes.length},
+          questoes_json = ${JSON.stringify(input.prova.questoes)},
+          status = 'RASCUNHO'
+      WHERE id = ${input.id} AND status = 'RASCUNHO'
+    `);
+
+    return {
+      id: input.id,
+      codigo: input.prova.codigo,
+      status: "RASCUNHO",
+      totalQuestoes: input.prova.questoes.length,
+      salvo: true,
+      mensagem: "Alterações salvas. A prova permanece como RASCUNHO até ser validada novamente.",
+    };
+  }),
+
   validarSalva: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input }) => {
     const db = await ensureTables();
     const result = await db.execute(sql`
