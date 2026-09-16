@@ -10,6 +10,7 @@ export default defineConfig({
     "./drizzle/schema.ts",
     "./drizzle/avaliacoes-schema.ts",
     "./drizzle/proficiencia-schema.ts",
+    "./drizzle/comportamental-schema.ts",
   ],
   out: "./drizzle",
   dialect: "mysql",
