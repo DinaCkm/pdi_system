@@ -37,6 +37,9 @@ export default function AdminAplicacoesProficiencia() {
   const participantesQuery = trpc.aplicacoesProficiencia.listarParticipantesDisponiveis.useQuery(undefined, {
     enabled: Boolean(user && isAdmin),
   });
+  const departamentosQuery = trpc.departamentos.list.useQuery(undefined, {
+    enabled: Boolean(user && isAdmin),
+  });
   const aplicacoesQuery = trpc.aplicacoesProficiencia.listar.useQuery(undefined, {
     enabled: Boolean(user && isAdmin),
     refetchInterval: 5000,
@@ -81,18 +84,43 @@ export default function AdminAplicacoesProficiencia() {
     onError: error => setMensagem(error.message),
   });
 
-  const participantes = (participantesQuery.data ?? []) as any[];
+  const participantesBase = (participantesQuery.data ?? []) as any[];
+  const catalogoDepartamentos = (departamentosQuery.data ?? []) as any[];
+
+  // Um líder mantém sua lotação principal, mas também integra operacionalmente
+  // todos os departamentos que lidera. A pessoa continua aparecendo uma única vez.
+  const participantes = useMemo(() => participantesBase.map(item => {
+    const lotacaoPrincipal = String(item.departamentoNome ?? "").trim();
+    const departamentosLiderados = catalogoDepartamentos
+      .filter(dept => dept.status === "ativo" && Number(dept.leaderId) === Number(item.id))
+      .map(dept => String(dept.nome ?? "").trim())
+      .filter(Boolean);
+    const departamentosVinculados = Array.from(new Set([
+      ...(lotacaoPrincipal ? [lotacaoPrincipal] : []),
+      ...departamentosLiderados,
+    ]));
+
+    return {
+      ...item,
+      departamentosLiderados,
+      departamentosVinculados,
+    };
+  }), [participantesBase, catalogoDepartamentos]);
+
   const departamentos = useMemo(
-    () => Array.from(new Set(participantes.map(item => String(item.departamentoNome ?? "").trim()).filter(Boolean)))
-      .sort((a, b) => a.localeCompare(b, "pt-BR")),
+    () => Array.from(new Set(
+      participantes.flatMap(item => (item.departamentosVinculados ?? []) as string[]),
+    )).sort((a, b) => a.localeCompare(b, "pt-BR")),
     [participantes],
   );
+
   const participantesFiltrados = useMemo(() => {
     const termo = busca.trim().toLocaleLowerCase("pt-BR");
     return participantes.filter(item => {
-      if (departamento && String(item.departamentoNome ?? "") !== departamento) return false;
+      const departamentosVinculados = (item.departamentosVinculados ?? []) as string[];
+      if (departamento && !departamentosVinculados.includes(departamento)) return false;
       if (!termo) return true;
-      return [item.name, item.email, item.cargo, item.departamentoNome]
+      return [item.name, item.email, item.cargo, ...departamentosVinculados]
         .some(valor => String(valor ?? "").toLocaleLowerCase("pt-BR").includes(termo));
     });
   }, [busca, departamento, participantes]);
@@ -211,7 +239,12 @@ export default function AdminAplicacoesProficiencia() {
                       <td className="px-3 py-2"><input type="checkbox" checked={selecionados.includes(Number(item.id))} onChange={() => alternarParticipante(Number(item.id))} /></td>
                       <td className="px-3 py-2"><p className="font-medium">{item.name}</p><p className="text-xs text-muted-foreground">{item.email || "—"}</p></td>
                       <td className="px-3 py-2">{item.cargo || "—"}</td>
-                      <td className="px-3 py-2">{item.departamentoNome || "Sem unidade"}</td>
+                      <td className="px-3 py-2">
+                        <p>{item.departamentoNome || "Sem unidade"}</p>
+                        {item.departamentosLiderados?.length > 0 && (
+                          <p className="text-xs text-muted-foreground">Lidera: {item.departamentosLiderados.join(", ")}</p>
+                        )}
+                      </td>
                     </tr>
                   ))}
                   {participantesFiltrados.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">Nenhum participante encontrado.</td></tr>}
