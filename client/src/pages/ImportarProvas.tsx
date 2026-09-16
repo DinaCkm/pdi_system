@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
-import { AlertCircle, CheckCircle2, FileSpreadsheet, Loader2, Pencil, Save, ShieldCheck, Upload, X } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowUp, CheckCircle2, FileSpreadsheet, Loader2, Pencil, Plus, Save, ShieldCheck, Trash2, Upload, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,6 +60,26 @@ function valorCabecalho(linha: unknown[], cabecalhos: string[], nome: string) {
 function pareceNaoSei(valor: string) {
   const normalizado = normalizar(valor);
   return normalizado.includes("nao sei") || normalizado.includes("nao tenho conhecimento") || normalizado.includes("desconheco");
+}
+
+function indiceParaLetra(indice: number) {
+  let numero = indice + 1;
+  let resultado = "";
+  while (numero > 0) {
+    const resto = (numero - 1) % 26;
+    resultado = String.fromCharCode(65 + resto) + resultado;
+    numero = Math.floor((numero - 1) / 26);
+  }
+  return resultado;
+}
+
+function renumerarOpcoes(opcoes: Opcao[], gabaritoAtual: string) {
+  const indiceGabarito = opcoes.findIndex(opcao => opcao.letra === gabaritoAtual);
+  const renumeradas = opcoes.map((opcao, index) => ({ ...opcao, letra: indiceParaLetra(index) }));
+  return {
+    opcoes: renumeradas,
+    gabarito: indiceGabarito >= 0 && renumeradas[indiceGabarito] ? renumeradas[indiceGabarito].letra : "",
+  };
 }
 
 function localizarColunasAlternativas(cabecalhosOriginais: unknown[]): ColunaAlternativa[] {
@@ -292,6 +312,64 @@ export default function ImportarProvas() {
     atualizarQuestao(questaoIndex, { opcoes: normalizadas });
   };
 
+  const adicionarAlternativa = (questaoIndex: number) => {
+    if (!provaEdicao) return;
+    const questao = provaEdicao.questoes[questaoIndex];
+    const ultima = questao.opcoes[questao.opcoes.length - 1];
+    const inserirAntesDaUltima = Boolean(ultima && (ultima.naoSei || pareceNaoSei(ultima.texto)));
+    const novaOpcao: Opcao = { letra: "", texto: "", naoSei: false };
+    const novas = inserirAntesDaUltima
+      ? [...questao.opcoes.slice(0, -1), novaOpcao, ultima]
+      : [...questao.opcoes, novaOpcao];
+    const renumeradas = renumerarOpcoes(novas, questao.gabarito);
+    atualizarQuestao(questaoIndex, renumeradas);
+  };
+
+  const removerAlternativa = (questaoIndex: number, opcaoIndex: number) => {
+    if (!provaEdicao) return;
+    const questao = provaEdicao.questoes[questaoIndex];
+    const removida = questao.opcoes[opcaoIndex];
+    const restantes = questao.opcoes.filter((_, index) => index !== opcaoIndex);
+    const gabaritoBase = removida?.letra === questao.gabarito ? "" : questao.gabarito;
+    const renumeradas = renumerarOpcoes(restantes, gabaritoBase);
+    atualizarQuestao(questaoIndex, renumeradas);
+  };
+
+  const adicionarQuestao = () => {
+    setProvaEdicao(atual => {
+      if (!atual) return atual;
+      const nova: Questao = {
+        id: "",
+        enunciado: "",
+        opcoes: [],
+        gabarito: "",
+        eixos: [],
+        macroarea: null,
+        microarea: null,
+        tagFonte: null,
+      };
+      return { ...atual, questoes: [...atual.questoes, nova] };
+    });
+  };
+
+  const excluirQuestao = (questaoIndex: number) => {
+    setProvaEdicao(atual => {
+      if (!atual) return atual;
+      return { ...atual, questoes: atual.questoes.filter((_, index) => index !== questaoIndex) };
+    });
+  };
+
+  const moverQuestao = (questaoIndex: number, direcao: -1 | 1) => {
+    setProvaEdicao(atual => {
+      if (!atual) return atual;
+      const destino = questaoIndex + direcao;
+      if (destino < 0 || destino >= atual.questoes.length) return atual;
+      const questoes = [...atual.questoes];
+      [questoes[questaoIndex], questoes[destino]] = [questoes[destino], questoes[questaoIndex]];
+      return { ...atual, questoes };
+    });
+  };
+
   const salvarEdicao = async () => {
     if (!editandoId || !provaEdicao) return;
     setErroLeitura("");
@@ -377,7 +455,7 @@ export default function ImportarProvas() {
         <Card>
           <CardHeader>
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div><CardTitle>Editar prova em RASCUNHO</CardTitle><CardDescription>As alterações ficam salvas como RASCUNHO. Depois, use Validar para voltar ao status VALIDADA.</CardDescription></div>
+              <div><CardTitle>Editar prova em RASCUNHO</CardTitle><CardDescription>Você pode corrigir a estrutura inteira da prova. As alterações permanecem como RASCUNHO até nova validação.</CardDescription></div>
               <Button type="button" variant="outline" size="sm" onClick={fecharEdicao}><X className="mr-2 h-4 w-4" />Fechar</Button>
             </div>
           </CardHeader>
@@ -394,16 +472,25 @@ export default function ImportarProvas() {
               <div className="space-y-5">
                 {provaEdicao.questoes.map((questao, questaoIndex) => (
                   <div key={`${questao.id}-${questaoIndex}`} className="space-y-4 rounded-md border p-4">
-                    <div className="font-semibold">Questão {questaoIndex + 1}</div>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="font-semibold">Questão {questaoIndex + 1}</div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => moverQuestao(questaoIndex, -1)} disabled={questaoIndex === 0}><ArrowUp className="mr-2 h-4 w-4" />Subir</Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => moverQuestao(questaoIndex, 1)} disabled={questaoIndex === provaEdicao.questoes.length - 1}><ArrowDown className="mr-2 h-4 w-4" />Descer</Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => excluirQuestao(questaoIndex)}><Trash2 className="mr-2 h-4 w-4" />Excluir questão</Button>
+                      </div>
+                    </div>
+
                     <div className="grid gap-3 md:grid-cols-2">
                       <label className="text-sm">ID<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.id} onChange={e => atualizarQuestao(questaoIndex, { id: e.target.value })} /></label>
-                      <label className="text-sm">Gabarito<select className="mt-1 w-full rounded-md border px-3 py-2" value={questao.gabarito} onChange={e => atualizarQuestao(questaoIndex, { gabarito: e.target.value })}><option value="">Selecione</option>{questao.opcoes.filter(opcao => !opcao.naoSei).map(opcao => <option key={opcao.letra} value={opcao.letra}>{opcao.letra}</option>)}</select></label>
+                      <label className="text-sm">Gabarito<select className="mt-1 w-full rounded-md border px-3 py-2" value={questao.gabarito} onChange={e => atualizarQuestao(questaoIndex, { gabarito: e.target.value })}><option value="">Selecione</option>{questao.opcoes.map(opcao => <option key={opcao.letra} value={opcao.letra}>{opcao.letra}</option>)}</select></label>
                       <label className="text-sm md:col-span-2">Enunciado<textarea className="mt-1 w-full rounded-md border px-3 py-2" rows={3} value={questao.enunciado} onChange={e => atualizarQuestao(questaoIndex, { enunciado: e.target.value })} /></label>
                     </div>
 
                     <div className="space-y-2">
-                      <div className="text-sm font-medium">Alternativas</div>
-                      {questao.opcoes.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma alternativa cadastrada.</p> : questao.opcoes.map((opcao, opcaoIndex) => <label key={`${opcao.letra}-${opcaoIndex}`} className="grid gap-2 text-sm md:grid-cols-[48px_1fr]"><span className="pt-2 font-semibold">{opcao.letra}</span><textarea className="min-h-[42px] rounded-md border px-3 py-2" value={opcao.texto} onChange={e => atualizarOpcao(questaoIndex, opcaoIndex, e.target.value)} /></label>)}
+                      <div className="flex flex-wrap items-center justify-between gap-2"><div className="text-sm font-medium">Alternativas</div><Button type="button" variant="outline" size="sm" onClick={() => adicionarAlternativa(questaoIndex)}><Plus className="mr-2 h-4 w-4" />Adicionar alternativa</Button></div>
+                      {questao.opcoes.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma alternativa cadastrada. Adicione as alternativas necessárias e deixe “Não sei” como a última antes de validar.</p>}
+                      {questao.opcoes.map((opcao, opcaoIndex) => <div key={`${opcao.letra}-${opcaoIndex}`} className="grid gap-2 md:grid-cols-[48px_1fr_auto]"><span className="pt-2 text-sm font-semibold">{opcao.letra}</span><textarea className="min-h-[42px] rounded-md border px-3 py-2 text-sm" value={opcao.texto} onChange={e => atualizarOpcao(questaoIndex, opcaoIndex, e.target.value)} /><Button type="button" variant="outline" size="sm" onClick={() => removerAlternativa(questaoIndex, opcaoIndex)}><Trash2 className="mr-2 h-4 w-4" />Excluir</Button></div>)}
                     </div>
 
                     <div className="grid gap-3 md:grid-cols-2">
@@ -414,6 +501,7 @@ export default function ImportarProvas() {
                     </div>
                   </div>
                 ))}
+                <Button type="button" variant="outline" onClick={adicionarQuestao}><Plus className="mr-2 h-4 w-4" />Adicionar nova questão</Button>
               </div>
 
               <div className="flex flex-wrap gap-2">
