@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ClipboardCheck, Loader2 } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, Loader2, PlayCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,11 +21,17 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [finalizada, setFinalizada] = useState(false);
 
-  const provaQuery = trpc.aplicacoesProficiencia.abrirProva.useQuery(
+  const provaQuery = trpc.aplicacoesProficiencia.estadoProva.useQuery(
     { aplicacaoId },
     { refetchOnWindowFocus: false, retry: false },
   );
-
+  const iniciarMutation = trpc.aplicacoesProficiencia.iniciar.useMutation({
+    onSuccess: async () => {
+      setMensagem(null);
+      await provaQuery.refetch();
+    },
+    onError: error => setMensagem(error.message),
+  });
   const salvarMutation = trpc.aplicacoesProficiencia.salvarResposta.useMutation({
     onError: error => setMensagem(error.message),
   });
@@ -47,28 +53,25 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
   const questoes = (provaQuery.data?.prova?.questoes ?? []) as Questao[];
   const questao = questoes[indice];
+  const tentativaId = Number(provaQuery.data?.tentativaId ?? 0);
+  const iniciou = tentativaId > 0;
   const totalRespondidas = useMemo(() => questoes.filter(item => Boolean(respostas[String(item.id)])).length, [questoes, respostas]);
   const percentual = questoes.length ? Math.round((totalRespondidas / questoes.length) * 100) : 0;
 
   const responder = (questaoId: string, letra: string) => {
-    if (!provaQuery.data || finalizada) return;
+    if (!provaQuery.data || !tentativaId || finalizada) return;
     setRespostas(current => ({ ...current, [questaoId]: letra }));
     setMensagem(null);
-    salvarMutation.mutate({
-      aplicacaoId,
-      tentativaId: Number(provaQuery.data.tentativaId),
-      questaoChave: questaoId,
-      resposta: letra,
-    });
+    salvarMutation.mutate({ aplicacaoId, tentativaId, questaoChave: questaoId, resposta: letra });
   };
 
   const finalizar = () => {
-    if (!provaQuery.data) return;
+    if (!tentativaId) return;
     if (totalRespondidas < questoes.length) {
       setMensagem(`Ainda faltam ${questoes.length - totalRespondidas} questão(ões). Você pode revisar antes de finalizar.`);
       return;
     }
-    finalizarMutation.mutate({ aplicacaoId, tentativaId: Number(provaQuery.data.tentativaId) });
+    finalizarMutation.mutate({ aplicacaoId, tentativaId });
   };
 
   if (provaQuery.isLoading) {
@@ -94,7 +97,37 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     );
   }
 
-  if (!questao || !provaQuery.data) return null;
+  if (!provaQuery.data) return null;
+
+  if (!iniciou) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-4 md:p-6">
+        <div className="mx-auto max-w-2xl">
+          <Card className="border-blue-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><ClipboardCheck className="h-6 w-6 text-blue-700" />{provaQuery.data.aplicacao.titulo}</CardTitle>
+              <CardDescription>{provaQuery.data.prova.nome} — {provaQuery.data.prova.unidade}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="rounded-md border bg-white p-4 text-sm">
+                <p><strong>Total de questões:</strong> {questoes.length}</p>
+                <p className="mt-2 text-muted-foreground">A tentativa só será registrada quando você clicar em iniciar.</p>
+              </div>
+              {mensagem && <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{mensagem}</div>}
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={() => iniciarMutation.mutate({ aplicacaoId })} disabled={iniciarMutation.isPending}>
+                  <PlayCircle className="mr-2 h-5 w-5" />{iniciarMutation.isPending ? "INICIANDO..." : "INICIAR PROVA"}
+                </Button>
+                <Button variant="outline" onClick={() => setLocation("/avaliacoes")}>Voltar</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!questao) return null;
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">
