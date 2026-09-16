@@ -5,15 +5,15 @@ import { getDb } from "../db";
 
 const eixoSchema = z.object({ nome: z.string().trim().min(1).max(255) });
 const opcaoSchema = z.object({
-  letra: z.enum(["A", "B", "C", "D", "E", "F"]),
+  letra: z.string().trim().min(1).max(4),
   texto: z.string().trim().min(1).max(5000),
   naoSei: z.boolean().default(false),
 });
 const questaoSchema = z.object({
   id: z.string().trim().min(1).max(80),
   enunciado: z.string().trim().min(1).max(20000),
-  opcoes: z.array(opcaoSchema).min(5).max(6),
-  gabarito: z.enum(["A", "B", "C", "D", "E"]),
+  opcoes: z.array(opcaoSchema).min(2).max(30),
+  gabarito: z.string().trim().min(1).max(4),
   eixos: z.array(eixoSchema).min(1).max(5),
   macroarea: z.string().trim().max(500).nullable().optional(),
   microarea: z.string().trim().max(500).nullable().optional(),
@@ -61,12 +61,18 @@ function normalizarTexto(valor: string) {
   return valor.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
 }
 
+function pareceNaoSei(valor: string) {
+  const normalizado = normalizarTexto(valor);
+  return normalizado.includes("nao sei") || normalizado.includes("nao tenho conhecimento") || normalizado.includes("desconheco");
+}
+
 function validarEstrutura(prova: z.infer<typeof provaSchema>) {
   const erros: string[] = [];
   const avisos: string[] = [];
   if (prova.numeroQuestoesDeclarado && prova.numeroQuestoesDeclarado !== prova.questoes.length) {
     erros.push(`A aba PROVA informa ${prova.numeroQuestoesDeclarado} questão(ões), mas a aba QUESTÕES contém ${prova.questoes.length}.`);
   }
+
   const ids = new Set<string>();
   prova.questoes.forEach((questao, indice) => {
     const linha = indice + 2;
@@ -74,13 +80,13 @@ function validarEstrutura(prova: z.infer<typeof provaSchema>) {
     if (ids.has(chave)) erros.push(`Questão ${questao.id}: ID duplicado.`);
     ids.add(chave);
 
-    const letras = new Set(questao.opcoes.map(opcao => opcao.letra));
-    for (const letra of ["A", "B", "C", "D", "E"] as const) {
-      if (!letras.has(letra)) erros.push(`Linha ${linha}: alternativa ${letra} não informada.`);
+    const letras = questao.opcoes.map(opcao => opcao.letra.trim().toUpperCase());
+    if (new Set(letras).size !== letras.length) {
+      erros.push(`Questão ${questao.id}: há letra de alternativa repetida.`);
     }
 
-    if (letras.size !== questao.opcoes.length) {
-      erros.push(`Questão ${questao.id}: há letra de alternativa repetida.`);
+    if (questao.opcoes.length < 2) {
+      erros.push(`Questão ${questao.id}: deve existir pelo menos uma alternativa real e uma última alternativa “Não sei”.`);
     }
 
     const naoSei = questao.opcoes.filter(opcao => opcao.naoSei);
@@ -88,24 +94,24 @@ function validarEstrutura(prova: z.infer<typeof provaSchema>) {
       erros.push(`Questão ${questao.id}: deve existir exatamente uma única alternativa marcada como “Não sei”.`);
     }
 
+    const ultimaOpcao = questao.opcoes[questao.opcoes.length - 1];
+    if (!ultimaOpcao?.naoSei || !pareceNaoSei(ultimaOpcao.texto)) {
+      erros.push(`Questão ${questao.id}: a última alternativa preenchida deve ser a única opção “Não sei”.`);
+    }
+
+    questao.opcoes.slice(0, -1).forEach(opcao => {
+      if (opcao.naoSei || pareceNaoSei(opcao.texto)) {
+        erros.push(`Questão ${questao.id}: “Não sei” só pode aparecer na última alternativa preenchida.`);
+      }
+    });
+
     const reais = questao.opcoes.filter(opcao => !opcao.naoSei);
     const textosReais = reais.map(opcao => normalizarTexto(opcao.texto));
     if (new Set(textosReais).size !== textosReais.length) {
       erros.push(`Questão ${questao.id}: existem alternativas reais com conteúdo duplicado.`);
     }
 
-    const alternativaNaoSei = naoSei[0];
-    if (alternativaNaoSei) {
-      const letraNaoSei = alternativaNaoSei.letra;
-      const formatoValido =
-        (questao.opcoes.length === 5 && letraNaoSei === "E" && !letras.has("F")) ||
-        (questao.opcoes.length === 6 && letraNaoSei === "F");
-      if (!formatoValido) {
-        erros.push(`Questão ${questao.id}: com 4 alternativas reais, E deve ser “Não sei” e F não deve existir; com 5 alternativas reais, F deve ser “Não sei”.`);
-      }
-    }
-
-    const opcaoGabarito = questao.opcoes.find(opcao => opcao.letra === questao.gabarito);
+    const opcaoGabarito = questao.opcoes.find(opcao => opcao.letra.trim().toUpperCase() === questao.gabarito.trim().toUpperCase());
     if (!opcaoGabarito || opcaoGabarito.naoSei) {
       erros.push(`Questão ${questao.id}: o gabarito deve apontar para uma alternativa real existente. “Não sei” nunca pode ser gabarito.`);
     }
@@ -114,6 +120,8 @@ function validarEstrutura(prova: z.infer<typeof provaSchema>) {
     if (new Set(eixosNormalizados).size !== eixosNormalizados.length) {
       erros.push(`Questão ${questao.id}: o mesmo eixo foi informado mais de uma vez.`);
     }
+
+    if (!questao.opcoes.length) erros.push(`Linha ${linha}: nenhuma alternativa informada.`);
   });
   return { erros, avisos };
 }
