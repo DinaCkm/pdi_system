@@ -175,19 +175,7 @@ export const importacaoProvasRouter = router({
     }> = [];
 
     for (const item of input.arquivos) {
-      const validacao = validarEstrutura(item.prova);
       const chave = `${item.prova.codigo.trim().toLocaleLowerCase("pt-BR")}::${item.prova.ano}`;
-
-      if (validacao.erros.length) {
-        resultados.push({
-          arquivoNome: item.arquivoNome,
-          codigo: item.prova.codigo,
-          ano: item.prova.ano,
-          sucesso: false,
-          motivo: validacao.erros.join(" "),
-        });
-        continue;
-      }
 
       if (chaves.has(chave)) {
         resultados.push({
@@ -241,7 +229,7 @@ export const importacaoProvasRouter = router({
           codigo: item.prova.codigo,
           ano: item.prova.ano,
           sucesso: false,
-          motivo: error?.message || "Não foi possível gravar esta prova.",
+          motivo: error?.message || "Não foi possível gravar esta prova como rascunho.",
         });
       }
     }
