@@ -15,6 +15,16 @@ type QuestaoImportada = {
   tagFonte?: string | null;
 };
 
+type ProvaSnapshot = {
+  id: number;
+  codigo: string;
+  nome: string;
+  unidade: string;
+  ano: number;
+  totalQuestoes: number;
+  questoes: QuestaoImportada[];
+};
+
 function rowsOf<T>(result: any): T[] {
   if (Array.isArray(result?.[0])) return result[0] as T[];
   if (Array.isArray(result)) return result as T[];
@@ -29,13 +39,18 @@ function arredondar(valor: number) {
   return Math.round(valor * 10) / 10;
 }
 
+function parseJson<T>(valor: unknown): T {
+  if (valor && typeof valor === "object") return valor as T;
+  return JSON.parse(String(valor ?? "null")) as T;
+}
+
 async function dbObrigatorio() {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco de dados indisponível." });
   return db;
 }
 
-async function obterProva(db: any, provaId: number, exigirValidada = true) {
+async function obterProvaValidada(db: any, provaId: number) {
   const result = await db.execute(sql`
     SELECT id, codigo, nome, unidade, ano, total_questoes AS totalQuestoes,
            questoes_json AS questoesJson, status
@@ -45,51 +60,64 @@ async function obterProva(db: any, provaId: number, exigirValidada = true) {
   `);
   const prova = rowsOf<any>(result)[0];
   if (!prova) throw new TRPCError({ code: "NOT_FOUND", message: "Prova não encontrada." });
-  if (exigirValidada && prova.status !== "VALIDADA") {
+  if (prova.status !== "VALIDADA") {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Somente provas VALIDADA podem ser usadas em uma aplicação." });
   }
-  let questoes: QuestaoImportada[] = [];
   try {
-    questoes = JSON.parse(String(prova.questoesJson ?? "[]"));
+    const questoes = parseJson<QuestaoImportada[]>(prova.questoesJson);
+    return {
+      id: Number(prova.id),
+      codigo: String(prova.codigo),
+      nome: String(prova.nome),
+      unidade: String(prova.unidade),
+      ano: Number(prova.ano),
+      totalQuestoes: Number(prova.totalQuestoes),
+      questoes,
+    } satisfies ProvaSnapshot;
   } catch {
     throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível ler as questões desta prova." });
   }
-  return { ...prova, questoes };
 }
 
 async function obterAplicacao(db: any, aplicacaoId: number) {
   const result = await db.execute(sql`
-    SELECT a.id, a.prova_id AS provaId, a.titulo, a.agendada_para AS agendadaPara,
-           a.status, a.liberada_em AS liberadaEm, a.encerrada_em AS encerradaEm,
-           a.calculada_em AS calculadaEm, p.codigo AS provaCodigo, p.nome AS provaNome,
-           p.unidade AS provaUnidade, p.ano AS provaAno, p.total_questoes AS totalQuestoes
-      FROM aplicacoes_proficiencia a
-      JOIN provas_importadas p ON p.id = a.prova_id
-     WHERE a.id = ${aplicacaoId}
+    SELECT id, prova_id AS provaId, prova_snapshot_json AS provaSnapshotJson,
+           titulo, agendada_para AS agendadaPara, status,
+           liberada_em AS liberadaEm, encerrada_em AS encerradaEm,
+           calculada_em AS calculadaEm
+      FROM aplicacoes_proficiencia
+     WHERE id = ${aplicacaoId}
      LIMIT 1
   `);
-  const aplicacao = rowsOf<any>(result)[0];
-  if (!aplicacao) throw new TRPCError({ code: "NOT_FOUND", message: "Aplicação não encontrada." });
-  return aplicacao;
+  const linha = rowsOf<any>(result)[0];
+  if (!linha) throw new TRPCError({ code: "NOT_FOUND", message: "Aplicação não encontrada." });
+  let prova: ProvaSnapshot;
+  try {
+    prova = parseJson<ProvaSnapshot>(linha.provaSnapshotJson);
+  } catch {
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "O snapshot da prova desta aplicação está inválido." });
+  }
+  return { ...linha, prova };
 }
 
-async function obterAplicacaoDoParticipante(db: any, aplicacaoId: number, colaboradorId: number) {
+async function obterVinculoParticipante(db: any, aplicacaoId: number, colaboradorId: number) {
   const result = await db.execute(sql`
-    SELECT a.id, a.prova_id AS provaId, a.titulo, a.agendada_para AS agendadaPara,
-           a.status, a.liberada_em AS liberadaEm,
+    SELECT a.id, a.titulo, a.status, a.agendada_para AS agendadaPara,
+           a.liberada_em AS liberadaEm, a.prova_snapshot_json AS provaSnapshotJson,
            ap.situacao,
            t.id AS tentativaId, t.status AS tentativaStatus,
            t.iniciada_em AS iniciadaEm, t.finalizada_em AS finalizadaEm
       FROM aplicacoes_proficiencia a
       JOIN aplicacoes_proficiencia_participantes ap ON ap.aplicacao_id = a.id
-      LEFT JOIN tentativas_proficiencia t ON t.aplicacao_id = a.id AND t.colaborador_id = ap.colaborador_id
+      LEFT JOIN tentativas_proficiencia t
+        ON t.aplicacao_id = a.id AND t.colaborador_id = ap.colaborador_id
      WHERE a.id = ${aplicacaoId}
        AND ap.colaborador_id = ${colaboradorId}
      LIMIT 1
   `);
   const item = rowsOf<any>(result)[0];
   if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Esta aplicação não está atribuída a este participante." });
-  return item;
+  return { ...item, prova: parseJson<ProvaSnapshot>(item.provaSnapshotJson) };
 }
 
 async function obterRelacoesEixos(db: any, colaboradorId: number) {
@@ -100,10 +128,10 @@ async function obterRelacoesEixos(db: any, colaboradorId: number) {
      WHERE m.colaborador_id = ${colaboradorId}
        AND m.status IN ('VALIDADA_PROVISORIA','VALIDADA_DEFINITIVA')
   `);
-  const mapa = new Map<string, { relacao: string; percentualAnterior: number | null }>();
+  const mapa = new Map<string, { relacao: string | null; percentualAnterior: number | null }>();
   for (const item of rowsOf<any>(result)) {
     mapa.set(normalizar(String(item.eixoNome ?? "")), {
-      relacao: String(item.relacao ?? ""),
+      relacao: item.relacao ? String(item.relacao) : null,
       percentualAnterior: item.percentualAnterior === null ? null : Number(item.percentualAnterior),
     });
   }
@@ -113,17 +141,10 @@ async function obterRelacoesEixos(db: any, colaboradorId: number) {
 function calcularResultado(
   questoes: QuestaoImportada[],
   respostas: Array<{ questaoChave: string; resposta: string }>,
-  relacoes: Map<string, { relacao: string; percentualAnterior: number | null }>,
+  relacoes: Map<string, { relacao: string | null; percentualAnterior: number | null }>,
 ) {
   const porQuestao = new Map(respostas.map(item => [String(item.questaoChave), String(item.resposta).toUpperCase()]));
-  const eixoMap = new Map<string, {
-    eixo: string;
-    totalQuestoes: number;
-    respondidas: number;
-    acertos: number;
-    naoSei: number;
-  }>();
-
+  const eixoMap = new Map<string, { eixo: string; totalQuestoes: number; respondidas: number; acertos: number; naoSei: number }>();
   let totalAcertos = 0;
   let totalRespondidas = 0;
 
@@ -175,6 +196,23 @@ function calcularResultado(
   };
 }
 
+function provaParaParticipante(prova: ProvaSnapshot) {
+  return {
+    id: prova.id,
+    codigo: prova.codigo,
+    nome: prova.nome,
+    unidade: prova.unidade,
+    totalQuestoes: prova.totalQuestoes,
+    questoes: prova.questoes.map(questao => ({
+      id: questao.id,
+      enunciado: questao.enunciado,
+      opcoes: questao.opcoes,
+      macroarea: questao.macroarea ?? null,
+      microarea: questao.microarea ?? null,
+    })),
+  };
+}
+
 export const aplicacoesProficienciaRouter = router({
   listarProvasValidas: adminProcedure.query(async () => {
     const db = await dbObrigatorio();
@@ -190,8 +228,7 @@ export const aplicacoesProficienciaRouter = router({
   listarParticipantesDisponiveis: adminProcedure.query(async () => {
     const db = await dbObrigatorio();
     const result = await db.execute(sql`
-      SELECT u.id, u.name, u.email, u.cargo, u.role,
-             d.nome AS departamentoNome
+      SELECT u.id, u.name, u.email, u.cargo, u.role, d.nome AS departamentoNome
         FROM users u
         LEFT JOIN departamentos d ON d.id = u.departamentoId
        WHERE u.status = 'ativo'
@@ -210,26 +247,27 @@ export const aplicacoesProficienciaRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
-      await obterProva(db, input.provaId, true);
+      const prova = await obterProvaValidada(db, input.provaId);
       const ids = Array.from(new Set(input.colaboradorIds));
-      const usuariosResult = await db.execute(sql`
+      const usuariosResult = await db.execute(sql.raw(`
         SELECT id FROM users
          WHERE status = 'ativo'
            AND role IN ('colaborador','lider','gerente')
-           AND id IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})
-      `);
-      const usuarios = rowsOf<{ id: number }>(usuariosResult);
-      if (usuarios.length !== ids.length) {
+           AND id IN (${ids.map(id => Number(id)).join(",")})
+      `));
+      if (rowsOf<{ id: number }>(usuariosResult).length !== ids.length) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Um ou mais participantes selecionados não estão ativos ou não podem receber a prova." });
       }
-
       const data = new Date(input.agendadaPara);
       if (Number.isNaN(data.getTime())) throw new TRPCError({ code: "BAD_REQUEST", message: "Data e horário inválidos." });
+      const snapshotJson = JSON.stringify(prova);
 
       return await db.transaction(async (tx: any) => {
         const result = await tx.execute(sql`
-          INSERT INTO aplicacoes_proficiencia (prova_id, titulo, agendada_para, status, created_by)
-          VALUES (${input.provaId}, ${input.titulo}, ${data}, 'AGENDADA', ${ctx.user.id})
+          INSERT INTO aplicacoes_proficiencia
+            (prova_id, prova_snapshot_json, titulo, agendada_para, status, created_by)
+          VALUES
+            (${input.provaId}, ${snapshotJson}, ${input.titulo}, ${data}, 'AGENDADA', ${ctx.user.id})
         `);
         const info: any = Array.isArray(result) ? result[0] : result;
         const aplicacaoId = Number(info?.insertId ?? 0);
@@ -240,7 +278,7 @@ export const aplicacoesProficienciaRouter = router({
             VALUES (${aplicacaoId}, ${colaboradorId}, 'SELECIONADO')
           `);
         }
-        return { id: aplicacaoId, status: "AGENDADA", participantes: ids.length };
+        return { id: aplicacaoId, status: "AGENDADA" as const, participantes: ids.length };
       });
     }),
 
@@ -249,59 +287,22 @@ export const aplicacoesProficienciaRouter = router({
     const result = await db.execute(sql`
       SELECT a.id, a.titulo, a.agendada_para AS agendadaPara, a.status,
              a.liberada_em AS liberadaEm, a.calculada_em AS calculadaEm,
-             p.id AS provaId, p.codigo AS provaCodigo, p.nome AS provaNome, p.unidade AS provaUnidade,
+             a.prova_snapshot_json AS provaSnapshotJson,
              COUNT(ap.id) AS totalParticipantes,
              SUM(CASE WHEN t.id IS NULL THEN 1 ELSE 0 END) AS naoIniciaram,
              SUM(CASE WHEN t.status IN ('EM_ANDAMENTO','BLOQUEADA','LIBERADA_CONTINUIDADE') THEN 1 ELSE 0 END) AS emAndamento,
              SUM(CASE WHEN t.status IN ('FINALIZADA','FINALIZADA_TEMPO') THEN 1 ELSE 0 END) AS finalizados
         FROM aplicacoes_proficiencia a
-        JOIN provas_importadas p ON p.id = a.prova_id
         LEFT JOIN aplicacoes_proficiencia_participantes ap ON ap.aplicacao_id = a.id
         LEFT JOIN tentativas_proficiencia t ON t.aplicacao_id = a.id AND t.colaborador_id = ap.colaborador_id
-       GROUP BY a.id, a.titulo, a.agendada_para, a.status, a.liberada_em, a.calculada_em,
-                p.id, p.codigo, p.nome, p.unidade
+       GROUP BY a.id, a.titulo, a.agendada_para, a.status, a.liberada_em, a.calculada_em, a.prova_snapshot_json
        ORDER BY a.agendada_para DESC, a.id DESC
     `);
-    return rowsOf<any>(result);
+    return rowsOf<any>(result).map(item => {
+      const prova = parseJson<ProvaSnapshot>(item.provaSnapshotJson);
+      return { ...item, provaId: prova.id, provaCodigo: prova.codigo, provaNome: prova.nome, provaUnidade: prova.unidade };
+    });
   }),
-
-  detalhe: adminProcedure
-    .input(z.object({ aplicacaoId: z.number().int().positive() }))
-    .query(async ({ input }) => {
-      const db = await dbObrigatorio();
-      const aplicacao = await obterAplicacao(db, input.aplicacaoId);
-      const participantesResult = await db.execute(sql`
-        SELECT ap.colaborador_id AS colaboradorId,
-               u.name AS colaboradorNome, u.email AS colaboradorEmail,
-               d.nome AS departamentoNome,
-               t.id AS tentativaId, t.status AS tentativaStatus,
-               t.iniciada_em AS iniciadaEm, t.finalizada_em AS finalizadaEm,
-               COUNT(r.id) AS respostasSalvas,
-               CASE
-                 WHEN p.total_questoes > 0 THEN ROUND((COUNT(r.id) / p.total_questoes) * 100, 1)
-                 ELSE 0
-               END AS percentualRealizacao,
-               CASE
-                 WHEN t.id IS NULL THEN 'NAO_INICIOU'
-                 WHEN t.status IN ('FINALIZADA','FINALIZADA_TEMPO') THEN 'FINALIZOU'
-                 ELSE 'EM_ANDAMENTO'
-               END AS situacaoRealizacao,
-               rp.percentual_geral AS percentualResultado
-          FROM aplicacoes_proficiencia_participantes ap
-          JOIN users u ON u.id = ap.colaborador_id
-          LEFT JOIN departamentos d ON d.id = u.departamentoId
-          JOIN aplicacoes_proficiencia a ON a.id = ap.aplicacao_id
-          JOIN provas_importadas p ON p.id = a.prova_id
-          LEFT JOIN tentativas_proficiencia t ON t.aplicacao_id = ap.aplicacao_id AND t.colaborador_id = ap.colaborador_id
-          LEFT JOIN respostas_proficiencia r ON r.tentativa_id = t.id
-          LEFT JOIN resultados_proficiencia rp ON rp.aplicacao_id = ap.aplicacao_id AND rp.colaborador_id = ap.colaborador_id
-         WHERE ap.aplicacao_id = ${input.aplicacaoId}
-         GROUP BY ap.colaborador_id, u.name, u.email, d.nome, t.id, t.status, t.iniciada_em,
-                  t.finalizada_em, p.total_questoes, rp.percentual_geral
-         ORDER BY u.name
-      `);
-      return { aplicacao, participantes: rowsOf<any>(participantesResult) };
-    }),
 
   liberar: adminProcedure
     .input(z.object({ aplicacaoId: z.number().int().positive() }))
@@ -319,7 +320,7 @@ export const aplicacoesProficienciaRouter = router({
            SET status = 'LIBERADA', liberada_em = NOW(), liberada_por = ${ctx.user.id}
          WHERE id = ${input.aplicacaoId} AND status = 'AGENDADA'
       `);
-      return { liberada: true, status: "LIBERADA" };
+      return { liberada: true, status: "LIBERADA" as const };
     }),
 
   monitoramento: adminProcedure
@@ -331,37 +332,37 @@ export const aplicacoesProficienciaRouter = router({
         SELECT ap.colaborador_id AS colaboradorId, u.name AS colaboradorNome,
                d.nome AS departamentoNome, t.id AS tentativaId, t.status AS tentativaStatus,
                t.iniciada_em AS iniciadaEm, t.ultima_atividade_em AS ultimaAtividadeEm,
-               t.finalizada_em AS finalizadaEm,
-               COUNT(r.id) AS respostasSalvas,
-               CASE WHEN p.total_questoes > 0 THEN ROUND((COUNT(r.id) / p.total_questoes) * 100, 1) ELSE 0 END AS percentualRealizacao,
-               CASE
-                 WHEN t.id IS NULL THEN 'NAO_INICIOU'
-                 WHEN t.status IN ('FINALIZADA','FINALIZADA_TEMPO') THEN 'FINALIZOU'
-                 ELSE 'EM_ANDAMENTO'
-               END AS situacao
+               t.finalizada_em AS finalizadaEm, COUNT(r.id) AS respostasSalvas
           FROM aplicacoes_proficiencia_participantes ap
           JOIN users u ON u.id = ap.colaborador_id
           LEFT JOIN departamentos d ON d.id = u.departamentoId
-          JOIN aplicacoes_proficiencia a ON a.id = ap.aplicacao_id
-          JOIN provas_importadas p ON p.id = a.prova_id
-          LEFT JOIN tentativas_proficiencia t ON t.aplicacao_id = ap.aplicacao_id AND t.colaborador_id = ap.colaborador_id
+          LEFT JOIN tentativas_proficiencia t
+            ON t.aplicacao_id = ap.aplicacao_id AND t.colaborador_id = ap.colaborador_id
           LEFT JOIN respostas_proficiencia r ON r.tentativa_id = t.id
          WHERE ap.aplicacao_id = ${input.aplicacaoId}
-         GROUP BY ap.colaborador_id, u.name, d.nome, t.id, t.status, t.iniciada_em,
-                  t.ultima_atividade_em, t.finalizada_em, p.total_questoes
+         GROUP BY ap.colaborador_id, u.name, d.nome, t.id, t.status,
+                  t.iniciada_em, t.ultima_atividade_em, t.finalizada_em
          ORDER BY u.name
       `);
-      const participantes = rowsOf<any>(participantesResult);
+      const totalQuestoes = Math.max(1, Number(aplicacao.prova.totalQuestoes || aplicacao.prova.questoes.length));
+      const participantes = rowsOf<any>(participantesResult).map(item => ({
+        ...item,
+        percentualRealizacao: arredondar((Number(item.respostasSalvas ?? 0) / totalQuestoes) * 100),
+        situacao: !item.tentativaId
+          ? "NAO_INICIOU"
+          : ["FINALIZADA", "FINALIZADA_TEMPO"].includes(String(item.tentativaStatus))
+            ? "FINALIZOU"
+            : "EM_ANDAMENTO",
+      }));
+      const finalizados = participantes.filter(item => item.situacao === "FINALIZOU").length;
       return {
-        aplicacao,
+        aplicacao: { ...aplicacao, provaSnapshotJson: undefined },
         resumo: {
           total: participantes.length,
           naoIniciaram: participantes.filter(item => item.situacao === "NAO_INICIOU").length,
           emAndamento: participantes.filter(item => item.situacao === "EM_ANDAMENTO").length,
-          finalizados: participantes.filter(item => item.situacao === "FINALIZOU").length,
-          percentualConclusao: participantes.length
-            ? arredondar((participantes.filter(item => item.situacao === "FINALIZOU").length / participantes.length) * 100)
-            : 0,
+          finalizados,
+          percentualConclusao: participantes.length ? arredondar((finalizados / participantes.length) * 100) : 0,
         },
         participantes,
       };
@@ -371,63 +372,71 @@ export const aplicacoesProficienciaRouter = router({
     const db = await dbObrigatorio();
     const result = await db.execute(sql`
       SELECT a.id, a.titulo, a.agendada_para AS agendadaPara, a.status,
-             a.liberada_em AS liberadaEm,
-             p.nome AS provaNome, p.unidade AS provaUnidade, p.total_questoes AS totalQuestoes,
+             a.liberada_em AS liberadaEm, a.prova_snapshot_json AS provaSnapshotJson,
              t.id AS tentativaId, t.status AS tentativaStatus, t.finalizada_em AS finalizadaEm
         FROM aplicacoes_proficiencia_participantes ap
         JOIN aplicacoes_proficiencia a ON a.id = ap.aplicacao_id
-        JOIN provas_importadas p ON p.id = a.prova_id
-        LEFT JOIN tentativas_proficiencia t ON t.aplicacao_id = a.id AND t.colaborador_id = ap.colaborador_id
+        LEFT JOIN tentativas_proficiencia t
+          ON t.aplicacao_id = a.id AND t.colaborador_id = ap.colaborador_id
        WHERE ap.colaborador_id = ${ctx.user.id}
          AND a.status IN ('LIBERADA','ENCERRADA','CALCULADA')
        ORDER BY a.agendada_para DESC, a.id DESC
     `);
-    return rowsOf<any>(result);
+    return rowsOf<any>(result).map(item => {
+      const prova = parseJson<ProvaSnapshot>(item.provaSnapshotJson);
+      return { ...item, provaNome: prova.nome, provaUnidade: prova.unidade, totalQuestoes: prova.totalQuestoes };
+    });
   }),
 
-  abrirProva: assessmentProcedure
+  estadoProva: assessmentProcedure
     .input(z.object({ aplicacaoId: z.number().int().positive() }))
     .query(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
-      const vinculo = await obterAplicacaoDoParticipante(db, input.aplicacaoId, ctx.user.id);
+      const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
       if (vinculo.status !== "LIBERADA" && !vinculo.tentativaId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Esta prova ainda não está liberada para início." });
       }
-      const prova = await obterProva(db, Number(vinculo.provaId), true);
-      let tentativaId = Number(vinculo.tentativaId ?? 0);
-      if (!tentativaId) {
-        const result = await db.execute(sql`
-          INSERT INTO tentativas_proficiencia (aplicacao_id, colaborador_id, status, iniciada_em, ultima_atividade_em)
-          VALUES (${input.aplicacaoId}, ${ctx.user.id}, 'EM_ANDAMENTO', NOW(), NOW())
-        `);
-        const info: any = Array.isArray(result) ? result[0] : result;
-        tentativaId = Number(info?.insertId ?? 0);
-      }
-      const respostasResult = await db.execute(sql`
-        SELECT questao_chave AS questaoChave, resposta
-          FROM respostas_proficiencia
-         WHERE tentativa_id = ${tentativaId}
-      `);
+      const respostas = vinculo.tentativaId
+        ? rowsOf<any>(await db.execute(sql`
+            SELECT questao_chave AS questaoChave, resposta
+              FROM respostas_proficiencia
+             WHERE tentativa_id = ${Number(vinculo.tentativaId)}
+          `))
+        : [];
       return {
         aplicacao: { id: input.aplicacaoId, titulo: vinculo.titulo },
-        tentativaId,
-        tentativaStatus: vinculo.tentativaStatus ?? "EM_ANDAMENTO",
-        prova: {
-          id: prova.id,
-          codigo: prova.codigo,
-          nome: prova.nome,
-          unidade: prova.unidade,
-          totalQuestoes: prova.totalQuestoes,
-          questoes: prova.questoes.map((questao: QuestaoImportada) => ({
-            id: questao.id,
-            enunciado: questao.enunciado,
-            opcoes: questao.opcoes,
-            macroarea: questao.macroarea ?? null,
-            microarea: questao.microarea ?? null,
-          })),
-        },
-        respostas: rowsOf<any>(respostasResult),
+        tentativaId: vinculo.tentativaId ? Number(vinculo.tentativaId) : null,
+        tentativaStatus: vinculo.tentativaStatus ?? null,
+        prova: provaParaParticipante(vinculo.prova),
+        respostas,
       };
+    }),
+
+  iniciar: assessmentProcedure
+    .input(z.object({ aplicacaoId: z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
+      if (vinculo.status !== "LIBERADA") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Esta prova ainda não está liberada para início." });
+      }
+      if (vinculo.tentativaId) return { tentativaId: Number(vinculo.tentativaId), criada: false };
+      try {
+        const result = await db.execute(sql`
+          INSERT INTO tentativas_proficiencia
+            (aplicacao_id, colaborador_id, status, iniciada_em, ultima_atividade_em)
+          VALUES
+            (${input.aplicacaoId}, ${ctx.user.id}, 'EM_ANDAMENTO', NOW(), NOW())
+        `);
+        const info: any = Array.isArray(result) ? result[0] : result;
+        const tentativaId = Number(info?.insertId ?? 0);
+        if (!tentativaId) throw new Error("Sem identificador da tentativa.");
+        return { tentativaId, criada: true };
+      } catch {
+        const existente = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
+        if (existente.tentativaId) return { tentativaId: Number(existente.tentativaId), criada: false };
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível iniciar a avaliação." });
+      }
     }),
 
   salvarResposta: assessmentProcedure
@@ -440,9 +449,8 @@ export const aplicacoesProficienciaRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
       const tentativaResult = await db.execute(sql`
-        SELECT t.id, t.status, a.prova_id AS provaId
+        SELECT t.id, t.status
           FROM tentativas_proficiencia t
-          JOIN aplicacoes_proficiencia a ON a.id = t.aplicacao_id
          WHERE t.id = ${input.tentativaId}
            AND t.aplicacao_id = ${input.aplicacaoId}
            AND t.colaborador_id = ${ctx.user.id}
@@ -452,10 +460,10 @@ export const aplicacoesProficienciaRouter = router({
       if (!tentativa || tentativa.status !== "EM_ANDAMENTO") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Esta tentativa não está disponível para respostas." });
       }
-      const prova = await obterProva(db, Number(tentativa.provaId), true);
-      const questao = prova.questoes.find((item: QuestaoImportada) => String(item.id) === input.questaoChave);
+      const aplicacao = await obterAplicacao(db, input.aplicacaoId);
+      const questao = aplicacao.prova.questoes.find((item: QuestaoImportada) => String(item.id) === input.questaoChave);
       if (!questao) throw new TRPCError({ code: "BAD_REQUEST", message: "Questão não encontrada nesta prova." });
-      const opcaoValida = questao.opcoes.some((opcao: any) => String(opcao.letra).toUpperCase() === input.resposta.toUpperCase());
+      const opcaoValida = questao.opcoes.some(opcao => String(opcao.letra).toUpperCase() === input.resposta.toUpperCase());
       if (!opcaoValida) throw new TRPCError({ code: "BAD_REQUEST", message: "Alternativa inválida para esta questão." });
       await db.execute(sql`
         INSERT INTO respostas_proficiencia (tentativa_id, questao_chave, resposta, respondida_em)
@@ -484,16 +492,26 @@ export const aplicacoesProficienciaRouter = router({
       if (!tentativa || tentativa.status !== "EM_ANDAMENTO") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Esta tentativa não pode ser finalizada." });
       }
-      await db.execute(sql`
-        UPDATE tentativas_proficiencia
-           SET status = 'FINALIZADA', finalizada_em = NOW(), ultima_atividade_em = NOW()
-         WHERE id = ${input.tentativaId} AND status = 'EM_ANDAMENTO'
+      const aplicacao = await obterAplicacao(db, input.aplicacaoId);
+      const countResult = await db.execute(sql`
+        SELECT COUNT(*) AS total FROM respostas_proficiencia WHERE tentativa_id = ${input.tentativaId}
       `);
-      await db.execute(sql`
-        UPDATE aplicacoes_proficiencia_participantes
-           SET situacao = 'FINALIZADO'
-         WHERE aplicacao_id = ${input.aplicacaoId} AND colaborador_id = ${ctx.user.id}
-      `);
+      const respondidas = Number(rowsOf<any>(countResult)[0]?.total ?? 0);
+      if (respondidas < aplicacao.prova.totalQuestoes) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Ainda faltam ${aplicacao.prova.totalQuestoes - respondidas} questão(ões) para finalizar.` });
+      }
+      await db.transaction(async (tx: any) => {
+        await tx.execute(sql`
+          UPDATE tentativas_proficiencia
+             SET status = 'FINALIZADA', finalizada_em = NOW(), ultima_atividade_em = NOW()
+           WHERE id = ${input.tentativaId} AND status = 'EM_ANDAMENTO'
+        `);
+        await tx.execute(sql`
+          UPDATE aplicacoes_proficiencia_participantes
+             SET situacao = 'FINALIZADO'
+           WHERE aplicacao_id = ${input.aplicacaoId} AND colaborador_id = ${ctx.user.id}
+        `);
+      });
       return { finalizada: true };
     }),
 
@@ -505,24 +523,21 @@ export const aplicacoesProficienciaRouter = router({
       if (!["LIBERADA", "ENCERRADA", "CALCULADA"].includes(String(aplicacao.status))) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "A aplicação precisa ter sido liberada antes do cálculo." });
       }
-      const prova = await obterProva(db, Number(aplicacao.provaId), true);
-      const tentativasResult = await db.execute(sql`
-        SELECT t.id, t.colaborador_id AS colaboradorId
-          FROM tentativas_proficiencia t
-         WHERE t.aplicacao_id = ${input.aplicacaoId}
-           AND t.status IN ('FINALIZADA','FINALIZADA_TEMPO')
-      `);
-      const tentativas = rowsOf<any>(tentativasResult);
+      const tentativas = rowsOf<any>(await db.execute(sql`
+        SELECT id, colaborador_id AS colaboradorId
+          FROM tentativas_proficiencia
+         WHERE aplicacao_id = ${input.aplicacaoId}
+           AND status IN ('FINALIZADA','FINALIZADA_TEMPO')
+      `));
       let calculados = 0;
-
       for (const tentativa of tentativas) {
-        const respostasResult = await db.execute(sql`
+        const respostas = rowsOf<any>(await db.execute(sql`
           SELECT questao_chave AS questaoChave, resposta
             FROM respostas_proficiencia
            WHERE tentativa_id = ${Number(tentativa.id)}
-        `);
+        `));
         const relacoes = await obterRelacoesEixos(db, Number(tentativa.colaboradorId));
-        const resultado = calcularResultado(prova.questoes, rowsOf<any>(respostasResult), relacoes);
+        const resultado = calcularResultado(aplicacao.prova.questoes, respostas, relacoes);
         await db.execute(sql`
           INSERT INTO resultados_proficiencia
             (aplicacao_id, colaborador_id, tentativa_id, percentual_geral, resultado_json, calculado_em)
@@ -536,35 +551,29 @@ export const aplicacoesProficienciaRouter = router({
         `);
         calculados += 1;
       }
-
-      const contagemResult = await db.execute(sql`
+      const contagem = rowsOf<any>(await db.execute(sql`
         SELECT COUNT(*) AS total,
                SUM(CASE WHEN t.status IN ('FINALIZADA','FINALIZADA_TEMPO') THEN 1 ELSE 0 END) AS finalizados
           FROM aplicacoes_proficiencia_participantes ap
-          LEFT JOIN tentativas_proficiencia t ON t.aplicacao_id = ap.aplicacao_id AND t.colaborador_id = ap.colaborador_id
+          LEFT JOIN tentativas_proficiencia t
+            ON t.aplicacao_id = ap.aplicacao_id AND t.colaborador_id = ap.colaborador_id
          WHERE ap.aplicacao_id = ${input.aplicacaoId}
+      `))[0] ?? { total: 0, finalizados: 0 };
+      const total = Number(contagem.total ?? 0);
+      const finalizados = Number(contagem.finalizados ?? 0);
+      const todosFinalizados = total > 0 && finalizados === total;
+      await db.execute(sql`
+        UPDATE aplicacoes_proficiencia
+           SET calculada_em = NOW(), calculada_por = ${ctx.user.id},
+               status = ${todosFinalizados ? "CALCULADA" : aplicacao.status},
+               encerrada_em = ${todosFinalizados ? new Date() : aplicacao.encerradaEm ?? null}
+         WHERE id = ${input.aplicacaoId}
       `);
-      const contagem = rowsOf<any>(contagemResult)[0] ?? { total: 0, finalizados: 0 };
-      const todosFinalizados = Number(contagem.total) > 0 && Number(contagem.finalizados) === Number(contagem.total);
-      if (todosFinalizados) {
-        await db.execute(sql`
-          UPDATE aplicacoes_proficiencia
-             SET status = 'CALCULADA', calculada_em = NOW(), calculada_por = ${ctx.user.id}, encerrada_em = COALESCE(encerrada_em, NOW())
-           WHERE id = ${input.aplicacaoId}
-        `);
-      } else {
-        await db.execute(sql`
-          UPDATE aplicacoes_proficiencia
-             SET calculada_em = NOW(), calculada_por = ${ctx.user.id}
-           WHERE id = ${input.aplicacaoId}
-        `);
-      }
-
       return {
         calculados,
-        totalParticipantes: Number(contagem.total),
-        finalizados: Number(contagem.finalizados),
-        pendentes: Math.max(0, Number(contagem.total) - Number(contagem.finalizados)),
+        totalParticipantes: total,
+        finalizados,
+        pendentes: Math.max(0, total - finalizados),
         status: todosFinalizados ? "CALCULADA" : aplicacao.status,
       };
     }),
@@ -576,16 +585,16 @@ export const aplicacoesProficienciaRouter = router({
       const result = await db.execute(sql`
         SELECT rp.id, rp.aplicacao_id AS aplicacaoId, rp.percentual_geral AS percentualGeral,
                rp.resultado_json AS resultadoJson, rp.calculado_em AS calculadoEm,
-               a.titulo AS aplicacaoTitulo, p.nome AS provaNome, p.unidade AS provaUnidade
+               a.titulo AS aplicacaoTitulo, a.prova_snapshot_json AS provaSnapshotJson
           FROM resultados_proficiencia rp
           JOIN aplicacoes_proficiencia a ON a.id = rp.aplicacao_id
-          JOIN provas_importadas p ON p.id = a.prova_id
          WHERE rp.colaborador_id = ${input.colaboradorId}
          ORDER BY rp.calculado_em DESC, rp.id DESC
          LIMIT 1
       `);
       const linha = rowsOf<any>(result)[0];
       if (!linha) return null;
-      return { ...linha, resultado: JSON.parse(String(linha.resultadoJson)) };
+      const prova = parseJson<ProvaSnapshot>(linha.provaSnapshotJson);
+      return { ...linha, provaNome: prova.nome, provaUnidade: prova.unidade, resultado: parseJson<any>(linha.resultadoJson) };
     }),
 });
