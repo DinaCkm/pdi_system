@@ -30,6 +30,8 @@ import ImportarEixosAvaliacoes from "./pages/ImportarEixosAvaliacoes";
 import ImportarProvas from "./pages/ImportarProvas";
 import AdminAvaliacoes from "./pages/AdminAvaliacoes";
 import AdminResultadosUtic from "./pages/AdminResultadosUtic";
+import AdminAplicacoesProficiencia from "./pages/AdminAplicacoesProficiencia";
+import ProvaProficiencia from "./pages/ProvaProficiencia";
 import ProvaSeguraUtic from "./pages/ProvaSeguraUtic";
 
 import PDIsEquipe from "./pages/PDIsEquipe";
@@ -75,6 +77,9 @@ function Router() {
           </ProvaUticIdentityGuard>
         </ProvaUticRealtimeGuard>
       </Route>
+      <Route path={"/avaliacoes/proficiencia/:id"}>
+        {(params) => <ProvaProficiencia key={params.id} aplicacaoId={Number(params.id)} />}
+      </Route>
       <Route path={"/dashboard"}><DashboardLayout><Dashboard /></DashboardLayout></Route>
       <Route path={"/central-comando"}><DashboardLayout><CentralComando /></DashboardLayout></Route>
       <Route path={"/404"} component={NotFound} />
@@ -103,6 +108,7 @@ function Router() {
       <Route path={"/admin-eixos-tecnicos"}><DashboardLayout><AdminEixosTecnicos /></DashboardLayout></Route>
       <Route path={"/importar-eixos-avaliacoes"}><DashboardLayout><ImportarEixosAvaliacoes /></DashboardLayout></Route>
       <Route path={"/importar-provas"}><DashboardLayout><ImportarProvas /></DashboardLayout></Route>
+      <Route path={"/admin-aplicacoes-proficiencia"}><DashboardLayout><AdminAplicacoesProficiencia /></DashboardLayout></Route>
       <Route path={"/admin-avaliacoes"}><DashboardLayout><AdminAvaliacoes /></DashboardLayout></Route>
       <Route path={"/admin-avaliacoes/utic/resultados"}><DashboardLayout><AdminResultadosUtic /></DashboardLayout></Route>
       <Route path={"/evidencias-equipe"}><DashboardLayout><EvidenciasEquipe /></DashboardLayout></Route>
