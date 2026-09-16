@@ -3,35 +3,37 @@ import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
 
-const eixoSchema = z.object({ nome: z.string().trim().min(1).max(255) });
-const opcaoSchema = z.object({
-  letra: z.string().trim().min(1).max(4),
-  texto: z.string().trim().min(1).max(5000),
+const eixoRascunhoSchema = z.object({ nome: z.string().max(255) });
+const opcaoRascunhoSchema = z.object({
+  letra: z.string().max(16),
+  texto: z.string().max(5000),
   naoSei: z.boolean().default(false),
 });
-const questaoSchema = z.object({
-  id: z.string().trim().min(1).max(80),
-  enunciado: z.string().trim().min(1).max(20000),
-  opcoes: z.array(opcaoSchema).min(2).max(30),
-  gabarito: z.string().trim().min(1).max(4),
-  eixos: z.array(eixoSchema).min(1).max(5),
-  macroarea: z.string().trim().max(500).nullable().optional(),
-  microarea: z.string().trim().max(500).nullable().optional(),
-  tagFonte: z.string().trim().max(2000).nullable().optional(),
+const questaoRascunhoSchema = z.object({
+  id: z.string().max(80),
+  enunciado: z.string().max(20000),
+  opcoes: z.array(opcaoRascunhoSchema).max(1000),
+  gabarito: z.string().max(16),
+  eixos: z.array(eixoRascunhoSchema).max(100),
+  macroarea: z.string().max(500).nullable().optional(),
+  microarea: z.string().max(500).nullable().optional(),
+  tagFonte: z.string().max(2000).nullable().optional(),
 });
-const provaSchema = z.object({
+const provaRascunhoSchema = z.object({
   codigo: z.string().trim().min(1).max(100),
   nome: z.string().trim().min(1).max(255),
   unidade: z.string().trim().min(1).max(255),
   ano: z.number().int().min(2020).max(2100),
-  descricao: z.string().trim().max(5000).nullable().optional(),
-  numeroQuestoesDeclarado: z.number().int().positive().max(1000).nullable().optional(),
-  questoes: z.array(questaoSchema).min(1).max(1000),
+  descricao: z.string().max(5000).nullable().optional(),
+  numeroQuestoesDeclarado: z.number().int().min(0).max(1000).nullable().optional(),
+  questoes: z.array(questaoRascunhoSchema).max(1000),
 });
-const arquivoProvaSchema = z.object({
+const arquivoProvaRascunhoSchema = z.object({
   arquivoNome: z.string().trim().min(1).max(255),
-  prova: provaSchema,
+  prova: provaRascunhoSchema,
 });
+
+type ProvaRascunho = z.infer<typeof provaRascunhoSchema>;
 
 async function ensureTables() {
   const db = await getDb();
@@ -66,69 +68,74 @@ function pareceNaoSei(valor: string) {
   return normalizado.includes("nao sei") || normalizado.includes("nao tenho conhecimento") || normalizado.includes("desconheco");
 }
 
-function validarEstrutura(prova: z.infer<typeof provaSchema>) {
+function validarEstrutura(prova: ProvaRascunho) {
   const erros: string[] = [];
   const avisos: string[] = [];
-  if (prova.numeroQuestoesDeclarado && prova.numeroQuestoesDeclarado !== prova.questoes.length) {
-    erros.push(`A aba PROVA informa ${prova.numeroQuestoesDeclarado} questão(ões), mas a aba QUESTÕES contém ${prova.questoes.length}.`);
+
+  if (!prova.questoes.length) erros.push("A prova precisa conter pelo menos uma questão para ser validada.");
+  if (prova.numeroQuestoesDeclarado !== null && prova.numeroQuestoesDeclarado !== undefined && prova.numeroQuestoesDeclarado !== prova.questoes.length) {
+    erros.push(`A aba PROVA informa ${prova.numeroQuestoesDeclarado} questão(ões), mas a prova armazenada contém ${prova.questoes.length}.`);
   }
 
   const ids = new Set<string>();
   prova.questoes.forEach((questao, indice) => {
-    const linha = indice + 2;
-    const chave = questao.id.toLocaleLowerCase("pt-BR");
-    if (ids.has(chave)) erros.push(`Questão ${questao.id}: ID duplicado.`);
-    ids.add(chave);
+    const referencia = questao.id.trim() || `linha ${indice + 2}`;
+    const idNormalizado = normalizarTexto(questao.id);
+
+    if (!questao.id.trim()) erros.push(`Questão na linha ${indice + 2}: ID não informado.`);
+    else if (ids.has(idNormalizado)) erros.push(`Questão ${questao.id}: ID duplicado.`);
+    else ids.add(idNormalizado);
+
+    if (!questao.enunciado.trim()) erros.push(`Questão ${referencia}: enunciado não informado.`);
+    if (questao.opcoes.length < 2) erros.push(`Questão ${referencia}: deve existir pelo menos uma alternativa real e uma última alternativa “Não sei”.`);
 
     const letras = questao.opcoes.map(opcao => opcao.letra.trim().toUpperCase());
-    if (new Set(letras).size !== letras.length) {
-      erros.push(`Questão ${questao.id}: há letra de alternativa repetida.`);
-    }
+    if (letras.some(letra => !letra)) erros.push(`Questão ${referencia}: há alternativa sem identificação de letra.`);
+    if (new Set(letras.filter(Boolean)).size !== letras.filter(Boolean).length) erros.push(`Questão ${referencia}: há letra de alternativa repetida.`);
 
-    if (questao.opcoes.length < 2) {
-      erros.push(`Questão ${questao.id}: deve existir pelo menos uma alternativa real e uma última alternativa “Não sei”.`);
-    }
+    questao.opcoes.forEach((opcao, opcaoIndex) => {
+      if (!opcao.texto.trim()) erros.push(`Questão ${referencia}: alternativa ${opcao.letra || opcaoIndex + 1} sem texto.`);
+    });
 
-    const naoSei = questao.opcoes.filter(opcao => opcao.naoSei);
-    if (naoSei.length !== 1) {
-      erros.push(`Questão ${questao.id}: deve existir exatamente uma única alternativa marcada como “Não sei”.`);
-    }
+    const naoSeiPorMarcacaoOuTexto = questao.opcoes.filter(opcao => opcao.naoSei || pareceNaoSei(opcao.texto));
+    if (naoSeiPorMarcacaoOuTexto.length !== 1) erros.push(`Questão ${referencia}: deve existir exatamente uma única alternativa “Não sei”.`);
 
     const ultimaOpcao = questao.opcoes[questao.opcoes.length - 1];
-    if (!ultimaOpcao?.naoSei || !pareceNaoSei(ultimaOpcao.texto)) {
-      erros.push(`Questão ${questao.id}: a última alternativa preenchida deve ser a única opção “Não sei”.`);
+    if (!ultimaOpcao || !ultimaOpcao.naoSei || !pareceNaoSei(ultimaOpcao.texto)) {
+      erros.push(`Questão ${referencia}: a última alternativa preenchida deve ser a única opção “Não sei”.`);
     }
 
     questao.opcoes.slice(0, -1).forEach(opcao => {
-      if (opcao.naoSei || pareceNaoSei(opcao.texto)) {
-        erros.push(`Questão ${questao.id}: “Não sei” só pode aparecer na última alternativa preenchida.`);
-      }
+      if (opcao.naoSei || pareceNaoSei(opcao.texto)) erros.push(`Questão ${referencia}: “Não sei” só pode aparecer na última alternativa preenchida.`);
     });
 
-    const reais = questao.opcoes.filter(opcao => !opcao.naoSei);
-    const textosReais = reais.map(opcao => normalizarTexto(opcao.texto));
-    if (new Set(textosReais).size !== textosReais.length) {
-      erros.push(`Questão ${questao.id}: existem alternativas reais com conteúdo duplicado.`);
+    const reais = questao.opcoes.filter(opcao => !opcao.naoSei && !pareceNaoSei(opcao.texto));
+    const textosReais = reais.map(opcao => normalizarTexto(opcao.texto)).filter(Boolean);
+    if (new Set(textosReais).size !== textosReais.length) erros.push(`Questão ${referencia}: existem alternativas reais com conteúdo duplicado.`);
+
+    if (!questao.gabarito.trim()) {
+      erros.push(`Questão ${referencia}: gabarito não informado.`);
+    } else {
+      const opcaoGabarito = questao.opcoes.find(opcao => opcao.letra.trim().toUpperCase() === questao.gabarito.trim().toUpperCase());
+      if (!opcaoGabarito || opcaoGabarito.naoSei || pareceNaoSei(opcaoGabarito.texto)) {
+        erros.push(`Questão ${referencia}: o gabarito deve apontar para uma alternativa real existente. “Não sei” nunca pode ser gabarito.`);
+      }
     }
 
-    const opcaoGabarito = questao.opcoes.find(opcao => opcao.letra.trim().toUpperCase() === questao.gabarito.trim().toUpperCase());
-    if (!opcaoGabarito || opcaoGabarito.naoSei) {
-      erros.push(`Questão ${questao.id}: o gabarito deve apontar para uma alternativa real existente. “Não sei” nunca pode ser gabarito.`);
-    }
-
-    const eixosNormalizados = questao.eixos.map(eixo => eixo.nome.trim().toLocaleLowerCase("pt-BR"));
-    if (new Set(eixosNormalizados).size !== eixosNormalizados.length) {
-      erros.push(`Questão ${questao.id}: o mesmo eixo foi informado mais de uma vez.`);
-    }
-
-    if (!questao.opcoes.length) erros.push(`Linha ${linha}: nenhuma alternativa informada.`);
+    if (!questao.eixos.length) erros.push(`Questão ${referencia}: informe pelo menos um eixo.`);
+    const eixosNormalizados = questao.eixos.map(eixo => normalizarTexto(eixo.nome));
+    if (eixosNormalizados.some(eixo => !eixo)) erros.push(`Questão ${referencia}: há eixo sem nome.`);
+    if (new Set(eixosNormalizados.filter(Boolean)).size !== eixosNormalizados.filter(Boolean).length) erros.push(`Questão ${referencia}: o mesmo eixo foi informado mais de uma vez.`);
   });
+
   return { erros, avisos };
 }
 
-function resumo(prova: z.infer<typeof provaSchema>) {
+function resumo(prova: ProvaRascunho) {
   const validacao = validarEstrutura(prova);
-  const eixos = new Set(prova.questoes.flatMap(questao => questao.eixos.map(eixo => eixo.nome.trim())));
+  const eixos = new Set(
+    prova.questoes.flatMap(questao => questao.eixos.map(eixo => eixo.nome.trim()).filter(Boolean)),
+  );
   return {
     valido: validacao.erros.length === 0,
     totalQuestoes: prova.questoes.length,
@@ -140,7 +147,7 @@ function resumo(prova: z.infer<typeof provaSchema>) {
 }
 
 export const importacaoProvasRouter = router({
-  validarLote: adminProcedure.input(z.object({ arquivos: z.array(arquivoProvaSchema).min(1).max(100) })).mutation(async ({ input }) => {
+  validarLote: adminProcedure.input(z.object({ arquivos: z.array(arquivoProvaRascunhoSchema).min(1).max(100) })).mutation(async ({ input }) => {
     const chaves = new Set<string>();
     const resultados = input.arquivos.map(item => {
       const r = resumo(item.prova);
@@ -159,61 +166,246 @@ export const importacaoProvasRouter = router({
     };
   }),
 
+  obter: adminProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
+    const db = await ensureTables();
+    const result = await db.execute(sql`
+      SELECT id, codigo, nome, unidade, ano, descricao, total_questoes AS totalQuestoes,
+             questoes_json AS questoesJson, arquivo_nome AS arquivoNome, status
+      FROM provas_importadas
+      WHERE id = ${input.id}
+      LIMIT 1
+    `);
+    const linhas = Array.isArray(result) ? (result[0] as any[]) : [];
+    if (!linhas.length) throw new Error("Prova não encontrada.");
+
+    const registro = linhas[0];
+    let questoes: unknown;
+    try {
+      questoes = JSON.parse(registro.questoesJson);
+    } catch {
+      throw new Error("Não foi possível ler as questões armazenadas desta prova.");
+    }
+
+    const prova = provaRascunhoSchema.safeParse({
+      codigo: registro.codigo,
+      nome: registro.nome,
+      unidade: registro.unidade,
+      ano: Number(registro.ano),
+      descricao: registro.descricao ?? null,
+      numeroQuestoesDeclarado: Number(registro.totalQuestoes),
+      questoes,
+    });
+    if (!prova.success) throw new Error("A prova armazenada possui uma estrutura técnica que não pode ser aberta para edição.");
+
+    return {
+      id: Number(registro.id),
+      arquivoNome: registro.arquivoNome,
+      status: registro.status,
+      prova: prova.data,
+    };
+  }),
+
+  salvarRascunho: adminProcedure.input(z.object({
+    id: z.number().int().positive(),
+    prova: provaRascunhoSchema,
+  })).mutation(async ({ input }) => {
+    const db = await ensureTables();
+    const atualResult = await db.execute(sql`
+      SELECT id, codigo, ano, status
+      FROM provas_importadas
+      WHERE id = ${input.id}
+      LIMIT 1
+    `);
+    const atuais = Array.isArray(atualResult) ? (atualResult[0] as any[]) : [];
+    if (!atuais.length) throw new Error("Prova não encontrada.");
+
+    const atual = atuais[0];
+    if (atual.status !== "RASCUNHO") {
+      throw new Error("A prova precisa estar como RASCUNHO para ser editada.");
+    }
+
+    const duplicadaResult = await db.execute(sql`
+      SELECT id
+      FROM provas_importadas
+      WHERE codigo = ${input.prova.codigo} AND ano = ${input.prova.ano} AND id <> ${input.id}
+      LIMIT 1
+    `);
+    const duplicadas = Array.isArray(duplicadaResult) ? (duplicadaResult[0] as any[]) : [];
+    if (duplicadas.length) {
+      throw new Error(`Já existe outra prova com o código ${input.prova.codigo} e ano ${input.prova.ano}.`);
+    }
+
+    await db.execute(sql`
+      UPDATE provas_importadas
+      SET codigo = ${input.prova.codigo},
+          nome = ${input.prova.nome},
+          unidade = ${input.prova.unidade},
+          ano = ${input.prova.ano},
+          descricao = ${input.prova.descricao ?? null},
+          total_questoes = ${input.prova.questoes.length},
+          questoes_json = ${JSON.stringify(input.prova.questoes)},
+          status = 'RASCUNHO'
+      WHERE id = ${input.id} AND status = 'RASCUNHO'
+    `);
+
+    return {
+      id: input.id,
+      codigo: input.prova.codigo,
+      status: "RASCUNHO",
+      totalQuestoes: input.prova.questoes.length,
+      salvo: true,
+      mensagem: "Alterações salvas. A prova permanece como RASCUNHO até ser validada novamente.",
+    };
+  }),
+
+  validarSalva: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input }) => {
+    const db = await ensureTables();
+    const result = await db.execute(sql`
+      SELECT id, codigo, nome, unidade, ano, descricao, total_questoes AS totalQuestoes,
+             questoes_json AS questoesJson, arquivo_nome AS arquivoNome, status
+      FROM provas_importadas
+      WHERE id = ${input.id}
+      LIMIT 1
+    `);
+    const linhas = Array.isArray(result) ? (result[0] as any[]) : [];
+    if (!linhas.length) throw new Error("Prova não encontrada.");
+
+    const registro = linhas[0];
+    let questoesBrutas: unknown;
+    try {
+      questoesBrutas = JSON.parse(registro.questoesJson);
+    } catch {
+      return {
+        id: registro.id,
+        codigo: registro.codigo,
+        status: "RASCUNHO",
+        validada: false,
+        valido: false,
+        totalQuestoes: 0,
+        totalEixosDistintos: 0,
+        questoesComMultiplosEixos: 0,
+        erros: ["Não foi possível ler as questões armazenadas desta prova."],
+        avisos: [],
+      };
+    }
+
+    const provaParse = provaRascunhoSchema.safeParse({
+      codigo: registro.codigo,
+      nome: registro.nome,
+      unidade: registro.unidade,
+      ano: Number(registro.ano),
+      descricao: registro.descricao ?? null,
+      numeroQuestoesDeclarado: Number(registro.totalQuestoes),
+      questoes: questoesBrutas,
+    });
+
+    if (!provaParse.success) {
+      return {
+        id: registro.id,
+        codigo: registro.codigo,
+        status: "RASCUNHO",
+        validada: false,
+        valido: false,
+        totalQuestoes: Array.isArray(questoesBrutas) ? questoesBrutas.length : 0,
+        totalEixosDistintos: 0,
+        questoesComMultiplosEixos: 0,
+        erros: provaParse.error.issues.map(issue => `Estrutura inválida em ${issue.path.join(".") || "prova"}: ${issue.message}`),
+        avisos: [],
+      };
+    }
+
+    const validacao = resumo(provaParse.data);
+    if (!validacao.valido) {
+      return {
+        id: registro.id,
+        codigo: registro.codigo,
+        status: "RASCUNHO",
+        validada: false,
+        ...validacao,
+      };
+    }
+
+    if (registro.status === "RASCUNHO") {
+      await db.execute(sql`
+        UPDATE provas_importadas
+        SET status = 'VALIDADA'
+        WHERE id = ${input.id} AND status = 'RASCUNHO'
+      `);
+    } else if (registro.status !== "VALIDADA") {
+      throw new Error(`A prova está com status ${registro.status} e não pode ser validada.`);
+    }
+
+    return {
+      id: registro.id,
+      codigo: registro.codigo,
+      status: "VALIDADA",
+      validada: true,
+      ...validacao,
+    };
+  }),
+
+  reabrirParaEdicao: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input }) => {
+    const db = await ensureTables();
+    const result = await db.execute(sql`
+      SELECT id, codigo, status
+      FROM provas_importadas
+      WHERE id = ${input.id}
+      LIMIT 1
+    `);
+    const linhas = Array.isArray(result) ? (result[0] as any[]) : [];
+    if (!linhas.length) throw new Error("Prova não encontrada.");
+
+    const registro = linhas[0];
+    if (registro.status === "RASCUNHO") {
+      return {
+        id: registro.id,
+        codigo: registro.codigo,
+        status: "RASCUNHO",
+        reaberta: false,
+        mensagem: "A prova já está em modo de edição.",
+      };
+    }
+
+    if (registro.status !== "VALIDADA") {
+      throw new Error(`A prova está com status ${registro.status} e não pode ser reaberta para edição.`);
+    }
+
+    await db.execute(sql`
+      UPDATE provas_importadas
+      SET status = 'RASCUNHO'
+      WHERE id = ${input.id} AND status = 'VALIDADA'
+    `);
+
+    return {
+      id: registro.id,
+      codigo: registro.codigo,
+      status: "RASCUNHO",
+      reaberta: true,
+      mensagem: "Prova reaberta para edição. Será necessário validar novamente antes de utilizá-la em novos processos de avaliação.",
+    };
+  }),
+
   importarLote: adminProcedure.input(z.object({
-    arquivos: z.array(arquivoProvaSchema).min(1).max(100),
+    arquivos: z.array(arquivoProvaRascunhoSchema).min(1).max(100),
     confirmado: z.literal(true),
   })).mutation(async ({ input, ctx }) => {
     const db = await ensureTables();
     const chaves = new Set<string>();
-    const resultados: Array<{
-      arquivoNome: string;
-      codigo: string;
-      ano: number;
-      sucesso: boolean;
-      motivo?: string;
-      totalQuestoes?: number;
-    }> = [];
+    const resultados: Array<{ arquivoNome: string; codigo: string; ano: number; sucesso: boolean; motivo?: string; totalQuestoes?: number }> = [];
 
     for (const item of input.arquivos) {
-      const validacao = validarEstrutura(item.prova);
       const chave = `${item.prova.codigo.trim().toLocaleLowerCase("pt-BR")}::${item.prova.ano}`;
-
-      if (validacao.erros.length) {
-        resultados.push({
-          arquivoNome: item.arquivoNome,
-          codigo: item.prova.codigo,
-          ano: item.prova.ano,
-          sucesso: false,
-          motivo: validacao.erros.join(" "),
-        });
-        continue;
-      }
-
       if (chaves.has(chave)) {
-        resultados.push({
-          arquivoNome: item.arquivoNome,
-          codigo: item.prova.codigo,
-          ano: item.prova.ano,
-          sucesso: false,
-          motivo: `Código ${item.prova.codigo} / ${item.prova.ano}: prova repetida dentro deste lote.`,
-        });
+        resultados.push({ arquivoNome: item.arquivoNome, codigo: item.prova.codigo, ano: item.prova.ano, sucesso: false, motivo: `Código ${item.prova.codigo} / ${item.prova.ano}: prova repetida dentro deste lote.` });
         continue;
       }
       chaves.add(chave);
 
       try {
-        const existenteResult = await db.execute(sql`
-          SELECT id FROM provas_importadas WHERE codigo = ${item.prova.codigo} AND ano = ${item.prova.ano} LIMIT 1
-        `);
+        const existenteResult = await db.execute(sql`SELECT id FROM provas_importadas WHERE codigo = ${item.prova.codigo} AND ano = ${item.prova.ano} LIMIT 1`);
         const existentes = Array.isArray(existenteResult) ? (existenteResult[0] as any[]) : [];
         if (existentes.length) {
-          resultados.push({
-            arquivoNome: item.arquivoNome,
-            codigo: item.prova.codigo,
-            ano: item.prova.ano,
-            sucesso: false,
-            motivo: `Já existe uma prova importada com o código ${item.prova.codigo} e ano ${item.prova.ano}.`,
-          });
+          resultados.push({ arquivoNome: item.arquivoNome, codigo: item.prova.codigo, ano: item.prova.ano, sucesso: false, motivo: `Já existe uma prova importada com o código ${item.prova.codigo} e ano ${item.prova.ano}.` });
           continue;
         }
 
@@ -228,27 +420,14 @@ export const importacaoProvasRouter = router({
           `);
         });
 
-        resultados.push({
-          arquivoNome: item.arquivoNome,
-          codigo: item.prova.codigo,
-          ano: item.prova.ano,
-          sucesso: true,
-          totalQuestoes: item.prova.questoes.length,
-        });
+        resultados.push({ arquivoNome: item.arquivoNome, codigo: item.prova.codigo, ano: item.prova.ano, sucesso: true, totalQuestoes: item.prova.questoes.length });
       } catch (error: any) {
-        resultados.push({
-          arquivoNome: item.arquivoNome,
-          codigo: item.prova.codigo,
-          ano: item.prova.ano,
-          sucesso: false,
-          motivo: error?.message || "Não foi possível gravar esta prova.",
-        });
+        resultados.push({ arquivoNome: item.arquivoNome, codigo: item.prova.codigo, ano: item.prova.ano, sucesso: false, motivo: error?.message || "Não foi possível gravar esta prova como rascunho." });
       }
     }
 
     const gravadas = resultados.filter(item => item.sucesso);
     const comErro = resultados.filter(item => !item.sucesso);
-
     return {
       sucesso: gravadas.length > 0,
       totalProvas: input.arquivos.length,

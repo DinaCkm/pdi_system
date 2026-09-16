@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
-import { AlertCircle, CheckCircle2, FileSpreadsheet, Loader2, ShieldCheck, Upload } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowUp, CheckCircle2, FileSpreadsheet, Loader2, Pencil, Plus, Save, ShieldCheck, Trash2, Upload, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,6 +62,26 @@ function pareceNaoSei(valor: string) {
   return normalizado.includes("nao sei") || normalizado.includes("nao tenho conhecimento") || normalizado.includes("desconheco");
 }
 
+function indiceParaLetra(indice: number) {
+  let numero = indice + 1;
+  let resultado = "";
+  while (numero > 0) {
+    const resto = (numero - 1) % 26;
+    resultado = String.fromCharCode(65 + resto) + resultado;
+    numero = Math.floor((numero - 1) / 26);
+  }
+  return resultado;
+}
+
+function renumerarOpcoes(opcoes: Opcao[], gabaritoAtual: string) {
+  const indiceGabarito = opcoes.findIndex(opcao => opcao.letra === gabaritoAtual);
+  const renumeradas = opcoes.map((opcao, index) => ({ ...opcao, letra: indiceParaLetra(index) }));
+  return {
+    opcoes: renumeradas,
+    gabarito: indiceGabarito >= 0 && renumeradas[indiceGabarito] ? renumeradas[indiceGabarito].letra : "",
+  };
+}
+
 function localizarColunasAlternativas(cabecalhosOriginais: unknown[]): ColunaAlternativa[] {
   return cabecalhosOriginais
     .map((cabecalho, indice) => {
@@ -73,28 +93,13 @@ function localizarColunasAlternativas(cabecalhosOriginais: unknown[]): ColunaAlt
     .filter((item): item is ColunaAlternativa => Boolean(item));
 }
 
-function validarAlternativasReais(arquivoNome: string, linhaNumero: number, opcoes: Opcao[]) {
-  const reais = opcoes.filter(opcao => !opcao.naoSei);
-  const vistos = new Map<string, string>();
-  for (const opcao of reais) {
-    if (pareceNaoSei(opcao.texto)) {
-      throw new Error(`${arquivoNome}: linha ${linhaNumero}, a alternativa ${opcao.letra} contém texto de “Não sei”, mas não é a última alternativa preenchida.`);
-    }
-    const chave = normalizar(opcao.texto);
-    const anterior = vistos.get(chave);
-    if (anterior) {
-      throw new Error(`${arquivoNome}: linha ${linhaNumero}, as alternativas ${anterior} e ${opcao.letra} têm o mesmo conteúdo.`);
-    }
-    vistos.set(chave, opcao.letra);
-  }
-}
-
 function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
   const workbook = XLSX.read(buffer, { type: "array" });
   const wsProva = abaPorNome(workbook, ["prova"]);
   const wsQuestoes = abaPorNome(workbook, ["questoes"]);
   const provaLinhas = XLSX.utils.sheet_to_json(wsProva, { header: 1, raw: true, defval: "" }) as unknown[][];
   const campos = campoMapa(provaLinhas);
+
   const codigo = texto(campos.get("codigo da prova"));
   const nome = texto(campos.get("nome da prova"));
   const unidade = texto(campos.get("unidade"));
@@ -109,49 +114,35 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
   const numeroDeclaradoBruto = campos.get("numero de questoes") ?? campos.get("número de questões");
   const numeroQuestoesDeclarado = texto(numeroDeclaradoBruto) ? Number(numeroDeclaradoBruto) : null;
   const linhas = XLSX.utils.sheet_to_json(wsQuestoes, { header: 1, raw: true, defval: "" }) as unknown[][];
-  if (linhas.length < 2) throw new Error(`${arquivoNome}: a aba QUESTÕES não contém questões.`);
-  const cabecalhosOriginais = linhas[0];
+  const cabecalhosOriginais = linhas[0] ?? [];
   const cabecalhos = cabecalhosOriginais.map(normalizar);
   const colunasAlternativas = localizarColunasAlternativas(cabecalhosOriginais);
-  if (colunasAlternativas.length < 2) throw new Error(`${arquivoNome}: a aba QUESTÕES deve ter pelo menos duas colunas de alternativas.`);
 
   const questoes: Questao[] = [];
   for (let indice = 1; indice < linhas.length; indice += 1) {
     const linha = linhas[indice];
-    const numeroLinha = indice + 1;
+    const linhaTemConteudo = linha.some(valor => texto(valor));
+    if (!linhaTemConteudo) continue;
+
     const idBruto = valorCabecalho(linha, cabecalhos, "ID da Questão");
     const enunciado = texto(valorCabecalho(linha, cabecalhos, "Enunciado"));
-    if (!texto(idBruto) && !enunciado) continue;
-    if (!texto(idBruto)) throw new Error(`${arquivoNome}: linha ${numeroLinha}, ID da questão não informado.`);
-    if (!enunciado) throw new Error(`${arquivoNome}: linha ${numeroLinha}, enunciado não informado.`);
 
-    const alternativasDaLinha = colunasAlternativas.map(coluna => ({ letra: coluna.letra, texto: texto(linha[coluna.indice]) }));
-    const indicesPreenchidos = alternativasDaLinha.map((opcao, posicao) => opcao.texto ? posicao : -1).filter(posicao => posicao >= 0);
-    if (indicesPreenchidos.length < 2) throw new Error(`${arquivoNome}: linha ${numeroLinha}, a questão deve ter pelo menos uma alternativa real e uma última alternativa “Não sei”.`);
+    const alternativasDaLinha = colunasAlternativas
+      .map(coluna => ({ letra: coluna.letra, texto: texto(linha[coluna.indice]) }))
+      .filter(opcao => opcao.texto);
 
-    const ultimoIndicePreenchido = indicesPreenchidos[indicesPreenchidos.length - 1];
-    for (let posicao = 0; posicao <= ultimoIndicePreenchido; posicao += 1) {
-      if (!alternativasDaLinha[posicao].texto) throw new Error(`${arquivoNome}: linha ${numeroLinha}, há uma alternativa vazia entre alternativas preenchidas.`);
-    }
-
-    const preenchidas = alternativasDaLinha.slice(0, ultimoIndicePreenchido + 1);
-    const ultima = preenchidas[preenchidas.length - 1];
-    if (!pareceNaoSei(ultima.texto)) throw new Error(`${arquivoNome}: linha ${numeroLinha}, a última alternativa preenchida (${ultima.letra}) deve ser a opção “Não sei”.`);
-
-    const opcoes: Opcao[] = preenchidas.map((opcao, posicao) => ({ letra: opcao.letra, texto: opcao.texto, naoSei: posicao === preenchidas.length - 1 }));
-    validarAlternativasReais(arquivoNome, numeroLinha, opcoes);
-    const ocorrenciasNaoSei = opcoes.filter(opcao => pareceNaoSei(opcao.texto));
-    if (ocorrenciasNaoSei.length !== 1) throw new Error(`${arquivoNome}: linha ${numeroLinha}, deve existir exatamente uma única alternativa “Não sei”.`);
+    const ultimoIndice = alternativasDaLinha.length - 1;
+    const opcoes: Opcao[] = alternativasDaLinha.map((opcao, posicao) => ({
+      letra: opcao.letra,
+      texto: opcao.texto,
+      naoSei: posicao === ultimoIndice && pareceNaoSei(opcao.texto),
+    }));
 
     const gabarito = texto(valorCabecalho(linha, cabecalhos, "Gabarito")).toUpperCase();
-    const opcaoGabarito = opcoes.find(opcao => opcao.letra === gabarito);
-    if (!opcaoGabarito || opcaoGabarito.naoSei) {
-      const permitidos = opcoes.filter(opcao => !opcao.naoSei).map(opcao => opcao.letra).join(", ");
-      throw new Error(`${arquivoNome}: linha ${numeroLinha}, gabarito deve apontar para uma alternativa real existente (${permitidos}). “Não sei” nunca pode ser gabarito.`);
-    }
-
-    const eixos = [1, 2, 3, 4, 5].map(numero => texto(valorCabecalho(linha, cabecalhos, `Eixo ${numero} da Questão`))).filter(Boolean).map(nomeEixo => ({ nome: nomeEixo }));
-    if (!eixos.length) throw new Error(`${arquivoNome}: linha ${numeroLinha}, informe pelo menos o Eixo 1 da Questão.`);
+    const eixos = [1, 2, 3, 4, 5]
+      .map(numero => texto(valorCabecalho(linha, cabecalhos, `Eixo ${numero} da Questão`)))
+      .filter(Boolean)
+      .map(nomeEixo => ({ nome: nomeEixo }));
 
     questoes.push({
       id: texto(idBruto),
@@ -165,34 +156,56 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
     });
   }
 
-  if (!questoes.length) throw new Error(`${arquivoNome}: nenhuma questão preenchida foi localizada.`);
-  return { arquivoNome, prova: { codigo, nome, unidade, ano, descricao: descricao || null, numeroQuestoesDeclarado: Number.isFinite(numeroQuestoesDeclarado as number) ? numeroQuestoesDeclarado : null, questoes } };
-}
-
-function proximaLetra(opcoes: Opcao[]) {
-  const ultimaReal = opcoes[Math.max(0, opcoes.length - 2)]?.letra || "A";
-  const codigo = ultimaReal.charCodeAt(0) + 1;
-  return codigo <= 90 ? String.fromCharCode(codigo) : `A${opcoes.length}`;
+  return {
+    arquivoNome,
+    prova: {
+      codigo,
+      nome,
+      unidade,
+      ano,
+      descricao: descricao || null,
+      numeroQuestoesDeclarado: Number.isFinite(numeroQuestoesDeclarado as number) ? numeroQuestoesDeclarado : null,
+      questoes,
+    },
+  };
 }
 
 export default function ImportarProvas() {
   const api = (trpc as any).importacaoProvas;
   const validarLote = api.validarLote.useMutation();
+  const validarSalva = api.validarSalva.useMutation();
+  const reabrirParaEdicao = api.reabrirParaEdicao.useMutation();
+  const salvarRascunho = api.salvarRascunho.useMutation();
   const importarLote = api.importarLote.useMutation();
   const listaQuery = api.listar.useQuery(undefined, { refetchOnWindowFocus: false });
 
   const [arquivos, setArquivos] = useState<ArquivoProva[]>([]);
   const [erroLeitura, setErroLeitura] = useState("");
   const [validacao, setValidacao] = useState<any>(null);
-  const [confirmado, setConfirmado] = useState(false);
   const [resultado, setResultado] = useState<any>(null);
+  const [validacaoSalva, setValidacaoSalva] = useState<any>(null);
+  const [validandoId, setValidandoId] = useState<number | null>(null);
+  const [reabrindoId, setReabrindoId] = useState<number | null>(null);
+  const [mensagemAcao, setMensagemAcao] = useState("");
   const [inputKey, setInputKey] = useState(0);
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [provaEdicao, setProvaEdicao] = useState<Prova | null>(null);
+
+  const provaQuery = api.obter.useQuery(
+    { id: editandoId ?? 0 },
+    { enabled: Boolean(editandoId), refetchOnWindowFocus: false },
+  );
+
+  useEffect(() => {
+    if (provaQuery.data?.prova && editandoId) {
+      setProvaEdicao(provaQuery.data.prova as Prova);
+    }
+  }, [provaQuery.data, editandoId]);
 
   const limparFluxo = () => {
     setArquivos([]);
     setErroLeitura("");
     setValidacao(null);
-    setConfirmado(false);
     setResultado(null);
     setInputKey(chave => chave + 1);
   };
@@ -202,8 +215,8 @@ export default function ImportarProvas() {
     setErroLeitura("");
     setValidacao(null);
     setResultado(null);
-    setConfirmado(false);
     if (!selecionados.length) { setArquivos([]); return; }
+
     try {
       const processados: ArquivoProva[] = [];
       for (const arquivo of selecionados) {
@@ -217,100 +230,163 @@ export default function ImportarProvas() {
     }
   };
 
-  const atualizarProva = (arquivoIndex: number, campo: keyof Prova, valor: any) => {
-    setArquivos(atuais => atuais.map((arquivo, index) => index === arquivoIndex ? { ...arquivo, prova: { ...arquivo.prova, [campo]: valor } } : arquivo));
-    setValidacao(null);
-  };
-
-  const atualizarQuestao = (arquivoIndex: number, questaoIndex: number, alteracoes: Partial<Questao>) => {
-    setArquivos(atuais => atuais.map((arquivo, index) => {
-      if (index !== arquivoIndex) return arquivo;
-      const questoes = arquivo.prova.questoes.map((questao, qi) => qi === questaoIndex ? { ...questao, ...alteracoes } : questao);
-      return { ...arquivo, prova: { ...arquivo.prova, questoes, numeroQuestoesDeclarado: questoes.length } };
-    }));
-    setValidacao(null);
-  };
-
-  const atualizarOpcao = (arquivoIndex: number, questaoIndex: number, opcaoIndex: number, novoTexto: string) => {
-    const questao = arquivos[arquivoIndex].prova.questoes[questaoIndex];
-    const opcoes = questao.opcoes.map((opcao, oi) => oi === opcaoIndex ? { ...opcao, texto: novoTexto } : opcao);
-    atualizarQuestao(arquivoIndex, questaoIndex, { opcoes });
-  };
-
-  const adicionarAlternativa = (arquivoIndex: number, questaoIndex: number) => {
-    const questao = arquivos[arquivoIndex].prova.questoes[questaoIndex];
-    const naoSei = questao.opcoes[questao.opcoes.length - 1];
-    const novaLetra = proximaLetra(questao.opcoes);
-    const opcoes = [...questao.opcoes.slice(0, -1), { letra: novaLetra, texto: "Nova alternativa", naoSei: false }, { ...naoSei, letra: String.fromCharCode(novaLetra.charCodeAt(0) + 1) }];
-    atualizarQuestao(arquivoIndex, questaoIndex, { opcoes });
-  };
-
-  const removerAlternativa = (arquivoIndex: number, questaoIndex: number, opcaoIndex: number) => {
-    const questao = arquivos[arquivoIndex].prova.questoes[questaoIndex];
-    if (opcaoIndex >= questao.opcoes.length - 1 || questao.opcoes.length <= 2) return;
-    const opcoesRestantes = questao.opcoes.filter((_, oi) => oi !== opcaoIndex);
-    const opcoes = opcoesRestantes.map((opcao, oi) => ({ ...opcao, letra: String.fromCharCode(65 + oi), naoSei: oi === opcoesRestantes.length - 1 }));
-    const gabarito = opcoes.some(opcao => !opcao.naoSei && opcao.letra === questao.gabarito) ? questao.gabarito : opcoes[0].letra;
-    atualizarQuestao(arquivoIndex, questaoIndex, { opcoes, gabarito });
-  };
-
-  const excluirQuestao = (arquivoIndex: number, questaoIndex: number) => {
-    setArquivos(atuais => atuais.map((arquivo, index) => {
-      if (index !== arquivoIndex) return arquivo;
-      const questoes = arquivo.prova.questoes.filter((_, qi) => qi !== questaoIndex);
-      return { ...arquivo, prova: { ...arquivo.prova, questoes, numeroQuestoesDeclarado: questoes.length } };
-    }));
-    setValidacao(null);
-  };
-
-  const moverQuestao = (arquivoIndex: number, questaoIndex: number, direcao: -1 | 1) => {
-    setArquivos(atuais => atuais.map((arquivo, index) => {
-      if (index !== arquivoIndex) return arquivo;
-      const destino = questaoIndex + direcao;
-      if (destino < 0 || destino >= arquivo.prova.questoes.length) return arquivo;
-      const questoes = [...arquivo.prova.questoes];
-      [questoes[questaoIndex], questoes[destino]] = [questoes[destino], questoes[questaoIndex]];
-      return { ...arquivo, prova: { ...arquivo.prova, questoes } };
-    }));
-    setValidacao(null);
-  };
-
-  const adicionarQuestao = (arquivoIndex: number) => {
-    const arquivo = arquivos[arquivoIndex];
-    const nova: Questao = {
-      id: `Q${arquivo.prova.questoes.length + 1}`,
-      enunciado: "Nova questão",
-      opcoes: [
-        { letra: "A", texto: "Nova alternativa", naoSei: false },
-        { letra: "B", texto: "Não sei", naoSei: true },
-      ],
-      gabarito: "A",
-      eixos: [{ nome: "Novo eixo" }],
-      macroarea: null,
-      microarea: null,
-      tagFonte: null,
-    };
-    const questoes = [...arquivo.prova.questoes, nova];
-    atualizarProva(arquivoIndex, "questoes", questoes);
-    atualizarProva(arquivoIndex, "numeroQuestoesDeclarado", questoes.length);
-  };
-
-  const validar = async () => {
-    setErroLeitura(""); setResultado(null); setConfirmado(false);
-    try { setValidacao(await validarLote.mutateAsync({ arquivos })); }
-    catch (error: any) { setValidacao(null); setErroLeitura(error?.message || "Não foi possível validar o lote."); }
-  };
-
-  const importar = async () => {
-    if (!validacao?.valido || !confirmado) return;
+  const gravarRascunho = async () => {
+    if (!arquivos.length) return;
     setErroLeitura("");
+    setValidacao(null);
     try {
       const resposta = await importarLote.mutateAsync({ arquivos, confirmado: true });
       setResultado(resposta);
       await listaQuery.refetch();
     } catch (error: any) {
-      setErroLeitura(error?.message || "Não foi possível concluir a importação das provas válidas.");
+      setErroLeitura(error?.message || "Não foi possível gravar as provas como rascunho.");
     }
+  };
+
+  const validar = async () => {
+    setErroLeitura("");
+    try {
+      setValidacao(await validarLote.mutateAsync({ arquivos }));
+    } catch (error: any) {
+      setValidacao(null);
+      setErroLeitura(error?.message || "Não foi possível validar as provas carregadas.");
+    }
+  };
+
+  const validarProvaSalva = async (id: number) => {
+    setErroLeitura("");
+    setValidacaoSalva(null);
+    setMensagemAcao("");
+    setValidandoId(id);
+    try {
+      const resposta = await validarSalva.mutateAsync({ id });
+      setValidacaoSalva(resposta);
+      await listaQuery.refetch();
+    } catch (error: any) {
+      setErroLeitura(error?.message || "Não foi possível validar a prova salva.");
+    } finally {
+      setValidandoId(null);
+    }
+  };
+
+  const abrirEdicao = (id: number) => {
+    setErroLeitura("");
+    setMensagemAcao("");
+    setEditandoId(id);
+    setProvaEdicao(null);
+  };
+
+  const reabrirProva = async (id: number) => {
+    setErroLeitura("");
+    setValidacaoSalva(null);
+    setMensagemAcao("");
+    setReabrindoId(id);
+    try {
+      const resposta = await reabrirParaEdicao.mutateAsync({ id });
+      setMensagemAcao(resposta?.mensagem || "Prova reaberta para edição. O status voltou para RASCUNHO.");
+      await listaQuery.refetch();
+      abrirEdicao(id);
+    } catch (error: any) {
+      setErroLeitura(error?.message || "Não foi possível reabrir a prova para edição.");
+    } finally {
+      setReabrindoId(null);
+    }
+  };
+
+  const atualizarQuestao = (questaoIndex: number, alteracoes: Partial<Questao>) => {
+    setProvaEdicao(atual => {
+      if (!atual) return atual;
+      return {
+        ...atual,
+        questoes: atual.questoes.map((questao, index) => index === questaoIndex ? { ...questao, ...alteracoes } : questao),
+      };
+    });
+  };
+
+  const atualizarOpcao = (questaoIndex: number, opcaoIndex: number, novoTexto: string) => {
+    if (!provaEdicao) return;
+    const questao = provaEdicao.questoes[questaoIndex];
+    const opcoes = questao.opcoes.map((opcao, index) => index === opcaoIndex ? { ...opcao, texto: novoTexto } : opcao);
+    const ultimo = opcoes.length - 1;
+    const normalizadas = opcoes.map((opcao, index) => ({ ...opcao, naoSei: index === ultimo && pareceNaoSei(opcao.texto) }));
+    atualizarQuestao(questaoIndex, { opcoes: normalizadas });
+  };
+
+  const adicionarAlternativa = (questaoIndex: number) => {
+    if (!provaEdicao) return;
+    const questao = provaEdicao.questoes[questaoIndex];
+    const ultima = questao.opcoes[questao.opcoes.length - 1];
+    const inserirAntesDaUltima = Boolean(ultima && (ultima.naoSei || pareceNaoSei(ultima.texto)));
+    const novaOpcao: Opcao = { letra: "", texto: "", naoSei: false };
+    const novas = inserirAntesDaUltima
+      ? [...questao.opcoes.slice(0, -1), novaOpcao, ultima]
+      : [...questao.opcoes, novaOpcao];
+    const renumeradas = renumerarOpcoes(novas, questao.gabarito);
+    atualizarQuestao(questaoIndex, renumeradas);
+  };
+
+  const removerAlternativa = (questaoIndex: number, opcaoIndex: number) => {
+    if (!provaEdicao) return;
+    const questao = provaEdicao.questoes[questaoIndex];
+    const removida = questao.opcoes[opcaoIndex];
+    const restantes = questao.opcoes.filter((_, index) => index !== opcaoIndex);
+    const gabaritoBase = removida?.letra === questao.gabarito ? "" : questao.gabarito;
+    const renumeradas = renumerarOpcoes(restantes, gabaritoBase);
+    atualizarQuestao(questaoIndex, renumeradas);
+  };
+
+  const adicionarQuestao = () => {
+    setProvaEdicao(atual => {
+      if (!atual) return atual;
+      const nova: Questao = {
+        id: "",
+        enunciado: "",
+        opcoes: [],
+        gabarito: "",
+        eixos: [],
+        macroarea: null,
+        microarea: null,
+        tagFonte: null,
+      };
+      return { ...atual, questoes: [...atual.questoes, nova] };
+    });
+  };
+
+  const excluirQuestao = (questaoIndex: number) => {
+    setProvaEdicao(atual => {
+      if (!atual) return atual;
+      return { ...atual, questoes: atual.questoes.filter((_, index) => index !== questaoIndex) };
+    });
+  };
+
+  const moverQuestao = (questaoIndex: number, direcao: -1 | 1) => {
+    setProvaEdicao(atual => {
+      if (!atual) return atual;
+      const destino = questaoIndex + direcao;
+      if (destino < 0 || destino >= atual.questoes.length) return atual;
+      const questoes = [...atual.questoes];
+      [questoes[questaoIndex], questoes[destino]] = [questoes[destino], questoes[questaoIndex]];
+      return { ...atual, questoes };
+    });
+  };
+
+  const salvarEdicao = async () => {
+    if (!editandoId || !provaEdicao) return;
+    setErroLeitura("");
+    setMensagemAcao("");
+    try {
+      const resposta = await salvarRascunho.mutateAsync({ id: editandoId, prova: provaEdicao });
+      setMensagemAcao(resposta?.mensagem || "Alterações salvas. A prova permanece como RASCUNHO.");
+      await listaQuery.refetch();
+      await provaQuery.refetch();
+    } catch (error: any) {
+      setErroLeitura(error?.message || "Não foi possível salvar as alterações da prova.");
+    }
+  };
+
+  const fecharEdicao = () => {
+    setEditandoId(null);
+    setProvaEdicao(null);
   };
 
   const totalQuestoes = useMemo(() => arquivos.reduce((soma, item) => soma + item.prova.questoes.length, 0), [arquivos]);
@@ -320,106 +396,122 @@ export default function ImportarProvas() {
     <div className="space-y-6 p-6">
       <div className="space-y-2">
         <div className="flex items-center gap-3"><FileSpreadsheet className="h-7 w-7 text-blue-600" /><h1 className="text-2xl font-semibold">Upload de Avaliações</h1></div>
-        <p className="max-w-4xl text-sm text-muted-foreground">Envie a prova, revise e ajuste todo o conteúdo na tela e só depois execute a validação estrutural.</p>
+        <p className="max-w-4xl text-sm text-muted-foreground">As provas podem ser carregadas primeiro como RASCUNHO e validadas posteriormente. Uma prova VALIDADA precisa ser reaberta para edição antes de qualquer alteração.</p>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>1. Selecione as provas</CardTitle><CardDescription>Cada questão pode ter quantidade variável de alternativas. A última alternativa preenchida deve ser sempre a única opção “Não sei”.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>1. Selecione as provas</CardTitle><CardDescription>O upload não exige validação prévia. A prova será armazenada como RASCUNHO para revisão posterior.</CardDescription></CardHeader>
         <CardContent className="space-y-4">
           <input key={inputKey} type="file" accept=".xlsx" multiple onChange={selecionar} className="block w-full text-sm" />
-          {arquivos.length > 0 && <div className="rounded-md border bg-muted/20 p-4 text-sm"><strong>{arquivos.length}</strong> prova(s) carregada(s) · <strong>{totalQuestoes}</strong> questão(ões). Antes de validar, revise abaixo todos os dados.</div>}
+          {arquivos.length > 0 && <div className="rounded-md border bg-muted/20 p-4 text-sm"><strong>{arquivos.length}</strong> prova(s) carregada(s) · <strong>{totalQuestoes}</strong> questão(ões). Você pode gravá-las agora como RASCUNHO sem validar.</div>}
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={gravarRascunho} disabled={!arquivos.length || carregando}>{carregando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Gravar como RASCUNHO</Button>
+            <Button variant="outline" onClick={validar} disabled={!arquivos.length || carregando}>{carregando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Validar agora (opcional)</Button>
+          </div>
         </CardContent>
       </Card>
 
       {erroLeitura && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{erroLeitura}</AlertDescription></Alert>}
-
-      {arquivos.map((arquivo, arquivoIndex) => (
-        <Card key={`${arquivo.arquivoNome}-${arquivoIndex}`}>
-          <CardHeader><CardTitle>2. Revisão completa — {arquivo.prova.nome}</CardTitle><CardDescription>{arquivo.arquivoNome}. Todos os campos abaixo podem ser ajustados antes da validação.</CardDescription></CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="text-sm">Código<input className="mt-1 w-full rounded-md border px-3 py-2" value={arquivo.prova.codigo} onChange={e => atualizarProva(arquivoIndex, "codigo", e.target.value)} /></label>
-              <label className="text-sm">Nome<input className="mt-1 w-full rounded-md border px-3 py-2" value={arquivo.prova.nome} onChange={e => atualizarProva(arquivoIndex, "nome", e.target.value)} /></label>
-              <label className="text-sm">Unidade<input className="mt-1 w-full rounded-md border px-3 py-2" value={arquivo.prova.unidade} onChange={e => atualizarProva(arquivoIndex, "unidade", e.target.value)} /></label>
-              <label className="text-sm">Ano<input type="number" className="mt-1 w-full rounded-md border px-3 py-2" value={arquivo.prova.ano} onChange={e => atualizarProva(arquivoIndex, "ano", Number(e.target.value))} /></label>
-              <label className="text-sm md:col-span-2">Descrição<textarea className="mt-1 w-full rounded-md border px-3 py-2" rows={2} value={arquivo.prova.descricao ?? ""} onChange={e => atualizarProva(arquivoIndex, "descricao", e.target.value)} /></label>
-            </div>
-
-            <div className="space-y-5">
-              {arquivo.prova.questoes.map((questao, questaoIndex) => (
-                <div key={`${questao.id}-${questaoIndex}`} className="rounded-md border p-4 space-y-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <strong>Questão {questaoIndex + 1}</strong>
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="button" variant="outline" size="sm" onClick={() => moverQuestao(arquivoIndex, questaoIndex, -1)} disabled={questaoIndex === 0}>Subir</Button>
-                      <Button type="button" variant="outline" size="sm" onClick={() => moverQuestao(arquivoIndex, questaoIndex, 1)} disabled={questaoIndex === arquivo.prova.questoes.length - 1}>Descer</Button>
-                      <Button type="button" variant="outline" size="sm" onClick={() => excluirQuestao(arquivoIndex, questaoIndex)} disabled={arquivo.prova.questoes.length <= 1}>Excluir questão</Button>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <label className="text-sm">ID<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.id} onChange={e => atualizarQuestao(arquivoIndex, questaoIndex, { id: e.target.value })} /></label>
-                    <label className="text-sm">Gabarito<select className="mt-1 w-full rounded-md border px-3 py-2" value={questao.gabarito} onChange={e => atualizarQuestao(arquivoIndex, questaoIndex, { gabarito: e.target.value })}>{questao.opcoes.filter(opcao => !opcao.naoSei).map(opcao => <option key={opcao.letra} value={opcao.letra}>{opcao.letra}</option>)}</select></label>
-                    <label className="text-sm md:col-span-2">Enunciado<textarea className="mt-1 w-full rounded-md border px-3 py-2" rows={3} value={questao.enunciado} onChange={e => atualizarQuestao(arquivoIndex, questaoIndex, { enunciado: e.target.value })} /></label>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium">Alternativas</div>
-                    {questao.opcoes.map((opcao, opcaoIndex) => (
-                      <div key={`${opcao.letra}-${opcaoIndex}`} className="flex items-start gap-2">
-                        <div className="w-10 pt-2 text-sm font-semibold">{opcao.letra}</div>
-                        <textarea className="min-h-[42px] flex-1 rounded-md border px-3 py-2" value={opcao.texto} onChange={e => atualizarOpcao(arquivoIndex, questaoIndex, opcaoIndex, e.target.value)} />
-                        {opcao.naoSei ? <span className="pt-2 text-xs font-medium text-muted-foreground">ÚLTIMA = NÃO SEI</span> : <Button type="button" variant="outline" size="sm" onClick={() => removerAlternativa(arquivoIndex, questaoIndex, opcaoIndex)} disabled={questao.opcoes.length <= 2}>Remover</Button>}
-                      </div>
-                    ))}
-                    <Button type="button" variant="outline" size="sm" onClick={() => adicionarAlternativa(arquivoIndex, questaoIndex)}>Adicionar alternativa antes do “Não sei”</Button>
-                  </div>
-
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <label className="text-sm md:col-span-2">Eixos da questão, separados por vírgula<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.eixos.map(eixo => eixo.nome).join(", ")} onChange={e => atualizarQuestao(arquivoIndex, questaoIndex, { eixos: e.target.value.split(",").map(item => item.trim()).filter(Boolean).map(nome => ({ nome })) })} /></label>
-                    <label className="text-sm">Macroárea<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.macroarea ?? ""} onChange={e => atualizarQuestao(arquivoIndex, questaoIndex, { macroarea: e.target.value || null })} /></label>
-                    <label className="text-sm">Microárea<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.microarea ?? ""} onChange={e => atualizarQuestao(arquivoIndex, questaoIndex, { microarea: e.target.value || null })} /></label>
-                    <label className="text-sm md:col-span-2">Fonte / Tag<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.tagFonte ?? ""} onChange={e => atualizarQuestao(arquivoIndex, questaoIndex, { tagFonte: e.target.value || null })} /></label>
-                  </div>
-                </div>
-              ))}
-              <Button type="button" variant="outline" onClick={() => adicionarQuestao(arquivoIndex)}>Adicionar nova questão</Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-
-      {arquivos.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle>3. Validar após a revisão</CardTitle><CardDescription>A validação só será executada sobre o conteúdo que está atualmente na tela.</CardDescription></CardHeader>
-          <CardContent><Button onClick={validar} disabled={carregando}>{carregando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Validar provas revisadas</Button></CardContent>
-        </Card>
-      )}
+      {mensagemAcao && <Alert><Pencil className="h-4 w-4" /><AlertDescription>{mensagemAcao}</AlertDescription></Alert>}
 
       {validacao && (
         <Card>
-          <CardHeader><CardTitle>4. Resultado da validação</CardTitle><CardDescription>{validacao.totalComErro > 0 ? `${validacao.totalValidos ?? 0} prova(s) válida(s) e ${validacao.totalComErro} com erro.` : "Todas as provas passaram pela validação estrutural."}</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Resultado da validação opcional</CardTitle><CardDescription>Esta conferência não é necessária para gravar o rascunho.</CardDescription></CardHeader>
           <CardContent className="space-y-4">
             {(validacao.resultados ?? []).map((item: any) => (
               <div key={`${item.arquivoNome}-${item.codigo}`} className="rounded-md border p-4 text-sm">
-                <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{item.nome}</p><p className="text-muted-foreground">{item.arquivoNome} · {item.unidade} · {item.ano}</p></div><div>{item.valido ? <span className="inline-flex items-center gap-1 text-green-700"><CheckCircle2 className="h-4 w-4" /> Válida</span> : <span className="inline-flex items-center gap-1 text-red-700"><AlertCircle className="h-4 w-4" /> Com erro</span>}</div></div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-3"><div>Questões: <strong>{item.totalQuestoes}</strong></div><div>Eixos distintos: <strong>{item.totalEixosDistintos}</strong></div><div>Questões com múltiplos eixos: <strong>{item.questoesComMultiplosEixos}</strong></div></div>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div><p className="font-semibold">{item.nome}</p><p className="text-muted-foreground">{item.arquivoNome} · {item.unidade} · {item.ano}</p></div>
+                  <div>{item.valido ? <span className="inline-flex items-center gap-1 text-green-700"><CheckCircle2 className="h-4 w-4" /> Sem pendências estruturais</span> : <span className="inline-flex items-center gap-1 text-red-700"><AlertCircle className="h-4 w-4" /> Requer revisão</span>}</div>
+                </div>
                 {(item.erros ?? []).length > 0 && <div className="mt-3 text-red-700">{item.erros.map((erro: string) => <p key={erro}>• {erro}</p>)}</div>}
               </div>
             ))}
-            {validacao.valido && <div className="space-y-3 rounded-md border p-4"><label className="flex items-start gap-2 text-sm"><input type="checkbox" checked={confirmado} onChange={event => setConfirmado(event.target.checked)} className="mt-1" /><span>Conferi a prova revisada e autorizo a gravação das provas válidas como rascunho.</span></label><Button onClick={importar} disabled={!confirmado || carregando}>{carregando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Gravar avaliações válidas</Button></div>}
           </CardContent>
         </Card>
       )}
 
-      {resultado?.sucesso && <Alert><CheckCircle2 className="h-4 w-4" /><AlertDescription><div className="space-y-3"><p>{resultado.totalGravadas ?? resultado.totalProvas} prova(s) gravada(s) com sucesso como RASCUNHO, totalizando {resultado.totalQuestoes} questão(ões).</p><Button type="button" variant="outline" onClick={limparFluxo}>Nova importação</Button></div></AlertDescription></Alert>}
+      {resultado?.sucesso && <Alert><CheckCircle2 className="h-4 w-4" /><AlertDescription><div className="space-y-3"><p>{resultado.totalGravadas ?? resultado.totalProvas} prova(s) gravada(s) como RASCUNHO, totalizando {resultado.totalQuestoes} questão(ões). A validação poderá ser feita posteriormente.</p><Button type="button" variant="outline" onClick={limparFluxo}>Nova importação</Button></div></AlertDescription></Alert>}
+
+      {validacaoSalva && (
+        <Alert variant={validacaoSalva.validada ? "default" : "destructive"}>
+          {validacaoSalva.validada ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+          <AlertDescription>
+            {validacaoSalva.validada ? `Prova ${validacaoSalva.codigo} validada com sucesso. Status alterado para VALIDADA.` : <div><p>A prova ${validacaoSalva.codigo} continua como RASCUNHO.</p>{(validacaoSalva.erros ?? []).map((erro: string) => <p key={erro}>• {erro}</p>)}</div>}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card>
-        <CardHeader><CardTitle>Avaliações já importadas</CardTitle><CardDescription>Histórico das provas recebidas por este módulo.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>Avaliações já importadas</CardTitle><CardDescription>Rascunhos podem ser editados e validados. Provas validadas devem ser reabertas antes de qualquer alteração.</CardDescription></CardHeader>
         <CardContent>
-          {listaQuery.isLoading ? <p className="text-sm text-muted-foreground">Carregando...</p> : (listaQuery.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma avaliação importada ainda.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead><tr className="border-b text-left"><th className="px-3 py-2">Código</th><th className="px-3 py-2">Avaliação</th><th className="px-3 py-2">Unidade</th><th className="px-3 py-2">Ano</th><th className="px-3 py-2">Questões</th><th className="px-3 py-2">Status</th></tr></thead><tbody>{(listaQuery.data ?? []).map((item: any) => <tr key={item.id} className="border-b last:border-0"><td className="px-3 py-2">{item.codigo}</td><td className="px-3 py-2">{item.nome}</td><td className="px-3 py-2">{item.unidade}</td><td className="px-3 py-2">{item.ano}</td><td className="px-3 py-2">{item.totalQuestoes}</td><td className="px-3 py-2">{item.status}</td></tr>)}</tbody></table></div>}
+          {listaQuery.isLoading ? <p className="text-sm text-muted-foreground">Carregando...</p> : (listaQuery.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma avaliação importada ainda.</p> : (
+            <div className="overflow-x-auto"><table className="w-full min-w-[980px] text-sm"><thead><tr className="border-b text-left"><th className="px-3 py-2">Código</th><th className="px-3 py-2">Avaliação</th><th className="px-3 py-2">Unidade</th><th className="px-3 py-2">Ano</th><th className="px-3 py-2">Questões</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">Ações</th></tr></thead><tbody>{(listaQuery.data ?? []).map((item: any) => <tr key={item.id} className="border-b last:border-0"><td className="px-3 py-2">{item.codigo}</td><td className="px-3 py-2">{item.nome}</td><td className="px-3 py-2">{item.unidade}</td><td className="px-3 py-2">{item.ano}</td><td className="px-3 py-2">{item.totalQuestoes}</td><td className="px-3 py-2">{item.status}</td><td className="px-3 py-2"><div className="flex flex-wrap gap-2">{item.status === "RASCUNHO" ? <><Button size="sm" variant="outline" onClick={() => abrirEdicao(Number(item.id))}><Pencil className="mr-2 h-4 w-4" />Editar</Button><Button size="sm" variant="outline" onClick={() => validarProvaSalva(Number(item.id))} disabled={validandoId === Number(item.id)}>{validandoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Validar</Button></> : item.status === "VALIDADA" ? <Button size="sm" variant="outline" onClick={() => reabrirProva(Number(item.id))} disabled={reabrindoId === Number(item.id)}>{reabrindoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pencil className="mr-2 h-4 w-4" />}Reabrir para edição</Button> : <span className="text-muted-foreground">Sem ação disponível</span>}</div></td></tr>)}</tbody></table></div>
+          )}
         </CardContent>
       </Card>
+
+      {editandoId && (
+        <Card>
+          <CardHeader>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div><CardTitle>Editar prova em RASCUNHO</CardTitle><CardDescription>Você pode corrigir a estrutura inteira da prova. As alterações permanecem como RASCUNHO até nova validação.</CardDescription></div>
+              <Button type="button" variant="outline" size="sm" onClick={fecharEdicao}><X className="mr-2 h-4 w-4" />Fechar</Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {provaQuery.isLoading || !provaEdicao ? <p className="text-sm text-muted-foreground">Carregando prova...</p> : <>
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="text-sm">Código<input className="mt-1 w-full rounded-md border px-3 py-2" value={provaEdicao.codigo} onChange={e => setProvaEdicao({ ...provaEdicao, codigo: e.target.value })} /></label>
+                <label className="text-sm">Nome<input className="mt-1 w-full rounded-md border px-3 py-2" value={provaEdicao.nome} onChange={e => setProvaEdicao({ ...provaEdicao, nome: e.target.value })} /></label>
+                <label className="text-sm">Unidade<input className="mt-1 w-full rounded-md border px-3 py-2" value={provaEdicao.unidade} onChange={e => setProvaEdicao({ ...provaEdicao, unidade: e.target.value })} /></label>
+                <label className="text-sm">Ano<input type="number" className="mt-1 w-full rounded-md border px-3 py-2" value={provaEdicao.ano} onChange={e => setProvaEdicao({ ...provaEdicao, ano: Number(e.target.value) })} /></label>
+                <label className="text-sm md:col-span-2">Descrição<textarea className="mt-1 w-full rounded-md border px-3 py-2" rows={2} value={provaEdicao.descricao ?? ""} onChange={e => setProvaEdicao({ ...provaEdicao, descricao: e.target.value || null })} /></label>
+              </div>
+
+              <div className="space-y-5">
+                {provaEdicao.questoes.map((questao, questaoIndex) => (
+                  <div key={`${questao.id}-${questaoIndex}`} className="space-y-4 rounded-md border p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="font-semibold">Questão {questaoIndex + 1}</div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="button" variant="outline" size="sm" onClick={() => moverQuestao(questaoIndex, -1)} disabled={questaoIndex === 0}><ArrowUp className="mr-2 h-4 w-4" />Subir</Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => moverQuestao(questaoIndex, 1)} disabled={questaoIndex === provaEdicao.questoes.length - 1}><ArrowDown className="mr-2 h-4 w-4" />Descer</Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => excluirQuestao(questaoIndex)}><Trash2 className="mr-2 h-4 w-4" />Excluir questão</Button>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <label className="text-sm">ID<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.id} onChange={e => atualizarQuestao(questaoIndex, { id: e.target.value })} /></label>
+                      <label className="text-sm">Gabarito<select className="mt-1 w-full rounded-md border px-3 py-2" value={questao.gabarito} onChange={e => atualizarQuestao(questaoIndex, { gabarito: e.target.value })}><option value="">Selecione</option>{questao.opcoes.map(opcao => <option key={opcao.letra} value={opcao.letra}>{opcao.letra}</option>)}</select></label>
+                      <label className="text-sm md:col-span-2">Enunciado<textarea className="mt-1 w-full rounded-md border px-3 py-2" rows={3} value={questao.enunciado} onChange={e => atualizarQuestao(questaoIndex, { enunciado: e.target.value })} /></label>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2"><div className="text-sm font-medium">Alternativas</div><Button type="button" variant="outline" size="sm" onClick={() => adicionarAlternativa(questaoIndex)}><Plus className="mr-2 h-4 w-4" />Adicionar alternativa</Button></div>
+                      {questao.opcoes.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma alternativa cadastrada. Adicione as alternativas necessárias e deixe “Não sei” como a última antes de validar.</p>}
+                      {questao.opcoes.map((opcao, opcaoIndex) => <div key={`${opcao.letra}-${opcaoIndex}`} className="grid gap-2 md:grid-cols-[48px_1fr_auto]"><span className="pt-2 text-sm font-semibold">{opcao.letra}</span><textarea className="min-h-[42px] rounded-md border px-3 py-2 text-sm" value={opcao.texto} onChange={e => atualizarOpcao(questaoIndex, opcaoIndex, e.target.value)} /><Button type="button" variant="outline" size="sm" onClick={() => removerAlternativa(questaoIndex, opcaoIndex)}><Trash2 className="mr-2 h-4 w-4" />Excluir</Button></div>)}
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <label className="text-sm md:col-span-2">Eixos da questão, separados por vírgula<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.eixos.map(eixo => eixo.nome).join(", ")} onChange={e => atualizarQuestao(questaoIndex, { eixos: e.target.value.split(",").map(item => item.trim()).filter(Boolean).map(nome => ({ nome })) })} /></label>
+                      <label className="text-sm">Macroárea<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.macroarea ?? ""} onChange={e => atualizarQuestao(questaoIndex, { macroarea: e.target.value || null })} /></label>
+                      <label className="text-sm">Microárea<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.microarea ?? ""} onChange={e => atualizarQuestao(questaoIndex, { microarea: e.target.value || null })} /></label>
+                      <label className="text-sm md:col-span-2">Fonte / Tag<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.tagFonte ?? ""} onChange={e => atualizarQuestao(questaoIndex, { tagFonte: e.target.value || null })} /></label>
+                    </div>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={adicionarQuestao}><Plus className="mr-2 h-4 w-4" />Adicionar nova questão</Button>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" onClick={salvarEdicao} disabled={salvarRascunho.isPending}>{salvarRascunho.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Salvar alterações</Button>
+                <Button type="button" variant="outline" onClick={fecharEdicao}>Cancelar</Button>
+              </div>
+            </>}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
