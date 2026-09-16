@@ -24,13 +24,12 @@ import MinhasPendencias from "./pages/MinhasPendencias";
 import Relatorios from "./pages/Relatorios";
 import Importacao from "./pages/Importacao";
 import AvaliacoesProficiencia from "./pages/AvaliacoesProficiencia";
-import Evolucao from "./pages/Evolucao";
+import EvolucaoProficiencia from "./pages/EvolucaoProficiencia";
 import AdminEixosTecnicos from "./pages/AdminEixosTecnicos";
 import ImportarEixosAvaliacoes from "./pages/ImportarEixosAvaliacoes";
 import ImportarProvas from "./pages/ImportarProvas";
-import AdminAvaliacoes from "./pages/AdminAvaliacoes";
-import AdminResultadosUtic from "./pages/AdminResultadosUtic";
 import AdminAplicacoesProficiencia from "./pages/AdminAplicacoesProficiencia";
+import ResultadosProficiencia from "./pages/ResultadosProficiencia";
 import ProvaProficiencia from "./pages/ProvaProficiencia";
 import ProvaSeguraUtic from "./pages/ProvaSeguraUtic";
 
@@ -104,13 +103,13 @@ function Router() {
       <Route path={"/relatorios"}><DashboardLayout><Relatorios /></DashboardLayout></Route>
       <Route path={"/importacao"}><DashboardLayout><Importacao /></DashboardLayout></Route>
       <Route path={"/avaliacoes"}><DashboardLayout><AvaliacoesProficiencia /></DashboardLayout></Route>
-      <Route path={"/evolucao"}><DashboardLayout><Evolucao /></DashboardLayout></Route>
+      <Route path={"/evolucao"}><DashboardLayout><EvolucaoProficiencia /></DashboardLayout></Route>
       <Route path={"/admin-eixos-tecnicos"}><DashboardLayout><AdminEixosTecnicos /></DashboardLayout></Route>
       <Route path={"/importar-eixos-avaliacoes"}><DashboardLayout><ImportarEixosAvaliacoes /></DashboardLayout></Route>
       <Route path={"/importar-provas"}><DashboardLayout><ImportarProvas /></DashboardLayout></Route>
       <Route path={"/admin-aplicacoes-proficiencia"}><DashboardLayout><AdminAplicacoesProficiencia /></DashboardLayout></Route>
-      <Route path={"/admin-avaliacoes"}><DashboardLayout><AdminAvaliacoes /></DashboardLayout></Route>
-      <Route path={"/admin-avaliacoes/utic/resultados"}><DashboardLayout><AdminResultadosUtic /></DashboardLayout></Route>
+      <Route path={"/admin-avaliacoes"}><DashboardLayout><AdminAplicacoesProficiencia /></DashboardLayout></Route>
+      <Route path={"/admin-avaliacoes/utic/resultados"}><DashboardLayout><ResultadosProficiencia /></DashboardLayout></Route>
       <Route path={"/evidencias-equipe"}><DashboardLayout><EvidenciasEquipe /></DashboardLayout></Route>
       <Route path={"/solicitacoes-equipe"}><DashboardLayout><SolicitacoesEquipe /></DashboardLayout></Route>
       <Route path={"/solicitacoes-admin"}><DashboardLayout><SolicitacoesAdmin /></DashboardLayout></Route>
