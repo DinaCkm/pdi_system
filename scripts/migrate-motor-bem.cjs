@@ -21,6 +21,56 @@ async function main() {
     `);
 
     await connection.query(`
+      CREATE TABLE IF NOT EXISTS funcoes_organizacionais (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        organizacao_id INT NOT NULL,
+        departamento_id INT NULL,
+        nome VARCHAR(255) NOT NULL,
+        codigo VARCHAR(100) NULL,
+        cargo_referencia VARCHAR(255) NULL,
+        descricao TEXT NULL,
+        origem ENUM('VALIDACAO_ADMIN','QUESTIONARIO','IMPORTACAO','OUTRA') NOT NULL DEFAULT 'VALIDACAO_ADMIN',
+        versao INT NOT NULL DEFAULT 1,
+        vigencia_inicio DATE NULL,
+        vigencia_fim DATE NULL,
+        ativa BOOLEAN NOT NULL DEFAULT TRUE,
+        created_by INT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY funcao_org_nome_versao_uq (organizacao_id, departamento_id, nome, versao),
+        INDEX funcao_org_organizacao_idx (organizacao_id),
+        INDEX funcao_org_dept_idx (departamento_id),
+        INDEX funcao_org_ativa_idx (ativa),
+        FOREIGN KEY (organizacao_id) REFERENCES organizacoes(id) ON DELETE RESTRICT,
+        FOREIGN KEY (departamento_id) REFERENCES departamentos(id) ON DELETE SET NULL,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS usuarios_funcoes_organizacionais (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        usuario_id INT NOT NULL,
+        funcao_organizacional_id INT NOT NULL,
+        tipo_vinculo ENUM('PRINCIPAL','SECUNDARIA','TEMPORARIA') NOT NULL DEFAULT 'PRINCIPAL',
+        origem ENUM('VALIDACAO_ADMIN','QUESTIONARIO','IMPORTACAO','OUTRA') NOT NULL DEFAULT 'VALIDACAO_ADMIN',
+        vigencia_inicio DATE NULL,
+        vigencia_fim DATE NULL,
+        ativo BOOLEAN NOT NULL DEFAULT TRUE,
+        created_by INT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY usuario_funcao_uq (usuario_id, funcao_organizacional_id, tipo_vinculo, vigencia_inicio),
+        INDEX usuario_funcao_usuario_idx (usuario_id),
+        INDEX usuario_funcao_funcao_idx (funcao_organizacional_id),
+        INDEX usuario_funcao_ativo_idx (ativo),
+        FOREIGN KEY (usuario_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (funcao_organizacional_id) REFERENCES funcoes_organizacionais(id) ON DELETE RESTRICT,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS metodologia_competencias (
         id INT AUTO_INCREMENT PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
@@ -160,6 +210,8 @@ async function main() {
 
     const tabelas = [
       'organizacoes',
+      'funcoes_organizacionais',
+      'usuarios_funcoes_organizacionais',
       'metodologia_competencias',
       'competencias_organizacionais',
       'competencias_organizacionais_comportamentos',
