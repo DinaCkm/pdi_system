@@ -26,7 +26,9 @@ import { departamentos, users } from "./schema";
  * - competencias organizacionais sao versionaveis por organizacao;
  * - ESSENCIAL_FUNCAO nao se confunde com a familia ESSENCIAL da metodologia B.E.M.;
  * - competencias emergentes nunca entram automaticamente no catalogo oficial;
- * - nenhuma relacao organizacional x B.E.M. representa equivalencia direta.
+ * - nenhuma relacao organizacional x B.E.M. representa equivalencia direta;
+ * - cargo cadastrado em users continua sendo preservado como dado historico/operacional;
+ * - funcao organizacional e uma camada metodologica adicional e nunca e inferida/corrigida automaticamente.
  */
 
 export const organizacoes = mysqlTable(
@@ -48,6 +50,90 @@ export const organizacoes = mysqlTable(
   table => ({
     organizacoesCodigoUq: uniqueIndex("organizacoes_codigo_uq").on(table.codigo),
     organizacoesAtivaIdx: index("organizacoes_ativa_idx").on(table.ativa),
+  }),
+);
+
+export const funcoesOrganizacionais = mysqlTable(
+  "funcoes_organizacionais",
+  {
+    id: int().autoincrement().notNull().primaryKey(),
+    organizacaoId: int("organizacao_id")
+      .notNull()
+      .references(() => organizacoes.id, { onDelete: "restrict" }),
+    departamentoId: int("departamento_id").references(() => departamentos.id, {
+      onDelete: "set null",
+    }),
+    nome: varchar({ length: 255 }).notNull(),
+    codigo: varchar({ length: 100 }),
+    cargoReferencia: varchar("cargo_referencia", { length: 255 }),
+    descricao: text(),
+    origem: mysqlEnum(["VALIDACAO_ADMIN", "QUESTIONARIO", "IMPORTACAO", "OUTRA"])
+      .default("VALIDACAO_ADMIN")
+      .notNull(),
+    versao: int().default(1).notNull(),
+    vigenciaInicio: date("vigencia_inicio"),
+    vigenciaFim: date("vigencia_fim"),
+    ativa: boolean().default(true).notNull(),
+    createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .onUpdateNow()
+      .notNull(),
+  },
+  table => ({
+    funcaoOrgOrganizacaoIdx: index("funcao_org_organizacao_idx").on(table.organizacaoId),
+    funcaoOrgDeptIdx: index("funcao_org_dept_idx").on(table.departamentoId),
+    funcaoOrgAtivaIdx: index("funcao_org_ativa_idx").on(table.ativa),
+    funcaoOrgNomeVersaoUq: uniqueIndex("funcao_org_nome_versao_uq").on(
+      table.organizacaoId,
+      table.departamentoId,
+      table.nome,
+      table.versao,
+    ),
+  }),
+);
+
+export const usuariosFuncoesOrganizacionais = mysqlTable(
+  "usuarios_funcoes_organizacionais",
+  {
+    id: int().autoincrement().notNull().primaryKey(),
+    usuarioId: int("usuario_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    funcaoOrganizacionalId: int("funcao_organizacional_id")
+      .notNull()
+      .references(() => funcoesOrganizacionais.id, { onDelete: "restrict" }),
+    tipoVinculo: mysqlEnum(["PRINCIPAL", "SECUNDARIA", "TEMPORARIA"])
+      .default("PRINCIPAL")
+      .notNull(),
+    origem: mysqlEnum(["VALIDACAO_ADMIN", "QUESTIONARIO", "IMPORTACAO", "OUTRA"])
+      .default("VALIDACAO_ADMIN")
+      .notNull(),
+    vigenciaInicio: date("vigencia_inicio"),
+    vigenciaFim: date("vigencia_fim"),
+    ativo: boolean().default(true).notNull(),
+    createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .onUpdateNow()
+      .notNull(),
+  },
+  table => ({
+    usuarioFuncaoUsuarioIdx: index("usuario_funcao_usuario_idx").on(table.usuarioId),
+    usuarioFuncaoFuncaoIdx: index("usuario_funcao_funcao_idx").on(table.funcaoOrganizacionalId),
+    usuarioFuncaoAtivoIdx: index("usuario_funcao_ativo_idx").on(table.ativo),
+    usuarioFuncaoUq: uniqueIndex("usuario_funcao_uq").on(
+      table.usuarioId,
+      table.funcaoOrganizacionalId,
+      table.tipoVinculo,
+      table.vigenciaInicio,
+    ),
   }),
 );
 
