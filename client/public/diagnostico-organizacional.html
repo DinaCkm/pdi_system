@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Diagnóstico Organizacional</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 32px; color: #111; background: #fafafa; }
+    main { max-width: 980px; margin: 0 auto; background: #fff; padding: 28px; border: 1px solid #ddd; border-radius: 12px; }
+    h1 { margin-top: 0; font-size: 24px; }
+    .ok { color: #166534; }
+    .erro { color: #991b1b; white-space: pre-wrap; }
+    .aviso { background: #f5f5f5; border-left: 4px solid #666; padding: 12px 16px; margin: 16px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+    th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: #f4f4f4; }
+    pre { background: #111; color: #eee; padding: 16px; border-radius: 8px; overflow: auto; max-height: 500px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Diagnóstico do Cadastro Organizacional</h1>
+  <p>Esta página consulta somente os endpoints administrativos já existentes. Nenhum cadastro é alterado.</p>
+  <div class="aviso">Os dados brutos permanecem no navegador. O relatório exibido abaixo contém apenas informações agregadas e IDs técnicos, sem e-mail, CPF, openId ou senha.</div>
+  <p id="status">Carregando diagnóstico...</p>
+  <section id="conteudo" hidden>
+    <h2>Resumo</h2>
+    <table id="resumo"></table>
+    <h2>Usuários por status e papel</h2>
+    <table id="roles"></table>
+    <h2>Cargos cadastrados</h2>
+    <table id="cargos"></table>
+    <h2>Possíveis duplicidades de grafia</h2>
+    <table id="duplicados"></table>
+    <h2>Departamentos e liderança</h2>
+    <table id="departamentos"></table>
+    <h2>JSON do diagnóstico</h2>
+    <pre id="json"></pre>
+  </section>
+</main>
+<script>
+  const byId = (id) => document.getElementById(id);
+
+  function normalizar(texto) {
+    return String(texto ?? '')
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .toLocaleLowerCase('pt-BR');
+  }
+
+  async function trpcGet(procedure) {
+    const input = encodeURIComponent(JSON.stringify({ json: null }));
+    const response = await fetch(`/api/trpc/${procedure}?input=${input}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Accept': 'application/json' },
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+      const mensagem = body?.error?.json?.message || body?.error?.message || `HTTP ${response.status}`;
+      throw new Error(`${procedure}: ${mensagem}`);
+    }
+    const data = body?.result?.data;
+    if (data && Object.prototype.hasOwnProperty.call(data, 'json')) return data.json;
+    return data;
+  }
+
+  function tabela(id, headers, rows) {
+    const el = byId(id);
+    el.innerHTML = '';
+    const head = document.createElement('tr');
+    headers.forEach((h) => {
+      const th = document.createElement('th');
+      th.textContent = h;
+      head.appendChild(th);
+    });
+    el.appendChild(head);
+    rows.forEach((row) => {
+      const tr = document.createElement('tr');
+      row.forEach((valor) => {
+        const td = document.createElement('td');
+        td.textContent = valor == null || valor === '' ? '—' : String(valor);
+        tr.appendChild(td);
+      });
+      el.appendChild(tr);
+    });
+  }
+
+  async function executar() {
+    try {
+      const [users, departamentos] = await Promise.all([
+        trpcGet('users.list'),
+        trpcGet('departamentos.list'),
+      ]);
+
+      if (!Array.isArray(users) || !Array.isArray(departamentos)) {
+        throw new Error('Resposta inesperada dos endpoints administrativos.');
+      }
+
+      const usuariosPorStatusERole = {};
+      const cargos = new Map();
+      const gruposGrafia = new Map();
+      const userById = new Map(users.map((u) => [Number(u.id), u]));
+
+      let autoLideranca = 0;
+      let cargosVazios = 0;
+      let lideresDiretosInvalidos = 0;
+      let ativosSemDepartamento = 0;
+      let ativosSemLiderDireto = 0;
+
+      for (const u of users) {
+        const chave = `${u.status || 'SEM_STATUS'}|${u.role || 'SEM_ROLE'}`;
+        usuariosPorStatusERole[chave] = (usuariosPorStatusERole[chave] || 0) + 1;
+
+        const cargo = String(u.cargo ?? '').trim();
+        if (!cargo) cargosVazios += 1;
+        cargos.set(cargo || '[VAZIO]', (cargos.get(cargo || '[VAZIO]') || 0) + 1);
+
+        if (cargo) {
+          const norm = normalizar(cargo);
+          const grupo = gruposGrafia.get(norm) || new Map();
+          grupo.set(cargo, (grupo.get(cargo) || 0) + 1);
+          gruposGrafia.set(norm, grupo);
+        }
+
+        if (u.leaderId != null && Number(u.leaderId) === Number(u.id)) autoLideranca += 1;
+        if (u.leaderId != null) {
+          const lider = userById.get(Number(u.leaderId));
+          if (!lider || lider.status !== 'ativo') lideresDiretosInvalidos += 1;
+        }
+        if (u.status === 'ativo' && u.departamentoId == null) ativosSemDepartamento += 1;
+        if (u.status === 'ativo' && u.role === 'colaborador' && u.leaderId == null) ativosSemLiderDireto += 1;
+      }
+
+      const duplicados = [];
+      for (const [norm, variantes] of gruposGrafia.entries()) {
+        if (variantes.size > 1) {
+          duplicados.push({
+            normalizado: norm,
+            variantes: Array.from(variantes.entries()).map(([cargo, quantidade]) => ({ cargo, quantidade })),
+          });
+        }
+      }
+
+      let departamentosAtivos = 0;
+      let departamentosSemLider = 0;
+      let departamentosComLiderInvalido = 0;
+      let lideresForaDepartamentoLiderado = 0;
+
+      const departamentosResumo = departamentos.map((d) => {
+        const lider = d.leaderId == null ? null : userById.get(Number(d.leaderId));
+        if (d.status === 'ativo') {
+          departamentosAtivos += 1;
+          if (d.leaderId == null) departamentosSemLider += 1;
+          if (d.leaderId != null && (!lider || lider.status !== 'ativo')) departamentosComLiderInvalido += 1;
+          if (lider && Number(lider.departamentoId) !== Number(d.id)) lideresForaDepartamentoLiderado += 1;
+        }
+        return {
+          departamentoId: Number(d.id),
+          departamento: d.nome,
+          status: d.status,
+          leaderId: d.leaderId == null ? null : Number(d.leaderId),
+          leaderCargo: lider?.cargo || null,
+          leaderStatus: lider?.status || null,
+          leaderDepartamentoPrincipalId: lider?.departamentoId == null ? null : Number(lider.departamentoId),
+        };
+      });
+
+      const resultado = {
+        geradoEm: new Date().toISOString(),
+        fonte: 'Endpoints administrativos existentes users.list e departamentos.list',
+        modo: 'SOMENTE_LEITURA_NO_NAVEGADOR',
+        observacao: 'user_department_roles não é consultado por esta página porque não há endpoint administrativo de leitura dedicado identificado.',
+        resumo: {
+          totalUsuarios: users.length,
+          cargosDistintos: cargos.size,
+          cargosVazios,
+          autoLideranca,
+          lideresDiretosInvalidos,
+          ativosSemDepartamento,
+          ativosSemLiderDireto,
+          departamentosAtivos,
+          departamentosSemLider,
+          departamentosComLiderInvalido,
+          lideresForaDepartamentoLiderado,
+          gruposDeCargoPossivelmenteDuplicados: duplicados.length,
+        },
+        usuariosPorStatusERole: Object.entries(usuariosPorStatusERole)
+          .map(([chave, quantidade]) => {
+            const [status, role] = chave.split('|');
+            return { status, role, quantidade };
+          })
+          .sort((a, b) => a.status.localeCompare(b.status) || a.role.localeCompare(b.role)),
+        cargos: Array.from(cargos.entries())
+          .map(([cargo, quantidade]) => ({ cargo, quantidade }))
+          .sort((a, b) => b.quantidade - a.quantidade || a.cargo.localeCompare(b.cargo, 'pt-BR')),
+        cargosPossivelmenteDuplicados: duplicados,
+        departamentos: departamentosResumo,
+      };
+
+      tabela('resumo', ['Indicador', 'Quantidade'], Object.entries(resultado.resumo));
+      tabela('roles', ['Status', 'Papel', 'Quantidade'], resultado.usuariosPorStatusERole.map((x) => [x.status, x.role, x.quantidade]));
+      tabela('cargos', ['Cargo', 'Quantidade'], resultado.cargos.map((x) => [x.cargo, x.quantidade]));
+      tabela('duplicados', ['Forma normalizada', 'Variantes'], duplicados.map((x) => [x.normalizado, x.variantes.map((v) => `${v.cargo} (${v.quantidade})`).join(' | ')]));
+      tabela('departamentos', ['ID', 'Departamento', 'Status', 'ID líder', 'Cargo líder', 'Status líder', 'Depto principal do líder'], departamentosResumo.map((x) => [x.departamentoId, x.departamento, x.status, x.leaderId, x.leaderCargo, x.leaderStatus, x.leaderDepartamentoPrincipalId]));
+      byId('json').textContent = JSON.stringify(resultado, null, 2);
+      byId('status').textContent = 'Diagnóstico concluído. Nenhum dado foi alterado.';
+      byId('status').className = 'ok';
+      byId('conteudo').hidden = false;
+    } catch (error) {
+      byId('status').textContent = `Não foi possível gerar o diagnóstico: ${error.message}`;
+      byId('status').className = 'erro';
+    }
+  }
+
+  executar();
+</script>
+</body>
+</html>
