@@ -280,6 +280,10 @@ export const competenciasRequeridasFuncao = mysqlTable(
     departamentoId: int("departamento_id").references(() => departamentos.id, {
       onDelete: "set null",
     }),
+    funcaoOrganizacionalId: int("funcao_organizacional_id").references(
+      () => funcoesOrganizacionais.id,
+      { onDelete: "set null" },
+    ),
     cargoFuncao: varchar("cargo_funcao", { length: 255 }).notNull(),
     competenciaOrganizacionalId: int("competencia_organizacional_id")
       .notNull()
@@ -313,6 +317,9 @@ export const competenciasRequeridasFuncao = mysqlTable(
   table => ({
     compReqFuncaoOrgIdx: index("comp_req_funcao_org_idx").on(table.organizacaoId),
     compReqFuncaoDeptIdx: index("comp_req_funcao_dept_idx").on(table.departamentoId),
+    compReqFuncaoEstruturadaIdx: index("comp_req_funcao_estruturada_idx").on(
+      table.funcaoOrganizacionalId,
+    ),
     compReqFuncaoCompIdx: index("comp_req_funcao_comp_idx").on(
       table.competenciaOrganizacionalId,
     ),
@@ -336,6 +343,10 @@ export const competenciasEmergentes = mysqlTable(
     departamentoId: int("departamento_id").references(() => departamentos.id, {
       onDelete: "set null",
     }),
+    funcaoOrganizacionalId: int("funcao_organizacional_id").references(
+      () => funcoesOrganizacionais.id,
+      { onDelete: "set null" },
+    ),
     colaboradorId: int("colaborador_id").references(() => users.id, {
       onDelete: "set null",
     }),
@@ -370,6 +381,7 @@ export const competenciasEmergentes = mysqlTable(
   table => ({
     compEmergOrgIdx: index("comp_emerg_org_idx").on(table.organizacaoId),
     compEmergDeptIdx: index("comp_emerg_dept_idx").on(table.departamentoId),
+    compEmergFuncaoIdx: index("comp_emerg_funcao_idx").on(table.funcaoOrganizacionalId),
     compEmergColabIdx: index("comp_emerg_colab_idx").on(table.colaboradorId),
     compEmergStatusIdx: index("comp_emerg_status_idx").on(table.status),
   }),

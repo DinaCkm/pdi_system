@@ -1,5 +1,45 @@
 const mysql = require('mysql2/promise');
 
+async function columnExists(connection, tableName, columnName) {
+  const [rows] = await connection.query(
+    `SELECT 1
+       FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = ?
+        AND COLUMN_NAME = ?
+      LIMIT 1`,
+    [tableName, columnName],
+  );
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+async function indexExists(connection, tableName, indexName) {
+  const [rows] = await connection.query(
+    `SELECT 1
+       FROM information_schema.STATISTICS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = ?
+        AND INDEX_NAME = ?
+      LIMIT 1`,
+    [tableName, indexName],
+  );
+  return Array.isArray(rows) && rows.length > 0;
+}
+
+async function foreignKeyExists(connection, tableName, constraintName) {
+  const [rows] = await connection.query(
+    `SELECT 1
+       FROM information_schema.TABLE_CONSTRAINTS
+      WHERE CONSTRAINT_SCHEMA = DATABASE()
+        AND TABLE_NAME = ?
+        AND CONSTRAINT_NAME = ?
+        AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+      LIMIT 1`,
+    [tableName, constraintName],
+  );
+  return Array.isArray(rows) && rows.length > 0;
+}
+
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL não definida. Migração não executada.');
@@ -152,6 +192,7 @@ async function main() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         organizacao_id INT NOT NULL,
         departamento_id INT NULL,
+        funcao_organizacional_id INT NULL,
         cargo_funcao VARCHAR(255) NOT NULL,
         competencia_organizacional_id INT NOT NULL,
         classificacao_funcao ENUM('ESSENCIAL_FUNCAO','TRANSVERSAL_FUNCAO') NOT NULL,
@@ -170,9 +211,11 @@ async function main() {
         UNIQUE KEY comp_req_funcao_uq (organizacao_id, departamento_id, cargo_funcao, competencia_organizacional_id, versao),
         INDEX comp_req_funcao_org_idx (organizacao_id),
         INDEX comp_req_funcao_dept_idx (departamento_id),
+        INDEX comp_req_funcao_estruturada_idx (funcao_organizacional_id),
         INDEX comp_req_funcao_comp_idx (competencia_organizacional_id),
         FOREIGN KEY (organizacao_id) REFERENCES organizacoes(id) ON DELETE RESTRICT,
         FOREIGN KEY (departamento_id) REFERENCES departamentos(id) ON DELETE SET NULL,
+        CONSTRAINT comp_req_funcao_estruturada_fk FOREIGN KEY (funcao_organizacional_id) REFERENCES funcoes_organizacionais(id) ON DELETE SET NULL,
         FOREIGN KEY (competencia_organizacional_id) REFERENCES competencias_organizacionais(id) ON DELETE RESTRICT,
         FOREIGN KEY (validada_por) REFERENCES users(id) ON DELETE SET NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -183,6 +226,7 @@ async function main() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         organizacao_id INT NOT NULL,
         departamento_id INT NULL,
+        funcao_organizacional_id INT NULL,
         colaborador_id INT NULL,
         cargo_funcao VARCHAR(255) NULL,
         atividade_origem TEXT NULL,
@@ -198,15 +242,61 @@ async function main() {
         updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX comp_emerg_org_idx (organizacao_id),
         INDEX comp_emerg_dept_idx (departamento_id),
+        INDEX comp_emerg_funcao_idx (funcao_organizacional_id),
         INDEX comp_emerg_colab_idx (colaborador_id),
         INDEX comp_emerg_status_idx (status),
         FOREIGN KEY (organizacao_id) REFERENCES organizacoes(id) ON DELETE RESTRICT,
         FOREIGN KEY (departamento_id) REFERENCES departamentos(id) ON DELETE SET NULL,
+        CONSTRAINT comp_emerg_funcao_fk FOREIGN KEY (funcao_organizacional_id) REFERENCES funcoes_organizacionais(id) ON DELETE SET NULL,
         FOREIGN KEY (colaborador_id) REFERENCES users(id) ON DELETE SET NULL,
         FOREIGN KEY (competencia_organizacional_relacionada_id) REFERENCES competencias_organizacionais(id) ON DELETE SET NULL,
         FOREIGN KEY (analisada_por) REFERENCES users(id) ON DELETE SET NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    if (!(await columnExists(connection, 'competencias_requeridas_funcao', 'funcao_organizacional_id'))) {
+      await connection.query(
+        `ALTER TABLE competencias_requeridas_funcao
+           ADD COLUMN funcao_organizacional_id INT NULL AFTER departamento_id`,
+      );
+    }
+    if (!(await indexExists(connection, 'competencias_requeridas_funcao', 'comp_req_funcao_estruturada_idx'))) {
+      await connection.query(
+        `ALTER TABLE competencias_requeridas_funcao
+           ADD INDEX comp_req_funcao_estruturada_idx (funcao_organizacional_id)`,
+      );
+    }
+    if (!(await foreignKeyExists(connection, 'competencias_requeridas_funcao', 'comp_req_funcao_estruturada_fk'))) {
+      await connection.query(
+        `ALTER TABLE competencias_requeridas_funcao
+           ADD CONSTRAINT comp_req_funcao_estruturada_fk
+           FOREIGN KEY (funcao_organizacional_id)
+           REFERENCES funcoes_organizacionais(id)
+           ON DELETE SET NULL`,
+      );
+    }
+
+    if (!(await columnExists(connection, 'competencias_emergentes', 'funcao_organizacional_id'))) {
+      await connection.query(
+        `ALTER TABLE competencias_emergentes
+           ADD COLUMN funcao_organizacional_id INT NULL AFTER departamento_id`,
+      );
+    }
+    if (!(await indexExists(connection, 'competencias_emergentes', 'comp_emerg_funcao_idx'))) {
+      await connection.query(
+        `ALTER TABLE competencias_emergentes
+           ADD INDEX comp_emerg_funcao_idx (funcao_organizacional_id)`,
+      );
+    }
+    if (!(await foreignKeyExists(connection, 'competencias_emergentes', 'comp_emerg_funcao_fk'))) {
+      await connection.query(
+        `ALTER TABLE competencias_emergentes
+           ADD CONSTRAINT comp_emerg_funcao_fk
+           FOREIGN KEY (funcao_organizacional_id)
+           REFERENCES funcoes_organizacionais(id)
+           ON DELETE SET NULL`,
+      );
+    }
 
     const tabelas = [
       'organizacoes',
