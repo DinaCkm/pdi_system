@@ -438,6 +438,179 @@ export const funcoesOrganizacionaisRouter = router({
       .orderBy(asc(departamentos.nome), asc(users.name));
   }),
 
+  definirFuncaoPorNome: adminProcedure
+    .input(
+      z.object({
+        usuarioId: z.number().int().positive(),
+        nomeFuncao: z.string().trim().min(2).max(255),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await dbObrigatorio();
+      const hoje = new Date().toISOString().slice(0, 10);
+
+      return db.transaction(async tx => {
+        const usuario = (
+          await tx
+            .select({
+              id: users.id,
+              cargo: users.cargo,
+              status: users.status,
+            })
+            .from(users)
+            .where(eq(users.id, input.usuarioId))
+            .limit(1)
+        )[0];
+
+        if (!usuario || usuario.status !== "ativo") {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Empregado ativo não encontrado.",
+          });
+        }
+
+        let org = (
+          await tx
+            .select({ id: organizacoes.id })
+            .from(organizacoes)
+            .where(eq(organizacoes.codigo, "SEBRAE-TO"))
+            .limit(1)
+        )[0];
+
+        if (!org) {
+          await tx.insert(organizacoes).values({
+            nome: "Sebrae Tocantins",
+            nomeFantasia: "Sebrae TO",
+            codigo: "SEBRAE-TO",
+            ativa: true,
+          });
+          org = (
+            await tx
+              .select({ id: organizacoes.id })
+              .from(organizacoes)
+              .where(eq(organizacoes.codigo, "SEBRAE-TO"))
+              .limit(1)
+          )[0];
+        }
+
+        if (!org) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Não foi possível localizar a organização Sebrae Tocantins.",
+          });
+        }
+
+        let funcao = (
+          await tx
+            .select({
+              id: funcoesOrganizacionais.id,
+              nome: funcoesOrganizacionais.nome,
+            })
+            .from(funcoesOrganizacionais)
+            .where(
+              and(
+                eq(funcoesOrganizacionais.organizacaoId, org.id),
+                eq(funcoesOrganizacionais.nome, input.nomeFuncao),
+                eq(funcoesOrganizacionais.ativa, true),
+              ),
+            )
+            .limit(1)
+        )[0];
+
+        if (!funcao) {
+          await tx.insert(funcoesOrganizacionais).values({
+            organizacaoId: org.id,
+            departamentoId: null,
+            nome: input.nomeFuncao,
+            cargoReferencia: usuario.cargo,
+            origem: "VALIDACAO_ADMIN",
+            versao: 1,
+            vigenciaInicio: hoje,
+            ativa: true,
+            createdBy: Number(ctx.user.id),
+          });
+
+          funcao = (
+            await tx
+              .select({
+                id: funcoesOrganizacionais.id,
+                nome: funcoesOrganizacionais.nome,
+              })
+              .from(funcoesOrganizacionais)
+              .where(
+                and(
+                  eq(funcoesOrganizacionais.organizacaoId, org.id),
+                  eq(funcoesOrganizacionais.nome, input.nomeFuncao),
+                  eq(funcoesOrganizacionais.ativa, true),
+                ),
+              )
+              .limit(1)
+          )[0];
+        }
+
+        if (!funcao) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Não foi possível criar ou localizar a função.",
+          });
+        }
+
+        const atual = (
+          await tx
+            .select({
+              id: usuariosFuncoesOrganizacionais.id,
+              funcaoOrganizacionalId:
+                usuariosFuncoesOrganizacionais.funcaoOrganizacionalId,
+            })
+            .from(usuariosFuncoesOrganizacionais)
+            .where(
+              and(
+                eq(usuariosFuncoesOrganizacionais.usuarioId, input.usuarioId),
+                eq(usuariosFuncoesOrganizacionais.tipoVinculo, "PRINCIPAL"),
+                eq(usuariosFuncoesOrganizacionais.ativo, true),
+              ),
+            )
+            .limit(1)
+        )[0];
+
+        if (atual?.funcaoOrganizacionalId === funcao.id) {
+          return {
+            success: true,
+            funcaoId: funcao.id,
+            funcaoNome: funcao.nome,
+            alteracaoNecessaria: false,
+          };
+        }
+
+        if (atual) {
+          await tx
+            .update(usuariosFuncoesOrganizacionais)
+            .set({
+              ativo: false,
+              vigenciaFim: hoje,
+            })
+            .where(eq(usuariosFuncoesOrganizacionais.id, atual.id));
+        }
+
+        await tx.insert(usuariosFuncoesOrganizacionais).values({
+          usuarioId: input.usuarioId,
+          funcaoOrganizacionalId: funcao.id,
+          tipoVinculo: "PRINCIPAL",
+          origem: "VALIDACAO_ADMIN",
+          vigenciaInicio: hoje,
+          ativo: true,
+          createdBy: Number(ctx.user.id),
+        });
+
+        return {
+          success: true,
+          funcaoId: funcao.id,
+          funcaoNome: funcao.nome,
+          alteracaoNecessaria: true,
+        };
+      });
+    }),
+
   vincularPrincipal: adminProcedure
     .input(
       z.object({
