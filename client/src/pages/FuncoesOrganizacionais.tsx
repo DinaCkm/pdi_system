@@ -50,6 +50,11 @@ export default function FuncoesOrganizacionais() {
   }, [funcoes.data, filtro]);
 
   const executarCargaInicial = async () => {
+    const confirmado = window.confirm(
+      "Esta ação criará as 7 funções iniciais e vinculará os 187 empregados com base no cargo padronizado. Vínculos principais já existentes serão preservados. Deseja continuar?",
+    );
+    if (!confirmado) return;
+
     try {
       const resultado = await aplicarCargaInicial.mutateAsync({
         confirmar: "CARGA_INICIAL_187",
