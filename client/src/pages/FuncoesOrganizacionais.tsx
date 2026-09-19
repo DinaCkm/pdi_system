@@ -18,14 +18,12 @@ export default function FuncoesOrganizacionais() {
   const [codigo, setCodigo] = useState("");
   const [cargoReferencia, setCargoReferencia] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [departamentoId, setDepartamentoId] = useState<string>("sem");
   const [filtro, setFiltro] = useState("");
   const [usuarioSelecionado, setUsuarioSelecionado] = useState<string>("");
   const [funcaoSelecionada, setFuncaoSelecionada] = useState<string>("");
 
   const organizacoes = trpc.funcoesOrganizacionais.organizacoes.useQuery();
   const cargaInicial = trpc.funcoesOrganizacionais.prepararCargaInicial.useQuery();
-  const departamentos = trpc.departamentos.list.useQuery();
   const funcoes = trpc.funcoesOrganizacionais.listar.useQuery(
     organizacaoId ? { organizacaoId: Number(organizacaoId) } : undefined,
   );
@@ -100,7 +98,7 @@ export default function FuncoesOrganizacionais() {
     try {
       await criarFuncao.mutateAsync({
         organizacaoId: Number(organizacaoId),
-        departamentoId: departamentoId === "sem" ? null : Number(departamentoId),
+        departamentoId: null,
         nome: nome.trim(),
         codigo: codigo.trim() || null,
         cargoReferencia: cargoReferencia.trim() || null,
@@ -111,7 +109,6 @@ export default function FuncoesOrganizacionais() {
       setCodigo("");
       setCargoReferencia("");
       setDescricao("");
-      setDepartamentoId("sem");
       await funcoes.refetch();
     } catch (error: any) {
       toast.error(error.message || "Não foi possível criar a função.");
@@ -142,7 +139,7 @@ export default function FuncoesOrganizacionais() {
       <div>
         <h1 className="text-3xl font-bold">Funções Organizacionais</h1>
         <p className="text-muted-foreground">
-          Camada metodológica separada do cargo administrativo. Use-a para representar a função real exercida pelo empregado.
+          As funções organizacionais são válidas para toda a organização, independentemente da unidade ou regional do empregado.
         </p>
       </div>
 
@@ -150,7 +147,7 @@ export default function FuncoesOrganizacionais() {
         <CardHeader><CardTitle>Carga inicial pelas funções derivadas dos cargos padronizados</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Esta carga cria 7 funções iniciais a partir dos cargos padronizados e vincula os 187 empregados.
+            Esta carga cria 7 funções iniciais válidas para todas as unidades e regionais e vincula os 187 empregados.
             A função inicial poderá ser refinada depois pela análise da função real no Bloco 1.
           </p>
           <div className="grid gap-3 md:grid-cols-4">
@@ -202,16 +199,8 @@ export default function FuncoesOrganizacionais() {
                 </Select>
               </div>
               <div>
-                <Label>Unidade / departamento</Label>
-                <Select value={departamentoId} onValueChange={setDepartamentoId}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sem">Sem unidade específica</SelectItem>
-                    {(departamentos.data ?? []).filter((d) => d.status === "ativo").map((d) => (
-                      <SelectItem key={d.id} value={String(d.id)}>{d.nome}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Abrangência</Label>
+                <Input value="Todas as unidades e regionais" disabled />
               </div>
               <div>
                 <Label>Nome da função</Label>
@@ -256,7 +245,7 @@ export default function FuncoesOrganizacionais() {
                     ) : funcoesFiltradas.map((f) => (
                       <TableRow key={f.id}>
                         <TableCell className="font-medium">{f.nome}</TableCell>
-                        <TableCell>{f.departamentoNome || "Transversal / sem unidade"}</TableCell>
+                        <TableCell>{f.departamentoNome || "Todas as unidades e regionais"}</TableCell>
                         <TableCell>{f.cargoReferencia || "—"}</TableCell>
                         <TableCell>{f.versao}</TableCell>
                         <TableCell><Badge variant={f.ativa ? "default" : "secondary"}>{f.ativa ? "Ativa" : "Inativa"}</Badge></TableCell>
