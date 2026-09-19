@@ -137,7 +137,6 @@ export const bloco1CompetenciasFuncaoRouter = router({
         .select({
           medicaoId: medicoesCompetencias.id,
           avaliacaoId: avaliacoes.id,
-          avaliacaoTitulo: avaliacoes.titulo,
           dataReferencia: avaliacoes.dataReferencia,
           cicloId: avaliacoes.cicloId,
           cicloNome: ciclos.nome,
@@ -148,8 +147,6 @@ export const bloco1CompetenciasFuncaoRouter = router({
           valor: medicoesCompetencias.valor,
           escalaMin: medicoesCompetencias.escalaMin,
           escalaMax: medicoesCompetencias.escalaMax,
-          classificacaoResultado: medicoesCompetencias.classificacao,
-          observacao: medicoesCompetencias.observacao,
           validada: medicoesCompetencias.validada,
         })
         .from(medicoesCompetencias)
@@ -164,9 +161,114 @@ export const bloco1CompetenciasFuncaoRouter = router({
             eq(medicoesCompetencias.colaboradorId, input.colaboradorId),
             eq(medicoesCompetencias.tipoCompetencia, "COMPORTAMENTAL"),
             eq(medicoesCompetencias.fonte, "AVALIACAO_DESEMPENHO"),
+            eq(medicoesCompetencias.validada, true),
           ),
         )
         .orderBy(desc(avaliacoes.dataReferencia), desc(medicoesCompetencias.id));
+
+      function anoDaMedicao(item: any): number | null {
+        const candidatos = [
+          item.cicloNome,
+          item.cicloDataInicio,
+          item.cicloDataFim,
+          item.dataReferencia,
+        ]
+          .filter(Boolean)
+          .map((valor) => String(valor));
+
+        for (const candidato of candidatos) {
+          const encontrado = candidato.match(/\\b(2024|2025)\\b/);
+          if (encontrado) return Number(encontrado[1]);
+        }
+
+        return null;
+      }
+
+      const porCompetencia = new Map<number, any>();
+
+      for (const item of comportamentais) {
+        const competenciaMacroId = Number(item.competenciaMacroId);
+        if (!competenciaMacroId) continue;
+
+        const ano = anoDaMedicao(item);
+        if (ano !== 2024 && ano !== 2025) continue;
+
+        const atual = porCompetencia.get(competenciaMacroId) ?? {
+          competenciaMacroId,
+          competenciaNome: item.competenciaNome,
+          resultado2024: null,
+          resultado2025: null,
+          escalaMin2024: null,
+          escalaMax2024: null,
+          escalaMin2025: null,
+          escalaMax2025: null,
+        };
+
+        const valor = Number(item.valor);
+        const escalaMin = Number(item.escalaMin);
+        const escalaMax = Number(item.escalaMax);
+
+        if (ano === 2024 && atual.resultado2024 === null) {
+          atual.resultado2024 = valor;
+          atual.escalaMin2024 = escalaMin;
+          atual.escalaMax2024 = escalaMax;
+        }
+
+        if (ano === 2025 && atual.resultado2025 === null) {
+          atual.resultado2025 = valor;
+          atual.escalaMin2025 = escalaMin;
+          atual.escalaMax2025 = escalaMax;
+        }
+
+        porCompetencia.set(competenciaMacroId, atual);
+      }
+
+      const evolucaoComportamental = Array.from(porCompetencia.values())
+        .map((item: any) => {
+          const possuiDoisCiclos =
+            item.resultado2024 !== null && item.resultado2025 !== null;
+          const mesmaEscala =
+            possuiDoisCiclos &&
+            item.escalaMin2024 === item.escalaMin2025 &&
+            item.escalaMax2024 === item.escalaMax2025;
+
+          if (!possuiDoisCiclos || !mesmaEscala) {
+            return {
+              ...item,
+              comparavel: false,
+              variacao: null,
+              evolucao: "SEM_COMPARACAO",
+              criarNovaAcaoPdi: false,
+              motivo: !possuiDoisCiclos
+                ? "É necessário ter resultados válidos em 2024 e 2025."
+                : "As escalas dos dois ciclos são diferentes.",
+            };
+          }
+
+          const variacao =
+            Math.round((item.resultado2025 - item.resultado2024) * 100) / 100;
+          const evolucao =
+            variacao > 0
+              ? "EVOLUCAO"
+              : variacao < 0
+                ? "REDUCAO"
+                : "ESTABILIDADE";
+
+          return {
+            ...item,
+            comparavel: true,
+            variacao,
+            evolucao,
+            criarNovaAcaoPdi: evolucao !== "EVOLUCAO",
+            motivo: null,
+          };
+        })
+        .sort((a: any, b: any) =>
+          String(a.competenciaNome || "").localeCompare(
+            String(b.competenciaNome || ""),
+            "pt-BR",
+          ),
+        );
 
       return {
         empregado,
@@ -179,25 +281,10 @@ export const bloco1CompetenciasFuncaoRouter = router({
           competencias: tecnicas,
         },
         comportamental: {
-          fonte: "Avaliação de Desempenho",
-          competencias: comportamentais.map((item: any) => ({
-            medicaoId: Number(item.medicaoId),
-            avaliacaoId: Number(item.avaliacaoId),
-            avaliacaoTitulo: item.avaliacaoTitulo,
-            dataReferencia: item.dataReferencia,
-            cicloId: Number(item.cicloId),
-            cicloNome: item.cicloNome,
-            cicloDataInicio: item.cicloDataInicio,
-            cicloDataFim: item.cicloDataFim,
-            competenciaMacroId: Number(item.competenciaMacroId),
-            competenciaNome: item.competenciaNome,
-            valor: Number(item.valor),
-            escalaMin: Number(item.escalaMin),
-            escalaMax: Number(item.escalaMax),
-            classificacaoResultado: item.classificacaoResultado,
-            observacao: item.observacao,
-            validada: Boolean(item.validada),
-          })),
+          competencias: evolucaoComportamental,
+          regraAtual:
+            "Comparação exclusiva das competências comportamentais entre 2024 e 2025.",
+          discNoCalculo: false,
         },
       };
     }),
