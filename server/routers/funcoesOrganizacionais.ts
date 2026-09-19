@@ -189,6 +189,122 @@ export const funcoesOrganizacionaisRouter = router({
       return { success: true };
     }),
 
+  validarAjustes: adminProcedure.query(async () => {
+    const db = await dbObrigatorio();
+
+    const todosUsuarios = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        status: users.status,
+        cargo: users.cargo,
+      })
+      .from(users);
+
+    const vinculos = await db
+      .select({
+        id: usuariosFuncoesOrganizacionais.id,
+        usuarioId: usuariosFuncoesOrganizacionais.usuarioId,
+        funcaoOrganizacionalId: usuariosFuncoesOrganizacionais.funcaoOrganizacionalId,
+        tipoVinculo: usuariosFuncoesOrganizacionais.tipoVinculo,
+        ativo: usuariosFuncoesOrganizacionais.ativo,
+      })
+      .from(usuariosFuncoesOrganizacionais)
+      .where(
+        and(
+          eq(usuariosFuncoesOrganizacionais.tipoVinculo, "PRINCIPAL"),
+          eq(usuariosFuncoesOrganizacionais.ativo, true),
+        ),
+      );
+
+    const funcoes = await db
+      .select({
+        id: funcoesOrganizacionais.id,
+        nome: funcoesOrganizacionais.nome,
+        ativa: funcoesOrganizacionais.ativa,
+      })
+      .from(funcoesOrganizacionais);
+
+    const vinculosPorUsuario = new Map<number, typeof vinculos>();
+    for (const vinculo of vinculos) {
+      const lista = vinculosPorUsuario.get(Number(vinculo.usuarioId)) ?? [];
+      lista.push(vinculo);
+      vinculosPorUsuario.set(Number(vinculo.usuarioId), lista);
+    }
+
+    const funcaoPorId = new Map(
+      funcoes.map(funcao => [Number(funcao.id), funcao]),
+    );
+
+    const semFuncao = todosUsuarios
+      .filter(usuario => (vinculosPorUsuario.get(Number(usuario.id)) ?? []).length === 0)
+      .map(usuario => ({
+        id: usuario.id,
+        nome: usuario.name,
+        cargo: usuario.cargo,
+        status: usuario.status,
+      }));
+
+    const multiplasFuncoesPrincipais = todosUsuarios
+      .map(usuario => ({
+        usuario,
+        vinculos: vinculosPorUsuario.get(Number(usuario.id)) ?? [],
+      }))
+      .filter(item => item.vinculos.length > 1)
+      .map(item => ({
+        id: item.usuario.id,
+        nome: item.usuario.name,
+        quantidade: item.vinculos.length,
+      }));
+
+    const contagemPorFuncao = new Map<string, number>();
+    for (const usuario of todosUsuarios) {
+      const principal = (vinculosPorUsuario.get(Number(usuario.id)) ?? [])[0];
+      if (!principal) continue;
+      const funcao = funcaoPorId.get(Number(principal.funcaoOrganizacionalId));
+      const nome = String(funcao?.nome ?? "").trim();
+      if (!nome) continue;
+      contagemPorFuncao.set(nome, (contagemPorFuncao.get(nome) ?? 0) + 1);
+    }
+
+    const gruposNormalizados = new Map<string, string[]>();
+    for (const funcao of funcoes.filter(f => f.ativa)) {
+      const nome = String(funcao.nome ?? "").trim();
+      if (!nome) continue;
+      const chave = nome.toLocaleLowerCase("pt-BR");
+      const grupo = gruposNormalizados.get(chave) ?? [];
+      if (!grupo.includes(nome)) grupo.push(nome);
+      gruposNormalizados.set(chave, grupo);
+    }
+
+    const funcoesPossivelmenteDuplicadas = Array.from(gruposNormalizados.values())
+      .filter(grupo => grupo.length > 1)
+      .map(grupo => ({ nomes: grupo }));
+
+    const distribuicao = Array.from(contagemPorFuncao.entries())
+      .map(([funcao, quantidade]) => ({ funcao, quantidade }))
+      .sort((a, b) =>
+        a.funcao.localeCompare(b.funcao, "pt-BR"),
+      );
+
+    return {
+      totalUsuarios: todosUsuarios.length,
+      totalVinculosPrincipaisAtivos: vinculos.length,
+      usuariosSemFuncao: semFuncao.length,
+      usuariosComMaisDeUmaFuncaoPrincipal: multiplasFuncoesPrincipais.length,
+      totalFuncoesAtivas: funcoes.filter(f => f.ativa).length,
+      distribuicao,
+      semFuncao,
+      multiplasFuncoesPrincipais,
+      funcoesPossivelmenteDuplicadas,
+      aptoParaBloco1:
+        todosUsuarios.length > 0 &&
+        semFuncao.length === 0 &&
+        multiplasFuncoesPrincipais.length === 0,
+      gravacaoExecutada: false,
+    };
+  }),
+
   prepararCargaInicial: adminProcedure.query(async () => {
     const db = await dbObrigatorio();
     const todosUsuarios = await db
