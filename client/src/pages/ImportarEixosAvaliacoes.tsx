@@ -149,6 +149,15 @@ export default function ImportarEixosAvaliacoes() {
   const validarComportamentais = api.validarComportamentais.useMutation();
   const importarTecnicos = api.importarTecnicos.useMutation();
   const importarComportamentais = api.importarComportamentais.useMutation();
+  const prepararCatalogoComportamental = api.prepararCatalogoComportamental.useMutation({
+    onSuccess: () => {
+      setErroLeitura("");
+      setValidacao(null);
+    },
+    onError: (error: any) => {
+      setErroLeitura(error?.message || "Não foi possível preparar o catálogo comportamental.");
+    },
+  });
   const criarAvaliacaoDesempenho = avaliacoesApi.criarRascunho.useMutation({
     onSuccess: async (resultado: any) => {
       await avaliacoesQuery.refetch();
@@ -222,7 +231,7 @@ export default function ImportarEixosAvaliacoes() {
     }
   };
 
-  const carregando = validarTecnicos.isPending || validarComportamentais.isPending || importarTecnicos.isPending || importarComportamentais.isPending;
+  const carregando = validarTecnicos.isPending || validarComportamentais.isPending || importarTecnicos.isPending || importarComportamentais.isPending || prepararCatalogoComportamental.isPending;
   const exemplo = linhas.slice(0, 8) as any[];
 
   return (
@@ -291,6 +300,24 @@ export default function ImportarEixosAvaliacoes() {
         </CardContent></Card>}
 
         {validacao && <Card className={validacao.valido ? "border-emerald-300" : "border-red-300"}><CardHeader><CardTitle className="flex items-center gap-2">{validacao.valido ? <CheckCircle2 className="h-5 w-5 text-emerald-600" /> : <AlertCircle className="h-5 w-5 text-red-600" />}{validacao.valido ? "Arquivo validado" : "Arquivo não aprovado"}</CardTitle></CardHeader><CardContent className="space-y-4">
+          {tipo === "COMPORTAMENTAL" && !validacao.valido && validacao.erros?.some((item: any) => item.campo === "Eixo" && String(item.mensagem).includes("não localizado")) && (
+            <div className="rounded-md border border-blue-200 bg-blue-50 p-4 space-y-3 text-sm">
+              <div>
+                <p className="font-semibold text-blue-950">Competências comportamentais ainda não cadastradas</p>
+                <p className="text-blue-900">Cadastre somente o catálogo padrão das 11 competências. Nenhum resultado da avaliação será gravado nesta etapa.</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => prepararCatalogoComportamental.mutate()}
+                disabled={prepararCatalogoComportamental.isPending}
+              >
+                {prepararCatalogoComportamental.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Cadastrar competências comportamentais padrão
+              </Button>
+              <p className="text-xs text-blue-800">Depois, clique novamente em “Validar sem gravar”.</p>
+            </div>
+          )}
           <div className="grid gap-3 sm:grid-cols-3"><div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Linhas</p><p className="text-2xl font-bold">{validacao.totalLinhas}</p></div><div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Empregados</p><p className="text-2xl font-bold">{validacao.totalEmpregados}</p></div><div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Eixos</p><p className="text-2xl font-bold">{validacao.totalEixos}</p></div></div>
           {(validacao.erros?.length > 0 || validacao.avisos?.length > 0) && <div className="max-h-72 space-y-2 overflow-y-auto rounded-md border p-3">{validacao.erros?.map((item: any, index: number) => <p key={`e-${index}`} className="text-sm text-red-700"><strong>Linha {item.linha} — {item.campo}:</strong> {item.mensagem}</p>)}{validacao.avisos?.map((item: any, index: number) => <p key={`a-${index}`} className="text-sm text-amber-700"><strong>Aviso na linha {item.linha}:</strong> {item.mensagem}</p>)}</div>}
           {validacao.valido && !resultado && <div className="space-y-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
