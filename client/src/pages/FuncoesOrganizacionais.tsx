@@ -30,6 +30,8 @@ export default function FuncoesOrganizacionais() {
   const [filtroEmpregado, setFiltroEmpregado] = useState("");
   const [usuarioFuncaoEmEdicao, setUsuarioFuncaoEmEdicao] = useState<number | null>(null);
   const [nomeFuncaoEmpregado, setNomeFuncaoEmpregado] = useState("");
+  const [selecionados, setSelecionados] = useState<number[]>([]);
+  const [funcaoGrupo, setFuncaoGrupo] = useState("");
 
   const organizacoes = trpc.funcoesOrganizacionais.organizacoes.useQuery();
   const cargaInicial = trpc.funcoesOrganizacionais.prepararCargaInicial.useQuery();
@@ -46,6 +48,7 @@ export default function FuncoesOrganizacionais() {
   const aplicarCargaInicial = trpc.funcoesOrganizacionais.aplicarCargaInicial.useMutation();
   const atualizarFuncao = trpc.funcoesOrganizacionais.atualizar.useMutation();
   const definirFuncaoPorNome = trpc.funcoesOrganizacionais.definirFuncaoPorNome.useMutation();
+  const definirFuncaoEmGrupo = trpc.funcoesOrganizacionais.definirFuncaoEmGrupo.useMutation();
 
   const organizacoesAtivas = organizacoes.data?.filter((x) => x.ativa) ?? [];
 
@@ -76,6 +79,63 @@ export default function FuncoesOrganizacionais() {
         .some((v) => String(v).toLocaleLowerCase("pt-BR").includes(termo)),
     );
   }, [usuariosBase.data, usuariosFuncoes.data, departamentos.data, filtroEmpregado]);
+
+  const todosFiltradosSelecionados =
+    empregadosFiltrados.length > 0 &&
+    empregadosFiltrados.every((u: any) => selecionados.includes(Number(u.id)));
+
+  const alternarSelecao = (id: number, marcado: boolean) => {
+    setSelecionados(prev =>
+      marcado
+        ? Array.from(new Set([...prev, id]))
+        : prev.filter(x => x !== id),
+    );
+  };
+
+  const alternarTodosFiltrados = (marcado: boolean) => {
+    const idsFiltrados = empregadosFiltrados.map((u: any) => Number(u.id));
+    setSelecionados(prev => {
+      if (marcado) return Array.from(new Set([...prev, ...idsFiltrados]));
+      const remover = new Set(idsFiltrados);
+      return prev.filter(id => !remover.has(id));
+    });
+  };
+
+  const aplicarFuncaoGrupo = async () => {
+    if (selecionados.length === 0) {
+      toast.error("Selecione pelo menos um empregado.");
+      return;
+    }
+    if (!funcaoGrupo.trim()) {
+      toast.error("Informe a função que será aplicada ao grupo.");
+      return;
+    }
+
+    const confirmado = window.confirm(
+      `Aplicar a função "${funcaoGrupo.trim()}" a ${selecionados.length} empregado(s) selecionado(s)?`,
+    );
+    if (!confirmado) return;
+
+    try {
+      const resultado = await definirFuncaoEmGrupo.mutateAsync({
+        usuarioIds: selecionados,
+        nomeFuncao: funcaoGrupo.trim(),
+      });
+      toast.success(
+        `Função aplicada: ${resultado.alterados} alterado(s) e ${resultado.semAlteracao} já estavam nessa função.`,
+      );
+      setSelecionados([]);
+      setFuncaoGrupo("");
+      await Promise.all([
+        usuariosFuncoes.refetch(),
+        usuariosBase.refetch(),
+        funcoes.refetch(),
+        organizacoes.refetch(),
+      ]);
+    } catch (error: any) {
+      toast.error(error.message || "Não foi possível aplicar a função ao grupo.");
+    }
+  };
 
   const iniciarEdicaoFuncaoEmpregado = (usuario: any) => {
     setUsuarioFuncaoEmEdicao(Number(usuario.id));
@@ -256,10 +316,40 @@ export default function FuncoesOrganizacionais() {
             onChange={(e) => setFiltroEmpregado(e.target.value)}
             placeholder="Buscar por empregado, função, cargo ou unidade..."
           />
+
+          <div className="rounded-md border p-4">
+            <div className="grid gap-3 md:grid-cols-[1fr_auto_auto] items-end">
+              <div>
+                <Label>Editar função em grupo</Label>
+                <Input
+                  value={funcaoGrupo}
+                  onChange={(e) => setFuncaoGrupo(e.target.value)}
+                  placeholder="Digite a função que será aplicada aos selecionados"
+                />
+              </div>
+              <div className="text-sm text-muted-foreground pb-2">
+                {selecionados.length} selecionado(s)
+              </div>
+              <Button
+                onClick={aplicarFuncaoGrupo}
+                disabled={selecionados.length === 0 || !funcaoGrupo.trim() || definirFuncaoEmGrupo.isPending}
+              >
+                Aplicar aos selecionados
+              </Button>
+            </div>
+          </div>
           <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[44px]">
+                    <input
+                      type="checkbox"
+                      aria-label="Selecionar todos os empregados filtrados"
+                      checked={todosFiltradosSelecionados}
+                      onChange={(e) => alternarTodosFiltrados(e.target.checked)}
+                    />
+                  </TableHead>
                   <TableHead>Empregado</TableHead>
                   <TableHead>Unidade</TableHead>
                   <TableHead>Cargo</TableHead>
@@ -270,13 +360,21 @@ export default function FuncoesOrganizacionais() {
               <TableBody>
                 {empregadosFiltrados.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
                       Nenhum empregado encontrado.
                     </TableCell>
                   </TableRow>
                 ) : (
                   empregadosFiltrados.map((u: any) => (
                     <TableRow key={u.id}>
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          aria-label={`Selecionar ${u.name || "empregado"}`}
+                          checked={selecionados.includes(Number(u.id))}
+                          onChange={(e) => alternarSelecao(Number(u.id), e.target.checked)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{u.name || "—"}</TableCell>
                       <TableCell>{u.departamentoNome || "Sem unidade"}</TableCell>
                       <TableCell>{u.cargo || "—"}</TableCell>
