@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,10 +23,12 @@ const evolucaoLabel: Record<string, string> = {
 };
 
 export default function Bloco1CompetenciasFuncao() {
+  const [, navigate] = useLocation();
   const [colaboradorId, setColaboradorId] = useState("");
   const [busca, setBusca] = useState("");
 
   const empregados = trpc.bloco1CompetenciasFuncao.empregados.useQuery();
+  const pdis = trpc.pdis.list.useQuery();
   const mapa = trpc.bloco1CompetenciasFuncao.mapaIndividual.useQuery(
     { colaboradorId: Number(colaboradorId || 0) },
     { enabled: Boolean(colaboradorId) },
@@ -41,6 +44,23 @@ export default function Bloco1CompetenciasFuncao() {
         .some((v) => String(v).toLocaleLowerCase("pt-BR").includes(termo)),
     );
   }, [empregados.data, busca]);
+
+  const pdiDoEmpregado = useMemo(() => {
+    if (!colaboradorId) return null;
+    return (pdis.data ?? []).find(
+      (pdi: any) => Number(pdi.colaboradorId) === Number(colaboradorId),
+    ) ?? null;
+  }, [pdis.data, colaboradorId]);
+
+  const abrirBiblioteca = (eixo: string, macroId?: number | null) => {
+    const params = new URLSearchParams();
+    if (pdiDoEmpregado?.pdiId) params.set("pdiId", String(pdiDoEmpregado.pdiId));
+    if (eixo) params.set("eixo", eixo);
+    if (macroId) params.set("macroId", String(macroId));
+    params.set("origem", "evolucao_individual");
+    params.set("modo", "biblioteca");
+    navigate(`/acoes/nova?${params.toString()}`);
+  };
 
   return (
     <div className="flex-1 w-full min-w-0 space-y-6 p-2 md:p-6">
@@ -151,15 +171,9 @@ export default function Bloco1CompetenciasFuncao() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {item.criarNovaAcaoPdi ? (
-                              <Button size="sm" variant="outline" disabled>
-                                Criar ação no PDI
-                              </Button>
-                            ) : item.evolucao === "EVOLUCAO" ? (
-                              <span className="text-sm text-muted-foreground">Sem nova ação automática</span>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">Aguardando comparação</span>
-                            )}
+                            <Button size="sm" variant="outline" onClick={() => abrirBiblioteca(item.eixoNome)}>
+                              Criar ação no PDI
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -230,15 +244,13 @@ export default function Bloco1CompetenciasFuncao() {
                             ) : null}
                           </TableCell>
                           <TableCell>
-                            {item.criarNovaAcaoPdi ? (
-                              <Button size="sm" variant="outline" disabled>
-                                Criar ação no PDI
-                              </Button>
-                            ) : item.evolucao === "EVOLUCAO" ? (
-                              <span className="text-sm text-muted-foreground">Sem nova ação automática</span>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">Aguardando comparação</span>
-                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => abrirBiblioteca(item.competenciaNome || "", Number(item.competenciaMacroId))}
+                            >
+                              Criar ação no PDI
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -247,8 +259,7 @@ export default function Bloco1CompetenciasFuncao() {
                 </Table>
               </div>
               <p className="text-xs text-muted-foreground mt-3">
-                O botão está apenas sinalizado nesta etapa e permanece desabilitado até ligarmos esta necessidade
-                ao fluxo seguro de criação de ações do PDI.
+                A criação de nova ação permanece disponível em qualquer resultado de evolução.
               </p>
             </CardContent>
           </Card>
@@ -261,7 +272,7 @@ export default function Bloco1CompetenciasFuncao() {
               <p><strong>Técnicas:</strong> a relação Essencial/Transversal é individual e decorre das atividades declaradas pelo empregado no questionário.</p>
               <p><strong>Comportamentais:</strong> comparar a mesma competência entre 2024 e 2025.</p>
               <p><strong>Leitura:</strong> resultado maior = evolução; resultado igual = estabilidade; resultado menor = redução.</p>
-              <p><strong>PDI:</strong> estabilidade ou redução sinaliza necessidade de nova ação de desenvolvimento.</p>
+              <p><strong>PDI:</strong> estabilidade ou redução sinaliza necessidade de atenção, mas a criação de nova ação permanece disponível em qualquer resultado, inclusive quando houve evolução.</p>
               <p><strong>DISC:</strong> não participa do cálculo atual; fica reservado para funcionalidade futura.</p>
             </CardContent>
           </Card>
