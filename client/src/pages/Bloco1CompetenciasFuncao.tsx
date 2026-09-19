@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const relacaoLabel: Record<string, string> = {
@@ -11,6 +12,13 @@ const relacaoLabel: Record<string, string> = {
   TRANSVERSAL: "Transversal",
   NAO_APLICAVEL: "Não aplicável",
   PENDENTE: "Pendente",
+};
+
+const evolucaoLabel: Record<string, string> = {
+  EVOLUCAO: "Evolução",
+  ESTABILIDADE: "Estabilidade",
+  REDUCAO: "Redução",
+  SEM_COMPARACAO: "Sem comparação",
 };
 
 export default function Bloco1CompetenciasFuncao() {
@@ -39,9 +47,8 @@ export default function Bloco1CompetenciasFuncao() {
       <div>
         <h1 className="text-3xl font-bold">Bloco 1 — Competências Individuais</h1>
         <p className="text-muted-foreground max-w-4xl">
-          A análise é individual. Pessoas com a mesma função podem ter competências e classificações diferentes,
-          porque a fonte técnica é o questionário individual de levantamento das atividades e a fonte comportamental
-          é a Avaliação de Desempenho.
+          A análise é individual. O objetivo é acompanhar se houve desenvolvimento das competências
+          técnicas e comportamentais após as ações do PDI.
         </p>
       </div>
 
@@ -135,10 +142,10 @@ export default function Bloco1CompetenciasFuncao() {
 
           <Card>
             <CardHeader>
-              <CardTitle>3. Competências Comportamentais</CardTitle>
+              <CardTitle>3. Competências Comportamentais — Evolução 2024 × 2025</CardTitle>
               <CardDescription>
-                Fonte: Avaliação de Desempenho individual. O resultado pertence à pessoa e não é herdado automaticamente
-                por outras pessoas com a mesma função.
+                Nesta etapa, a evolução considera exclusivamente a mesma competência comportamental
+                medida em 2024 e 2025. O DISC não participa deste cálculo.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -147,43 +154,72 @@ export default function Bloco1CompetenciasFuncao() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Competência comportamental</TableHead>
-                      <TableHead>Avaliação</TableHead>
-                      <TableHead>Resultado</TableHead>
-                      <TableHead>Classificação da avaliação</TableHead>
+                      <TableHead>2024</TableHead>
+                      <TableHead>2025</TableHead>
+                      <TableHead>Variação</TableHead>
+                      <TableHead>Evolução</TableHead>
+                      <TableHead>Próxima ação</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {mapa.data.comportamental.competencias.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground">
-                          Nenhuma medição comportamental de Avaliação de Desempenho localizada para este empregado.
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          Nenhuma competência comportamental comparável localizada para este empregado.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      mapa.data.comportamental.competencias.map((item: any) => {
-                        const amplitude = item.escalaMax - item.escalaMin;
-                        const percentual = amplitude > 0
-                          ? ((item.valor - item.escalaMin) / amplitude) * 100
-                          : null;
-                        return (
-                          <TableRow key={item.medicaoId}>
-                            <TableCell className="font-medium">{item.competenciaNome || "—"}</TableCell>
-                            <TableCell>
-                              <div>{item.avaliacaoTitulo || "Avaliação de Desempenho"}</div>
-                              <div className="text-xs text-muted-foreground">{String(item.dataReferencia || "")}</div>
-                            </TableCell>
-                            <TableCell>
-                              {item.valor} / {item.escalaMax}
-                              {percentual !== null ? ` (${percentual.toFixed(1)}%)` : ""}
-                            </TableCell>
-                            <TableCell>{item.classificacaoResultado || "—"}</TableCell>
-                          </TableRow>
-                        );
-                      })
+                      mapa.data.comportamental.competencias.map((item: any) => (
+                        <TableRow key={item.competenciaMacroId}>
+                          <TableCell className="font-medium">{item.competenciaNome || "—"}</TableCell>
+                          <TableCell>
+                            {item.resultado2024 === null ? "—" : Number(item.resultado2024).toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            {item.resultado2025 === null ? "—" : Number(item.resultado2025).toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            {item.variacao === null
+                              ? "—"
+                              : `${Number(item.variacao) > 0 ? "+" : ""}${Number(item.variacao).toFixed(2)}`}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                item.evolucao === "EVOLUCAO"
+                                  ? "default"
+                                  : item.evolucao === "SEM_COMPARACAO"
+                                    ? "outline"
+                                    : "secondary"
+                              }
+                            >
+                              {evolucaoLabel[item.evolucao] || item.evolucao}
+                            </Badge>
+                            {!item.comparavel && item.motivo ? (
+                              <div className="text-xs text-muted-foreground mt-1">{item.motivo}</div>
+                            ) : null}
+                          </TableCell>
+                          <TableCell>
+                            {item.criarNovaAcaoPdi ? (
+                              <Button size="sm" variant="outline" disabled>
+                                Criar ação no PDI
+                              </Button>
+                            ) : item.evolucao === "EVOLUCAO" ? (
+                              <span className="text-sm text-muted-foreground">Sem nova ação automática</span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">Aguardando comparação</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
                   </TableBody>
                 </Table>
               </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                O botão está apenas sinalizado nesta etapa e permanece desabilitado até ligarmos esta necessidade
+                ao fluxo seguro de criação de ações do PDI.
+              </p>
             </CardContent>
           </Card>
 
@@ -193,8 +229,10 @@ export default function Bloco1CompetenciasFuncao() {
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground space-y-2">
               <p><strong>Técnicas:</strong> a relação Essencial/Transversal é individual e decorre das atividades declaradas pelo empregado no questionário.</p>
-              <p><strong>Comportamentais:</strong> a análise parte da Avaliação de Desempenho individual.</p>
-              <p><strong>Função:</strong> serve como contexto organizacional; não obriga duas pessoas da mesma função a terem o mesmo mapa de competências.</p>
+              <p><strong>Comportamentais:</strong> comparar a mesma competência entre 2024 e 2025.</p>
+              <p><strong>Leitura:</strong> resultado maior = evolução; resultado igual = estabilidade; resultado menor = redução.</p>
+              <p><strong>PDI:</strong> estabilidade ou redução sinaliza necessidade de nova ação de desenvolvimento.</p>
+              <p><strong>DISC:</strong> não participa do cálculo atual; fica reservado para funcionalidade futura.</p>
             </CardContent>
           </Card>
         </>
