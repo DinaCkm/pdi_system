@@ -16,6 +16,7 @@ import Users from "./pages/Users";
 import ConfigurarUsuario from "./pages/ConfigurarUsuario";
 import Competencias from "./pages/Competencias";
 import Departamentos from "./pages/Departamentos";
+import FuncoesOrganizacionais from "./pages/FuncoesOrganizacionais";
 import Ciclos from "./pages/Ciclos";
 import PDIs from "./pages/PDIs";
 import PDIDetalhes from "./pages/PDIDetalhes";
@@ -88,6 +89,7 @@ function Router() {
       <Route path={"/competencias"}><DashboardLayout><Competencias /></DashboardLayout></Route>
       <Route path={"/importar-competencias"}><DashboardLayout><ImportarCompetencias /></DashboardLayout></Route>
       <Route path={"/departamentos"}><DashboardLayout><Departamentos /></DashboardLayout></Route>
+      <Route path={"/funcoes-organizacionais"}><DashboardLayout><FuncoesOrganizacionais /></DashboardLayout></Route>
       <Route path={"/ciclos"}><DashboardLayout><Ciclos /></DashboardLayout></Route>
       <Route path={"/pdis"}><DashboardLayout><PDIs /></DashboardLayout></Route>
       <Route path={"/pdis/:id"}>{(params) => (<DashboardLayout><PDIDetalhes key={params.id} /></DashboardLayout>)}</Route>

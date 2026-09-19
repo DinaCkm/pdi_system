@@ -28,7 +28,7 @@ import { departamentos, users } from "./schema";
  * - competencias emergentes nunca entram automaticamente no catalogo oficial;
  * - nenhuma relacao organizacional x B.E.M. representa equivalencia direta;
  * - cargo cadastrado em users continua sendo preservado como dado historico/operacional;
- * - funcao organizacional e uma camada metodologica adicional e nunca e inferida/corrigida automaticamente.
+ * - funcao organizacional e uma camada metodologica adicional; a carga inicial pode partir do cargo padronizado e depois ser refinada pela funcao real.
  */
 
 export const organizacoes = mysqlTable(
