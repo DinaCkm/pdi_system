@@ -257,10 +257,10 @@ export const importacaoEixosRouter = router({
         const existenteResult = await tx.execute(sql`SELECT id FROM medicoes_competencias WHERE avaliacaoId = ${input.avaliacaoId} AND colaboradorId = ${linha.usuario.id} AND competenciaMacroId = ${linha.competencia.id} LIMIT 1`);
         if (rowsOf<any>(existenteResult).length) { ignorados++; continue; }
         await tx.execute(sql`INSERT INTO medicoes_competencias (avaliacaoId, colaboradorId, competenciaMacroId, tipoCompetencia, fonte, valor, escala_min, escala_max, classificacao, observacao, validada, validada_por, validada_em)
-          VALUES (${input.avaliacaoId}, ${linha.usuario.id}, ${linha.competencia.id}, 'COMPORTAMENTAL', 'AVALIACAO_DESEMPENHO', ${linha.pontuacao}, ${linha.escalaMin}, ${linha.escalaMax}, ${linha.classificacao ?? null}, ${linha.observacao ?? null}, 0, NULL, NULL)`);
+          VALUES (${input.avaliacaoId}, ${linha.usuario.id}, ${linha.competencia.id}, 'COMPORTAMENTAL', 'AVALIACAO_DESEMPENHO', ${linha.pontuacao}, ${linha.escalaMin}, ${linha.escalaMax}, ${linha.classificacao ?? null}, ${linha.observacao ?? null}, 1, ${ctx.user.id}, NOW())`);
         criados++;
       }
-      await tx.execute(sql`UPDATE avaliacoes SET origem = 'IMPORTACAO', arquivo_origem_nome = ${input.arquivoNome}, status = IF(status = 'RASCUNHO', 'EM_CONFERENCIA', status), updatedAt = NOW() WHERE id = ${input.avaliacaoId}`);
+      await tx.execute(sql`UPDATE avaliacoes SET origem = 'IMPORTACAO', arquivo_origem_nome = ${input.arquivoNome}, status = 'FINALIZADA', updatedAt = NOW() WHERE id = ${input.avaliacaoId}`);
     });
     return { sucesso: true, criados, ignorados, total: input.linhas.length, importadoPor: ctx.user.name };
   }),
