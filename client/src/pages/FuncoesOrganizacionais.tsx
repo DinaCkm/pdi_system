@@ -32,6 +32,7 @@ export default function FuncoesOrganizacionais() {
   const [nomeFuncaoEmpregado, setNomeFuncaoEmpregado] = useState("");
   const [selecionados, setSelecionados] = useState<number[]>([]);
   const [funcaoGrupo, setFuncaoGrupo] = useState("");
+  const [filtroFuncao, setFiltroFuncao] = useState("todas");
 
   const organizacoes = trpc.funcoesOrganizacionais.organizacoes.useQuery();
   const cargaInicial = trpc.funcoesOrganizacionais.prepararCargaInicial.useQuery();
@@ -71,14 +72,38 @@ export default function FuncoesOrganizacionais() {
       };
     });
 
-    if (!termo) return dados;
+    return dados.filter((u: any) => {
+      const funcaoAtual = String(u.funcaoNome || u.cargo || "—");
 
-    return dados.filter((u: any) =>
-      [u.name, u.cargo, u.departamentoNome, u.funcaoNome]
+      const matchesFuncao =
+        filtroFuncao === "todas" ||
+        (filtroFuncao === "sem-vinculo"
+          ? !u.funcaoNome
+          : funcaoAtual === filtroFuncao);
+
+      if (!matchesFuncao) return false;
+      if (!termo) return true;
+
+      return [u.name, u.cargo, u.departamentoNome, u.funcaoNome]
         .filter(Boolean)
-        .some((v) => String(v).toLocaleLowerCase("pt-BR").includes(termo)),
+        .some((v) => String(v).toLocaleLowerCase("pt-BR").includes(termo));
+    });
+  }, [usuariosBase.data, usuariosFuncoes.data, departamentos.data, filtroEmpregado, filtroFuncao]);
+
+  const funcoesDisponiveisFiltro = useMemo(() => {
+    const vinculosPorUsuario = new Map(
+      (usuariosFuncoes.data ?? []).map((u: any) => [Number(u.id), u]),
     );
-  }, [usuariosBase.data, usuariosFuncoes.data, departamentos.data, filtroEmpregado]);
+
+    const nomes = new Set<string>();
+    for (const u of usuariosBase.data ?? []) {
+      const vinculo: any = vinculosPorUsuario.get(Number((u as any).id));
+      const nome = String(vinculo?.funcaoNome || (u as any).cargo || "").trim();
+      if (nome) nomes.add(nome);
+    }
+
+    return Array.from(nomes).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [usuariosBase.data, usuariosFuncoes.data]);
 
   const todosFiltradosSelecionados =
     empregadosFiltrados.length > 0 &&
@@ -311,11 +336,27 @@ export default function FuncoesOrganizacionais() {
             O sistema busca automaticamente os empregados já cadastrados. Quando ainda não existe um vínculo de função organizacional,
             a função exibida parte do cadastro atual do empregado. Você pode revisar e editar diretamente nesta lista.
           </p>
-          <Input
-            value={filtroEmpregado}
-            onChange={(e) => setFiltroEmpregado(e.target.value)}
-            placeholder="Buscar por empregado, função, cargo ou unidade..."
-          />
+          <div className="grid gap-3 md:grid-cols-[1fr_320px]">
+            <Input
+              value={filtroEmpregado}
+              onChange={(e) => setFiltroEmpregado(e.target.value)}
+              placeholder="Buscar por empregado, função, cargo ou unidade..."
+            />
+            <Select value={filtroFuncao} onValueChange={setFiltroFuncao}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por função" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as funções</SelectItem>
+                <SelectItem value="sem-vinculo">Sem função organizacional vinculada</SelectItem>
+                {funcoesDisponiveisFiltro.map((funcao) => (
+                  <SelectItem key={funcao} value={funcao}>
+                    {funcao}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="rounded-md border p-4">
             <div className="grid gap-3 md:grid-cols-[1fr_auto_auto] items-end">
