@@ -36,7 +36,9 @@ export default function FuncoesOrganizacionais() {
   const funcoes = trpc.funcoesOrganizacionais.listar.useQuery(
     organizacaoId ? { organizacaoId: Number(organizacaoId) } : undefined,
   );
-  const usuarios = trpc.funcoesOrganizacionais.usuarios.useQuery();
+  const usuariosBase = trpc.users.list.useQuery();
+  const usuariosFuncoes = trpc.funcoesOrganizacionais.usuarios.useQuery();
+  const departamentos = trpc.departamentos.list.useQuery();
 
   const criarOrganizacao = trpc.funcoesOrganizacionais.criarOrganizacao.useMutation();
   const criarFuncao = trpc.funcoesOrganizacionais.criar.useMutation();
@@ -49,14 +51,31 @@ export default function FuncoesOrganizacionais() {
 
   const empregadosFiltrados = useMemo(() => {
     const termo = filtroEmpregado.trim().toLocaleLowerCase("pt-BR");
-    const dados = usuarios.data ?? [];
+    const vinculosPorUsuario = new Map(
+      (usuariosFuncoes.data ?? []).map((u: any) => [Number(u.id), u]),
+    );
+
+    const dados = (usuariosBase.data ?? []).map((u: any) => {
+      const vinculo = vinculosPorUsuario.get(Number(u.id));
+      const departamento = (departamentos.data ?? []).find(
+        (d: any) => Number(d.id) === Number(u.departamentoId),
+      );
+
+      return {
+        ...u,
+        departamentoNome: vinculo?.departamentoNome || departamento?.nome || null,
+        funcaoNome: vinculo?.funcaoNome || null,
+      };
+    });
+
     if (!termo) return dados;
-    return dados.filter((u) =>
+
+    return dados.filter((u: any) =>
       [u.name, u.cargo, u.departamentoNome, u.funcaoNome]
         .filter(Boolean)
         .some((v) => String(v).toLocaleLowerCase("pt-BR").includes(termo)),
     );
-  }, [usuarios.data, filtroEmpregado]);
+  }, [usuariosBase.data, usuariosFuncoes.data, departamentos.data, filtroEmpregado]);
 
   const iniciarEdicaoFuncaoEmpregado = (usuario: any) => {
     setUsuarioFuncaoEmEdicao(Number(usuario.id));
@@ -77,7 +96,7 @@ export default function FuncoesOrganizacionais() {
       toast.success("Função do empregado atualizada.");
       setUsuarioFuncaoEmEdicao(null);
       setNomeFuncaoEmpregado("");
-      await Promise.all([usuarios.refetch(), funcoes.refetch(), organizacoes.refetch()]);
+      await Promise.all([usuariosFuncoes.refetch(), usuariosBase.refetch(), funcoes.refetch(), organizacoes.refetch()]);
     } catch (error: any) {
       toast.error(error.message || "Não foi possível atualizar a função do empregado.");
     }
@@ -111,7 +130,7 @@ export default function FuncoesOrganizacionais() {
         cargaInicial.refetch(),
         organizacoes.refetch(),
         funcoes.refetch(),
-        usuarios.refetch(),
+        usuariosFuncoes.refetch(), usuariosBase.refetch(),
       ]);
     } catch (error: any) {
       toast.error(error.message || "Não foi possível executar a carga inicial.");
@@ -189,7 +208,7 @@ export default function FuncoesOrganizacionais() {
       });
       toast.success("Função atualizada com sucesso.");
       setFuncaoEmEdicao(null);
-      await Promise.all([funcoes.refetch(), usuarios.refetch()]);
+      await Promise.all([funcoes.refetch(), usuariosFuncoes.refetch(), usuariosBase.refetch()]);
     } catch (error: any) {
       toast.error(error.message || "Não foi possível atualizar a função.");
     }
@@ -208,7 +227,7 @@ export default function FuncoesOrganizacionais() {
       toast.success("Função principal vinculada ao empregado.");
       setUsuarioSelecionado("");
       setFuncaoSelecionada("");
-      await usuarios.refetch();
+      await usuariosFuncoes.refetch(), usuariosBase.refetch();
     } catch (error: any) {
       toast.error(error.message || "Não foi possível vincular a função.");
     }
@@ -489,7 +508,7 @@ export default function FuncoesOrganizacionais() {
                 <Select value={usuarioSelecionado} onValueChange={setUsuarioSelecionado}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
-                    {(usuarios.data ?? []).map((u) => (
+                    {(usuariosBase.data ?? []).map((u) => (
                       <SelectItem key={u.id} value={String(u.id)}>
                         {u.name} — {u.cargo}{u.funcaoNome ? ` — atual: ${u.funcaoNome}` : ""}
                       </SelectItem>
