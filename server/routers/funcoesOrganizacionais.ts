@@ -10,6 +10,16 @@ import {
   usuariosFuncoesOrganizacionais,
 } from "../../drizzle/comportamental-schema";
 
+const CARGOS_FUNCOES_INICIAIS = [
+  "Analista Técnico I",
+  "Analista Técnico III",
+  "Gerente",
+  "Assistente",
+  "Administrador",
+  "Assistente I",
+  "Teste",
+] as const;
+
 async function dbObrigatorio() {
   const db = await getDb();
   if (!db) {
@@ -177,6 +187,219 @@ export const funcoesOrganizacionaisRouter = router({
         })
         .where(eq(funcoesOrganizacionais.id, input.id));
       return { success: true };
+    }),
+
+  prepararCargaInicial: adminProcedure.query(async () => {
+    const db = await dbObrigatorio();
+    const todosUsuarios = await db
+      .select({ id: users.id, cargo: users.cargo, status: users.status })
+      .from(users);
+
+    const contagemPorCargo = Object.fromEntries(
+      CARGOS_FUNCOES_INICIAIS.map(cargo => [
+        cargo,
+        todosUsuarios.filter(u => String(u.cargo).trim() === cargo).length,
+      ]),
+    );
+
+    const naoMapeados = todosUsuarios
+      .filter(u => !CARGOS_FUNCOES_INICIAIS.includes(String(u.cargo).trim() as any))
+      .map(u => ({ id: u.id, cargo: u.cargo }));
+
+    const vinculosExistentes = await db
+      .select({ usuarioId: usuariosFuncoesOrganizacionais.usuarioId })
+      .from(usuariosFuncoesOrganizacionais)
+      .where(
+        and(
+          eq(usuariosFuncoesOrganizacionais.tipoVinculo, "PRINCIPAL"),
+          eq(usuariosFuncoesOrganizacionais.ativo, true),
+        ),
+      );
+
+    return {
+      totalUsuarios: todosUsuarios.length,
+      contagemPorCargo,
+      cargosEsperados: CARGOS_FUNCOES_INICIAIS,
+      naoMapeados,
+      vinculosPrincipaisAtivosExistentes: vinculosExistentes.length,
+      apto:
+        todosUsuarios.length === 187 &&
+        naoMapeados.length === 0,
+      gravacaoExecutada: false,
+    };
+  }),
+
+  aplicarCargaInicial: adminProcedure
+    .input(z.object({ confirmar: z.literal("CARGA_INICIAL_187") }))
+    .mutation(async ({ ctx }) => {
+      const db = await dbObrigatorio();
+      const hoje = new Date().toISOString().slice(0, 10);
+
+      return db.transaction(async tx => {
+        const todosUsuarios = await tx
+          .select({ id: users.id, cargo: users.cargo })
+          .from(users);
+
+        const naoMapeados = todosUsuarios.filter(
+          u => !CARGOS_FUNCOES_INICIAIS.includes(String(u.cargo).trim() as any),
+        );
+
+        if (todosUsuarios.length !== 187 || naoMapeados.length > 0) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Carga inicial bloqueada: o cadastro atual não corresponde aos 187 usuários e 7 cargos padronizados.",
+          });
+        }
+
+        let org = (
+          await tx
+            .select({ id: organizacoes.id })
+            .from(organizacoes)
+            .where(eq(organizacoes.codigo, "SEBRAE-TO"))
+            .limit(1)
+        )[0];
+
+        if (!org) {
+          await tx.insert(organizacoes).values({
+            nome: "Sebrae Tocantins",
+            nomeFantasia: "Sebrae TO",
+            codigo: "SEBRAE-TO",
+            ativa: true,
+          });
+          org = (
+            await tx
+              .select({ id: organizacoes.id })
+              .from(organizacoes)
+              .where(eq(organizacoes.codigo, "SEBRAE-TO"))
+              .limit(1)
+          )[0];
+        }
+
+        if (!org) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Não foi possível obter a organização Sebrae Tocantins.",
+          });
+        }
+
+        const existentes = await tx
+          .select({
+            id: funcoesOrganizacionais.id,
+            cargoReferencia: funcoesOrganizacionais.cargoReferencia,
+            ativa: funcoesOrganizacionais.ativa,
+          })
+          .from(funcoesOrganizacionais)
+          .where(eq(funcoesOrganizacionais.organizacaoId, org.id));
+
+        const funcaoPorCargo = new Map<string, number>();
+        for (const cargo of CARGOS_FUNCOES_INICIAIS) {
+          let funcao = existentes.find(
+            f => f.ativa && f.cargoReferencia === cargo,
+          );
+
+          if (!funcao) {
+            await tx.insert(funcoesOrganizacionais).values({
+              organizacaoId: org.id,
+              departamentoId: null,
+              nome: cargo,
+              codigo: `CARGO-${cargo
+                .normalize("NFD")
+                .replace(/[\\u0300-\\u036f]/g, "")
+                .replace(/[^a-zA-Z0-9]+/g, "-")
+                .replace(/^-|-$/g, "")
+                .toUpperCase()}`,
+              cargoReferencia: cargo,
+              descricao:
+                "Função inicial criada automaticamente a partir do cargo padronizado. Deve ser refinada posteriormente pela análise da função real no Bloco 1.",
+              origem: "IMPORTACAO",
+              versao: 1,
+              vigenciaInicio: hoje,
+              ativa: true,
+              createdBy: Number(ctx.user.id),
+            });
+
+            funcao = (
+              await tx
+                .select({
+                  id: funcoesOrganizacionais.id,
+                  cargoReferencia: funcoesOrganizacionais.cargoReferencia,
+                  ativa: funcoesOrganizacionais.ativa,
+                })
+                .from(funcoesOrganizacionais)
+                .where(
+                  and(
+                    eq(funcoesOrganizacionais.organizacaoId, org.id),
+                    eq(funcoesOrganizacionais.cargoReferencia, cargo),
+                    eq(funcoesOrganizacionais.ativa, true),
+                  ),
+                )
+                .limit(1)
+            )[0];
+          }
+
+          if (!funcao) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: `Não foi possível criar/localizar a função inicial para ${cargo}.`,
+            });
+          }
+          funcaoPorCargo.set(cargo, funcao.id);
+        }
+
+        const ativosExistentes = await tx
+          .select({
+            usuarioId: usuariosFuncoesOrganizacionais.usuarioId,
+            funcaoOrganizacionalId:
+              usuariosFuncoesOrganizacionais.funcaoOrganizacionalId,
+          })
+          .from(usuariosFuncoesOrganizacionais)
+          .where(
+            and(
+              eq(usuariosFuncoesOrganizacionais.tipoVinculo, "PRINCIPAL"),
+              eq(usuariosFuncoesOrganizacionais.ativo, true),
+            ),
+          );
+        const usuariosComPrincipal = new Set(
+          ativosExistentes.map(v => v.usuarioId),
+        );
+
+        let criados = 0;
+        let preservados = 0;
+        for (const usuario of todosUsuarios) {
+          if (usuariosComPrincipal.has(usuario.id)) {
+            preservados += 1;
+            continue;
+          }
+          const cargo = String(usuario.cargo).trim();
+          const funcaoId = funcaoPorCargo.get(cargo);
+          if (!funcaoId) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: `Função inicial não localizada para o cargo ${cargo}.`,
+            });
+          }
+
+          await tx.insert(usuariosFuncoesOrganizacionais).values({
+            usuarioId: usuario.id,
+            funcaoOrganizacionalId: funcaoId,
+            tipoVinculo: "PRINCIPAL",
+            origem: "IMPORTACAO",
+            vigenciaInicio: hoje,
+            ativo: true,
+            createdBy: Number(ctx.user.id),
+          });
+          criados += 1;
+        }
+
+        return {
+          success: true,
+          organizacaoId: org.id,
+          funcoesIniciais: CARGOS_FUNCOES_INICIAIS.length,
+          usuariosTotal: todosUsuarios.length,
+          vinculosCriados: criados,
+          vinculosPrincipaisPreservados: preservados,
+        };
+      });
     }),
 
   usuarios: adminProcedure.query(async () => {
