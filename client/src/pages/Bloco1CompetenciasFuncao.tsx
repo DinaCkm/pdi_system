@@ -45,7 +45,7 @@ export default function Bloco1CompetenciasFuncao() {
   return (
     <div className="flex-1 w-full min-w-0 space-y-6 p-2 md:p-6">
       <div>
-        <h1 className="text-3xl font-bold">Bloco 1 — Competências Individuais</h1>
+        <h1 className="text-3xl font-bold">Evolução Individual</h1>
         <p className="text-muted-foreground max-w-4xl">
           A análise é individual. O objetivo é acompanhar se houve desenvolvimento das competências
           técnicas e comportamentais após as ações do PDI.
@@ -107,14 +107,16 @@ export default function Bloco1CompetenciasFuncao() {
                     <TableRow>
                       <TableHead>Eixo / competência técnica</TableHead>
                       <TableHead>Classificação individual</TableHead>
-                      <TableHead>Resultado histórico</TableHead>
-                      <TableHead>Fonte</TableHead>
+                      <TableHead>Anterior</TableHead>
+                      <TableHead>Atual</TableHead>
+                      <TableHead>Evolução</TableHead>
+                      <TableHead>Próxima ação</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {mapa.data.tecnico.competencias.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
                           Nenhuma matriz técnica individual localizada para este empregado.
                         </TableCell>
                       </TableRow>
@@ -130,7 +132,35 @@ export default function Bloco1CompetenciasFuncao() {
                           <TableCell>
                             {item.percentualAnterior === null ? "—" : `${Number(item.percentualAnterior).toFixed(1)}%`}
                           </TableCell>
-                          <TableCell className="max-w-[420px] whitespace-normal">{item.fonte}</TableCell>
+                          <TableCell>
+                            {item.percentualAtual === null ? "—" : `${Number(item.percentualAtual).toFixed(1)}%`}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={
+                                item.evolucao === "EVOLUCAO"
+                                  ? "default"
+                                  : item.evolucao === "SEM_COMPARACAO"
+                                    ? "outline"
+                                    : "secondary"
+                              }
+                            >
+                              {item.evolucao === "SEM_COMPARACAO"
+                                ? "Sem comparação"
+                                : `${evolucaoLabel[item.evolucao] || item.evolucao} ${item.evolucaoPp === null ? "" : `(${Number(item.evolucaoPp) > 0 ? "+" : ""}${Number(item.evolucaoPp).toFixed(1)} p.p.)`}`}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {item.criarNovaAcaoPdi ? (
+                              <Button size="sm" variant="outline" disabled>
+                                Criar ação no PDI
+                              </Button>
+                            ) : item.evolucao === "EVOLUCAO" ? (
+                              <span className="text-sm text-muted-foreground">Sem nova ação automática</span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">Aguardando comparação</span>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
