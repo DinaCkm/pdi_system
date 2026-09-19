@@ -27,6 +27,9 @@ export default function FuncoesOrganizacionais() {
   const [editCargoReferencia, setEditCargoReferencia] = useState("");
   const [editDescricao, setEditDescricao] = useState("");
   const [editAtiva, setEditAtiva] = useState(true);
+  const [filtroEmpregado, setFiltroEmpregado] = useState("");
+  const [usuarioFuncaoEmEdicao, setUsuarioFuncaoEmEdicao] = useState<number | null>(null);
+  const [nomeFuncaoEmpregado, setNomeFuncaoEmpregado] = useState("");
 
   const organizacoes = trpc.funcoesOrganizacionais.organizacoes.useQuery();
   const cargaInicial = trpc.funcoesOrganizacionais.prepararCargaInicial.useQuery();
@@ -40,8 +43,45 @@ export default function FuncoesOrganizacionais() {
   const vincular = trpc.funcoesOrganizacionais.vincularPrincipal.useMutation();
   const aplicarCargaInicial = trpc.funcoesOrganizacionais.aplicarCargaInicial.useMutation();
   const atualizarFuncao = trpc.funcoesOrganizacionais.atualizar.useMutation();
+  const definirFuncaoPorNome = trpc.funcoesOrganizacionais.definirFuncaoPorNome.useMutation();
 
   const organizacoesAtivas = organizacoes.data?.filter((x) => x.ativa) ?? [];
+
+  const empregadosFiltrados = useMemo(() => {
+    const termo = filtroEmpregado.trim().toLocaleLowerCase("pt-BR");
+    const dados = usuarios.data ?? [];
+    if (!termo) return dados;
+    return dados.filter((u) =>
+      [u.name, u.cargo, u.departamentoNome, u.funcaoNome]
+        .filter(Boolean)
+        .some((v) => String(v).toLocaleLowerCase("pt-BR").includes(termo)),
+    );
+  }, [usuarios.data, filtroEmpregado]);
+
+  const iniciarEdicaoFuncaoEmpregado = (usuario: any) => {
+    setUsuarioFuncaoEmEdicao(Number(usuario.id));
+    setNomeFuncaoEmpregado(String(usuario.funcaoNome || usuario.cargo || ""));
+  };
+
+  const salvarFuncaoEmpregado = async (usuarioId: number) => {
+    if (!nomeFuncaoEmpregado.trim()) {
+      toast.error("Informe a função do empregado.");
+      return;
+    }
+
+    try {
+      await definirFuncaoPorNome.mutateAsync({
+        usuarioId,
+        nomeFuncao: nomeFuncaoEmpregado.trim(),
+      });
+      toast.success("Função do empregado atualizada.");
+      setUsuarioFuncaoEmEdicao(null);
+      setNomeFuncaoEmpregado("");
+      await Promise.all([usuarios.refetch(), funcoes.refetch(), organizacoes.refetch()]);
+    } catch (error: any) {
+      toast.error(error.message || "Não foi possível atualizar a função do empregado.");
+    }
+  };
 
   const funcoesFiltradas = useMemo(() => {
     const termo = filtro.trim().toLocaleLowerCase("pt-BR");
@@ -182,6 +222,91 @@ export default function FuncoesOrganizacionais() {
           As funções organizacionais são válidas para toda a organização, independentemente da unidade ou regional do empregado.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Funções atuais dos empregados</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            O sistema busca automaticamente os empregados já cadastrados. Quando ainda não existe um vínculo de função organizacional,
+            a função exibida parte do cadastro atual do empregado. Você pode revisar e editar diretamente nesta lista.
+          </p>
+          <Input
+            value={filtroEmpregado}
+            onChange={(e) => setFiltroEmpregado(e.target.value)}
+            placeholder="Buscar por empregado, função, cargo ou unidade..."
+          />
+          <div className="rounded-md border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Empregado</TableHead>
+                  <TableHead>Unidade</TableHead>
+                  <TableHead>Cargo</TableHead>
+                  <TableHead>Função atual</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {empregadosFiltrados.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                      Nenhum empregado encontrado.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  empregadosFiltrados.map((u: any) => (
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">{u.name || "—"}</TableCell>
+                      <TableCell>{u.departamentoNome || "Sem unidade"}</TableCell>
+                      <TableCell>{u.cargo || "—"}</TableCell>
+                      <TableCell className="min-w-[280px]">
+                        {usuarioFuncaoEmEdicao === Number(u.id) ? (
+                          <Input
+                            value={nomeFuncaoEmpregado}
+                            onChange={(e) => setNomeFuncaoEmpregado(e.target.value)}
+                            autoFocus
+                          />
+                        ) : (
+                          <span>{u.funcaoNome || u.cargo || "—"}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {usuarioFuncaoEmEdicao === Number(u.id) ? (
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setUsuarioFuncaoEmEdicao(null);
+                                setNomeFuncaoEmpregado("");
+                              }}
+                            >
+                              Cancelar
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => salvarFuncaoEmpregado(Number(u.id))}
+                              disabled={definirFuncaoPorNome.isPending}
+                            >
+                              Salvar
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button variant="outline" size="sm" onClick={() => iniciarEdicaoFuncaoEmpregado(u)}>
+                            Editar função
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle>Carga inicial pelas funções derivadas dos cargos padronizados</CardTitle></CardHeader>
