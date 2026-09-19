@@ -21,6 +21,12 @@ export default function FuncoesOrganizacionais() {
   const [filtro, setFiltro] = useState("");
   const [usuarioSelecionado, setUsuarioSelecionado] = useState<string>("");
   const [funcaoSelecionada, setFuncaoSelecionada] = useState<string>("");
+  const [funcaoEmEdicao, setFuncaoEmEdicao] = useState<any | null>(null);
+  const [editNome, setEditNome] = useState("");
+  const [editCodigo, setEditCodigo] = useState("");
+  const [editCargoReferencia, setEditCargoReferencia] = useState("");
+  const [editDescricao, setEditDescricao] = useState("");
+  const [editAtiva, setEditAtiva] = useState(true);
 
   const organizacoes = trpc.funcoesOrganizacionais.organizacoes.useQuery();
   const cargaInicial = trpc.funcoesOrganizacionais.prepararCargaInicial.useQuery();
@@ -33,6 +39,7 @@ export default function FuncoesOrganizacionais() {
   const criarFuncao = trpc.funcoesOrganizacionais.criar.useMutation();
   const vincular = trpc.funcoesOrganizacionais.vincularPrincipal.useMutation();
   const aplicarCargaInicial = trpc.funcoesOrganizacionais.aplicarCargaInicial.useMutation();
+  const atualizarFuncao = trpc.funcoesOrganizacionais.atualizar.useMutation();
 
   const organizacoesAtivas = organizacoes.data?.filter((x) => x.ativa) ?? [];
 
@@ -112,6 +119,39 @@ export default function FuncoesOrganizacionais() {
       await funcoes.refetch();
     } catch (error: any) {
       toast.error(error.message || "Não foi possível criar a função.");
+    }
+  };
+
+  const iniciarEdicao = (funcao: any) => {
+    setFuncaoEmEdicao(funcao);
+    setEditNome(funcao.nome || "");
+    setEditCodigo(funcao.codigo || "");
+    setEditCargoReferencia(funcao.cargoReferencia || "");
+    setEditDescricao(funcao.descricao || "");
+    setEditAtiva(Boolean(funcao.ativa));
+  };
+
+  const salvarEdicao = async () => {
+    if (!funcaoEmEdicao || !editNome.trim()) {
+      toast.error("Informe o nome da função.");
+      return;
+    }
+
+    try {
+      await atualizarFuncao.mutateAsync({
+        id: Number(funcaoEmEdicao.id),
+        departamentoId: null,
+        nome: editNome.trim(),
+        codigo: editCodigo.trim() || null,
+        cargoReferencia: editCargoReferencia.trim() || null,
+        descricao: editDescricao.trim() || null,
+        ativa: editAtiva,
+      });
+      toast.success("Função atualizada com sucesso.");
+      setFuncaoEmEdicao(null);
+      await Promise.all([funcoes.refetch(), usuarios.refetch()]);
+    } catch (error: any) {
+      toast.error(error.message || "Não foi possível atualizar a função.");
     }
   };
 
@@ -237,11 +277,12 @@ export default function FuncoesOrganizacionais() {
                       <TableHead>Cargo de referência</TableHead>
                       <TableHead>Versão</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {funcoesFiltradas.length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhuma função cadastrada.</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhuma função cadastrada.</TableCell></TableRow>
                     ) : funcoesFiltradas.map((f) => (
                       <TableRow key={f.id}>
                         <TableCell className="font-medium">{f.nome}</TableCell>
@@ -249,11 +290,69 @@ export default function FuncoesOrganizacionais() {
                         <TableCell>{f.cargoReferencia || "—"}</TableCell>
                         <TableCell>{f.versao}</TableCell>
                         <TableCell><Badge variant={f.ativa ? "default" : "secondary"}>{f.ativa ? "Ativa" : "Inativa"}</Badge></TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="outline" size="sm" onClick={() => iniciarEdicao(f)}>
+                            Editar
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
+
+              {funcaoEmEdicao && (
+                <div className="rounded-md border p-4 space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-lg">Editar função</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Ajuste aqui a função já cadastrada. A alteração vale para todas as unidades e regionais.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <Label>Nome da função</Label>
+                      <Input value={editNome} onChange={(e) => setEditNome(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label>Código da função</Label>
+                      <Input value={editCodigo} onChange={(e) => setEditCodigo(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label>Cargo de referência</Label>
+                      <Input
+                        value={editCargoReferencia}
+                        onChange={(e) => setEditCargoReferencia(e.target.value)}
+                        placeholder="Opcional"
+                      />
+                    </div>
+                    <div>
+                      <Label>Status</Label>
+                      <Select value={editAtiva ? "ativa" : "inativa"} onValueChange={(v) => setEditAtiva(v === "ativa")}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ativa">Ativa</SelectItem>
+                          <SelectItem value="inativa">Inativa</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label>Descrição resumida</Label>
+                      <Textarea value={editDescricao} onChange={(e) => setEditDescricao(e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setFuncaoEmEdicao(null)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={salvarEdicao} disabled={atualizarFuncao.isPending}>
+                      {atualizarFuncao.isPending ? "Salvando..." : "Salvar alterações"}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
