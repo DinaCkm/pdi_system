@@ -4,7 +4,7 @@ import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
 import { avaliacoes, medicoesCompetencias } from "../../drizzle/avaliacoes-schema";
-import { competenciasMacros, departamentos, users } from "../../drizzle/schema";
+import { ciclos, competenciasMacros, departamentos, users } from "../../drizzle/schema";
 import {
   funcoesOrganizacionais,
   usuariosFuncoesOrganizacionais,
@@ -139,6 +139,10 @@ export const bloco1CompetenciasFuncaoRouter = router({
           avaliacaoId: avaliacoes.id,
           avaliacaoTitulo: avaliacoes.titulo,
           dataReferencia: avaliacoes.dataReferencia,
+          cicloId: avaliacoes.cicloId,
+          cicloNome: ciclos.nome,
+          cicloDataInicio: ciclos.dataInicio,
+          cicloDataFim: ciclos.dataFim,
           competenciaMacroId: medicoesCompetencias.competenciaMacroId,
           competenciaNome: competenciasMacros.nome,
           valor: medicoesCompetencias.valor,
@@ -150,6 +154,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
         })
         .from(medicoesCompetencias)
         .innerJoin(avaliacoes, eq(medicoesCompetencias.avaliacaoId, avaliacoes.id))
+        .leftJoin(ciclos, eq(avaliacoes.cicloId, ciclos.id))
         .leftJoin(
           competenciasMacros,
           eq(medicoesCompetencias.competenciaMacroId, competenciasMacros.id),
@@ -163,14 +168,6 @@ export const bloco1CompetenciasFuncaoRouter = router({
         )
         .orderBy(desc(avaliacoes.dataReferencia), desc(medicoesCompetencias.id));
 
-      const ultimaMedicaoPorCompetencia = new Map<number, any>();
-      for (const item of comportamentais) {
-        const chave = Number(item.competenciaMacroId);
-        if (!ultimaMedicaoPorCompetencia.has(chave)) {
-          ultimaMedicaoPorCompetencia.set(chave, item);
-        }
-      }
-
       return {
         empregado,
         tecnico: {
@@ -183,22 +180,24 @@ export const bloco1CompetenciasFuncaoRouter = router({
         },
         comportamental: {
           fonte: "Avaliação de Desempenho",
-          competencias: Array.from(ultimaMedicaoPorCompetencia.values()).map(
-            (item: any) => ({
-              medicaoId: Number(item.medicaoId),
-              avaliacaoId: Number(item.avaliacaoId),
-              avaliacaoTitulo: item.avaliacaoTitulo,
-              dataReferencia: item.dataReferencia,
-              competenciaMacroId: Number(item.competenciaMacroId),
-              competenciaNome: item.competenciaNome,
-              valor: Number(item.valor),
-              escalaMin: Number(item.escalaMin),
-              escalaMax: Number(item.escalaMax),
-              classificacaoResultado: item.classificacaoResultado,
-              observacao: item.observacao,
-              validada: Boolean(item.validada),
-            }),
-          ),
+          competencias: comportamentais.map((item: any) => ({
+            medicaoId: Number(item.medicaoId),
+            avaliacaoId: Number(item.avaliacaoId),
+            avaliacaoTitulo: item.avaliacaoTitulo,
+            dataReferencia: item.dataReferencia,
+            cicloId: Number(item.cicloId),
+            cicloNome: item.cicloNome,
+            cicloDataInicio: item.cicloDataInicio,
+            cicloDataFim: item.cicloDataFim,
+            competenciaMacroId: Number(item.competenciaMacroId),
+            competenciaNome: item.competenciaNome,
+            valor: Number(item.valor),
+            escalaMin: Number(item.escalaMin),
+            escalaMax: Number(item.escalaMax),
+            classificacaoResultado: item.classificacaoResultado,
+            observacao: item.observacao,
+            validada: Boolean(item.validada),
+          })),
         },
       };
     }),
