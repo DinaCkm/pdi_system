@@ -79,7 +79,7 @@ export const diagnosticoCargosRouter = router({
 
     const contagens = new Map<string, number>();
     for (const user of users) {
-      const cargo = String(user.cargo ?? "");
+      const cargo = String(user.cargo ?? "").trim();
       contagens.set(cargo, (contagens.get(cargo) ?? 0) + 1);
     }
 
