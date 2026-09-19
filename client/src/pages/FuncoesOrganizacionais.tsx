@@ -24,6 +24,7 @@ export default function FuncoesOrganizacionais() {
   const [funcaoSelecionada, setFuncaoSelecionada] = useState<string>("");
 
   const organizacoes = trpc.funcoesOrganizacionais.organizacoes.useQuery();
+  const cargaInicial = trpc.funcoesOrganizacionais.prepararCargaInicial.useQuery();
   const departamentos = trpc.departamentos.list.useQuery();
   const funcoes = trpc.funcoesOrganizacionais.listar.useQuery(
     organizacaoId ? { organizacaoId: Number(organizacaoId) } : undefined,
@@ -33,6 +34,7 @@ export default function FuncoesOrganizacionais() {
   const criarOrganizacao = trpc.funcoesOrganizacionais.criarOrganizacao.useMutation();
   const criarFuncao = trpc.funcoesOrganizacionais.criar.useMutation();
   const vincular = trpc.funcoesOrganizacionais.vincularPrincipal.useMutation();
+  const aplicarCargaInicial = trpc.funcoesOrganizacionais.aplicarCargaInicial.useMutation();
 
   const organizacoesAtivas = organizacoes.data?.filter((x) => x.ativa) ?? [];
 
@@ -46,6 +48,25 @@ export default function FuncoesOrganizacionais() {
         .some((v) => String(v).toLocaleLowerCase("pt-BR").includes(termo)),
     );
   }, [funcoes.data, filtro]);
+
+  const executarCargaInicial = async () => {
+    try {
+      const resultado = await aplicarCargaInicial.mutateAsync({
+        confirmar: "CARGA_INICIAL_187",
+      });
+      toast.success(
+        `Carga inicial concluída: ${resultado.vinculosCriados} vínculos criados e ${resultado.vinculosPrincipaisPreservados} preservados.`,
+      );
+      await Promise.all([
+        cargaInicial.refetch(),
+        organizacoes.refetch(),
+        funcoes.refetch(),
+        usuarios.refetch(),
+      ]);
+    } catch (error: any) {
+      toast.error(error.message || "Não foi possível executar a carga inicial.");
+    }
+  };
 
   const criarOrg = async () => {
     if (!orgNome.trim() || !orgCodigo.trim()) {
@@ -119,6 +140,28 @@ export default function FuncoesOrganizacionais() {
           Camada metodológica separada do cargo administrativo. Use-a para representar a função real exercida pelo empregado.
         </p>
       </div>
+
+      <Card>
+        <CardHeader><CardTitle>Carga inicial pelas funções derivadas dos cargos padronizados</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Esta carga cria 7 funções iniciais a partir dos cargos padronizados e vincula os 187 empregados.
+            A função inicial poderá ser refinada depois pela análise da função real no Bloco 1.
+          </p>
+          <div className="grid gap-3 md:grid-cols-4">
+            <div><span className="text-xs text-muted-foreground">Usuários</span><div className="font-semibold">{cargaInicial.data?.totalUsuarios ?? "..."}</div></div>
+            <div><span className="text-xs text-muted-foreground">Não mapeados</span><div className="font-semibold">{cargaInicial.data?.naoMapeados.length ?? "..."}</div></div>
+            <div><span className="text-xs text-muted-foreground">Vínculos principais existentes</span><div className="font-semibold">{cargaInicial.data?.vinculosPrincipaisAtivosExistentes ?? "..."}</div></div>
+            <div><span className="text-xs text-muted-foreground">Situação</span><div className="font-semibold">{cargaInicial.data?.apto ? "Apto para carga" : "Aguardando validação"}</div></div>
+          </div>
+          <Button
+            onClick={executarCargaInicial}
+            disabled={!cargaInicial.data?.apto || aplicarCargaInicial.isPending}
+          >
+            Executar carga inicial dos 187 empregados
+          </Button>
+        </CardContent>
+      </Card>
 
       {organizacoesAtivas.length === 0 && (
         <Card>
