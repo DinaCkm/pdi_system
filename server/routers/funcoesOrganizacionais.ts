@@ -416,6 +416,7 @@ export const funcoesOrganizacionaisRouter = router({
           usuariosFuncoesOrganizacionais.funcaoOrganizacionalId,
         funcaoNome: funcoesOrganizacionais.nome,
         tipoVinculo: usuariosFuncoesOrganizacionais.tipoVinculo,
+        status: users.status,
       })
       .from(users)
       .leftJoin(departamentos, eq(users.departamentoId, departamentos.id))
@@ -434,7 +435,6 @@ export const funcoesOrganizacionaisRouter = router({
           funcoesOrganizacionais.id,
         ),
       )
-      .where(eq(users.status, "ativo"))
       .orderBy(asc(departamentos.nome), asc(users.name));
   }),
 
@@ -462,10 +462,10 @@ export const funcoesOrganizacionaisRouter = router({
             .limit(1)
         )[0];
 
-        if (!usuario || usuario.status !== "ativo") {
+        if (!usuario) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Empregado ativo não encontrado.",
+            message: "Empregado não encontrado.",
           });
         }
 
