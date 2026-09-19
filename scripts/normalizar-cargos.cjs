@@ -94,7 +94,10 @@ async function lerContagens(connection) {
       ORDER BY cargo`,
   );
   const contagens = new Map();
-  for (const row of rows) contagens.set(row.cargo, toCount(row.quantidade));
+  for (const row of rows) {
+    const cargo = String(row.cargo ?? "").trim();
+    contagens.set(cargo, (contagens.get(cargo) ?? 0) + toCount(row.quantidade));
+  }
   return contagens;
 }
 
@@ -207,15 +210,17 @@ async function apply(connection) {
     const [users] = await connection.query("SELECT id, cargo FROM users FOR UPDATE");
 
     for (const user of users) {
-      const novo = MAPA.get(user.cargo);
-      if (!novo) throw new Error(`Cargo sem mapeamento durante aplicação: ${user.cargo}`);
-      if (novo === user.cargo) continue;
+      const cargoAtual = String(user.cargo ?? "");
+      const cargoNormalizado = cargoAtual.trim();
+      const novo = MAPA.get(cargoNormalizado);
+      if (!novo) throw new Error(`Cargo sem mapeamento durante aplicação: ${cargoAtual}`);
+      if (novo === cargoAtual) continue;
 
       await connection.query(
         `INSERT INTO cargo_normalizacao_backup
           (operation_id, user_id, cargo_anterior, cargo_novo)
          VALUES (?, ?, ?, ?)`,
-        [operationId, user.id, user.cargo, novo],
+        [operationId, user.id, cargoAtual, novo],
       );
       await connection.query("UPDATE users SET cargo = ? WHERE id = ?", [novo, user.id]);
     }
