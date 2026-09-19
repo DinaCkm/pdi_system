@@ -137,14 +137,45 @@ export default function ImportarEixosAvaliacoes() {
   const [validacao, setValidacao] = useState<any>(null);
   const [resultado, setResultado] = useState<any>(null);
   const [avaliacaoId, setAvaliacaoId] = useState<number | null>(null);
+  const [novoAnoAvaliacao, setNovoAnoAvaliacao] = useState<"2024" | "2025">("2024");
+  const [novoCicloId, setNovoCicloId] = useState<number | null>(null);
   const [substituir, setSubstituir] = useState(false);
   const [confirmado, setConfirmado] = useState(false);
-  const avaliacoesQuery = (trpc as any).avaliacoes.listar.useQuery({ tipo: "DESEMPENHO" }, { refetchOnWindowFocus: false });
+  const avaliacoesApi = (trpc as any).avaliacoes;
+  const avaliacoesQuery = avaliacoesApi.listar.useQuery({ tipo: "DESEMPENHO" }, { refetchOnWindowFocus: false });
+  const ciclosQuery = (trpc as any).ciclos.list.useQuery(undefined, { refetchOnWindowFocus: false });
   const avaliacoesDisponiveis = useMemo(() => (avaliacoesQuery.data ?? []).filter((item: any) => ["RASCUNHO", "EM_CONFERENCIA"].includes(item.status)), [avaliacoesQuery.data]);
   const validarTecnicos = api.validarTecnicos.useMutation();
   const validarComportamentais = api.validarComportamentais.useMutation();
   const importarTecnicos = api.importarTecnicos.useMutation();
   const importarComportamentais = api.importarComportamentais.useMutation();
+  const criarAvaliacaoDesempenho = avaliacoesApi.criarRascunho.useMutation({
+    onSuccess: async (resultado: any) => {
+      await avaliacoesQuery.refetch();
+      setAvaliacaoId(Number(resultado.id));
+      setErroLeitura("");
+    },
+    onError: (error: any) => {
+      setErroLeitura(error?.message || "Não foi possível criar a Avaliação de Desempenho.");
+    },
+  });
+
+  const criarAvaliacao = async () => {
+    if (!novoCicloId) {
+      setErroLeitura("Selecione o ciclo antes de criar a Avaliação de Desempenho.");
+      return;
+    }
+    setErroLeitura("");
+    await criarAvaliacaoDesempenho.mutateAsync({
+      cicloId: novoCicloId,
+      tipo: "DESEMPENHO",
+      titulo: `Avaliação de Desempenho ${novoAnoAvaliacao}`,
+      descricao: `Base comportamental histórica ${novoAnoAvaliacao} para comparação de evolução do PDI.`,
+      dataReferencia: `${novoAnoAvaliacao}-12-31`,
+      origem: "IMPORTACAO",
+      observacoes: "Criada pela área de upload para receber dados históricos previamente validados.",
+    });
+  };
 
   const limpar = (novoTipo = tipo) => {
     setTipo(novoTipo); setArquivo(null); setLinhas([]); setErroLeitura(""); setValidacao(null);
@@ -211,11 +242,39 @@ export default function ImportarEixosAvaliacoes() {
         <Card><CardHeader><CardTitle>2. Prepare e selecione a planilha</CardTitle><CardDescription>
           {tipo === "TECNICA" ? "A matriz consolidada já é aceita; títulos explicativos acima do cabeçalho podem ser mantidos." : "Selecione uma Avaliação de Desempenho aberta e use a planilha-modelo."}
         </CardDescription></CardHeader><CardContent className="space-y-4">
-          {tipo === "COMPORTAMENTAL" && <label className="block space-y-2 text-sm font-medium">Avaliação de Desempenho
-            <select value={avaliacaoId ?? ""} onChange={event => setAvaliacaoId(event.target.value ? Number(event.target.value) : null)} className="h-10 w-full rounded-md border bg-background px-3 font-normal">
-              <option value="">Selecione</option>{avaliacoesDisponiveis.map((item: any) => <option key={item.id} value={item.id}>{item.titulo} — {item.status === "RASCUNHO" ? "Rascunho" : "Em conferência"}</option>)}
-            </select>
-          </label>}
+          {tipo === "COMPORTAMENTAL" && <div className="space-y-4">
+            <label className="block space-y-2 text-sm font-medium">Avaliação de Desempenho
+              <select value={avaliacaoId ?? ""} onChange={event => setAvaliacaoId(event.target.value ? Number(event.target.value) : null)} className="h-10 w-full rounded-md border bg-background px-3 font-normal">
+                <option value="">Selecione</option>
+                {avaliacoesDisponiveis.map((item: any) => <option key={item.id} value={item.id}>{item.titulo} — {item.status === "RASCUNHO" ? "Rascunho" : "Em conferência"}</option>)}
+              </select>
+            </label>
+
+            <div className="rounded-md border bg-muted/20 p-4 space-y-3">
+              <div>
+                <p className="text-sm font-semibold">Não encontrou a avaliação de 2024 ou 2025?</p>
+                <p className="text-xs text-muted-foreground">Crie o registro-base aqui. Ele serve somente como destino do upload; a validação da planilha continua obrigatória antes da gravação.</p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="space-y-1.5 text-sm font-medium">Ano
+                  <select value={novoAnoAvaliacao} onChange={event => setNovoAnoAvaliacao(event.target.value as "2024" | "2025")} className="h-10 w-full rounded-md border bg-background px-3 font-normal">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                  </select>
+                </label>
+                <label className="space-y-1.5 text-sm font-medium">Ciclo do PDI
+                  <select value={novoCicloId ?? ""} onChange={event => setNovoCicloId(event.target.value ? Number(event.target.value) : null)} className="h-10 w-full rounded-md border bg-background px-3 font-normal">
+                    <option value="">Selecione o ciclo</option>
+                    {(ciclosQuery.data ?? []).map((ciclo: any) => <option key={ciclo.id} value={ciclo.id}>{ciclo.nome} — {String(ciclo.dataInicio).slice(0, 10)} a {String(ciclo.dataFim).slice(0, 10)}</option>)}
+                  </select>
+                </label>
+              </div>
+              <Button type="button" variant="outline" onClick={criarAvaliacao} disabled={!novoCicloId || criarAvaliacaoDesempenho.isPending}>
+                {criarAvaliacaoDesempenho.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Criar e selecionar Avaliação de Desempenho {novoAnoAvaliacao}
+              </Button>
+            </div>
+          </div>}
           <a href={tipo === "TECNICA" ? "/templates/modelo_importacao_eixos_tecnicos.csv" : "/templates/modelo_importacao_eixos_comportamentais.csv"} download className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 underline"><Download className="h-4 w-4" />Baixar planilha-modelo</a>
           <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-5 text-center">
             <Upload className="mb-2 h-7 w-7 text-muted-foreground" /><span className="font-medium">{arquivo?.name || "Selecionar Excel ou CSV"}</span>
