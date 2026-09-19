@@ -38,6 +38,21 @@ type UsuarioImportacao = { id: number; nome: string; email: string | null; cpf: 
 type ErroImportacao = { linha: number; campo: string; mensagem: string };
 type AvisoImportacao = { linha: number; mensagem: string };
 
+const COMPETENCIAS_COMPORTAMENTAIS_PADRAO = [
+  "Protagonismo Colaborativo",
+  "Comunicação Eficaz",
+  "Olhar Empreendedor",
+  "Orientação para Resultados",
+  "Tomada de Decisão",
+  "Relacionamento Interpessoal",
+  "Orientação à Inovação",
+  "Foco no Cliente",
+  "Atuação Colaborativa",
+  "Liderança Transformadora",
+  "Gestão de Pessoas",
+] as const;
+
+
 function rowsOf<T>(result: any): T[] {
   if (Array.isArray(result?.[0])) return result[0] as T[];
   if (Array.isArray(result)) return result as T[];
@@ -180,6 +195,29 @@ async function validarComportamentais(db: any, avaliacaoId: number, linhas: Linh
 }
 
 export const importacaoEixosRouter = router({
+  prepararCatalogoComportamental: adminProcedure.mutation(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco de dados indisponível." });
+
+    const descricao = "Competência comportamental utilizada na Avaliação de Desempenho para acompanhamento da evolução no PDI.";
+    let preparados = 0;
+
+    await db.transaction(async (tx: any) => {
+      for (const nome of COMPETENCIAS_COMPORTAMENTAIS_PADRAO) {
+        await tx.execute(sql`INSERT INTO competencias_macros (nome, descricao, ativo)
+          VALUES (${nome}, ${descricao}, 1)
+          ON DUPLICATE KEY UPDATE ativo = 1`);
+        preparados++;
+      }
+    });
+
+    return {
+      sucesso: true,
+      preparados,
+      competencias: [...COMPETENCIAS_COMPORTAMENTAIS_PADRAO],
+    };
+  }),
+
   validarTecnicos: adminProcedure.input(z.object({ linhas: z.array(linhaTecnicaSchema).min(1).max(10000) })).mutation(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco de dados indisponível." });
