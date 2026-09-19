@@ -16,6 +16,23 @@ function rowsOf<T>(result: any): T[] {
   return [];
 }
 
+function normalizarNome(valor: unknown) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function parseResultadoProficiencia(valor: unknown) {
+  try {
+    return JSON.parse(String(valor ?? "{}"));
+  } catch {
+    return { porEixo: [], percentualGeral: 0 };
+  }
+}
+
 async function dbObrigatorio() {
   const db = await getDb();
   if (!db) {
@@ -119,19 +136,65 @@ export const bloco1CompetenciasFuncaoRouter = router({
 
       const linhasTecnicas = rowsOf<any>(matrizResult);
       const matrizBase = linhasTecnicas[0] ?? null;
+      const resultadoTecnicoResult = await db.execute(sql`
+        SELECT rp.resultado_json AS resultadoJson, rp.percentual_geral AS percentualGeral,
+               rp.calculado_em AS calculadoEm, a.titulo AS aplicacaoTitulo
+          FROM resultados_proficiencia rp
+          JOIN aplicacoes_proficiencia a ON a.id = rp.aplicacao_id
+         WHERE rp.colaborador_id = ${input.colaboradorId}
+         ORDER BY rp.calculado_em DESC, rp.id DESC
+         LIMIT 1
+      `);
+      const resultadoTecnicoLinha = rowsOf<any>(resultadoTecnicoResult)[0] ?? null;
+      const resultadoTecnico = resultadoTecnicoLinha
+        ? parseResultadoProficiencia(resultadoTecnicoLinha.resultadoJson)
+        : { porEixo: [] };
+
+      const tecnicoAtualPorNome = new Map<string, any>();
+      for (const eixo of resultadoTecnico.porEixo ?? []) {
+        tecnicoAtualPorNome.set(normalizarNome(eixo.eixo), eixo);
+      }
+
       const tecnicas = linhasTecnicas
         .filter((linha) => linha.eixoRegistroId)
-        .map((linha) => ({
-          eixoRegistroId: Number(linha.eixoRegistroId),
-          eixoId: String(linha.eixoId),
-          eixoNome: String(linha.eixoNome),
-          classificacao: String(linha.relacao),
-          percentualAnterior:
-            linha.percentualAnterior === null ? null : Number(linha.percentualAnterior),
-          fonte:
-            matrizBase?.matrizFonte ||
-            "Questionário individual de levantamento das atividades",
-        }));
+        .map((linha) => {
+          const atual = tecnicoAtualPorNome.get(normalizarNome(linha.eixoNome));
+          const percentualAnterior =
+            linha.percentualAnterior === null ? null : Number(linha.percentualAnterior);
+          const percentualAtual =
+            atual?.percentualAtual === null || atual?.percentualAtual === undefined
+              ? null
+              : Number(atual.percentualAtual);
+          const evolucaoPp =
+            percentualAnterior === null || percentualAtual === null
+              ? null
+              : Math.round((percentualAtual - percentualAnterior) * 10) / 10;
+
+          return {
+            eixoRegistroId: Number(linha.eixoRegistroId),
+            eixoId: String(linha.eixoId),
+            eixoNome: String(linha.eixoNome),
+            classificacao: String(linha.relacao),
+            percentualAnterior,
+            percentualAtual,
+            evolucaoPp,
+            comparavel: percentualAnterior !== null && percentualAtual !== null,
+            evolucao:
+              evolucaoPp === null
+                ? "SEM_COMPARACAO"
+                : evolucaoPp > 0
+                  ? "EVOLUCAO"
+                  : evolucaoPp < 0
+                    ? "REDUCAO"
+                    : "ESTABILIDADE",
+            criarNovaAcaoPdi: evolucaoPp !== null && evolucaoPp <= 0,
+            acertos: atual?.acertos ?? null,
+            totalQuestoes: atual?.totalQuestoes ?? null,
+            fonte:
+              matrizBase?.matrizFonte ||
+              "Questionário individual de levantamento das atividades",
+          };
+        });
 
       const comportamentais = await db
         .select({
@@ -177,7 +240,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
           .map((valor) => String(valor));
 
         for (const candidato of candidatos) {
-          const encontrado = candidato.match(/\\b(2024|2025)\\b/);
+          const encontrado = candidato.match(/\b(2024|2025)\b/);
           if (encontrado) return Number(encontrado[1]);
         }
 
@@ -278,6 +341,8 @@ export const bloco1CompetenciasFuncaoRouter = router({
           fonte:
             matrizBase?.matrizFonte ||
             "Questionário individual de levantamento das atividades",
+          aplicacaoAtual: resultadoTecnicoLinha?.aplicacaoTitulo ?? null,
+          calculadoEm: resultadoTecnicoLinha?.calculadoEm ?? null,
           competencias: tecnicas,
         },
         comportamental: {

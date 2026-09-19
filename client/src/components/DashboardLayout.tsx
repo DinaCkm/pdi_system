@@ -79,7 +79,7 @@ const getMenuItems = (userRole: string) => {
       { icon: Users, label: "Usuários", path: "/usuarios", section: "pessoas" },
       { icon: Building2, label: "Departamentos", path: "/departamentos", section: "pessoas" },
       { icon: Target, label: "Funções Organizacionais", path: "/funcoes-organizacionais", section: "pessoas" },
-      { icon: ClipboardCheck, label: "Bloco 1 — Competências Individuais", path: "/bloco1-competencias-funcao", section: "pessoas" },
+      { icon: TrendingUp, label: "Evolução Individual", path: "/bloco1-competencias-funcao", section: "desenvolvimento" },
       { icon: Lock, label: "Controle de Execução do PDI", path: "/controle-execucao", section: "pessoas" },
 
       { icon: TrendingUp, label: "Análise de Liderança", path: "/analise-lideranca", section: "acompanhamento" },
