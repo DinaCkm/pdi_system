@@ -13,6 +13,7 @@ import { visaoExecutivaRouter } from "./routers/visaoExecutiva";
 import { pdiAjustesRouter } from "./routers/pdi-ajustes.router";
 import { systemLockRouter } from "./routers/systemLock";
 import { importacaoEixosRouter } from "./routers/importacaoEixos";
+import { diagnosticoCargosRouter } from "./routers/diagnosticoCargos";
 import { invokeLLM } from "./_core/llm";
 import { generatePasswordResetToken, generateTemporaryPassword, hashPassword } from "./_core/password";
 import { ENV } from "./_core/env";
@@ -26,6 +27,7 @@ export const appRouter = router({
   system: systemRouter,
   systemLock: systemLockRouter,
   importacaoEixos: importacaoEixosRouter,
+  diagnosticoCargos: diagnosticoCargosRouter,
   auth: authRouter, // <--- AQUI ESTÁ A MÁGICA DO LOGIN
   pdiAjustes: pdiAjustesRouter,
   notifications: notificationsRouter,

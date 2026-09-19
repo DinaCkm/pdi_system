@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dry-run de Cargos</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 32px; background: #fafafa; color: #111; }
+    main { max-width: 920px; margin: 0 auto; background: #fff; padding: 28px; border: 1px solid #ddd; border-radius: 12px; }
+    h1 { margin-top: 0; }
+    .ok { color: #166534; }
+    .erro { color: #991b1b; white-space: pre-wrap; }
+    .aviso { background: #f5f5f5; border-left: 4px solid #666; padding: 12px 16px; margin: 16px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+    th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; }
+    th { background: #f4f4f4; }
+    pre { background: #111; color: #eee; padding: 16px; border-radius: 8px; overflow: auto; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Dry-run da Normalização de Cargos</h1>
+  <p>Esta página executa apenas leitura. Nenhum usuário é alterado.</p>
+  <div class="aviso">A consulta é restrita a administrador e compara o cadastro atual com o DE → PARA aprovado.</div>
+  <p id="status">Executando conferência...</p>
+  <section id="conteudo" hidden>
+    <h2>Resumo</h2>
+    <table id="resumo"></table>
+    <h2>Distribuição final prevista</h2>
+    <table id="distribuicao"></table>
+    <h2>Divergências</h2>
+    <pre id="json"></pre>
+  </section>
+</main>
+<script>
+  const byId = (id) => document.getElementById(id);
+
+  async function executar() {
+    try {
+      const input = encodeURIComponent(JSON.stringify({ json: null }));
+      const response = await fetch('/api/trpc/diagnosticoCargos.dryRun?input=' + input, {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' },
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        const mensagem = body?.error?.json?.message || body?.error?.message || ('HTTP ' + response.status);
+        throw new Error(mensagem);
+      }
+      const data = body?.result?.data;
+      const resultado = data && Object.prototype.hasOwnProperty.call(data, 'json') ? data.json : data;
+
+      const resumo = {
+        modo: resultado.modo,
+        totalUsuarios: resultado.totalUsuarios,
+        snapshotAprovado: resultado.snapshotAprovado,
+        totalUsuariosMapeados: resultado.totalUsuariosMapeados,
+        usuariosQueMudariamCargo: resultado.usuariosQueMudariamCargo,
+        usuariosQuePermaneceriamComMesmoTexto: resultado.usuariosQuePermaneceriamComMesmoTexto,
+        distribuicaoFinalConfere: resultado.distribuicaoFinalConfere,
+        gravacaoExecutada: resultado.gravacaoExecutada,
+      };
+
+      const resumoEl = byId('resumo');
+      resumoEl.innerHTML = '<tr><th>Indicador</th><th>Valor</th></tr>' +
+        Object.entries(resumo).map(([k,v]) => '<tr><td>' + k + '</td><td>' + String(v) + '</td></tr>').join('');
+
+      const distEl = byId('distribuicao');
+      distEl.innerHTML = '<tr><th>Cargo padronizado</th><th>Quantidade</th></tr>' +
+        Object.entries(resultado.distribuicaoFinalPrevista || {}).map(([k,v]) => '<tr><td>' + k + '</td><td>' + String(v) + '</td></tr>').join('');
+
+      byId('json').textContent = JSON.stringify({
+        divergenciasSnapshot: resultado.divergenciasSnapshot,
+        cargosNaoMapeados: resultado.cargosNaoMapeados,
+        divergenciasDistribuicaoFinal: resultado.divergenciasDistribuicaoFinal,
+        destinosNaoPrevistos: resultado.destinosNaoPrevistos,
+      }, null, 2);
+
+      const aprovado = resultado.snapshotAprovado && resultado.distribuicaoFinalConfere && resultado.gravacaoExecutada === false;
+      byId('status').textContent = aprovado
+        ? 'Dry-run concluído com sucesso. Nenhum dado foi alterado.'
+        : 'Dry-run concluído com divergências. Nenhum dado foi alterado.';
+      byId('status').className = aprovado ? 'ok' : 'erro';
+      byId('conteudo').hidden = false;
+    } catch (error) {
+      byId('status').textContent = 'Não foi possível executar o dry-run: ' + error.message;
+      byId('status').className = 'erro';
+    }
+  }
+
+  executar();
+</script>
+</body>
+</html>
