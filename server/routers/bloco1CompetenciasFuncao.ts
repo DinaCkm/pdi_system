@@ -1,172 +1,205 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
+import { avaliacoes, medicoesCompetencias } from "../../drizzle/avaliacoes-schema";
+import { competenciasMacros, departamentos, users } from "../../drizzle/schema";
 import {
-  competenciasOrganizacionais,
-  competenciasRequeridasFuncao,
   funcoesOrganizacionais,
-  organizacoes,
+  usuariosFuncoesOrganizacionais,
 } from "../../drizzle/comportamental-schema";
+
+function rowsOf<T>(result: any): T[] {
+  if (Array.isArray(result?.[0])) return result[0] as T[];
+  if (Array.isArray(result)) return result as T[];
+  return [];
+}
 
 async function dbObrigatorio() {
   const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco de dados indisponível." });
+  if (!db) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Banco de dados indisponível.",
+    });
+  }
   return db;
 }
 
 export const bloco1CompetenciasFuncaoRouter = router({
-  funcoes: adminProcedure.query(async () => {
+  empregados: adminProcedure.query(async () => {
     const db = await dbObrigatorio();
-    return db.select({
-      id: funcoesOrganizacionais.id,
-      nome: funcoesOrganizacionais.nome,
-      cargoReferencia: funcoesOrganizacionais.cargoReferencia,
-      organizacaoId: funcoesOrganizacionais.organizacaoId,
-      organizacaoNome: organizacoes.nome,
-    })
-      .from(funcoesOrganizacionais)
-      .innerJoin(organizacoes, eq(funcoesOrganizacionais.organizacaoId, organizacoes.id))
-      .where(eq(funcoesOrganizacionais.ativa, true))
-      .orderBy(asc(funcoesOrganizacionais.nome));
+
+    return db
+      .select({
+        id: users.id,
+        nome: users.name,
+        cargo: users.cargo,
+        departamentoId: users.departamentoId,
+        departamentoNome: departamentos.nome,
+        funcaoOrganizacionalId: usuariosFuncoesOrganizacionais.funcaoOrganizacionalId,
+        funcaoNome: funcoesOrganizacionais.nome,
+        status: users.status,
+      })
+      .from(users)
+      .leftJoin(departamentos, eq(users.departamentoId, departamentos.id))
+      .leftJoin(
+        usuariosFuncoesOrganizacionais,
+        and(
+          eq(usuariosFuncoesOrganizacionais.usuarioId, users.id),
+          eq(usuariosFuncoesOrganizacionais.tipoVinculo, "PRINCIPAL"),
+          eq(usuariosFuncoesOrganizacionais.ativo, true),
+        ),
+      )
+      .leftJoin(
+        funcoesOrganizacionais,
+        eq(
+          usuariosFuncoesOrganizacionais.funcaoOrganizacionalId,
+          funcoesOrganizacionais.id,
+        ),
+      )
+      .orderBy(users.name);
   }),
 
-  competencias: adminProcedure
-    .input(z.object({ organizacaoId: z.number().int().positive() }))
+  mapaIndividual: adminProcedure
+    .input(z.object({ colaboradorId: z.number().int().positive() }))
     .query(async ({ input }) => {
       const db = await dbObrigatorio();
-      return db.select({
-        id: competenciasOrganizacionais.id,
-        nome: competenciasOrganizacionais.nome,
-        descricao: competenciasOrganizacionais.descricao,
-      })
-        .from(competenciasOrganizacionais)
-        .where(and(
-          eq(competenciasOrganizacionais.organizacaoId, input.organizacaoId),
-          eq(competenciasOrganizacionais.ativa, true),
-        ))
-        .orderBy(asc(competenciasOrganizacionais.nome));
-    }),
 
-  requisitos: adminProcedure
-    .input(z.object({ funcaoOrganizacionalId: z.number().int().positive() }))
-    .query(async ({ input }) => {
-      const db = await dbObrigatorio();
-      return db.select({
-        id: competenciasRequeridasFuncao.id,
-        competenciaOrganizacionalId: competenciasRequeridasFuncao.competenciaOrganizacionalId,
-        competenciaNome: competenciasOrganizacionais.nome,
-        classificacaoFuncao: competenciasRequeridasFuncao.classificacaoFuncao,
-        justificativa: competenciasRequeridasFuncao.justificativa,
-        nivelResponsabilidade: competenciasRequeridasFuncao.nivelResponsabilidade,
-      })
-        .from(competenciasRequeridasFuncao)
-        .innerJoin(
-          competenciasOrganizacionais,
-          eq(competenciasRequeridasFuncao.competenciaOrganizacionalId, competenciasOrganizacionais.id),
-        )
-        .where(and(
-          eq(competenciasRequeridasFuncao.funcaoOrganizacionalId, input.funcaoOrganizacionalId),
-          eq(competenciasRequeridasFuncao.ativa, true),
-        ))
-        .orderBy(asc(competenciasOrganizacionais.nome));
-    }),
+      const empregado = (
+        await db
+          .select({
+            id: users.id,
+            nome: users.name,
+            cargo: users.cargo,
+            departamentoNome: departamentos.nome,
+            funcaoOrganizacionalId: usuariosFuncoesOrganizacionais.funcaoOrganizacionalId,
+            funcaoNome: funcoesOrganizacionais.nome,
+          })
+          .from(users)
+          .leftJoin(departamentos, eq(users.departamentoId, departamentos.id))
+          .leftJoin(
+            usuariosFuncoesOrganizacionais,
+            and(
+              eq(usuariosFuncoesOrganizacionais.usuarioId, users.id),
+              eq(usuariosFuncoesOrganizacionais.tipoVinculo, "PRINCIPAL"),
+              eq(usuariosFuncoesOrganizacionais.ativo, true),
+            ),
+          )
+          .leftJoin(
+            funcoesOrganizacionais,
+            eq(
+              usuariosFuncoesOrganizacionais.funcaoOrganizacionalId,
+              funcoesOrganizacionais.id,
+            ),
+          )
+          .where(eq(users.id, input.colaboradorId))
+          .limit(1)
+      )[0];
 
-  salvarRequisito: adminProcedure
-    .input(z.object({
-      funcaoOrganizacionalId: z.number().int().positive(),
-      competenciaOrganizacionalId: z.number().int().positive(),
-      classificacaoFuncao: z.enum(["ESSENCIAL_FUNCAO", "TRANSVERSAL_FUNCAO"]),
-      nivelResponsabilidade: z.enum([
-        "EXECUTA_COM_ORIENTACAO",
-        "EXECUTA_COM_AUTONOMIA",
-        "ANALISA_RECOMENDA",
-        "DECIDE",
-        "COORDENA",
-        "RESPONDE_PELO_RESULTADO",
-      ]).optional().nullable(),
-      justificativa: z.string().trim().max(5000).optional().nullable(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      const db = await dbObrigatorio();
-      const hoje = new Date().toISOString().slice(0, 10);
-
-      return db.transaction(async tx => {
-        const funcao = (await tx.select({
-          id: funcoesOrganizacionais.id,
-          nome: funcoesOrganizacionais.nome,
-          organizacaoId: funcoesOrganizacionais.organizacaoId,
-          ativa: funcoesOrganizacionais.ativa,
-        }).from(funcoesOrganizacionais)
-          .where(eq(funcoesOrganizacionais.id, input.funcaoOrganizacionalId))
-          .limit(1))[0];
-
-        if (!funcao?.ativa) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Função organizacional ativa não encontrada." });
-        }
-
-        const competencia = (await tx.select({
-          id: competenciasOrganizacionais.id,
-          organizacaoId: competenciasOrganizacionais.organizacaoId,
-          ativa: competenciasOrganizacionais.ativa,
-        }).from(competenciasOrganizacionais)
-          .where(eq(competenciasOrganizacionais.id, input.competenciaOrganizacionalId))
-          .limit(1))[0];
-
-        if (!competencia?.ativa || Number(competencia.organizacaoId) !== Number(funcao.organizacaoId)) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Competência organizacional inválida para esta função." });
-        }
-
-        const existente = (await tx.select({ id: competenciasRequeridasFuncao.id })
-          .from(competenciasRequeridasFuncao)
-          .where(and(
-            eq(competenciasRequeridasFuncao.funcaoOrganizacionalId, input.funcaoOrganizacionalId),
-            eq(competenciasRequeridasFuncao.competenciaOrganizacionalId, input.competenciaOrganizacionalId),
-          ))
-          .limit(1))[0];
-
-        const dados = {
-          classificacaoFuncao: input.classificacaoFuncao,
-          nivelResponsabilidade: input.nivelResponsabilidade ?? null,
-          justificativa: input.justificativa ?? null,
-          origem: "VALIDACAO_ADMIN" as const,
-          validada: true,
-          validadaPor: Number(ctx.user.id),
-          validadaEm: new Date().toISOString().slice(0, 19).replace("T", " "),
-          ativa: true,
-          vigenciaFim: null,
-        };
-
-        if (existente) {
-          await tx.update(competenciasRequeridasFuncao)
-            .set(dados)
-            .where(eq(competenciasRequeridasFuncao.id, existente.id));
-          return { success: true, id: existente.id, operacao: "ATUALIZADO" as const };
-        }
-
-        await tx.insert(competenciasRequeridasFuncao).values({
-          organizacaoId: funcao.organizacaoId,
-          departamentoId: null,
-          funcaoOrganizacionalId: funcao.id,
-          cargoFuncao: funcao.nome,
-          competenciaOrganizacionalId: input.competenciaOrganizacionalId,
-          ...dados,
-          versao: 1,
-          vigenciaInicio: hoje,
+      if (!empregado) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Empregado não encontrado.",
         });
+      }
 
-        return { success: true, operacao: "CRIADO" as const };
-      });
-    }),
+      const matrizResult = await db.execute(
+        sql.raw(
+          "SELECT m.id AS matrizId, m.status AS matrizStatus, m.fonte AS matrizFonte, " +
+          "e.id AS eixoRegistroId, e.eixo_id AS eixoId, e.eixo_nome AS eixoNome, " +
+          "e.relacao, e.percentual_anterior AS percentualAnterior " +
+          "FROM prova_utic_matrizes m " +
+          "LEFT JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id " +
+          "WHERE m.colaborador_id = " + Number(input.colaboradorId) + " " +
+          "ORDER BY e.id",
+        ),
+      );
 
-  removerRequisito: adminProcedure
-    .input(z.object({ id: z.number().int().positive() }))
-    .mutation(async ({ input }) => {
-      const db = await dbObrigatorio();
-      await db.update(competenciasRequeridasFuncao)
-        .set({ ativa: false, vigenciaFim: new Date().toISOString().slice(0, 10) })
-        .where(eq(competenciasRequeridasFuncao.id, input.id));
-      return { success: true };
+      const linhasTecnicas = rowsOf<any>(matrizResult);
+      const matrizBase = linhasTecnicas[0] ?? null;
+      const tecnicas = linhasTecnicas
+        .filter((linha) => linha.eixoRegistroId)
+        .map((linha) => ({
+          eixoRegistroId: Number(linha.eixoRegistroId),
+          eixoId: String(linha.eixoId),
+          eixoNome: String(linha.eixoNome),
+          classificacao: String(linha.relacao),
+          percentualAnterior:
+            linha.percentualAnterior === null ? null : Number(linha.percentualAnterior),
+          fonte:
+            matrizBase?.matrizFonte ||
+            "Questionário individual de levantamento das atividades",
+        }));
+
+      const comportamentais = await db
+        .select({
+          medicaoId: medicoesCompetencias.id,
+          avaliacaoId: avaliacoes.id,
+          avaliacaoTitulo: avaliacoes.titulo,
+          dataReferencia: avaliacoes.dataReferencia,
+          competenciaMacroId: medicoesCompetencias.competenciaMacroId,
+          competenciaNome: competenciasMacros.nome,
+          valor: medicoesCompetencias.valor,
+          escalaMin: medicoesCompetencias.escalaMin,
+          escalaMax: medicoesCompetencias.escalaMax,
+          classificacaoResultado: medicoesCompetencias.classificacao,
+          observacao: medicoesCompetencias.observacao,
+          validada: medicoesCompetencias.validada,
+        })
+        .from(medicoesCompetencias)
+        .innerJoin(avaliacoes, eq(medicoesCompetencias.avaliacaoId, avaliacoes.id))
+        .leftJoin(
+          competenciasMacros,
+          eq(medicoesCompetencias.competenciaMacroId, competenciasMacros.id),
+        )
+        .where(
+          and(
+            eq(medicoesCompetencias.colaboradorId, input.colaboradorId),
+            eq(medicoesCompetencias.tipoCompetencia, "COMPORTAMENTAL"),
+            eq(medicoesCompetencias.fonte, "AVALIACAO_DESEMPENHO"),
+          ),
+        )
+        .orderBy(desc(avaliacoes.dataReferencia), desc(medicoesCompetencias.id));
+
+      const ultimaMedicaoPorCompetencia = new Map<number, any>();
+      for (const item of comportamentais) {
+        const chave = Number(item.competenciaMacroId);
+        if (!ultimaMedicaoPorCompetencia.has(chave)) {
+          ultimaMedicaoPorCompetencia.set(chave, item);
+        }
+      }
+
+      return {
+        empregado,
+        tecnico: {
+          matrizId: matrizBase?.matrizId ? Number(matrizBase.matrizId) : null,
+          status: matrizBase?.matrizStatus ?? null,
+          fonte:
+            matrizBase?.matrizFonte ||
+            "Questionário individual de levantamento das atividades",
+          competencias: tecnicas,
+        },
+        comportamental: {
+          fonte: "Avaliação de Desempenho",
+          competencias: Array.from(ultimaMedicaoPorCompetencia.values()).map(
+            (item: any) => ({
+              medicaoId: Number(item.medicaoId),
+              avaliacaoId: Number(item.avaliacaoId),
+              avaliacaoTitulo: item.avaliacaoTitulo,
+              dataReferencia: item.dataReferencia,
+              competenciaMacroId: Number(item.competenciaMacroId),
+              competenciaNome: item.competenciaNome,
+              valor: Number(item.valor),
+              escalaMin: Number(item.escalaMin),
+              escalaMax: Number(item.escalaMax),
+              classificacaoResultado: item.classificacaoResultado,
+              observacao: item.observacao,
+              validada: Boolean(item.validada),
+            }),
+          ),
+        },
+      };
     }),
 });
