@@ -177,7 +177,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
           .map((valor) => String(valor));
 
         for (const candidato of candidatos) {
-          const encontrado = candidato.match(/\\b(2024|2025)\\b/);
+          const encontrado = candidato.match(/\b(2024|2025)\b/);
           if (encontrado) return Number(encontrado[1]);
         }
 
