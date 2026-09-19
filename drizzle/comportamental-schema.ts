@@ -106,7 +106,7 @@ export const usuariosFuncoesOrganizacionais = mysqlTable(
     funcaoOrganizacionalId: int("funcao_organizacional_id")
       .notNull()
       .references(() => funcoesOrganizacionais.id, { onDelete: "restrict" }),
-    tipoVinculo: mysqlEnum(["PRINCIPAL", "SECUNDARIA", "TEMPORARIA"])
+    tipoVinculo: mysqlEnum("tipo_vinculo", ["PRINCIPAL", "SECUNDARIA", "TEMPORARIA"])
       .default("PRINCIPAL")
       .notNull(),
     origem: mysqlEnum(["VALIDACAO_ADMIN", "QUESTIONARIO", "IMPORTACAO", "OUTRA"])
