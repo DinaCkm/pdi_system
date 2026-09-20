@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
+import { ensureTechnicalMatrixTables } from "../services/technicalMatrixSchema";
 
 const identificacaoSchema = z.object({
   linha: z.number().int().positive(),
@@ -16,7 +17,7 @@ const identificacaoSchema = z.object({
 const linhaTecnicaSchema = identificacaoSchema.extend({
   eixoId: z.string().trim().max(40).optional().nullable(),
   eixoNome: z.string().trim().min(1).max(255),
-  relacao: z.enum(["ESSENCIAL", "TRANSVERSAL", "NAO_APLICAVEL", "PENDENTE"]),
+  relacao: z.enum(["ESSENCIAL", "TRANSVERSAL", "NAO_ESSENCIAL", "NAO_APLICAVEL", "PENDENTE"]),
   pontuacao: z.number().min(0).max(100).nullable(),
   justificativa: z.string().trim().max(5000).optional().nullable(),
   fonte: z.string().trim().max(5000).optional().nullable(),
@@ -71,47 +72,14 @@ function idEixoPorNome(nome: string) {
   return `EIXO_${createHash("sha256").update(normalizarTexto(nome)).digest("hex").slice(0, 24)}`;
 }
 
-async function ensureMatrizTables() {
-  const db = await getDb();
-  if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco de dados indisponível." });
-  await db.execute(sql.raw(`CREATE TABLE IF NOT EXISTS prova_utic_matrizes (
-    id INT AUTO_INCREMENT PRIMARY KEY, colaborador_id INT NOT NULL,
-    status ENUM('VALIDADA_PROVISORIA','VALIDADA_DEFINITIVA','PENDENTE_HISTORICO') NOT NULL,
-    fonte TEXT NULL, observacao TEXT NULL, atualizado_por INT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_prova_utic_matriz_colaborador (colaborador_id),
-    INDEX idx_prova_utic_matrizes_status (status),
-    CONSTRAINT fk_prova_utic_matrizes_colaborador FOREIGN KEY (colaborador_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_prova_utic_matrizes_atualizado_por FOREIGN KEY (atualizado_por) REFERENCES users(id) ON DELETE RESTRICT
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`));
-  await db.execute(sql.raw(`CREATE TABLE IF NOT EXISTS prova_utic_matriz_eixos (
-    id INT AUTO_INCREMENT PRIMARY KEY, matriz_id INT NOT NULL, eixo_id VARCHAR(40) NOT NULL,
-    eixo_nome VARCHAR(255) NOT NULL,
-    relacao ENUM('ESSENCIAL','TRANSVERSAL','NAO_APLICAVEL','PENDENTE') NOT NULL,
-    percentual_anterior DECIMAL(5,2) NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_prova_utic_matriz_eixo (matriz_id, eixo_id),
-    CONSTRAINT fk_prova_utic_matriz_eixos_matriz FOREIGN KEY (matriz_id) REFERENCES prova_utic_matrizes(id) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`));
-  await db.execute(sql.raw(`CREATE TABLE IF NOT EXISTS prova_utic_matriz_historico (
-    id INT AUTO_INCREMENT PRIMARY KEY, matriz_id INT NOT NULL, eixo_id VARCHAR(40) NULL,
-    valor_anterior TEXT NULL, valor_novo TEXT NOT NULL, motivo VARCHAR(255) NOT NULL,
-    observacao TEXT NULL, alterado_por INT NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_prova_utic_matriz_historico_matriz (matriz_id),
-    CONSTRAINT fk_prova_utic_matriz_historico_matriz FOREIGN KEY (matriz_id) REFERENCES prova_utic_matrizes(id) ON DELETE CASCADE,
-    CONSTRAINT fk_prova_utic_matriz_historico_usuario FOREIGN KEY (alterado_por) REFERENCES users(id) ON DELETE RESTRICT
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`));
-
-  const colunaResult = await db.execute(sql`SELECT COLUMN_TYPE AS columnType FROM information_schema.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'prova_utic_matriz_eixos' AND COLUMN_NAME = 'relacao' LIMIT 1`);
-  const coluna = rowsOf<any>(colunaResult)[0];
-  if (coluna && !String(coluna.columnType ?? "").includes("'PENDENTE'")) {
-    await db.execute(sql.raw("ALTER TABLE prova_utic_matriz_eixos MODIFY COLUMN relacao ENUM('ESSENCIAL','TRANSVERSAL','NAO_APLICAVEL','PENDENTE') NOT NULL"));
+function normalizarRelacaoTecnica(relacao: LinhaTecnica["relacao"]) {
+  if (relacao === "PENDENTE") {
+    return { relacao: null as "ESSENCIAL" | "TRANSVERSAL" | "NAO_ESSENCIAL" | null, statusClassificacao: "PENDENTE" as const };
   }
-  return db;
+  if (relacao === "NAO_APLICAVEL") {
+    return { relacao: "NAO_ESSENCIAL" as const, statusClassificacao: "CLASSIFICADO" as const };
+  }
+  return { relacao, statusClassificacao: "CLASSIFICADO" as const };
 }
 
 async function carregarUsuarios(db: any): Promise<UsuarioImportacao[]> {
@@ -233,7 +201,7 @@ export const importacaoEixosRouter = router({
     linhas: z.array(linhaTecnicaSchema).min(1).max(10000), arquivoNome: z.string().trim().min(1).max(255),
     substituirExistentes: z.boolean().default(false), confirmado: z.literal(true),
   })).mutation(async ({ input, ctx }) => {
-    const db = await ensureMatrizTables();
+    const db = await ensureTechnicalMatrixTables();
     const validacao = validarTecnicas(input.linhas, await carregarUsuarios(db));
     if (validacao.erros.length) throw new TRPCError({ code: "BAD_REQUEST", message: `Importação cancelada: ${validacao.erros.length} erro(s).` });
     let criados = 0, atualizados = 0, ignorados = 0;
@@ -249,18 +217,35 @@ export const importacaoEixosRouter = router({
         const matrizResult = await tx.execute(sql`SELECT id FROM prova_utic_matrizes WHERE colaborador_id = ${usuarioId} LIMIT 1`);
         const matriz = rowsOf<{ id: number }>(matrizResult)[0];
         if (!matriz) throw new Error("Não foi possível preparar a matriz do empregado.");
-        const existentesResult = await tx.execute(sql`SELECT eixo_id AS eixoId, eixo_nome AS eixoNome, relacao, percentual_anterior AS pontuacao FROM prova_utic_matriz_eixos WHERE matriz_id = ${matriz.id}`);
+        const existentesResult = await tx.execute(sql`SELECT eixo_id AS eixoId, eixo_nome AS eixoNome, relacao, status_classificacao AS statusClassificacao, justificativa, percentual_anterior AS pontuacao FROM prova_utic_matriz_eixos WHERE matriz_id = ${matriz.id}`);
         const existentes = rowsOf<any>(existentesResult);
         for (const linha of linhas) {
           const existente = existentes.find(item => (linha.eixoId && item.eixoId === linha.eixoId) || normalizarTexto(item.eixoNome) === normalizarTexto(linha.eixoNome));
           if (existente && !input.substituirExistentes) { ignorados++; continue; }
           const eixoId = existente?.eixoId || linha.eixoId || idEixoPorNome(linha.eixoNome);
-          const valorNovo = { eixo: linha.eixoNome, relacao: linha.relacao, anterior: linha.pontuacao };
+          const classificacao = normalizarRelacaoTecnica(linha.relacao);
+          const valorNovo = {
+            eixo: linha.eixoNome,
+            relacao: classificacao.relacao,
+            statusClassificacao: classificacao.statusClassificacao,
+            justificativa: linha.justificativa ?? null,
+            anterior: linha.pontuacao,
+          };
           if (existente) {
-            await tx.execute(sql`UPDATE prova_utic_matriz_eixos SET eixo_nome = ${linha.eixoNome}, relacao = ${linha.relacao}, percentual_anterior = ${linha.pontuacao}, updated_at = NOW() WHERE matriz_id = ${matriz.id} AND eixo_id = ${eixoId}`);
+            await tx.execute(sql`UPDATE prova_utic_matriz_eixos
+              SET eixo_nome = ${linha.eixoNome},
+                  relacao = ${classificacao.relacao},
+                  status_classificacao = ${classificacao.statusClassificacao},
+                  justificativa = ${linha.justificativa ?? null},
+                  percentual_anterior = ${linha.pontuacao},
+                  updated_at = NOW()
+              WHERE matriz_id = ${matriz.id} AND eixo_id = ${eixoId}`);
             atualizados++;
           } else {
-            await tx.execute(sql`INSERT INTO prova_utic_matriz_eixos (matriz_id, eixo_id, eixo_nome, relacao, percentual_anterior) VALUES (${matriz.id}, ${eixoId}, ${linha.eixoNome}, ${linha.relacao}, ${linha.pontuacao})`);
+            await tx.execute(sql`INSERT INTO prova_utic_matriz_eixos
+              (matriz_id, eixo_id, eixo_nome, relacao, status_classificacao, justificativa, percentual_anterior)
+              VALUES (${matriz.id}, ${eixoId}, ${linha.eixoNome}, ${classificacao.relacao},
+                      ${classificacao.statusClassificacao}, ${linha.justificativa ?? null}, ${linha.pontuacao})`);
             criados++;
           }
           const detalhes = [linha.justificativa, linha.observacao, linha.fonte].filter(Boolean).join("\n\n") || null;
