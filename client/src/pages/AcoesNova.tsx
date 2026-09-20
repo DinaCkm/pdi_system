@@ -3,6 +3,7 @@ import { useLocation, useSearch } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Sparkles, Loader2, Search, ChevronDown, X, Check } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
+import { competenciaADRelacionadaDaMacro } from '../../../shared/competenciasAdRelacionamento';
 
 
 type SubcompetenciaReferencia = {
@@ -480,6 +481,10 @@ const referenciasMetodologicas: Record<string, ReferenciaMetodologica> = {
   }
 };
 
+const aliasesCompetenciasHistoricas: Record<string, string> = {
+  'Atuação Colaborativa': 'COMPORTAMENTAL - Integração Organizacional e Trabalho Interáreas',
+};
+
 export function AcoesNova() {
   const [, navigate] = useLocation();
   const searchString = useSearch(); 
@@ -587,7 +592,10 @@ export function AcoesNova() {
 
   const selectedMacroReference = useMemo(() => {
     if (!selectedMacroName) return null;
-    const nomeNormalizado = selectedMacroName.replace(/^COMPORTAMENTAL\s*-\s*/i, 'COMPORTAMENTAL - ');
+    const nomeSemPrefixo = selectedMacroName.replace(/^COMPORTAMENTAL\s*-\s*/i, '').trim();
+    const aliasAtual = aliasesCompetenciasHistoricas[nomeSemPrefixo];
+    const nomeNormalizado = aliasAtual
+      ?? selectedMacroName.replace(/^COMPORTAMENTAL\s*-\s*/i, 'COMPORTAMENTAL - ');
     return referenciasMetodologicas[nomeNormalizado] ?? null;
   }, [selectedMacroName]);
 
@@ -639,6 +647,7 @@ export function AcoesNova() {
     const urlPdiId = params.get('pdiId');
     const eixo = params.get('eixo');
     const macroId = params.get('macroId');
+    const macroRelacionada = params.get('macroRelacionada');
     const origem = params.get('origem');
     const modo = params.get('modo');
 
@@ -652,11 +661,24 @@ export function AcoesNova() {
     }
 
     if (macroId) setMacroBiblioteca(macroId);
-    if (eixo && !macroId) setEixoBiblioteca(eixo);
+
+    if (macroRelacionada && macros.length > 0) {
+      const macroEncontrada = (macros as any[]).find((macro) =>
+        String(macro.nome ?? '').replace(/^COMPORTAMENTAL\s*-\s*/i, 'COMPORTAMENTAL - ').trim()
+        === macroRelacionada.replace(/^COMPORTAMENTAL\s*-\s*/i, 'COMPORTAMENTAL - ').trim()
+      );
+      if (macroEncontrada) {
+        const macroRelacionadaId = String(macroEncontrada.id);
+        setFormData(prev => ({ ...prev, macroId: macroRelacionadaId }));
+        setMacroBiblioteca(macroRelacionadaId);
+      }
+    }
+
+    if (eixo && !macroId && !macroRelacionada) setEixoBiblioteca(eixo);
     if (modo === "biblioteca" || origem === "evolucao_individual") {
       setModoCriacao("biblioteca");
     }
-  }, [searchString]);
+  }, [searchString, macros]);
   
   const utils = trpc.useUtils();
   
@@ -1234,7 +1256,7 @@ export function AcoesNova() {
                     Competência relacionada na Avaliação de Desempenho
                   </div>
                   <div style={{ marginTop: '4px', fontWeight: 600, color: '#0f172a' }}>
-                    {selectedMacroReference.competenciaAD}
+                    {competenciaADRelacionadaDaMacro(selectedMacroName) || selectedMacroReference.competenciaAD}
                   </div>
                 </div>
               </div>
