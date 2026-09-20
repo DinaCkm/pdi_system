@@ -119,5 +119,25 @@ export async function ensureTechnicalMatrixTables() {
     ));
   }
 
+  await db.execute(sql.raw(`
+    UPDATE prova_utic_matriz_eixos e
+    JOIN (
+      SELECT h1.matriz_id, h1.eixo_id, h1.observacao
+        FROM prova_utic_matriz_historico h1
+        JOIN (
+          SELECT matriz_id, eixo_id, MAX(id) AS max_id
+            FROM prova_utic_matriz_historico
+           WHERE eixo_id IS NOT NULL
+             AND observacao IS NOT NULL
+             AND TRIM(observacao) <> ''
+           GROUP BY matriz_id, eixo_id
+        ) ult ON ult.max_id = h1.id
+    ) hist
+      ON hist.matriz_id = e.matriz_id
+     AND hist.eixo_id = e.eixo_id
+       SET e.justificativa = hist.observacao
+     WHERE (e.justificativa IS NULL OR TRIM(e.justificativa) = '')
+  `));
+
   return db;
 }
