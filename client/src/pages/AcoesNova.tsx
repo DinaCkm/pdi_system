@@ -6,6 +6,7 @@ import RichTextEditor from '@/components/RichTextEditor';
 
 
 type ReferenciaMetodologica = {
+  competenciaAD: string;
   basicas: string[];
   essenciais: string[];
   master: string[];
@@ -13,16 +14,19 @@ type ReferenciaMetodologica = {
 
 const referenciasMetodologicas: Record<string, ReferenciaMetodologica> = {
   'COMPORTAMENTAL - Relacionamento Interpessoal': {
+    competenciaAD: 'COMPORTAMENTAL - Relacionamento Interpessoal',
     basicas: ['Empatia', 'Escuta Ativa', 'Autopercepção'],
     essenciais: ['Comunicação Assertiva', 'Inteligência Emocional'],
     master: ['Relacionamentos Conectivos', 'Gestão de Conflitos', 'Influência'],
   },
   'COMPORTAMENTAL - Comunicação': {
+    competenciaAD: 'COMPORTAMENTAL - Comunicação',
     basicas: ['Escuta Ativa', 'Empatia'],
     essenciais: ['Comunicação Assertiva', 'Inteligência Emocional'],
     master: ['Influência', 'Presença Executiva', 'Negociação'],
   },
   'COMPORTAMENTAL - Atendimento e Relacionamento com o Cliente': {
+    competenciaAD: 'COMPORTAMENTAL - Atendimento e Relacionamento com o Cliente',
     basicas: ['Empatia', 'Escuta Ativa', 'Atenção'],
     essenciais: ['Comunicação Assertiva', 'Inteligência Emocional', 'Proatividade'],
     master: ['Negociação', 'Relacionamentos Conectivos', 'Influência'],
@@ -138,6 +142,14 @@ export function AcoesNova() {
     if (!selectedMacroName) return null;
     return referenciasMetodologicas[selectedMacroName] ?? null;
   }, [selectedMacroName]);
+
+
+  const acoesDisponiveisDaMacro = useMemo(() => {
+    if (!formData.macroId) return [];
+    return (biblioteca as any[]).filter(
+      (modelo) => String(modelo.macroId ?? '') === formData.macroId,
+    );
+  }, [biblioteca, formData.macroId]);
   
   // Fechar dropdowns ao clicar fora
   useEffect(() => {
@@ -752,43 +764,112 @@ export function AcoesNova() {
                 backgroundColor: '#f8fbff',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px',
+                gap: '14px',
               }}
             >
+              <div style={{ fontWeight: 700, color: '#1e3a8a', fontSize: '16px' }}>
+                Referência integrada para criação da ação
+              </div>
+
+              <div style={{ display: 'grid', gap: '10px' }}>
+                <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Macrocompetência
+                  </div>
+                  <div style={{ marginTop: '4px', fontWeight: 600, color: '#0f172a' }}>
+                    {selectedMacroName}
+                  </div>
+                </div>
+
+                <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Competência relacionada na Avaliação de Desempenho
+                  </div>
+                  <div style={{ marginTop: '4px', fontWeight: 600, color: '#0f172a' }}>
+                    {selectedMacroReference.competenciaAD}
+                  </div>
+                </div>
+              </div>
+
               <div>
-                <div style={{ fontWeight: 700, color: '#1e3a8a' }}>
-                  Referência para desenvolver esta competência
+                <div style={{ fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+                  Subcompetências de referência
                 </div>
-                <p style={{ margin: '6px 0 0', fontSize: '14px', color: '#475569', lineHeight: 1.5 }}>
-                  Para desenvolver <strong>{selectedMacroName}</strong>, considere as subcompetências abaixo.
-                  Ao escolher uma ação existente ou criar uma nova ação, utilize este quadro como orientação.
-                  O resultado oficial continuará sendo registrado somente na competência principal.
-                </p>
-              </div>
-
-              <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
-                <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-                  <div style={{ fontWeight: 700, marginBottom: '8px' }}>Básicas</div>
-                  <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
-                    {selectedMacroReference.basicas.map((item) => <li key={item}>{item}</li>)}
-                  </ul>
-                </div>
-                <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-                  <div style={{ fontWeight: 700, marginBottom: '8px' }}>Essenciais</div>
-                  <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
-                    {selectedMacroReference.essenciais.map((item) => <li key={item}>{item}</li>)}
-                  </ul>
-                </div>
-                <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-                  <div style={{ fontWeight: 700, marginBottom: '8px' }}>Master</div>
-                  <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
-                    {selectedMacroReference.master.map((item) => <li key={item}>{item}</li>)}
-                  </ul>
+                <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
+                  <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                    <div style={{ fontWeight: 700, marginBottom: '8px' }}>Básicas</div>
+                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
+                      {selectedMacroReference.basicas.map((item) => <li key={item}>{item}</li>)}
+                    </ul>
+                  </div>
+                  <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                    <div style={{ fontWeight: 700, marginBottom: '8px' }}>Essenciais</div>
+                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
+                      {selectedMacroReference.essenciais.map((item) => <li key={item}>{item}</li>)}
+                    </ul>
+                  </div>
+                  <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                    <div style={{ fontWeight: 700, marginBottom: '8px' }}>Master</div>
+                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
+                      {selectedMacroReference.master.map((item) => <li key={item}>{item}</li>)}
+                    </ul>
+                  </div>
                 </div>
               </div>
 
-              <div style={{ fontSize: '13px', color: '#475569' }}>
-                Você pode criar mais de uma ação para esta mesma competência, usando subcompetências diferentes como foco de desenvolvimento.
+              <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#334155' }}>Ações disponíveis</div>
+                    <div style={{ marginTop: '3px', fontSize: '13px', color: '#64748b' }}>
+                      {acoesDisponiveisDaMacro.length} ação(ões) encontrada(s) na Biblioteca para esta macrocompetência.
+                    </div>
+                  </div>
+                  {acoesDisponiveisDaMacro.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMacroBiblioteca(formData.macroId);
+                        setEixoBiblioteca('');
+                        setModoCriacao('biblioteca');
+                      }}
+                      style={{
+                        padding: '8px 12px',
+                        border: '1px solid #93c5fd',
+                        borderRadius: '6px',
+                        background: '#eff6ff',
+                        color: '#1d4ed8',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Ver ações disponíveis
+                    </button>
+                  )}
+                </div>
+
+                {acoesDisponiveisDaMacro.length > 0 ? (
+                  <ul style={{ margin: '10px 0 0', paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
+                    {acoesDisponiveisDaMacro.slice(0, 5).map((acao: any) => (
+                      <li key={acao.modeloId || `${acao.titulo}-${acao.microcompetencia || ''}`}>
+                        {acao.titulo}
+                        {acao.microcompetencia ? ` — ${acao.microcompetencia}` : ''}
+                      </li>
+                    ))}
+                    {acoesDisponiveisDaMacro.length > 5 && (
+                      <li>+ {acoesDisponiveisDaMacro.length - 5} outra(s) ação(ões)</li>
+                    )}
+                  </ul>
+                ) : (
+                  <div style={{ marginTop: '10px', fontSize: '13px', color: '#64748b' }}>
+                    Ainda não há ação disponível na Biblioteca para esta macrocompetência. Você pode criar uma nova ação usando as referências acima.
+                  </div>
+                )}
+              </div>
+
+              <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
+                A macrocompetência e a competência da Avaliação de Desempenho permanecem estruturas relacionadas, sem substituir o histórico existente.
+                As subcompetências funcionam somente como orientação para escolha ou criação das ações.
               </div>
             </div>
           )}
