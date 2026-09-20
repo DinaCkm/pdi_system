@@ -43,6 +43,12 @@ const referenciasMetodologicas: Record<string, ReferenciaMetodologica> = {
     essenciais: ['Inteligência Emocional', 'Resiliência', 'Adaptabilidade'],
     master: ['Gestão de Conflitos', 'Presença Executiva', 'Relacionamentos Conectivos'],
   },
+  'COMPORTAMENTAL - Adaptabilidade, Flexibilidade e Resiliência': {
+    competenciaAD: 'COMPORTAMENTAL - Adaptabilidade, Flexibilidade e Resiliência',
+    basicas: ['Autopercepção', 'Disciplina', 'Atenção'],
+    essenciais: ['Adaptabilidade', 'Resiliência', 'Inteligência Emocional'],
+    master: ['Protagonismo', 'Tomada de Decisão', 'Visão Estratégica'],
+  },
 };
 
 export function AcoesNova() {
