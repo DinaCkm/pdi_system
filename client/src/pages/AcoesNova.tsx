@@ -502,6 +502,9 @@ export function AcoesNova() {
   const [buscaBiblioteca, setBuscaBiblioteca] = useState("");
   const [macroBiblioteca, setMacroBiblioteca] = useState("");
   const [eixoBiblioteca, setEixoBiblioteca] = useState("");
+  const [grupoAberto, setGrupoAberto] = useState<"basicas" | "essenciais" | "master" | null>(null);
+  const [subcompetenciaSelecionada, setSubcompetenciaSelecionada] = useState("");
+  const [mostrarTodosModelosMacro, setMostrarTodosModelosMacro] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -606,6 +609,43 @@ export function AcoesNova() {
       (modelo) => String(modelo.macroId ?? '') === formData.macroId,
     );
   }, [biblioteca, formData.macroId]);
+
+  const normalizarBusca = (valor: unknown) =>
+    String(valor ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase("pt-BR")
+      .trim();
+
+  const modelosRelacionadosASubcompetencia = (nome: string) => {
+    const alvo = normalizarBusca(nome);
+    return acoesDisponiveisDaMacro.filter((modelo: any) => {
+      const campos = [modelo.microcompetencia, modelo.titulo, modelo.descricao]
+        .map(normalizarBusca)
+        .filter(Boolean);
+      return campos.some((campo) => campo.includes(alvo));
+    });
+  };
+
+  const selecionarSubcompetencia = (nome: string) => {
+    setSubcompetenciaSelecionada(nome);
+    setFormData((prev) => ({ ...prev, microcompetencia: nome }));
+    setMostrarTodosModelosMacro(false);
+    setSugestaoGerada(false);
+  };
+
+  const usarModeloNoFoco = (modelo: any, foco: string) => {
+    setSubcompetenciaSelecionada(foco);
+    setFormData((prev) => ({
+      ...prev,
+      macroId: modelo.macroId ? String(modelo.macroId) : prev.macroId,
+      microcompetencia: foco,
+      titulo: modelo.titulo || "",
+      descricao: modelo.descricao || "",
+    }));
+    setErrors({});
+    setSugestaoGerada(false);
+  };
   
   // Fechar dropdowns ao clicar fora
   useEffect(() => {
@@ -676,7 +716,7 @@ export function AcoesNova() {
 
     if (eixo && !macroId && !macroRelacionada) setEixoBiblioteca(eixo);
     if (modo === "biblioteca" || origem === "evolucao_individual") {
-      setModoCriacao("biblioteca");
+      setModoCriacao("nova");
     }
   }, [searchString, macros]);
   
@@ -777,749 +817,396 @@ export function AcoesNova() {
     });
   };
 
-  const canSuggest = formData.macroId && !isSuggesting;
+  const canSuggest = Boolean(formData.macroId && subcompetenciaSelecionada && !isSuggesting);
   const [sugestaoGerada, setSugestaoGerada] = useState(false);
 
-  return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', padding: '24px' }}>
-      <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-        
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '30px', fontWeight: 'bold', marginBottom: '8px' }}>Nova Ação</h1>
-          <p style={{ color: '#666' }}>Preencha os dados da ação de desenvolvimento</p>
-          {new URLSearchParams(searchString).get('origem') === 'evolucao_proficiencia' && (
-            <div style={{ marginTop: '12px', padding: '12px 14px', border: '1px solid #93c5fd', borderRadius: '8px', background: '#eff6ff', color: '#1e3a8a', fontSize: '14px' }}>
-              Ação originada de um gap identificado na Evolução da Avaliação de Proficiência. Selecione o PDI de destino e revise os dados antes de salvar.
-            </div>
-          )}
-          {new URLSearchParams(searchString).get('origem') === 'evolucao_individual' && (
-            <div style={{ marginTop: '12px', padding: '12px 14px', border: '1px solid #93c5fd', borderRadius: '8px', background: '#eff6ff', color: '#1e3a8a', fontSize: '14px' }}>
-              Biblioteca aberta a partir da Evolução Individual. O PDI e o filtro de competência ou eixo de conhecimento foram trazidos como contexto; revise e selecione a ação mais adequada.
-            </div>
-          )}
-        </div>
+  const competenciaAdAtual =
+    new URLSearchParams(searchString).get("eixo")
+    || competenciaADRelacionadaDaMacro(selectedMacroName)
+    || selectedMacroReference?.competenciaAD
+    || "";
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-          <button
-            type="button"
-            onClick={() => setModoCriacao("nova")}
-            style={{ padding: '14px', borderRadius: '8px', border: modoCriacao === "nova" ? '2px solid #2563eb' : '1px solid #d1d5db', background: modoCriacao === "nova" ? '#eff6ff' : 'white', fontWeight: 600, cursor: 'pointer' }}
-          >
-            Criar uma ação nova
-          </button>
-          <button
-            type="button"
-            onClick={() => setModoCriacao("biblioteca")}
-            style={{ padding: '14px', borderRadius: '8px', border: modoCriacao === "biblioteca" ? '2px solid #2563eb' : '1px solid #d1d5db', background: modoCriacao === "biblioteca" ? '#eff6ff' : 'white', fontWeight: 600, cursor: 'pointer' }}
-          >
-            Buscar na biblioteca
-          </button>
-        </div>
+  const renderModelosDoFoco = (foco: string) => {
+    const modelos = modelosRelacionadosASubcompetencia(foco);
+    const selecionada = subcompetenciaSelecionada === foco;
 
-        {modoCriacao === "biblioteca" && (
-          <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '20px', marginBottom: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>Biblioteca de ações</h2>
-              <p style={{ color: '#666', marginTop: '4px' }}>Selecione uma ação existente para utilizar como modelo. Empregado, PDI, prazo, status e evidências não serão copiados.</p>
+    return (
+      <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {modelos.length > 0 ? (
+          <>
+            <div style={{ fontSize: '13px', color: '#475569' }}>
+              {modelos.length} modelo(s) relacionado(s) diretamente a esta subcompetência.
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(220px, 0.7fr) minmax(220px, 0.7fr)', gap: '12px' }}>
-              <input
-                type="search"
-                value={buscaBiblioteca}
-                onChange={(event) => setBuscaBiblioteca(event.target.value)}
-                placeholder="Pesquisar ação, descrição ou conhecimento"
-                style={{ padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
-              />
-              <select
-                value={macroBiblioteca}
-                onChange={(event) => setMacroBiblioteca(event.target.value)}
-                style={{ padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white' }}
+            {modelos.slice(0, 4).map((modelo: any) => (
+              <div
+                key={modelo.modeloId || `${modelo.titulo}-${foco}`}
+                style={{
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  background: '#fff',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                }}
               >
-                <option value="">Todas as competências</option>
-                {macros.map((macro: any) => <option key={macro.id} value={String(macro.id)}>{macro.nome}</option>)}
-              </select>
-              <select
-                value={eixoBiblioteca}
-                onChange={(event) => setEixoBiblioteca(event.target.value)}
-                style={{ padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white' }}
-              >
-                <option value="">Todos os eixos / conhecimentos</option>
-                {eixosBiblioteca.map((eixo) => <option key={eixo} value={eixo}>{eixo}</option>)}
-              </select>
-            </div>
-            <div style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
-              {loadingBiblioteca ? (
-                <div style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>Carregando biblioteca...</div>
-              ) : modelosBiblioteca.length === 0 ? (
-                <div style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>Nenhuma ação encontrada para os filtros selecionados.</div>
-              ) : modelosBiblioteca.map((modelo: any) => {
-                const macro = macros.find((item: any) => Number(item.id) === Number(modelo.macroId));
-                return (
-                  <div key={modelo.modeloId} style={{ padding: '16px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{modelo.titulo}</div>
-                      <div style={{ marginTop: '4px', fontSize: '13px', color: '#6b7280' }}>{macro?.nome || "Sem competência classificada"}{modelo.microcompetencia ? ` · ${modelo.microcompetencia}` : ""}</div>
-                      <div style={{ marginTop: '6px', fontSize: '12px', color: '#6b7280' }}>Utilizada {modelo.utilizacoes} vez(es)</div>
+                <div>
+                  <div style={{ fontWeight: 650, color: '#0f172a' }}>{modelo.titulo}</div>
+                  {modelo.microcompetencia ? (
+                    <div style={{ marginTop: '4px', fontSize: '12px', color: '#64748b' }}>
+                      Biblioteca: {modelo.microcompetencia}
                     </div>
-                    <button type="button" onClick={() => usarModeloBiblioteca(modelo)} style={{ flexShrink: 0, padding: '9px 14px', border: 'none', borderRadius: '6px', background: '#2563eb', color: 'white', fontWeight: 600, cursor: 'pointer' }}>Usar como modelo</button>
-                  </div>
-                );
-              })}
-            </div>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => usarModeloNoFoco(modelo, foco)}
+                  style={{
+                    flexShrink: 0,
+                    border: '1px solid #2563eb',
+                    borderRadius: '6px',
+                    padding: '8px 11px',
+                    background: '#2563eb',
+                    color: '#fff',
+                    fontWeight: 650,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Usar como modelo
+                </button>
+              </div>
+            ))}
+          </>
+        ) : (
+          <div style={{ fontSize: '13px', color: '#64748b' }}>
+            Ainda não existe modelo classificado diretamente para esta subcompetência.
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ backgroundColor: 'white', borderRadius: '8px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          
-          {/* 1. SELEÇÃO DE PDI COM BUSCA */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label style={{ fontWeight: 'bold', color: '#2563eb' }}>1. Vincular ao PDI de quem? *</label>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => selecionarSubcompetencia(foco)}
+            style={{
+              border: selecionada ? '2px solid #2563eb' : '1px solid #cbd5e1',
+              borderRadius: '7px',
+              padding: '9px 12px',
+              background: selecionada ? '#eff6ff' : '#fff',
+              color: '#1e3a8a',
+              fontWeight: 650,
+              cursor: 'pointer',
+            }}
+          >
+            {selecionada ? 'Foco selecionado' : 'Criar ação nesta subcompetência'}
+          </button>
+          {selecionada && (
+            <button
+              type="button"
+              onClick={handleSugerirComIA}
+              disabled={!canSuggest}
+              style={{
+                border: 'none',
+                borderRadius: '7px',
+                padding: '9px 12px',
+                background: canSuggest ? '#0284c7' : '#94a3b8',
+                color: '#fff',
+                fontWeight: 650,
+                cursor: canSuggest ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '7px',
+              }}
+            >
+              <Sparkles size={16} />
+              {isSuggesting ? 'Gerando...' : sugestaoGerada ? 'Gerar outra sugestão' : 'Sugerir ação com IA'}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#f5f7fa', padding: '28px 20px 48px' }}>
+      <div style={{ maxWidth: '1040px', margin: '0 auto' }}>
+        <div style={{ marginBottom: '22px' }}>
+          <h1 style={{ fontSize: '30px', fontWeight: 750, margin: 0 }}>Criar ação de desenvolvimento</h1>
+          <p style={{ color: '#64748b', marginTop: '7px' }}>
+            Escolha primeiro o foco de desenvolvimento. Depois utilize um modelo, crie a ação ou peça uma sugestão à IA.
+          </p>
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+          gap: '8px',
+          marginBottom: '22px',
+        }}>
+          {['1. Pessoa', '2. Competência', '3. Foco', '4. Ação', '5. Revisão'].map((etapa) => (
+            <div key={etapa} style={{
+              padding: '10px 8px',
+              textAlign: 'center',
+              borderRadius: '7px',
+              background: '#fff',
+              border: '1px solid #e2e8f0',
+              fontSize: '13px',
+              fontWeight: 650,
+              color: '#475569',
+            }}>{etapa}</div>
+          ))}
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Etapa 1</div>
+            <h2 style={{ margin: '4px 0 14px', fontSize: '20px' }}>De quem é esta ação?</h2>
+
             <div ref={pdiDropdownRef} style={{ position: 'relative' }}>
-              {/* Campo de seleção/busca */}
               <div
                 onClick={() => setPdiDropdownOpen(!pdiDropdownOpen)}
                 style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: errors.pdiId ? '2px solid red' : pdiDropdownOpen ? '2px solid #2563eb' : '1px solid #ccc',
-                  borderRadius: '4px',
-                  backgroundColor: 'white',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '8px',
-                  minHeight: '42px'
+                  width: '100%', padding: '12px 14px',
+                  border: errors.pdiId ? '2px solid red' : pdiDropdownOpen ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                  borderRadius: '7px', background: '#fff', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
                 }}
               >
                 {formData.pdiId && selectedPdiInfo ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                    <Check size={16} style={{ color: '#22c55e', flexShrink: 0 }} />
-                    <span style={{ fontSize: '14px', color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {selectedPdiInfo.nome} - {selectedPdiInfo.titulo}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFormData(prev => ({ ...prev, pdiId: '' }));
-                      }}
-                      style={{ 
-                        marginLeft: 'auto', 
-                        background: 'none', 
-                        border: 'none', 
-                        cursor: 'pointer', 
-                        padding: '2px',
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <X size={16} style={{ color: '#9ca3af' }} />
-                    </button>
-                  </div>
+                  <span style={{ fontWeight: 600 }}>{selectedPdiInfo.nome} — {selectedPdiInfo.titulo}</span>
                 ) : (
-                  <span style={{ color: '#9ca3af', fontSize: '14px' }}>Clique para buscar colaborador...</span>
+                  <span style={{ color: '#94a3b8' }}>Selecione o empregado e o PDI</span>
                 )}
-                <ChevronDown size={18} style={{ color: '#6b7280', flexShrink: 0, transform: pdiDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                <ChevronDown size={18} />
               </div>
-              
-              {/* Dropdown com busca */}
+
               {pdiDropdownOpen && (
                 <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  marginTop: '4px',
-                  backgroundColor: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-                  zIndex: 50,
-                  maxHeight: '350px',
-                  display: 'flex',
-                  flexDirection: 'column'
+                  position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                  marginTop: '5px', background: '#fff', border: '1px solid #e2e8f0',
+                  borderRadius: '8px', boxShadow: '0 12px 30px rgba(15,23,42,.12)',
                 }}>
-                  {/* Campo de busca */}
-                  <div style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>
-                    <div style={{ position: 'relative' }}>
-                      <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-                      <input
-                        type="text"
-                        placeholder="Digite o nome do colaborador..."
-                        value={pdiSearchTerm}
-                        onChange={(e) => setPdiSearchTerm(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        autoFocus
+                  <div style={{ padding: '10px' }}>
+                    <input
+                      value={pdiSearchTerm}
+                      onChange={(e) => setPdiSearchTerm(e.target.value)}
+                      placeholder="Buscar empregado..."
+                      style={{ width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                    />
+                  </div>
+                  <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
+                    {filteredPdis.map((pdi: any) => (
+                      <button
+                        type="button"
+                        key={pdi.pdiId}
+                        onClick={() => handleSelectPdi(String(pdi.pdiId))}
                         style={{
-                          width: '100%',
-                          padding: '10px 10px 10px 38px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '14px',
-                          outline: 'none'
+                          width: '100%', textAlign: 'left', padding: '11px 14px',
+                          border: 'none', borderTop: '1px solid #f1f5f9',
+                          background: formData.pdiId === String(pdi.pdiId) ? '#eff6ff' : '#fff',
+                          cursor: 'pointer',
                         }}
-                      />
-                      {pdiSearchTerm && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPdiSearchTerm('');
-                          }}
-                          style={{
-                            position: 'absolute',
-                            right: '10px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: '2px'
-                          }}
-                        >
-                          <X size={16} style={{ color: '#9ca3af' }} />
-                        </button>
-                      )}
-                    </div>
-                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
-                      {filteredPdis.length} colaborador(es) encontrado(s)
-                    </div>
-                  </div>
-                  
-                  {/* Lista de opções */}
-                  <div style={{ overflowY: 'auto', maxHeight: '250px' }}>
-                    {loadingPdis ? (
-                      <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
-                        <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', margin: '0 auto' }} />
-                        <span style={{ marginTop: '8px', display: 'block' }}>Carregando...</span>
-                      </div>
-                    ) : filteredPdis.length === 0 ? (
-                      <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
-                        Nenhum colaborador encontrado para "{pdiSearchTerm}"
-                      </div>
-                    ) : (
-                      filteredPdis.map((pdi: any) => (
-                        <div
-                          key={pdi.pdiId}
-                          onClick={() => handleSelectPdi(String(pdi.pdiId))}
-                          style={{
-                            padding: '12px 16px',
-                            cursor: 'pointer',
-                            backgroundColor: formData.pdiId === String(pdi.pdiId) ? '#eff6ff' : 'white',
-                            borderLeft: formData.pdiId === String(pdi.pdiId) ? '3px solid #2563eb' : '3px solid transparent',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            transition: 'background-color 0.15s'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (formData.pdiId !== String(pdi.pdiId)) {
-                              e.currentTarget.style.backgroundColor = '#f9fafb';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (formData.pdiId !== String(pdi.pdiId)) {
-                              e.currentTarget.style.backgroundColor = 'white';
-                            }
-                          }}
-                        >
-                          {formData.pdiId === String(pdi.pdiId) && (
-                            <Check size={16} style={{ color: '#2563eb', flexShrink: 0 }} />
-                          )}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            <span style={{ 
-                              fontSize: '14px', 
-                              color: formData.pdiId === String(pdi.pdiId) ? '#2563eb' : '#374151',
-                              fontWeight: formData.pdiId === String(pdi.pdiId) ? '600' : '500'
-                            }}>
-                              {pdi.colaboradorNome}
-                            </span>
-                            <span style={{ 
-                              fontSize: '12px', 
-                              color: '#6b7280'
-                            }}>
-                              {pdi.titulo}
-                            </span>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-            {errors.pdiId && <span style={{ color: 'red', fontSize: '12px' }}>{errors.pdiId}</span>}
-          </div>
-
-          {/* 2. COMPETÊNCIA (MACRO) COM BUSCA */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label style={{ fontWeight: '500' }}>2. Competência Geral (Macro) *</label>
-            <div ref={macroDropdownRef} style={{ position: 'relative' }}>
-              {/* Campo de seleção/busca */}
-              <div
-                onClick={() => setMacroDropdownOpen(!macroDropdownOpen)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: errors.macroId ? '2px solid red' : macroDropdownOpen ? '2px solid #2563eb' : '1px solid #ccc',
-                  borderRadius: '4px',
-                  backgroundColor: 'white',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '8px',
-                  minHeight: '42px'
-                }}
-              >
-                {formData.macroId ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                    <Check size={16} style={{ color: '#22c55e', flexShrink: 0 }} />
-                    <span style={{ fontSize: '14px', color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {selectedMacroName}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFormData(prev => ({ ...prev, macroId: '' }));
-                      }}
-                      style={{ 
-                        marginLeft: 'auto', 
-                        background: 'none', 
-                        border: 'none', 
-                        cursor: 'pointer', 
-                        padding: '2px',
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <X size={16} style={{ color: '#9ca3af' }} />
-                    </button>
-                  </div>
-                ) : (
-                  <span style={{ color: '#9ca3af', fontSize: '14px' }}>Clique para buscar e selecionar...</span>
-                )}
-                <ChevronDown size={18} style={{ color: '#6b7280', flexShrink: 0, transform: macroDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-              </div>
-              
-              {/* Dropdown com busca */}
-              {macroDropdownOpen && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  marginTop: '4px',
-                  backgroundColor: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-                  zIndex: 50,
-                  maxHeight: '350px',
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}>
-                  {/* Campo de busca */}
-                  <div style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>
-                    <div style={{ position: 'relative' }}>
-                      <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-                      <input
-                        type="text"
-                        placeholder="Digite para buscar competência..."
-                        value={macroSearchTerm}
-                        onChange={(e) => setMacroSearchTerm(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        autoFocus
-                        style={{
-                          width: '100%',
-                          padding: '10px 10px 10px 38px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '14px',
-                          outline: 'none'
-                        }}
-                      />
-                      {macroSearchTerm && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setMacroSearchTerm('');
-                          }}
-                          style={{
-                            position: 'absolute',
-                            right: '10px',
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            padding: '2px'
-                          }}
-                        >
-                          <X size={16} style={{ color: '#9ca3af' }} />
-                        </button>
-                      )}
-                    </div>
-                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
-                      {filteredMacros.length} competência(s) encontrada(s)
-                    </div>
-                  </div>
-                  
-                  {/* Lista de opções */}
-                  <div style={{ overflowY: 'auto', maxHeight: '250px' }}>
-                    {loadingMacros ? (
-                      <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
-                        <Loader2 size={20} style={{ animation: 'spin 1s linear infinite', margin: '0 auto' }} />
-                        <span style={{ marginTop: '8px', display: 'block' }}>Carregando...</span>
-                      </div>
-                    ) : filteredMacros.length === 0 ? (
-                      <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
-                        Nenhuma competência encontrada para "{macroSearchTerm}"
-                      </div>
-                    ) : (
-                      filteredMacros.map((macro: any) => (
-                        <div
-                          key={macro.id}
-                          onClick={() => handleSelectMacro(String(macro.id), macro.nome)}
-                          style={{
-                            padding: '12px 16px',
-                            cursor: 'pointer',
-                            backgroundColor: formData.macroId === String(macro.id) ? '#eff6ff' : 'white',
-                            borderLeft: formData.macroId === String(macro.id) ? '3px solid #2563eb' : '3px solid transparent',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            transition: 'background-color 0.15s'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (formData.macroId !== String(macro.id)) {
-                              e.currentTarget.style.backgroundColor = '#f9fafb';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (formData.macroId !== String(macro.id)) {
-                              e.currentTarget.style.backgroundColor = 'white';
-                            }
-                          }}
-                        >
-                          {formData.macroId === String(macro.id) && (
-                            <Check size={16} style={{ color: '#2563eb', flexShrink: 0 }} />
-                          )}
-                          <span style={{ 
-                            fontSize: '14px', 
-                            color: formData.macroId === String(macro.id) ? '#2563eb' : '#374151',
-                            fontWeight: formData.macroId === String(macro.id) ? '500' : '400'
-                          }}>
-                            {macro.nome}
-                          </span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-            {errors.macroId && <span style={{ color: 'red', fontSize: '12px' }}>{errors.macroId}</span>}
-          </div>
-
-          {selectedMacroReference && (
-            <div
-              style={{
-                padding: '16px',
-                border: '1px solid #dbeafe',
-                borderRadius: '8px',
-                backgroundColor: '#f8fbff',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '14px',
-              }}
-            >
-              <div style={{ fontWeight: 700, color: '#1e3a8a', fontSize: '16px' }}>
-                Referência integrada para criação da ação
-              </div>
-
-              <div style={{ display: 'grid', gap: '10px' }}>
-                <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
-                    Macrocompetência
-                  </div>
-                  <div style={{ marginTop: '4px', fontWeight: 600, color: '#0f172a' }}>
-                    {selectedMacroName}
-                  </div>
-                </div>
-
-                <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
-                    Competência relacionada na Avaliação de Desempenho
-                  </div>
-                  <div style={{ marginTop: '4px', fontWeight: 600, color: '#0f172a' }}>
-                    {competenciaADRelacionadaDaMacro(selectedMacroName) || selectedMacroReference.competenciaAD}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
-                  Subcompetências de referência
-                </div>
-                <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
-                  <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-                    <div style={{ fontWeight: 700, marginBottom: '8px' }}>Básicas</div>
-                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
-                      {selectedMacroReference.basicas.map((item) => (
-                        <li key={item.nome} style={{ marginBottom: '8px' }}>
-                          <strong>{item.nome}</strong>
-                          <div style={{ marginTop: '2px', color: '#64748b', lineHeight: 1.45 }}>{item.justificativa}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-                    <div style={{ fontWeight: 700, marginBottom: '8px' }}>Essenciais</div>
-                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
-                      {selectedMacroReference.essenciais.map((item) => (
-                        <li key={item.nome} style={{ marginBottom: '8px' }}>
-                          <strong>{item.nome}</strong>
-                          <div style={{ marginTop: '2px', color: '#64748b', lineHeight: 1.45 }}>{item.justificativa}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-                    <div style={{ fontWeight: 700, marginBottom: '8px' }}>Master</div>
-                    <div style={{ color: '#374151', fontSize: '14px' }}>
-                      <strong>{selectedMacroReference.master.nome}</strong>
-                      <div style={{ marginTop: '4px', color: '#64748b', lineHeight: 1.45 }}>
-                        {selectedMacroReference.master.justificativa}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                  <div>
-                    <div style={{ fontWeight: 700, color: '#334155' }}>Ações disponíveis</div>
-                    <div style={{ marginTop: '3px', fontSize: '13px', color: '#64748b' }}>
-                      {acoesDisponiveisDaMacro.length} ação(ões) encontrada(s) na Biblioteca para esta macrocompetência.
-                    </div>
-                  </div>
-                  {acoesDisponiveisDaMacro.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMacroBiblioteca(formData.macroId);
-                        setEixoBiblioteca('');
-                        setModoCriacao('biblioteca');
-                      }}
-                      style={{
-                        padding: '8px 12px',
-                        border: '1px solid #93c5fd',
-                        borderRadius: '6px',
-                        background: '#eff6ff',
-                        color: '#1d4ed8',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Ver ações disponíveis
-                    </button>
-                  )}
-                </div>
-
-                {acoesDisponiveisDaMacro.length > 0 ? (
-                  <ul style={{ margin: '10px 0 0', paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
-                    {acoesDisponiveisDaMacro.slice(0, 5).map((acao: any) => (
-                      <li key={acao.modeloId || `${acao.titulo}-${acao.microcompetencia || ''}`}>
-                        {acao.titulo}
-                        {acao.microcompetencia ? ` — ${acao.microcompetencia}` : ''}
-                      </li>
+                      >
+                        <div style={{ fontWeight: 650 }}>{pdi.colaboradorNome}</div>
+                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{pdi.titulo}</div>
+                      </button>
                     ))}
-                    {acoesDisponiveisDaMacro.length > 5 && (
-                      <li>+ {acoesDisponiveisDaMacro.length - 5} outra(s) ação(ões)</li>
-                    )}
-                  </ul>
-                ) : (
-                  <div style={{ marginTop: '10px', fontSize: '13px', color: '#64748b' }}>
-                    Ainda não há ação disponível na Biblioteca para esta macrocompetência. Você pode criar uma nova ação usando as referências acima.
                   </div>
-                )}
-              </div>
-
-              <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
-                A macrocompetência e a competência da Avaliação de Desempenho permanecem estruturas relacionadas, sem substituir o histórico existente.
-                As subcompetências funcionam somente como orientação para escolha ou criação das ações.
-              </div>
+                </div>
+              )}
             </div>
-          )}
+            {errors.pdiId && <div style={{ color: '#b91c1c', marginTop: '6px', fontSize: '13px' }}>{errors.pdiId}</div>}
+          </section>
 
-          {/* 3. COMPETÊNCIA (MICRO) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label htmlFor="microcompetencia" style={{ fontWeight: '500' }}>3. Competência Específica (Texto) - Opcional</label>
-            <input
-              type="text"
-              id="microcompetencia"
-              name="microcompetencia"
-              placeholder="Ex: Melhorar comunicação no Slack..."
-              value={formData.microcompetencia}
-              onChange={handleChange}
-              style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
-            />
-          </div>
+          <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Etapa 2</div>
+            <h2 style={{ margin: '4px 0 14px', fontSize: '20px' }}>Qual competência estamos desenvolvendo?</h2>
 
-          {/* BOTÃO DE SUGESTÃO COM IA */}
-          <div style={{ 
-            padding: '16px', 
-            backgroundColor: '#f0f9ff', 
-            borderRadius: '8px', 
-            border: '1px solid #bae6fd',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Sparkles size={20} style={{ color: '#0284c7' }} />
-              <span style={{ fontWeight: '600', color: '#0284c7' }}>Assistente de IA</span>
+            {competenciaAdAtual && (
+              <div style={{ marginBottom: '10px', padding: '12px 14px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#64748b', fontWeight: 750 }}>Competência da Avaliação de Desempenho</div>
+                <div style={{ marginTop: '4px', fontWeight: 700 }}>{competenciaAdAtual}</div>
+              </div>
+            )}
+
+            <div style={{ padding: '12px 14px', borderRadius: '8px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+              <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#1d4ed8', fontWeight: 750 }}>Macrocompetência relacionada da Biblioteca</div>
+              <div style={{ marginTop: '4px', fontWeight: 700 }}>{selectedMacroName || 'Selecione a macrocompetência'}</div>
             </div>
-            <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}>
-              Selecione a competência Macro (e opcionalmente a Micro) e clique no botão abaixo para receber uma sugestão de ação de desenvolvimento.
-            </p>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={handleSugerirComIA}
-                disabled={!canSuggest}
-                style={{ 
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '12px 20px', 
-                  backgroundColor: canSuggest ? '#0284c7' : '#94a3b8', 
-                  color: 'white', 
-                  borderRadius: '6px', 
-                  border: 'none', 
-                  cursor: canSuggest ? 'pointer' : 'not-allowed',
-                  fontSize: '15px',
-                  fontWeight: '500',
-                  transition: 'background-color 0.2s',
-                  flex: sugestaoGerada ? '1' : 'auto'
-                }}
-              >
-                {isSuggesting ? (
-                  <>
-                    <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
-                    Gerando sugestão...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={18} />
-                    ✨ Sugerir Ação com IA
-                  </>
-                )}
-              </button>
-              
-              {sugestaoGerada && !isSuggesting && (
+
+            {!selectedMacroName && (
+              <div ref={macroDropdownRef} style={{ position: 'relative', marginTop: '10px' }}>
                 <button
                   type="button"
-                  onClick={handleSugerirComIA}
-                  disabled={!canSuggest}
-                  style={{ 
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    padding: '12px 20px', 
-                    backgroundColor: '#f59e0b', 
-                    color: 'white', 
-                    borderRadius: '6px', 
-                    border: 'none', 
-                    cursor: 'pointer',
-                    fontSize: '15px',
-                    fontWeight: '500',
-                    transition: 'background-color 0.2s',
-                    flex: '1'
-                  }}
+                  onClick={() => setMacroDropdownOpen(!macroDropdownOpen)}
+                  style={{ width: '100%', padding: '11px', border: '1px solid #cbd5e1', borderRadius: '7px', background: '#fff', cursor: 'pointer' }}
                 >
-                  🔄 Gerar outra sugestão
+                  Selecionar macrocompetência
                 </button>
+                {macroDropdownOpen && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', maxHeight: '280px', overflowY: 'auto' }}>
+                    {filteredMacros.map((macro: any) => (
+                      <button
+                        type="button"
+                        key={macro.id}
+                        onClick={() => handleSelectMacro(String(macro.id), macro.nome)}
+                        style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: '#fff', border: 'none', borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
+                      >
+                        {macro.nome}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {errors.macroId && <div style={{ color: '#b91c1c', marginTop: '6px', fontSize: '13px' }}>{errors.macroId}</div>}
+          </section>
+
+          {selectedMacroReference && (
+            <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Etapa 3</div>
+              <h2 style={{ margin: '4px 0 6px', fontSize: '20px' }}>Qual é o foco do desenvolvimento?</h2>
+              <p style={{ margin: '0 0 14px', color: '#64748b', fontSize: '14px' }}>
+                Abra um grupo e escolha a subcompetência que esta ação deve desenvolver.
+              </p>
+
+              {([
+                ['basicas', 'Básicas', selectedMacroReference.basicas],
+                ['essenciais', 'Essenciais', selectedMacroReference.essenciais],
+                ['master', 'Master', [selectedMacroReference.master]],
+              ] as const).map(([chave, titulo, itens]) => (
+                <div key={chave} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '10px', overflow: 'hidden' }}>
+                  <button
+                    type="button"
+                    onClick={() => setGrupoAberto(grupoAberto === chave ? null : chave)}
+                    style={{
+                      width: '100%', padding: '13px 15px', border: 'none', background: '#f8fafc',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      cursor: 'pointer', fontWeight: 750, fontSize: '15px',
+                    }}
+                  >
+                    <span>{titulo} <span style={{ color: '#94a3b8', fontWeight: 600 }}>({itens.length})</span></span>
+                    <ChevronDown size={18} style={{ transform: grupoAberto === chave ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
+                  </button>
+
+                  {grupoAberto === chave && (
+                    <div style={{ padding: '10px 14px 14px' }}>
+                      {itens.map((item: any) => (
+                        <div key={item.nome} style={{ padding: '12px 0', borderBottom: '1px solid #f1f5f9' }}>
+                          <div style={{ fontWeight: 750, color: '#0f172a' }}>{item.nome}</div>
+                          <div style={{ marginTop: '4px', fontSize: '13px', lineHeight: 1.5, color: '#64748b' }}>{item.justificativa}</div>
+                          {renderModelosDoFoco(item.nome)}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {acoesDisponiveisDaMacro.length > 0 && (
+                <div style={{ marginTop: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setMostrarTodosModelosMacro(!mostrarTodosModelosMacro)}
+                    style={{ border: 'none', background: 'transparent', color: '#2563eb', fontWeight: 650, cursor: 'pointer', padding: 0 }}
+                  >
+                    {mostrarTodosModelosMacro ? 'Ocultar outros modelos da macro' : `Ver também os ${acoesDisponiveisDaMacro.length} modelos gerais desta macro`}
+                  </button>
+                  {mostrarTodosModelosMacro && (
+                    <div style={{ marginTop: '10px', display: 'grid', gap: '8px' }}>
+                      {acoesDisponiveisDaMacro.slice(0, 8).map((modelo: any) => (
+                        <div key={modelo.modeloId} style={{ padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '7px', fontSize: '13px' }}>
+                          <strong>{modelo.titulo}</strong>
+                          {modelo.microcompetencia ? <span style={{ color: '#64748b' }}> — {modelo.microcompetencia}</span> : null}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
-            </div>
-          </div>
-
-          {/* 4. TÍTULO */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label htmlFor="titulo" style={{ fontWeight: '500' }}>4. O que será feito? (Título) *</label>
-            <input
-              id="titulo"
-              name="titulo"
-              type="text"
-              value={formData.titulo}
-              onChange={handleChange}
-              placeholder="Ex: Participar do curso de Liderança"
-              style={{ width: '100%', padding: '10px', border: errors.titulo ? '2px solid red' : '1px solid #ccc', borderRadius: '4px' }}
-            />
-            {errors.titulo && <span style={{ color: 'red', fontSize: '12px' }}>{errors.titulo}</span>}
-          </div>
-
-          {/* 5. DESCRIÇÃO */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label htmlFor="descricao" style={{ fontWeight: '500' }}>Detalhes da ação</label>
-            <RichTextEditor
-              value={formData.descricao}
-              onChange={(val) => setFormData(prev => ({ ...prev, descricao: val }))}
-              placeholder="Descreva o que fazer, como fazer e como comprovar..."
-              minHeight="150px"
-            />
-            <span style={{ fontSize: '12px', color: '#666' }}>
-              A descrição inclui: o que fazer, aviso de flexibilidade e evidência esperada.
-            </span>
-          </div>
-
-          {/* 6. PRAZO */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <label htmlFor="prazo" style={{ fontWeight: '500' }}>5. Prazo de conclusão *</label>
-            <input
-              id="prazo"
-              name="prazo"
-              type="date"
-              value={formData.prazo}
-              onChange={handleChange}
-              style={{ width: '100%', padding: '10px', border: errors.prazo ? '2px solid red' : '1px solid #ccc', borderRadius: '4px' }}
-            />
-            {errors.prazo && <span style={{ color: 'red', fontSize: '12px' }}>{errors.prazo}</span>}
-          </div>
-
-          {/* MENSAGEM DE ERRO DO SERVIDOR */}
-          {errors.submit && (
-            <div style={{ padding: '12px', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '4px', fontSize: '14px', fontWeight: 'bold' }}>
-              {errors.submit}
-            </div>
+            </section>
           )}
 
-          <div style={{ display: 'flex', gap: '16px', paddingTop: '16px' }}>
-            <button
-              type="submit"
-              disabled={createMutation.isPending}
-              style={{ flex: 1, padding: '12px', backgroundColor: '#2563eb', color: 'white', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '16px', fontWeight: '500' }}
-            >
-              {createMutation.isPending ? 'Salvando...' : 'Salvar Ação'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const returnUrl = sessionStorage.getItem('acoes_return_url') || '/acoes';
-                navigate(returnUrl);
-              }}
-              style={{ flex: 1, padding: '12px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: 'white', cursor: 'pointer' }}
-            >
-              Cancelar
-            </button>
-          </div>
+          {subcompetenciaSelecionada && (
+            <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Etapa 4</div>
+              <h2 style={{ margin: '4px 0 6px', fontSize: '20px' }}>Defina a ação</h2>
+              <div style={{ marginBottom: '14px', padding: '10px 12px', borderRadius: '7px', background: '#f8fafc', color: '#475569', fontSize: '14px' }}>
+                Foco escolhido: <strong>{subcompetenciaSelecionada}</strong>
+              </div>
+
+              <div style={{ display: 'grid', gap: '14px' }}>
+                <div>
+                  <label htmlFor="titulo" style={{ display: 'block', fontWeight: 700, marginBottom: '5px' }}>O que será feito? *</label>
+                  <input
+                    id="titulo"
+                    name="titulo"
+                    value={formData.titulo}
+                    onChange={handleChange}
+                    placeholder="Título da ação"
+                    style={{ width: '100%', padding: '11px', border: errors.titulo ? '2px solid #dc2626' : '1px solid #cbd5e1', borderRadius: '7px' }}
+                  />
+                  {errors.titulo && <div style={{ color: '#b91c1c', marginTop: '5px', fontSize: '13px' }}>{errors.titulo}</div>}
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontWeight: 700, marginBottom: '5px' }}>Detalhes da ação</label>
+                  <RichTextEditor
+                    value={formData.descricao}
+                    onChange={(val) => setFormData(prev => ({ ...prev, descricao: val }))}
+                    placeholder="O que fazer, como fazer e como comprovar..."
+                    minHeight="160px"
+                  />
+                </div>
+              </div>
+            </section>
+          )}
+
+          {subcompetenciaSelecionada && (
+            <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Etapa 5</div>
+              <h2 style={{ margin: '4px 0 14px', fontSize: '20px' }}>Revise e conclua</h2>
+
+              <div>
+                <label htmlFor="prazo" style={{ display: 'block', fontWeight: 700, marginBottom: '5px' }}>Prazo de conclusão *</label>
+                <input
+                  id="prazo"
+                  name="prazo"
+                  type="date"
+                  value={formData.prazo}
+                  onChange={handleChange}
+                  style={{ width: '100%', maxWidth: '320px', padding: '11px', border: errors.prazo ? '2px solid #dc2626' : '1px solid #cbd5e1', borderRadius: '7px' }}
+                />
+                {errors.prazo && <div style={{ color: '#b91c1c', marginTop: '5px', fontSize: '13px' }}>{errors.prazo}</div>}
+              </div>
+
+              {errors.submit && (
+                <div style={{ marginTop: '12px', padding: '11px', borderRadius: '7px', background: '#fee2e2', color: '#b91c1c' }}>
+                  {errors.submit}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '18px', flexWrap: 'wrap' }}>
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending}
+                  style={{ padding: '11px 18px', border: 'none', borderRadius: '7px', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  {createMutation.isPending ? 'Salvando...' : 'Salvar ação'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const returnUrl = sessionStorage.getItem('acoes_return_url') || '/acoes';
+                    navigate(returnUrl);
+                  }}
+                  style={{ padding: '11px 18px', border: '1px solid #cbd5e1', borderRadius: '7px', background: '#fff', fontWeight: 650, cursor: 'pointer' }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </section>
+          )}
         </form>
       </div>
     </div>
