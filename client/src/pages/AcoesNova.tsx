@@ -4,6 +4,21 @@ import { trpc } from '@/lib/trpc';
 import { Sparkles, Loader2, Search, ChevronDown, X, Check } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
 
+
+type ReferenciaMetodologica = {
+  basicas: string[];
+  essenciais: string[];
+  master: string[];
+};
+
+const referenciasMetodologicas: Record<string, ReferenciaMetodologica> = {
+  'COMPORTAMENTAL - Relacionamento Interpessoal': {
+    basicas: ['Empatia', 'Escuta Ativa', 'Autopercepção'],
+    essenciais: ['Comunicação Assertiva', 'Inteligência Emocional'],
+    master: ['Relacionamentos Conectivos', 'Gestão de Conflitos', 'Influência'],
+  },
+};
+
 export function AcoesNova() {
   const [, navigate] = useLocation();
   const searchString = useSearch(); 
@@ -107,6 +122,12 @@ export function AcoesNova() {
     const macro = macros.find((m: any) => String(m.id) === formData.macroId);
     return macro ? macro.nome : '';
   }, [formData.macroId, macros]);
+
+
+  const selectedMacroReference = useMemo(() => {
+    if (!selectedMacroName) return null;
+    return referenciasMetodologicas[selectedMacroName] ?? null;
+  }, [selectedMacroName]);
   
   // Fechar dropdowns ao clicar fora
   useEffect(() => {
@@ -711,6 +732,56 @@ export function AcoesNova() {
             </div>
             {errors.macroId && <span style={{ color: 'red', fontSize: '12px' }}>{errors.macroId}</span>}
           </div>
+
+          {selectedMacroReference && (
+            <div
+              style={{
+                padding: '16px',
+                border: '1px solid #dbeafe',
+                borderRadius: '8px',
+                backgroundColor: '#f8fbff',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 700, color: '#1e3a8a' }}>
+                  Referência para desenvolver esta competência
+                </div>
+                <p style={{ margin: '6px 0 0', fontSize: '14px', color: '#475569', lineHeight: 1.5 }}>
+                  Para desenvolver <strong>{selectedMacroName}</strong>, considere as subcompetências abaixo.
+                  Ao escolher uma ação existente ou criar uma nova ação, utilize este quadro como orientação.
+                  O resultado oficial continuará sendo registrado somente na competência principal.
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))' }}>
+                <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontWeight: 700, marginBottom: '8px' }}>Básicas</div>
+                  <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
+                    {selectedMacroReference.basicas.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+                <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontWeight: 700, marginBottom: '8px' }}>Essenciais</div>
+                  <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
+                    {selectedMacroReference.essenciais.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+                <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontWeight: 700, marginBottom: '8px' }}>Master</div>
+                  <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
+                    {selectedMacroReference.master.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+              </div>
+
+              <div style={{ fontSize: '13px', color: '#475569' }}>
+                Você pode criar mais de uma ação para esta mesma competência, usando subcompetências diferentes como foco de desenvolvimento.
+              </div>
+            </div>
+          )}
 
           {/* 3. COMPETÊNCIA (MICRO) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
