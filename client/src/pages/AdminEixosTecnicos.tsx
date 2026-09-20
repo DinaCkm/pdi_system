@@ -5,13 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 
-type RelacaoEixo = "ESSENCIAL" | "TRANSVERSAL" | "NAO_APLICAVEL" | "PENDENTE";
+type RelacaoEixo = "ESSENCIAL" | "TRANSVERSAL" | "NAO_ESSENCIAL";
+type StatusClassificacao = "CLASSIFICADO" | "PENDENTE";
 type StatusMatriz = "VALIDADA_PROVISORIA" | "VALIDADA_DEFINITIVA" | "PENDENTE_HISTORICO";
 
 type EixoEdicao = {
   eixoId: string;
   eixo: string;
   relacao: RelacaoEixo | "";
+  statusClassificacao: StatusClassificacao;
+  justificativa: string;
   anterior: number | null;
 };
 
@@ -24,8 +27,7 @@ const STATUS_LABEL: Record<StatusMatriz, string> = {
 const RELACAO_LABEL: Record<RelacaoEixo, string> = {
   ESSENCIAL: "Essencial",
   TRANSVERSAL: "Transversal",
-  NAO_APLICAVEL: "Não aplicável à atuação atual",
-  PENDENTE: "Pendente de classificação",
+  NAO_ESSENCIAL: "Não essencial",
 };
 
 function normalizar(valor: unknown) {
@@ -42,7 +44,9 @@ function descreverValor(valor: any) {
   if (!valor) return "Sem registro anterior";
   if (typeof valor === "string") return valor;
   if (valor.status) return STATUS_LABEL[valor.status as StatusMatriz] ?? valor.status;
-  const relacao = RELACAO_LABEL[valor.relacao as RelacaoEixo] ?? valor.relacao ?? "Sem classificação";
+  const relacao = valor.statusClassificacao === "PENDENTE"
+    ? "Pendente de análise"
+    : RELACAO_LABEL[valor.relacao as RelacaoEixo] ?? valor.relacao ?? "Sem classificação";
   const pontuacao = valor.anterior === null || valor.anterior === undefined
     ? "sem pontuação"
     : `${Number(valor.anterior).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
@@ -108,6 +112,8 @@ export default function AdminEixosTecnicos() {
         eixoId: eixo.eixoId,
         eixo: eixo.eixo,
         relacao: eixo.relacao ?? "",
+        statusClassificacao: eixo.statusClassificacao === "PENDENTE" ? "PENDENTE" : "CLASSIFICADO",
+        justificativa: eixo.justificativa ?? "",
         anterior: eixo.anterior === null || eixo.anterior === undefined ? null : Number(eixo.anterior),
       };
     }
@@ -125,8 +131,8 @@ export default function AdminEixosTecnicos() {
       setMensagem("Este empregado ainda não possui eixos importados.");
       return;
     }
-    if (linhas.some((item) => !item.relacao)) {
-      setMensagem("Classifique todos os eixos antes de validar a matriz.");
+    if (linhas.some((item) => item.statusClassificacao === "CLASSIFICADO" && !item.relacao)) {
+      setMensagem("Classifique como Essencial, Transversal ou Não essencial todos os eixos marcados como classificados.");
       return;
     }
     if (motivo.trim().length < 3) {
@@ -140,7 +146,11 @@ export default function AdminEixosTecnicos() {
       const anteriorOriginal = original?.anterior === null || original?.anterior === undefined
         ? null
         : Number(original.anterior);
-      return original?.relacao !== eixo.relacao || anteriorOriginal !== eixo.anterior || original?.eixo !== eixo.eixo;
+      return original?.relacao !== (eixo.statusClassificacao === "PENDENTE" ? null : eixo.relacao) ||
+        (original?.statusClassificacao ?? "CLASSIFICADO") !== eixo.statusClassificacao ||
+        (original?.justificativa ?? "") !== eixo.justificativa ||
+        anteriorOriginal !== eixo.anterior ||
+        original?.eixo !== eixo.eixo;
     });
     const metadadosAlterados =
       matriz.status !== status ||
@@ -159,7 +169,9 @@ export default function AdminEixosTecnicos() {
           matrizId: Number(matriz.id),
           eixoId: eixo.eixoId,
           eixo: eixo.eixo,
-          relacao: eixo.relacao,
+          relacao: eixo.statusClassificacao === "PENDENTE" ? null : eixo.relacao,
+          statusClassificacao: eixo.statusClassificacao,
+          justificativa: eixo.justificativa.trim() || null,
           anterior: eixo.anterior,
           motivo: motivo.trim(),
           observacao: observacao.trim() || undefined,
@@ -274,11 +286,13 @@ export default function AdminEixosTecnicos() {
                 <div className="rounded-md border p-5 text-sm text-muted-foreground">Os eixos deste empregado ainda não foram importados.</div>
               ) : (
                 <div className="overflow-x-auto rounded-md border">
-                  <table className="w-full min-w-[900px] text-sm">
+                  <table className="w-full min-w-[1250px] text-sm">
                     <thead className="bg-muted/40">
                       <tr className="border-b text-left">
                         <th className="px-4 py-3">Eixo de conhecimento</th>
+                        <th className="px-4 py-3">Situação</th>
                         <th className="px-4 py-3">Classificação para a função</th>
+                        <th className="px-4 py-3">Justificativa</th>
                         <th className="px-4 py-3">Pontuação histórica (%)</th>
                       </tr>
                     </thead>
@@ -290,18 +304,48 @@ export default function AdminEixosTecnicos() {
                             <td className="px-4 py-3 font-medium">{eixo.eixo}</td>
                             <td className="px-4 py-3">
                               <select
+                                value={edicao?.statusClassificacao ?? "CLASSIFICADO"}
+                                onChange={(event) => setEdicoes((atual) => ({
+                                  ...atual,
+                                  [eixo.eixoId]: {
+                                    ...atual[eixo.eixoId],
+                                    statusClassificacao: event.target.value as StatusClassificacao,
+                                    relacao: event.target.value === "PENDENTE" ? "" : atual[eixo.eixoId].relacao,
+                                  },
+                                }))}
+                                className="h-9 min-w-[180px] rounded-md border bg-background px-2"
+                              >
+                                <option value="CLASSIFICADO">Classificado</option>
+                                <option value="PENDENTE">Pendente de análise</option>
+                              </select>
+                            </td>
+                            <td className="px-4 py-3">
+                              <select
                                 value={edicao?.relacao ?? ""}
+                                disabled={edicao?.statusClassificacao === "PENDENTE"}
                                 onChange={(event) => setEdicoes((atual) => ({
                                   ...atual,
                                   [eixo.eixoId]: { ...atual[eixo.eixoId], relacao: event.target.value as RelacaoEixo },
                                 }))}
-                                className="h-9 min-w-[250px] rounded-md border bg-background px-2"
+                                className="h-9 min-w-[220px] rounded-md border bg-background px-2"
                               >
                                 <option value="">Selecione...</option>
                                 {Object.entries(RELACAO_LABEL).map(([valor, rotulo]) => (
                                   <option key={valor} value={valor}>{rotulo}</option>
                                 ))}
                               </select>
+                            </td>
+                            <td className="px-4 py-3">
+                              <textarea
+                                value={edicao?.justificativa ?? ""}
+                                onChange={(event) => setEdicoes((atual) => ({
+                                  ...atual,
+                                  [eixo.eixoId]: { ...atual[eixo.eixoId], justificativa: event.target.value },
+                                }))}
+                                rows={3}
+                                className="min-w-[320px] rounded-md border bg-background p-2"
+                                placeholder="Justifique a classificação deste eixo para este empregado."
+                              />
                             </td>
                             <td className="px-4 py-3">
                               <input
