@@ -31,6 +31,12 @@ const referenciasMetodologicas: Record<string, ReferenciaMetodologica> = {
     essenciais: ['Comunicação Assertiva', 'Inteligência Emocional', 'Proatividade'],
     master: ['Negociação', 'Relacionamentos Conectivos', 'Influência'],
   },
+  'COMPORTAMENTAL - Ética, Integridade e Responsabilidade': {
+    competenciaAD: 'COMPORTAMENTAL - Ética, Integridade e Responsabilidade',
+    basicas: ['Disciplina', 'Atenção', 'Autopercepção'],
+    essenciais: ['Comunicação Assertiva', 'Planejamento e Organização', 'Proatividade'],
+    master: ['Accountability', 'Responsabilidade Social', 'Tomada de Decisão'],
+  },
 };
 
 export function AcoesNova() {
