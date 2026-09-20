@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { macroRelacionadaDaAD } from "../../../shared/competenciasAdRelacionamento";
 
 const relacaoLabel: Record<string, string> = {
   ESSENCIAL: "Essencial",
@@ -108,11 +109,12 @@ export default function Bloco1CompetenciasFuncao() {
     ) ?? null;
   }, [pdis.data, colaboradorId]);
 
-  const abrirBiblioteca = (eixo: string, macroId?: number | null) => {
+  const abrirBiblioteca = (eixo: string, macroId?: number | null, macroRelacionada?: string | null) => {
     const params = new URLSearchParams();
     if (pdiDoEmpregado?.pdiId) params.set("pdiId", String(pdiDoEmpregado.pdiId));
     if (eixo) params.set("eixo", eixo);
     if (macroId) params.set("macroId", String(macroId));
+    if (macroRelacionada) params.set("macroRelacionada", macroRelacionada);
     params.set("origem", "evolucao_individual");
     params.set("modo", "biblioteca");
     navigate(`/acoes/nova?${params.toString()}`);
@@ -341,7 +343,14 @@ export default function Bloco1CompetenciasFuncao() {
                     ) : (
                       mapa.data.comportamental.competencias.map((item: any) => (
                         <TableRow key={item.competenciaMacroId}>
-                          <TableCell className="font-medium">{item.competenciaNome || "—"}</TableCell>
+                          <TableCell className="font-medium">
+                            <div>{item.competenciaNome || "—"}</div>
+                            {macroRelacionadaDaAD(item.competenciaNome) ? (
+                              <div className="mt-1 text-xs font-normal text-muted-foreground">
+                                Macrocompetência relacionada para ações: {macroRelacionadaDaAD(item.competenciaNome)}
+                              </div>
+                            ) : null}
+                          </TableCell>
                           <TableCell>
                             {item.resultado2024 === null ? "—" : Number(item.resultado2024).toFixed(2)}
                           </TableCell>
@@ -373,7 +382,11 @@ export default function Bloco1CompetenciasFuncao() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => abrirBiblioteca(item.competenciaNome || "", Number(item.competenciaMacroId))}
+                              onClick={() => abrirBiblioteca(
+                                item.competenciaNome || "",
+                                Number(item.competenciaMacroId),
+                                macroRelacionadaDaAD(item.competenciaNome),
+                              )}
                             >
                               Criar ação no PDI
                             </Button>
