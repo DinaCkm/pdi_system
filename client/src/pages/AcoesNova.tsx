@@ -20,6 +20,7 @@ export function AcoesNova() {
   const [modoCriacao, setModoCriacao] = useState<"nova" | "biblioteca">("nova");
   const [buscaBiblioteca, setBuscaBiblioteca] = useState("");
   const [macroBiblioteca, setMacroBiblioteca] = useState("");
+  const [eixoBiblioteca, setEixoBiblioteca] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -39,15 +40,28 @@ export function AcoesNova() {
   const { data: macros = [], isLoading: loadingMacros } = trpc.competencias.listAllMacros.useQuery();
   const { data: biblioteca = [], isLoading: loadingBiblioteca } = trpc.actions.library.useQuery();
 
+  const eixosBiblioteca = useMemo(() => {
+    return Array.from(
+      new Set(
+        (biblioteca as any[])
+          .map((modelo) => String(modelo.microcompetencia ?? "").trim())
+          .filter(Boolean),
+      ),
+    ).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [biblioteca]);
+
   const modelosBiblioteca = useMemo(() => {
     const termo = buscaBiblioteca.trim().toLocaleLowerCase("pt-BR");
     return (biblioteca as any[]).filter((modelo) => {
       const atendeMacro = !macroBiblioteca || String(modelo.macroId ?? "") === macroBiblioteca;
+      const atendeEixo =
+        !eixoBiblioteca ||
+        String(modelo.microcompetencia ?? "").trim() === eixoBiblioteca;
       const atendeBusca = !termo || [modelo.titulo, modelo.descricao, modelo.microcompetencia]
         .some((valor) => String(valor ?? "").toLocaleLowerCase("pt-BR").includes(termo));
-      return atendeMacro && atendeBusca;
+      return atendeMacro && atendeEixo && atendeBusca;
     });
-  }, [biblioteca, buscaBiblioteca, macroBiblioteca]);
+  }, [biblioteca, buscaBiblioteca, macroBiblioteca, eixoBiblioteca]);
 
   const usarModeloBiblioteca = (modelo: any) => {
     setFormData((prev) => ({
@@ -128,17 +142,28 @@ export function AcoesNova() {
     },
   });
   
-  // Preencher se vier da URL
+  // Preencher e filtrar a biblioteca quando vier da Evolução Individual
   useEffect(() => {
     const params = new URLSearchParams(searchString);
     const urlPdiId = params.get('pdiId');
     const eixo = params.get('eixo');
-    if (urlPdiId || eixo) {
+    const macroId = params.get('macroId');
+    const origem = params.get('origem');
+    const modo = params.get('modo');
+
+    if (urlPdiId || eixo || macroId) {
       setFormData(prev => ({
         ...prev,
         ...(urlPdiId ? { pdiId: urlPdiId } : {}),
         ...(eixo ? { microcompetencia: eixo } : {}),
+        ...(macroId ? { macroId } : {}),
       }));
+    }
+
+    if (macroId) setMacroBiblioteca(macroId);
+    if (eixo && !macroId) setEixoBiblioteca(eixo);
+    if (modo === "biblioteca" || origem === "evolucao_individual") {
+      setModoCriacao("biblioteca");
     }
   }, [searchString]);
   
@@ -254,6 +279,11 @@ export function AcoesNova() {
               Ação originada de um gap identificado na Evolução da Avaliação de Proficiência. Selecione o PDI de destino e revise os dados antes de salvar.
             </div>
           )}
+          {new URLSearchParams(searchString).get('origem') === 'evolucao_individual' && (
+            <div style={{ marginTop: '12px', padding: '12px 14px', border: '1px solid #93c5fd', borderRadius: '8px', background: '#eff6ff', color: '#1e3a8a', fontSize: '14px' }}>
+              Biblioteca aberta a partir da Evolução Individual. O PDI e o filtro de competência ou eixo de conhecimento foram trazidos como contexto; revise e selecione a ação mais adequada.
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
@@ -279,12 +309,12 @@ export function AcoesNova() {
               <h2 style={{ fontSize: '20px', fontWeight: 700, margin: 0 }}>Biblioteca de ações</h2>
               <p style={{ color: '#666', marginTop: '4px' }}>Selecione uma ação existente para utilizar como modelo. Empregado, PDI, prazo, status e evidências não serão copiados.</p>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(220px, 0.6fr)', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(220px, 0.7fr) minmax(220px, 0.7fr)', gap: '12px' }}>
               <input
                 type="search"
                 value={buscaBiblioteca}
                 onChange={(event) => setBuscaBiblioteca(event.target.value)}
-                placeholder="Pesquisar título, descrição ou competência específica"
+                placeholder="Pesquisar ação, descrição ou conhecimento"
                 style={{ padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px' }}
               />
               <select
@@ -294,6 +324,14 @@ export function AcoesNova() {
               >
                 <option value="">Todas as competências</option>
                 {macros.map((macro: any) => <option key={macro.id} value={String(macro.id)}>{macro.nome}</option>)}
+              </select>
+              <select
+                value={eixoBiblioteca}
+                onChange={(event) => setEixoBiblioteca(event.target.value)}
+                style={{ padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white' }}
+              >
+                <option value="">Todos os eixos / conhecimentos</option>
+                {eixosBiblioteca.map((eixo) => <option key={eixo} value={eixo}>{eixo}</option>)}
               </select>
             </div>
             <div style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
