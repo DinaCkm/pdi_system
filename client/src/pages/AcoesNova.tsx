@@ -5,49 +5,224 @@ import { Sparkles, Loader2, Search, ChevronDown, X, Check } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
 
 
+type SubcompetenciaReferencia = {
+  nome: string;
+  justificativa: string;
+};
+
 type ReferenciaMetodologica = {
   competenciaAD: string;
-  basicas: string[];
-  essenciais: string[];
-  master: string[];
+  basicas: SubcompetenciaReferencia[];
+  essenciais: SubcompetenciaReferencia[];
+  master: {
+    nome: string;
+    justificativa: string;
+  };
 };
 
 const referenciasMetodologicas: Record<string, ReferenciaMetodologica> = {
   'COMPORTAMENTAL - Relacionamento Interpessoal': {
     competenciaAD: 'COMPORTAMENTAL - Relacionamento Interpessoal',
-    basicas: ['Empatia', 'Escuta Ativa', 'Autopercepção'],
-    essenciais: ['Comunicação Assertiva', 'Inteligência Emocional'],
-    master: ['Relacionamentos Conectivos', 'Gestão de Conflitos', 'Influência'],
+    basicas: [
+      {
+        nome: 'Empatia',
+        justificativa: 'Empatia é básica para o desenvolvimento de Relacionamento Interpessoal porque permite compreender perspectivas, necessidades e reações das outras pessoas. Sem essa capacidade, a interação tende a ficar centrada apenas no próprio ponto de vista, dificultando a construção de relações profissionais respeitosas e cooperativas.',
+      },
+      {
+        nome: 'Escuta Ativa',
+        justificativa: 'Escuta Ativa é básica para o desenvolvimento de Relacionamento Interpessoal porque permite compreender com precisão o que o outro comunica, inclusive necessidades e expectativas. Sem escuta qualificada, aumentam os ruídos, interpretações equivocadas e conflitos que prejudicam a qualidade das relações.',
+      },
+      {
+        nome: 'Autopercepção',
+        justificativa: 'Autopercepção é básica para o desenvolvimento de Relacionamento Interpessoal porque ajuda a pessoa a reconhecer como seu próprio comportamento, emoções e forma de comunicação afetam os outros. Sem essa consciência, torna-se mais difícil ajustar a própria conduta para manter relações produtivas.',
+      },
+    ],
+    essenciais: [
+      {
+        nome: 'Comunicação Assertiva',
+        justificativa: 'Comunicação Assertiva é essencial para o desenvolvimento de Relacionamento Interpessoal porque permite expressar opiniões, limites e necessidades de forma clara e respeitosa. Sem assertividade, a relação pode ser prejudicada por omissões, agressividade ou mensagens ambíguas.',
+      },
+      {
+        nome: 'Inteligência Emocional',
+        justificativa: 'Inteligência Emocional é essencial para o desenvolvimento de Relacionamento Interpessoal porque permite administrar emoções próprias e compreender as emoções presentes nas interações. Sem essa capacidade, situações de tensão ou divergência podem comprometer a cooperação e a confiança.',
+      },
+    ],
+    master: {
+      nome: 'Relacionamento Interpessoal',
+      justificativa: 'Relacionamento Interpessoal é a competência Master porque representa a integração das capacidades de compreender o outro, perceber o próprio impacto, comunicar-se adequadamente e administrar emoções para construir relações profissionais respeitosas, cooperativas e produtivas.',
+    },
   },
+
   'COMPORTAMENTAL - Comunicação': {
     competenciaAD: 'COMPORTAMENTAL - Comunicação',
-    basicas: ['Escuta Ativa', 'Empatia'],
-    essenciais: ['Comunicação Assertiva', 'Inteligência Emocional'],
-    master: ['Influência', 'Presença Executiva', 'Negociação'],
+    basicas: [
+      {
+        nome: 'Escuta Ativa',
+        justificativa: 'Escuta Ativa é básica para o desenvolvimento de Comunicação porque comunicar-se bem exige primeiro compreender corretamente a mensagem, a necessidade e o contexto do interlocutor. Sem essa capacidade, a resposta pode ser inadequada mesmo quando a pessoa se expressa com clareza.',
+      },
+      {
+        nome: 'Empatia',
+        justificativa: 'Empatia é básica para o desenvolvimento de Comunicação porque permite considerar o ponto de vista e as necessidades do interlocutor ao formular a mensagem. Sem essa leitura do outro, a comunicação pode ser tecnicamente correta, mas inadequada ao público ou ao contexto.',
+      },
+    ],
+    essenciais: [
+      {
+        nome: 'Comunicação Assertiva',
+        justificativa: 'Comunicação Assertiva é essencial para o desenvolvimento de Comunicação porque transforma compreensão em mensagens claras, objetivas e respeitosas. Sem assertividade, a pessoa pode compreender o contexto, mas não conseguir posicionar-se de forma eficaz.',
+      },
+      {
+        nome: 'Inteligência Emocional',
+        justificativa: 'Inteligência Emocional é essencial para o desenvolvimento de Comunicação porque ajuda a regular tom, reação e escolha das palavras, especialmente em situações de pressão ou divergência. Sem esse controle, a emoção pode distorcer ou comprometer a mensagem.',
+      },
+    ],
+    master: {
+      nome: 'Comunicação',
+      justificativa: 'Comunicação é a competência Master porque integra escuta, compreensão do interlocutor, clareza, assertividade e regulação emocional para produzir mensagens adequadas aos diferentes públicos, contextos e canais.',
+    },
   },
+
   'COMPORTAMENTAL - Atendimento e Relacionamento com o Cliente': {
     competenciaAD: 'COMPORTAMENTAL - Atendimento e Relacionamento com o Cliente',
-    basicas: ['Empatia', 'Escuta Ativa', 'Atenção'],
-    essenciais: ['Comunicação Assertiva', 'Inteligência Emocional', 'Proatividade'],
-    master: ['Negociação', 'Relacionamentos Conectivos', 'Influência'],
+    basicas: [
+      {
+        nome: 'Empatia',
+        justificativa: 'Empatia é básica para o desenvolvimento de Atendimento e Relacionamento com o Cliente porque permite compreender a necessidade do cliente para além do pedido explícito. Sem essa capacidade, o atendimento tende a ser mecânico e menos aderente à real demanda.',
+      },
+      {
+        nome: 'Escuta Ativa',
+        justificativa: 'Escuta Ativa é básica para o desenvolvimento de Atendimento e Relacionamento com o Cliente porque permite captar corretamente dúvidas, expectativas e problemas apresentados. Sem escuta qualificada, aumenta o risco de oferecer respostas ou soluções inadequadas.',
+      },
+      {
+        nome: 'Atenção',
+        justificativa: 'Atenção é básica para o desenvolvimento de Atendimento e Relacionamento com o Cliente porque permite perceber detalhes relevantes da solicitação, do contexto e dos sinais apresentados pelo cliente. Sem atenção, informações importantes podem ser ignoradas e comprometer a qualidade do atendimento.',
+      },
+    ],
+    essenciais: [
+      {
+        nome: 'Comunicação Assertiva',
+        justificativa: 'Comunicação Assertiva é essencial para o desenvolvimento de Atendimento e Relacionamento com o Cliente porque permite orientar, esclarecer e alinhar expectativas de forma clara e respeitosa. Sem assertividade, o cliente pode receber informações incompletas, confusas ou inadequadas.',
+      },
+      {
+        nome: 'Inteligência Emocional',
+        justificativa: 'Inteligência Emocional é essencial para o desenvolvimento de Atendimento e Relacionamento com o Cliente porque ajuda a manter equilíbrio e postura profissional mesmo diante de reclamações, pressão ou frustração. Sem essa capacidade, situações difíceis podem deteriorar a relação com o cliente.',
+      },
+      {
+        nome: 'Proatividade',
+        justificativa: 'Proatividade é essencial para o desenvolvimento de Atendimento e Relacionamento com o Cliente porque permite antecipar necessidades, buscar soluções e assumir iniciativa diante de problemas. Sem proatividade, o atendimento tende a ficar restrito à resposta imediata, sem geração de valor para o cliente.',
+      },
+    ],
+    master: {
+      nome: 'Atendimento e Relacionamento com o Cliente',
+      justificativa: 'Atendimento e Relacionamento com o Cliente é a competência Master porque integra compreensão da necessidade, atenção aos detalhes, comunicação adequada, equilíbrio emocional e iniciativa para entregar soluções e fortalecer a relação com clientes internos e externos.',
+    },
   },
+
   'COMPORTAMENTAL - Ética, Integridade e Responsabilidade': {
     competenciaAD: 'COMPORTAMENTAL - Ética, Integridade e Responsabilidade',
-    basicas: ['Disciplina', 'Atenção', 'Autopercepção'],
-    essenciais: ['Comunicação Assertiva', 'Planejamento e Organização', 'Proatividade'],
-    master: ['Accountability', 'Responsabilidade Social', 'Tomada de Decisão'],
+    basicas: [
+      {
+        nome: 'Disciplina',
+        justificativa: 'Disciplina é básica para o desenvolvimento de Ética, Integridade e Responsabilidade porque sustenta o cumprimento consistente de regras, compromissos e padrões mesmo quando não há supervisão direta. Sem disciplina, princípios podem ser aplicados de forma irregular.',
+      },
+      {
+        nome: 'Atenção',
+        justificativa: 'Atenção é básica para o desenvolvimento de Ética, Integridade e Responsabilidade porque permite perceber requisitos, riscos, limites e consequências presentes em uma situação. Sem atenção, a pessoa pode descumprir normas ou compromissos por não reconhecer aspectos relevantes do contexto.',
+      },
+      {
+        nome: 'Autopercepção',
+        justificativa: 'Autopercepção é básica para o desenvolvimento de Ética, Integridade e Responsabilidade porque ajuda a reconhecer interesses, vieses e reações pessoais que podem influenciar decisões. Sem essa consciência, torna-se mais difícil avaliar o próprio comportamento de forma responsável.',
+      },
+    ],
+    essenciais: [
+      {
+        nome: 'Comunicação Assertiva',
+        justificativa: 'Comunicação Assertiva é essencial para o desenvolvimento de Ética, Integridade e Responsabilidade porque permite registrar posições, sinalizar riscos, recusar condutas inadequadas e comunicar limites com clareza. Sem assertividade, problemas éticos podem ser silenciados ou tratados de forma ambígua.',
+      },
+      {
+        nome: 'Planejamento e Organização',
+        justificativa: 'Planejamento e Organização é essencial para o desenvolvimento de Ética, Integridade e Responsabilidade porque ajuda a garantir que compromissos, controles, prazos e obrigações sejam efetivamente cumpridos. Sem organização, mesmo boas intenções podem resultar em falhas de responsabilidade.',
+      },
+      {
+        nome: 'Proatividade',
+        justificativa: 'Proatividade é essencial para o desenvolvimento de Ética, Integridade e Responsabilidade porque implica agir diante de riscos, inconsistências ou responsabilidades sem esperar que outra pessoa intervenha. Sem proatividade, situações inadequadas podem permanecer sem tratamento.',
+      },
+    ],
+    master: {
+      nome: 'Ética, Integridade e Responsabilidade',
+      justificativa: 'Ética, Integridade e Responsabilidade é a competência Master porque integra consciência, disciplina, cumprimento de compromissos, comunicação transparente e iniciativa para agir de acordo com normas, valores e princípios organizacionais.',
+    },
   },
+
   'COMPORTAMENTAL - Inteligência Emocional e Autoconhecimento': {
     competenciaAD: 'COMPORTAMENTAL - Inteligência Emocional e Autoconhecimento',
-    basicas: ['Autopercepção', 'Empatia', 'Escuta Ativa'],
-    essenciais: ['Inteligência Emocional', 'Resiliência', 'Adaptabilidade'],
-    master: ['Gestão de Conflitos', 'Presença Executiva', 'Relacionamentos Conectivos'],
+    basicas: [
+      {
+        nome: 'Autopercepção',
+        justificativa: 'Autopercepção é básica para o desenvolvimento de Inteligência Emocional e Autoconhecimento porque a pessoa precisa primeiro reconhecer suas próprias emoções, padrões de reação, limites e gatilhos. Sem essa percepção, não há base para regular conscientemente o próprio comportamento.',
+      },
+      {
+        nome: 'Empatia',
+        justificativa: 'Empatia é básica para o desenvolvimento de Inteligência Emocional e Autoconhecimento porque amplia a capacidade de perceber emoções e perspectivas de outras pessoas. Sem essa leitura do outro, a inteligência emocional fica restrita ao mundo interno e perde eficácia nas relações.',
+      },
+      {
+        nome: 'Escuta Ativa',
+        justificativa: 'Escuta Ativa é básica para o desenvolvimento de Inteligência Emocional e Autoconhecimento porque permite captar sinais, sentimentos e informações que ajudam a compreender o impacto das próprias ações e das emoções nas interações. Sem escuta, parte importante desse aprendizado se perde.',
+      },
+    ],
+    essenciais: [
+      {
+        nome: 'Inteligência Emocional',
+        justificativa: 'Inteligência Emocional é essencial para o desenvolvimento de Inteligência Emocional e Autoconhecimento porque transforma a percepção das emoções em capacidade de regulá-las e utilizá-las de forma construtiva. Sem essa regulação, reconhecer emoções não é suficiente para mudar comportamento.',
+      },
+      {
+        nome: 'Resiliência',
+        justificativa: 'Resiliência é essencial para o desenvolvimento de Inteligência Emocional e Autoconhecimento porque permite lidar com frustração, pressão e adversidade sem perder estabilidade. Sem resiliência, o conhecimento sobre si mesmo pode não se converter em resposta emocional mais madura diante de dificuldades.',
+      },
+      {
+        nome: 'Adaptabilidade',
+        justificativa: 'Adaptabilidade é essencial para o desenvolvimento de Inteligência Emocional e Autoconhecimento porque permite ajustar comportamentos a partir da leitura das próprias emoções e do contexto. Sem capacidade de adaptação, o autoconhecimento não se traduz em mudança prática.',
+      },
+    ],
+    master: {
+      nome: 'Inteligência Emocional e Autoconhecimento',
+      justificativa: 'Inteligência Emocional e Autoconhecimento é a competência Master porque integra consciência de si, compreensão do outro, regulação emocional, resiliência e capacidade de ajustar o comportamento de forma consciente e funcional.',
+    },
   },
+
   'COMPORTAMENTAL - Adaptabilidade, Flexibilidade e Resiliência': {
     competenciaAD: 'COMPORTAMENTAL - Adaptabilidade, Flexibilidade e Resiliência',
-    basicas: ['Autopercepção', 'Disciplina', 'Atenção'],
-    essenciais: ['Adaptabilidade', 'Resiliência', 'Inteligência Emocional'],
-    master: ['Protagonismo', 'Tomada de Decisão', 'Visão Estratégica'],
+    basicas: [
+      {
+        nome: 'Autopercepção',
+        justificativa: 'Autopercepção é básica para o desenvolvimento de Adaptabilidade, Flexibilidade e Resiliência porque permite reconhecer como a pessoa reage a mudanças, incertezas e pressões. Sem essa consciência, torna-se mais difícil identificar o que precisa ser ajustado no próprio comportamento.',
+      },
+      {
+        nome: 'Disciplina',
+        justificativa: 'Disciplina é básica para o desenvolvimento de Adaptabilidade, Flexibilidade e Resiliência porque ajuda a preservar constância e compromisso mesmo quando rotinas, prioridades ou condições mudam. Sem disciplina, a mudança pode gerar perda de organização e continuidade.',
+      },
+      {
+        nome: 'Atenção',
+        justificativa: 'Atenção é básica para o desenvolvimento de Adaptabilidade, Flexibilidade e Resiliência porque permite perceber alterações no ambiente, novos riscos e sinais que exigem mudança de abordagem. Sem atenção ao contexto, a pessoa pode insistir em respostas que deixaram de ser adequadas.',
+      },
+    ],
+    essenciais: [
+      {
+        nome: 'Adaptabilidade',
+        justificativa: 'Adaptabilidade é essencial para o desenvolvimento de Adaptabilidade, Flexibilidade e Resiliência porque permite modificar estratégias, comportamentos e formas de atuação diante de novas condições. Sem adaptação, não há resposta efetiva à mudança.',
+      },
+      {
+        nome: 'Resiliência',
+        justificativa: 'Resiliência é essencial para o desenvolvimento de Adaptabilidade, Flexibilidade e Resiliência porque permite recuperar-se de dificuldades, sustentar o desempenho e continuar atuando diante de adversidades. Sem resiliência, a mudança pode gerar paralisação ou perda prolongada de desempenho.',
+      },
+      {
+        nome: 'Inteligência Emocional',
+        justificativa: 'Inteligência Emocional é essencial para o desenvolvimento de Adaptabilidade, Flexibilidade e Resiliência porque ajuda a administrar medo, frustração, ansiedade e resistência provocados pelas mudanças. Sem regulação emocional, a pessoa pode compreender a necessidade de mudar, mas não conseguir agir de forma flexível.',
+      },
+    ],
+    master: {
+      nome: 'Adaptabilidade, Flexibilidade e Resiliência',
+      justificativa: 'Adaptabilidade, Flexibilidade e Resiliência é a competência Master porque integra percepção do contexto e de si mesmo, estabilidade diante da pressão e capacidade de ajustar comportamento e estratégia sem perder continuidade e desempenho.',
+    },
   },
 };
 
@@ -817,20 +992,33 @@ export function AcoesNova() {
                   <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
                     <div style={{ fontWeight: 700, marginBottom: '8px' }}>Básicas</div>
                     <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
-                      {selectedMacroReference.basicas.map((item) => <li key={item}>{item}</li>)}
+                      {selectedMacroReference.basicas.map((item) => (
+                        <li key={item.nome} style={{ marginBottom: '8px' }}>
+                          <strong>{item.nome}</strong>
+                          <div style={{ marginTop: '2px', color: '#64748b', lineHeight: 1.45 }}>{item.justificativa}</div>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                   <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
                     <div style={{ fontWeight: 700, marginBottom: '8px' }}>Essenciais</div>
                     <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
-                      {selectedMacroReference.essenciais.map((item) => <li key={item}>{item}</li>)}
+                      {selectedMacroReference.essenciais.map((item) => (
+                        <li key={item.nome} style={{ marginBottom: '8px' }}>
+                          <strong>{item.nome}</strong>
+                          <div style={{ marginTop: '2px', color: '#64748b', lineHeight: 1.45 }}>{item.justificativa}</div>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                   <div style={{ padding: '12px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
                     <div style={{ fontWeight: 700, marginBottom: '8px' }}>Master</div>
-                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#374151', fontSize: '14px' }}>
-                      {selectedMacroReference.master.map((item) => <li key={item}>{item}</li>)}
-                    </ul>
+                    <div style={{ color: '#374151', fontSize: '14px' }}>
+                      <strong>{selectedMacroReference.master.nome}</strong>
+                      <div style={{ marginTop: '4px', color: '#64748b', lineHeight: 1.45 }}>
+                        {selectedMacroReference.master.justificativa}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
