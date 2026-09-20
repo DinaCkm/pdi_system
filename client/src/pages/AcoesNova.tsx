@@ -22,6 +22,11 @@ const referenciasMetodologicas: Record<string, ReferenciaMetodologica> = {
     essenciais: ['Comunicação Assertiva', 'Inteligência Emocional'],
     master: ['Influência', 'Presença Executiva', 'Negociação'],
   },
+  'COMPORTAMENTAL - Atendimento e Relacionamento com o Cliente': {
+    basicas: ['Empatia', 'Escuta Ativa', 'Atenção'],
+    essenciais: ['Comunicação Assertiva', 'Inteligência Emocional', 'Proatividade'],
+    master: ['Negociação', 'Relacionamentos Conectivos', 'Influência'],
+  },
 };
 
 export function AcoesNova() {
