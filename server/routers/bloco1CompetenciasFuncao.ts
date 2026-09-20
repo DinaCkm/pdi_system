@@ -3,6 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
+import { ensureTechnicalMatrixTables } from "../services/technicalMatrixSchema";
 import { avaliacoes, medicoesCompetencias } from "../../drizzle/avaliacoes-schema";
 import { ciclos, competenciasMacros, departamentos, users } from "../../drizzle/schema";
 import {
@@ -82,7 +83,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
   mapaIndividual: adminProcedure
     .input(z.object({ colaboradorId: z.number().int().positive() }))
     .query(async ({ input }) => {
-      const db = await dbObrigatorio();
+      const db = await ensureTechnicalMatrixTables();
 
       const empregado = (
         await db
@@ -126,7 +127,8 @@ export const bloco1CompetenciasFuncaoRouter = router({
         sql.raw(
           "SELECT m.id AS matrizId, m.status AS matrizStatus, m.fonte AS matrizFonte, " +
           "e.id AS eixoRegistroId, e.eixo_id AS eixoId, e.eixo_nome AS eixoNome, " +
-          "e.relacao, e.percentual_anterior AS percentualAnterior " +
+          "e.relacao, e.status_classificacao AS statusClassificacao, e.justificativa, " +
+          "e.percentual_anterior AS percentualAnterior " +
           "FROM prova_utic_matrizes m " +
           "LEFT JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id " +
           "WHERE m.colaborador_id = " + Number(input.colaboradorId) + " " +
@@ -174,7 +176,9 @@ export const bloco1CompetenciasFuncaoRouter = router({
             eixoRegistroId: Number(linha.eixoRegistroId),
             eixoId: String(linha.eixoId),
             eixoNome: String(linha.eixoNome),
-            classificacao: String(linha.relacao),
+            classificacao: linha.relacao ? String(linha.relacao) : null,
+            statusClassificacao: String(linha.statusClassificacao || "PENDENTE"),
+            justificativa: linha.justificativa ? String(linha.justificativa) : null,
             percentualAnterior,
             percentualAtual,
             evolucaoPp,
