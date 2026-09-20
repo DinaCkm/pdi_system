@@ -480,6 +480,10 @@ const referenciasMetodologicas: Record<string, ReferenciaMetodologica> = {
   }
 };
 
+const aliasesCompetenciasHistoricas: Record<string, string> = {
+  'Atuação Colaborativa': 'COMPORTAMENTAL - Integração Organizacional e Trabalho Interáreas',
+};
+
 export function AcoesNova() {
   const [, navigate] = useLocation();
   const searchString = useSearch(); 
@@ -587,7 +591,10 @@ export function AcoesNova() {
 
   const selectedMacroReference = useMemo(() => {
     if (!selectedMacroName) return null;
-    const nomeNormalizado = selectedMacroName.replace(/^COMPORTAMENTAL\s*-\s*/i, 'COMPORTAMENTAL - ');
+    const nomeSemPrefixo = selectedMacroName.replace(/^COMPORTAMENTAL\s*-\s*/i, '').trim();
+    const aliasAtual = aliasesCompetenciasHistoricas[nomeSemPrefixo];
+    const nomeNormalizado = aliasAtual
+      ?? selectedMacroName.replace(/^COMPORTAMENTAL\s*-\s*/i, 'COMPORTAMENTAL - ');
     return referenciasMetodologicas[nomeNormalizado] ?? null;
   }, [selectedMacroName]);
 
