@@ -11,8 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 const relacaoLabel: Record<string, string> = {
   ESSENCIAL: "Essencial",
   TRANSVERSAL: "Transversal",
-  NAO_APLICAVEL: "Não aplicável",
-  PENDENTE: "Pendente",
+  NAO_ESSENCIAL: "Não essencial",
 };
 
 const evolucaoLabel: Record<string, string> = {
@@ -26,6 +25,12 @@ export default function Bloco1CompetenciasFuncao() {
   const [, navigate] = useLocation();
   const [colaboradorId, setColaboradorId] = useState("");
   const [busca, setBusca] = useState("");
+  const [eixoAberto, setEixoAberto] = useState<number | null>(null);
+  const [statusEdicao, setStatusEdicao] = useState<"CLASSIFICADO" | "PENDENTE">("CLASSIFICADO");
+  const [relacaoEdicao, setRelacaoEdicao] = useState<"ESSENCIAL" | "TRANSVERSAL" | "NAO_ESSENCIAL" | "">("");
+  const [justificativaEdicao, setJustificativaEdicao] = useState("");
+  const [motivoEdicao, setMotivoEdicao] = useState("Revisão da classificação do eixo técnico");
+  const [mensagemEdicao, setMensagemEdicao] = useState("");
 
   const empregados = trpc.bloco1CompetenciasFuncao.empregados.useQuery();
   const pdis = trpc.pdis.list.useQuery();
@@ -33,6 +38,57 @@ export default function Bloco1CompetenciasFuncao() {
     { colaboradorId: Number(colaboradorId || 0) },
     { enabled: Boolean(colaboradorId) },
   );
+
+  const salvarEixoMutation = (trpc as any).provaUticMatriz.salvarEixo.useMutation({
+    onSuccess: async () => {
+      await mapa.refetch();
+      setMensagemEdicao("Classificação e justificativa atualizadas com histórico preservado.");
+    },
+    onError: (error: any) => {
+      setMensagemEdicao(error?.message || "Não foi possível salvar a alteração.");
+    },
+  });
+
+  const abrirJustificativa = (item: any) => {
+    const id = Number(item.eixoRegistroId);
+    if (eixoAberto === id) {
+      setEixoAberto(null);
+      setMensagemEdicao("");
+      return;
+    }
+    setEixoAberto(id);
+    setStatusEdicao(item.statusClassificacao === "PENDENTE" ? "PENDENTE" : "CLASSIFICADO");
+    setRelacaoEdicao(item.classificacao || "");
+    setJustificativaEdicao(item.justificativa || "");
+    setMotivoEdicao("Revisão da classificação do eixo técnico");
+    setMensagemEdicao("");
+  };
+
+  const salvarJustificativa = async (item: any) => {
+    if (!mapa.data?.tecnico?.matrizId) {
+      setMensagemEdicao("Matriz técnica não localizada.");
+      return;
+    }
+    if (statusEdicao === "CLASSIFICADO" && !relacaoEdicao) {
+      setMensagemEdicao("Selecione Essencial, Transversal ou Não essencial.");
+      return;
+    }
+    if (motivoEdicao.trim().length < 3) {
+      setMensagemEdicao("Informe o motivo da alteração.");
+      return;
+    }
+    await salvarEixoMutation.mutateAsync({
+      matrizId: Number(mapa.data.tecnico.matrizId),
+      eixoId: String(item.eixoId),
+      eixo: String(item.eixoNome),
+      relacao: statusEdicao === "PENDENTE" ? null : relacaoEdicao,
+      statusClassificacao: statusEdicao,
+      justificativa: justificativaEdicao.trim() || null,
+      anterior: item.percentualAnterior === null ? null : Number(item.percentualAnterior),
+      motivo: motivoEdicao.trim(),
+      observacao: "Alteração realizada pela tela Evolução Individual.",
+    });
+  };
 
   const empregadosFiltrados = useMemo(() => {
     const termo = busca.trim().toLocaleLowerCase("pt-BR");
@@ -116,8 +172,8 @@ export default function Bloco1CompetenciasFuncao() {
             <CardHeader>
               <CardTitle>2. Competências Técnicas</CardTitle>
               <CardDescription>
-                Fonte: questionário individual de levantamento das atividades. A classificação Essencial/Transversal
-                é individual e não deve ser copiada automaticamente para outra pessoa com a mesma função.
+                Fonte: questionário individual de levantamento das atividades. A classificação Essencial, Transversal ou Não essencial
+                é individual e deve ser sustentada pela justificativa registrada para aquele empregado.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -142,12 +198,20 @@ export default function Bloco1CompetenciasFuncao() {
                       </TableRow>
                     ) : (
                       mapa.data.tecnico.competencias.map((item: any) => (
+                        <>
                         <TableRow key={item.eixoRegistroId}>
                           <TableCell className="font-medium">{item.eixoNome}</TableCell>
                           <TableCell>
-                            <Badge variant={item.classificacao === "ESSENCIAL" ? "default" : "outline"}>
-                              {relacaoLabel[item.classificacao] || item.classificacao}
-                            </Badge>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge variant={item.statusClassificacao === "PENDENTE" ? "secondary" : item.classificacao === "ESSENCIAL" ? "default" : "outline"}>
+                                {item.statusClassificacao === "PENDENTE"
+                                  ? "Pendente"
+                                  : relacaoLabel[item.classificacao] || item.classificacao || "Sem classificação"}
+                              </Badge>
+                              <Button size="sm" variant="ghost" onClick={() => abrirJustificativa(item)}>
+                                {eixoAberto === Number(item.eixoRegistroId) ? "Fechar" : "Ver / editar justificativa"}
+                              </Button>
+                            </div>
                           </TableCell>
                           <TableCell>
                             {item.percentualAnterior === null ? "—" : `${Number(item.percentualAnterior).toFixed(1)}%`}
@@ -176,6 +240,68 @@ export default function Bloco1CompetenciasFuncao() {
                             </Button>
                           </TableCell>
                         </TableRow>
+                        {eixoAberto === Number(item.eixoRegistroId) && (
+                          <TableRow key={`${item.eixoRegistroId}-justificativa`}>
+                            <TableCell colSpan={6} className="bg-muted/20">
+                              <div className="grid gap-4 p-3 md:grid-cols-2">
+                                <label className="space-y-2 text-sm font-medium">
+                                  Situação da análise
+                                  <select
+                                    value={statusEdicao}
+                                    onChange={(event) => {
+                                      const valor = event.target.value as "CLASSIFICADO" | "PENDENTE";
+                                      setStatusEdicao(valor);
+                                      if (valor === "PENDENTE") setRelacaoEdicao("");
+                                    }}
+                                    className="h-10 w-full rounded-md border bg-background px-3 font-normal"
+                                  >
+                                    <option value="CLASSIFICADO">Classificado</option>
+                                    <option value="PENDENTE">Pendente de análise</option>
+                                  </select>
+                                </label>
+                                <label className="space-y-2 text-sm font-medium">
+                                  Classificação
+                                  <select
+                                    value={relacaoEdicao}
+                                    disabled={statusEdicao === "PENDENTE"}
+                                    onChange={(event) => setRelacaoEdicao(event.target.value as any)}
+                                    className="h-10 w-full rounded-md border bg-background px-3 font-normal"
+                                  >
+                                    <option value="">Selecione</option>
+                                    <option value="ESSENCIAL">Essencial</option>
+                                    <option value="TRANSVERSAL">Transversal</option>
+                                    <option value="NAO_ESSENCIAL">Não essencial</option>
+                                  </select>
+                                </label>
+                                <label className="space-y-2 text-sm font-medium md:col-span-2">
+                                  Justificativa da classificação
+                                  <textarea
+                                    value={justificativaEdicao}
+                                    onChange={(event) => setJustificativaEdicao(event.target.value)}
+                                    rows={4}
+                                    className="w-full rounded-md border bg-background p-3 font-normal"
+                                    placeholder="Explique por que este eixo é Essencial, Transversal ou Não essencial para este empregado."
+                                  />
+                                </label>
+                                <label className="space-y-2 text-sm font-medium md:col-span-2">
+                                  Motivo da alteração
+                                  <Input value={motivoEdicao} onChange={(event) => setMotivoEdicao(event.target.value)} />
+                                </label>
+                                <div className="md:col-span-2 flex flex-wrap items-center gap-3">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => salvarJustificativa(item)}
+                                    disabled={salvarEixoMutation.isPending}
+                                  >
+                                    {salvarEixoMutation.isPending ? "Salvando..." : "Salvar classificação e justificativa"}
+                                  </Button>
+                                  {mensagemEdicao && <span className="text-sm text-muted-foreground">{mensagemEdicao}</span>}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        </>
                       ))
                     )}
                   </TableBody>
@@ -269,7 +395,7 @@ export default function Bloco1CompetenciasFuncao() {
               <CardTitle>Regra metodológica aplicada</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground space-y-2">
-              <p><strong>Técnicas:</strong> a relação Essencial/Transversal é individual e decorre das atividades declaradas pelo empregado no questionário.</p>
+              <p><strong>Técnicas:</strong> a classificação final é Essencial, Transversal ou Não essencial. “Pendente” é apenas status temporário de análise. A justificativa deve registrar a evidência utilizada para a decisão individual.</p>
               <p><strong>Comportamentais:</strong> comparar a mesma competência entre 2024 e 2025.</p>
               <p><strong>Leitura:</strong> resultado maior = evolução; resultado igual = estabilidade; resultado menor = redução.</p>
               <p><strong>PDI:</strong> estabilidade ou redução sinaliza necessidade de atenção, mas a criação de nova ação permanece disponível em qualquer resultado, inclusive quando houve evolução.</p>

@@ -10,7 +10,7 @@ import ImportarProvas from "./ImportarProvas";
 type TipoImportacao = "TECNICA" | "COMPORTAMENTAL" | "PROVA";
 type LinhaTecnica = {
   linha: number; nome: string | null; email: string | null; cpf: string | null; unidade: string | null;
-  eixoId: string | null; eixoNome: string; relacao: "ESSENCIAL" | "TRANSVERSAL" | "NAO_APLICAVEL" | "PENDENTE";
+  eixoId: string | null; eixoNome: string; relacao: "ESSENCIAL" | "TRANSVERSAL" | "NAO_ESSENCIAL" | "NAO_APLICAVEL" | "PENDENTE";
   pontuacao: number | null; justificativa: string | null; fonte: string | null; observacao: string | null;
 };
 type LinhaComportamental = {
@@ -68,6 +68,7 @@ function relacao(valor: unknown, linha: number): LinhaTecnica["relacao"] {
   if (!item || item === "pendente") return "PENDENTE";
   if (item === "essencial") return "ESSENCIAL";
   if (item === "transversal") return "TRANSVERSAL";
+  if (["nao essencial", "não essencial"].includes(item)) return "NAO_ESSENCIAL";
   if (["nao aplicavel", "nao se aplica", "na"].includes(item)) return "NAO_APLICAVEL";
   throw new Error(`Linha ${linha}: classificação “${String(valor)}” não reconhecida.`);
 }
