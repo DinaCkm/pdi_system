@@ -204,6 +204,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
         .select({
           medicaoId: medicoesCompetencias.id,
           avaliacaoId: avaliacoes.id,
+          avaliacaoTitulo: avaliacoes.titulo,
           dataReferencia: avaliacoes.dataReferencia,
           cicloId: avaliacoes.cicloId,
           cicloNome: ciclos.nome,
@@ -235,10 +236,11 @@ export const bloco1CompetenciasFuncaoRouter = router({
 
       function anoDaMedicao(item: any): number | null {
         const candidatos = [
+          item.avaliacaoTitulo,
+          item.dataReferencia,
           item.cicloNome,
           item.cicloDataInicio,
           item.cicloDataFim,
-          item.dataReferencia,
         ]
           .filter(Boolean)
           .map((valor) => String(valor));
