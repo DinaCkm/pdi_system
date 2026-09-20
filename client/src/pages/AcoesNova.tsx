@@ -37,6 +37,12 @@ const referenciasMetodologicas: Record<string, ReferenciaMetodologica> = {
     essenciais: ['Comunicação Assertiva', 'Planejamento e Organização', 'Proatividade'],
     master: ['Accountability', 'Responsabilidade Social', 'Tomada de Decisão'],
   },
+  'COMPORTAMENTAL - Inteligência Emocional e Autoconhecimento': {
+    competenciaAD: 'COMPORTAMENTAL - Inteligência Emocional e Autoconhecimento',
+    basicas: ['Autopercepção', 'Empatia', 'Escuta Ativa'],
+    essenciais: ['Inteligência Emocional', 'Resiliência', 'Adaptabilidade'],
+    master: ['Gestão de Conflitos', 'Presença Executiva', 'Relacionamentos Conectivos'],
+  },
 };
 
 export function AcoesNova() {
