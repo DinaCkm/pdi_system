@@ -10,8 +10,6 @@ type Questao = {
   id: string;
   enunciado: string;
   opcoes: Array<{ letra: string; texto: string; naoSei?: boolean }>;
-  macroarea?: string | null;
-  microarea?: string | null;
 };
 
 export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number }) {
@@ -146,7 +144,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between gap-3"><Badge variant="secondary">Questão {indice + 1} de {questoes.length}</Badge>{questao.macroarea && <span className="text-xs text-muted-foreground">{questao.macroarea}{questao.microarea ? ` / ${questao.microarea}` : ""}</span>}</div>
+            <div className="flex items-center justify-between gap-3"><Badge variant="secondary">Questão {indice + 1} de {questoes.length}</Badge></div>
             <CardTitle className="pt-2 text-lg leading-relaxed">{questao.enunciado}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">

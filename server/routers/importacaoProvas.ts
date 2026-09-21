@@ -663,8 +663,12 @@ export const importacaoProvasRouter = router({
     return linhas.map(item => {
       let questoes: any[] = [];
       try { questoes = item.questoesJson ? JSON.parse(item.questoesJson) : []; } catch { questoes = []; }
-      const macroareas = Array.from(new Set(questoes.map(q => String(q?.macroarea ?? "").trim()).filter(Boolean)));
-      const microareas = Array.from(new Set(questoes.map(q => String(q?.microarea ?? "").trim()).filter(Boolean)));
+      const eixosTecnicos = Array.from(new Set(
+        questoes
+          .flatMap(q => Array.isArray(q?.eixos) ? q.eixos : [])
+          .map((eixo: any) => String(eixo?.nome ?? "").trim())
+          .filter(Boolean),
+      )).sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
       return {
         id: Number(item.id),
         codigo: item.codigo,
@@ -675,8 +679,7 @@ export const importacaoProvasRouter = router({
         arquivoNome: item.arquivoNome,
         status: item.status,
         createdAt: item.createdAt,
-        macroareas,
-        microareas,
+        eixosTecnicos,
       };
     });
   }),
