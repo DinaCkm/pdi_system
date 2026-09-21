@@ -679,5 +679,5 @@ export const importacaoProvasRouter = router({
         microareas,
       };
     });
-  }),,
+  }),
 });
