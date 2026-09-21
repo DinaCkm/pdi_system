@@ -4,6 +4,7 @@ import { AlertCircle, ArrowDown, ArrowUp, CheckCircle2, Eye, FileSpreadsheet, Hi
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { trpc } from "@/lib/trpc";
 
 type Opcao = { letra: string; texto: string; naoSei: boolean };
@@ -80,6 +81,16 @@ function renumerarOpcoes(opcoes: Opcao[], gabaritoAtual: string) {
     opcoes: renumeradas,
     gabarito: indiceGabarito >= 0 && renumeradas[indiceGabarito] ? renumeradas[indiceGabarito].letra : "",
   };
+}
+
+function areasDaProva(item: any) {
+  return Array.from(
+    new Set(
+      [...(item?.macroareas ?? []), ...(item?.microareas ?? [])]
+        .map((area: unknown) => String(area ?? "").trim())
+        .filter(Boolean),
+    ),
+  );
 }
 
 function localizarColunasAlternativas(cabecalhosOriginais: unknown[]): ColunaAlternativa[] {
@@ -521,7 +532,7 @@ export default function ImportarProvas() {
               <table className="w-full min-w-[1080px] text-sm">
                 <thead><tr className="border-b text-left">
                   <th className="px-3 py-2">Código</th><th className="px-3 py-2">Avaliação</th><th className="px-3 py-2">Unidade</th>
-                  <th className="px-3 py-2">Área(s)</th><th className="px-3 py-2">Ano</th><th className="px-3 py-2">Questões</th>
+                  <th className="w-[150px] px-3 py-2">Área(s)</th><th className="px-3 py-2">Ano</th><th className="px-3 py-2">Questões</th>
                   <th className="px-3 py-2">Status</th><th className="px-3 py-2">Ações</th>
                 </tr></thead>
                 <tbody>
@@ -531,7 +542,39 @@ export default function ImportarProvas() {
                         <td className="px-3 py-3 font-medium">{item.codigo}</td>
                         <td className="px-3 py-3">{item.nome}</td>
                         <td className="px-3 py-3">{item.unidade}</td>
-                        <td className="px-3 py-3 text-xs">{[...(item.macroareas ?? []), ...(item.microareas ?? [])].join(", ") || "—"}</td>
+                        <td className="w-[150px] px-3 py-3">
+                          {(() => {
+                            const areas = areasDaProva(item);
+                            if (areas.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
+                            return (
+                              <div className="flex min-w-[120px] flex-col items-start gap-1">
+                                <span className="text-sm font-medium">{areas.length} área{areas.length === 1 ? "" : "s"}</span>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs">
+                                      Ver áreas
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent align="start" className="w-[380px] max-w-[calc(100vw-2rem)] p-0">
+                                    <div className="border-b px-4 py-3">
+                                      <p className="font-semibold">Áreas da prova</p>
+                                      <p className="text-xs text-muted-foreground">{areas.length} área{areas.length === 1 ? "" : "s"} vinculada{areas.length === 1 ? "" : "s"}</p>
+                                    </div>
+                                    <div className="max-h-72 overflow-y-auto p-4">
+                                      <ul className="space-y-2 text-sm">
+                                        {areas.map((area: string) => (
+                                          <li key={area} className="rounded-md bg-slate-50 px-3 py-2 leading-relaxed">
+                                            {area}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                            );
+                          })()}
+                        </td>
                         <td className="px-3 py-3">{item.ano}</td>
                         <td className="px-3 py-3">{item.totalQuestoes}</td>
                         <td className="px-3 py-3">{item.status}</td>
