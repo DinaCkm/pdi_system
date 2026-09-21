@@ -53,6 +53,25 @@ export const actionsRouter = router({
     }
   }),
 
+  // Histórico real de ações do empregado vinculado ao PDI selecionado
+  historyForPdi: protectedProcedure
+    .input(z.object({ pdiId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin" && ctx.user.role !== "lider" && ctx.user.role !== "gerente") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Sem permissão para consultar o histórico de ações." });
+      }
+
+      const pdi = await db.getPDIById(input.pdiId);
+      if (!pdi) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "PDI não encontrado." });
+      }
+
+      const colaboradorId = Number((pdi as any).colaboradorId);
+      if (!colaboradorId) return [];
+
+      return await db.getActionsByColaboradorId(colaboradorId);
+    }),
+
   // Biblioteca dinâmica: modelos consolidados a partir das ações já existentes
   library: protectedProcedure.query(async ({ ctx }) => {
     if (ctx.user.role !== "admin" && ctx.user.role !== "lider" && ctx.user.role !== "gerente") {
