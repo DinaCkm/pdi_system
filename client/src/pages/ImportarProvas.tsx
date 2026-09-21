@@ -220,6 +220,10 @@ export default function ImportarProvas() {
     { id: historicoId ?? 0 },
     { enabled: Boolean(historicoId), refetchOnWindowFocus: false },
   );
+  const catalogoEixosQuery = api.catalogoEixos.useQuery(
+    { unidade: provaEdicao?.unidade ?? "" },
+    { enabled: Boolean(provaEdicao?.unidade), refetchOnWindowFocus: false },
+  );
 
   useEffect(() => {
     if (provaQuery.data?.prova && editandoId) {
@@ -600,6 +604,11 @@ export default function ImportarProvas() {
                               </div>
 
                               {provaQuery.isLoading || !provaEdicao ? <p className="text-sm text-muted-foreground">Carregando prova...</p> : <div className="space-y-6">
+                                {catalogoEixosQuery.data?.eixos?.length ? (
+                                  <div className="rounded-md border border-blue-200 bg-blue-50 p-4 text-sm md:col-span-2">
+                                    <strong>Matriz Técnica oficial da UGP:</strong> {catalogoEixosQuery.data.versao} · {catalogoEixosQuery.data.eixos.length} eixos. Cada questão deve possuir um único Eixo Técnico principal.
+                                  </div>
+                                ) : null}
                                 <div className="grid gap-3 md:grid-cols-2">
                                   <label className="text-sm">Código<input className="mt-1 w-full rounded-md border px-3 py-2" value={provaEdicao.codigo} onChange={e => setProvaEdicao({ ...provaEdicao, codigo: e.target.value })} /></label>
                                   <label className="text-sm">Nome<input className="mt-1 w-full rounded-md border px-3 py-2" value={provaEdicao.nome} onChange={e => setProvaEdicao({ ...provaEdicao, nome: e.target.value })} /></label>
@@ -636,7 +645,29 @@ export default function ImportarProvas() {
                                         {questao.opcoes.map((opcao, opcaoIndex) => <div key={opcaoIndex} className="grid gap-2 md:grid-cols-[48px_1fr_auto]"><span className="pt-2 text-sm font-semibold">{opcao.letra}</span><textarea className="min-h-[42px] rounded-md border px-3 py-2 text-sm" value={opcao.texto} onChange={e => atualizarOpcao(questaoIndex, opcaoIndex, e.target.value)} /><Button type="button" variant="outline" size="sm" onClick={() => removerAlternativa(questaoIndex, opcaoIndex)}><Trash2 className="h-4 w-4" /></Button></div>)}
                                       </div>
                                       <div className="grid gap-3 md:grid-cols-2">
-                                        <label className="text-sm md:col-span-2"><strong>Eixo(s) Técnico(s) da questão</strong> — separados por vírgula<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.eixos.map(eixo => eixo.nome).join(", ")} onChange={e => atualizarQuestao(questaoIndex, { eixos: e.target.value.split(",").map(item => item.trim()).filter(Boolean).map(nome => ({ nome })) })} /></label>
+                                        {catalogoEixosQuery.data?.eixos?.length ? (
+                                          <label className="text-sm md:col-span-2">
+                                            <strong>Eixo Técnico principal da questão</strong>
+                                            <select
+                                              className="mt-1 w-full rounded-md border px-3 py-2"
+                                              value={questao.eixos[0]?.nome ?? ""}
+                                              onChange={e => atualizarQuestao(questaoIndex, { eixos: e.target.value ? [{ nome: e.target.value }] : [] })}
+                                            >
+                                              <option value="">Selecione um dos 10 eixos oficiais</option>
+                                              {catalogoEixosQuery.data.eixos.map((eixo: any) => (
+                                                <option key={eixo.id} value={eixo.nome}>{eixo.id} — {eixo.nome}</option>
+                                              ))}
+                                            </select>
+                                            <span className="mt-1 block text-xs text-muted-foreground">
+                                              Matriz oficial {catalogoEixosQuery.data.versao}. Para a UGP, cada questão mede um único eixo técnico principal.
+                                            </span>
+                                          </label>
+                                        ) : (
+                                          <label className="text-sm md:col-span-2">
+                                            <strong>Eixo(s) Técnico(s) da questão</strong> — separados por vírgula
+                                            <input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.eixos.map(eixo => eixo.nome).join(", ")} onChange={e => atualizarQuestao(questaoIndex, { eixos: e.target.value.split(",").map(item => item.trim()).filter(Boolean).map(nome => ({ nome })) })} />
+                                          </label>
+                                        )}
 
                                         <label className="text-sm md:col-span-2">Fonte / Tag<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.tagFonte ?? ""} onChange={e => atualizarQuestao(questaoIndex, { tagFonte: e.target.value || null })} /></label>
                                       </div>
