@@ -56,6 +56,20 @@ async function ensureTables() {
       UNIQUE KEY uq_provas_importadas_codigo_ano (codigo, ano)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `));
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS provas_importadas_historico (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      prova_id INT NOT NULL,
+      acao VARCHAR(40) NOT NULL,
+      usuario_id INT NULL,
+      resumo_json LONGTEXT NULL,
+      antes_json LONGTEXT NULL,
+      depois_json LONGTEXT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX provas_importadas_historico_prova_idx (prova_id),
+      INDEX provas_importadas_historico_created_idx (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `));
   return db;
 }
 
@@ -146,6 +160,99 @@ function resumo(prova: ProvaRascunho) {
   };
 }
 
+
+type AlteracaoAuditoria = {
+  campo: string;
+  antes: unknown;
+  depois: unknown;
+};
+
+function valorComparavel(valor: unknown) {
+  if (valor === undefined) return null;
+  return valor;
+}
+
+function mudou(antes: unknown, depois: unknown) {
+  return JSON.stringify(valorComparavel(antes)) !== JSON.stringify(valorComparavel(depois));
+}
+
+function resumirAlteracoes(antes: ProvaRascunho, depois: ProvaRascunho): AlteracaoAuditoria[] {
+  const alteracoes: AlteracaoAuditoria[] = [];
+  const camposCabecalho: Array<keyof Pick<ProvaRascunho, "codigo" | "nome" | "unidade" | "ano" | "descricao">> = [
+    "codigo",
+    "nome",
+    "unidade",
+    "ano",
+    "descricao",
+  ];
+
+  for (const campo of camposCabecalho) {
+    if (mudou(antes[campo], depois[campo])) {
+      alteracoes.push({ campo: `Prova · ${campo}`, antes: antes[campo] ?? null, depois: depois[campo] ?? null });
+    }
+  }
+
+  const total = Math.max(antes.questoes.length, depois.questoes.length);
+  for (let index = 0; index < total; index += 1) {
+    const anterior = antes.questoes[index];
+    const atual = depois.questoes[index];
+    const referencia = atual?.id || anterior?.id || String(index + 1);
+
+    if (!anterior && atual) {
+      alteracoes.push({ campo: `Questão ${index + 1} (${referencia}) · adicionada`, antes: null, depois: atual });
+      continue;
+    }
+    if (anterior && !atual) {
+      alteracoes.push({ campo: `Questão ${index + 1} (${referencia}) · excluída`, antes: anterior, depois: null });
+      continue;
+    }
+    if (!anterior || !atual) continue;
+
+    const pares: Array<[string, unknown, unknown]> = [
+      ["ID", anterior.id, atual.id],
+      ["Enunciado", anterior.enunciado, atual.enunciado],
+      ["Gabarito", anterior.gabarito, atual.gabarito],
+      ["Alternativas", anterior.opcoes, atual.opcoes],
+      ["Eixos", anterior.eixos, atual.eixos],
+      ["Macroárea", anterior.macroarea ?? null, atual.macroarea ?? null],
+      ["Microárea", anterior.microarea ?? null, atual.microarea ?? null],
+      ["Fonte / Tag", anterior.tagFonte ?? null, atual.tagFonte ?? null],
+    ];
+
+    for (const [rotulo, valorAntes, valorDepois] of pares) {
+      if (mudou(valorAntes, valorDepois)) {
+        alteracoes.push({
+          campo: `Questão ${index + 1} (${referencia}) · ${rotulo}`,
+          antes: valorAntes ?? null,
+          depois: valorDepois ?? null,
+        });
+      }
+    }
+  }
+
+  return alteracoes;
+}
+
+async function registrarHistorico(params: {
+  db: any;
+  provaId: number;
+  acao: string;
+  usuarioId?: number | null;
+  resumo?: unknown;
+  antes?: unknown;
+  depois?: unknown;
+}) {
+  await params.db.execute(sql`
+    INSERT INTO provas_importadas_historico
+      (prova_id, acao, usuario_id, resumo_json, antes_json, depois_json)
+    VALUES
+      (${params.provaId}, ${params.acao}, ${params.usuarioId ?? null},
+       ${params.resumo === undefined ? null : JSON.stringify(params.resumo)},
+       ${params.antes === undefined ? null : JSON.stringify(params.antes)},
+       ${params.depois === undefined ? null : JSON.stringify(params.depois)})
+  `);
+}
+
 export const importacaoProvasRouter = router({
   validarLote: adminProcedure.input(z.object({ arquivos: z.array(arquivoProvaRascunhoSchema).min(1).max(100) })).mutation(async ({ input }) => {
     const chaves = new Set<string>();
@@ -208,10 +315,11 @@ export const importacaoProvasRouter = router({
   salvarRascunho: adminProcedure.input(z.object({
     id: z.number().int().positive(),
     prova: provaRascunhoSchema,
-  })).mutation(async ({ input }) => {
+  })).mutation(async ({ input, ctx }) => {
     const db = await ensureTables();
     const atualResult = await db.execute(sql`
-      SELECT id, codigo, ano, status
+      SELECT id, codigo, nome, unidade, ano, descricao, total_questoes AS totalQuestoes,
+             questoes_json AS questoesJson, arquivo_nome AS arquivoNome, status
       FROM provas_importadas
       WHERE id = ${input.id}
       LIMIT 1
@@ -224,6 +332,24 @@ export const importacaoProvasRouter = router({
       throw new Error("A prova precisa estar como RASCUNHO para ser editada.");
     }
 
+    let questoesAtuais: unknown;
+    try {
+      questoesAtuais = JSON.parse(atual.questoesJson);
+    } catch {
+      throw new Error("A versão atual da prova não pôde ser lida para gerar a auditoria.");
+    }
+
+    const provaAtualParse = provaRascunhoSchema.safeParse({
+      codigo: atual.codigo,
+      nome: atual.nome,
+      unidade: atual.unidade,
+      ano: Number(atual.ano),
+      descricao: atual.descricao ?? null,
+      numeroQuestoesDeclarado: Number(atual.totalQuestoes),
+      questoes: questoesAtuais,
+    });
+    if (!provaAtualParse.success) throw new Error("A versão atual da prova possui estrutura inválida para auditoria.");
+
     const duplicadaResult = await db.execute(sql`
       SELECT id
       FROM provas_importadas
@@ -235,18 +361,34 @@ export const importacaoProvasRouter = router({
       throw new Error(`Já existe outra prova com o código ${input.prova.codigo} e ano ${input.prova.ano}.`);
     }
 
-    await db.execute(sql`
-      UPDATE provas_importadas
-      SET codigo = ${input.prova.codigo},
-          nome = ${input.prova.nome},
-          unidade = ${input.prova.unidade},
-          ano = ${input.prova.ano},
-          descricao = ${input.prova.descricao ?? null},
-          total_questoes = ${input.prova.questoes.length},
-          questoes_json = ${JSON.stringify(input.prova.questoes)},
-          status = 'RASCUNHO'
-      WHERE id = ${input.id} AND status = 'RASCUNHO'
-    `);
+    const alteracoes = resumirAlteracoes(provaAtualParse.data, input.prova);
+
+    await db.transaction(async (tx: any) => {
+      await tx.execute(sql`
+        UPDATE provas_importadas
+        SET codigo = ${input.prova.codigo},
+            nome = ${input.prova.nome},
+            unidade = ${input.prova.unidade},
+            ano = ${input.prova.ano},
+            descricao = ${input.prova.descricao ?? null},
+            total_questoes = ${input.prova.questoes.length},
+            questoes_json = ${JSON.stringify(input.prova.questoes)},
+            status = 'RASCUNHO'
+        WHERE id = ${input.id} AND status = 'RASCUNHO'
+      `);
+
+      if (alteracoes.length > 0) {
+        await registrarHistorico({
+          db: tx,
+          provaId: input.id,
+          acao: "AJUSTE_RASCUNHO",
+          usuarioId: ctx.user.id,
+          resumo: alteracoes,
+          antes: provaAtualParse.data,
+          depois: input.prova,
+        });
+      }
+    });
 
     return {
       id: input.id,
@@ -254,11 +396,15 @@ export const importacaoProvasRouter = router({
       status: "RASCUNHO",
       totalQuestoes: input.prova.questoes.length,
       salvo: true,
-      mensagem: "Alterações salvas. A prova permanece como RASCUNHO até ser validada novamente.",
+      alteracoes,
+      totalAlteracoes: alteracoes.length,
+      mensagem: alteracoes.length
+        ? `Alterações salvas. ${alteracoes.length} ajuste(s) registrado(s) no histórico de auditoria.`
+        : "Nenhuma alteração nova foi identificada. A prova permanece como RASCUNHO.",
     };
   }),
 
-  validarSalva: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input }) => {
+  validarSalva: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input, ctx }) => {
     const db = await ensureTables();
     const result = await db.execute(sql`
       SELECT id, codigo, nome, unidade, ano, descricao, total_questoes AS totalQuestoes,
@@ -326,11 +472,22 @@ export const importacaoProvasRouter = router({
     }
 
     if (registro.status === "RASCUNHO") {
-      await db.execute(sql`
-        UPDATE provas_importadas
-        SET status = 'VALIDADA'
-        WHERE id = ${input.id} AND status = 'RASCUNHO'
-      `);
+      await db.transaction(async (tx: any) => {
+        await tx.execute(sql`
+          UPDATE provas_importadas
+          SET status = 'VALIDADA'
+          WHERE id = ${input.id} AND status = 'RASCUNHO'
+        `);
+        await registrarHistorico({
+          db: tx,
+          provaId: input.id,
+          acao: "VALIDACAO",
+          usuarioId: ctx.user.id,
+          resumo: [{ campo: "Status", antes: "RASCUNHO", depois: "VALIDADA" }],
+          antes: { status: "RASCUNHO" },
+          depois: { status: "VALIDADA" },
+        });
+      });
     } else if (registro.status !== "VALIDADA") {
       throw new Error(`A prova está com status ${registro.status} e não pode ser validada.`);
     }
@@ -344,7 +501,7 @@ export const importacaoProvasRouter = router({
     };
   }),
 
-  reabrirParaEdicao: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input }) => {
+  reabrirParaEdicao: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input, ctx }) => {
     const db = await ensureTables();
     const result = await db.execute(sql`
       SELECT id, codigo, status
@@ -370,11 +527,22 @@ export const importacaoProvasRouter = router({
       throw new Error(`A prova está com status ${registro.status} e não pode ser reaberta para edição.`);
     }
 
-    await db.execute(sql`
-      UPDATE provas_importadas
-      SET status = 'RASCUNHO'
-      WHERE id = ${input.id} AND status = 'VALIDADA'
-    `);
+    await db.transaction(async (tx: any) => {
+      await tx.execute(sql`
+        UPDATE provas_importadas
+        SET status = 'RASCUNHO'
+        WHERE id = ${input.id} AND status = 'VALIDADA'
+      `);
+      await registrarHistorico({
+        db: tx,
+        provaId: input.id,
+        acao: "REABERTURA",
+        usuarioId: ctx.user.id,
+        resumo: [{ campo: "Status", antes: "VALIDADA", depois: "RASCUNHO" }],
+        antes: { status: "VALIDADA" },
+        depois: { status: "RASCUNHO" },
+      });
+    });
 
     return {
       id: registro.id,
@@ -418,6 +586,20 @@ export const importacaoProvasRouter = router({
                ${item.prova.descricao ?? null}, ${item.prova.questoes.length}, ${JSON.stringify(item.prova.questoes)},
                ${item.arquivoNome}, 'RASCUNHO', ${ctx.user.id})
           `);
+          const idResult = await tx.execute(sql`SELECT LAST_INSERT_ID() AS id`);
+          const idRows = Array.isArray(idResult) ? (idResult[0] as any[]) : [];
+          const provaId = Number(idRows[0]?.id ?? 0);
+          if (provaId) {
+            await registrarHistorico({
+              db: tx,
+              provaId,
+              acao: "IMPORTACAO",
+              usuarioId: ctx.user.id,
+              resumo: [{ campo: "Prova", antes: null, depois: `${item.prova.codigo} / ${item.prova.ano}` }],
+              antes: null,
+              depois: item.prova,
+            });
+          }
         });
 
         resultados.push({ arquivoNome: item.arquivoNome, codigo: item.prova.codigo, ano: item.prova.ano, sucesso: true, totalQuestoes: item.prova.questoes.length });
@@ -439,14 +621,63 @@ export const importacaoProvasRouter = router({
     };
   }),
 
+  historico: adminProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
+    const db = await ensureTables();
+    const result = await db.execute(sql`
+      SELECT h.id, h.prova_id AS provaId, h.acao, h.usuario_id AS usuarioId,
+             u.name AS usuarioNome, u.email AS usuarioEmail,
+             h.resumo_json AS resumoJson, h.created_at AS createdAt
+      FROM provas_importadas_historico h
+      LEFT JOIN users u ON u.id = h.usuario_id
+      WHERE h.prova_id = ${input.id}
+      ORDER BY h.created_at DESC, h.id DESC
+      LIMIT 200
+    `);
+    const linhas = Array.isArray(result) ? (result[0] as any[]) : [];
+    return linhas.map(item => {
+      let resumo: unknown[] = [];
+      try { resumo = item.resumoJson ? JSON.parse(item.resumoJson) : []; } catch { resumo = []; }
+      return {
+        id: Number(item.id),
+        provaId: Number(item.provaId),
+        acao: item.acao,
+        usuarioId: item.usuarioId ? Number(item.usuarioId) : null,
+        usuarioNome: item.usuarioNome ?? null,
+        usuarioEmail: item.usuarioEmail ?? null,
+        createdAt: item.createdAt,
+        resumo,
+      };
+    });
+  }),
+
   listar: adminProcedure.query(async () => {
     const db = await ensureTables();
     const result = await db.execute(sql`
       SELECT id, codigo, nome, unidade, ano, total_questoes AS totalQuestoes,
-             arquivo_nome AS arquivoNome, status, created_at AS createdAt
+             arquivo_nome AS arquivoNome, status, created_at AS createdAt,
+             questoes_json AS questoesJson
       FROM provas_importadas
       ORDER BY created_at DESC, id DESC
     `);
-    return Array.isArray(result) ? (result[0] as any[]) : [];
+    const linhas = Array.isArray(result) ? (result[0] as any[]) : [];
+    return linhas.map(item => {
+      let questoes: any[] = [];
+      try { questoes = item.questoesJson ? JSON.parse(item.questoesJson) : []; } catch { questoes = []; }
+      const macroareas = Array.from(new Set(questoes.map(q => String(q?.macroarea ?? "").trim()).filter(Boolean)));
+      const microareas = Array.from(new Set(questoes.map(q => String(q?.microarea ?? "").trim()).filter(Boolean)));
+      return {
+        id: Number(item.id),
+        codigo: item.codigo,
+        nome: item.nome,
+        unidade: item.unidade,
+        ano: Number(item.ano),
+        totalQuestoes: Number(item.totalQuestoes),
+        arquivoNome: item.arquivoNome,
+        status: item.status,
+        createdAt: item.createdAt,
+        macroareas,
+        microareas,
+      };
+    });
   }),
 });
