@@ -45,6 +45,23 @@ async function main(){
     }
     out.push({...emp,consolidacao:consol});
   }
+  const resumo=out.map(emp=>({
+    id:emp.id,nome:emp.nome,matrizStatus:emp.matrizStatus,
+    diretos:emp.consolidacao.filter(x=>x.status==="DIRETO").map(x=>({id:x.id,relacao:x.sugerida})),
+    regraFixa:emp.consolidacao.filter(x=>x.status==="REGRA_FIXA").map(x=>({id:x.id,relacao:x.sugerida})),
+    conflitos:emp.consolidacao.filter(x=>x.status==="CONFLITO").map(x=>({id:x.id,nome:x.nome,relacoes:[...new Set(x.legadosEncontrados.map(y=>y.relacao))]})),
+    semDados:emp.consolidacao.filter(x=>x.status==="SEM_DADOS").map(x=>x.id)
+  }));
+  console.log("[UGP_MIGRACAO_RESUMO] "+JSON.stringify({
+    empregados:resumo.length,
+    totais:{
+      diretos:resumo.reduce((a,e)=>a+e.diretos.length,0),
+      regrasFixas:resumo.reduce((a,e)=>a+e.regraFixa.length,0),
+      conflitos:resumo.reduce((a,e)=>a+e.conflitos.length,0),
+      semDados:resumo.reduce((a,e)=>a+e.semDados.length,0)
+    },
+    empregadosResumo:resumo
+  }));
   console.log("[UGP_MIGRACAO] "+JSON.stringify(out));
  }finally{await db.end();}
 }
