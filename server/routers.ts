@@ -16,6 +16,7 @@ import { importacaoEixosRouter } from "./routers/importacaoEixos";
 import { diagnosticoCargosRouter } from "./routers/diagnosticoCargos";
 import { funcoesOrganizacionaisRouter } from "./routers/funcoesOrganizacionais";
 import { bloco1CompetenciasFuncaoRouter } from "./routers/bloco1CompetenciasFuncao";
+import { questionarioAtividadesRouter } from "./routers/questionarioAtividades";
 import { invokeLLM } from "./_core/llm";
 import { generatePasswordResetToken, generateTemporaryPassword, hashPassword } from "./_core/password";
 import { ENV } from "./_core/env";
@@ -32,6 +33,7 @@ export const appRouter = router({
   diagnosticoCargos: diagnosticoCargosRouter,
   funcoesOrganizacionais: funcoesOrganizacionaisRouter,
   bloco1CompetenciasFuncao: bloco1CompetenciasFuncaoRouter,
+  questionarioAtividades: questionarioAtividadesRouter,
   auth: authRouter, // <--- AQUI ESTÁ A MÁGICA DO LOGIN
   pdiAjustes: pdiAjustesRouter,
   notifications: notificationsRouter,

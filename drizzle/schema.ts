@@ -225,6 +225,61 @@ export const users = mysqlTable("users", {
 	}
 });
 
+export const questionariosAtividadesFuncao = mysqlTable("questionarios_atividades_funcao", {
+	id: int().autoincrement().notNull().primaryKey(),
+	colaboradorId: int("colaborador_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	ano: int().notNull(),
+	versao: int().default(1).notNull(),
+	status: mysqlEnum([`rascunho`,`preenchido`,`validado`]).default(`rascunho`).notNull(),
+	fonte: mysqlEnum([`manual`,`importado_historico`]).default(`manual`).notNull(),
+	arquivoOrigemNome: varchar("arquivo_origem_nome", { length: 255 }),
+	arquivoOrigemUrl: text("arquivo_origem_url"),
+	observacoes: text(),
+	preenchidoPor: int("preenchido_por").references(() => users.id, { onDelete: "set null" }),
+	validadoPor: int("validado_por").references(() => users.id, { onDelete: "set null" }),
+	validadoEm: timestamp("validado_em", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+},
+(table) => {
+	return {
+		questionarios_atividades_colaborador_idx: index("questionarios_atividades_colaborador_idx").on(table.colaboradorId),
+		questionarios_atividades_ano_idx: index("questionarios_atividades_ano_idx").on(table.ano),
+	}
+});
+
+export const questionarioAtividadesRespostas = mysqlTable("questionario_atividades_respostas", {
+	id: int().autoincrement().notNull().primaryKey(),
+	questionarioId: int("questionario_id").notNull().references(() => questionariosAtividadesFuncao.id, { onDelete: "cascade" }),
+	chave: varchar({ length: 100 }).notNull(),
+	pergunta: text().notNull(),
+	resposta: text(),
+	ordem: int().default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+},
+(table) => {
+	return {
+		questionario_respostas_questionario_idx: index("questionario_respostas_questionario_idx").on(table.questionarioId),
+		questionario_respostas_chave_idx: index("questionario_respostas_chave_idx").on(table.chave),
+	}
+});
+
+export const questionarioAtividadesHistorico = mysqlTable("questionario_atividades_historico", {
+	id: int().autoincrement().notNull().primaryKey(),
+	questionarioId: int("questionario_id").notNull().references(() => questionariosAtividadesFuncao.id, { onDelete: "cascade" }),
+	campo: varchar({ length: 150 }).notNull(),
+	valorAnterior: text("valor_anterior"),
+	valorNovo: text("valor_novo"),
+	alteradoPor: int("alterado_por").notNull().references(() => users.id, { onDelete: "restrict" }),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+},
+(table) => {
+	return {
+		questionario_historico_questionario_idx: index("questionario_historico_questionario_idx").on(table.questionarioId),
+	}
+});
+
 export const deletionAuditLog = mysqlTable("deletion_audit_log", {
 	id: int().autoincrement().notNull().primaryKey(),
 	entidadeTipo: mysqlEnum([`acao`,`pdi`,`usuario`,`evidencia`,`solicitacao`]).notNull(),
