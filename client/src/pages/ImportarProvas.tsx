@@ -83,11 +83,11 @@ function renumerarOpcoes(opcoes: Opcao[], gabaritoAtual: string) {
   };
 }
 
-function areasDaProva(item: any) {
+function eixosDaProva(item: any) {
   return Array.from(
     new Set(
-      [...(item?.macroareas ?? []), ...(item?.microareas ?? [])]
-        .map((area: unknown) => String(area ?? "").trim())
+      (item?.eixosTecnicos ?? [])
+        .map((eixo: unknown) => String(eixo ?? "").trim())
         .filter(Boolean),
     ),
   );
@@ -202,7 +202,7 @@ export default function ImportarProvas() {
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [provaEdicao, setProvaEdicao] = useState<Prova | null>(null);
   const [filtroProva, setFiltroProva] = useState("");
-  const [filtroArea, setFiltroArea] = useState("");
+  const [filtroEixo, setFiltroEixo] = useState("");
   const [visualizandoId, setVisualizandoId] = useState<number | null>(null);
   const [previewIndice, setPreviewIndice] = useState(0);
   const [historicoId, setHistoricoId] = useState<number | null>(null);
@@ -440,19 +440,19 @@ export default function ImportarProvas() {
   const totalQuestoes = useMemo(() => arquivos.reduce((soma, item) => soma + item.prova.questoes.length, 0), [arquivos]);
   const carregando = validarLote.isPending || importarLote.isPending;
   const provasImportadas = (listaQuery.data ?? []) as any[];
-  const areasDisponiveis = useMemo(
-    () => Array.from(new Set(provasImportadas.flatMap((item: any) => [...(item.macroareas ?? []), ...(item.microareas ?? [])]))).sort((a, b) => String(a).localeCompare(String(b), "pt-BR")),
+  const eixosDisponiveis = useMemo(
+    () => Array.from(new Set(provasImportadas.flatMap((item: any) => item.eixosTecnicos ?? []))).sort((a, b) => String(a).localeCompare(String(b), "pt-BR")),
     [listaQuery.data],
   );
   const provasFiltradas = useMemo(() => {
     const termo = normalizar(filtroProva);
-    const area = normalizar(filtroArea);
+    const eixo = normalizar(filtroEixo);
     return provasImportadas.filter((item: any) => {
       const textoProva = normalizar([item.codigo, item.nome, item.unidade, item.ano].join(" "));
-      const areas = [...(item.macroareas ?? []), ...(item.microareas ?? [])].map(normalizar);
-      return (!termo || textoProva.includes(termo)) && (!area || areas.includes(area));
+      const eixos = (item.eixosTecnicos ?? []).map(normalizar);
+      return (!termo || textoProva.includes(termo)) && (!eixo || eixos.includes(eixo));
     });
-  }, [listaQuery.data, filtroProva, filtroArea]);
+  }, [listaQuery.data, filtroProva, filtroEixo]);
 
   return (
     <div className="space-y-6 p-6">
@@ -514,14 +514,14 @@ export default function ImportarProvas() {
             <label className="text-sm">Filtrar por prova
               <input className="mt-1 w-full rounded-md border px-3 py-2" placeholder="Código, nome, unidade ou ano" value={filtroProva} onChange={e => setFiltroProva(e.target.value)} />
             </label>
-            <label className="text-sm">Filtrar por área
-              <select className="mt-1 w-full rounded-md border px-3 py-2" value={filtroArea} onChange={e => setFiltroArea(e.target.value)}>
-                <option value="">Todas as áreas</option>
-                {areasDisponiveis.map(area => <option key={String(area)} value={String(area)}>{String(area)}</option>)}
+            <label className="text-sm">Filtrar por Eixo Técnico
+              <select className="mt-1 w-full rounded-md border px-3 py-2" value={filtroEixo} onChange={e => setFiltroEixo(e.target.value)}>
+                <option value="">Todos os eixos técnicos</option>
+                {eixosDisponiveis.map(eixo => <option key={String(eixo)} value={String(eixo)}>{String(eixo)}</option>)}
               </select>
             </label>
             <div className="flex items-end">
-              <Button type="button" variant="outline" onClick={() => { setFiltroProva(""); setFiltroArea(""); }}>Limpar filtros</Button>
+              <Button type="button" variant="outline" onClick={() => { setFiltroProva(""); setFiltroEixo(""); }}>Limpar filtros</Button>
             </div>
           </div>
 
@@ -532,7 +532,7 @@ export default function ImportarProvas() {
               <table className="w-full min-w-[1080px] text-sm">
                 <thead><tr className="border-b text-left">
                   <th className="px-3 py-2">Código</th><th className="px-3 py-2">Avaliação</th><th className="px-3 py-2">Unidade</th>
-                  <th className="w-[150px] px-3 py-2">Área(s)</th><th className="px-3 py-2">Ano</th><th className="px-3 py-2">Questões</th>
+                  <th className="w-[160px] px-3 py-2">Eixos Técnicos</th><th className="px-3 py-2">Ano</th><th className="px-3 py-2">Questões</th>
                   <th className="px-3 py-2">Status</th><th className="px-3 py-2">Ações</th>
                 </tr></thead>
                 <tbody>
@@ -542,29 +542,29 @@ export default function ImportarProvas() {
                         <td className="px-3 py-3 font-medium">{item.codigo}</td>
                         <td className="px-3 py-3">{item.nome}</td>
                         <td className="px-3 py-3">{item.unidade}</td>
-                        <td className="w-[150px] px-3 py-3">
+                        <td className="w-[160px] px-3 py-3">
                           {(() => {
-                            const areas = areasDaProva(item);
-                            if (areas.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
+                            const eixos = eixosDaProva(item);
+                            if (eixos.length === 0) return <span className="text-xs text-muted-foreground">Sem eixo técnico</span>;
                             return (
-                              <div className="flex min-w-[120px] flex-col items-start gap-1">
-                                <span className="text-sm font-medium">{areas.length} área{areas.length === 1 ? "" : "s"}</span>
+                              <div className="flex min-w-[130px] flex-col items-start gap-1">
+                                <span className="text-sm font-medium">{eixos.length} eixo{eixos.length === 1 ? "" : "s"}</span>
                                 <Popover>
                                   <PopoverTrigger asChild>
                                     <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs">
-                                      Ver áreas
+                                      Ver eixos
                                     </Button>
                                   </PopoverTrigger>
                                   <PopoverContent align="start" className="w-[380px] max-w-[calc(100vw-2rem)] p-0">
                                     <div className="border-b px-4 py-3">
-                                      <p className="font-semibold">Áreas da prova</p>
-                                      <p className="text-xs text-muted-foreground">{areas.length} área{areas.length === 1 ? "" : "s"} vinculada{areas.length === 1 ? "" : "s"}</p>
+                                      <p className="font-semibold">Eixos Técnicos da prova</p>
+                                      <p className="text-xs text-muted-foreground">{eixos.length} eixo{eixos.length === 1 ? "" : "s"} técnico{eixos.length === 1 ? "" : "s"} distinto{eixos.length === 1 ? "" : "s"}</p>
                                     </div>
                                     <div className="max-h-72 overflow-y-auto p-4">
                                       <ul className="space-y-2 text-sm">
-                                        {areas.map((area: string) => (
-                                          <li key={area} className="rounded-md bg-slate-50 px-3 py-2 leading-relaxed">
-                                            {area}
+                                        {eixos.map((eixo: string) => (
+                                          <li key={eixo} className="rounded-md bg-slate-50 px-3 py-2 leading-relaxed">
+                                            {eixo}
                                           </li>
                                         ))}
                                       </ul>
@@ -636,9 +636,8 @@ export default function ImportarProvas() {
                                         {questao.opcoes.map((opcao, opcaoIndex) => <div key={opcaoIndex} className="grid gap-2 md:grid-cols-[48px_1fr_auto]"><span className="pt-2 text-sm font-semibold">{opcao.letra}</span><textarea className="min-h-[42px] rounded-md border px-3 py-2 text-sm" value={opcao.texto} onChange={e => atualizarOpcao(questaoIndex, opcaoIndex, e.target.value)} /><Button type="button" variant="outline" size="sm" onClick={() => removerAlternativa(questaoIndex, opcaoIndex)}><Trash2 className="h-4 w-4" /></Button></div>)}
                                       </div>
                                       <div className="grid gap-3 md:grid-cols-2">
-                                        <label className="text-sm md:col-span-2">Eixos, separados por vírgula<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.eixos.map(eixo => eixo.nome).join(", ")} onChange={e => atualizarQuestao(questaoIndex, { eixos: e.target.value.split(",").map(item => item.trim()).filter(Boolean).map(nome => ({ nome })) })} /></label>
-                                        <label className="text-sm">Macroárea<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.macroarea ?? ""} onChange={e => atualizarQuestao(questaoIndex, { macroarea: e.target.value || null })} /></label>
-                                        <label className="text-sm">Microárea<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.microarea ?? ""} onChange={e => atualizarQuestao(questaoIndex, { microarea: e.target.value || null })} /></label>
+                                        <label className="text-sm md:col-span-2"><strong>Eixo(s) Técnico(s) da questão</strong> — separados por vírgula<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.eixos.map(eixo => eixo.nome).join(", ")} onChange={e => atualizarQuestao(questaoIndex, { eixos: e.target.value.split(",").map(item => item.trim()).filter(Boolean).map(nome => ({ nome })) })} /></label>
+
                                         <label className="text-sm md:col-span-2">Fonte / Tag<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.tagFonte ?? ""} onChange={e => atualizarQuestao(questaoIndex, { tagFonte: e.target.value || null })} /></label>
                                       </div>
                                     </div>
@@ -674,7 +673,7 @@ export default function ImportarProvas() {
                                     <p className="mt-1 text-xs text-muted-foreground">{previewQuery.data.prova.unidade}</p>
                                   </div>
                                   <div className="rounded-lg border p-5">
-                                    <div className="mb-3 flex items-center justify-between gap-3"><span className="text-sm font-medium">Questão {previewIndice + 1}</span>{q.macroarea && <span className="text-xs text-muted-foreground">{q.macroarea}{q.microarea ? " / " + q.microarea : ""}</span>}</div>
+                                    <div className="mb-3 flex items-center justify-between gap-3"><span className="text-sm font-medium">Questão {previewIndice + 1}</span></div>
                                     <p className="mb-5 text-lg font-semibold leading-relaxed">{q.enunciado}</p>
                                     <div className="space-y-3">{q.opcoes.map(opcao => <div key={opcao.letra} className="flex w-full items-start gap-3 rounded-lg border bg-white p-4 text-left"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border text-sm font-semibold">{opcao.letra}</span><span className="pt-0.5 text-sm leading-relaxed">{opcao.texto}</span></div>)}</div>
                                   </div>
