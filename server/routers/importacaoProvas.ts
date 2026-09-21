@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
+import { catalogoEixosParaUnidade, eixoOficialPorNome } from "../services/eixosTecnicosCatalogo";
 
 const eixoRascunhoSchema = z.object({ nome: z.string().max(255) });
 const opcaoRascunhoSchema = z.object({
@@ -140,6 +141,18 @@ function validarEstrutura(prova: ProvaRascunho) {
     const eixosNormalizados = questao.eixos.map(eixo => normalizarTexto(eixo.nome));
     if (eixosNormalizados.some(eixo => !eixo)) erros.push(`Questão ${referencia}: há eixo sem nome.`);
     if (new Set(eixosNormalizados.filter(Boolean)).size !== eixosNormalizados.filter(Boolean).length) erros.push(`Questão ${referencia}: o mesmo eixo foi informado mais de uma vez.`);
+
+    const catalogoOficial = catalogoEixosParaUnidade(prova.unidade);
+    if (catalogoOficial) {
+      if (questao.eixos.length !== 1) {
+        erros.push(`Questão ${referencia}: a matriz oficial ${catalogoOficial.versao} exige exatamente um Eixo Técnico principal por questão.`);
+      }
+      for (const eixo of questao.eixos) {
+        if (!eixoOficialPorNome(prova.unidade, eixo.nome)) {
+          erros.push(`Questão ${referencia}: o eixo "${eixo.nome}" não pertence à matriz oficial ${catalogoOficial.versao}.`);
+        }
+      }
+    }
   });
 
   return { erros, avisos };
@@ -254,6 +267,16 @@ async function registrarHistorico(params: {
 }
 
 export const importacaoProvasRouter = router({
+  catalogoEixos: adminProcedure.input(z.object({ unidade: z.string().max(255) })).query(({ input }) => {
+    const catalogo = catalogoEixosParaUnidade(input.unidade);
+    return catalogo ? {
+      unidadeCodigo: catalogo.unidadeCodigo,
+      unidadeNome: catalogo.unidadeNome,
+      versao: catalogo.versao,
+      eixos: catalogo.eixos,
+    } : null;
+  }),
+
   validarLote: adminProcedure.input(z.object({ arquivos: z.array(arquivoProvaRascunhoSchema).min(1).max(100) })).mutation(async ({ input }) => {
     const chaves = new Set<string>();
     const resultados = input.arquivos.map(item => {
