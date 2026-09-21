@@ -169,11 +169,22 @@ async function main() {
       return obj;
     });
 
-    const ready = parsed.filter((r) => isReadyStatus(r.status_extracao));
+    const allowEmails = new Set(
+      String(process.env.CARGA_EMAILS || "")
+        .split(",")
+        .map((v) => normalizeEmail(v))
+        .filter(Boolean)
+    );
+
+    const readyAll = parsed.filter((r) => isReadyStatus(r.status_extracao));
+    const ready = allowEmails.size
+      ? readyAll.filter((r) => allowEmails.has(normalizeEmail(r.email)))
+      : readyAll;
     const ignored = parsed.filter((r) => !isReadyStatus(r.status_extracao));
 
     console.log("[LOTE] CSV_TOTAL", parsed.length);
     console.log("[LOTE] PRONTOS", ready.length);
+    console.log("[LOTE] FILTRO_EMAILS", allowEmails.size);
     console.log("[LOTE] IGNORADOS_NAO_PRONTOS", ignored.length);
 
     const [users] = await db.execute("SELECT id,name,email FROM users");
