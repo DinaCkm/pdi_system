@@ -18,6 +18,7 @@ import Competencias from "./pages/Competencias";
 import Departamentos from "./pages/Departamentos";
 import FuncoesOrganizacionais from "./pages/FuncoesOrganizacionais";
 import Bloco1CompetenciasFuncao from "./pages/Bloco1CompetenciasFuncao";
+import QuestionarioAtividadesFuncao from "./pages/QuestionarioAtividadesFuncao";
 import Ciclos from "./pages/Ciclos";
 import PDIs from "./pages/PDIs";
 import PDIDetalhes from "./pages/PDIDetalhes";
@@ -92,6 +93,7 @@ function Router() {
       <Route path={"/departamentos"}><DashboardLayout><Departamentos /></DashboardLayout></Route>
       <Route path={"/funcoes-organizacionais"}><DashboardLayout><FuncoesOrganizacionais /></DashboardLayout></Route>
       <Route path={"/bloco1-competencias-funcao"}><DashboardLayout><Bloco1CompetenciasFuncao /></DashboardLayout></Route>
+      <Route path={"/questionario-atividades-funcao"}><DashboardLayout><QuestionarioAtividadesFuncao /></DashboardLayout></Route>
       <Route path={"/ciclos"}><DashboardLayout><Ciclos /></DashboardLayout></Route>
       <Route path={"/pdis"}><DashboardLayout><PDIs /></DashboardLayout></Route>
       <Route path={"/pdis/:id"}>{(params) => (<DashboardLayout><PDIDetalhes key={params.id} /></DashboardLayout>)}</Route>
