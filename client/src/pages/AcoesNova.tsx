@@ -505,6 +505,13 @@ export function AcoesNova() {
   const [grupoAberto, setGrupoAberto] = useState<"basicas" | "essenciais" | "master" | null>(null);
   const [subcompetenciaSelecionada, setSubcompetenciaSelecionada] = useState("");
   const [mostrarTodosModelosMacro, setMostrarTodosModelosMacro] = useState(false);
+  const [acaoPreview, setAcaoPreview] = useState<null | {
+    origem: "modelo" | "ia";
+    foco: string;
+    titulo: string;
+    descricao: string;
+    macroId: string;
+  }>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -523,6 +530,10 @@ export function AcoesNova() {
   const { data: pdis = [], isLoading: loadingPdis } = trpc.pdis.list.useQuery();
   const { data: macros = [], isLoading: loadingMacros } = trpc.competencias.listAllMacros.useQuery();
   const { data: biblioteca = [], isLoading: loadingBiblioteca } = trpc.actions.library.useQuery();
+  const { data: historicoEmpregado = [] } = trpc.actions.historyForPdi.useQuery(
+    { pdiId: Number(formData.pdiId) },
+    { enabled: Boolean(formData.pdiId) && Number(formData.pdiId) > 0 },
+  );
 
   const eixosBiblioteca = useMemo(() => {
     return Array.from(
@@ -636,13 +647,13 @@ export function AcoesNova() {
 
   const usarModeloNoFoco = (modelo: any, foco: string) => {
     setSubcompetenciaSelecionada(foco);
-    setFormData((prev) => ({
-      ...prev,
-      macroId: modelo.macroId ? String(modelo.macroId) : prev.macroId,
-      microcompetencia: foco,
+    setAcaoPreview({
+      origem: "modelo",
+      foco,
       titulo: modelo.titulo || "",
       descricao: modelo.descricao || "",
-    }));
+      macroId: modelo.macroId ? String(modelo.macroId) : formData.macroId,
+    });
     setErrors({});
     setSugestaoGerada(false);
   };
@@ -665,11 +676,13 @@ export function AcoesNova() {
   const sugerirAcaoMutation = trpc.ia.sugerirAcao.useMutation({
     onSuccess: (data) => {
       if (data.success && data.sugestao) {
-        setFormData(prev => ({
-          ...prev,
+        setAcaoPreview({
+          origem: "ia",
+          foco: subcompetenciaSelecionada,
           titulo: data.sugestao.titulo,
           descricao: data.sugestao.detalhes,
-        }));
+          macroId: formData.macroId,
+        });
         setSugestaoGerada(true);
       }
       setIsSuggesting(false);
@@ -817,6 +830,38 @@ export function AcoesNova() {
     });
   };
 
+  const normalizarTitulo = (valor: unknown) =>
+    normalizarBusca(valor).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+
+  const historicoDaPreview = useMemo(() => {
+    if (!acaoPreview) return [];
+    const tituloAlvo = normalizarTitulo(acaoPreview.titulo);
+    const focoAlvo = normalizarBusca(acaoPreview.foco);
+    const macroAlvo = String(acaoPreview.macroId || "");
+
+    return (historicoEmpregado as any[]).filter((acao) => {
+      const titulo = normalizarTitulo(acao.titulo);
+      const micro = normalizarBusca(acao.microcompetencia ?? acao.microcompetenciaNome);
+      const mesmaMacro = macroAlvo && String(acao.macroId ?? "") === macroAlvo;
+      const mesmoTitulo = Boolean(tituloAlvo && titulo === tituloAlvo);
+      const mesmaSubcompetencia = Boolean(focoAlvo && micro.includes(focoAlvo));
+      return mesmoTitulo || (mesmaMacro && mesmaSubcompetencia);
+    });
+  }, [acaoPreview, historicoEmpregado]);
+
+  const aprovarPreview = () => {
+    if (!acaoPreview) return;
+    setSubcompetenciaSelecionada(acaoPreview.foco);
+    setFormData((prev) => ({
+      ...prev,
+      macroId: acaoPreview.macroId || prev.macroId,
+      microcompetencia: acaoPreview.foco,
+      titulo: acaoPreview.titulo,
+      descricao: acaoPreview.descricao,
+    }));
+    setErrors({});
+  };
+
   const canSuggest = Boolean(formData.macroId && subcompetenciaSelecionada && !isSuggesting);
   const [sugestaoGerada, setSugestaoGerada] = useState(false);
 
@@ -923,6 +968,84 @@ export function AcoesNova() {
             </button>
           )}
         </div>
+        {acaoPreview && acaoPreview.foco === foco && (
+          <div style={{ marginTop: '14px', border: '2px solid #93c5fd', borderRadius: '10px', padding: '16px', background: '#f8fbff' }}>
+            <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>
+              Prévia da ação
+            </div>
+            <div style={{ marginTop: '6px', fontSize: '18px', fontWeight: 750, color: '#0f172a' }}>
+              {acaoPreview.titulo}
+            </div>
+            <div
+              style={{ marginTop: '10px', color: '#475569', lineHeight: 1.55 }}
+              dangerouslySetInnerHTML={{ __html: acaoPreview.descricao || '<p>Sem descrição.</p>' }}
+            />
+
+            <div style={{ marginTop: '14px', padding: '12px', borderRadius: '8px', background: '#fff', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontWeight: 700, color: '#334155' }}>Histórico deste empregado</div>
+              {historicoDaPreview.length === 0 ? (
+                <div style={{ marginTop: '5px', fontSize: '13px', color: '#166534' }}>
+                  Não localizamos esta mesma ação nem ação da mesma macro/subcompetência em PDIs anteriores.
+                </div>
+              ) : (
+                <div style={{ marginTop: '7px' }}>
+                  <div style={{ fontSize: '13px', color: '#b45309', fontWeight: 650 }}>
+                    Atenção: encontramos {historicoDaPreview.length} ocorrência(s) relacionada(s) no histórico.
+                  </div>
+                  <ul style={{ margin: '7px 0 0', paddingLeft: '18px', color: '#475569', fontSize: '13px' }}>
+                    {historicoDaPreview.slice(0, 5).map((acao: any) => (
+                      <li key={acao.id}>
+                        {acao.titulo} — {acao.pdiTitulo || 'PDI'} — status: {acao.status || 'não informado'}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div style={{ marginTop: '14px', display: 'grid', gridTemplateColumns: 'minmax(180px, 260px) 1fr', gap: '12px', alignItems: 'end' }}>
+              <div>
+                <label htmlFor={`prazo-inline-${foco}`} style={{ display: 'block', fontWeight: 700, marginBottom: '5px' }}>
+                  Prazo para incluir no PDI
+                </label>
+                <input
+                  id={`prazo-inline-${foco}`}
+                  name="prazo"
+                  type="date"
+                  value={formData.prazo}
+                  onChange={handleChange}
+                  style={{ width: '100%', padding: '10px', border: errors.prazo ? '2px solid #dc2626' : '1px solid #cbd5e1', borderRadius: '7px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={aprovarPreview}
+                  style={{ border: 'none', borderRadius: '7px', padding: '10px 14px', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Aprovar esta ação
+                </button>
+                <button
+                  type="submit"
+                  onClick={aprovarPreview}
+                  disabled={!formData.prazo || createMutation.isPending}
+                  style={{ border: 'none', borderRadius: '7px', padding: '10px 14px', background: formData.prazo ? '#166534' : '#94a3b8', color: '#fff', fontWeight: 700, cursor: formData.prazo ? 'pointer' : 'not-allowed' }}
+                >
+                  {createMutation.isPending ? 'Incluindo...' : 'Aprovar e incluir no PDI'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAcaoPreview(null)}
+                  style={{ border: '1px solid #cbd5e1', borderRadius: '7px', padding: '10px 14px', background: '#fff', fontWeight: 650, cursor: 'pointer' }}
+                >
+                  Fechar prévia
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     );
   };
@@ -1127,86 +1250,6 @@ export function AcoesNova() {
             </section>
           )}
 
-          {subcompetenciaSelecionada && (
-            <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Etapa 4</div>
-              <h2 style={{ margin: '4px 0 6px', fontSize: '20px' }}>Defina a ação</h2>
-              <div style={{ marginBottom: '14px', padding: '10px 12px', borderRadius: '7px', background: '#f8fafc', color: '#475569', fontSize: '14px' }}>
-                Foco escolhido: <strong>{subcompetenciaSelecionada}</strong>
-              </div>
-
-              <div style={{ display: 'grid', gap: '14px' }}>
-                <div>
-                  <label htmlFor="titulo" style={{ display: 'block', fontWeight: 700, marginBottom: '5px' }}>O que será feito? *</label>
-                  <input
-                    id="titulo"
-                    name="titulo"
-                    value={formData.titulo}
-                    onChange={handleChange}
-                    placeholder="Título da ação"
-                    style={{ width: '100%', padding: '11px', border: errors.titulo ? '2px solid #dc2626' : '1px solid #cbd5e1', borderRadius: '7px' }}
-                  />
-                  {errors.titulo && <div style={{ color: '#b91c1c', marginTop: '5px', fontSize: '13px' }}>{errors.titulo}</div>}
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontWeight: 700, marginBottom: '5px' }}>Detalhes da ação</label>
-                  <RichTextEditor
-                    value={formData.descricao}
-                    onChange={(val) => setFormData(prev => ({ ...prev, descricao: val }))}
-                    placeholder="O que fazer, como fazer e como comprovar..."
-                    minHeight="160px"
-                  />
-                </div>
-              </div>
-            </section>
-          )}
-
-          {subcompetenciaSelecionada && (
-            <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Etapa 5</div>
-              <h2 style={{ margin: '4px 0 14px', fontSize: '20px' }}>Revise e conclua</h2>
-
-              <div>
-                <label htmlFor="prazo" style={{ display: 'block', fontWeight: 700, marginBottom: '5px' }}>Prazo de conclusão *</label>
-                <input
-                  id="prazo"
-                  name="prazo"
-                  type="date"
-                  value={formData.prazo}
-                  onChange={handleChange}
-                  style={{ width: '100%', maxWidth: '320px', padding: '11px', border: errors.prazo ? '2px solid #dc2626' : '1px solid #cbd5e1', borderRadius: '7px' }}
-                />
-                {errors.prazo && <div style={{ color: '#b91c1c', marginTop: '5px', fontSize: '13px' }}>{errors.prazo}</div>}
-              </div>
-
-              {errors.submit && (
-                <div style={{ marginTop: '12px', padding: '11px', borderRadius: '7px', background: '#fee2e2', color: '#b91c1c' }}>
-                  {errors.submit}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '10px', marginTop: '18px', flexWrap: 'wrap' }}>
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending}
-                  style={{ padding: '11px 18px', border: 'none', borderRadius: '7px', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  {createMutation.isPending ? 'Salvando...' : 'Salvar ação'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const returnUrl = sessionStorage.getItem('acoes_return_url') || '/acoes';
-                    navigate(returnUrl);
-                  }}
-                  style={{ padding: '11px 18px', border: '1px solid #cbd5e1', borderRadius: '7px', background: '#fff', fontWeight: 650, cursor: 'pointer' }}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </section>
-          )}
         </form>
       </div>
     </div>
