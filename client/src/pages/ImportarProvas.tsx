@@ -314,25 +314,74 @@ export default function ImportarProvas() {
   };
 
   const replicarEixosRegionais = async () => {
-    const porCodigo = new Map((listaQuery.data ?? []).map((item: any) => [String(item.codigo), item]));
-    const origem = porCodigo.get("REGIONAIS_2026_RPJ");
-    const codigosDestino = [
-      "REGIONAIS_2026_RBP",
-      "REGIONAIS_2026_RMN",
-      "REGIONAIS_2026_RNO",
-      "REGIONAIS_2026_RSG",
-      "REGIONAIS_2026_RSU",
-      "REGIONAIS_2026_RVA",
-    ];
-    const destinos = codigosDestino.map(codigo => porCodigo.get(codigo));
+    const provas = (listaQuery.data ?? []) as any[];
+    const candidatas = provas.filter((item: any) =>
+      Number(item.ano) === 2026 &&
+      String(item.cicloNome ?? "").trim() === "2026/2" &&
+      Number(item.totalQuestoes) === 65 &&
+      String(item.status) !== "INVALIDADA"
+    );
 
-    if (!origem || destinos.some(item => !item)) {
-      setErroLeitura("Não foi possível localizar no sistema a prova de referência RPJ e todas as seis Regionais de destino.");
+    const textoIdentificacao = (item: any) =>
+      normalizar([item.codigo, item.nome, item.unidade].filter(Boolean).join(" "))
+        .replace(/[^a-z0-9]+/g, " ")
+        .replace(/\\s+/g, " ")
+        .trim();
+
+    const contemToken = (textoBase: string, token: string) =>
+      (` ${textoBase} `).includes(` ${token} `);
+
+    const localizarUnica = (rotulo: string, teste: (textoBase: string) => boolean) => {
+      const encontradas = candidatas.filter((item: any) => teste(textoIdentificacao(item)));
+      if (encontradas.length !== 1) {
+        const codigos = encontradas.map((item: any) => String(item.codigo)).join(", ") || "nenhuma";
+        throw new Error(`${rotulo}: esperava encontrar exatamente 1 prova atual de 65 questões no ciclo 2026/2, mas encontrei ${encontradas.length} (${codigos}).`);
+      }
+      return encontradas[0];
+    };
+
+    let origem: any;
+    let destinos: any[];
+    try {
+      origem = localizarUnica("RPJ", textoBase =>
+        contemToken(textoBase, "rpj") || textoBase.includes("portal do jalapao")
+      );
+
+      const regioes = [
+        {
+          rotulo: "RBP",
+          teste: (textoBase: string) => contemToken(textoBase, "rbp") || textoBase.includes("bico do papagaio"),
+        },
+        {
+          rotulo: "RMN",
+          teste: (textoBase: string) => contemToken(textoBase, "rmn") || textoBase.includes("medio norte") || textoBase.includes("norte colinas"),
+        },
+        {
+          rotulo: "RNO",
+          teste: (textoBase: string) => contemToken(textoBase, "rno") || (textoBase.includes("regional norte") && !textoBase.includes("colinas") && !textoBase.includes("medio norte")),
+        },
+        {
+          rotulo: "RSG",
+          teste: (textoBase: string) => contemToken(textoBase, "rsg") || textoBase.includes("serras gerais"),
+        },
+        {
+          rotulo: "RSU",
+          teste: (textoBase: string) => contemToken(textoBase, "rsu") || textoBase.includes("regional sul"),
+        },
+        {
+          rotulo: "RVA",
+          teste: (textoBase: string) => contemToken(textoBase, "rva") || textoBase.includes("vale do araguaia"),
+        },
+      ];
+      destinos = regioes.map(regiao => localizarUnica(regiao.rotulo, regiao.teste));
+    } catch (error: any) {
+      setErroLeitura(error?.message || "Não foi possível localizar com segurança todas as provas Regionais atuais.");
       return;
     }
 
+    const nomesDestino = destinos.map((item: any) => String(item.codigo)).join(", ");
     const confirmada = window.confirm(
-      "Replicar exclusivamente os eixos técnicos da prova REGIONAIS_2026_RPJ para RBP, RMN, RNO, RSG, RSU e RVA? O sistema só continuará se as 65 questões forem textualmente idênticas e os IDs coincidirem."
+      `Replicar exclusivamente os eixos técnicos da prova ${origem.codigo} para: ${nomesDestino}? O sistema só continuará se as 65 questões forem textualmente idênticas e os IDs coincidirem.`
     );
     if (!confirmada) return;
 
