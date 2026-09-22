@@ -94,81 +94,6 @@ function eixosDaProva(item: any) {
   );
 }
 
-const REGIONAIS_2026 = [
-  { sigla: "RBP", nome: "Regional Bico do Papagaio", unidade: "RBP-REGIONAL BICO DO PAPAGAIO" },
-  { sigla: "RME", nome: "Regional Metropolitana", unidade: "RME-REGIONAL METROPOLITANA" },
-  { sigla: "RMN", nome: "Regional Médio Norte Colinas", unidade: "RMN-REGIONAL MÉDIO NORTE COLINAS" },
-  { sigla: "RNO", nome: "Regional Norte", unidade: "RNO-REGIONAL NORTE" },
-  { sigla: "RPJ", nome: "Regional Portal do Jalapão", unidade: "RPJ-REGIONAL PORTAL DO JALAPÃO" },
-  { sigla: "RSG", nome: "Regional Serras Gerais", unidade: "RSG-REGIONAL SERRAS GERAIS" },
-  { sigla: "RSU", nome: "Regional Sul", unidade: "RSU-REGIONAL SUL" },
-  { sigla: "RVA", nome: "Regional Vale do Araguaia", unidade: "RVA-REGIONAL VALE DO ARAGUAIA" },
-] as const;
-
-function identificarRegionalProva(item: any) {
-  const base = normalizar([item?.codigo, item?.nome, item?.unidade].filter(Boolean).join(" "));
-  const regras: Array<[string, string[]]> = [
-    ["RBP", ["rbp", "bico do papagaio"]],
-    ["RME", ["rme", "metropolitana"]],
-    ["RMN", ["rmn", "medio norte", "norte colinas"]],
-    ["RNO", ["rno", "regional norte"]],
-    ["RPJ", ["rpj", "portal do jalapao"]],
-    ["RSG", ["rsg", "serras gerais"]],
-    ["RSU", ["rsu", "regional sul"]],
-    ["RVA", ["rva", "vale do araguaia"]],
-  ];
-  for (const [sigla, termos] of regras) {
-    if (sigla === "RNO" && (base.includes("medio norte") || base.includes("norte colinas"))) continue;
-    if (termos.some(termo => base.includes(termo))) return sigla;
-  }
-  return null;
-}
-
-function baixarWorkbookDaProva(prova: Prova, arquivoNome: string) {
-  const workbook = XLSX.utils.book_new();
-  const wsProva = XLSX.utils.aoa_to_sheet([
-    ["Código da prova", prova.codigo],
-    ["Nome da prova", prova.nome],
-    ["Unidade", prova.unidade],
-    ["Ano", prova.ano],
-    ["Descrição", prova.descricao ?? ""],
-    ["Número de questões", prova.questoes.length],
-  ]);
-  wsProva["!cols"] = [{ wch: 24 }, { wch: 90 }];
-
-  const maiorNumeroAlternativas = Math.max(2, ...prova.questoes.map(questao => questao.opcoes.length));
-  const alternativaHeaders = Array.from({ length: maiorNumeroAlternativas }, (_, indice) => {
-    const letra = indiceParaLetra(indice);
-    return indice === maiorNumeroAlternativas - 1 ? `Alternativa ${letra} / Não sei` : `Alternativa ${letra}`;
-  });
-  const headers = [
-    "ID da Questão", "Enunciado", ...alternativaHeaders, "Gabarito",
-    "Eixo 1 da Questão", "Eixo 2 da Questão", "Eixo 3 da Questão", "Eixo 4 da Questão", "Eixo 5 da Questão",
-    "Macroárea", "Microárea", "Fonte / Tag",
-  ];
-  const rows = prova.questoes.map(questao => [
-    questao.id,
-    questao.enunciado,
-    ...Array.from({ length: maiorNumeroAlternativas }, (_, indice) => questao.opcoes[indice]?.texto ?? ""),
-    questao.gabarito,
-    ...Array.from({ length: 5 }, (_, indice) => questao.eixos[indice]?.nome ?? ""),
-    questao.macroarea ?? "",
-    questao.microarea ?? "",
-    questao.tagFonte ?? "",
-  ]);
-  const wsQuestoes = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-  wsQuestoes["!cols"] = [
-    { wch: 14 }, { wch: 90 },
-    ...Array.from({ length: maiorNumeroAlternativas }, () => ({ wch: 42 })),
-    { wch: 12 },
-    ...Array.from({ length: 5 }, () => ({ wch: 42 })),
-    { wch: 28 }, { wch: 28 }, { wch: 28 },
-  ];
-  XLSX.utils.book_append_sheet(workbook, wsProva, "PROVA");
-  XLSX.utils.book_append_sheet(workbook, wsQuestoes, "QUESTOES");
-  XLSX.writeFile(workbook, arquivoNome);
-}
-
 function localizarColunasAlternativas(cabecalhosOriginais: unknown[]): ColunaAlternativa[] {
   return cabecalhosOriginais
     .map((cabecalho, indice) => {
@@ -282,14 +207,13 @@ export default function ImportarProvas() {
   const [justificativaInvalidacao, setJustificativaInvalidacao] = useState("");
   const [processandoInvalidacao, setProcessandoInvalidacao] = useState(false);
   const [processandoReplicacao, setProcessandoReplicacao] = useState(false);
-  const [baseCopiaId, setBaseCopiaId] = useState<number | null>(null);
-  const [baixandoCopias, setBaixandoCopias] = useState(false);
   const [mensagemAcao, setMensagemAcao] = useState("");
   const [inputKey, setInputKey] = useState(0);
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [provaEdicao, setProvaEdicao] = useState<Prova | null>(null);
   const [filtroProva, setFiltroProva] = useState("");
   const [filtroEixo, setFiltroEixo] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("");
   const [visualizandoId, setVisualizandoId] = useState<number | null>(null);
   const [previewIndice, setPreviewIndice] = useState(0);
   const [historicoId, setHistoricoId] = useState<number | null>(null);
@@ -306,10 +230,6 @@ export default function ImportarProvas() {
   const historicoQuery = api.historico.useQuery(
     { id: historicoId ?? 0 },
     { enabled: Boolean(historicoId), refetchOnWindowFocus: false },
-  );
-  const baseCopiaQuery = api.obter.useQuery(
-    { id: baseCopiaId ?? 0 },
-    { enabled: Boolean(baseCopiaId), refetchOnWindowFocus: false },
   );
 
   useEffect(() => {
@@ -391,63 +311,6 @@ export default function ImportarProvas() {
     } catch (error: any) {
       setValidacao(null);
       setErroLeitura(error?.message || "Não foi possível validar as provas carregadas.");
-    }
-  };
-
-  const baixarCopiasDaBaseValidada = () => {
-    const registroBase = basesRegionaisValidadas.find((item: any) => Number(item.id) === baseCopiaId);
-    const provaBase = baseCopiaQuery.data?.prova as Prova | undefined;
-    if (!registroBase || !provaBase || baseCopiaQuery.data?.status !== "VALIDADA") {
-      setErroLeitura("Selecione uma prova Regional com status VALIDADA e aguarde o carregamento completo da base.");
-      return;
-    }
-    if (provaBase.questoes.length !== 65) {
-      setErroLeitura("A prova VALIDADA selecionada não possui exatamente 65 questões. Nenhum arquivo foi gerado.");
-      return;
-    }
-    const eixos = new Set(provaBase.questoes.flatMap(questao => questao.eixos.map(eixo => eixo.nome.trim()).filter(Boolean)));
-    if (eixos.size !== 11) {
-      setErroLeitura(`A prova VALIDADA selecionada possui ${eixos.size} eixos distintos, e não 11. Nenhum arquivo foi gerado.`);
-      return;
-    }
-    const siglaBase = identificarRegionalProva(registroBase);
-    if (!siglaBase) {
-      setErroLeitura("Não foi possível identificar a Regional da prova VALIDADA selecionada.");
-      return;
-    }
-
-    setErroLeitura("");
-    setMensagemAcao("");
-    setBaixandoCopias(true);
-    try {
-      const destinos = REGIONAIS_2026.filter(regional => regional.sigla !== siglaBase);
-      destinos.forEach(regional => {
-        const copia: Prova = {
-          ...provaBase,
-          codigo: `REGIONAIS_2026_${regional.sigla}_OFICIAL`,
-          nome: `Avaliação de Proficiência para a Função - ${regional.nome}`,
-          unidade: regional.unidade,
-          ano: 2026,
-          cicloId: null,
-          numeroQuestoesDeclarado: 65,
-          questoes: provaBase.questoes.map(questao => ({
-            ...questao,
-            opcoes: questao.opcoes.map(opcao => ({ ...opcao })),
-            eixos: questao.eixos.map(eixo => ({ ...eixo })),
-          })),
-        };
-        baixarWorkbookDaProva(
-          copia,
-          `UPLOAD_${regional.sigla}_2026_BASE_VALIDADA_${String(registroBase.codigo).replace(/[^a-zA-Z0-9_-]+/g, "_")}.xlsx`,
-        );
-      });
-      setMensagemAcao(
-        `Foram geradas ${destinos.length} cópias a partir da prova VALIDADA ${registroBase.codigo}. Questões, alternativas, gabaritos e eixos foram copiados integralmente; somente código, nome e unidade foram adaptados para cada Regional.`
-      );
-    } catch (error: any) {
-      setErroLeitura(error?.message || "Não foi possível gerar as cópias da prova VALIDADA.");
-    } finally {
-      setBaixandoCopias(false);
     }
   };
 
@@ -739,26 +602,6 @@ export default function ImportarProvas() {
   const totalQuestoes = useMemo(() => arquivos.reduce((soma, item) => soma + item.prova.questoes.length, 0), [arquivos]);
   const carregando = validarLote.isPending || importarLote.isPending;
   const provasImportadas = (listaQuery.data ?? []) as any[];
-  const basesRegionaisValidadas = useMemo(
-    () => provasImportadas.filter((item: any) =>
-      String(item.status) === "VALIDADA" &&
-      Number(item.ano) === 2026 &&
-      String(item.cicloNome ?? "").trim() === "2026/2" &&
-      Number(item.totalQuestoes) === 65 &&
-      Boolean(identificarRegionalProva(item))
-    ),
-    [listaQuery.data],
-  );
-
-  useEffect(() => {
-    if (basesRegionaisValidadas.length === 1 && !baseCopiaId) {
-      setBaseCopiaId(Number(basesRegionaisValidadas[0].id));
-    }
-    if (baseCopiaId && !basesRegionaisValidadas.some((item: any) => Number(item.id) === baseCopiaId)) {
-      setBaseCopiaId(basesRegionaisValidadas.length === 1 ? Number(basesRegionaisValidadas[0].id) : null);
-    }
-  }, [basesRegionaisValidadas, baseCopiaId]);
-
   const eixosDisponiveis = useMemo(
     () => Array.from(new Set(provasImportadas.flatMap((item: any) => item.eixosTecnicos ?? []))).sort((a, b) => String(a).localeCompare(String(b), "pt-BR")),
     [listaQuery.data],
@@ -766,12 +609,16 @@ export default function ImportarProvas() {
   const provasFiltradas = useMemo(() => {
     const termo = normalizar(filtroProva);
     const eixo = normalizar(filtroEixo);
+    const status = normalizar(filtroStatus);
     return provasImportadas.filter((item: any) => {
       const textoProva = normalizar([item.codigo, item.nome, item.unidade, item.ano, item.cicloNome].join(" "));
       const eixos = (item.eixosTecnicos ?? []).map(normalizar);
-      return (!termo || textoProva.includes(termo)) && (!eixo || eixos.includes(eixo));
+      const statusItem = normalizar(item.status);
+      return (!termo || textoProva.includes(termo))
+        && (!eixo || eixos.includes(eixo))
+        && (!status || statusItem === status);
     });
-  }, [listaQuery.data, filtroProva, filtroEixo]);
+  }, [listaQuery.data, filtroProva, filtroEixo, filtroStatus]);
 
   return (
     <div className="space-y-6 p-6">
@@ -843,43 +690,6 @@ export default function ImportarProvas() {
           <CardDescription>Localize a prova, edite na própria linha, visualize como candidato e consulte todo o histórico de alterações.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
-            <div className="space-y-3">
-              <div>
-                <p className="font-medium">Gerar cópias a partir da prova VALIDADA pelo administrador</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  A base aparece aqui somente se estiver no ciclo 2026/2, tiver 65 questões e status VALIDADA. As cópias preservam integralmente questões, alternativas, gabaritos e os 11 eixos da base.
-                </p>
-              </div>
-              {basesRegionaisValidadas.length === 0 ? (
-                <p className="text-sm text-amber-800">Nenhuma prova Regional 2026/2 com 65 questões está marcada como VALIDADA.</p>
-              ) : (
-                <div className="flex flex-wrap items-end gap-3">
-                  <label className="min-w-[360px] text-sm">
-                    Prova VALIDADA usada como base
-                    <select
-                      className="mt-1 h-10 w-full rounded-md border bg-white px-3"
-                      value={baseCopiaId ?? ""}
-                      onChange={event => setBaseCopiaId(event.target.value ? Number(event.target.value) : null)}
-                    >
-                      {basesRegionaisValidadas.length > 1 && <option value="">Selecione a prova VALIDADA</option>}
-                      {basesRegionaisValidadas.map((item: any) => (
-                        <option key={item.id} value={item.id}>{item.codigo} — {item.unidade}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <Button type="button" onClick={baixarCopiasDaBaseValidada} disabled={!baseCopiaId || baseCopiaQuery.isLoading || baixandoCopias}>
-                    {baseCopiaQuery.isLoading || baixandoCopias ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
-                    Baixar cópias para as outras Regionais
-                  </Button>
-                </div>
-              )}
-              {basesRegionaisValidadas.length > 1 && (
-                <p className="text-xs text-amber-800">Há mais de uma prova Regional VALIDADA. Selecione explicitamente qual delas será usada como matriz oficial.</p>
-              )}
-            </div>
-          </div>
-
           <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -894,7 +704,7 @@ export default function ImportarProvas() {
               </Button>
             </div>
           </div>
-          <div className="grid gap-3 md:grid-cols-[1fr_280px_auto]">
+          <div className="grid gap-3 md:grid-cols-[1fr_260px_220px_auto]">
             <label className="text-sm">Filtrar por prova
               <input className="mt-1 w-full rounded-md border px-3 py-2" placeholder="Código, nome, unidade ou ano" value={filtroProva} onChange={e => setFiltroProva(e.target.value)} />
             </label>
@@ -904,8 +714,16 @@ export default function ImportarProvas() {
                 {eixosDisponiveis.map(eixo => <option key={String(eixo)} value={String(eixo)}>{String(eixo)}</option>)}
               </select>
             </label>
+            <label className="text-sm">Filtrar por Status
+              <select className="mt-1 w-full rounded-md border px-3 py-2" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}>
+                <option value="">Todos os status</option>
+                <option value="RASCUNHO">RASCUNHO</option>
+                <option value="VALIDADA">VALIDADA</option>
+                <option value="INVALIDADA">INVALIDADA</option>
+              </select>
+            </label>
             <div className="flex items-end">
-              <Button type="button" variant="outline" onClick={() => { setFiltroProva(""); setFiltroEixo(""); }}>Limpar filtros</Button>
+              <Button type="button" variant="outline" onClick={() => { setFiltroProva(""); setFiltroEixo(""); setFiltroStatus(""); }}>Limpar filtros</Button>
             </div>
           </div>
 
