@@ -24,6 +24,7 @@ const provaRascunhoSchema = z.object({
   nome: z.string().trim().min(1).max(255),
   unidade: z.string().trim().min(1).max(255),
   ano: z.number().int().min(2020).max(2100),
+  cicloId: z.number().int().positive().nullable().optional(),
   descricao: z.string().max(5000).nullable().optional(),
   numeroQuestoesDeclarado: z.number().int().min(0).max(1000).nullable().optional(),
   questoes: z.array(questaoRascunhoSchema).max(1000),
@@ -45,6 +46,7 @@ async function ensureTables() {
       nome VARCHAR(255) NOT NULL,
       unidade VARCHAR(255) NOT NULL,
       ano INT NOT NULL,
+      ciclo_id INT NULL,
       descricao TEXT NULL,
       total_questoes INT NOT NULL,
       questoes_json LONGTEXT NOT NULL,
@@ -53,9 +55,26 @@ async function ensureTables() {
       criado_por INT NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      UNIQUE KEY uq_provas_importadas_codigo_ano (codigo, ano)
+      UNIQUE KEY uq_provas_importadas_codigo_ano (codigo, ano),
+      INDEX provas_importadas_ciclo_idx (ciclo_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `));
+  const colunaCicloResult = await db.execute(sql`
+    SELECT COUNT(*) AS total
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'provas_importadas'
+      AND COLUMN_NAME = 'ciclo_id'
+  `);
+  const colunaCicloRows = Array.isArray(colunaCicloResult) ? (colunaCicloResult[0] as any[]) : [];
+  if (Number(colunaCicloRows[0]?.total ?? 0) === 0) {
+    await db.execute(sql.raw(`
+      ALTER TABLE provas_importadas
+        ADD COLUMN ciclo_id INT NULL AFTER ano,
+        ADD INDEX provas_importadas_ciclo_idx (ciclo_id)
+    `));
+  }
+
   await db.execute(sql.raw(`
     CREATE TABLE IF NOT EXISTS provas_importadas_historico (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -70,6 +89,50 @@ async function ensureTables() {
       INDEX provas_importadas_historico_created_idx (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `));
+
+  // Migração segura dos rascunhos/provas atuais já existentes.
+  // Regra confirmada: provas novas = ciclo 2026/2. Provas históricas serão carregadas depois no ciclo 2026/1.
+  const cicloAtualResult = await db.execute(sql`
+    SELECT id, nome
+    FROM ciclos
+    WHERE nome = '2026/2'
+    LIMIT 1
+  `);
+  const cicloAtualRows = Array.isArray(cicloAtualResult) ? (cicloAtualResult[0] as any[]) : [];
+  const cicloAtual = cicloAtualRows[0] ?? null;
+
+  if (cicloAtual?.id) {
+    const semCicloResult = await db.execute(sql`
+      SELECT id
+      FROM provas_importadas
+      WHERE ciclo_id IS NULL
+        AND ano = 2026
+        AND UPPER(codigo) NOT LIKE '%HIST%'
+        AND UPPER(nome) NOT LIKE '%HIST%'
+        AND UPPER(codigo) NOT LIKE '%ERRO_NAO_USAR%'
+    `);
+    const semCiclo = Array.isArray(semCicloResult) ? (semCicloResult[0] as any[]) : [];
+
+    for (const prova of semCiclo) {
+      await db.transaction(async (tx: any) => {
+        await tx.execute(sql`
+          UPDATE provas_importadas
+          SET ciclo_id = ${Number(cicloAtual.id)}
+          WHERE id = ${Number(prova.id)} AND ciclo_id IS NULL
+        `);
+        await tx.execute(sql`
+          INSERT INTO provas_importadas_historico
+            (prova_id, acao, usuario_id, resumo_json, antes_json, depois_json)
+          VALUES
+            (${Number(prova.id)}, 'VINCULO_CICLO', NULL,
+             ${JSON.stringify([{ campo: "Ciclo do PDI", antes: null, depois: "2026/2" }])},
+             ${JSON.stringify({ cicloId: null })},
+             ${JSON.stringify({ cicloId: Number(cicloAtual.id), cicloNome: "2026/2" })})
+        `);
+      });
+    }
+  }
+
   return db;
 }
 
@@ -86,6 +149,7 @@ function validarEstrutura(prova: ProvaRascunho) {
   const erros: string[] = [];
   const avisos: string[] = [];
 
+  if (!prova.cicloId) erros.push("Selecione o Ciclo do PDI para esta prova.");
   if (!prova.questoes.length) erros.push("A prova precisa conter pelo menos uma questão para ser validada.");
   if (prova.numeroQuestoesDeclarado !== null && prova.numeroQuestoesDeclarado !== undefined && prova.numeroQuestoesDeclarado !== prova.questoes.length) {
     erros.push(`A aba PROVA informa ${prova.numeroQuestoesDeclarado} questão(ões), mas a prova armazenada contém ${prova.questoes.length}.`);
@@ -178,11 +242,12 @@ function mudou(antes: unknown, depois: unknown) {
 
 function resumirAlteracoes(antes: ProvaRascunho, depois: ProvaRascunho): AlteracaoAuditoria[] {
   const alteracoes: AlteracaoAuditoria[] = [];
-  const camposCabecalho: Array<keyof Pick<ProvaRascunho, "codigo" | "nome" | "unidade" | "ano" | "descricao">> = [
+  const camposCabecalho: Array<keyof Pick<ProvaRascunho, "codigo" | "nome" | "unidade" | "ano" | "cicloId" | "descricao">> = [
     "codigo",
     "nome",
     "unidade",
     "ano",
+    "cicloId",
     "descricao",
   ];
 
@@ -233,6 +298,18 @@ function resumirAlteracoes(antes: ProvaRascunho, depois: ProvaRascunho): Alterac
   return alteracoes;
 }
 
+async function obterCiclo(db: any, cicloId: number | null | undefined) {
+  if (!cicloId) return null;
+  const result = await db.execute(sql`
+    SELECT id, nome
+    FROM ciclos
+    WHERE id = ${cicloId}
+    LIMIT 1
+  `);
+  const linhas = Array.isArray(result) ? (result[0] as any[]) : [];
+  return linhas[0] ?? null;
+}
+
 async function registrarHistorico(params: {
   db: any;
   provaId: number;
@@ -276,7 +353,7 @@ export const importacaoProvasRouter = router({
   obter: adminProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
     const db = await ensureTables();
     const result = await db.execute(sql`
-      SELECT id, codigo, nome, unidade, ano, descricao, total_questoes AS totalQuestoes,
+      SELECT id, codigo, nome, unidade, ano, ciclo_id AS cicloId, descricao, total_questoes AS totalQuestoes,
              questoes_json AS questoesJson, arquivo_nome AS arquivoNome, status
       FROM provas_importadas
       WHERE id = ${input.id}
@@ -298,6 +375,7 @@ export const importacaoProvasRouter = router({
       nome: registro.nome,
       unidade: registro.unidade,
       ano: Number(registro.ano),
+      cicloId: registro.cicloId ? Number(registro.cicloId) : null,
       descricao: registro.descricao ?? null,
       numeroQuestoesDeclarado: Number(registro.totalQuestoes),
       questoes,
@@ -318,7 +396,7 @@ export const importacaoProvasRouter = router({
   })).mutation(async ({ input, ctx }) => {
     const db = await ensureTables();
     const atualResult = await db.execute(sql`
-      SELECT id, codigo, nome, unidade, ano, descricao, total_questoes AS totalQuestoes,
+      SELECT id, codigo, nome, unidade, ano, ciclo_id AS cicloId, descricao, total_questoes AS totalQuestoes,
              questoes_json AS questoesJson, arquivo_nome AS arquivoNome, status
       FROM provas_importadas
       WHERE id = ${input.id}
@@ -344,11 +422,20 @@ export const importacaoProvasRouter = router({
       nome: atual.nome,
       unidade: atual.unidade,
       ano: Number(atual.ano),
+      cicloId: atual.cicloId ? Number(atual.cicloId) : null,
       descricao: atual.descricao ?? null,
       numeroQuestoesDeclarado: Number(atual.totalQuestoes),
       questoes: questoesAtuais,
     });
     if (!provaAtualParse.success) throw new Error("A versão atual da prova possui estrutura inválida para auditoria.");
+
+    if (!input.prova.cicloId) {
+      throw new Error("Selecione o Ciclo do PDI antes de salvar a prova.");
+    }
+    const ciclo = await obterCiclo(db, input.prova.cicloId);
+    if (!ciclo) {
+      throw new Error("O Ciclo do PDI selecionado não existe mais. Atualize a tela e selecione um ciclo válido.");
+    }
 
     const duplicadaResult = await db.execute(sql`
       SELECT id
@@ -370,6 +457,7 @@ export const importacaoProvasRouter = router({
             nome = ${input.prova.nome},
             unidade = ${input.prova.unidade},
             ano = ${input.prova.ano},
+            ciclo_id = ${input.prova.cicloId},
             descricao = ${input.prova.descricao ?? null},
             total_questoes = ${input.prova.questoes.length},
             questoes_json = ${JSON.stringify(input.prova.questoes)},
@@ -407,7 +495,7 @@ export const importacaoProvasRouter = router({
   validarSalva: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input, ctx }) => {
     const db = await ensureTables();
     const result = await db.execute(sql`
-      SELECT id, codigo, nome, unidade, ano, descricao, total_questoes AS totalQuestoes,
+      SELECT id, codigo, nome, unidade, ano, ciclo_id AS cicloId, descricao, total_questoes AS totalQuestoes,
              questoes_json AS questoesJson, arquivo_nome AS arquivoNome, status
       FROM provas_importadas
       WHERE id = ${input.id}
@@ -440,6 +528,7 @@ export const importacaoProvasRouter = router({
       nome: registro.nome,
       unidade: registro.unidade,
       ano: Number(registro.ano),
+      cicloId: registro.cicloId ? Number(registro.cicloId) : null,
       descricao: registro.descricao ?? null,
       numeroQuestoesDeclarado: Number(registro.totalQuestoes),
       questoes: questoesBrutas,
@@ -461,6 +550,11 @@ export const importacaoProvasRouter = router({
     }
 
     const validacao = resumo(provaParse.data);
+    if (provaParse.data.cicloId) {
+      const ciclo = await obterCiclo(db, provaParse.data.cicloId);
+      if (!ciclo) validacao.erros.push("O Ciclo do PDI vinculado a esta prova não existe mais.");
+      validacao.valido = validacao.erros.length === 0;
+    }
     if (!validacao.valido) {
       return {
         id: registro.id,
@@ -570,6 +664,16 @@ export const importacaoProvasRouter = router({
       chaves.add(chave);
 
       try {
+        if (!item.prova.cicloId) {
+          resultados.push({ arquivoNome: item.arquivoNome, codigo: item.prova.codigo, ano: item.prova.ano, sucesso: false, motivo: "Selecione o Ciclo do PDI antes de gravar a prova." });
+          continue;
+        }
+        const ciclo = await obterCiclo(db, item.prova.cicloId);
+        if (!ciclo) {
+          resultados.push({ arquivoNome: item.arquivoNome, codigo: item.prova.codigo, ano: item.prova.ano, sucesso: false, motivo: "O Ciclo do PDI selecionado não existe mais. Atualize a tela e tente novamente." });
+          continue;
+        }
+
         const existenteResult = await db.execute(sql`SELECT id FROM provas_importadas WHERE codigo = ${item.prova.codigo} AND ano = ${item.prova.ano} LIMIT 1`);
         const existentes = Array.isArray(existenteResult) ? (existenteResult[0] as any[]) : [];
         if (existentes.length) {
@@ -580,9 +684,9 @@ export const importacaoProvasRouter = router({
         await db.transaction(async (tx: any) => {
           await tx.execute(sql`
             INSERT INTO provas_importadas
-              (codigo, nome, unidade, ano, descricao, total_questoes, questoes_json, arquivo_nome, status, criado_por)
+              (codigo, nome, unidade, ano, ciclo_id, descricao, total_questoes, questoes_json, arquivo_nome, status, criado_por)
             VALUES
-              (${item.prova.codigo}, ${item.prova.nome}, ${item.prova.unidade}, ${item.prova.ano},
+              (${item.prova.codigo}, ${item.prova.nome}, ${item.prova.unidade}, ${item.prova.ano}, ${item.prova.cicloId},
                ${item.prova.descricao ?? null}, ${item.prova.questoes.length}, ${JSON.stringify(item.prova.questoes)},
                ${item.arquivoNome}, 'RASCUNHO', ${ctx.user.id})
           `);
@@ -653,11 +757,12 @@ export const importacaoProvasRouter = router({
   listar: adminProcedure.query(async () => {
     const db = await ensureTables();
     const result = await db.execute(sql`
-      SELECT id, codigo, nome, unidade, ano, total_questoes AS totalQuestoes,
-             arquivo_nome AS arquivoNome, status, created_at AS createdAt,
-             questoes_json AS questoesJson
-      FROM provas_importadas
-      ORDER BY created_at DESC, id DESC
+      SELECT p.id, p.codigo, p.nome, p.unidade, p.ano, p.ciclo_id AS cicloId, c.nome AS cicloNome,
+             p.total_questoes AS totalQuestoes, p.arquivo_nome AS arquivoNome, p.status,
+             p.created_at AS createdAt, p.questoes_json AS questoesJson
+      FROM provas_importadas p
+      LEFT JOIN ciclos c ON c.id = p.ciclo_id
+      ORDER BY p.created_at DESC, p.id DESC
     `);
     const linhas = Array.isArray(result) ? (result[0] as any[]) : [];
     return linhas.map(item => {
@@ -675,6 +780,8 @@ export const importacaoProvasRouter = router({
         nome: item.nome,
         unidade: item.unidade,
         ano: Number(item.ano),
+        cicloId: item.cicloId ? Number(item.cicloId) : null,
+        cicloNome: item.cicloNome ?? null,
         totalQuestoes: Number(item.totalQuestoes),
         arquivoNome: item.arquivoNome,
         status: item.status,

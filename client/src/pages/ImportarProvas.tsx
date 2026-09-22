@@ -23,6 +23,7 @@ type Prova = {
   nome: string;
   unidade: string;
   ano: number;
+  cicloId?: number | null;
   descricao?: string | null;
   numeroQuestoesDeclarado?: number | null;
   questoes: Questao[];
@@ -174,6 +175,7 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
       nome,
       unidade,
       ano,
+      cicloId: null,
       descricao: descricao || null,
       numeroQuestoesDeclarado: Number.isFinite(numeroQuestoesDeclarado as number) ? numeroQuestoesDeclarado : null,
       questoes,
@@ -189,8 +191,10 @@ export default function ImportarProvas() {
   const salvarRascunho = api.salvarRascunho.useMutation();
   const importarLote = api.importarLote.useMutation();
   const listaQuery = api.listar.useQuery(undefined, { refetchOnWindowFocus: false });
+  const ciclosQuery = trpc.ciclos.list.useQuery();
 
   const [arquivos, setArquivos] = useState<ArquivoProva[]>([]);
+  const [cicloIdUpload, setCicloIdUpload] = useState<number | null>(null);
   const [erroLeitura, setErroLeitura] = useState("");
   const [validacao, setValidacao] = useState<any>(null);
   const [resultado, setResultado] = useState<any>(null);
@@ -235,18 +239,35 @@ export default function ImportarProvas() {
     setInputKey(chave => chave + 1);
   };
 
+  const alterarCicloUpload = (cicloId: number | null) => {
+    setCicloIdUpload(cicloId);
+    setArquivos(atuais => atuais.map(item => ({
+      ...item,
+      prova: { ...item.prova, cicloId },
+    })));
+    setValidacao(null);
+    setResultado(null);
+  };
+
   const selecionar = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selecionados = Array.from(event.target.files ?? []);
     setErroLeitura("");
     setValidacao(null);
     setResultado(null);
     if (!selecionados.length) { setArquivos([]); return; }
+    if (!cicloIdUpload) {
+      setArquivos([]);
+      setErroLeitura("Selecione primeiro o Ciclo do PDI ao qual estas provas pertencem.");
+      return;
+    }
 
     try {
       const processados: ArquivoProva[] = [];
       for (const arquivo of selecionados) {
         if (!arquivo.name.toLowerCase().endsWith(".xlsx")) throw new Error(`${arquivo.name}: use arquivo .xlsx.`);
-        processados.push(lerProva(await arquivo.arrayBuffer(), arquivo.name));
+        const processado = lerProva(await arquivo.arrayBuffer(), arquivo.name);
+        processado.prova.cicloId = cicloIdUpload;
+        processados.push(processado);
       }
       setArquivos(processados);
     } catch (error: any) {
@@ -257,6 +278,10 @@ export default function ImportarProvas() {
 
   const gravarRascunho = async () => {
     if (!arquivos.length) return;
+    if (!cicloIdUpload) {
+      setErroLeitura("Selecione o Ciclo do PDI antes de gravar as provas.");
+      return;
+    }
     setErroLeitura("");
     setValidacao(null);
     try {
@@ -269,6 +294,10 @@ export default function ImportarProvas() {
   };
 
   const validar = async () => {
+    if (!cicloIdUpload) {
+      setErroLeitura("Selecione o Ciclo do PDI antes de validar as provas.");
+      return;
+    }
     setErroLeitura("");
     try {
       setValidacao(await validarLote.mutateAsync({ arquivos }));
@@ -448,7 +477,7 @@ export default function ImportarProvas() {
     const termo = normalizar(filtroProva);
     const eixo = normalizar(filtroEixo);
     return provasImportadas.filter((item: any) => {
-      const textoProva = normalizar([item.codigo, item.nome, item.unidade, item.ano].join(" "));
+      const textoProva = normalizar([item.codigo, item.nome, item.unidade, item.ano, item.cicloNome].join(" "));
       const eixos = (item.eixosTecnicos ?? []).map(normalizar);
       return (!termo || textoProva.includes(termo)) && (!eixo || eixos.includes(eixo));
     });
@@ -462,13 +491,27 @@ export default function ImportarProvas() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>1. Selecione as provas</CardTitle><CardDescription>O upload não exige validação prévia. A prova será armazenada como RASCUNHO para revisão posterior.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>1. Selecione o ciclo e as provas</CardTitle><CardDescription>Use o mesmo Ciclo do PDI já existente no sistema. O ciclo será aplicado a todas as provas selecionadas neste lote.</CardDescription></CardHeader>
         <CardContent className="space-y-4">
-          <input key={inputKey} type="file" accept=".xlsx" multiple onChange={selecionar} className="block w-full text-sm" />
+          <label className="block max-w-xl text-sm font-medium">
+            Ciclo do PDI
+            <select
+              value={cicloIdUpload ?? ""}
+              onChange={event => alterarCicloUpload(event.target.value ? Number(event.target.value) : null)}
+              className="mt-1 h-10 w-full rounded-md border bg-background px-3 font-normal"
+            >
+              <option value="">Selecione o ciclo antes das provas</option>
+              {(ciclosQuery.data ?? []).map((ciclo: any) => (
+                <option key={ciclo.id} value={ciclo.id}>{ciclo.nome}</option>
+              ))}
+            </select>
+          </label>
+          <p className="text-xs text-muted-foreground">O ciclo selecionado é o mesmo utilizado pelos PDIs e pelas ações. Ele não é criado nesta tela.</p>
+          <input key={inputKey} type="file" accept=".xlsx" multiple onChange={selecionar} disabled={!cicloIdUpload} className="block w-full text-sm disabled:cursor-not-allowed disabled:opacity-50" />
           {arquivos.length > 0 && <div className="rounded-md border bg-muted/20 p-4 text-sm"><strong>{arquivos.length}</strong> prova(s) carregada(s) · <strong>{totalQuestoes}</strong> questão(ões). Você pode gravá-las agora como RASCUNHO sem validar.</div>}
           <div className="flex flex-wrap gap-2">
-            <Button onClick={gravarRascunho} disabled={!arquivos.length || carregando}>{carregando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Gravar como RASCUNHO</Button>
-            <Button variant="outline" onClick={validar} disabled={!arquivos.length || carregando}>{carregando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Validar agora (opcional)</Button>
+            <Button onClick={gravarRascunho} disabled={!arquivos.length || !cicloIdUpload || carregando}>{carregando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Gravar como RASCUNHO</Button>
+            <Button variant="outline" onClick={validar} disabled={!arquivos.length || !cicloIdUpload || carregando}>{carregando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Validar agora (opcional)</Button>
           </div>
         </CardContent>
       </Card>
@@ -532,7 +575,7 @@ export default function ImportarProvas() {
               <table className="w-full min-w-[1080px] text-sm">
                 <thead><tr className="border-b text-left">
                   <th className="px-3 py-2">Código</th><th className="px-3 py-2">Avaliação</th><th className="px-3 py-2">Unidade</th>
-                  <th className="w-[160px] px-3 py-2">Eixos Técnicos</th><th className="px-3 py-2">Ano</th><th className="px-3 py-2">Questões</th>
+                  <th className="w-[160px] px-3 py-2">Eixos Técnicos</th><th className="px-3 py-2">Ano</th><th className="px-3 py-2">Ciclo</th><th className="px-3 py-2">Questões</th>
                   <th className="px-3 py-2">Status</th><th className="px-3 py-2">Ações</th>
                 </tr></thead>
                 <tbody>
@@ -576,6 +619,7 @@ export default function ImportarProvas() {
                           })()}
                         </td>
                         <td className="px-3 py-3">{item.ano}</td>
+                        <td className="px-3 py-3">{item.cicloNome || <span className="text-amber-700">Sem ciclo</span>}</td>
                         <td className="px-3 py-3">{item.totalQuestoes}</td>
                         <td className="px-3 py-3">{item.status}</td>
                         <td className="px-3 py-3">
@@ -592,7 +636,7 @@ export default function ImportarProvas() {
 
                       {editandoId === Number(item.id) && (
                         <tr className="border-b bg-slate-50/70">
-                          <td colSpan={8} className="p-4">
+                          <td colSpan={9} className="p-4">
                             <div className="rounded-lg border bg-white p-5 shadow-sm">
                               <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                                 <div><h3 className="text-lg font-semibold">Editar prova: {item.nome}</h3><p className="text-sm text-muted-foreground">A edição fica junto da prova selecionada. Salve antes de validar.</p></div>
@@ -605,6 +649,12 @@ export default function ImportarProvas() {
                                   <label className="text-sm">Nome<input className="mt-1 w-full rounded-md border px-3 py-2" value={provaEdicao.nome} onChange={e => setProvaEdicao({ ...provaEdicao, nome: e.target.value })} /></label>
                                   <label className="text-sm">Unidade<input className="mt-1 w-full rounded-md border px-3 py-2" value={provaEdicao.unidade} onChange={e => setProvaEdicao({ ...provaEdicao, unidade: e.target.value })} /></label>
                                   <label className="text-sm">Ano<input type="number" className="mt-1 w-full rounded-md border px-3 py-2" value={provaEdicao.ano} onChange={e => setProvaEdicao({ ...provaEdicao, ano: Number(e.target.value) })} /></label>
+                                  <label className="text-sm">Ciclo do PDI
+                                    <select className="mt-1 h-10 w-full rounded-md border bg-background px-3" value={provaEdicao.cicloId ?? ""} onChange={e => setProvaEdicao({ ...provaEdicao, cicloId: e.target.value ? Number(e.target.value) : null })}>
+                                      <option value="">Selecione o ciclo</option>
+                                      {(ciclosQuery.data ?? []).map((ciclo: any) => <option key={ciclo.id} value={ciclo.id}>{ciclo.nome}</option>)}
+                                    </select>
+                                  </label>
                                   <label className="text-sm md:col-span-2">Descrição<textarea className="mt-1 w-full rounded-md border px-3 py-2" rows={2} value={provaEdicao.descricao ?? ""} onChange={e => setProvaEdicao({ ...provaEdicao, descricao: e.target.value || null })} /></label>
                                 </div>
 
@@ -657,7 +707,7 @@ export default function ImportarProvas() {
 
                       {visualizandoId === Number(item.id) && (
                         <tr className="border-b bg-blue-50/40">
-                          <td colSpan={8} className="p-4">
+                          <td colSpan={9} className="p-4">
                             <div className="rounded-lg border border-blue-200 bg-white p-5 shadow-sm">
                               <div className="mb-4 flex items-start justify-between gap-3">
                                 <div><h3 className="text-lg font-semibold">Pré-visualização como candidato</h3><p className="text-sm text-muted-foreground">Esta prévia reproduz a ordem, enunciado e alternativas que o candidato verá.</p></div>
@@ -690,7 +740,7 @@ export default function ImportarProvas() {
 
                       {historicoId === Number(item.id) && (
                         <tr className="border-b bg-amber-50/30">
-                          <td colSpan={8} className="p-4">
+                          <td colSpan={9} className="p-4">
                             <div className="rounded-lg border bg-white p-5 shadow-sm">
                               <div className="mb-4 flex items-start justify-between gap-3"><div><h3 className="text-lg font-semibold">Histórico de auditoria</h3><p className="text-sm text-muted-foreground">Registro permanente de importações, ajustes, validações e reaberturas.</p></div><Button variant="outline" size="sm" onClick={() => setHistoricoId(null)}><X className="mr-2 h-4 w-4" />Fechar</Button></div>
                               {historicoQuery.isLoading ? <p className="text-sm text-muted-foreground">Carregando histórico...</p> : (historicoQuery.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">Ainda não há eventos registrados para esta prova.</p> : <div className="space-y-3">
