@@ -785,6 +785,178 @@ export const importacaoProvasRouter = router({
     };
   }),
 
+  replicarEixos: adminProcedure.input(z.object({
+    origemId: z.number().int().positive(),
+    destinoIds: z.array(z.number().int().positive()).min(1).max(20),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await ensureTables();
+
+    const ids = Array.from(new Set([input.origemId, ...input.destinoIds]));
+    if (ids.length !== input.destinoIds.length + 1) {
+      throw new Error("A prova de origem não pode também aparecer entre as provas de destino.");
+    }
+
+    const registrosResult = await db.execute(sql`
+      SELECT id, codigo, nome, status, total_questoes AS totalQuestoes, questoes_json AS questoesJson
+      FROM provas_importadas
+      WHERE id IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})
+    `);
+    const registros = Array.isArray(registrosResult) ? (registrosResult[0] as any[]) : [];
+
+    const porId = new Map<number, any>(registros.map(item => [Number(item.id), item]));
+    const origem = porId.get(input.origemId);
+    if (!origem) throw new Error("Prova de origem não encontrada.");
+
+    const faltantes = input.destinoIds.filter(id => !porId.has(id));
+    if (faltantes.length) throw new Error("Uma ou mais provas de destino não foram encontradas.");
+
+    let questoesOrigem: any[];
+    try {
+      questoesOrigem = JSON.parse(origem.questoesJson);
+    } catch {
+      throw new Error("Não foi possível ler as questões da prova de origem.");
+    }
+    if (!Array.isArray(questoesOrigem) || questoesOrigem.length !== 65) {
+      throw new Error("A prova de origem precisa conter exatamente 65 questões.");
+    }
+
+    const mapaOrigem = new Map<string, any>();
+    const eixosOrigem = new Set<string>();
+    for (const questao of questoesOrigem) {
+      const idQuestao = normalizarTexto(String(questao?.id ?? ""));
+      if (!idQuestao || mapaOrigem.has(idQuestao)) {
+        throw new Error("A prova de origem possui ID de questão vazio ou duplicado.");
+      }
+      const eixos = Array.isArray(questao?.eixos) ? questao.eixos : [];
+      if (eixos.length !== 1 || !String(eixos[0]?.nome ?? "").trim()) {
+        throw new Error(`A questão ${questao?.id ?? "?"} da prova de origem precisa possuir exatamente um eixo técnico principal.`);
+      }
+      eixosOrigem.add(String(eixos[0].nome).trim());
+      mapaOrigem.set(idQuestao, {
+        enunciado: normalizarTexto(String(questao?.enunciado ?? "")),
+        eixos: [{ nome: String(eixos[0].nome).trim() }],
+      });
+    }
+    if (eixosOrigem.size !== 11) {
+      throw new Error(`A prova de origem possui ${eixosOrigem.size} eixos distintos. A replicação exige exatamente 11 eixos.`);
+    }
+
+    const preparados: Array<{
+      id: number;
+      codigo: string;
+      questoesAntes: any[];
+      questoesDepois: any[];
+      alteracoes: any[];
+    }> = [];
+
+    for (const destinoId of input.destinoIds) {
+      const destino = porId.get(destinoId);
+      if (destino.status !== "RASCUNHO") {
+        throw new Error(`A prova ${destino.codigo} precisa estar como RASCUNHO antes de receber os eixos.`);
+      }
+
+      const usoResult = await db.execute(sql`
+        SELECT COUNT(*) AS total
+        FROM aplicacoes_proficiencia
+        WHERE prova_id = ${destinoId}
+      `);
+      const usoRows = Array.isArray(usoResult) ? (usoResult[0] as any[]) : [];
+      if (Number(usoRows[0]?.total ?? 0) > 0) {
+        throw new Error(`A prova ${destino.codigo} já possui aplicação vinculada e não pode receber replicação automática de eixos.`);
+      }
+
+      let questoesDestino: any[];
+      try {
+        questoesDestino = JSON.parse(destino.questoesJson);
+      } catch {
+        throw new Error(`Não foi possível ler as questões da prova ${destino.codigo}.`);
+      }
+      if (!Array.isArray(questoesDestino) || questoesDestino.length !== 65) {
+        throw new Error(`A prova ${destino.codigo} precisa conter exatamente 65 questões.`);
+      }
+
+      const idsDestino = new Set<string>();
+      const alteracoes: any[] = [];
+      const questoesDepois = questoesDestino.map((questao: any) => {
+        const idQuestao = normalizarTexto(String(questao?.id ?? ""));
+        if (!idQuestao || idsDestino.has(idQuestao)) {
+          throw new Error(`A prova ${destino.codigo} possui ID de questão vazio ou duplicado.`);
+        }
+        idsDestino.add(idQuestao);
+
+        const referencia = mapaOrigem.get(idQuestao);
+        if (!referencia) {
+          throw new Error(`A questão ${questao?.id ?? "?"} da prova ${destino.codigo} não existe na prova de referência.`);
+        }
+
+        const enunciadoDestino = normalizarTexto(String(questao?.enunciado ?? ""));
+        if (enunciadoDestino !== referencia.enunciado) {
+          throw new Error(`A questão ${questao?.id ?? "?"} da prova ${destino.codigo} não é textualmente idêntica à questão correspondente da prova de referência. Nenhuma alteração foi gravada.`);
+        }
+
+        const antes = Array.isArray(questao?.eixos)
+          ? questao.eixos.map((eixo: any) => String(eixo?.nome ?? "").trim()).filter(Boolean)
+          : [];
+        const depois = referencia.eixos.map((eixo: any) => eixo.nome);
+        if (JSON.stringify(antes) !== JSON.stringify(depois)) {
+          alteracoes.push({
+            campo: `Questão ${questao?.id ?? "?"} · Eixo(s) técnico(s)`,
+            antes,
+            depois,
+          });
+        }
+        return { ...questao, eixos: referencia.eixos.map((eixo: any) => ({ ...eixo })) };
+      });
+
+      if (idsDestino.size !== mapaOrigem.size) {
+        throw new Error(`A prova ${destino.codigo} não possui o mesmo conjunto de 65 IDs da prova de referência.`);
+      }
+
+      preparados.push({
+        id: destinoId,
+        codigo: destino.codigo,
+        questoesAntes: questoesDestino,
+        questoesDepois,
+        alteracoes,
+      });
+    }
+
+    await db.transaction(async (tx: any) => {
+      for (const item of preparados) {
+        if (!item.alteracoes.length) continue;
+        await tx.execute(sql`
+          UPDATE provas_importadas
+          SET questoes_json = ${JSON.stringify(item.questoesDepois)}
+          WHERE id = ${item.id} AND status = 'RASCUNHO'
+        `);
+        await registrarHistorico({
+          db: tx,
+          provaId: item.id,
+          acao: "REPLICACAO_EIXOS",
+          usuarioId: ctx.user.id,
+          resumo: [
+            { campo: "Origem dos eixos", antes: null, depois: origem.codigo },
+            { campo: "Total de questões ajustadas", antes: null, depois: item.alteracoes.length },
+            ...item.alteracoes,
+          ],
+          antes: { questoes: item.questoesAntes.map(q => ({ id: q?.id, eixos: q?.eixos ?? [] })) },
+          depois: { questoes: item.questoesDepois.map(q => ({ id: q?.id, eixos: q?.eixos ?? [] })) },
+        });
+      }
+    });
+
+    return {
+      origem: { id: Number(origem.id), codigo: origem.codigo },
+      eixos: Array.from(eixosOrigem).sort((a, b) => a.localeCompare(b, "pt-BR")),
+      resultados: preparados.map(item => ({
+        id: item.id,
+        codigo: item.codigo,
+        questoesAjustadas: item.alteracoes.length,
+      })),
+      mensagem: "Eixos replicados com segurança. Apenas o campo de eixo técnico foi alterado nas provas de destino.",
+    };
+  }),
+
   historico: adminProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
     const db = await ensureTables();
     const result = await db.execute(sql`
