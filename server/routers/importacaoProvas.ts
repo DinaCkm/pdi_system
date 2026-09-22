@@ -819,7 +819,23 @@ export const importacaoProvasRouter = router({
     const result = await db.execute(sql`
       SELECT p.id, p.codigo, p.nome, p.unidade, p.ano, p.ciclo_id AS cicloId, c.nome AS cicloNome,
              p.total_questoes AS totalQuestoes, p.arquivo_nome AS arquivoNome, p.status,
-             p.created_at AS createdAt, p.questoes_json AS questoesJson
+             p.created_at AS createdAt, p.questoes_json AS questoesJson,
+             (
+               SELECT h.resumo_json
+               FROM provas_importadas_historico h
+               WHERE h.prova_id = p.id
+                 AND h.acao = 'INVALIDACAO'
+               ORDER BY h.created_at DESC, h.id DESC
+               LIMIT 1
+             ) AS invalidacaoResumoJson,
+             (
+               SELECT h.created_at
+               FROM provas_importadas_historico h
+               WHERE h.prova_id = p.id
+                 AND h.acao = 'INVALIDACAO'
+               ORDER BY h.created_at DESC, h.id DESC
+               LIMIT 1
+             ) AS invalidadaEm
       FROM provas_importadas p
       LEFT JOIN ciclos c ON c.id = p.ciclo_id
       ORDER BY p.created_at DESC, p.id DESC
@@ -834,6 +850,18 @@ export const importacaoProvasRouter = router({
           .map((eixo: any) => String(eixo?.nome ?? "").trim())
           .filter(Boolean),
       )).sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
+      let invalidacaoMotivo: string | null = null;
+      if (item.status === "INVALIDADA" && item.invalidacaoResumoJson) {
+        try {
+          const resumoInvalidacao = JSON.parse(item.invalidacaoResumoJson);
+          const justificativa = Array.isArray(resumoInvalidacao)
+            ? resumoInvalidacao.find((entrada: any) => entrada?.campo === "Justificativa")
+            : null;
+          invalidacaoMotivo = justificativa?.depois ? String(justificativa.depois) : null;
+        } catch {
+          invalidacaoMotivo = null;
+        }
+      }
       return {
         id: Number(item.id),
         codigo: item.codigo,
@@ -845,6 +873,8 @@ export const importacaoProvasRouter = router({
         totalQuestoes: Number(item.totalQuestoes),
         arquivoNome: item.arquivoNome,
         status: item.status,
+        invalidacaoMotivo,
+        invalidadaEm: item.invalidadaEm ?? null,
         createdAt: item.createdAt,
         eixosTecnicos,
       };
