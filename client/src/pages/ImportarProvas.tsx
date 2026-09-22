@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
-import { AlertCircle, ArrowDown, ArrowUp, CheckCircle2, Eye, FileSpreadsheet, History, Loader2, Pencil, Plus, Save, ShieldCheck, Trash2, Upload, X } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowUp, Ban, CheckCircle2, Eye, FileSpreadsheet, History, Loader2, Pencil, Plus, Save, ShieldCheck, Trash2, Upload, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -188,6 +188,7 @@ export default function ImportarProvas() {
   const validarLote = api.validarLote.useMutation();
   const validarSalva = api.validarSalva.useMutation();
   const reabrirParaEdicao = api.reabrirParaEdicao.useMutation();
+  const invalidarProva = api.invalidar.useMutation();
   const salvarRascunho = api.salvarRascunho.useMutation();
   const importarLote = api.importarLote.useMutation();
   const listaQuery = api.listar.useQuery(undefined, { refetchOnWindowFocus: false });
@@ -201,6 +202,9 @@ export default function ImportarProvas() {
   const [validacaoSalva, setValidacaoSalva] = useState<any>(null);
   const [validandoId, setValidandoId] = useState<number | null>(null);
   const [reabrindoId, setReabrindoId] = useState<number | null>(null);
+  const [invalidandoId, setInvalidandoId] = useState<number | null>(null);
+  const [justificativaInvalidacao, setJustificativaInvalidacao] = useState("");
+  const [processandoInvalidacao, setProcessandoInvalidacao] = useState(false);
   const [mensagemAcao, setMensagemAcao] = useState("");
   const [inputKey, setInputKey] = useState(0);
   const [editandoId, setEditandoId] = useState<number | null>(null);
@@ -349,7 +353,41 @@ export default function ImportarProvas() {
   const abrirHistorico = (id: number) => {
     setEditandoId(null);
     setVisualizandoId(null);
+    setInvalidandoId(null);
+    setJustificativaInvalidacao("");
     setHistoricoId(id);
+  };
+
+  const abrirInvalidacao = (id: number) => {
+    setErroLeitura("");
+    setMensagemAcao("");
+    setEditandoId(null);
+    setVisualizandoId(null);
+    setHistoricoId(null);
+    setInvalidandoId(id);
+    setJustificativaInvalidacao("");
+  };
+
+  const confirmarInvalidacao = async (id: number) => {
+    const justificativa = justificativaInvalidacao.trim();
+    if (justificativa.length < 10) {
+      setErroLeitura("Informe uma justificativa com pelo menos 10 caracteres para invalidar a prova.");
+      return;
+    }
+    setErroLeitura("");
+    setMensagemAcao("");
+    setProcessandoInvalidacao(true);
+    try {
+      const resposta = await invalidarProva.mutateAsync({ id, justificativa });
+      setMensagemAcao(resposta?.mensagem || "Prova invalidada.");
+      setInvalidandoId(null);
+      setJustificativaInvalidacao("");
+      await listaQuery.refetch();
+    } catch (error: any) {
+      setErroLeitura(error?.message || "Não foi possível invalidar a prova.");
+    } finally {
+      setProcessandoInvalidacao(false);
+    }
   };
 
   const reabrirProva = async (id: number) => {
@@ -628,11 +666,42 @@ export default function ImportarProvas() {
                               <Button size="sm" variant={editandoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirEdicao(Number(item.id))}><Pencil className="mr-2 h-4 w-4" />Editar</Button>
                               <Button size="sm" variant="outline" onClick={() => validarProvaSalva(Number(item.id))} disabled={validandoId === Number(item.id)}>{validandoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Salvar e validar</Button>
                             </> : item.status === "VALIDADA" ? <Button size="sm" variant="outline" onClick={() => reabrirProva(Number(item.id))} disabled={reabrindoId === Number(item.id)}>{reabrindoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pencil className="mr-2 h-4 w-4" />}Reabrir</Button> : null}
+                            {["RASCUNHO", "VALIDADA"].includes(String(item.status)) && <Button size="sm" variant={invalidandoId === Number(item.id) ? "destructive" : "outline"} onClick={() => abrirInvalidacao(Number(item.id))}><Ban className="mr-2 h-4 w-4" />Invalidar prova</Button>}
                             <Button size="sm" variant={visualizandoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirPreview(Number(item.id))}><Eye className="mr-2 h-4 w-4" />Visualizar como candidato</Button>
                             <Button size="sm" variant={historicoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirHistorico(Number(item.id))}><History className="mr-2 h-4 w-4" />Histórico</Button>
                           </div>
                         </td>
                       </tr>
+
+                      {invalidandoId === Number(item.id) && (
+                        <tr className="border-b bg-red-50/50">
+                          <td colSpan={9} className="p-4">
+                            <div className="rounded-lg border border-red-200 bg-white p-5 shadow-sm">
+                              <div className="mb-3">
+                                <h3 className="font-semibold text-red-900">Invalidar prova: {item.codigo}</h3>
+                                <p className="mt-1 text-sm text-muted-foreground">A prova será preservada para auditoria, mas deixará de ficar disponível para novas aplicações. Aplicações e resultados já existentes não serão apagados.</p>
+                              </div>
+                              <label className="block text-sm font-medium">
+                                Justificativa obrigatória
+                                <textarea
+                                  value={justificativaInvalidacao}
+                                  onChange={event => setJustificativaInvalidacao(event.target.value)}
+                                  rows={3}
+                                  maxLength={2000}
+                                  placeholder="Ex.: versão incompleta substituída pela prova oficial de 65 questões."
+                                  className="mt-1 w-full rounded-md border px-3 py-2 font-normal"
+                                />
+                              </label>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <Button type="button" variant="destructive" onClick={() => confirmarInvalidacao(Number(item.id))} disabled={processandoInvalidacao || justificativaInvalidacao.trim().length < 10}>
+                                  {processandoInvalidacao ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Ban className="mr-2 h-4 w-4" />}Confirmar invalidação
+                                </Button>
+                                <Button type="button" variant="outline" onClick={() => { setInvalidandoId(null); setJustificativaInvalidacao(""); }}>Cancelar</Button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
 
                       {editandoId === Number(item.id) && (
                         <tr className="border-b bg-slate-50/70">
