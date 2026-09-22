@@ -381,7 +381,7 @@ export default function ImportarProvas() {
 
     const nomesDestino = destinos.map((item: any) => String(item.codigo)).join(", ");
     const confirmada = window.confirm(
-      `Replicar exclusivamente os eixos técnicos da prova ${origem.codigo} para: ${nomesDestino}? O sistema só continuará se as 65 questões forem textualmente idênticas e os IDs coincidirem.`
+      `Sincronizar exclusivamente os eixos técnicos usando ${origem.codigo} como base canônica para: ${nomesDestino}? O sistema preservará enunciados, alternativas e gabaritos e aplicará a correspondência auditada do banco de 65 itens de cada Regional.`
     );
     if (!confirmada) return;
 
@@ -690,12 +690,12 @@ export default function ImportarProvas() {
               <div>
                 <p className="font-medium">Regionais 2026 — sincronização dos eixos técnicos</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Usa REGIONAIS_2026_RPJ como referência dos 11 eixos e altera somente o campo de eixo das 65 questões em RBP, RMN, RNO, RSG, RSU e RVA. A operação é bloqueada se qualquer questão não for idêntica.
+                  Usa a prova Regional 2026 já corrigida como base dos 11 eixos e altera somente o campo de eixo das 65 questões em RBP, RMN, RNO, RSG, RSU e RVA. A correspondência considera a ordem específica do mesmo banco de 65 itens em cada Regional.
                 </p>
               </div>
               <Button type="button" variant="outline" onClick={replicarEixosRegionais} disabled={processandoReplicacao || listaQuery.isLoading}>
                 {processandoReplicacao ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-                Replicar eixos das Regionais
+                Sincronizar eixos das Regionais
               </Button>
             </div>
           </div>
