@@ -647,6 +647,66 @@ export const importacaoProvasRouter = router({
     };
   }),
 
+  invalidar: adminProcedure.input(z.object({
+    id: z.number().int().positive(),
+    justificativa: z.string().trim().min(10, "Informe uma justificativa com pelo menos 10 caracteres.").max(2000),
+  })).mutation(async ({ input, ctx }) => {
+    const db = await ensureTables();
+    const result = await db.execute(sql`
+      SELECT id, codigo, nome, status
+      FROM provas_importadas
+      WHERE id = ${input.id}
+      LIMIT 1
+    `);
+    const linhas = Array.isArray(result) ? (result[0] as any[]) : [];
+    if (!linhas.length) throw new Error("Prova não encontrada.");
+
+    const registro = linhas[0];
+    if (registro.status === "INVALIDADA") {
+      return {
+        id: Number(registro.id),
+        codigo: registro.codigo,
+        status: "INVALIDADA",
+        invalidada: false,
+        mensagem: "Esta prova já está invalidada.",
+      };
+    }
+
+    if (!["RASCUNHO", "VALIDADA"].includes(String(registro.status))) {
+      throw new Error(`A prova está com status ${registro.status} e não pode ser invalidada.`);
+    }
+
+    await db.transaction(async (tx: any) => {
+      await tx.execute(sql`
+        UPDATE provas_importadas
+        SET status = 'INVALIDADA'
+        WHERE id = ${input.id}
+          AND status IN ('RASCUNHO','VALIDADA')
+      `);
+
+      await registrarHistorico({
+        db: tx,
+        provaId: input.id,
+        acao: "INVALIDACAO",
+        usuarioId: ctx.user.id,
+        resumo: [
+          { campo: "Status", antes: registro.status, depois: "INVALIDADA" },
+          { campo: "Justificativa", antes: null, depois: input.justificativa },
+        ],
+        antes: { status: registro.status },
+        depois: { status: "INVALIDADA", justificativa: input.justificativa },
+      });
+    });
+
+    return {
+      id: Number(registro.id),
+      codigo: registro.codigo,
+      status: "INVALIDADA",
+      invalidada: true,
+      mensagem: "Prova invalidada. Ela foi preservada para auditoria e não poderá ser usada em novas aplicações.",
+    };
+  }),
+
   importarLote: adminProcedure.input(z.object({
     arquivos: z.array(arquivoProvaRascunhoSchema).min(1).max(100),
     confirmado: z.literal(true),
