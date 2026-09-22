@@ -190,6 +190,7 @@ export default function ImportarProvas() {
   const reabrirParaEdicao = api.reabrirParaEdicao.useMutation();
   const invalidarProva = api.invalidar.useMutation();
   const salvarRascunho = api.salvarRascunho.useMutation();
+  const replicarEixos = api.replicarEixos.useMutation();
   const importarLote = api.importarLote.useMutation();
   const listaQuery = api.listar.useQuery(undefined, { refetchOnWindowFocus: false });
   const ciclosQuery = trpc.ciclos.list.useQuery();
@@ -205,6 +206,7 @@ export default function ImportarProvas() {
   const [invalidandoId, setInvalidandoId] = useState<number | null>(null);
   const [justificativaInvalidacao, setJustificativaInvalidacao] = useState("");
   const [processandoInvalidacao, setProcessandoInvalidacao] = useState(false);
+  const [processandoReplicacao, setProcessandoReplicacao] = useState(false);
   const [mensagemAcao, setMensagemAcao] = useState("");
   const [inputKey, setInputKey] = useState(0);
   const [editandoId, setEditandoId] = useState<number | null>(null);
@@ -308,6 +310,49 @@ export default function ImportarProvas() {
     } catch (error: any) {
       setValidacao(null);
       setErroLeitura(error?.message || "Não foi possível validar as provas carregadas.");
+    }
+  };
+
+  const replicarEixosRegionais = async () => {
+    const porCodigo = new Map((listaQuery.data ?? []).map((item: any) => [String(item.codigo), item]));
+    const origem = porCodigo.get("REGIONAIS_2026_RPJ");
+    const codigosDestino = [
+      "REGIONAIS_2026_RBP",
+      "REGIONAIS_2026_RMN",
+      "REGIONAIS_2026_RNO",
+      "REGIONAIS_2026_RSG",
+      "REGIONAIS_2026_RSU",
+      "REGIONAIS_2026_RVA",
+    ];
+    const destinos = codigosDestino.map(codigo => porCodigo.get(codigo));
+
+    if (!origem || destinos.some(item => !item)) {
+      setErroLeitura("Não foi possível localizar no sistema a prova de referência RPJ e todas as seis Regionais de destino.");
+      return;
+    }
+
+    const confirmada = window.confirm(
+      "Replicar exclusivamente os eixos técnicos da prova REGIONAIS_2026_RPJ para RBP, RMN, RNO, RSG, RSU e RVA? O sistema só continuará se as 65 questões forem textualmente idênticas e os IDs coincidirem."
+    );
+    if (!confirmada) return;
+
+    setErroLeitura("");
+    setMensagemAcao("");
+    setProcessandoReplicacao(true);
+    try {
+      const resposta = await replicarEixos.mutateAsync({
+        origemId: Number(origem.id),
+        destinoIds: destinos.map((item: any) => Number(item.id)),
+      });
+      const resumo = (resposta?.resultados ?? [])
+        .map((item: any) => `${item.codigo}: ${item.questoesAjustadas} questão(ões)`)
+        .join(" · ");
+      setMensagemAcao(`${resposta?.mensagem ?? "Eixos replicados."} ${resumo}`);
+      await listaQuery.refetch();
+    } catch (error: any) {
+      setErroLeitura(error?.message || "Não foi possível replicar os eixos das Regionais.");
+    } finally {
+      setProcessandoReplicacao(false);
     }
   };
 
@@ -591,6 +636,20 @@ export default function ImportarProvas() {
           <CardDescription>Localize a prova, edite na própria linha, visualize como candidato e consulte todo o histórico de alterações.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-medium">Regionais 2026 — sincronização dos eixos técnicos</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Usa REGIONAIS_2026_RPJ como referência dos 11 eixos e altera somente o campo de eixo das 65 questões em RBP, RMN, RNO, RSG, RSU e RVA. A operação é bloqueada se qualquer questão não for idêntica.
+                </p>
+              </div>
+              <Button type="button" variant="outline" onClick={replicarEixosRegionais} disabled={processandoReplicacao || listaQuery.isLoading}>
+                {processandoReplicacao ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                Replicar eixos das Regionais
+              </Button>
+            </div>
+          </div>
           <div className="grid gap-3 md:grid-cols-[1fr_280px_auto]">
             <label className="text-sm">Filtrar por prova
               <input className="mt-1 w-full rounded-md border px-3 py-2" placeholder="Código, nome, unidade ou ano" value={filtroProva} onChange={e => setFiltroProva(e.target.value)} />
