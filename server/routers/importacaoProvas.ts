@@ -791,13 +791,39 @@ export const importacaoProvasRouter = router({
   })).mutation(async ({ input, ctx }) => {
     const db = await ensureTables();
 
+    const mapasPorRegional: Record<string, number[]> = {
+      RBP: Array.from({ length: 65 }, (_, indice) => indice + 1),
+      RMN: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,52,25,24,26,27,28,31,38,34,42,37,33,56,53,57,58,59,60,61,62,50,51,49,65,64,55,44,46,54,48,45,23,47,63,41,30,35,40,39,29,32,36,43],
+      RNO: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,52,25,24,26,27,28,31,38,34,42,37,33,56,53,57,58,59,60,61,62,50,51,49,65,64,55,44,46,54,48,45,23,47,63,41,30,35,40,39,29,32,36,43],
+      RSG: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,52,25,24,26,27,28,31,38,34,42,37,33,56,53,57,58,59,60,61,62,50,51,49,65,64,55,44,46,54,48,45,23,47,63,41,30,35,40,39,29,32,36,43],
+      RSU: Array.from({ length: 65 }, (_, indice) => indice + 1),
+      RVA: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,52,25,24,26,27,28,31,38,34,42,37,33,56,53,57,58,59,60,61,62,50,51,49,65,64,55,44,46,54,48,45,23,47,63,41,30,35,40,39,29,32,36,43],
+    };
+
+    const identificarRegional = (registro: any) => {
+      const texto = normalizarTexto([registro.codigo, registro.nome, registro.unidade].filter(Boolean).join(" "));
+      const regras: Array<[string, string[]]> = [
+        ["RBP", ["rbp", "bico do papagaio"]],
+        ["RMN", ["rmn", "medio norte", "norte colinas"]],
+        ["RNO", ["rno", "regional norte"]],
+        ["RSG", ["rsg", "serras gerais"]],
+        ["RSU", ["rsu", "regional sul"]],
+        ["RVA", ["rva", "vale do araguaia"]],
+      ];
+      for (const [codigo, termos] of regras) {
+        if (codigo === "RNO" && (texto.includes("medio norte") || texto.includes("norte colinas"))) continue;
+        if (termos.some(termo => texto.includes(termo))) return codigo;
+      }
+      return null;
+    };
+
     const ids = Array.from(new Set([input.origemId, ...input.destinoIds]));
     if (ids.length !== input.destinoIds.length + 1) {
       throw new Error("A prova de origem não pode também aparecer entre as provas de destino.");
     }
 
     const registrosResult = await db.execute(sql`
-      SELECT id, codigo, nome, status, total_questoes AS totalQuestoes, questoes_json AS questoesJson
+      SELECT id, codigo, nome, unidade, status, total_questoes AS totalQuestoes, questoes_json AS questoesJson
       FROM provas_importadas
       WHERE id IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})
     `);
@@ -805,7 +831,7 @@ export const importacaoProvasRouter = router({
 
     const porId = new Map<number, any>(registros.map(item => [Number(item.id), item]));
     const origem = porId.get(input.origemId);
-    if (!origem) throw new Error("Prova de origem não encontrada.");
+    if (!origem) throw new Error("Prova de referência não encontrada.");
 
     const faltantes = input.destinoIds.filter(id => !porId.has(id));
     if (faltantes.length) throw new Error("Uma ou mais provas de destino não foram encontradas.");
@@ -814,43 +840,52 @@ export const importacaoProvasRouter = router({
     try {
       questoesOrigem = JSON.parse(origem.questoesJson);
     } catch {
-      throw new Error("Não foi possível ler as questões da prova de origem.");
+      throw new Error("Não foi possível ler as questões da prova de referência.");
     }
     if (!Array.isArray(questoesOrigem) || questoesOrigem.length !== 65) {
-      throw new Error("A prova de origem precisa conter exatamente 65 questões.");
+      throw new Error("A prova de referência precisa conter exatamente 65 questões.");
     }
 
-    const mapaOrigem = new Map<string, any>();
+    const origemPorNumero = new Map<number, any>();
     const eixosOrigem = new Set<string>();
     for (const questao of questoesOrigem) {
-      const idQuestao = normalizarTexto(String(questao?.id ?? ""));
-      if (!idQuestao || mapaOrigem.has(idQuestao)) {
-        throw new Error("A prova de origem possui ID de questão vazio ou duplicado.");
+      const numero = Number(String(questao?.id ?? "").trim());
+      if (!Number.isInteger(numero) || numero < 1 || numero > 65 || origemPorNumero.has(numero)) {
+        throw new Error("A prova de referência precisa possuir IDs numéricos únicos de 1 a 65.");
       }
       const eixos = Array.isArray(questao?.eixos) ? questao.eixos : [];
       if (eixos.length !== 1 || !String(eixos[0]?.nome ?? "").trim()) {
-        throw new Error(`A questão ${questao?.id ?? "?"} da prova de origem precisa possuir exatamente um eixo técnico principal.`);
+        throw new Error(`A questão ${questao?.id ?? "?"} da prova de referência precisa possuir exatamente um eixo técnico principal.`);
       }
-      eixosOrigem.add(String(eixos[0].nome).trim());
-      mapaOrigem.set(idQuestao, {
-        enunciado: normalizarTexto(String(questao?.enunciado ?? "")),
-        eixos: [{ nome: String(eixos[0].nome).trim() }],
-      });
+      const eixo = String(eixos[0].nome).trim();
+      eixosOrigem.add(eixo);
+      origemPorNumero.set(numero, { eixo });
     }
-    if (eixosOrigem.size !== 11) {
-      throw new Error(`A prova de origem possui ${eixosOrigem.size} eixos distintos. A replicação exige exatamente 11 eixos.`);
+    if (origemPorNumero.size !== 65 || eixosOrigem.size !== 11) {
+      throw new Error(`A prova de referência precisa ter 65 questões e exatamente 11 eixos distintos. Foram encontrados ${origemPorNumero.size} questões e ${eixosOrigem.size} eixos.`);
     }
 
     const preparados: Array<{
       id: number;
       codigo: string;
+      regional: string;
       questoesAntes: any[];
       questoesDepois: any[];
       alteracoes: any[];
     }> = [];
+    const regionaisUsadas = new Set<string>();
 
     for (const destinoId of input.destinoIds) {
       const destino = porId.get(destinoId);
+      const regional = identificarRegional(destino);
+      if (!regional || !mapasPorRegional[regional]) {
+        throw new Error(`Não foi possível identificar com segurança a Regional da prova ${destino.codigo}.`);
+      }
+      if (regionaisUsadas.has(regional)) {
+        throw new Error(`Há mais de uma prova de destino identificada como ${regional}. Nenhuma alteração foi gravada.`);
+      }
+      regionaisUsadas.add(regional);
+
       if (destino.status !== "RASCUNHO") {
         throw new Error(`A prova ${destino.codigo} precisa estar como RASCUNHO antes de receber os eixos.`);
       }
@@ -862,7 +897,7 @@ export const importacaoProvasRouter = router({
       `);
       const usoRows = Array.isArray(usoResult) ? (usoResult[0] as any[]) : [];
       if (Number(usoRows[0]?.total ?? 0) > 0) {
-        throw new Error(`A prova ${destino.codigo} já possui aplicação vinculada e não pode receber replicação automática de eixos.`);
+        throw new Error(`A prova ${destino.codigo} já possui aplicação vinculada e não pode receber a sincronização automática de eixos.`);
       }
 
       let questoesDestino: any[];
@@ -875,46 +910,56 @@ export const importacaoProvasRouter = router({
         throw new Error(`A prova ${destino.codigo} precisa conter exatamente 65 questões.`);
       }
 
-      const idsDestino = new Set<string>();
+      const mapa = mapasPorRegional[regional];
+      const idsDestino = new Set<number>();
       const alteracoes: any[] = [];
       const questoesDepois = questoesDestino.map((questao: any) => {
-        const idQuestao = normalizarTexto(String(questao?.id ?? ""));
-        if (!idQuestao || idsDestino.has(idQuestao)) {
-          throw new Error(`A prova ${destino.codigo} possui ID de questão vazio ou duplicado.`);
+        const numeroDestino = Number(String(questao?.id ?? "").trim());
+        if (!Number.isInteger(numeroDestino) || numeroDestino < 1 || numeroDestino > 65 || idsDestino.has(numeroDestino)) {
+          throw new Error(`A prova ${destino.codigo} precisa possuir IDs numéricos únicos de 1 a 65.`);
         }
-        idsDestino.add(idQuestao);
+        idsDestino.add(numeroDestino);
 
-        const referencia = mapaOrigem.get(idQuestao);
+        const numeroReferencia = mapa[numeroDestino - 1];
+        const referencia = origemPorNumero.get(numeroReferencia);
         if (!referencia) {
-          throw new Error(`A questão ${questao?.id ?? "?"} da prova ${destino.codigo} não existe na prova de referência.`);
-        }
-
-        const enunciadoDestino = normalizarTexto(String(questao?.enunciado ?? ""));
-        if (enunciadoDestino !== referencia.enunciado) {
-          throw new Error(`A questão ${questao?.id ?? "?"} da prova ${destino.codigo} não é textualmente idêntica à questão correspondente da prova de referência. Nenhuma alteração foi gravada.`);
+          throw new Error(`Não foi encontrada a questão de referência ${numeroReferencia} para a questão ${numeroDestino} da prova ${destino.codigo}.`);
         }
 
         const antes = Array.isArray(questao?.eixos)
           ? questao.eixos.map((eixo: any) => String(eixo?.nome ?? "").trim()).filter(Boolean)
           : [];
-        const depois = referencia.eixos.map((eixo: any) => eixo.nome);
+        const depois = [referencia.eixo];
         if (JSON.stringify(antes) !== JSON.stringify(depois)) {
           alteracoes.push({
-            campo: `Questão ${questao?.id ?? "?"} · Eixo(s) técnico(s)`,
+            campo: `Questão ${numeroDestino} · Eixo técnico`,
             antes,
             depois,
+            referenciaQuestao: numeroReferencia,
           });
         }
-        return { ...questao, eixos: referencia.eixos.map((eixo: any) => ({ ...eixo })) };
+        return { ...questao, eixos: [{ nome: referencia.eixo }] };
       });
 
-      if (idsDestino.size !== mapaOrigem.size) {
-        throw new Error(`A prova ${destino.codigo} não possui o mesmo conjunto de 65 IDs da prova de referência.`);
+      if (idsDestino.size !== 65) {
+        throw new Error(`A prova ${destino.codigo} não possui o conjunto completo de IDs de 1 a 65.`);
+      }
+
+      const eixosDepois = new Set(
+        questoesDepois.flatMap((questao: any) =>
+          Array.isArray(questao?.eixos)
+            ? questao.eixos.map((eixo: any) => String(eixo?.nome ?? "").trim()).filter(Boolean)
+            : []
+        )
+      );
+      if (eixosDepois.size !== 11) {
+        throw new Error(`A prova ${destino.codigo} terminaria com ${eixosDepois.size} eixos distintos, e não 11. Nenhuma alteração foi gravada.`);
       }
 
       preparados.push({
         id: destinoId,
         codigo: destino.codigo,
+        regional,
         questoesAntes: questoesDestino,
         questoesDepois,
         alteracoes,
@@ -932,10 +977,12 @@ export const importacaoProvasRouter = router({
         await registrarHistorico({
           db: tx,
           provaId: item.id,
-          acao: "REPLICACAO_EIXOS",
+          acao: "SINCRONIZACAO_EIXOS_REGIONAIS",
           usuarioId: ctx.user.id,
           resumo: [
-            { campo: "Origem dos eixos", antes: null, depois: origem.codigo },
+            { campo: "Regional", antes: null, depois: item.regional },
+            { campo: "Base canônica", antes: null, depois: origem.codigo },
+            { campo: "Regra de correspondência", antes: null, depois: "Banco de 65 itens da prova Regional 2026, com ordem específica por Regional" },
             { campo: "Total de questões ajustadas", antes: null, depois: item.alteracoes.length },
             ...item.alteracoes,
           ],
@@ -951,9 +998,10 @@ export const importacaoProvasRouter = router({
       resultados: preparados.map(item => ({
         id: item.id,
         codigo: item.codigo,
+        regional: item.regional,
         questoesAjustadas: item.alteracoes.length,
       })),
-      mensagem: "Eixos replicados com segurança. Apenas o campo de eixo técnico foi alterado nas provas de destino.",
+      mensagem: "Eixos das Regionais sincronizados. Somente o campo de eixo técnico foi alterado; enunciados, alternativas e gabaritos foram preservados.",
     };
   }),
 
