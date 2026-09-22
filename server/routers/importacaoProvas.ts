@@ -89,6 +89,50 @@ async function ensureTables() {
       INDEX provas_importadas_historico_created_idx (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `));
+
+  // Migração segura dos rascunhos/provas atuais já existentes.
+  // Regra confirmada: provas novas = ciclo 2026/2. Provas históricas serão carregadas depois no ciclo 2026/1.
+  const cicloAtualResult = await db.execute(sql`
+    SELECT id, nome
+    FROM ciclos
+    WHERE nome = '2026/2'
+    LIMIT 1
+  `);
+  const cicloAtualRows = Array.isArray(cicloAtualResult) ? (cicloAtualResult[0] as any[]) : [];
+  const cicloAtual = cicloAtualRows[0] ?? null;
+
+  if (cicloAtual?.id) {
+    const semCicloResult = await db.execute(sql`
+      SELECT id
+      FROM provas_importadas
+      WHERE ciclo_id IS NULL
+        AND ano = 2026
+        AND UPPER(codigo) NOT LIKE '%HIST%'
+        AND UPPER(nome) NOT LIKE '%HIST%'
+        AND UPPER(codigo) NOT LIKE '%ERRO_NAO_USAR%'
+    `);
+    const semCiclo = Array.isArray(semCicloResult) ? (semCicloResult[0] as any[]) : [];
+
+    for (const prova of semCiclo) {
+      await db.transaction(async (tx: any) => {
+        await tx.execute(sql`
+          UPDATE provas_importadas
+          SET ciclo_id = ${Number(cicloAtual.id)}
+          WHERE id = ${Number(prova.id)} AND ciclo_id IS NULL
+        `);
+        await tx.execute(sql`
+          INSERT INTO provas_importadas_historico
+            (prova_id, acao, usuario_id, resumo_json, antes_json, depois_json)
+          VALUES
+            (${Number(prova.id)}, 'VINCULO_CICLO', NULL,
+             ${JSON.stringify([{ campo: "Ciclo do PDI", antes: null, depois: "2026/2" }])},
+             ${JSON.stringify({ cicloId: null })},
+             ${JSON.stringify({ cicloId: Number(cicloAtual.id), cicloNome: "2026/2" })})
+        `);
+      });
+    }
+  }
+
   return db;
 }
 
