@@ -659,7 +659,25 @@ export default function ImportarProvas() {
                         <td className="px-3 py-3">{item.ano}</td>
                         <td className="px-3 py-3">{item.cicloNome || <span className="text-amber-700">Sem ciclo</span>}</td>
                         <td className="px-3 py-3">{item.totalQuestoes}</td>
-                        <td className="px-3 py-3">{item.status}</td>
+                        <td className="px-3 py-3">
+                          {item.status === "INVALIDADA" ? (
+                            <div className="min-w-[190px] space-y-1">
+                              <div className="inline-flex items-center gap-1 rounded-full border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-800">
+                                <Ban className="h-3.5 w-3.5" /> PROVA INVALIDADA
+                              </div>
+                              {item.invalidacaoMotivo && (
+                                <p className="max-w-[320px] text-xs leading-relaxed text-red-800">
+                                  <strong>Motivo:</strong> {item.invalidacaoMotivo}
+                                </p>
+                              )}
+                              {item.invalidadaEm && (
+                                <p className="text-[11px] text-muted-foreground">
+                                  Invalidada em {new Date(item.invalidadaEm).toLocaleString("pt-BR")}
+                                </p>
+                              )}
+                            </div>
+                          ) : item.status}
+                        </td>
                         <td className="px-3 py-3">
                           <div className="flex flex-wrap gap-2">
                             {item.status === "RASCUNHO" ? <>
@@ -667,7 +685,7 @@ export default function ImportarProvas() {
                               <Button size="sm" variant="outline" onClick={() => validarProvaSalva(Number(item.id))} disabled={validandoId === Number(item.id)}>{validandoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Salvar e validar</Button>
                             </> : item.status === "VALIDADA" ? <Button size="sm" variant="outline" onClick={() => reabrirProva(Number(item.id))} disabled={reabrindoId === Number(item.id)}>{reabrindoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pencil className="mr-2 h-4 w-4" />}Reabrir</Button> : null}
                             {["RASCUNHO", "VALIDADA"].includes(String(item.status)) && <Button size="sm" variant={invalidandoId === Number(item.id) ? "destructive" : "outline"} onClick={() => abrirInvalidacao(Number(item.id))}><Ban className="mr-2 h-4 w-4" />Invalidar prova</Button>}
-                            <Button size="sm" variant={visualizandoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirPreview(Number(item.id))}><Eye className="mr-2 h-4 w-4" />Visualizar como candidato</Button>
+                            {item.status !== "INVALIDADA" && <Button size="sm" variant={visualizandoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirPreview(Number(item.id))}><Eye className="mr-2 h-4 w-4" />Visualizar como candidato</Button>}
                             <Button size="sm" variant={historicoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirHistorico(Number(item.id))}><History className="mr-2 h-4 w-4" />Histórico</Button>
                           </div>
                         </td>
