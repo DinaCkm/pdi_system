@@ -796,12 +796,11 @@ export const importacaoProvasRouter = router({
       throw new Error("A prova de origem não pode também aparecer entre as provas de destino.");
     }
 
-    const placeholders = ids.map(id => Number(id));
-    const registrosResult = await db.execute(sql.raw(`
+    const registrosResult = await db.execute(sql`
       SELECT id, codigo, nome, status, total_questoes AS totalQuestoes, questoes_json AS questoesJson
       FROM provas_importadas
-      WHERE id IN (${placeholders.map(() => "?").join(",")})
-    `), placeholders as any);
+      WHERE id IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})
+    `);
     const registros = Array.isArray(registrosResult) ? (registrosResult[0] as any[]) : [];
 
     const porId = new Map<number, any>(registros.map(item => [Number(item.id), item]));
