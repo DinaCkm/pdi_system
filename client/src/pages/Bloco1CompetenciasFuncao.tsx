@@ -40,7 +40,7 @@ export default function Bloco1CompetenciasFuncao() {
     { enabled: Boolean(colaboradorId) },
   );
 
-  const salvarEixoMutation = (trpc as any).provaUticMatriz.salvarEixo.useMutation({
+  const salvarEixoMutation = (trpc as any).questionarioAtividades.salvarEixosTecnicos.useMutation({
     onSuccess: async () => {
       await mapa.refetch();
       setMensagemEdicao("Classificação e justificativa atualizadas com histórico preservado.");
@@ -66,28 +66,41 @@ export default function Bloco1CompetenciasFuncao() {
   };
 
   const salvarJustificativa = async (item: any) => {
-    if (!mapa.data?.tecnico?.matrizId) {
-      setMensagemEdicao("Matriz técnica não localizada.");
+    const tecnico = mapa.data?.tecnico;
+    if (!tecnico?.questionarioId || !tecnico?.provaHistoricaId || !tecnico?.origemProvaChave || !tecnico?.anoQuestionario) {
+      setMensagemEdicao("Registro histórico regional ainda não está completo para este empregado.");
       return;
     }
     if (statusEdicao === "CLASSIFICADO" && !relacaoEdicao) {
       setMensagemEdicao("Selecione Essencial, Transversal ou Não essencial.");
       return;
     }
-    if (motivoEdicao.trim().length < 3) {
-      setMensagemEdicao("Informe o motivo da alteração.");
+    if (statusEdicao === "CLASSIFICADO" && justificativaEdicao.trim().length < 3) {
+      setMensagemEdicao("Informe a justificativa com base no Questionário de Atividades/Função.");
       return;
     }
+
+    const eixos = tecnico.competencias.map((eixo: any) => ({
+      eixoChave: String(eixo.eixoChave || eixo.eixoId),
+      eixoNome: String(eixo.eixoNome),
+      classificacao:
+        Number(eixo.eixoRegistroId) === Number(item.eixoRegistroId)
+          ? (statusEdicao === "PENDENTE" ? null : relacaoEdicao)
+          : (eixo.statusClassificacao === "PENDENTE" ? null : eixo.classificacao),
+      justificativa:
+        Number(eixo.eixoRegistroId) === Number(item.eixoRegistroId)
+          ? (justificativaEdicao.trim() || null)
+          : (eixo.justificativa || null),
+    }));
+
     await salvarEixoMutation.mutateAsync({
-      matrizId: Number(mapa.data.tecnico.matrizId),
-      eixoId: String(item.eixoId),
-      eixo: String(item.eixoNome),
-      relacao: statusEdicao === "PENDENTE" ? null : relacaoEdicao,
-      statusClassificacao: statusEdicao,
-      justificativa: justificativaEdicao.trim() || null,
-      anterior: item.percentualAnterior === null ? null : Number(item.percentualAnterior),
-      motivo: motivoEdicao.trim(),
-      observacao: "Alteração realizada pela tela Evolução Individual.",
+      colaboradorId: Number(colaboradorId),
+      ano: Number(tecnico.anoQuestionario),
+      provaId: Number(tecnico.provaHistoricaId),
+      aplicacaoId: null,
+      origemProvaChave: String(tecnico.origemProvaChave),
+      motivoAlteracao: motivoEdicao.trim(),
+      eixos,
     });
   };
 
@@ -174,8 +187,8 @@ export default function Bloco1CompetenciasFuncao() {
             <CardHeader>
               <CardTitle>2. Competências Técnicas</CardTitle>
               <CardDescription>
-                Fonte: questionário individual de levantamento das atividades. A classificação Essencial, Transversal ou Não essencial
-                é individual e deve ser sustentada pela justificativa registrada para aquele empregado.
+                A classificação funcional vem do Questionário de Atividades/Função. O indicador anterior é o marco zero da prova histórica regional.
+                O resultado atual somente será preenchido pela Prova 2, quando ela for aplicada.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -185,8 +198,8 @@ export default function Bloco1CompetenciasFuncao() {
                     <TableRow>
                       <TableHead>Eixo / competência técnica</TableHead>
                       <TableHead>Classificação individual</TableHead>
-                      <TableHead>Anterior</TableHead>
-                      <TableHead>Atual</TableHead>
+                      <TableHead>Histórico (marco zero)</TableHead>
+                      <TableHead>Prova 2</TableHead>
                       <TableHead>Evolução</TableHead>
                       <TableHead>Próxima ação</TableHead>
                     </TableRow>
@@ -195,7 +208,7 @@ export default function Bloco1CompetenciasFuncao() {
                     {mapa.data.tecnico.competencias.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          Nenhuma matriz técnica individual localizada para este empregado.
+                          Nenhum registro histórico regional vinculado ao Questionário de Atividades/Função foi localizado para este empregado.
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -219,7 +232,7 @@ export default function Bloco1CompetenciasFuncao() {
                             {item.percentualAnterior === null ? "—" : `${Number(item.percentualAnterior).toFixed(1)}%`}
                           </TableCell>
                           <TableCell>
-                            {item.percentualAtual === null ? "—" : `${Number(item.percentualAtual).toFixed(1)}%`}
+                            {item.percentualAtual === null ? "Aguardando Prova 2" : `${Number(item.percentualAtual).toFixed(1)}%`}
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -232,7 +245,7 @@ export default function Bloco1CompetenciasFuncao() {
                               }
                             >
                               {item.evolucao === "SEM_COMPARACAO"
-                                ? "Sem comparação"
+                                ? "Aguardando Prova 2"
                                 : `${evolucaoLabel[item.evolucao] || item.evolucao} ${item.evolucaoPp === null ? "" : `(${Number(item.evolucaoPp) > 0 ? "+" : ""}${Number(item.evolucaoPp).toFixed(1)} p.p.)`}`}
                             </Badge>
                           </TableCell>
@@ -408,7 +421,7 @@ export default function Bloco1CompetenciasFuncao() {
               <CardTitle>Regra metodológica aplicada</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground space-y-2">
-              <p><strong>Técnicas:</strong> a classificação final é Essencial, Transversal ou Não essencial. “Pendente” é apenas status temporário de análise. A justificativa deve registrar a evidência utilizada para a decisão individual.</p>
+              <p><strong>Técnicas:</strong> Questionário de Atividades/Função = classificação funcional; prova histórica regional = indicador original (marco zero); Prova 2 = indicador atual; evolução = Prova 2 − histórico.</p>
               <p><strong>Comportamentais:</strong> comparar a mesma competência entre 2024 e 2025.</p>
               <p><strong>Leitura:</strong> resultado maior = evolução; resultado igual = estabilidade; resultado menor = redução.</p>
               <p><strong>PDI:</strong> estabilidade ou redução sinaliza necessidade de atenção, mas a criação de nova ação permanece disponível em qualquer resultado, inclusive quando houve evolução.</p>

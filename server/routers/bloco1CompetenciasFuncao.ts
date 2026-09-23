@@ -3,9 +3,16 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
-import { ensureTechnicalMatrixTables } from "../services/technicalMatrixSchema";
 import { avaliacoes, medicoesCompetencias } from "../../drizzle/avaliacoes-schema";
-import { ciclos, competenciasMacros, departamentos, users } from "../../drizzle/schema";
+import {
+  ciclos,
+  competenciasMacros,
+  departamentos,
+  questionarioAtividadesEixosTecnicos,
+  questionariosAtividadesFuncao,
+  registroHistoricoProficienciaEixos,
+  users,
+} from "../../drizzle/schema";
 import {
   funcoesOrganizacionais,
   usuariosFuncoesOrganizacionais,
@@ -83,7 +90,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
   mapaIndividual: adminProcedure
     .input(z.object({ colaboradorId: z.number().int().positive() }))
     .query(async ({ input }) => {
-      const db = await ensureTechnicalMatrixTables();
+      const db = await dbObrigatorio();
 
       const empregado = (
         await db
@@ -123,31 +130,113 @@ export const bloco1CompetenciasFuncaoRouter = router({
         });
       }
 
-      const matrizResult = await db.execute(
-        sql.raw(
-          "SELECT m.id AS matrizId, m.status AS matrizStatus, m.fonte AS matrizFonte, " +
-          "e.id AS eixoRegistroId, e.eixo_id AS eixoId, e.eixo_nome AS eixoNome, " +
-          "e.relacao, e.status_classificacao AS statusClassificacao, e.justificativa, " +
-          "e.percentual_anterior AS percentualAnterior " +
-          "FROM prova_utic_matrizes m " +
-          "LEFT JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id " +
-          "WHERE m.colaborador_id = " + Number(input.colaboradorId) + " " +
-          "ORDER BY e.id",
-        ),
+      const eixosQuestionario = await db
+        .select({
+          eixoRegistroId: questionarioAtividadesEixosTecnicos.id,
+          questionarioId: questionariosAtividadesFuncao.id,
+          anoQuestionario: questionariosAtividadesFuncao.ano,
+          versaoQuestionario: questionariosAtividadesFuncao.versao,
+          statusQuestionario: questionariosAtividadesFuncao.status,
+          fonteQuestionario: questionariosAtividadesFuncao.fonte,
+          provaId: questionarioAtividadesEixosTecnicos.provaId,
+          origemProvaChave: questionarioAtividadesEixosTecnicos.origemProvaChave,
+          eixoChave: questionarioAtividadesEixosTecnicos.eixoChave,
+          eixoNome: questionarioAtividadesEixosTecnicos.eixoNome,
+          classificacao: questionarioAtividadesEixosTecnicos.classificacao,
+          statusClassificacao: questionarioAtividadesEixosTecnicos.statusClassificacao,
+          justificativa: questionarioAtividadesEixosTecnicos.justificativa,
+        })
+        .from(questionarioAtividadesEixosTecnicos)
+        .innerJoin(
+          questionariosAtividadesFuncao,
+          eq(questionarioAtividadesEixosTecnicos.questionarioId, questionariosAtividadesFuncao.id),
+        )
+        .where(
+          and(
+            eq(questionariosAtividadesFuncao.colaboradorId, input.colaboradorId),
+            eq(questionarioAtividadesEixosTecnicos.origemProva, "PROVA_HISTORICA"),
+          ),
+        )
+        .orderBy(
+          desc(questionariosAtividadesFuncao.ano),
+          desc(questionariosAtividadesFuncao.versao),
+          desc(questionariosAtividadesFuncao.id),
+          desc(questionarioAtividadesEixosTecnicos.id),
+        );
+
+      const eixoReferencia = eixosQuestionario[0] ?? null;
+      const questionarioId = eixoReferencia?.questionarioId ?? null;
+      const anoQuestionario = eixoReferencia?.anoQuestionario ?? null;
+      const origemProvaChave = eixoReferencia?.origemProvaChave ?? null;
+      const provaHistoricaId = eixoReferencia?.provaId ?? null;
+
+      const linhasTecnicas =
+        questionarioId && origemProvaChave
+          ? eixosQuestionario
+              .filter(
+                (item) =>
+                  Number(item.questionarioId) === Number(questionarioId) &&
+                  item.origemProvaChave === origemProvaChave,
+              )
+              .sort((a, b) => Number(a.eixoRegistroId) - Number(b.eixoRegistroId))
+          : [];
+
+      const historicosRegistrados = provaHistoricaId
+        ? await db
+            .select()
+            .from(registroHistoricoProficienciaEixos)
+            .where(
+              and(
+                eq(registroHistoricoProficienciaEixos.colaboradorId, input.colaboradorId),
+                eq(registroHistoricoProficienciaEixos.provaHistoricaId, Number(provaHistoricaId)),
+              ),
+            )
+        : [];
+
+      const historicoPorEixo = new Map(
+        historicosRegistrados.map((item) => [item.eixoChave, item]),
       );
 
-      const linhasTecnicas = rowsOf<any>(matrizResult);
-      const matrizBase = linhasTecnicas[0] ?? null;
-      const resultadoTecnicoResult = await db.execute(sql`
-        SELECT rp.resultado_json AS resultadoJson, rp.percentual_geral AS percentualGeral,
-               rp.calculado_em AS calculadoEm, a.titulo AS aplicacaoTitulo
-          FROM resultados_proficiencia rp
-          JOIN aplicacoes_proficiencia a ON a.id = rp.aplicacao_id
-         WHERE rp.colaborador_id = ${input.colaboradorId}
-         ORDER BY rp.calculado_em DESC, rp.id DESC
-         LIMIT 1
-      `);
-      const resultadoTecnicoLinha = rowsOf<any>(resultadoTecnicoResult)[0] ?? null;
+      // Resultado atual: somente prova posterior ao marco histórico e nunca uma prova HIST.
+      // Assim, avaliações antigas ou de outra unidade não viram "Prova 2" por engano.
+      const resultadosPosterioresResult = anoQuestionario
+        ? await db.execute(sql`
+            SELECT rp.resultado_json AS resultadoJson,
+                   rp.calculado_em AS calculadoEm,
+                   a.id AS aplicacaoId,
+                   a.titulo AS aplicacaoTitulo,
+                   p.id AS provaId,
+                   p.codigo AS provaCodigo,
+                   p.nome AS provaNome,
+                   p.unidade AS provaUnidade,
+                   p.ano AS provaAno
+              FROM resultados_proficiencia rp
+              JOIN aplicacoes_proficiencia a ON a.id = rp.aplicacao_id
+              JOIN provas_importadas p ON p.id = a.prova_id
+             WHERE rp.colaborador_id = ${input.colaboradorId}
+               AND p.ano > ${Number(anoQuestionario)}
+               AND p.codigo NOT LIKE '%HIST%'
+             ORDER BY rp.calculado_em DESC, rp.id DESC
+          `)
+        : null;
+
+      const resultadosPosteriores = resultadosPosterioresResult
+        ? rowsOf<any>(resultadosPosterioresResult)
+        : [];
+
+      const unidadeEmpregado = normalizarNome(empregado.departamentoNome);
+      const resultadoTecnicoLinha =
+        resultadosPosteriores.find((linha: any) => {
+          const unidadeProva = normalizarNome(linha.provaUnidade);
+          return Boolean(
+            unidadeEmpregado &&
+              unidadeProva &&
+              (unidadeProva === unidadeEmpregado ||
+                unidadeProva.includes(unidadeEmpregado) ||
+                unidadeEmpregado.includes(unidadeProva)),
+          );
+        }) ?? null;
+
       const resultadoTecnico = resultadoTecnicoLinha
         ? parseResultadoProficiencia(resultadoTecnicoLinha.resultadoJson)
         : { porEixo: [] };
@@ -157,48 +246,50 @@ export const bloco1CompetenciasFuncaoRouter = router({
         tecnicoAtualPorNome.set(normalizarNome(eixo.eixo), eixo);
       }
 
-      const tecnicas = linhasTecnicas
-        .filter((linha) => linha.eixoRegistroId)
-        .map((linha) => {
-          const atual = tecnicoAtualPorNome.get(normalizarNome(linha.eixoNome));
-          const percentualAnterior =
-            linha.percentualAnterior === null ? null : Number(linha.percentualAnterior);
-          const percentualAtual =
-            atual?.percentualAtual === null || atual?.percentualAtual === undefined
-              ? null
-              : Number(atual.percentualAtual);
-          const evolucaoPp =
-            percentualAnterior === null || percentualAtual === null
-              ? null
-              : Math.round((percentualAtual - percentualAnterior) * 10) / 10;
+      const tecnicas = linhasTecnicas.map((linha) => {
+        const historico = historicoPorEixo.get(linha.eixoChave);
+        const atual = tecnicoAtualPorNome.get(normalizarNome(linha.eixoNome));
+        const percentualAnterior =
+          historico?.percentualOriginal === null || historico?.percentualOriginal === undefined
+            ? null
+            : Number(historico.percentualOriginal);
+        const percentualAtual =
+          atual?.percentualAtual === null || atual?.percentualAtual === undefined
+            ? null
+            : Number(atual.percentualAtual);
+        const evolucaoPp =
+          percentualAnterior === null || percentualAtual === null
+            ? null
+            : Math.round((percentualAtual - percentualAnterior) * 10) / 10;
 
-          return {
-            eixoRegistroId: Number(linha.eixoRegistroId),
-            eixoId: String(linha.eixoId),
-            eixoNome: String(linha.eixoNome),
-            classificacao: linha.relacao ? String(linha.relacao) : null,
-            statusClassificacao: String(linha.statusClassificacao || "PENDENTE"),
-            justificativa: linha.justificativa ? String(linha.justificativa) : null,
-            percentualAnterior,
-            percentualAtual,
-            evolucaoPp,
-            comparavel: percentualAnterior !== null && percentualAtual !== null,
-            evolucao:
-              evolucaoPp === null
-                ? "SEM_COMPARACAO"
-                : evolucaoPp > 0
-                  ? "EVOLUCAO"
-                  : evolucaoPp < 0
-                    ? "REDUCAO"
-                    : "ESTABILIDADE",
-            criarNovaAcaoPdi: evolucaoPp !== null && evolucaoPp <= 0,
-            acertos: atual?.acertos ?? null,
-            totalQuestoes: atual?.totalQuestoes ?? null,
-            fonte:
-              matrizBase?.matrizFonte ||
-              "Questionário individual de levantamento das atividades",
-          };
-        });
+        return {
+          eixoRegistroId: Number(linha.eixoRegistroId),
+          eixoId: String(linha.eixoChave),
+          eixoChave: String(linha.eixoChave),
+          eixoNome: String(linha.eixoNome),
+          classificacao: linha.classificacao ? String(linha.classificacao) : null,
+          statusClassificacao: String(linha.statusClassificacao || "PENDENTE"),
+          justificativa: linha.justificativa ? String(linha.justificativa) : null,
+          percentualAnterior,
+          indicadorOriginalStatus: historico?.status ?? "PENDENTE_VALIDACAO",
+          percentualAtual,
+          evolucaoPp,
+          comparavel: percentualAnterior !== null && percentualAtual !== null,
+          evolucao:
+            evolucaoPp === null
+              ? "SEM_COMPARACAO"
+              : evolucaoPp > 0
+                ? "EVOLUCAO"
+                : evolucaoPp < 0
+                  ? "REDUCAO"
+                  : "ESTABILIDADE",
+          criarNovaAcaoPdi: true,
+          acertos: atual?.acertos ?? null,
+          totalQuestoes: atual?.totalQuestoes ?? null,
+          fonte: "Questionário de Atividades/Função + prova histórica regional",
+          statusAtual: resultadoTecnicoLinha ? "PROVA_2_CALCULADA" : "AGUARDANDO_PROVA_2",
+        };
+      });
 
       const comportamentais = await db
         .select({
@@ -342,12 +433,15 @@ export const bloco1CompetenciasFuncaoRouter = router({
       return {
         empregado,
         tecnico: {
-          matrizId: matrizBase?.matrizId ? Number(matrizBase.matrizId) : null,
-          status: matrizBase?.matrizStatus ?? null,
-          fonte:
-            matrizBase?.matrizFonte ||
-            "Questionário individual de levantamento das atividades",
+          matrizId: null,
+          questionarioId: questionarioId ? Number(questionarioId) : null,
+          anoQuestionario: anoQuestionario ? Number(anoQuestionario) : null,
+          provaHistoricaId: provaHistoricaId ? Number(provaHistoricaId) : null,
+          origemProvaChave,
+          status: eixoReferencia?.statusQuestionario ?? null,
+          fonte: "Questionário de Atividades/Função + prova histórica regional",
           aplicacaoAtual: resultadoTecnicoLinha?.aplicacaoTitulo ?? null,
+          provaAtual: resultadoTecnicoLinha?.provaNome ?? null,
           calculadoEm: resultadoTecnicoLinha?.calculadoEm ?? null,
           competencias: tecnicas,
         },
