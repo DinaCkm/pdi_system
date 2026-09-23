@@ -270,7 +270,7 @@ export const questionarioAtividadesEixosTecnicos = mysqlTable("questionario_ativ
 	questionarioId: int("questionario_id").notNull().references(() => questionariosAtividadesFuncao.id, { onDelete: "cascade" }),
 	provaId: int("prova_id").notNull(),
 	aplicacaoId: int("aplicacao_id"),
-	origemProva: mysqlEnum([`SNAPSHOT_APLICACAO`,`PROVA_VALIDADA`]).notNull(),
+	origemProva: mysqlEnum([`SNAPSHOT_APLICACAO`,`PROVA_HISTORICA`]).notNull(),
 	origemProvaChave: varchar("origem_prova_chave", { length: 80 }).notNull(),
 	eixoChave: varchar("eixo_chave", { length: 255 }).notNull(),
 	eixoNome: varchar("eixo_nome", { length: 255 }).notNull(),
