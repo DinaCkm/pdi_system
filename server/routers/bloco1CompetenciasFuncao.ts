@@ -3,6 +3,7 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
+import { ensureHomologacaoTables } from "../services/homologacaoProvas";
 import { avaliacoes, medicoesCompetencias } from "../../drizzle/avaliacoes-schema";
 import {
   ciclos,
@@ -49,6 +50,7 @@ async function dbObrigatorio() {
       message: "Banco de dados indisponível.",
     });
   }
+  await ensureHomologacaoTables(db);
   return db;
 }
 
