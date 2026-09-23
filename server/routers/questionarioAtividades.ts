@@ -6,6 +6,7 @@ import { getDb } from "../db";
 import {
   departamentos,
   questionarioAtividadesEixosTecnicos,
+  registroHistoricoProficienciaEixos,
   questionarioAtividadesHistorico,
   questionarioAtividadesRespostas,
   questionariosAtividadesFuncao,
@@ -160,86 +161,64 @@ export const questionarioAtividadesRouter = router({
       const empregado = rowsOf<any>(empregadoResult)[0] ?? null;
       const departamentoNome = String(empregado?.departamentoNome ?? "").trim();
 
-      const aplicacaoResult = await db.execute(sql`
-        SELECT a.id AS aplicacaoId, a.prova_id AS provaId, a.prova_snapshot_json AS provaSnapshotJson,
-               a.titulo AS aplicacaoTitulo, p.codigo AS provaCodigo, p.nome AS provaNome,
-               p.unidade AS provaUnidade, p.ano AS provaAno
-          FROM aplicacoes_proficiencia a
-          JOIN aplicacoes_proficiencia_participantes ap ON ap.aplicacao_id = a.id
-          JOIN provas_importadas p ON p.id = a.prova_id
-         WHERE ap.colaborador_id = ${input.colaboradorId}
-           AND p.ano = ${input.ano}
-         ORDER BY a.agendada_para DESC, a.id DESC
-         LIMIT 1
-      `);
-      const aplicacao = rowsOf<any>(aplicacaoResult)[0] ?? null;
-
-      let provaOrigem: any = null;
-      let questoes: any[] = [];
-
-      if (aplicacao) {
-        const snapshot = parseJsonSeguro<any>(aplicacao.provaSnapshotJson);
-        const questoesSnapshot = Array.isArray(snapshot?.questoes) ? snapshot.questoes : [];
-        if (questoesSnapshot.length > 0) {
-          provaOrigem = {
-            provaId: Number(aplicacao.provaId),
-            aplicacaoId: Number(aplicacao.aplicacaoId),
-            codigo: aplicacao.provaCodigo,
-            nome: aplicacao.provaNome,
-            unidade: aplicacao.provaUnidade,
-            ano: Number(aplicacao.provaAno),
-            aplicacaoTitulo: aplicacao.aplicacaoTitulo,
-            origem: "SNAPSHOT_APLICACAO" as const,
-            origemProvaChave: `APLICACAO:${Number(aplicacao.aplicacaoId)}`,
-          };
-          questoes = questoesSnapshot;
-        }
-      }
-
-      if (!provaOrigem && departamentoNome) {
-        const provasResult = await db.execute(sql`
-          SELECT id, codigo, nome, unidade, ano, status, questoes_json AS questoesJson
-            FROM provas_importadas
-           WHERE ano = ${input.ano}
-           ORDER BY CASE WHEN codigo LIKE '%HIST%' THEN 0 ELSE 1 END, id DESC
-        `);
-        const candidatos = rowsOf<any>(provasResult);
-        const unidadeEmpregado = normalizarEixo(departamentoNome);
-
-        const provaHistorica = candidatos.find((item: any) => {
-          const unidadeProva = normalizarEixo(String(item.unidade ?? ""));
-          return unidadeProva === unidadeEmpregado ||
-            unidadeProva.includes(unidadeEmpregado) ||
-            unidadeEmpregado.includes(unidadeProva);
-        }) ?? null;
-
-        if (provaHistorica) {
-          const questoesProva = parseJsonSeguro<any[]>(provaHistorica.questoesJson);
-          if (Array.isArray(questoesProva) && questoesProva.length > 0) {
-            provaOrigem = {
-              provaId: Number(provaHistorica.id),
-              aplicacaoId: null,
-              codigo: provaHistorica.codigo,
-              nome: provaHistorica.nome,
-              unidade: provaHistorica.unidade,
-              ano: Number(provaHistorica.ano),
-              aplicacaoTitulo: "Prova histórica reconstruída",
-              origem: "PROVA_HISTORICA" as const,
-              origemProvaChave: `PROVA:${Number(provaHistorica.id)}`,
-            };
-            questoes = questoesProva;
-          }
-        }
-      }
-
-      if (!provaOrigem) {
+      if (!departamentoNome) {
         return {
           questionarioId: questionario?.id ?? null,
           prova: null,
           eixos: [],
-          aviso: "Nenhuma prova correspondente ao empregado e ao período selecionado foi localizada.",
+          aviso: "O empregado não possui unidade/departamento identificado para localizar a prova histórica.",
         };
       }
+
+      const provasResult = await db.execute(sql`
+        SELECT id, codigo, nome, unidade, ano, status, questoes_json AS questoesJson
+          FROM provas_importadas
+         WHERE ano = ${input.ano}
+           AND codigo LIKE '%HIST%'
+         ORDER BY id DESC
+      `);
+      const candidatos = rowsOf<any>(provasResult);
+      const unidadeEmpregado = normalizarEixo(departamentoNome);
+
+      const provaHistorica = candidatos.find((item: any) => {
+        const unidadeProva = normalizarEixo(String(item.unidade ?? ""));
+        return unidadeProva === unidadeEmpregado ||
+          unidadeProva.includes(unidadeEmpregado) ||
+          unidadeEmpregado.includes(unidadeProva);
+      }) ?? null;
+
+      if (!provaHistorica) {
+        return {
+          questionarioId: questionario?.id ?? null,
+          prova: null,
+          eixos: [],
+          aviso: "Nenhuma prova histórica correspondente à unidade deste empregado foi localizada para o período selecionado.",
+        };
+      }
+
+      const questoesProva = parseJsonSeguro<any[]>(provaHistorica.questoesJson);
+      const questoes = Array.isArray(questoesProva) ? questoesProva : [];
+
+      if (questoes.length === 0) {
+        return {
+          questionarioId: questionario?.id ?? null,
+          prova: null,
+          eixos: [],
+          aviso: "A prova histórica localizada não possui questões/eixos disponíveis para análise.",
+        };
+      }
+
+      const provaOrigem = {
+        provaId: Number(provaHistorica.id),
+        aplicacaoId: null,
+        codigo: provaHistorica.codigo,
+        nome: provaHistorica.nome,
+        unidade: provaHistorica.unidade,
+        ano: Number(provaHistorica.ano),
+        aplicacaoTitulo: "Prova histórica já aplicada",
+        origem: "PROVA_HISTORICA" as const,
+        origemProvaChave: `PROVA:${Number(provaHistorica.id)}`,
+      };
 
       const catalogo = new Map<string, string>();
       for (const questao of questoes) {
@@ -265,6 +244,38 @@ export const questionarioAtividadesRouter = router({
           .map(item => [item.eixoChave, item]),
       );
 
+      const historicosRegistrados = await db
+        .select()
+        .from(registroHistoricoProficienciaEixos)
+        .where(
+          and(
+            eq(registroHistoricoProficienciaEixos.colaboradorId, input.colaboradorId),
+            eq(registroHistoricoProficienciaEixos.provaHistoricaId, provaOrigem.provaId),
+          ),
+        );
+
+      const historicoPorEixo = new Map(
+        historicosRegistrados.map(item => [item.eixoChave, item]),
+      );
+
+      const legadoResult = await db.execute(sql`
+        SELECT e.eixo_nome AS eixoNome, e.percentual_anterior AS percentualAnterior
+          FROM prova_utic_matrizes m
+          JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
+         WHERE m.colaborador_id = ${input.colaboradorId}
+      `);
+      const legadoPorEixo = new Map<string, number | null>();
+      for (const item of rowsOf<any>(legadoResult)) {
+        const chave = normalizarEixo(String(item.eixoNome ?? ""));
+        if (!chave) continue;
+        legadoPorEixo.set(
+          chave,
+          item.percentualAnterior === null || item.percentualAnterior === undefined
+            ? null
+            : Number(item.percentualAnterior),
+        );
+      }
+
       return {
         questionarioId: questionario?.id ?? null,
         prova: provaOrigem,
@@ -278,6 +289,12 @@ export const questionarioAtividadesRouter = router({
             justificativa: existente?.justificativa ?? "",
             classificadoPor: existente?.classificadoPor ?? null,
             classificadoEm: existente?.classificadoEm ?? null,
+            indicadorOriginal: historicoPorEixo.get(eixoChave)?.percentualOriginal === null ||
+              historicoPorEixo.get(eixoChave)?.percentualOriginal === undefined
+              ? (legadoPorEixo.get(eixoChave) ?? null)
+              : Number(historicoPorEixo.get(eixoChave)?.percentualOriginal),
+            indicadorOriginalStatus: historicoPorEixo.get(eixoChave)?.status ??
+              (legadoPorEixo.has(eixoChave) ? "LEGADO_VALIDADO" : "PENDENTE_VALIDACAO"),
           };
         }),
         aviso: null,
@@ -290,7 +307,7 @@ export const questionarioAtividadesRouter = router({
         colaboradorId: z.number().int().positive(),
         ano: z.number().int().min(2020).max(2100),
         provaId: z.number().int().positive(),
-        aplicacaoId: z.number().int().positive().nullable(),
+        aplicacaoId: z.null(),
         origemProvaChave: z.string().min(1).max(80),
         eixos: z.array(classificacaoEixoSchema).min(1),
       }),
@@ -320,61 +337,41 @@ export const questionarioAtividadesRouter = router({
         });
       }
 
-      let questoesOrigem: any[] = [];
-      let origemProva: "SNAPSHOT_APLICACAO" | "PROVA_HISTORICA";
-
-      if (input.aplicacaoId) {
-        const aplicacaoResult = await db.execute(sql`
-          SELECT a.id AS aplicacaoId, a.prova_id AS provaId, a.prova_snapshot_json AS provaSnapshotJson
-            FROM aplicacoes_proficiencia a
-            JOIN aplicacoes_proficiencia_participantes ap ON ap.aplicacao_id = a.id
-           WHERE a.id = ${input.aplicacaoId}
-             AND a.prova_id = ${input.provaId}
-             AND ap.colaborador_id = ${input.colaboradorId}
-           LIMIT 1
-        `);
-        const aplicacao = rowsOf<any>(aplicacaoResult)[0];
-        if (!aplicacao) {
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message: "A prova informada não corresponde a uma aplicação deste empregado.",
-          });
-        }
-        const snapshot = parseJsonSeguro<any>(aplicacao.provaSnapshotJson);
-        questoesOrigem = Array.isArray(snapshot?.questoes) ? snapshot.questoes : [];
-        origemProva = "SNAPSHOT_APLICACAO";
-      } else {
-        const provaResult = await db.execute(sql`
-          SELECT p.id, p.unidade, p.ano, p.questoes_json AS questoesJson, d.nome AS departamentoNome
-            FROM provas_importadas p
-            JOIN users u ON u.id = ${input.colaboradorId}
-            LEFT JOIN departamentos d ON d.id = u.departamentoId
-           WHERE p.id = ${input.provaId}
-             AND p.ano = ${input.ano}
-           LIMIT 1
-        `);
-        const prova = rowsOf<any>(provaResult)[0];
-        if (!prova) {
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message: "A prova histórica informada não foi localizada.",
-          });
-        }
-        const unidadeProva = normalizarEixo(String(prova.unidade ?? ""));
-        const unidadeEmpregado = normalizarEixo(String(prova.departamentoNome ?? ""));
-        const unidadeCompativel = unidadeProva === unidadeEmpregado ||
-          unidadeProva.includes(unidadeEmpregado) ||
-          unidadeEmpregado.includes(unidadeProva);
-        if (!unidadeEmpregado || !unidadeCompativel) {
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message: "A prova histórica não corresponde à unidade deste empregado.",
-          });
-        }
-        const questoesProva = parseJsonSeguro<any[]>(prova.questoesJson);
-        questoesOrigem = Array.isArray(questoesProva) ? questoesProva : [];
-        origemProva = "PROVA_HISTORICA";
+      const provaResult = await db.execute(sql`
+        SELECT p.id, p.codigo, p.nome, p.unidade, p.ano, p.questoes_json AS questoesJson,
+               d.nome AS departamentoNome
+          FROM provas_importadas p
+          JOIN users u ON u.id = ${input.colaboradorId}
+          LEFT JOIN departamentos d ON d.id = u.departamentoId
+         WHERE p.id = ${input.provaId}
+           AND p.ano = ${input.ano}
+           AND p.codigo LIKE '%HIST%'
+         LIMIT 1
+      `);
+      const prova = rowsOf<any>(provaResult)[0];
+      if (!prova) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "A prova histórica informada não foi localizada.",
+        });
       }
+
+      const unidadeProva = normalizarEixo(String(prova.unidade ?? ""));
+      const unidadeEmpregado = normalizarEixo(String(prova.departamentoNome ?? ""));
+      const unidadeCompativel = unidadeProva === unidadeEmpregado ||
+        unidadeProva.includes(unidadeEmpregado) ||
+        unidadeEmpregado.includes(unidadeProva);
+
+      if (!unidadeEmpregado || !unidadeCompativel) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "A prova histórica não corresponde à unidade deste empregado.",
+        });
+      }
+
+      const questoesProva = parseJsonSeguro<any[]>(prova.questoesJson);
+      const questoesOrigem = Array.isArray(questoesProva) ? questoesProva : [];
+      const origemProva = "PROVA_HISTORICA" as const;
 
       const catalogo = new Map<string, string>();
       for (const questao of questoesOrigem) {
@@ -386,12 +383,61 @@ export const questionarioAtividadesRouter = router({
         }
       }
 
+      const legadoResult = await db.execute(sql`
+        SELECT e.eixo_nome AS eixoNome, e.percentual_anterior AS percentualAnterior
+          FROM prova_utic_matrizes m
+          JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
+         WHERE m.colaborador_id = ${input.colaboradorId}
+      `);
+      const legadoPorEixo = new Map<string, number | null>();
+      for (const item of rowsOf<any>(legadoResult)) {
+        const chave = normalizarEixo(String(item.eixoNome ?? ""));
+        if (!chave) continue;
+        legadoPorEixo.set(
+          chave,
+          item.percentualAnterior === null || item.percentualAnterior === undefined
+            ? null
+            : Number(item.percentualAnterior),
+        );
+      }
+
+      for (const [eixoChave, eixoNome] of catalogo.entries()) {
+        const indicadorOriginal = legadoPorEixo.get(eixoChave) ?? null;
+        const existenteHistorico = (
+          await db
+            .select()
+            .from(registroHistoricoProficienciaEixos)
+            .where(
+              and(
+                eq(registroHistoricoProficienciaEixos.colaboradorId, input.colaboradorId),
+                eq(registroHistoricoProficienciaEixos.provaHistoricaId, input.provaId),
+                eq(registroHistoricoProficienciaEixos.eixoChave, eixoChave),
+              ),
+            )
+            .limit(1)
+        )[0] ?? null;
+
+        if (!existenteHistorico) {
+          await db.insert(registroHistoricoProficienciaEixos).values({
+            colaboradorId: input.colaboradorId,
+            provaHistoricaId: input.provaId,
+            eixoChave,
+            eixoNome,
+            percentualOriginal: indicadorOriginal === null ? null : String(indicadorOriginal),
+            status: indicadorOriginal === null ? "PENDENTE_VALIDACAO" : "REGISTRADO",
+            fonte: indicadorOriginal === null
+              ? "Prova histórica cadastrada; indicador original ainda pendente de validação."
+              : "Indicador original preservado de prova_utic_matriz_eixos.percentual_anterior.",
+          });
+        }
+      }
+
       for (const entrada of input.eixos) {
         const nomeOficial = catalogo.get(entrada.eixoChave);
         if (!nomeOficial) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: `O eixo "${entrada.eixoNome}" não pertence ao snapshot da prova aplicada.`,
+            message: `O eixo "${entrada.eixoNome}" não pertence à prova histórica selecionada.`,
           });
         }
 
