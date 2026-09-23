@@ -171,7 +171,7 @@ export default function QuestionarioAtividadesFuncao() {
   const salvarEixos = () => {
     const prova = eixos.data?.prova;
     if (!prova) {
-      toast.error("Não há prova aplicada para este empregado no período selecionado.");
+      toast.error("Não há prova histórica localizada para este empregado no período selecionado.");
       return;
     }
     if (!eixos.data?.questionarioId) {
@@ -359,7 +359,7 @@ export default function QuestionarioAtividadesFuncao() {
             <CardHeader>
               <CardTitle>Eixos Técnicos do Empregado</CardTitle>
               <CardDescription>
-                A prova aplicada fornece somente a lista oficial de eixos. A classificação Essencial, Não Essencial ou Transversal deve ser feita exclusivamente pela leitura deste Questionário de Atividades/Função.
+                A prova histórica já aplicada fornece os eixos e o indicador original de conhecimento. A classificação Essencial, Não Essencial ou Transversal é definida exclusivamente pela leitura deste Questionário de Atividades/Função.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -372,11 +372,11 @@ export default function QuestionarioAtividadesFuncao() {
               ) : (
                 <>
                   <div className="rounded-md border p-4 text-sm space-y-1">
-                    <div><span className="font-medium">Prova que fornece os eixos:</span> {eixos.data.prova.nome}</div>
-                    <div><span className="font-medium">Aplicação:</span> {eixos.data.prova.aplicacaoTitulo}</div>
+                    <div><span className="font-medium">Prova histórica (marco zero):</span> {eixos.data.prova.nome}</div>
+                    <div><span className="font-medium">Natureza:</span> Registro histórico já aplicado</div>
                     <div><span className="font-medium">Origem da classificação:</span> Questionário de Atividades/Função</div>
                     <div className="text-muted-foreground">
-                      A prova não define a importância do eixo para a função; ela apenas informa quais eixos foram avaliados.
+                      A prova histórica registra o conhecimento original por eixo. Ela não define a importância do eixo para a função; essa classificação vem do questionário.
                     </div>
                   </div>
 
@@ -390,7 +390,12 @@ export default function QuestionarioAtividadesFuncao() {
                         const atual = eixosTecnicos[eixo.eixoChave] ?? { classificacao: "", justificativa: "" };
                         return (
                           <div key={eixo.eixoChave} className="rounded-md border p-4 space-y-3">
-                            <div className="font-medium">{eixo.eixoNome}</div>
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="font-medium">{eixo.eixoNome}</div>
+                              <Badge variant={eixo.indicadorOriginal === null ? "secondary" : "outline"}>
+                                Indicador original: {eixo.indicadorOriginal === null ? "Pendente" : `${Number(eixo.indicadorOriginal).toFixed(1)}%`}
+                              </Badge>
+                            </div>
                             <div className="grid gap-3 md:grid-cols-[260px_1fr]">
                               <div className="space-y-2">
                                 <Label>Classificação funcional</Label>
@@ -456,7 +461,7 @@ export default function QuestionarioAtividadesFuncao() {
 
                   {!eixos.data?.questionarioId && (
                     <p className="text-sm text-muted-foreground">
-                      Para preservar a rastreabilidade, salve primeiro o questionário. Depois a classificação ficará vinculada a esta versão e à prova realmente aplicada.
+                      Para preservar a rastreabilidade, salve primeiro o questionário. Depois a classificação ficará vinculada a esta versão e à prova histórica correspondente.
                     </p>
                   )}
                 </>
