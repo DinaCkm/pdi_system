@@ -879,16 +879,18 @@ export default function ImportarProvas() {
                               )}
                             </div>
                           ) : item.status === "VALIDADA" ? (
-                            <div
-                              className="inline-flex items-center gap-1.5 rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm"
-                              title="Prova validada"
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5" />
-                              VALIDADA
-                            </div>
-                            <div className="mt-1 text-[11px] text-muted-foreground">
-                              Homologação: {item.homologacaoStatus || "PENDENTE"}
-                            </div>
+                            <>
+                              <div
+                                className="inline-flex items-center gap-1.5 rounded-md border border-emerald-700 bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm"
+                                title="Prova validada"
+                              >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                VALIDADA
+                              </div>
+                              <div className="mt-1 text-[11px] text-muted-foreground">
+                                Homologação: {item.homologacaoStatus || "PENDENTE"}
+                              </div>
+                            </>
                           ) : item.status}
                         </td>
                         <td className="px-3 py-3">
