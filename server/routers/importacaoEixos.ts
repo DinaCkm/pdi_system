@@ -199,12 +199,17 @@ export const importacaoEixosRouter = router({
 
   importarTecnicos: adminProcedure.input(z.object({
     linhas: z.array(linhaTecnicaSchema).min(1).max(10000), arquivoNome: z.string().trim().min(1).max(255),
-    substituirExistentes: z.boolean().default(false), confirmado: z.literal(true),
+    substituirExistentes: z.boolean().default(false),
+    // Quando true, a matriz de cada empregado presente no arquivo fica EXATAMENTE com os eixos do arquivo:
+    // eixos antigos que não constam no arquivo (inclusive duplicados) são removidos, com registro no histórico.
+    substituirMatrizCompleta: z.boolean().default(false),
+    confirmado: z.literal(true),
   })).mutation(async ({ input, ctx }) => {
     const db = await ensureTechnicalMatrixTables();
     const validacao = validarTecnicas(input.linhas, await carregarUsuarios(db));
     if (validacao.erros.length) throw new TRPCError({ code: "BAD_REQUEST", message: `Importação cancelada: ${validacao.erros.length} erro(s).` });
-    let criados = 0, atualizados = 0, ignorados = 0;
+    let criados = 0, atualizados = 0, ignorados = 0, removidos = 0;
+    const substituirTudo = input.substituirMatrizCompleta;
     await db.transaction(async (tx: any) => {
       const grupos = new Map<number, typeof validacao.resolvidas>();
       for (const linha of validacao.resolvidas) grupos.set(linha.usuario.id, [...(grupos.get(linha.usuario.id) ?? []), linha]);
@@ -219,10 +224,12 @@ export const importacaoEixosRouter = router({
         if (!matriz) throw new Error("Não foi possível preparar a matriz do empregado.");
         const existentesResult = await tx.execute(sql`SELECT eixo_id AS eixoId, eixo_nome AS eixoNome, relacao, status_classificacao AS statusClassificacao, justificativa, percentual_anterior AS pontuacao FROM prova_utic_matriz_eixos WHERE matriz_id = ${matriz.id}`);
         const existentes = rowsOf<any>(existentesResult);
+        const mantidos = new Set<string>();
         for (const linha of linhas) {
           const existente = existentes.find(item => (linha.eixoId && item.eixoId === linha.eixoId) || normalizarTexto(item.eixoNome) === normalizarTexto(linha.eixoNome));
-          if (existente && !input.substituirExistentes) { ignorados++; continue; }
+          if (existente && !input.substituirExistentes && !substituirTudo) { mantidos.add(existente.eixoId); ignorados++; continue; }
           const eixoId = existente?.eixoId || linha.eixoId || idEixoPorNome(linha.eixoNome);
+          mantidos.add(eixoId);
           const classificacao = normalizarRelacaoTecnica(linha.relacao);
           const valorNovo = {
             eixo: linha.eixoNome,
@@ -252,9 +259,20 @@ export const importacaoEixosRouter = router({
           await tx.execute(sql`INSERT INTO prova_utic_matriz_historico (matriz_id, eixo_id, valor_anterior, valor_novo, motivo, observacao, alterado_por)
             VALUES (${matriz.id}, ${eixoId}, ${existente ? JSON.stringify(existente) : null}, ${JSON.stringify(valorNovo)}, 'Importação administrativa de eixos técnicos', ${detalhes}, ${ctx.user.id})`);
         }
+        if (substituirTudo) {
+          for (const antigo of existentes) {
+            if (mantidos.has(antigo.eixoId)) continue;
+            await tx.execute(sql`DELETE FROM prova_utic_matriz_eixos WHERE matriz_id = ${matriz.id} AND eixo_id = ${antigo.eixoId}`);
+            await tx.execute(sql`INSERT INTO prova_utic_matriz_historico (matriz_id, eixo_id, valor_anterior, valor_novo, motivo, observacao, alterado_por)
+              VALUES (${matriz.id}, ${antigo.eixoId}, ${JSON.stringify(antigo)}, ${JSON.stringify({ removido: true })}, 'Eixo removido na substituição completa da matriz', ${`Importação: ${input.arquivoNome}`}, ${ctx.user.id})`);
+            removidos++;
+          }
+          await tx.execute(sql`UPDATE prova_utic_matrizes SET status = ${temPendencia ? "PENDENTE_HISTORICO" : "VALIDADA_PROVISORIA"},
+            fonte = ${`Importação: ${input.arquivoNome}`}, atualizado_por = ${ctx.user.id}, updated_at = NOW() WHERE id = ${matriz.id}`);
+        }
       }
     });
-    return { sucesso: true, criados, atualizados, ignorados, total: input.linhas.length };
+    return { sucesso: true, criados, atualizados, ignorados, removidos, total: input.linhas.length };
   }),
 
   validarComportamentais: adminProcedure.input(z.object({ avaliacaoId: z.number().int().positive(), linhas: z.array(linhaComportamentalSchema).min(1).max(10000) })).mutation(async ({ input }) => {
