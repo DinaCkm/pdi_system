@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 type StatusQuestionario = "rascunho" | "preenchido" | "validado";
 type FonteQuestionario = "manual" | "importado_historico";
+type ClassificacaoEixo = "ESSENCIAL" | "NAO_ESSENCIAL" | "TRANSVERSAL";
 
 const grupoLabel: Record<string, string> = {
   funcao: "Atividades e responsabilidades da função",
@@ -32,11 +33,22 @@ export default function QuestionarioAtividadesFuncao() {
   const [observacoes, setObservacoes] = useState("");
   const [respostas, setRespostas] = useState<Record<string, string>>({});
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
+  const [eixosTecnicos, setEixosTecnicos] = useState<Record<string, { classificacao: ClassificacaoEixo | ""; justificativa: string }>>({});
 
   const utils = trpc.useUtils();
   const empregados = trpc.questionarioAtividades.empregados.useQuery();
 
   const questionario = trpc.questionarioAtividades.get.useQuery(
+    {
+      colaboradorId: Number(colaboradorId || 0),
+      ano: Number(ano),
+    },
+    {
+      enabled: Boolean(colaboradorId) && Number(ano) > 0,
+    },
+  );
+
+  const eixos = trpc.questionarioAtividades.eixosTecnicos.useQuery(
     {
       colaboradorId: Number(colaboradorId || 0),
       ano: Number(ano),
@@ -52,6 +64,17 @@ export default function QuestionarioAtividadesFuncao() {
       enabled: Boolean(questionario.data?.questionario?.id) && mostrarHistorico,
     },
   );
+
+  useEffect(() => {
+    const mapa: Record<string, { classificacao: ClassificacaoEixo | ""; justificativa: string }> = {};
+    for (const eixo of eixos.data?.eixos ?? []) {
+      mapa[eixo.eixoChave] = {
+        classificacao: (eixo.classificacao as ClassificacaoEixo | null) ?? "",
+        justificativa: eixo.justificativa ?? "",
+      };
+    }
+    setEixosTecnicos(mapa);
+  }, [eixos.data]);
 
   useEffect(() => {
     if (!questionario.data) return;
@@ -100,6 +123,17 @@ export default function QuestionarioAtividadesFuncao() {
       .filter((item) => item.perguntas.length > 0);
   }, [questionario.data?.perguntas]);
 
+  const salvarEixosMutation = trpc.questionarioAtividades.salvarEixosTecnicos.useMutation({
+    onSuccess: async () => {
+      toast.success("Eixos técnicos salvos com origem no questionário.");
+      await utils.questionarioAtividades.eixosTecnicos.invalidate();
+      await utils.questionarioAtividades.historico.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Não foi possível salvar os eixos técnicos.");
+    },
+  });
+
   const salvarMutation = trpc.questionarioAtividades.save.useMutation({
     onSuccess: async () => {
       toast.success("Questionário salvo com histórico preservado.");
@@ -130,6 +164,32 @@ export default function QuestionarioAtividadesFuncao() {
       respostas: (questionario.data?.perguntas ?? []).map((pergunta) => ({
         chave: pergunta.chave,
         resposta: respostas[pergunta.chave] ?? "",
+      })),
+    });
+  };
+
+  const salvarEixos = () => {
+    const prova = eixos.data?.prova;
+    if (!prova) {
+      toast.error("Não há prova histórica localizada para este empregado no período selecionado.");
+      return;
+    }
+    if (!eixos.data?.questionarioId) {
+      toast.error("Salve o questionário antes de classificar os eixos técnicos.");
+      return;
+    }
+
+    salvarEixosMutation.mutate({
+      colaboradorId: Number(colaboradorId),
+      ano: Number(ano),
+      provaId: prova.provaId,
+      aplicacaoId: prova.aplicacaoId,
+      origemProvaChave: prova.origemProvaChave,
+      eixos: (eixos.data?.eixos ?? []).map((eixo) => ({
+        eixoChave: eixo.eixoChave,
+        eixoNome: eixo.eixoNome,
+        classificacao: eixosTecnicos[eixo.eixoChave]?.classificacao || null,
+        justificativa: eixosTecnicos[eixo.eixoChave]?.justificativa?.trim() || null,
       })),
     });
   };
@@ -297,9 +357,123 @@ export default function QuestionarioAtividadesFuncao() {
 
           <Card>
             <CardHeader>
+              <CardTitle>Eixos Técnicos do Empregado</CardTitle>
+              <CardDescription>
+                A prova histórica já aplicada fornece os eixos e o indicador original de conhecimento. A classificação Essencial, Não Essencial ou Transversal é definida exclusivamente pela leitura deste Questionário de Atividades/Função.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {eixos.isLoading ? (
+                <div className="text-sm text-muted-foreground">Carregando eixos da prova aplicada...</div>
+              ) : !eixos.data?.prova ? (
+                <div className="rounded-md border p-4 text-sm text-muted-foreground">
+                  {eixos.data?.aviso || "Nenhuma prova aplicada foi encontrada para este empregado no período selecionado."}
+                </div>
+              ) : (
+                <>
+                  <div className="rounded-md border p-4 text-sm space-y-1">
+                    <div><span className="font-medium">Prova histórica (marco zero):</span> {eixos.data.prova.nome}</div>
+                    <div><span className="font-medium">Natureza:</span> Registro histórico já aplicado</div>
+                    <div><span className="font-medium">Origem da classificação:</span> Questionário de Atividades/Função</div>
+                    <div className="text-muted-foreground">
+                      A prova histórica registra o conhecimento original por eixo. Ela não define a importância do eixo para a função; essa classificação vem do questionário.
+                    </div>
+                  </div>
+
+                  {(eixos.data.eixos ?? []).length === 0 ? (
+                    <div className="rounded-md border p-4 text-sm text-muted-foreground">
+                      A prova aplicada não possui eixos técnicos identificáveis no snapshot preservado.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {(eixos.data.eixos ?? []).map((eixo) => {
+                        const atual = eixosTecnicos[eixo.eixoChave] ?? { classificacao: "", justificativa: "" };
+                        return (
+                          <div key={eixo.eixoChave} className="rounded-md border p-4 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="font-medium">{eixo.eixoNome}</div>
+                              <Badge variant={eixo.indicadorOriginal === null ? "secondary" : "outline"}>
+                                Indicador original: {eixo.indicadorOriginal === null ? "Pendente" : `${Number(eixo.indicadorOriginal).toFixed(1)}%`}
+                              </Badge>
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-[260px_1fr]">
+                              <div className="space-y-2">
+                                <Label>Classificação funcional</Label>
+                                <Select
+                                  value={atual.classificacao || "PENDENTE"}
+                                  onValueChange={(value) =>
+                                    setEixosTecnicos((estado) => ({
+                                      ...estado,
+                                      [eixo.eixoChave]: {
+                                        ...atual,
+                                        classificacao: value === "PENDENTE" ? "" : (value as ClassificacaoEixo),
+                                      },
+                                    }))
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="PENDENTE">Pendente</SelectItem>
+                                    <SelectItem value="ESSENCIAL">Essencial</SelectItem>
+                                    <SelectItem value="NAO_ESSENCIAL">Não Essencial</SelectItem>
+                                    <SelectItem value="TRANSVERSAL">Transversal</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Justificativa baseada no questionário</Label>
+                                <Textarea
+                                  value={atual.justificativa}
+                                  onChange={(event) =>
+                                    setEixosTecnicos((estado) => ({
+                                      ...estado,
+                                      [eixo.eixoChave]: {
+                                        ...atual,
+                                        justificativa: event.target.value,
+                                      },
+                                    }))
+                                  }
+                                  rows={3}
+                                  placeholder="Registre o que no questionário sustenta esta classificação. Não use o resultado da prova como justificativa."
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    onClick={salvarEixos}
+                    disabled={
+                      salvarEixosMutation.isPending ||
+                      !eixos.data?.questionarioId ||
+                      (eixos.data?.eixos ?? []).length === 0
+                    }
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Salvar classificação dos eixos
+                  </Button>
+
+                  {!eixos.data?.questionarioId && (
+                    <p className="text-sm text-muted-foreground">
+                      Para preservar a rastreabilidade, salve primeiro o questionário. Depois a classificação ficará vinculada a esta versão e à prova histórica correspondente.
+                    </p>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Validação e rastreabilidade</CardTitle>
               <CardDescription>
-                Salvar não altera os eixos técnicos. A reclassificação será uma etapa posterior da auditoria.
+                O questionário é a fonte da classificação funcional dos eixos. Toda alteração fica vinculada ao empregado, ao período e ao histórico desta análise.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

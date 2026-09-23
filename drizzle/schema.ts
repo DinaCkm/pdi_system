@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, varchar, text, timestamp, mysqlEnum, index, foreignKey, bigint, boolean } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, varchar, text, timestamp, mysqlEnum, index, uniqueIndex, foreignKey, bigint, boolean, decimal } from "drizzle-orm/mysql-core"
 import { sql } from "drizzle-orm"
 import { date } from "drizzle-orm/mysql-core"
 
@@ -262,6 +262,57 @@ export const questionarioAtividadesRespostas = mysqlTable("questionario_atividad
 	return {
 		questionario_respostas_questionario_idx: index("questionario_respostas_questionario_idx").on(table.questionarioId),
 		questionario_respostas_chave_idx: index("questionario_respostas_chave_idx").on(table.chave),
+	}
+});
+
+export const registroHistoricoProficienciaEixos = mysqlTable("registro_historico_proficiencia_eixos", {
+	id: int().autoincrement().notNull().primaryKey(),
+	colaboradorId: int("colaborador_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	provaHistoricaId: int("prova_historica_id").notNull(),
+	eixoChave: varchar("eixo_chave", { length: 255 }).notNull(),
+	eixoNome: varchar("eixo_nome", { length: 255 }).notNull(),
+	percentualOriginal: decimal("percentual_original", { precision: 5, scale: 2 }),
+	acertosOriginal: int("acertos_original"),
+	totalQuestoesOriginal: int("total_questoes_original"),
+	naoSeiOriginal: int("nao_sei_original"),
+	status: mysqlEnum([`REGISTRADO`,`PENDENTE_VALIDACAO`]).default(`PENDENTE_VALIDACAO`).notNull(),
+	fonte: text(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+},
+(table) => {
+	return {
+		registro_historico_colaborador_prova_eixo_unique_idx: uniqueIndex("registro_historico_colaborador_prova_eixo_unique_idx").on(table.colaboradorId, table.provaHistoricaId, table.eixoChave),
+		registro_historico_colaborador_idx: index("registro_historico_colaborador_idx").on(table.colaboradorId),
+		registro_historico_prova_idx: index("registro_historico_prova_idx").on(table.provaHistoricaId),
+		registro_historico_status_idx: index("registro_historico_status_idx").on(table.status),
+	}
+});
+
+export const questionarioAtividadesEixosTecnicos = mysqlTable("questionario_atividades_eixos_tecnicos", {
+	id: int().autoincrement().notNull().primaryKey(),
+	questionarioId: int("questionario_id").notNull().references(() => questionariosAtividadesFuncao.id, { onDelete: "cascade" }),
+	provaId: int("prova_id").notNull(),
+	aplicacaoId: int("aplicacao_id"),
+	origemProva: mysqlEnum([`SNAPSHOT_APLICACAO`,`PROVA_HISTORICA`]).notNull(),
+	origemProvaChave: varchar("origem_prova_chave", { length: 80 }).notNull(),
+	eixoChave: varchar("eixo_chave", { length: 255 }).notNull(),
+	eixoNome: varchar("eixo_nome", { length: 255 }).notNull(),
+	classificacao: mysqlEnum([`ESSENCIAL`,`NAO_ESSENCIAL`,`TRANSVERSAL`]),
+	statusClassificacao: mysqlEnum([`PENDENTE`,`CLASSIFICADO`]).default(`PENDENTE`).notNull(),
+	justificativa: text(),
+	classificadoPor: int("classificado_por").references(() => users.id, { onDelete: "set null" }),
+	classificadoEm: timestamp("classificado_em", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+},
+(table) => {
+	return {
+		questionario_eixo_origem_unique_idx: uniqueIndex("questionario_eixo_origem_unique_idx").on(table.questionarioId, table.origemProvaChave, table.eixoChave),
+		questionario_eixos_questionario_idx: index("questionario_eixos_questionario_idx").on(table.questionarioId),
+		questionario_eixos_prova_idx: index("questionario_eixos_prova_idx").on(table.provaId),
+		questionario_eixos_aplicacao_idx: index("questionario_eixos_aplicacao_idx").on(table.aplicacaoId),
+		questionario_eixos_classificacao_idx: index("questionario_eixos_classificacao_idx").on(table.classificacao),
 	}
 });
 
