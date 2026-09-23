@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
+import { ensureHomologacaoTables } from "../services/homologacaoProvas";
 
 function rowsOf<T>(result: any): T[] {
   if (Array.isArray(result?.[0])) return result[0] as T[];
@@ -17,6 +18,7 @@ function arredondar(valor: number) {
 async function dbObrigatorio() {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco de dados indisponível." });
+  await ensureHomologacaoTables(db);
   return db;
 }
 
