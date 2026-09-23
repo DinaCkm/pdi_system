@@ -34,6 +34,12 @@ function normalizar(valor: unknown) {
   return String(valor ?? "").trim().toLocaleLowerCase("pt-BR");
 }
 
+// Regionais: nome contém "Regional" ou começa com a sigla de uma das 8 regionais.
+function ehRegional(nome: unknown) {
+  const texto = String(nome ?? "").trim();
+  return /regional/i.test(texto) || /^(RBP|RME|RMN|RNO|RPJ|RSG|RSU|RVA)\b/i.test(texto);
+}
+
 function formatarData(valor: unknown) {
   if (!valor) return "—";
   const data = new Date(String(valor));
@@ -79,34 +85,71 @@ export default function AdminEixosTecnicos() {
   const [aba, setAba] = useState<"individual" | "departamento">("individual");
   const [deptSelecionado, setDeptSelecionado] = useState("");
   const [buscaEixo, setBuscaEixo] = useState("");
+  const [grupo, setGrupo] = useState<"regionais" | "administrativas" | "todas">("regionais");
   const deptQuery = api.listarPorDepartamento.useQuery(undefined, {
     enabled: aba === "departamento",
     refetchOnWindowFocus: false,
   });
   const departamentos: any[] = deptQuery.data ?? [];
+
+  const departamentosDoGrupo = useMemo(
+    () => departamentos.filter((d: any) => grupo === "todas" || (ehRegional(d.unidadeNome) ? grupo === "regionais" : grupo === "administrativas")),
+    [departamentos, grupo],
+  );
+
+  // Consolidado: soma os eixos de todas as unidades do grupo em uma única tabela.
+  const consolidado = useMemo(() => {
+    const eixos = new Map<string, any>();
+    let totalEmpregados = 0;
+    for (const d of departamentosDoGrupo) {
+      totalEmpregados += Number(d.totalEmpregados);
+      for (const e of d.eixos) {
+        const atual = eixos.get(e.eixoId) ?? {
+          eixoId: e.eixoId, eixo: e.eixo, totalEmpregados: 0, qtdPontuacao: 0, somaPontuacao: 0,
+          menorPontuacao: null as number | null, maiorPontuacao: null as number | null, unidades: 0,
+        };
+        atual.totalEmpregados += e.totalEmpregados;
+        atual.qtdPontuacao += e.qtdPontuacao;
+        atual.somaPontuacao += e.somaPontuacao;
+        if (e.menorPontuacao !== null) atual.menorPontuacao = atual.menorPontuacao === null ? e.menorPontuacao : Math.min(atual.menorPontuacao, e.menorPontuacao);
+        if (e.maiorPontuacao !== null) atual.maiorPontuacao = atual.maiorPontuacao === null ? e.maiorPontuacao : Math.max(atual.maiorPontuacao, e.maiorPontuacao);
+        atual.unidades += 1;
+        eixos.set(e.eixoId, atual);
+      }
+    }
+    return {
+      unidadeNome: grupo === "regionais" ? "Consolidado das Regionais" : grupo === "administrativas" ? "Consolidado das Unidades Administrativas" : "Consolidado de todas as unidades",
+      totalEmpregados,
+      totalUnidades: departamentosDoGrupo.length,
+      consolidado: true,
+      eixos: Array.from(eixos.values())
+        .map((e) => ({ ...e, mediaPontuacao: e.qtdPontuacao ? Number((e.somaPontuacao / e.qtdPontuacao).toFixed(2)) : null }))
+        .sort((x, y) => String(x.eixo).localeCompare(String(y.eixo), "pt-BR")),
+    };
+  }, [departamentosDoGrupo, grupo]);
+
   const departamentosFiltrados = useMemo(() => {
     const termo = normalizar(buscaEixo);
-    return departamentos
-      .filter((d: any) => !deptSelecionado || d.unidadeNome === deptSelecionado)
-      .map((d: any) => ({
-        ...d,
-        eixos: termo ? d.eixos.filter((e: any) => normalizar(e.eixo).includes(termo) || normalizar(e.eixoId).includes(termo)) : d.eixos,
-      }))
+    const base = deptSelecionado ? departamentosDoGrupo.filter((d: any) => d.unidadeNome === deptSelecionado) : [consolidado];
+    return base
+      .map((d: any) => ({ ...d, eixos: termo ? d.eixos.filter((e: any) => normalizar(e.eixo).includes(termo)) : d.eixos }))
       .filter((d: any) => d.eixos.length > 0);
-  }, [departamentos, deptSelecionado, buscaEixo]);
+  }, [departamentosDoGrupo, consolidado, deptSelecionado, buscaEixo]);
+
+  const pct = (v: number | null) => v === null || v === undefined ? "" : `${Number(v).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 
   const exportarCsv = () => {
-    const cab = ["Unidade", "Eixo ID", "Eixo", "Empregados", "Essencial", "Transversal", "Não essencial", "Pendente", "Sem pontuação", "Média (%)"];
+    const cab = ["Unidade", "Eixo", "Unidades com o eixo", "Empregados com o eixo", "Média histórica (%)", "Menor (%)", "Maior (%)"];
     const linhas = departamentosFiltrados.flatMap((d: any) => d.eixos.map((e: any) => [
-      d.unidadeNome, e.eixoId, e.eixo, e.totalEmpregados, e.essencial, e.transversal, e.naoEssencial, e.pendente, e.semPontuacao,
-      e.mediaPontuacao === null ? "" : String(e.mediaPontuacao).replace(".", ","),
+      d.unidadeNome, e.eixo, d.consolidado ? e.unidades : 1, e.totalEmpregados,
+      ...[e.mediaPontuacao, e.menorPontuacao, e.maiorPontuacao].map((v) => (v === null ? "" : String(v).replace(".", ","))),
     ]));
     const csv = [cab, ...linhas].map((l) => l.map((c: any) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
     const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `eixos_por_departamento${deptSelecionado ? "_" + deptSelecionado.replace(/\W+/g, "_") : ""}.csv`;
+    a.download = `eixos_historicos_${(deptSelecionado || grupo).replace(/\W+/g, "_")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -495,15 +538,23 @@ export default function AdminEixosTecnicos() {
             <CardHeader>
               <CardTitle>Eixos Técnicos por Departamento</CardTitle>
               <CardDescription>
-                Todos os eixos técnicos de cada unidade, com a quantidade de empregados por classificação e a média da pontuação histórica.
+                Eixos técnicos das provas históricas: quantos empregados foram avaliados em cada eixo e a média da pontuação histórica.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4 lg:grid-cols-[minmax(220px,0.7fr)_minmax(320px,1.3fr)_auto] lg:items-end">
+            <CardContent className="grid gap-4 lg:grid-cols-[minmax(180px,0.5fr)_minmax(220px,0.8fr)_minmax(240px,1fr)_auto] lg:items-end">
+              <label className="space-y-2 text-sm font-medium">
+                Grupo
+                <select value={grupo} onChange={(e) => { setGrupo(e.target.value as any); setDeptSelecionado(""); }} className="h-10 w-full rounded-md border bg-background px-3 font-normal">
+                  <option value="regionais">Regionais</option>
+                  <option value="administrativas">Unidades administrativas</option>
+                  <option value="todas">Todas</option>
+                </select>
+              </label>
               <label className="space-y-2 text-sm font-medium">
                 Unidade
                 <select value={deptSelecionado} onChange={(e) => setDeptSelecionado(e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 font-normal">
-                  <option value="">Todas as unidades</option>
-                  {departamentos.map((d: any) => <option key={d.unidadeNome} value={d.unidadeNome}>{d.unidadeNome}</option>)}
+                  <option value="">Consolidado do grupo</option>
+                  {departamentosDoGrupo.map((d: any) => <option key={d.unidadeNome} value={d.unidadeNome}>{d.unidadeNome}</option>)}
                 </select>
               </label>
               <label className="space-y-2 text-sm font-medium">
@@ -520,11 +571,11 @@ export default function AdminEixosTecnicos() {
           </Card>
 
           {deptQuery.isLoading ? (
-            <Card><CardContent className="p-6 text-sm text-muted-foreground">Carregando eixos por departamento...</CardContent></Card>
+            <Card><CardContent className="p-6 text-sm text-muted-foreground">Carregando eixos...</CardContent></Card>
           ) : deptQuery.error ? (
             <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{deptQuery.error.message}</div>
           ) : departamentosFiltrados.length === 0 ? (
-            <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhum eixo encontrado para o filtro selecionado.</CardContent></Card>
+            <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhum registro histórico encontrado para este filtro.</CardContent></Card>
           ) : (
             departamentosFiltrados.map((dept: any) => (
               <Card key={dept.unidadeNome}>
@@ -532,6 +583,7 @@ export default function AdminEixosTecnicos() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <CardTitle className="text-base">{dept.unidadeNome}</CardTitle>
                     <div className="flex gap-2">
+                      {dept.consolidado && <Badge variant="outline">{dept.totalUnidades} unidade{dept.totalUnidades !== 1 ? "s" : ""}</Badge>}
                       <Badge variant="outline">{dept.eixos.length} eixo{dept.eixos.length !== 1 ? "s" : ""}</Badge>
                       <Badge variant="outline">{dept.totalEmpregados} empregado{dept.totalEmpregados !== 1 ? "s" : ""}</Badge>
                     </div>
@@ -539,32 +591,26 @@ export default function AdminEixosTecnicos() {
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto rounded-md border">
-                    <table className="w-full min-w-[900px] text-sm">
+                    <table className="w-full min-w-[720px] text-sm">
                       <thead className="bg-muted/40">
                         <tr className="border-b text-left">
-                          <th className="px-4 py-3">Eixo de conhecimento</th>
+                          <th className="px-4 py-3">Eixo técnico</th>
+                          {dept.consolidado && <th className="px-4 py-3 text-center">Unidades</th>}
                           <th className="px-4 py-3 text-center">Empregados</th>
-                          <th className="px-4 py-3 text-center">Essencial</th>
-                          <th className="px-4 py-3 text-center">Transversal</th>
-                          <th className="px-4 py-3 text-center">Não essencial</th>
-                          <th className="px-4 py-3 text-center">Pendente</th>
                           <th className="px-4 py-3 text-center">Média histórica</th>
+                          <th className="px-4 py-3 text-center">Menor</th>
+                          <th className="px-4 py-3 text-center">Maior</th>
                         </tr>
                       </thead>
                       <tbody>
                         {dept.eixos.map((eixo: any) => (
                           <tr key={eixo.eixoId} className="border-b last:border-0 hover:bg-muted/20">
                             <td className="px-4 py-3 font-medium">{eixo.eixo}</td>
+                            {dept.consolidado && <td className="px-4 py-3 text-center">{eixo.unidades}</td>}
                             <td className="px-4 py-3 text-center">{eixo.totalEmpregados}</td>
-                            <td className="px-4 py-3 text-center">{eixo.essencial || <span className="text-muted-foreground">—</span>}</td>
-                            <td className="px-4 py-3 text-center">{eixo.transversal || <span className="text-muted-foreground">—</span>}</td>
-                            <td className="px-4 py-3 text-center">{eixo.naoEssencial || <span className="text-muted-foreground">—</span>}</td>
-                            <td className="px-4 py-3 text-center">{eixo.pendente ? <span className="font-semibold text-amber-700">{eixo.pendente}</span> : <span className="text-muted-foreground">—</span>}</td>
-                            <td className="px-4 py-3 text-center">
-                              {eixo.mediaPontuacao === null
-                                ? <span className="text-muted-foreground">—</span>
-                                : `${Number(eixo.mediaPontuacao).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`}
-                            </td>
+                            <td className="px-4 py-3 text-center font-semibold">{pct(eixo.mediaPontuacao) || <span className="text-muted-foreground">—</span>}</td>
+                            <td className="px-4 py-3 text-center">{pct(eixo.menorPontuacao) || <span className="text-muted-foreground">—</span>}</td>
+                            <td className="px-4 py-3 text-center">{pct(eixo.maiorPontuacao) || <span className="text-muted-foreground">—</span>}</td>
                           </tr>
                         ))}
                       </tbody>
