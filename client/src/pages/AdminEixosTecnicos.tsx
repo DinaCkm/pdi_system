@@ -76,6 +76,40 @@ export default function AdminEixosTecnicos() {
   const [observacao, setObservacao] = useState("");
   const [status, setStatus] = useState<StatusMatriz>("PENDENTE_HISTORICO");
   const [mensagem, setMensagem] = useState("");
+  const [aba, setAba] = useState<"individual" | "departamento">("individual");
+  const [deptSelecionado, setDeptSelecionado] = useState("");
+  const [buscaEixo, setBuscaEixo] = useState("");
+  const deptQuery = api.listarPorDepartamento.useQuery(undefined, {
+    enabled: aba === "departamento",
+    refetchOnWindowFocus: false,
+  });
+  const departamentos: any[] = deptQuery.data ?? [];
+  const departamentosFiltrados = useMemo(() => {
+    const termo = normalizar(buscaEixo);
+    return departamentos
+      .filter((d: any) => !deptSelecionado || d.unidadeNome === deptSelecionado)
+      .map((d: any) => ({
+        ...d,
+        eixos: termo ? d.eixos.filter((e: any) => normalizar(e.eixo).includes(termo) || normalizar(e.eixoId).includes(termo)) : d.eixos,
+      }))
+      .filter((d: any) => d.eixos.length > 0);
+  }, [departamentos, deptSelecionado, buscaEixo]);
+
+  const exportarCsv = () => {
+    const cab = ["Unidade", "Eixo ID", "Eixo", "Empregados", "Essencial", "Transversal", "Não essencial", "Pendente", "Sem pontuação", "Média (%)"];
+    const linhas = departamentosFiltrados.flatMap((d: any) => d.eixos.map((e: any) => [
+      d.unidadeNome, e.eixoId, e.eixo, e.totalEmpregados, e.essencial, e.transversal, e.naoEssencial, e.pendente, e.semPontuacao,
+      e.mediaPontuacao === null ? "" : String(e.mediaPontuacao).replace(".", ","),
+    ]));
+    const csv = [cab, ...linhas].map((l) => l.map((c: any) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `eixos_por_departamento${deptSelecionado ? "_" + deptSelecionado.replace(/\W+/g, "_") : ""}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const matrizesFiltradas = useMemo(() => {
     const termo = normalizar(busca);
@@ -203,13 +237,28 @@ export default function AdminEixosTecnicos() {
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           <Settings2 className="h-7 w-7 text-blue-600" />
-          <h1 className="text-2xl font-semibold tracking-tight">Eixos Técnicos por Empregado</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Eixos Técnicos</h1>
         </div>
         <p className="max-w-4xl text-sm text-muted-foreground">
           Administração das classificações e pontuações históricas utilizadas em Avaliações e Evolução.
         </p>
         <Badge variant="outline">Todas as unidades administrativas e Regionais</Badge>
       </div>
+
+      <div className="flex gap-1 border-b">
+        {([["individual", "Por Empregado"], ["departamento", "Por Departamento"]] as const).map(([valor, rotulo]) => (
+          <button
+            key={valor}
+            type="button"
+            onClick={() => setAba(valor)}
+            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors ${aba === valor ? "border-blue-600 text-blue-600" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          >
+            {rotulo}
+          </button>
+        ))}
+      </div>
+
+      {aba === "individual" && (<>
 
       <Card>
         <CardHeader>
@@ -438,6 +487,95 @@ export default function AdminEixosTecnicos() {
 
       {mensagem && <div className="rounded-md border bg-muted/30 p-4 text-sm">{mensagem}</div>}
       {listaQuery.error && <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{listaQuery.error.message}</div>}
+      </>)}
+
+      {aba === "departamento" && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Eixos Técnicos por Departamento</CardTitle>
+              <CardDescription>
+                Todos os eixos técnicos de cada unidade, com a quantidade de empregados por classificação e a média da pontuação histórica.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 lg:grid-cols-[minmax(220px,0.7fr)_minmax(320px,1.3fr)_auto] lg:items-end">
+              <label className="space-y-2 text-sm font-medium">
+                Unidade
+                <select value={deptSelecionado} onChange={(e) => setDeptSelecionado(e.target.value)} className="h-10 w-full rounded-md border bg-background px-3 font-normal">
+                  <option value="">Todas as unidades</option>
+                  {departamentos.map((d: any) => <option key={d.unidadeNome} value={d.unidadeNome}>{d.unidadeNome}</option>)}
+                </select>
+              </label>
+              <label className="space-y-2 text-sm font-medium">
+                Buscar eixo
+                <span className="relative block">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <input value={buscaEixo} onChange={(e) => setBuscaEixo(e.target.value)} className="h-10 w-full rounded-md border bg-background pl-9 pr-3 font-normal" />
+                </span>
+              </label>
+              <Button type="button" variant="outline" onClick={exportarCsv} disabled={departamentosFiltrados.length === 0}>
+                Exportar CSV
+              </Button>
+            </CardContent>
+          </Card>
+
+          {deptQuery.isLoading ? (
+            <Card><CardContent className="p-6 text-sm text-muted-foreground">Carregando eixos por departamento...</CardContent></Card>
+          ) : deptQuery.error ? (
+            <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{deptQuery.error.message}</div>
+          ) : departamentosFiltrados.length === 0 ? (
+            <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhum eixo encontrado para o filtro selecionado.</CardContent></Card>
+          ) : (
+            departamentosFiltrados.map((dept: any) => (
+              <Card key={dept.unidadeNome}>
+                <CardHeader>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <CardTitle className="text-base">{dept.unidadeNome}</CardTitle>
+                    <div className="flex gap-2">
+                      <Badge variant="outline">{dept.eixos.length} eixo{dept.eixos.length !== 1 ? "s" : ""}</Badge>
+                      <Badge variant="outline">{dept.totalEmpregados} empregado{dept.totalEmpregados !== 1 ? "s" : ""}</Badge>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto rounded-md border">
+                    <table className="w-full min-w-[900px] text-sm">
+                      <thead className="bg-muted/40">
+                        <tr className="border-b text-left">
+                          <th className="px-4 py-3">Eixo de conhecimento</th>
+                          <th className="px-4 py-3 text-center">Empregados</th>
+                          <th className="px-4 py-3 text-center">Essencial</th>
+                          <th className="px-4 py-3 text-center">Transversal</th>
+                          <th className="px-4 py-3 text-center">Não essencial</th>
+                          <th className="px-4 py-3 text-center">Pendente</th>
+                          <th className="px-4 py-3 text-center">Média histórica</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dept.eixos.map((eixo: any) => (
+                          <tr key={eixo.eixoId} className="border-b last:border-0 hover:bg-muted/20">
+                            <td className="px-4 py-3 font-medium">{eixo.eixo}</td>
+                            <td className="px-4 py-3 text-center">{eixo.totalEmpregados}</td>
+                            <td className="px-4 py-3 text-center">{eixo.essencial || <span className="text-muted-foreground">—</span>}</td>
+                            <td className="px-4 py-3 text-center">{eixo.transversal || <span className="text-muted-foreground">—</span>}</td>
+                            <td className="px-4 py-3 text-center">{eixo.naoEssencial || <span className="text-muted-foreground">—</span>}</td>
+                            <td className="px-4 py-3 text-center">{eixo.pendente ? <span className="font-semibold text-amber-700">{eixo.pendente}</span> : <span className="text-muted-foreground">—</span>}</td>
+                            <td className="px-4 py-3 text-center">
+                              {eixo.mediaPontuacao === null
+                                ? <span className="text-muted-foreground">—</span>
+                                : `${Number(eixo.mediaPontuacao).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
