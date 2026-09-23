@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import * as XLSX from "xlsx";
-import { AlertCircle, ArrowDown, ArrowUp, Ban, CheckCircle2, Eye, FileSpreadsheet, History, Loader2, Pencil, Plus, Save, ShieldCheck, Trash2, Upload, X } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowUp, Ban, CheckCircle2, Eye, FileSpreadsheet, History, Loader2, Pencil, PlayCircle, Plus, RotateCcw, Save, ShieldCheck, Trash2, Upload, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -185,6 +186,8 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
 
 export default function ImportarProvas() {
   const api = (trpc as any).importacaoProvas;
+  const homologacaoApi = (trpc as any).homologacaoProvas;
+  const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const validarLote = api.validarLote.useMutation();
   const validarSalva = api.validarSalva.useMutation();
@@ -195,6 +198,9 @@ export default function ImportarProvas() {
   const importarLote = api.importarLote.useMutation();
   const listaQuery = api.listar.useQuery(undefined, { refetchOnWindowFocus: false });
   const ciclosQuery = trpc.ciclos.list.useQuery();
+  const criarTesteAdmin = homologacaoApi.criarOuObterTeste.useMutation();
+  const refazerTesteAdmin = homologacaoApi.refazerTeste.useMutation();
+  const homologarProva = homologacaoApi.homologar.useMutation();
 
   const [arquivos, setArquivos] = useState<ArquivoProva[]>([]);
   const [cicloIdUpload, setCicloIdUpload] = useState<number | null>(null);
@@ -219,6 +225,8 @@ export default function ImportarProvas() {
   const [previewIndice, setPreviewIndice] = useState(0);
   const [historicoId, setHistoricoId] = useState<number | null>(null);
   const [ultimaAuditoria, setUltimaAuditoria] = useState<any[]>([]);
+  const [homologacaoId, setHomologacaoId] = useState<number | null>(null);
+  const [processandoHomologacaoId, setProcessandoHomologacaoId] = useState<number | null>(null);
 
   const provaQuery = api.obter.useQuery(
     { id: editandoId ?? 0 },
@@ -231,6 +239,10 @@ export default function ImportarProvas() {
   const historicoQuery = api.historico.useQuery(
     { id: historicoId ?? 0 },
     { enabled: Boolean(historicoId), refetchOnWindowFocus: false },
+  );
+  const resultadoTesteQuery = homologacaoApi.resultadoTeste.useQuery(
+    { provaId: homologacaoId ?? 0 },
+    { enabled: Boolean(homologacaoId), refetchOnWindowFocus: false },
   );
 
   useEffect(() => {
@@ -441,6 +453,59 @@ export default function ImportarProvas() {
       setErroLeitura(error?.message || "Não foi possível salvar e validar a prova.");
     } finally {
       setValidandoId(null);
+    }
+  };
+
+  const iniciarTesteAdmin = async (id: number) => {
+    setErroLeitura("");
+    setMensagemAcao("");
+    setProcessandoHomologacaoId(id);
+    try {
+      const resposta = await criarTesteAdmin.mutateAsync({ provaId: id });
+      await listaQuery.refetch();
+      setLocation(resposta.url);
+    } catch (error: any) {
+      setErroLeitura(error?.message || "Não foi possível iniciar o teste administrativo.");
+    } finally {
+      setProcessandoHomologacaoId(null);
+    }
+  };
+
+  const abrirResultadoTeste = (id: number) => {
+    setHomologacaoId(id);
+    setEditandoId(null);
+    setVisualizandoId(null);
+    setHistoricoId(null);
+  };
+
+  const homologarTeste = async (id: number) => {
+    setErroLeitura("");
+    setMensagemAcao("");
+    setProcessandoHomologacaoId(id);
+    try {
+      await homologarProva.mutateAsync({ provaId: id });
+      setMensagemAcao("Prova homologada para aplicação.");
+      await listaQuery.refetch();
+      await resultadoTesteQuery.refetch();
+    } catch (error: any) {
+      setErroLeitura(error?.message || "Não foi possível homologar a prova.");
+    } finally {
+      setProcessandoHomologacaoId(null);
+    }
+  };
+
+  const refazerTeste = async (id: number) => {
+    setErroLeitura("");
+    setMensagemAcao("");
+    setProcessandoHomologacaoId(id);
+    try {
+      const resposta = await refazerTesteAdmin.mutateAsync({ provaId: id });
+      await listaQuery.refetch();
+      setLocation(resposta.url);
+    } catch (error: any) {
+      setErroLeitura(error?.message || "Não foi possível criar um novo teste.");
+    } finally {
+      setProcessandoHomologacaoId(null);
     }
   };
 
@@ -821,6 +886,9 @@ export default function ImportarProvas() {
                               <CheckCircle2 className="h-3.5 w-3.5" />
                               VALIDADA
                             </div>
+                            <div className="mt-1 text-[11px] text-muted-foreground">
+                              Homologação: {item.homologacaoStatus || "PENDENTE"}
+                            </div>
                           ) : item.status}
                         </td>
                         <td className="px-3 py-3">
@@ -828,13 +896,56 @@ export default function ImportarProvas() {
                             {item.status === "RASCUNHO" ? <>
                               <Button size="sm" variant={editandoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirEdicao(Number(item.id))}><Pencil className="mr-2 h-4 w-4" />Editar</Button>
                               <Button size="sm" variant="outline" onClick={() => validarProvaSalva(Number(item.id))} disabled={validandoId === Number(item.id)}>{validandoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Salvar e validar</Button>
-                            </> : item.status === "VALIDADA" ? <Button size="sm" variant="outline" onClick={() => reabrirProva(Number(item.id))} disabled={reabrindoId === Number(item.id)}>{reabrindoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pencil className="mr-2 h-4 w-4" />}Reabrir</Button> : null}
+                            </> : item.status === "VALIDADA" ? <>
+                              <Button size="sm" onClick={() => iniciarTesteAdmin(Number(item.id))} disabled={processandoHomologacaoId === Number(item.id)}>
+                                {processandoHomologacaoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+                                {item.aplicacaoTesteId ? "Abrir teste" : "Iniciar teste"}
+                              </Button>
+                              {item.aplicacaoTesteId && <Button size="sm" variant="outline" onClick={() => abrirResultadoTeste(Number(item.id))}><Eye className="mr-2 h-4 w-4" />Resultado do teste</Button>}
+                              {item.homologacaoStatus === "TESTADA" && <Button size="sm" variant="outline" onClick={() => homologarTeste(Number(item.id))} disabled={processandoHomologacaoId === Number(item.id)}><ShieldCheck className="mr-2 h-4 w-4" />Homologar</Button>}
+                              {["TESTADA","HOMOLOGADA"].includes(String(item.homologacaoStatus)) && <Button size="sm" variant="outline" onClick={() => refazerTeste(Number(item.id))} disabled={processandoHomologacaoId === Number(item.id)}><RotateCcw className="mr-2 h-4 w-4" />Refazer teste</Button>}
+                              <Button size="sm" variant="outline" onClick={() => reabrirProva(Number(item.id))} disabled={reabrindoId === Number(item.id)}>{reabrindoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pencil className="mr-2 h-4 w-4" />}Reabrir</Button>
+                            </> : null}
                             {["RASCUNHO", "VALIDADA"].includes(String(item.status)) && <Button size="sm" variant={invalidandoId === Number(item.id) ? "destructive" : "outline"} onClick={() => abrirInvalidacao(Number(item.id))}><Ban className="mr-2 h-4 w-4" />Invalidar prova</Button>}
                             {item.status !== "INVALIDADA" && <Button size="sm" variant={visualizandoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirPreview(Number(item.id))}><Eye className="mr-2 h-4 w-4" />Visualizar como candidato</Button>}
                             <Button size="sm" variant={historicoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirHistorico(Number(item.id))}><History className="mr-2 h-4 w-4" />Histórico</Button>
                           </div>
                         </td>
                       </tr>
+
+                      {homologacaoId === Number(item.id) && (
+                        <tr className="border-b bg-violet-50/40">
+                          <td colSpan={9} className="p-4">
+                            <div className="rounded-lg border border-violet-200 bg-white p-5 shadow-sm">
+                              <div className="mb-4 flex items-start justify-between gap-3">
+                                <div>
+                                  <h3 className="text-lg font-semibold">Resultado do teste administrativo</h3>
+                                  <p className="text-sm text-muted-foreground">MODO TESTE — SEM HISTÓRICO COMPARATIVO</p>
+                                </div>
+                                <Button variant="outline" size="sm" onClick={() => setHomologacaoId(null)}><X className="mr-2 h-4 w-4" />Fechar</Button>
+                              </div>
+                              {resultadoTesteQuery.isLoading ? <p className="text-sm text-muted-foreground">Carregando resultado...</p> : !resultadoTesteQuery.data?.resultado ? (
+                                <p className="text-sm text-muted-foreground">O teste ainda não foi concluído.</p>
+                              ) : (
+                                <div className="space-y-4">
+                                  <div className="grid gap-3 md:grid-cols-4">
+                                    <div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Resultado geral</p><p className="text-xl font-semibold">{resultadoTesteQuery.data.resultado.percentualGeral}%</p></div>
+                                    <div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Acertos</p><p className="text-xl font-semibold">{resultadoTesteQuery.data.resultado.totalAcertos}</p></div>
+                                    <div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Respondidas</p><p className="text-xl font-semibold">{resultadoTesteQuery.data.resultado.totalRespondidas}/{resultadoTesteQuery.data.resultado.totalQuestoes}</p></div>
+                                    <div className="rounded-md border p-3"><p className="text-xs text-muted-foreground">Evolução</p><p className="text-sm font-semibold">Não calculável — primeira medição</p></div>
+                                  </div>
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                      <thead><tr className="border-b text-left"><th className="py-2">Eixo</th><th>Acertos</th><th>Total</th><th>Não sei</th><th>Percentual</th></tr></thead>
+                                      <tbody>{(resultadoTesteQuery.data.resultado.porEixo ?? []).map((eixo: any) => <tr key={eixo.eixo} className="border-b"><td className="py-2 pr-3">{eixo.eixo}</td><td>{eixo.acertos}</td><td>{eixo.totalQuestoes}</td><td>{eixo.naoSei}</td><td>{eixo.percentualAtual}%</td></tr>)}</tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
 
                       {invalidandoId === Number(item.id) && (
                         <tr className="border-b bg-red-50/50">
