@@ -309,6 +309,7 @@ export const questionarioAtividadesRouter = router({
         provaId: z.number().int().positive(),
         aplicacaoId: z.null(),
         origemProvaChave: z.string().min(1).max(80),
+        motivoAlteracao: z.string().trim().min(3).max(500).nullable().optional(),
         eixos: z.array(classificacaoEixoSchema).min(1),
       }),
     )
@@ -502,6 +503,16 @@ export const questionarioAtividadesRouter = router({
               valorNovo: novo,
               alteradoPor: usuarioId,
             });
+
+            if (input.motivoAlteracao) {
+              await db.insert(questionarioAtividadesHistorico).values({
+                questionarioId: questionario.id,
+                campo: `eixoTecnico:${entrada.eixoChave}:motivo`,
+                valorAnterior: null,
+                valorNovo: input.motivoAlteracao,
+                alteradoPor: usuarioId,
+              });
+            }
           }
 
           await db
