@@ -538,7 +538,7 @@ export default function AdminEixosTecnicos() {
             <CardHeader>
               <CardTitle>Eixos Técnicos por Departamento</CardTitle>
               <CardDescription>
-                Eixos técnicos das provas históricas: quantos empregados foram avaliados em cada eixo e a média da pontuação histórica.
+                Quantos empregados têm cada eixo técnico e a média da pontuação histórica. Regionais: prova histórica 2025. Unidades administrativas: pontuação histórica da matriz de eixos de cada empregado.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 lg:grid-cols-[minmax(180px,0.5fr)_minmax(220px,0.8fr)_minmax(240px,1fr)_auto] lg:items-end">
