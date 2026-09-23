@@ -43,6 +43,57 @@ export const provaUticMatrizRouter = router({
     return matrizes;
   }),
 
+  listarPorDepartamento: adminProcedure.query(async () => {
+    const db = await ensureTechnicalMatrixTables();
+    const result = await db.execute(sql`
+      SELECT COALESCE(d.nome, 'Sem unidade') AS unidadeNome,
+             e.eixo_id AS eixoId,
+             MAX(e.eixo_nome) AS eixo,
+             COUNT(DISTINCT m.colaborador_id) AS totalEmpregados,
+             SUM(CASE WHEN e.status_classificacao <> 'PENDENTE' AND e.relacao = 'ESSENCIAL' THEN 1 ELSE 0 END) AS essencial,
+             SUM(CASE WHEN e.status_classificacao <> 'PENDENTE' AND e.relacao = 'TRANSVERSAL' THEN 1 ELSE 0 END) AS transversal,
+             SUM(CASE WHEN e.status_classificacao <> 'PENDENTE' AND e.relacao = 'NAO_ESSENCIAL' THEN 1 ELSE 0 END) AS naoEssencial,
+             SUM(CASE WHEN e.status_classificacao = 'PENDENTE' OR e.relacao IS NULL THEN 1 ELSE 0 END) AS pendente,
+             AVG(e.percentual_anterior) AS mediaPontuacao,
+             SUM(CASE WHEN e.percentual_anterior IS NULL THEN 1 ELSE 0 END) AS semPontuacao
+        FROM prova_utic_matrizes m
+        JOIN users u ON u.id = m.colaborador_id
+        LEFT JOIN departamentos d ON d.id = u.departamentoId
+        JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
+       GROUP BY COALESCE(d.nome, 'Sem unidade'), e.eixo_id
+       ORDER BY unidadeNome, eixo
+    `);
+    const totaisResult = await db.execute(sql`
+      SELECT COALESCE(d.nome, 'Sem unidade') AS unidadeNome,
+             COUNT(DISTINCT m.colaborador_id) AS totalEmpregados
+        FROM prova_utic_matrizes m
+        JOIN users u ON u.id = m.colaborador_id
+        LEFT JOIN departamentos d ON d.id = u.departamentoId
+       GROUP BY COALESCE(d.nome, 'Sem unidade')
+    `);
+    const totais = new Map(rowsOf<any>(totaisResult).map((t) => [t.unidadeNome, Number(t.totalEmpregados)]));
+
+    const porUnidade = new Map<string, { unidadeNome: string; totalEmpregados: number; eixos: any[] }>();
+    for (const row of rowsOf<any>(result)) {
+      const nome = String(row.unidadeNome);
+      if (!porUnidade.has(nome)) {
+        porUnidade.set(nome, { unidadeNome: nome, totalEmpregados: totais.get(nome) ?? 0, eixos: [] });
+      }
+      porUnidade.get(nome)!.eixos.push({
+        eixoId: row.eixoId,
+        eixo: row.eixo,
+        totalEmpregados: Number(row.totalEmpregados),
+        essencial: Number(row.essencial),
+        transversal: Number(row.transversal),
+        naoEssencial: Number(row.naoEssencial),
+        pendente: Number(row.pendente),
+        semPontuacao: Number(row.semPontuacao),
+        mediaPontuacao: row.mediaPontuacao === null ? null : Number(Number(row.mediaPontuacao).toFixed(2)),
+      });
+    }
+    return Array.from(porUnidade.values()).sort((a, b) => a.unidadeNome.localeCompare(b.unidadeNome, "pt-BR"));
+  }),
+
   listarHistorico: adminProcedure
     .input(z.object({ matrizId: z.number().int().positive() }))
     .query(async ({ input }) => {
