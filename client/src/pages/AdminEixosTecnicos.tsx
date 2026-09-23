@@ -50,6 +50,7 @@ function descreverValor(valor: any) {
   if (!valor) return "Sem registro anterior";
   if (typeof valor === "string") return valor;
   if (valor.status) return STATUS_LABEL[valor.status as StatusMatriz] ?? valor.status;
+  if (valor.removido) return "Eixo removido da matriz";
   const relacao = valor.statusClassificacao === "PENDENTE"
     ? "Pendente de análise"
     : RELACAO_LABEL[valor.relacao as RelacaoEixo] ?? valor.relacao ?? "Sem classificação";
@@ -344,7 +345,7 @@ export default function AdminEixosTecnicos() {
               <option value="">{matrizesFiltradas.length === 0 ? "Nenhum empregado localizado" : "Selecione um empregado"}</option>
               {matrizesFiltradas.map((item: any) => (
                 <option key={item.id} value={item.id}>
-                  {item.colaboradorNome} — {item.unidadeNome || "Sem unidade"} — {STATUS_LABEL[item.status as StatusMatriz]}
+                  {item.colaboradorNome} — {item.unidadeNome || "Sem unidade"} — {STATUS_LABEL[item.status as StatusMatriz]}{(item.eixos ?? []).length > 0 && (item.eixos ?? []).every((eixo: any) => eixo.anterior === null || eixo.anterior === undefined) ? " — ⚠ sem histórico" : ""}
                 </option>
               ))}
             </select>
@@ -364,6 +365,15 @@ export default function AdminEixosTecnicos() {
               <CardDescription>{matriz.cargo} · {matriz.unidadeNome || "Unidade não informada"} · {matriz.email}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
+              {(matriz.eixos ?? []).length > 0 && (matriz.eixos ?? []).every((eixo: any) => eixo.anterior === null || eixo.anterior === undefined) && (
+                <div className="flex gap-3 rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-900">
+                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                  <div>
+                    <p className="font-semibold">Empregado sem pontuação histórica</p>
+                    <p className="mt-1">Confirmar se não há avaliação no ciclo anterior (ex.: empregado admitido após a prova histórica). Enquanto isso, a Evolução deste empregado não terá ponto de partida para comparação.</p>
+                  </div>
+                </div>
+              )}
               {matriz.status === "PENDENTE_HISTORICO" && (
                 <div className="flex gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
                   <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />

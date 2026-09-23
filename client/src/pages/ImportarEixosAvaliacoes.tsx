@@ -141,6 +141,7 @@ export default function ImportarEixosAvaliacoes() {
   const [novoAnoAvaliacao, setNovoAnoAvaliacao] = useState<"2024" | "2025">("2024");
   const [novoCicloId, setNovoCicloId] = useState<number | null>(null);
   const [substituir, setSubstituir] = useState(false);
+  const [substituirTudo, setSubstituirTudo] = useState(false);
   const [confirmado, setConfirmado] = useState(false);
   const avaliacoesApi = (trpc as any).avaliacoes;
   const avaliacoesQuery = avaliacoesApi.listar.useQuery({ tipo: "DESEMPENHO" }, { refetchOnWindowFocus: false });
@@ -225,7 +226,7 @@ export default function ImportarEixosAvaliacoes() {
     if (tipo === "PROVA" || !arquivo || !validacao?.valido || !confirmado) return;
     setErroLeitura("");
     try {
-      if (tipo === "TECNICA") setResultado(await importarTecnicos.mutateAsync({ linhas, arquivoNome: arquivo.name, substituirExistentes: substituir, confirmado: true }));
+      if (tipo === "TECNICA") setResultado(await importarTecnicos.mutateAsync({ linhas, arquivoNome: arquivo.name, substituirExistentes: substituir || substituirTudo, substituirMatrizCompleta: substituirTudo, confirmado: true }));
       else if (avaliacaoId) setResultado(await importarComportamentais.mutateAsync({ avaliacaoId, linhas, arquivoNome: arquivo.name, confirmado: true }));
     } catch (error: any) {
       setErroLeitura(error?.message || "O upload foi cancelado e nenhuma linha foi gravada.");
@@ -323,12 +324,13 @@ export default function ImportarEixosAvaliacoes() {
           {(validacao.erros?.length > 0 || validacao.avisos?.length > 0) && <div className="max-h-72 space-y-2 overflow-y-auto rounded-md border p-3">{validacao.erros?.map((item: any, index: number) => <p key={`e-${index}`} className="text-sm text-red-700"><strong>Linha {item.linha} — {item.campo}:</strong> {item.mensagem}</p>)}{validacao.avisos?.map((item: any, index: number) => <p key={`a-${index}`} className="text-sm text-amber-700"><strong>Aviso na linha {item.linha}:</strong> {item.mensagem}</p>)}</div>}
           {validacao.valido && !resultado && <div className="space-y-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
             {tipo === "TECNICA" && <label className="flex items-start gap-2"><input type="checkbox" checked={substituir} onChange={event => setSubstituir(event.target.checked)} className="mt-1" /><span><strong>Substituir eixos que já existem.</strong> Deixe desmarcado para preservar tudo que já estiver cadastrado.</span></label>}
+            {tipo === "TECNICA" && <label className="flex items-start gap-2"><input type="checkbox" checked={substituirTudo} onChange={event => setSubstituirTudo(event.target.checked)} className="mt-1" /><span><strong>Substituir a matriz completa dos empregados do arquivo.</strong> Cada empregado do arquivo fica somente com os eixos do arquivo; os eixos antigos que não estiverem no arquivo são removidos (fica registrado no histórico).</span></label>}
             <label className="flex items-start gap-2"><input type="checkbox" checked={confirmado} onChange={event => setConfirmado(event.target.checked)} className="mt-1" /><span>Conferi o resumo e autorizo a gravação deste arquivo.</span></label>
             <Button onClick={importar} disabled={!confirmado || carregando}>{carregando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Fazer upload agora</Button>
           </div>}
         </CardContent></Card>}
 
-        {resultado && <Alert className="border-emerald-300 bg-emerald-50"><CheckCircle2 className="h-4 w-4 text-emerald-700" /><AlertDescription><strong>Upload concluído.</strong> Criados: {resultado.criados}. {resultado.atualizados !== undefined && <>Atualizados: {resultado.atualizados}. </>}Ignorados por já existirem: {resultado.ignorados}.</AlertDescription></Alert>}
+        {resultado && <Alert className="border-emerald-300 bg-emerald-50"><CheckCircle2 className="h-4 w-4 text-emerald-700" /><AlertDescription><strong>Upload concluído.</strong> Criados: {resultado.criados}. {resultado.atualizados !== undefined && <>Atualizados: {resultado.atualizados}. </>}Ignorados por já existirem: {resultado.ignorados}. {resultado.removidos ? <>Eixos antigos removidos: {resultado.removidos}.</> : null}</AlertDescription></Alert>}
       </>}
     </div>
   );
