@@ -24,7 +24,7 @@ function add(nome,s){PLAN[norm(nome)]=Object.fromEntries(ORDER.map((id,i)=>[id,P
 
 // Bico do Papagaio
 add("Edvaldo Pereira Lima Júnior","EEEETTETTET");
-add("Wanderson da Silva Pimentel Chagas","TTNNNTTNET");
+add("Wanderson da Silva Pimentel Chagas","TNNNNTTNENT");
 add("Romisson Matias Santos","EETTTETETTT");
 add("Juliana Masson Prediger","EEEEEEEEEE T".replace(/ /g,""));
 add("Valci Pereira da Silva Junior","EETEEEETNTT");
@@ -33,6 +33,7 @@ add("Wérica Souza Silva","TENTNTTTENT");
 add("Mailene Alencar Rodrigues Torres","EETTEEE TNN T".replace(/ /g,""));
 add("Jacirley Pereira do Nascimento","TETE N TETEN T".replace(/ /g,""));
 add("ANA MARIA LEAL FREITAS","EETTEEETNNT");
+add("Ana Maria Leal Cunha de Freitas","EETTEEETNNT");
 add("Aldeni Batista Torres","TEETTTTEEEE");
 // Metropolitana
 add("Odilo Junior Oliveira Carvalho","EEETEEETTTT");
@@ -44,13 +45,14 @@ add("ANTONIA GELMA PEREIRA DA SILVA CARVALHO","ETTTNETTN TT".replace(/ /g,""));
 add("Maria Divina Alves Feitosa","EETTEEE TTNT".replace(/ /g,""));
 add("Amaggeldo Barbosa","TEETTTETT EE".replace(/ /g,""));
 add("WALBENIA LEMOS DA SILVA TORRES","ETNNTETNNNT");
-add("ELIGENETH RESPLANDE PIMENTEL GOMES","EETTEEE TTT E".replace(/ /g,""));
+add("ELIGENETH RESPLANDE PIMENTEL GOMES","EETTEEETTTE");
+add("Eligeneth Resplandes Pimentel Gomes","EETTEEETTTE");
 add("Wiury Pereira de Aguiar","TTNNNTTNENT");
 add("Myrlla Catarine Matos Parente","EEETNTTTNNT");
 add("Monique Silva de Albuquerque","ETNTEETTNNT");
 // Portal do Jalapão
 add("Rafael Camelo Ayres","ETNNNTTTENT");
-add("Fabiane Cappellesso","T EETTTETN E".replace(/ /g,""));
+add("Fabiane Cappellesso","TEENNEEETNE");
 add("Millena Pereira Lima Rodrigues","EEEEETE TEEE".replace(/ /g,""));
 add("André Silva Gomes","EETTEEETTTT");
 add("Carlúcia Saraiva de Brito","EEE TETETETT".replace(/ /g,""));
@@ -60,6 +62,7 @@ add("Denise França dos Santos","TTNNNTTTENT");
 add("Glaucia de Godoi Souza Ferreira","EETNETETTNT");
 add("Thiago Dias da Silva","TEETTETTLEE".replace("L","E"));
 add("JOÃO MARCOS FERREIRA DOS","TTTETTETNNT");
+add("João Marcos Ferreira dos Santos","TTTETTETNNT");
 add("Marcus Vinicius Vieira Queiroz","TEE TTTETTEE".replace(/ /g,""));
 add("INGRID PÂMELA ALVES AMORIM","EETTEETETTT");
 add("Deilane Rodrigues Vieira","ETNNTEETN TT".replace(/ /g,""));
@@ -71,6 +74,7 @@ add("Stefane Cardoso Santana","ETTTEEENNNT");
 add("José Tavares Pires","ETTTEEETNTT");
 add("Paula dos Reis Coelho Alencar","EEE TTTETTET".replace(/ /g,""));
 add("Francielly Quitéria Guimarães","EETNEETTENT");
+add("Francielly Quiteria Guimaraes Alves","EETNEETTENT");
 add("Alice Sousa Santos Costa","NENNNTTNENT");
 add("Djales dos Santos Oliveira","EETTEEE TTE T".replace(/ /g,""));
 // Serras Gerais
@@ -88,6 +92,13 @@ add("Cesar Augusto de Sá Moreira","TEEETEETNTE");
 
 function regionalOk(v){const n=norm(v);return REGIONAIS.some(r=>n.includes(r)||r.includes(n))}
 function compat(a,b){a=norm(a);b=norm(b);return !!a&&!!b&&(a===b||a.includes(b)||b.includes(a))}
+function provaDaRegional(q,provas){
+ const dep=norm(q.departamentoNome);
+ if(dep.includes("medio norte")||dep.includes("norte colinas")){
+   return provas.find(p=>norm(p.codigo).includes("regionais 2025 rmn hist")||norm(p.codigo).includes("rmn hist")||norm(p.unidade).includes("norte colinas")||norm(p.unidade).includes("medio norte"));
+ }
+ return provas.find(p=>compat(q.departamentoNome,p.unidade));
+}
 function axisId(nome){const n=norm(nome);for(const [id,labels]of AX)if(labels.some(x=>n.includes(x)||x.includes(n)))return id;let best=null;for(const [id,labels]of AX){const ws=labels[0].split(" ").filter(w=>w.length>4),s=ws.filter(w=>n.includes(w)).length;if(!best||s>best.s)best={id,s}}return best&&best.s>=2?best.id:null}
 function evidence(id,d){
  const m={
@@ -116,7 +127,7 @@ async function main(){
    const [resp]=await db.execute("SELECT chave,resposta FROM questionario_atividades_respostas WHERE questionario_id=? ORDER BY ordem,id",[q.questionarioId]);const by=Object.fromEntries(resp.map(x=>[x.chave,String(x.resposta||"").trim()]));
    const d={descricao:by.descricao_funcao||"",atividades:by.principais_atividades||"",conhecimentos:by.conhecimentos_habilidades_indispensaveis||"",extras:by.responsabilidades_extras||"",temas:by.temas_competencias_indispensaveis||""};
    const volume=Object.values(d).join(" ").replace(/\s+/g," ").trim().length;if(volume<120||(!d.descricao&&!d.atividades)){pend.push({regional:q.departamentoNome,empregado:q.name,email:q.email,motivo:"Questionário incompleto ou com conteúdo insuficiente para decisão responsável."});continue}
-   const prova=provas.find(p=>compat(q.departamentoNome,p.unidade));if(!prova){pend.push({regional:q.departamentoNome,empregado:q.name,email:q.email,motivo:"Prova histórica correspondente à Regional não localizada."});continue}
+   const prova=provaDaRegional(q,provas);if(!prova){pend.push({regional:q.departamentoNome,empregado:q.name,email:q.email,motivo:"Prova histórica correspondente à Regional não localizada."});continue}
    let questoes;try{questoes=typeof prova.questoesJson==="string"?JSON.parse(prova.questoesJson):prova.questoesJson}catch{questoes=null}if(!Array.isArray(questoes)){pend.push({regional:q.departamentoNome,empregado:q.name,email:q.email,motivo:"Questões da prova histórica ilegíveis."});continue}
    const cat=new Map();for(const qq of questoes)for(const e of(Array.isArray(qq?.eixos)?qq.eixos:[])){const nome=String(e?.nome||"").trim();if(nome)cat.set(key(nome),nome)}if(cat.size!==11){pend.push({regional:q.departamentoNome,empregado:q.name,email:q.email,motivo:`Prova histórica possui ${cat.size} eixos distintos; esperado: 11.`});continue}
    const dec=[];let bad=false;for(const [ch,nome]of cat){const id=axisId(nome);if(!id||!plan[id]){pend.push({regional:q.departamentoNome,empregado:q.name,email:q.email,eixo:nome,motivo:"Eixo histórico sem correspondência segura com a matriz analisada."});bad=true;break}dec.push({ch,nome,c:plan[id],j:just(plan[id],id,d)})}if(bad)continue;
