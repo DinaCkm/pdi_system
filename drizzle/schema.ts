@@ -289,6 +289,31 @@ export const registroHistoricoProficienciaEixos = mysqlTable("registro_historico
 	}
 });
 
+export const registroHistoricoProficienciaRespostas = mysqlTable("registro_historico_proficiencia_respostas", {
+	id: int().autoincrement().notNull().primaryKey(),
+	colaboradorId: int("colaborador_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	provaHistoricaId: int("prova_historica_id").notNull(),
+	questaoChave: varchar("questao_chave", { length: 50 }).notNull(),
+	numeroQuestao: int("numero_questao").notNull(),
+	eixoChave: varchar("eixo_chave", { length: 255 }).notNull(),
+	eixoNome: varchar("eixo_nome", { length: 255 }).notNull(),
+	respostaMarcada: varchar("resposta_marcada", { length: 10 }),
+	gabarito: varchar({ length: 10 }).notNull(),
+	resultado: mysqlEnum([`CERTO`,`ERRADO`,`NAO_RESPONDEU`]).notNull(),
+	fonte: text(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).onUpdateNow().notNull(),
+},
+(table) => {
+	return {
+		registro_historico_resposta_unique_idx: uniqueIndex("registro_historico_resposta_unique_idx").on(table.colaboradorId, table.provaHistoricaId, table.questaoChave),
+		registro_historico_resposta_colaborador_idx: index("registro_historico_resposta_colaborador_idx").on(table.colaboradorId),
+		registro_historico_resposta_prova_idx: index("registro_historico_resposta_prova_idx").on(table.provaHistoricaId),
+		registro_historico_resposta_eixo_idx: index("registro_historico_resposta_eixo_idx").on(table.eixoChave),
+		registro_historico_resposta_resultado_idx: index("registro_historico_resposta_resultado_idx").on(table.resultado),
+	}
+});
+
 export const questionarioAtividadesEixosTecnicos = mysqlTable("questionario_atividades_eixos_tecnicos", {
 	id: int().autoincrement().notNull().primaryKey(),
 	questionarioId: int("questionario_id").notNull().references(() => questionariosAtividadesFuncao.id, { onDelete: "cascade" }),
