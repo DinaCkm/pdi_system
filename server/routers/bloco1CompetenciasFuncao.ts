@@ -1,11 +1,18 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
-import { ensureTechnicalMatrixTables } from "../services/technicalMatrixSchema";
 import { avaliacoes, medicoesCompetencias } from "../../drizzle/avaliacoes-schema";
-import { ciclos, competenciasMacros, departamentos, users } from "../../drizzle/schema";
+import {
+  ciclos,
+  competenciasMacros,
+  departamentos,
+  questionarioAtividadesEixosTecnicos,
+  questionariosAtividadesFuncao,
+  registroHistoricoProficienciaEixos,
+  users,
+} from "../../drizzle/schema";
 import {
   funcoesOrganizacionais,
   usuariosFuncoesOrganizacionais,
@@ -83,7 +90,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
   mapaIndividual: adminProcedure
     .input(z.object({ colaboradorId: z.number().int().positive() }))
     .query(async ({ input }) => {
-      const db = await ensureTechnicalMatrixTables();
+      const db = await dbObrigatorio();
 
       const empregado = (
         await db
@@ -123,82 +130,91 @@ export const bloco1CompetenciasFuncaoRouter = router({
         });
       }
 
-      const matrizResult = await db.execute(
-        sql.raw(
-          "SELECT m.id AS matrizId, m.status AS matrizStatus, m.fonte AS matrizFonte, " +
-          "e.id AS eixoRegistroId, e.eixo_id AS eixoId, e.eixo_nome AS eixoNome, " +
-          "e.relacao, e.status_classificacao AS statusClassificacao, e.justificativa, " +
-          "e.percentual_anterior AS percentualAnterior " +
-          "FROM prova_utic_matrizes m " +
-          "LEFT JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id " +
-          "WHERE m.colaborador_id = " + Number(input.colaboradorId) + " " +
-          "ORDER BY e.id",
-        ),
+      const questionario = (
+        await db
+          .select({
+            id: questionariosAtividadesFuncao.id,
+            ano: questionariosAtividadesFuncao.ano,
+            versao: questionariosAtividadesFuncao.versao,
+            status: questionariosAtividadesFuncao.status,
+            fonte: questionariosAtividadesFuncao.fonte,
+          })
+          .from(questionariosAtividadesFuncao)
+          .where(eq(questionariosAtividadesFuncao.colaboradorId, input.colaboradorId))
+          .orderBy(
+            desc(questionariosAtividadesFuncao.ano),
+            desc(questionariosAtividadesFuncao.versao),
+            desc(questionariosAtividadesFuncao.id),
+          )
+          .limit(1)
+      )[0] ?? null;
+
+      const eixosHistoricos = questionario
+        ? await db
+            .select()
+            .from(questionarioAtividadesEixosTecnicos)
+            .where(
+              and(
+                eq(questionarioAtividadesEixosTecnicos.questionarioId, questionario.id),
+                eq(questionarioAtividadesEixosTecnicos.origemProva, "PROVA_HISTORICA"),
+              ),
+            )
+            .orderBy(desc(questionarioAtividadesEixosTecnicos.id))
+        : [];
+
+      const origemProvaChave = eixosHistoricos[0]?.origemProvaChave ?? null;
+      const provaHistoricaId = eixosHistoricos[0]?.provaId ?? null;
+
+      const linhasTecnicas = origemProvaChave
+        ? eixosHistoricos
+            .filter((item) => item.origemProvaChave === origemProvaChave)
+            .sort((a, b) => Number(a.id) - Number(b.id))
+        : [];
+
+      const historicosRegistrados = provaHistoricaId
+        ? await db
+            .select()
+            .from(registroHistoricoProficienciaEixos)
+            .where(
+              and(
+                eq(registroHistoricoProficienciaEixos.colaboradorId, input.colaboradorId),
+                eq(registroHistoricoProficienciaEixos.provaHistoricaId, Number(provaHistoricaId)),
+              ),
+            )
+        : [];
+
+      const historicoPorEixo = new Map(
+        historicosRegistrados.map((item) => [item.eixoChave, item]),
       );
 
-      const linhasTecnicas = rowsOf<any>(matrizResult);
-      const matrizBase = linhasTecnicas[0] ?? null;
-      const resultadoTecnicoResult = await db.execute(sql`
-        SELECT rp.resultado_json AS resultadoJson, rp.percentual_geral AS percentualGeral,
-               rp.calculado_em AS calculadoEm, a.titulo AS aplicacaoTitulo
-          FROM resultados_proficiencia rp
-          JOIN aplicacoes_proficiencia a ON a.id = rp.aplicacao_id
-         WHERE rp.colaborador_id = ${input.colaboradorId}
-         ORDER BY rp.calculado_em DESC, rp.id DESC
-         LIMIT 1
-      `);
-      const resultadoTecnicoLinha = rowsOf<any>(resultadoTecnicoResult)[0] ?? null;
-      const resultadoTecnico = resultadoTecnicoLinha
-        ? parseResultadoProficiencia(resultadoTecnicoLinha.resultadoJson)
-        : { porEixo: [] };
+      const tecnicas = linhasTecnicas.map((linha) => {
+        const historico = historicoPorEixo.get(linha.eixoChave);
+        const percentualAnterior =
+          historico?.percentualOriginal === null || historico?.percentualOriginal === undefined
+            ? null
+            : Number(historico.percentualOriginal);
 
-      const tecnicoAtualPorNome = new Map<string, any>();
-      for (const eixo of resultadoTecnico.porEixo ?? []) {
-        tecnicoAtualPorNome.set(normalizarNome(eixo.eixo), eixo);
-      }
-
-      const tecnicas = linhasTecnicas
-        .filter((linha) => linha.eixoRegistroId)
-        .map((linha) => {
-          const atual = tecnicoAtualPorNome.get(normalizarNome(linha.eixoNome));
-          const percentualAnterior =
-            linha.percentualAnterior === null ? null : Number(linha.percentualAnterior);
-          const percentualAtual =
-            atual?.percentualAtual === null || atual?.percentualAtual === undefined
-              ? null
-              : Number(atual.percentualAtual);
-          const evolucaoPp =
-            percentualAnterior === null || percentualAtual === null
-              ? null
-              : Math.round((percentualAtual - percentualAnterior) * 10) / 10;
-
-          return {
-            eixoRegistroId: Number(linha.eixoRegistroId),
-            eixoId: String(linha.eixoId),
-            eixoNome: String(linha.eixoNome),
-            classificacao: linha.relacao ? String(linha.relacao) : null,
-            statusClassificacao: String(linha.statusClassificacao || "PENDENTE"),
-            justificativa: linha.justificativa ? String(linha.justificativa) : null,
-            percentualAnterior,
-            percentualAtual,
-            evolucaoPp,
-            comparavel: percentualAnterior !== null && percentualAtual !== null,
-            evolucao:
-              evolucaoPp === null
-                ? "SEM_COMPARACAO"
-                : evolucaoPp > 0
-                  ? "EVOLUCAO"
-                  : evolucaoPp < 0
-                    ? "REDUCAO"
-                    : "ESTABILIDADE",
-            criarNovaAcaoPdi: evolucaoPp !== null && evolucaoPp <= 0,
-            acertos: atual?.acertos ?? null,
-            totalQuestoes: atual?.totalQuestoes ?? null,
-            fonte:
-              matrizBase?.matrizFonte ||
-              "Questionário individual de levantamento das atividades",
-          };
-        });
+        return {
+          eixoRegistroId: Number(linha.id),
+          eixoId: String(linha.eixoChave),
+          eixoChave: String(linha.eixoChave),
+          eixoNome: String(linha.eixoNome),
+          classificacao: linha.classificacao ? String(linha.classificacao) : null,
+          statusClassificacao: String(linha.statusClassificacao || "PENDENTE"),
+          justificativa: linha.justificativa ? String(linha.justificativa) : null,
+          percentualAnterior,
+          indicadorOriginalStatus: historico?.status ?? "PENDENTE_VALIDACAO",
+          percentualAtual: null,
+          evolucaoPp: null,
+          comparavel: false,
+          evolucao: "SEM_COMPARACAO",
+          criarNovaAcaoPdi: true,
+          acertos: null,
+          totalQuestoes: null,
+          fonte: "Questionário de Atividades/Função + prova histórica regional",
+          statusAtual: "AGUARDANDO_PROVA_2",
+        };
+      });
 
       const comportamentais = await db
         .select({
@@ -342,13 +358,15 @@ export const bloco1CompetenciasFuncaoRouter = router({
       return {
         empregado,
         tecnico: {
-          matrizId: matrizBase?.matrizId ? Number(matrizBase.matrizId) : null,
-          status: matrizBase?.matrizStatus ?? null,
-          fonte:
-            matrizBase?.matrizFonte ||
-            "Questionário individual de levantamento das atividades",
-          aplicacaoAtual: resultadoTecnicoLinha?.aplicacaoTitulo ?? null,
-          calculadoEm: resultadoTecnicoLinha?.calculadoEm ?? null,
+          matrizId: null,
+          questionarioId: questionario?.id ? Number(questionario.id) : null,
+          anoQuestionario: questionario?.ano ? Number(questionario.ano) : null,
+          provaHistoricaId: provaHistoricaId ? Number(provaHistoricaId) : null,
+          origemProvaChave,
+          status: questionario?.status ?? null,
+          fonte: "Questionário de Atividades/Função + prova histórica regional",
+          aplicacaoAtual: null,
+          calculadoEm: null,
           competencias: tecnicas,
         },
         comportamental: {
