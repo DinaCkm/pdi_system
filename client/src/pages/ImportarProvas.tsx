@@ -185,6 +185,7 @@ function lerProva(buffer: ArrayBuffer, arquivoNome: string): ArquivoProva {
 
 export default function ImportarProvas() {
   const api = (trpc as any).importacaoProvas;
+  const utils = trpc.useUtils();
   const validarLote = api.validarLote.useMutation();
   const validarSalva = api.validarSalva.useMutation();
   const reabrirParaEdicao = api.reabrirParaEdicao.useMutation();
@@ -406,23 +407,38 @@ export default function ImportarProvas() {
     }
   };
 
-  const validarProvaSalva = async (id: number) => {
+  const validarProvaSalva = async (id: number, salvarAntes = false) => {
     setErroLeitura("");
     setValidacaoSalva(null);
     setMensagemAcao("");
     setValidandoId(id);
     try {
+      if (salvarAntes && editandoId === id && provaEdicao) {
+        const salvamento = await salvarRascunho.mutateAsync({ id, prova: provaEdicao });
+        setUltimaAuditoria(salvamento?.alteracoes ?? []);
+        await provaQuery.refetch();
+      }
+
       const resposta = await validarSalva.mutateAsync({ id });
       setValidacaoSalva(resposta);
-      await listaQuery.refetch();
+
       if (resposta?.validada) {
+        (utils as any).importacaoProvas.listar.setData(undefined, (atual: any[] | undefined) =>
+          (atual ?? []).map((item: any) =>
+            Number(item.id) === id ? { ...item, status: "VALIDADA" } : item,
+          ),
+        );
+        setMensagemAcao(`Prova ${resposta.codigo} salva e validada com sucesso.`);
         setVisualizandoId(id);
         setPreviewIndice(0);
         setHistoricoId(null);
         setEditandoId(null);
+        setProvaEdicao(null);
       }
+
+      await listaQuery.refetch();
     } catch (error: any) {
-      setErroLeitura(error?.message || "Não foi possível validar a prova salva.");
+      setErroLeitura(error?.message || "Não foi possível salvar e validar a prova.");
     } finally {
       setValidandoId(null);
     }
@@ -905,7 +921,7 @@ export default function ImportarProvas() {
 
                                 <div className="sticky bottom-0 flex flex-wrap gap-2 border-t bg-white py-3">
                                   <Button type="button" onClick={salvarEdicao} disabled={salvarRascunho.isPending}>{salvarRascunho.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Salvar alterações</Button>
-                                  <Button type="button" variant="outline" onClick={() => validarProvaSalva(Number(item.id))} disabled={validandoId === Number(item.id)}><ShieldCheck className="mr-2 h-4 w-4" />Salvar e validar</Button>
+                                  <Button type="button" variant="outline" onClick={() => validarProvaSalva(Number(item.id), true)} disabled={validandoId === Number(item.id) || salvarRascunho.isPending}>{validandoId === Number(item.id) || salvarRascunho.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Salvar e validar</Button>
                                 </div>
                               </div>}
                             </div>
