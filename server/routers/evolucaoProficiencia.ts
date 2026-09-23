@@ -46,8 +46,10 @@ export const evolucaoProficienciaRouter = router({
            LIMIT 1
         )
         JOIN aplicacoes_proficiencia a ON a.id = rp.aplicacao_id
+        LEFT JOIN provas_importadas_homologacao ph ON ph.aplicacao_teste_id = a.id
         JOIN provas_importadas p ON p.id = a.prova_id
        WHERE u.status = 'ativo'
+         AND ph.id IS NULL
        ORDER BY d.nome, u.name
     `);
     return rowsOf<any>(result);
@@ -66,10 +68,12 @@ export const evolucaoProficienciaRouter = router({
                d.nome AS departamentoNome
           FROM resultados_proficiencia rp
           JOIN aplicacoes_proficiencia a ON a.id = rp.aplicacao_id
+          LEFT JOIN provas_importadas_homologacao ph ON ph.aplicacao_teste_id = a.id
           JOIN provas_importadas p ON p.id = a.prova_id
           JOIN users u ON u.id = rp.colaborador_id
           LEFT JOIN departamentos d ON d.id = u.departamentoId
          WHERE rp.colaborador_id = ${input.colaboradorId}
+           AND ph.id IS NULL
          ORDER BY rp.calculado_em DESC, rp.id DESC
          LIMIT 1
       `);
@@ -91,6 +95,10 @@ export const evolucaoProficienciaRouter = router({
             SELECT rp2.id
               FROM resultados_proficiencia rp2
              WHERE rp2.colaborador_id = u.id
+               AND NOT EXISTS (
+                 SELECT 1 FROM provas_importadas_homologacao ph2
+                 WHERE ph2.aplicacao_teste_id = rp2.aplicacao_id
+               )
              ORDER BY rp2.calculado_em DESC, rp2.id DESC
              LIMIT 1
           )

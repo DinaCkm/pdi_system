@@ -2,6 +2,11 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
+import {
+  ensureHomologacaoTables,
+  invalidarHomologacoes,
+  marcarPendenciaHomologacao,
+} from "../services/homologacaoProvas";
 
 const eixoRascunhoSchema = z.object({ nome: z.string().max(255) });
 const opcaoRascunhoSchema = z.object({
@@ -74,6 +79,8 @@ async function ensureTables() {
         ADD INDEX provas_importadas_ciclo_idx (ciclo_id)
     `));
   }
+
+  await ensureHomologacaoTables(db);
 
   await db.execute(sql.raw(`
     CREATE TABLE IF NOT EXISTS provas_importadas_historico (
@@ -582,6 +589,7 @@ export const importacaoProvasRouter = router({
           depois: { status: "VALIDADA" },
         });
       });
+      await marcarPendenciaHomologacao(db, input.id);
     } else if (registro.status !== "VALIDADA") {
       throw new Error(`A prova está com status ${registro.status} e não pode ser validada.`);
     }
@@ -627,6 +635,7 @@ export const importacaoProvasRouter = router({
         SET status = 'RASCUNHO'
         WHERE id = ${input.id} AND status = 'VALIDADA'
       `);
+      await invalidarHomologacoes(tx, input.id, "INVALIDADA_POR_EDICAO");
       await registrarHistorico({
         db: tx,
         provaId: input.id,
@@ -683,6 +692,7 @@ export const importacaoProvasRouter = router({
         WHERE id = ${input.id}
           AND status IN ('RASCUNHO','VALIDADA')
       `);
+      await invalidarHomologacoes(tx, input.id, "INVALIDADA_POR_PROVA");
 
       await registrarHistorico({
         db: tx,
@@ -1041,6 +1051,34 @@ export const importacaoProvasRouter = router({
              p.total_questoes AS totalQuestoes, p.arquivo_nome AS arquivoNome, p.status,
              p.created_at AS createdAt, p.questoes_json AS questoesJson,
              (
+               SELECT ph.status
+               FROM provas_importadas_homologacao ph
+               WHERE ph.prova_id = p.id
+               ORDER BY ph.id DESC
+               LIMIT 1
+             ) AS homologacaoStatus,
+             (
+               SELECT ph.aplicacao_teste_id
+               FROM provas_importadas_homologacao ph
+               WHERE ph.prova_id = p.id
+               ORDER BY ph.id DESC
+               LIMIT 1
+             ) AS aplicacaoTesteId,
+             (
+               SELECT ph.testada_em
+               FROM provas_importadas_homologacao ph
+               WHERE ph.prova_id = p.id
+               ORDER BY ph.id DESC
+               LIMIT 1
+             ) AS testadaEm,
+             (
+               SELECT ph.homologada_em
+               FROM provas_importadas_homologacao ph
+               WHERE ph.prova_id = p.id
+               ORDER BY ph.id DESC
+               LIMIT 1
+             ) AS homologadaEm,
+             (
                SELECT h.resumo_json
                FROM provas_importadas_historico h
                WHERE h.prova_id = p.id
@@ -1093,6 +1131,10 @@ export const importacaoProvasRouter = router({
         totalQuestoes: Number(item.totalQuestoes),
         arquivoNome: item.arquivoNome,
         status: item.status,
+        homologacaoStatus: item.homologacaoStatus ?? null,
+        aplicacaoTesteId: item.aplicacaoTesteId ? Number(item.aplicacaoTesteId) : null,
+        testadaEm: item.testadaEm ?? null,
+        homologadaEm: item.homologadaEm ?? null,
         invalidacaoMotivo,
         invalidadaEm: item.invalidadaEm ?? null,
         createdAt: item.createdAt,

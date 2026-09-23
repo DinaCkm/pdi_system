@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, assessmentProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
+import { ensureHomologacaoTables, obterHomologacaoAtual, obterTestePorAplicacao } from "../services/homologacaoProvas";
 
 type QuestaoImportada = {
   id: string;
@@ -47,6 +48,7 @@ function parseJson<T>(valor: unknown): T {
 async function dbObrigatorio() {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco de dados indisponível." });
+  await ensureHomologacaoTables(db);
   return db;
 }
 
@@ -217,10 +219,20 @@ export const aplicacoesProficienciaRouter = router({
   listarProvasValidas: adminProcedure.query(async () => {
     const db = await dbObrigatorio();
     const result = await db.execute(sql`
-      SELECT id, codigo, nome, unidade, ano, total_questoes AS totalQuestoes
-        FROM provas_importadas
-       WHERE status = 'VALIDADA'
-       ORDER BY ano DESC, unidade, nome
+      SELECT p.id, p.codigo, p.nome, p.unidade, p.ano, p.total_questoes AS totalQuestoes
+        FROM provas_importadas p
+        LEFT JOIN (
+          SELECT h1.prova_id, h1.status
+            FROM provas_importadas_homologacao h1
+            JOIN (
+              SELECT prova_id, MAX(id) AS max_id
+                FROM provas_importadas_homologacao
+               GROUP BY prova_id
+            ) ult ON ult.max_id = h1.id
+        ) ph ON ph.prova_id = p.id
+       WHERE p.status = 'VALIDADA'
+         AND (ph.status IS NULL OR ph.status = 'HOMOLOGADA')
+       ORDER BY p.ano DESC, p.unidade, p.nome
     `);
     return rowsOf<any>(result);
   }),
@@ -248,6 +260,10 @@ export const aplicacoesProficienciaRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
       const prova = await obterProvaValidada(db, input.provaId);
+      const homologacao = await obterHomologacaoAtual(db, input.provaId);
+      if (homologacao && String(homologacao.status) !== "HOMOLOGADA") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Esta prova precisa ser testada e homologada antes de uma aplicação oficial." });
+      }
       const ids = Array.from(new Set(input.colaboradorIds));
       const usuariosResult = await db.execute(sql.raw(`
         SELECT id FROM users
@@ -295,6 +311,8 @@ export const aplicacoesProficienciaRouter = router({
         FROM aplicacoes_proficiencia a
         LEFT JOIN aplicacoes_proficiencia_participantes ap ON ap.aplicacao_id = a.id
         LEFT JOIN tentativas_proficiencia t ON t.aplicacao_id = a.id AND t.colaborador_id = ap.colaborador_id
+        LEFT JOIN provas_importadas_homologacao ph ON ph.aplicacao_teste_id = a.id
+       WHERE ph.id IS NULL
        GROUP BY a.id, a.titulo, a.agendada_para, a.status, a.liberada_em, a.calculada_em, a.prova_snapshot_json
        ORDER BY a.agendada_para DESC, a.id DESC
     `);
@@ -355,8 +373,10 @@ export const aplicacoesProficienciaRouter = router({
             : "EM_ANDAMENTO",
       }));
       const finalizados = participantes.filter(item => item.situacao === "FINALIZOU").length;
+      const testeAdmin = await obterTestePorAplicacao(db, input.aplicacaoId);
       return {
         aplicacao: { ...aplicacao, provaSnapshotJson: undefined },
+        modoTeste: Boolean(testeAdmin),
         resumo: {
           total: participantes.length,
           naoIniciaram: participantes.filter(item => item.situacao === "NAO_INICIOU").length,
@@ -378,8 +398,10 @@ export const aplicacoesProficienciaRouter = router({
         JOIN aplicacoes_proficiencia a ON a.id = ap.aplicacao_id
         LEFT JOIN tentativas_proficiencia t
           ON t.aplicacao_id = a.id AND t.colaborador_id = ap.colaborador_id
+        LEFT JOIN provas_importadas_homologacao ph ON ph.aplicacao_teste_id = a.id
        WHERE ap.colaborador_id = ${ctx.user.id}
          AND a.status IN ('LIBERADA','ENCERRADA','CALCULADA')
+         AND ph.id IS NULL
        ORDER BY a.agendada_para DESC, a.id DESC
     `);
     return rowsOf<any>(result).map(item => {
@@ -403,8 +425,10 @@ export const aplicacoesProficienciaRouter = router({
              WHERE tentativa_id = ${Number(vinculo.tentativaId)}
           `))
         : [];
+      const testeAdmin = await obterTestePorAplicacao(db, input.aplicacaoId);
       return {
         aplicacao: { id: input.aplicacaoId, titulo: vinculo.titulo },
+        modoTeste: Boolean(testeAdmin),
         tentativaId: vinculo.tentativaId ? Number(vinculo.tentativaId) : null,
         tentativaStatus: vinculo.tentativaStatus ?? null,
         prova: provaParaParticipante(vinculo.prova),
@@ -500,6 +524,7 @@ export const aplicacoesProficienciaRouter = router({
       if (respondidas < aplicacao.prova.totalQuestoes) {
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: `Ainda faltam ${aplicacao.prova.totalQuestoes - respondidas} questão(ões) para finalizar.` });
       }
+      const testeAdmin = await obterTestePorAplicacao(db, input.aplicacaoId);
       await db.transaction(async (tx: any) => {
         await tx.execute(sql`
           UPDATE tentativas_proficiencia
@@ -512,7 +537,41 @@ export const aplicacoesProficienciaRouter = router({
            WHERE aplicacao_id = ${input.aplicacaoId} AND colaborador_id = ${ctx.user.id}
         `);
       });
-      return { finalizada: true };
+
+      if (testeAdmin) {
+        const respostas = rowsOf<any>(await db.execute(sql`
+          SELECT questao_chave AS questaoChave, resposta
+            FROM respostas_proficiencia
+           WHERE tentativa_id = ${input.tentativaId}
+        `));
+        const resultado = calcularResultado(aplicacao.prova.questoes, respostas, new Map());
+        await db.transaction(async (tx: any) => {
+          await tx.execute(sql`
+            INSERT INTO resultados_proficiencia
+              (aplicacao_id, colaborador_id, tentativa_id, percentual_geral, resultado_json, calculado_em)
+            VALUES
+              (${input.aplicacaoId}, ${ctx.user.id}, ${input.tentativaId},
+               ${String(resultado.percentualGeral)}, ${JSON.stringify(resultado)}, NOW())
+            ON DUPLICATE KEY UPDATE tentativa_id = VALUES(tentativa_id),
+                                    percentual_geral = VALUES(percentual_geral),
+                                    resultado_json = VALUES(resultado_json),
+                                    calculado_em = NOW()
+          `);
+          await tx.execute(sql`
+            UPDATE aplicacoes_proficiencia
+               SET status = 'CALCULADA', calculada_em = NOW(), calculada_por = ${ctx.user.id}, encerrada_em = NOW()
+             WHERE id = ${input.aplicacaoId}
+          `);
+          await tx.execute(sql`
+            UPDATE provas_importadas_homologacao
+               SET status = 'TESTADA', testada_em = NOW(), updated_at = NOW()
+             WHERE id = ${Number(testeAdmin.id)}
+               AND status = 'EM_TESTE'
+          `);
+        });
+        return { finalizada: true, modoTeste: true, resultadoCalculado: true, percentualGeral: resultado.percentualGeral };
+      }
+      return { finalizada: true, modoTeste: false, resultadoCalculado: false };
     }),
 
   calcular: adminProcedure
@@ -588,7 +647,9 @@ export const aplicacoesProficienciaRouter = router({
                a.titulo AS aplicacaoTitulo, a.prova_snapshot_json AS provaSnapshotJson
           FROM resultados_proficiencia rp
           JOIN aplicacoes_proficiencia a ON a.id = rp.aplicacao_id
+          LEFT JOIN provas_importadas_homologacao ph ON ph.aplicacao_teste_id = a.id
          WHERE rp.colaborador_id = ${input.colaboradorId}
+           AND ph.id IS NULL
          ORDER BY rp.calculado_em DESC, rp.id DESC
          LIMIT 1
       `);

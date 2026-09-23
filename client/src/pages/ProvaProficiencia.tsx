@@ -37,6 +37,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     onSuccess: () => {
       setFinalizada(true);
       setMensagem(null);
+      void provaQuery.refetch();
     },
     onError: error => setMensagem(error.message),
   });
@@ -85,11 +86,16 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   }
 
   if (finalizada) {
+    const modoTeste = Boolean(provaQuery.data?.modoTeste);
     return (
       <div className="mx-auto max-w-2xl p-6">
+        {modoTeste && <div className="mb-4 rounded-md border border-violet-300 bg-violet-50 p-3 text-center text-sm font-semibold text-violet-950">MODO TESTE — ADMINISTRADOR — ESTE RESULTADO NÃO COMPÕE INDICADORES</div>}
         <Card className="border-green-300 bg-green-50/40">
-          <CardHeader><CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-6 w-6 text-green-700" />Avaliação finalizada</CardTitle><CardDescription>Suas respostas foram gravadas. O resultado será calculado pelo administrador após o encerramento da realização.</CardDescription></CardHeader>
-          <CardContent><Button onClick={() => setLocation("/avaliacoes")}>Voltar para Avaliações</Button></CardContent>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><CheckCircle2 className="h-6 w-6 text-green-700" />{modoTeste ? "Teste concluído" : "Avaliação finalizada"}</CardTitle>
+            <CardDescription>{modoTeste ? "O resultado do teste foi calculado automaticamente e já pode ser conferido na tela de Provas." : "Suas respostas foram gravadas. O resultado será calculado pelo administrador após o encerramento da realização."}</CardDescription>
+          </CardHeader>
+          <CardContent><Button onClick={() => setLocation(modoTeste ? "/importar-provas" : "/avaliacoes")}>{modoTeste ? "Voltar para Provas" : "Voltar para Avaliações"}</Button></CardContent>
         </Card>
       </div>
     );
@@ -101,6 +107,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     return (
       <div className="min-h-screen bg-slate-50 p-4 md:p-6">
         <div className="mx-auto max-w-2xl">
+          {provaQuery.data.modoTeste && <div className="mb-4 rounded-md border border-violet-300 bg-violet-50 p-3 text-center text-sm font-semibold text-violet-950">MODO TESTE — ADMINISTRADOR — ESTE RESULTADO NÃO COMPÕE INDICADORES</div>}
           <Card className="border-blue-200">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><ClipboardCheck className="h-6 w-6 text-blue-700" />{provaQuery.data.aplicacao.titulo}</CardTitle>
@@ -130,6 +137,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">
       <div className="mx-auto max-w-4xl space-y-4">
+        {provaQuery.data.modoTeste && <div className="rounded-md border border-violet-300 bg-violet-50 p-3 text-center text-sm font-semibold text-violet-950">MODO TESTE — ADMINISTRADOR — ESTE RESULTADO NÃO COMPÕE INDICADORES</div>}
         <Card>
           <CardHeader className="space-y-3">
             <div className="flex flex-wrap items-start justify-between gap-3">

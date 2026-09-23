@@ -212,8 +212,10 @@ export const bloco1CompetenciasFuncaoRouter = router({
                    p.ano AS provaAno
               FROM resultados_proficiencia rp
               JOIN aplicacoes_proficiencia a ON a.id = rp.aplicacao_id
+              LEFT JOIN provas_importadas_homologacao ph ON ph.aplicacao_teste_id = a.id
               JOIN provas_importadas p ON p.id = a.prova_id
              WHERE rp.colaborador_id = ${input.colaboradorId}
+               AND ph.id IS NULL
                AND p.ano > ${Number(anoQuestionario)}
                AND p.codigo NOT LIKE '%HIST%'
              ORDER BY rp.calculado_em DESC, rp.id DESC
