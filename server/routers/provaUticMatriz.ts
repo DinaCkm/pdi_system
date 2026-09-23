@@ -43,32 +43,67 @@ export const provaUticMatrizRouter = router({
     return matrizes;
   }),
 
-  // Eixos técnicos das provas históricas (registro_historico_proficiencia_eixos),
-  // por unidade do empregado: quantos empregados têm cada eixo e a média histórica.
+  // Eixos técnicos com pontuação histórica, por unidade do empregado.
+  // Fonte por empregado:
+  //  - se o empregado tem registro da prova histórica (registro_historico_proficiencia_eixos,
+  //    hoje as Regionais), usa esse registro;
+  //  - senão, usa a matriz de eixos do empregado (prova_utic_matriz_eixos.percentual_anterior),
+  //    a mesma exibida na aba "Por Empregado" (unidades administrativas).
+  // Unidade: gestores (líderes de departamento) contam na unidade que gerenciam;
+  // os demais, no próprio departamento.
   listarPorDepartamento: adminProcedure.query(async () => {
     const db = await ensureTechnicalMatrixTables();
-    const result = await db.execute(sql`
-      SELECT COALESCE(d.nome, 'Sem unidade') AS unidadeNome,
-             h.eixo_chave AS eixoId,
-             MIN(h.eixo_nome) AS eixo,
-             COUNT(DISTINCT h.colaborador_id) AS totalEmpregados,
-             COUNT(h.percentual_original) AS qtdPontuacao,
-             SUM(h.percentual_original) AS somaPontuacao,
-             MIN(h.percentual_original) AS menorPontuacao,
-             MAX(h.percentual_original) AS maiorPontuacao
+    const base = sql`
+      SELECT h.colaborador_id AS colaboradorId,
+             h.eixo_chave AS eixoChave,
+             h.eixo_nome AS eixoNome,
+             h.percentual_original AS pontuacao
         FROM registro_historico_proficiencia_eixos h
-        JOIN users u ON u.id = h.colaborador_id
+      UNION ALL
+      SELECT m.colaborador_id AS colaboradorId,
+             LOWER(TRIM(e.eixo_nome)) AS eixoChave,
+             e.eixo_nome AS eixoNome,
+             e.percentual_anterior AS pontuacao
+        FROM prova_utic_matrizes m
+        JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
+       WHERE NOT EXISTS (
+         SELECT 1 FROM registro_historico_proficiencia_eixos h2 WHERE h2.colaborador_id = m.colaborador_id
+       )
+    `;
+    const result = await db.execute(sql`
+      SELECT COALESCE(dl.nome, d.nome, 'Sem unidade') AS unidadeNome,
+             x.eixoChave AS eixoId,
+             MIN(x.eixoNome) AS eixo,
+             COUNT(DISTINCT x.colaboradorId) AS totalEmpregados,
+             COUNT(x.pontuacao) AS qtdPontuacao,
+             SUM(x.pontuacao) AS somaPontuacao,
+             MIN(x.pontuacao) AS menorPontuacao,
+             MAX(x.pontuacao) AS maiorPontuacao
+        FROM (${base}) x
+        JOIN users u ON u.id = x.colaboradorId
         LEFT JOIN departamentos d ON d.id = u.departamentoId
-       GROUP BY COALESCE(d.nome, 'Sem unidade'), h.eixo_chave
+        LEFT JOIN (
+          SELECT leaderId, MIN(nome) AS nome
+            FROM departamentos
+           WHERE leaderId IS NOT NULL AND status = 'ativo'
+           GROUP BY leaderId
+        ) dl ON dl.leaderId = u.id
+       GROUP BY COALESCE(dl.nome, d.nome, 'Sem unidade'), x.eixoChave
        ORDER BY unidadeNome, eixo
     `);
     const empregadosResult = await db.execute(sql`
-      SELECT COALESCE(d.nome, 'Sem unidade') AS unidadeNome,
-             COUNT(DISTINCT h.colaborador_id) AS totalEmpregados
-        FROM registro_historico_proficiencia_eixos h
-        JOIN users u ON u.id = h.colaborador_id
+      SELECT COALESCE(dl.nome, d.nome, 'Sem unidade') AS unidadeNome,
+             COUNT(DISTINCT x.colaboradorId) AS totalEmpregados
+        FROM (${base}) x
+        JOIN users u ON u.id = x.colaboradorId
         LEFT JOIN departamentos d ON d.id = u.departamentoId
-       GROUP BY COALESCE(d.nome, 'Sem unidade')
+        LEFT JOIN (
+          SELECT leaderId, MIN(nome) AS nome
+            FROM departamentos
+           WHERE leaderId IS NOT NULL AND status = 'ativo'
+           GROUP BY leaderId
+        ) dl ON dl.leaderId = u.id
+       GROUP BY COALESCE(dl.nome, d.nome, 'Sem unidade')
     `);
     const totais = new Map(rowsOf<any>(empregadosResult).map((t) => [String(t.unidadeNome), Number(t.totalEmpregados)]));
 
