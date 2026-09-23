@@ -17,7 +17,8 @@ const REG={
 };
 const ALIAS={"vandebergue araujo silva jr":"vandebergue araujo silva junior"};
 function qNumber(q,i){const v=Number(q?.numero??q?.numeroQuestao??q?.ordem??q?.id);return Number.isFinite(v)&&v>=1&&v<=65?v:i+1}
-function answerKey(q){return String(q?.gabarito??q?.respostaCorreta??q?.correta??"").trim().toUpperCase()}
+const PLAN_GAB=["C","C","C","C","B","E","B","F","E","D","B","C","C","E","A","E","C","D","A","F","E","D","B","F","C","D","B","C","A","E","D","A","C","E","C","F","D","D","C","C","D","E","E","A","A","E","D","A","C","F","C","C","A","F","E","C","B","B","C","D","A","D","D","B","F"];
+function answerKey(_q,i){return PLAN_GAB[i]||""}
 function axisName(q){
  const e=q?.eixos;
  if(Array.isArray(e)){
@@ -80,7 +81,7 @@ async function main(){
       const axes=new Map();const rows=[];let hits=0;
       for(let i=0;i<65;i++){
         const q=qs[i].q,n=qs[i].n;
-        const gab=answerKey(q);if(!gab)throw new Error("Questao "+n+" sem gabarito.");
+        const gab=answerKey(q,n-1);if(!gab)throw new Error("Questao "+n+" sem gabarito da planilha.");
         const eixo=axisName(q),ek=axisKey(eixo);const resp=d.respostas[i]==null?"":String(d.respostas[i]).trim().toUpperCase();
         const result=!resp?"NAO_RESPONDEU":resp===gab?"CERTO":"ERRADO";if(result==="CERTO")hits++;
         if(!axes.has(ek))axes.set(ek,{nome:eixo,total:0,acertos:0,naoRespondidas:0});
@@ -108,7 +109,7 @@ async function main(){
               ON DUPLICATE KEY UPDATE eixo_nome=VALUES(eixo_nome),percentual_original=VALUES(percentual_original),
                 acertos_original=VALUES(acertos_original),total_questoes_original=VALUES(total_questoes_original),
                 nao_sei_original=NULL,status='REGISTRADO',fonte=VALUES(fonte)`,
-              [user.id,proof.id,ek,a.nome,pct,a.acertos,a.total,"Recalculado das respostas historicas questao a questao; eixo e gabarito lidos da prova historica do PDI-System."]);
+              [user.id,proof.id,ek,a.nome,pct,a.acertos,a.total,"Recalculado das respostas historicas questao a questao; CERTO/ERRADO conforme gabarito_empregados.xlsx e eixo lido da prova historica do PDI-System."]);
           }
           await db.commit();
         }catch(e){await db.rollback();throw e}
