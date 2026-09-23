@@ -99,6 +99,7 @@ export default function Bloco1CompetenciasFuncao() {
       provaId: Number(tecnico.provaHistoricaId),
       aplicacaoId: null,
       origemProvaChave: String(tecnico.origemProvaChave),
+      motivoAlteracao: motivoEdicao.trim(),
       eixos,
     });
   };
