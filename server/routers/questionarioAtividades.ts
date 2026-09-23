@@ -46,7 +46,7 @@ function normalizarEixo(valor: string) {
   return valor
     .trim()
     .normalize("NFD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("pt-BR")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
@@ -150,6 +150,16 @@ export const questionarioAtividadesRouter = router({
           .limit(1)
       )[0] ?? null;
 
+      const empregadoResult = await db.execute(sql`
+        SELECT u.id, d.nome AS departamentoNome
+          FROM users u
+          LEFT JOIN departamentos d ON d.id = u.departamentoId
+         WHERE u.id = ${input.colaboradorId}
+         LIMIT 1
+      `);
+      const empregado = rowsOf<any>(empregadoResult)[0] ?? null;
+      const departamentoNome = String(empregado?.departamentoNome ?? "").trim();
+
       const aplicacaoResult = await db.execute(sql`
         SELECT a.id AS aplicacaoId, a.prova_id AS provaId, a.prova_snapshot_json AS provaSnapshotJson,
                a.titulo AS aplicacaoTitulo, p.codigo AS provaCodigo, p.nome AS provaNome,
@@ -164,19 +174,74 @@ export const questionarioAtividadesRouter = router({
       `);
       const aplicacao = rowsOf<any>(aplicacaoResult)[0] ?? null;
 
-      if (!aplicacao) {
+      let provaOrigem: any = null;
+      let questoes: any[] = [];
+
+      if (aplicacao) {
+        const snapshot = parseJsonSeguro<any>(aplicacao.provaSnapshotJson);
+        const questoesSnapshot = Array.isArray(snapshot?.questoes) ? snapshot.questoes : [];
+        if (questoesSnapshot.length > 0) {
+          provaOrigem = {
+            provaId: Number(aplicacao.provaId),
+            aplicacaoId: Number(aplicacao.aplicacaoId),
+            codigo: aplicacao.provaCodigo,
+            nome: aplicacao.provaNome,
+            unidade: aplicacao.provaUnidade,
+            ano: Number(aplicacao.provaAno),
+            aplicacaoTitulo: aplicacao.aplicacaoTitulo,
+            origem: "SNAPSHOT_APLICACAO" as const,
+            origemProvaChave: `APLICACAO:${Number(aplicacao.aplicacaoId)}`,
+          };
+          questoes = questoesSnapshot;
+        }
+      }
+
+      if (!provaOrigem && departamentoNome) {
+        const provasResult = await db.execute(sql`
+          SELECT id, codigo, nome, unidade, ano, status, questoes_json AS questoesJson
+            FROM provas_importadas
+           WHERE ano = ${input.ano}
+           ORDER BY CASE WHEN codigo LIKE '%HIST%' THEN 0 ELSE 1 END, id DESC
+        `);
+        const candidatos = rowsOf<any>(provasResult);
+        const unidadeEmpregado = normalizarEixo(departamentoNome);
+
+        const provaHistorica = candidatos.find((item: any) => {
+          const unidadeProva = normalizarEixo(String(item.unidade ?? ""));
+          return unidadeProva === unidadeEmpregado ||
+            unidadeProva.includes(unidadeEmpregado) ||
+            unidadeEmpregado.includes(unidadeProva);
+        }) ?? null;
+
+        if (provaHistorica) {
+          const questoesProva = parseJsonSeguro<any[]>(provaHistorica.questoesJson);
+          if (Array.isArray(questoesProva) && questoesProva.length > 0) {
+            provaOrigem = {
+              provaId: Number(provaHistorica.id),
+              aplicacaoId: null,
+              codigo: provaHistorica.codigo,
+              nome: provaHistorica.nome,
+              unidade: provaHistorica.unidade,
+              ano: Number(provaHistorica.ano),
+              aplicacaoTitulo: "Prova histórica reconstruída",
+              origem: "PROVA_HISTORICA" as const,
+              origemProvaChave: `PROVA:${Number(provaHistorica.id)}`,
+            };
+            questoes = questoesProva;
+          }
+        }
+      }
+
+      if (!provaOrigem) {
         return {
           questionarioId: questionario?.id ?? null,
           prova: null,
           eixos: [],
-          aviso: "Nenhuma prova aplicada foi encontrada para este empregado no período selecionado.",
+          aviso: "Nenhuma prova correspondente ao empregado e ao período selecionado foi localizada.",
         };
       }
 
-      const snapshot = parseJsonSeguro<any>(aplicacao.provaSnapshotJson);
-      const questoes = Array.isArray(snapshot?.questoes) ? snapshot.questoes : [];
       const catalogo = new Map<string, string>();
-
       for (const questao of questoes) {
         for (const eixo of Array.isArray(questao?.eixos) ? questao.eixos : []) {
           const eixoNome = String(eixo?.nome ?? "").trim();
@@ -194,26 +259,15 @@ export const questionarioAtividadesRouter = router({
             .where(eq(questionarioAtividadesEixosTecnicos.questionarioId, questionario.id))
         : [];
 
-      const origemProvaChave = `APLICACAO:${Number(aplicacao.aplicacaoId)}`;
       const existentePorEixo = new Map(
         existentes
-          .filter(item => item.origemProvaChave === origemProvaChave)
+          .filter(item => item.origemProvaChave === provaOrigem.origemProvaChave)
           .map(item => [item.eixoChave, item]),
       );
 
       return {
         questionarioId: questionario?.id ?? null,
-        prova: {
-          provaId: Number(aplicacao.provaId),
-          aplicacaoId: Number(aplicacao.aplicacaoId),
-          codigo: aplicacao.provaCodigo,
-          nome: aplicacao.provaNome,
-          unidade: aplicacao.provaUnidade,
-          ano: Number(aplicacao.provaAno),
-          aplicacaoTitulo: aplicacao.aplicacaoTitulo,
-          origem: "SNAPSHOT_APLICACAO" as const,
-          origemProvaChave,
-        },
+        prova: provaOrigem,
         eixos: Array.from(catalogo.entries()).map(([eixoChave, eixoNome]) => {
           const existente = existentePorEixo.get(eixoChave);
           return {
@@ -236,7 +290,7 @@ export const questionarioAtividadesRouter = router({
         colaboradorId: z.number().int().positive(),
         ano: z.number().int().min(2020).max(2100),
         provaId: z.number().int().positive(),
-        aplicacaoId: z.number().int().positive(),
+        aplicacaoId: z.number().int().positive().nullable(),
         origemProvaChave: z.string().min(1).max(80),
         eixos: z.array(classificacaoEixoSchema).min(1),
       }),
@@ -266,26 +320,64 @@ export const questionarioAtividadesRouter = router({
         });
       }
 
-      const aplicacaoResult = await db.execute(sql`
-        SELECT a.id AS aplicacaoId, a.prova_id AS provaId, a.prova_snapshot_json AS provaSnapshotJson
-          FROM aplicacoes_proficiencia a
-          JOIN aplicacoes_proficiencia_participantes ap ON ap.aplicacao_id = a.id
-         WHERE a.id = ${input.aplicacaoId}
-           AND a.prova_id = ${input.provaId}
-           AND ap.colaborador_id = ${input.colaboradorId}
-         LIMIT 1
-      `);
-      const aplicacao = rowsOf<any>(aplicacaoResult)[0];
-      if (!aplicacao) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "A prova informada não corresponde a uma aplicação deste empregado.",
-        });
+      let questoesOrigem: any[] = [];
+      let origemProva: "SNAPSHOT_APLICACAO" | "PROVA_HISTORICA";
+
+      if (input.aplicacaoId) {
+        const aplicacaoResult = await db.execute(sql`
+          SELECT a.id AS aplicacaoId, a.prova_id AS provaId, a.prova_snapshot_json AS provaSnapshotJson
+            FROM aplicacoes_proficiencia a
+            JOIN aplicacoes_proficiencia_participantes ap ON ap.aplicacao_id = a.id
+           WHERE a.id = ${input.aplicacaoId}
+             AND a.prova_id = ${input.provaId}
+             AND ap.colaborador_id = ${input.colaboradorId}
+           LIMIT 1
+        `);
+        const aplicacao = rowsOf<any>(aplicacaoResult)[0];
+        if (!aplicacao) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "A prova informada não corresponde a uma aplicação deste empregado.",
+          });
+        }
+        const snapshot = parseJsonSeguro<any>(aplicacao.provaSnapshotJson);
+        questoesOrigem = Array.isArray(snapshot?.questoes) ? snapshot.questoes : [];
+        origemProva = "SNAPSHOT_APLICACAO";
+      } else {
+        const provaResult = await db.execute(sql`
+          SELECT p.id, p.unidade, p.ano, p.questoes_json AS questoesJson, d.nome AS departamentoNome
+            FROM provas_importadas p
+            JOIN users u ON u.id = ${input.colaboradorId}
+            LEFT JOIN departamentos d ON d.id = u.departamentoId
+           WHERE p.id = ${input.provaId}
+             AND p.ano = ${input.ano}
+           LIMIT 1
+        `);
+        const prova = rowsOf<any>(provaResult)[0];
+        if (!prova) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "A prova histórica informada não foi localizada.",
+          });
+        }
+        const unidadeProva = normalizarEixo(String(prova.unidade ?? ""));
+        const unidadeEmpregado = normalizarEixo(String(prova.departamentoNome ?? ""));
+        const unidadeCompativel = unidadeProva === unidadeEmpregado ||
+          unidadeProva.includes(unidadeEmpregado) ||
+          unidadeEmpregado.includes(unidadeProva);
+        if (!unidadeEmpregado || !unidadeCompativel) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "A prova histórica não corresponde à unidade deste empregado.",
+          });
+        }
+        const questoesProva = parseJsonSeguro<any[]>(prova.questoesJson);
+        questoesOrigem = Array.isArray(questoesProva) ? questoesProva : [];
+        origemProva = "PROVA_HISTORICA";
       }
 
-      const snapshot = parseJsonSeguro<any>(aplicacao.provaSnapshotJson);
       const catalogo = new Map<string, string>();
-      for (const questao of Array.isArray(snapshot?.questoes) ? snapshot.questoes : []) {
+      for (const questao of questoesOrigem) {
         for (const eixo of Array.isArray(questao?.eixos) ? questao.eixos : []) {
           const eixoNome = String(eixo?.nome ?? "").trim();
           if (!eixoNome) continue;
@@ -334,7 +426,7 @@ export const questionarioAtividadesRouter = router({
             questionarioId: questionario.id,
             provaId: input.provaId,
             aplicacaoId: input.aplicacaoId,
-            origemProva: "SNAPSHOT_APLICACAO",
+            origemProva,
             origemProvaChave: input.origemProvaChave,
             eixoChave: entrada.eixoChave,
             eixoNome: nomeOficial,
