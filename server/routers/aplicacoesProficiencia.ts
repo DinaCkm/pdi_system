@@ -219,10 +219,20 @@ export const aplicacoesProficienciaRouter = router({
   listarProvasValidas: adminProcedure.query(async () => {
     const db = await dbObrigatorio();
     const result = await db.execute(sql`
-      SELECT id, codigo, nome, unidade, ano, total_questoes AS totalQuestoes
-        FROM provas_importadas
-       WHERE status = 'VALIDADA'
-       ORDER BY ano DESC, unidade, nome
+      SELECT p.id, p.codigo, p.nome, p.unidade, p.ano, p.total_questoes AS totalQuestoes
+        FROM provas_importadas p
+        LEFT JOIN (
+          SELECT h1.prova_id, h1.status
+            FROM provas_importadas_homologacao h1
+            JOIN (
+              SELECT prova_id, MAX(id) AS max_id
+                FROM provas_importadas_homologacao
+               GROUP BY prova_id
+            ) ult ON ult.max_id = h1.id
+        ) ph ON ph.prova_id = p.id
+       WHERE p.status = 'VALIDADA'
+         AND (ph.status IS NULL OR ph.status = 'HOMOLOGADA')
+       ORDER BY p.ano DESC, p.unidade, p.nome
     `);
     return rowsOf<any>(result);
   }),
@@ -388,8 +398,10 @@ export const aplicacoesProficienciaRouter = router({
         JOIN aplicacoes_proficiencia a ON a.id = ap.aplicacao_id
         LEFT JOIN tentativas_proficiencia t
           ON t.aplicacao_id = a.id AND t.colaborador_id = ap.colaborador_id
+        LEFT JOIN provas_importadas_homologacao ph ON ph.aplicacao_teste_id = a.id
        WHERE ap.colaborador_id = ${ctx.user.id}
          AND a.status IN ('LIBERADA','ENCERRADA','CALCULADA')
+         AND ph.id IS NULL
        ORDER BY a.agendada_para DESC, a.id DESC
     `);
     return rowsOf<any>(result).map(item => {
