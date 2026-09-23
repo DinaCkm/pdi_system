@@ -27,14 +27,7 @@ async function main(){
     `,[p.id]);
     out.push({...p,aplicacoes:apps});
   }
-  const [aval]=await db.execute(`
-    SELECT id,usuario_id usuarioId,arquivo_origem_nome nome,arquivo_origem_url url
-    FROM avaliacoes
-    WHERE (LOWER(COALESCE(arquivo_origem_nome,'')) LIKE '%prova%'
-       OR LOWER(COALESCE(arquivo_origem_nome,'')) LIKE '%certifica%')
-    ORDER BY id DESC LIMIT 200
-  `);
-  console.log("LINK_AUDIT="+JSON.stringify({provas:out,avaliacoesComArquivo:aval.slice(0,50),totalAvaliacoesComArquivo:aval.length}));
+  console.log("LINK_AUDIT="+JSON.stringify({provas:out}));
  }finally{await db.end();}
 }
 main().catch(e=>{console.error("FATAL="+e.stack);process.exit(1)});
