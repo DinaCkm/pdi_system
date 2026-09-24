@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, ClipboardCheck, Loader2, PlayCircle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, Camera, CheckCircle2, ClipboardCheck, Loader2, PlayCircle, RefreshCw, ShieldCheck, UserCheck } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import RichTextDisplay from "@/components/RichTextDisplay";
 
 type Questao = {
@@ -14,16 +15,30 @@ type Questao = {
 };
 
 export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number }) {
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [indice, setIndice] = useState(0);
   const [respostas, setRespostas] = useState<Record<string, string>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [finalizada, setFinalizada] = useState(false);
+  const [cameraAtiva, setCameraAtiva] = useState(false);
+  const [foto, setFoto] = useState<string | null>(null);
+  const [aceiteIdentidade, setAceiteIdentidade] = useState(false);
+  const [aceiteRegras, setAceiteRegras] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const cameraRef = useRef<MediaStream | null>(null);
+  const eventosRecentesRef = useRef<Record<string, number>>({});
 
   const provaQuery = trpc.aplicacoesProficiencia.estadoProva.useQuery(
     { aplicacaoId },
     { refetchOnWindowFocus: false, retry: false },
   );
+  const identidadeQuery = trpc.aplicacoesProficiencia.estadoIdentidade.useQuery(
+    { aplicacaoId },
+    { enabled: Boolean(aplicacaoId), refetchOnWindowFocus: false, retry: false },
+  );
+  const registrarIdentidadeMutation = trpc.aplicacoesProficiencia.registrarIdentidade.useMutation();
+  const registrarOcorrenciaMutation = trpc.aplicacoesProficiencia.registrarOcorrencia.useMutation();
   const iniciarMutation = trpc.aplicacoesProficiencia.iniciar.useMutation({
     onSuccess: async () => {
       setMensagem(null);
@@ -43,6 +58,75 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     onError: error => setMensagem(error.message),
   });
 
+  const pararCamera = () => {
+    cameraRef.current?.getTracks().forEach(track => track.stop());
+    cameraRef.current = null;
+    setCameraAtiva(false);
+    if (videoRef.current) videoRef.current.srcObject = null;
+  };
+
+  const ativarCamera = async () => {
+    setMensagem(null);
+    setFoto(null);
+    setAceiteIdentidade(false);
+    pararCamera();
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMensagem("Este navegador não permite acessar a câmera necessária para confirmar sua identidade.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+      cameraRef.current = stream;
+      setCameraAtiva(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+    } catch {
+      setMensagem("Não foi possível acessar a câmera. Autorize o uso da câmera no navegador e tente novamente.");
+    }
+  };
+
+  const tirarFoto = () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setMensagem("A câmera ainda não está pronta. Aguarde alguns segundos e tente novamente.");
+      return;
+    }
+    const canvas = document.createElement("canvas");
+    const escala = Math.min(1, 720 / video.videoWidth);
+    canvas.width = Math.max(1, Math.round(video.videoWidth * escala));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * escala));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    setFoto(canvas.toDataURL("image/jpeg", 0.82));
+    pararCamera();
+  };
+
+  const confirmarIdentidade = async () => {
+    if (!foto || !aceiteIdentidade) return;
+    try {
+      await registrarIdentidadeMutation.mutateAsync({ aplicacaoId, fotoDataUrl: foto, aceiteDeclaracao: true });
+      await identidadeQuery.refetch();
+      setMensagem(null);
+    } catch (error: any) {
+      setMensagem(error?.message || "Não foi possível confirmar a identidade.");
+    }
+  };
+
+  const registrarOcorrencia = (tipo: string, detalhe: string, tentativaAtual?: number) => {
+    const agora = Date.now();
+    if (agora - (eventosRecentesRef.current[tipo] || 0) < 1200) return;
+    eventosRecentesRef.current[tipo] = agora;
+    registrarOcorrenciaMutation.mutate({
+      aplicacaoId,
+      tentativaId: tentativaAtual || undefined,
+      tipo,
+      detalhe,
+    });
+  };
+
   useEffect(() => {
     if (!provaQuery.data) return;
     const existentes: Record<string, string> = {};
@@ -50,6 +134,43 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     setRespostas(existentes);
     if (["FINALIZADA", "FINALIZADA_TEMPO"].includes(String(provaQuery.data.tentativaStatus))) setFinalizada(true);
   }, [provaQuery.data]);
+
+  useEffect(() => () => pararCamera(), []);
+
+  useEffect(() => {
+    const id = Number(provaQuery.data?.tentativaId ?? 0);
+    if (!id || finalizada) return;
+
+    registrarOcorrencia("MONITORAMENTO_INICIADO", "Monitoramento de foco e navegação iniciado.", id);
+
+    const onVisibility = () => {
+      if (document.hidden) registrarOcorrencia("TROCA_ABA", "A aba da avaliação perdeu visibilidade.", id);
+    };
+    const onBlur = () => registrarOcorrencia("SAIDA_FOCO", "A janela da avaliação perdeu o foco.", id);
+    const onFullscreen = () => {
+      if (!document.fullscreenElement) registrarOcorrencia("SAIDA_TELA_CHEIA", "O participante saiu do modo de tela cheia.", id);
+    };
+    const onContext = (event: MouseEvent) => {
+      registrarOcorrencia("MENU_CONTEXTO", "Foi acionado o menu de contexto durante a avaliação.", id);
+      event.preventDefault();
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "PrintScreen") registrarOcorrencia("PRINT_SCREEN", "Foi detectada tecla Print Screen durante a avaliação.", id);
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("blur", onBlur);
+    document.addEventListener("fullscreenchange", onFullscreen);
+    document.addEventListener("contextmenu", onContext);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("blur", onBlur);
+      document.removeEventListener("fullscreenchange", onFullscreen);
+      document.removeEventListener("contextmenu", onContext);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [provaQuery.data?.tentativaId, finalizada]);
 
   const questoes = (provaQuery.data?.prova?.questoes ?? []) as Questao[];
   const questao = questoes[indice];
@@ -63,6 +184,24 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     setRespostas(current => ({ ...current, [questaoId]: letra }));
     setMensagem(null);
     salvarMutation.mutate({ aplicacaoId, tentativaId, questaoChave: questaoId, resposta: letra });
+  };
+
+  const iniciarAvaliacao = async () => {
+    if (!identidadeQuery.data?.identidadeConfirmada) {
+      setMensagem("Confirme sua identidade antes de iniciar a avaliação.");
+      return;
+    }
+    if (!aceiteRegras) {
+      setMensagem("Leia e confirme as orientações antes de iniciar.");
+      return;
+    }
+    registrarOcorrencia("ABERTURA_CONFIRMADA", "O participante confirmou as orientações de realização.");
+    try {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+    } catch {
+      registrarOcorrencia("TELA_CHEIA_NAO_AUTORIZADA", "O navegador não entrou em tela cheia no início da avaliação.");
+    }
+    iniciarMutation.mutate({ aplicacaoId });
   };
 
   const finalizar = () => {
@@ -105,24 +244,72 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   if (!provaQuery.data) return null;
 
   if (!iniciou) {
+    const identidadeConfirmada = Boolean(identidadeQuery.data?.identidadeConfirmada);
+    const nome = String(user?.name || "Participante");
     return (
-      <div className="min-h-screen bg-slate-50 p-4 md:p-6">
-        <div className="mx-auto max-w-2xl">
-          {provaQuery.data.modoTeste && <div className="mb-4 rounded-md border border-violet-300 bg-violet-50 p-3 text-center text-sm font-semibold text-violet-950">MODO TESTE — ADMINISTRADOR — ESTE RESULTADO NÃO COMPÕE INDICADORES</div>}
+      <div className="min-h-screen bg-slate-100 p-4 md:p-6">
+        <div className="mx-auto max-w-4xl space-y-5">
+          {provaQuery.data.modoTeste && <div className="rounded-md border border-violet-300 bg-violet-50 p-3 text-center text-sm font-semibold text-violet-950">MODO TESTE — ADMINISTRADOR — MESMA EXPERIÊNCIA DO CANDIDATO — RESULTADO FORA DOS INDICADORES</div>}
+
           <Card className="border-blue-200">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><ClipboardCheck className="h-6 w-6 text-blue-700" />{provaQuery.data.aplicacao.titulo}</CardTitle>
-              <CardDescription>{provaQuery.data.prova.nome} — {provaQuery.data.prova.unidade}</CardDescription>
+              <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-blue-700" />Abertura da Avaliação de Proficiência para a Função</CardTitle>
+              <CardDescription>{provaQuery.data.aplicacao.titulo} — {provaQuery.data.prova.unidade}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="rounded-md border bg-white p-4 text-sm">
-                <p><strong>Total de questões:</strong> {questoes.length}</p>
-                <p className="mt-2 text-muted-foreground">A tentativa só será registrada quando você clicar em iniciar.</p>
+            <CardContent className="space-y-4 text-sm leading-6">
+              <p>Antes de iniciar, confirme sua identidade e leia as orientações. Durante a avaliação, ocorrências de foco e navegação são registradas para acompanhamento administrativo.</p>
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-950">
+                <div className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" /><span>Evite trocar de aba, minimizar a janela ou sair da tela cheia. Essas ocorrências serão registradas no histórico da tentativa.</span></div>
               </div>
+              <p><strong>Total de questões:</strong> {questoes.length}</p>
+            </CardContent>
+          </Card>
+
+          {!identidadeConfirmada ? (
+            <Card className="border-blue-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-blue-700" />Confirmação de identidade</CardTitle>
+                <CardDescription>A fotografia deve ser capturada agora, pela câmera deste dispositivo.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="overflow-hidden rounded-lg border bg-slate-950">
+                    {foto ? <img src={foto} alt="Fotografia capturada" className="aspect-video w-full object-cover" /> : <video ref={videoRef} autoPlay muted playsInline className="aspect-video w-full object-cover scale-x-[-1]" />}
+                  </div>
+                  <div className="flex flex-col justify-center gap-3">
+                    {!cameraAtiva && !foto && <Button onClick={() => void ativarCamera()}><Camera className="mr-2 h-5 w-5" />ATIVAR CÂMERA</Button>}
+                    {cameraAtiva && !foto && <Button onClick={tirarFoto}><Camera className="mr-2 h-5 w-5" />TIRAR FOTO</Button>}
+                    {foto && <Button variant="outline" onClick={() => void ativarCamera()}><RefreshCw className="mr-2 h-4 w-4" />REFAZER FOTO</Button>}
+                  </div>
+                </div>
+                <div className="rounded-lg border bg-slate-50 p-4 text-sm leading-6">
+                  Declaro que sou <strong>{nome}</strong>, participante identificado(a) nesta plataforma, e que sou a pessoa que realizará esta avaliação.
+                </div>
+                <label className="flex items-start gap-3 rounded-md border p-4 text-sm font-semibold">
+                  <input type="checkbox" className="mt-1 h-5 w-5" checked={aceiteIdentidade} onChange={e => setAceiteIdentidade(e.target.checked)} />
+                  Confirmo minha identidade e a fotografia capturada.
+                </label>
+                <Button onClick={() => void confirmarIdentidade()} disabled={!foto || !aceiteIdentidade || registrarIdentidadeMutation.isPending}>
+                  <UserCheck className="mr-2 h-5 w-5" />{registrarIdentidadeMutation.isPending ? "REGISTRANDO..." : "CONFIRMAR IDENTIDADE"}
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-emerald-300 bg-emerald-50/40">
+              <CardContent className="pt-6"><div className="flex items-center gap-2 font-semibold text-emerald-900"><CheckCircle2 className="h-5 w-5" />Identidade confirmada para esta aplicação.</div></CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardContent className="space-y-4 pt-6">
+              <label className="flex items-start gap-3 rounded-md border p-4 text-sm font-semibold">
+                <input type="checkbox" className="mt-1 h-5 w-5" checked={aceiteRegras} onChange={e => setAceiteRegras(e.target.checked)} />
+                Li as orientações e estou ciente de que ocorrências de navegação e foco serão registradas durante a avaliação.
+              </label>
               {mensagem && <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{mensagem}</div>}
               <div className="flex flex-wrap gap-3">
-                <Button onClick={() => iniciarMutation.mutate({ aplicacaoId })} disabled={iniciarMutation.isPending}>
-                  <PlayCircle className="mr-2 h-5 w-5" />{iniciarMutation.isPending ? "INICIANDO..." : "INICIAR PROVA"}
+                <Button onClick={() => void iniciarAvaliacao()} disabled={!identidadeConfirmada || !aceiteRegras || iniciarMutation.isPending}>
+                  <PlayCircle className="mr-2 h-5 w-5" />{iniciarMutation.isPending ? "INICIANDO..." : "INICIAR AVALIAÇÃO"}
                 </Button>
                 <Button variant="outline" onClick={() => setLocation("/avaliacoes")}>Voltar</Button>
               </div>
@@ -138,7 +325,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-6">
       <div className="mx-auto max-w-4xl space-y-4">
-        {provaQuery.data.modoTeste && <div className="rounded-md border border-violet-300 bg-violet-50 p-3 text-center text-sm font-semibold text-violet-950">MODO TESTE — ADMINISTRADOR — ESTE RESULTADO NÃO COMPÕE INDICADORES</div>}
+        {provaQuery.data.modoTeste && <div className="rounded-md border border-violet-300 bg-violet-50 p-3 text-center text-sm font-semibold text-violet-950">MODO TESTE — ADMINISTRADOR — MESMA EXPERIÊNCIA DO CANDIDATO — RESULTADO FORA DOS INDICADORES</div>}
         <Card>
           <CardHeader className="space-y-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
