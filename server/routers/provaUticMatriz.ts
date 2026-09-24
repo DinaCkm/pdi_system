@@ -44,89 +44,115 @@ export const provaUticMatrizRouter = router({
   }),
 
   // Eixos técnicos com pontuação histórica, por unidade do empregado.
-  // Fonte por empregado:
-  //  - se o empregado tem registro da prova histórica (registro_historico_proficiencia_eixos,
-  //    hoje as Regionais), usa esse registro;
-  //  - senão, usa a matriz de eixos do empregado (prova_utic_matriz_eixos.percentual_anterior),
-  //    a mesma exibida na aba "Por Empregado" (unidades administrativas).
-  // Unidade: gestores (líderes de departamento) contam na unidade que gerenciam;
-  // os demais, no próprio departamento.
+  // A consolidação é feita em memória para evitar uma consulta derivada complexa
+  // e manter a precedência do histórico regional sobre a matriz administrativa.
   listarPorDepartamento: adminProcedure.query(async () => {
     const db = await ensureTechnicalMatrixTables();
-    const base = sql`
-      SELECT h.colaborador_id AS colaboradorId,
-             h.eixo_chave AS eixoChave,
-             h.eixo_nome AS eixoNome,
-             h.percentual_original AS pontuacao
-        FROM registro_historico_proficiencia_eixos h
-      UNION ALL
-      SELECT m.colaborador_id AS colaboradorId,
-             LOWER(TRIM(e.eixo_nome)) AS eixoChave,
-             e.eixo_nome AS eixoNome,
-             e.percentual_anterior AS pontuacao
-        FROM prova_utic_matrizes m
-        JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
-       WHERE NOT EXISTS (
-         SELECT 1 FROM registro_historico_proficiencia_eixos h2 WHERE h2.colaborador_id = m.colaborador_id
-       )
-    `;
-    const result = await db.execute(sql`
-      SELECT COALESCE(dl.nome, d.nome, 'Sem unidade') AS unidadeNome,
-             x.eixoChave AS eixoId,
-             MIN(x.eixoNome) AS eixo,
-             COUNT(DISTINCT x.colaboradorId) AS totalEmpregados,
-             COUNT(x.pontuacao) AS qtdPontuacao,
-             SUM(x.pontuacao) AS somaPontuacao,
-             MIN(x.pontuacao) AS menorPontuacao,
-             MAX(x.pontuacao) AS maiorPontuacao
-        FROM (${base}) x
-        JOIN users u ON u.id = x.colaboradorId
-        LEFT JOIN departamentos d ON d.id = u.departamentoId
-        LEFT JOIN (
-          SELECT leaderId, MIN(nome) AS nome
-            FROM departamentos
-           WHERE leaderId IS NOT NULL AND status = 'ativo'
-           GROUP BY leaderId
-        ) dl ON dl.leaderId = u.id
-       GROUP BY COALESCE(dl.nome, d.nome, 'Sem unidade'), x.eixoChave
-       ORDER BY unidadeNome, eixo
-    `);
-    const empregadosResult = await db.execute(sql`
-      SELECT COALESCE(dl.nome, d.nome, 'Sem unidade') AS unidadeNome,
-             COUNT(DISTINCT x.colaboradorId) AS totalEmpregados
-        FROM (${base}) x
-        JOIN users u ON u.id = x.colaboradorId
-        LEFT JOIN departamentos d ON d.id = u.departamentoId
-        LEFT JOIN (
-          SELECT leaderId, MIN(nome) AS nome
-            FROM departamentos
-           WHERE leaderId IS NOT NULL AND status = 'ativo'
-           GROUP BY leaderId
-        ) dl ON dl.leaderId = u.id
-       GROUP BY COALESCE(dl.nome, d.nome, 'Sem unidade')
-    `);
-    const totais = new Map(rowsOf<any>(empregadosResult).map((t) => [String(t.unidadeNome), Number(t.totalEmpregados)]));
 
-    const porUnidade = new Map<string, any>();
-    for (const row of rowsOf<any>(result)) {
-      const nome = String(row.unidadeNome);
-      if (!porUnidade.has(nome)) {
-        porUnidade.set(nome, { unidadeNome: nome, totalEmpregados: totais.get(nome) ?? 0, eixos: [] });
+    const [historicoResult, matrizesResult, usuariosResult, departamentosResult] = await Promise.all([
+      db.execute(sql`
+        SELECT colaborador_id AS colaboradorId,
+               eixo_chave AS eixoChave,
+               eixo_nome AS eixoNome,
+               percentual_original AS pontuacao
+          FROM registro_historico_proficiencia_eixos
+      `),
+      db.execute(sql`
+        SELECT m.colaborador_id AS colaboradorId,
+               LOWER(TRIM(e.eixo_nome)) AS eixoChave,
+               e.eixo_nome AS eixoNome,
+               e.percentual_anterior AS pontuacao
+          FROM prova_utic_matrizes m
+          JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
+      `),
+      db.execute(sql`
+        SELECT id, departamentoId
+          FROM users
+      `),
+      db.execute(sql`
+        SELECT id, nome, leaderId, status
+          FROM departamentos
+      `),
+    ]);
+
+    const historico = rowsOf<any>(historicoResult);
+    const matrizes = rowsOf<any>(matrizesResult);
+    const usuarios = rowsOf<any>(usuariosResult);
+    const departamentos = rowsOf<any>(departamentosResult);
+
+    const colaboradoresComHistorico = new Set(historico.map((item) => Number(item.colaboradorId)));
+    const base = [
+      ...historico,
+      ...matrizes.filter((item) => !colaboradoresComHistorico.has(Number(item.colaboradorId))),
+    ];
+
+    const usuarioPorId = new Map(usuarios.map((item) => [Number(item.id), item]));
+    const departamentoPorId = new Map(departamentos.map((item) => [Number(item.id), item]));
+    const unidadeLideradaPorUsuario = new Map<number, string>();
+    for (const departamento of departamentos) {
+      if (departamento.leaderId && String(departamento.status ?? "ativo") === "ativo" && !unidadeLideradaPorUsuario.has(Number(departamento.leaderId))) {
+        unidadeLideradaPorUsuario.set(Number(departamento.leaderId), String(departamento.nome));
       }
-      const qtd = Number(row.qtdPontuacao);
-      const soma = row.somaPontuacao === null ? 0 : Number(row.somaPontuacao);
-      porUnidade.get(nome).eixos.push({
-        eixoId: String(row.eixoId),
-        eixo: row.eixo,
-        totalEmpregados: Number(row.totalEmpregados),
-        qtdPontuacao: qtd,
-        somaPontuacao: soma,
-        mediaPontuacao: qtd ? Number((soma / qtd).toFixed(2)) : null,
-        menorPontuacao: row.menorPontuacao === null ? null : Number(row.menorPontuacao),
-        maiorPontuacao: row.maiorPontuacao === null ? null : Number(row.maiorPontuacao),
-      });
     }
-    return Array.from(porUnidade.values()).sort((x, y) => x.unidadeNome.localeCompare(y.unidadeNome, "pt-BR"));
+
+    const unidadeDoColaborador = (colaboradorId: number) => {
+      const liderada = unidadeLideradaPorUsuario.get(colaboradorId);
+      if (liderada) return liderada;
+      const usuario = usuarioPorId.get(colaboradorId);
+      const departamento = usuario?.departamentoId ? departamentoPorId.get(Number(usuario.departamentoId)) : null;
+      return String(departamento?.nome ?? "Sem unidade");
+    };
+
+    const empregadosPorUnidade = new Map<string, Set<number>>();
+    const agregados = new Map<string, Map<string, any>>();
+
+    for (const item of base) {
+      const colaboradorId = Number(item.colaboradorId);
+      const unidadeNome = unidadeDoColaborador(colaboradorId);
+      const eixoId = String(item.eixoChave ?? "").trim();
+      const eixoNome = String(item.eixoNome ?? "").trim();
+      if (!eixoId || !eixoNome) continue;
+
+      if (!empregadosPorUnidade.has(unidadeNome)) empregadosPorUnidade.set(unidadeNome, new Set());
+      empregadosPorUnidade.get(unidadeNome)!.add(colaboradorId);
+
+      if (!agregados.has(unidadeNome)) agregados.set(unidadeNome, new Map());
+      const porEixo = agregados.get(unidadeNome)!;
+      const atual = porEixo.get(eixoId) ?? {
+        eixoId,
+        eixo: eixoNome,
+        empregados: new Set<number>(),
+        valores: [] as number[],
+      };
+      atual.empregados.add(colaboradorId);
+      if (item.pontuacao !== null && item.pontuacao !== undefined && item.pontuacao !== "") {
+        const valor = Number(item.pontuacao);
+        if (Number.isFinite(valor)) atual.valores.push(valor);
+      }
+      porEixo.set(eixoId, atual);
+    }
+
+    return Array.from(agregados.entries())
+      .map(([unidadeNome, porEixo]) => ({
+        unidadeNome,
+        totalEmpregados: empregadosPorUnidade.get(unidadeNome)?.size ?? 0,
+        eixos: Array.from(porEixo.values())
+          .map((item) => {
+            const somaPontuacao = item.valores.reduce((soma: number, valor: number) => soma + valor, 0);
+            return {
+              eixoId: item.eixoId,
+              eixo: item.eixo,
+              totalEmpregados: item.empregados.size,
+              qtdPontuacao: item.valores.length,
+              somaPontuacao,
+              mediaPontuacao: item.valores.length ? Number((somaPontuacao / item.valores.length).toFixed(2)) : null,
+              menorPontuacao: item.valores.length ? Math.min(...item.valores) : null,
+              maiorPontuacao: item.valores.length ? Math.max(...item.valores) : null,
+            };
+          })
+          .sort((a, b) => String(a.eixo).localeCompare(String(b.eixo), "pt-BR")),
+      }))
+      .sort((a, b) => a.unidadeNome.localeCompare(b.unidadeNome, "pt-BR"));
   }),
 
   listarHistorico: adminProcedure
