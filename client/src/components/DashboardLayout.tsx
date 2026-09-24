@@ -68,7 +68,7 @@ const getMenuItems = (userRole: string) => {
 
       { icon: Target, label: "Competências", path: "/competencias", section: "desenvolvimento" },
       { icon: ClipboardCheck, label: "Avaliações", path: "/avaliacoes", section: "desenvolvimento" },
-      { icon: Upload, label: "Upload de Eixos", path: "/importar-eixos-avaliacoes", section: "desenvolvimento", parentPath: "/avaliacoes" },
+      { icon: Upload, label: "Upload de Dados", path: "/importar-eixos-avaliacoes", section: "desenvolvimento", parentPath: "/avaliacoes" },
       { icon: Target, label: "Eixos Técnicos por Empregado", path: "/admin-eixos-tecnicos", section: "desenvolvimento", parentPath: "/avaliacoes" },
       { icon: ClipboardCheck, label: "Administração da Proficiência", path: "/admin-avaliacoes", section: "desenvolvimento", parentPath: "/avaliacoes" },
       { icon: BarChart3, label: "Resultados da Proficiência", path: "/admin-avaliacoes/utic/resultados", section: "desenvolvimento", parentPath: "/avaliacoes" },
@@ -242,6 +242,9 @@ function DashboardLayoutContent({
     administracao: false,
     normas: false,
   });
+  const [avaliacoesOpen, setAvaliacoesOpen] = useState(() =>
+    location === "/avaliacoes" || menuItems.some((item) => item.parentPath === "/avaliacoes" && item.path === location),
+  );
 
   useEffect(() => {
     if (user?.role === "admin" && activeAdminSection) {
@@ -304,7 +307,7 @@ function DashboardLayoutContent({
     };
   }, [isResizing, setSidebarWidth]);
 
-  const renderAdminItem = (item: MenuItem) => {
+  const renderAdminItem = (item: MenuItem, hasChildren = false) => {
     const isActive = location === item.path;
     return (
       <SidebarMenuItem
@@ -313,12 +316,22 @@ function DashboardLayoutContent({
       >
         <SidebarMenuButton
           isActive={isActive}
-          onClick={() => setLocation(item.path)}
+          onClick={() => {
+            if (hasChildren && item.path === "/avaliacoes") {
+              setAvaliacoesOpen((open) => !open);
+            }
+            setLocation(item.path);
+          }}
           tooltip={item.label}
           className={`h-9 transition-all font-normal ${item.parentPath ? "text-muted-foreground" : ""}`}
         >
           <item.icon className={`${item.parentPath ? "h-3.5 w-3.5" : "h-4 w-4"} ${isActive ? "text-primary" : ""}`} />
           <span className="text-sm">{item.label}</span>
+          {hasChildren && item.path === "/avaliacoes" && (
+            avaliacoesOpen
+              ? <ChevronDown className="ml-auto h-3.5 w-3.5" />
+              : <ChevronRight className="ml-auto h-3.5 w-3.5" />
+          )}
         </SidebarMenuButton>
       </SidebarMenuItem>
     );
@@ -412,7 +425,15 @@ function DashboardLayoutContent({
                           </button>
                           {isOpen && (
                             <div className="pl-1">
-                              {sectionItems.map(renderAdminItem)}
+                              {sectionItems.filter((item) => !item.parentPath).map((item) => {
+                                const children = sectionItems.filter((child) => child.parentPath === item.path);
+                                return (
+                                  <Fragment key={item.path}>
+                                    {renderAdminItem(item, children.length > 0)}
+                                    {item.path === "/avaliacoes" && avaliacoesOpen && children.map((child) => renderAdminItem(child))}
+                                  </Fragment>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
