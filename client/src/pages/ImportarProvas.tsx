@@ -811,12 +811,12 @@ export default function ImportarProvas() {
           <div className="text-xs text-muted-foreground">{provasFiltradas.length} prova(s) encontrada(s).</div>
 
           {listaQuery.isLoading ? <p className="text-sm text-muted-foreground">Carregando...</p> : provasImportadas.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma avaliação importada ainda.</p> : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1080px] text-sm">
+            <div className="max-w-full overflow-x-auto pb-3">
+              <table className="w-full min-w-[980px] text-sm">
                 <thead><tr className="border-b text-left">
                   <th className="px-3 py-2">Código</th><th className="px-3 py-2">Avaliação</th><th className="px-3 py-2">Unidade</th>
                   <th className="w-[160px] px-3 py-2">Eixos Técnicos</th><th className="px-3 py-2">Ano</th><th className="px-3 py-2">Ciclo</th><th className="px-3 py-2">Questões</th>
-                  <th className="px-3 py-2">Status</th><th className="px-3 py-2">Ações</th>
+                  <th className="px-3 py-2">Status</th>
                 </tr></thead>
                 <tbody>
                   {provasFiltradas.map((item: any) => (
@@ -893,31 +893,35 @@ export default function ImportarProvas() {
                             </>
                           ) : item.status}
                         </td>
-                        <td className="px-3 py-3">
-                          <div className="flex flex-wrap gap-2">
-                            {item.status === "RASCUNHO" ? <>
-                              <Button size="sm" variant={editandoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirEdicao(Number(item.id))}><Pencil className="mr-2 h-4 w-4" />Editar</Button>
-                              <Button size="sm" variant="outline" onClick={() => validarProvaSalva(Number(item.id))} disabled={validandoId === Number(item.id)}>{validandoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Salvar e validar</Button>
-                            </> : item.status === "VALIDADA" ? <>
-                              <Button size="sm" onClick={() => iniciarTesteAdmin(Number(item.id))} disabled={processandoHomologacaoId === Number(item.id)}>
-                                {processandoHomologacaoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
-                                {item.aplicacaoTesteId ? "Abrir teste" : "Iniciar teste"}
-                              </Button>
-                              {item.aplicacaoTesteId && <Button size="sm" variant="outline" onClick={() => abrirResultadoTeste(Number(item.id))}><Eye className="mr-2 h-4 w-4" />Resultado do teste</Button>}
-                              {item.homologacaoStatus === "TESTADA" && <Button size="sm" variant="outline" onClick={() => homologarTeste(Number(item.id))} disabled={processandoHomologacaoId === Number(item.id)}><ShieldCheck className="mr-2 h-4 w-4" />Homologar</Button>}
-                              {["TESTADA","HOMOLOGADA"].includes(String(item.homologacaoStatus)) && <Button size="sm" variant="outline" onClick={() => refazerTeste(Number(item.id))} disabled={processandoHomologacaoId === Number(item.id)}><RotateCcw className="mr-2 h-4 w-4" />Refazer teste</Button>}
-                              <Button size="sm" variant="outline" onClick={() => reabrirProva(Number(item.id))} disabled={reabrindoId === Number(item.id)}>{reabrindoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pencil className="mr-2 h-4 w-4" />}Reabrir</Button>
-                            </> : null}
-                            {["RASCUNHO", "VALIDADA"].includes(String(item.status)) && <Button size="sm" variant={invalidandoId === Number(item.id) ? "destructive" : "outline"} onClick={() => abrirInvalidacao(Number(item.id))}><Ban className="mr-2 h-4 w-4" />Invalidar prova</Button>}
-                            {item.status !== "INVALIDADA" && <Button size="sm" variant={visualizandoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirPreview(Number(item.id))}><Eye className="mr-2 h-4 w-4" />Visualizar como candidato</Button>}
-                            <Button size="sm" variant={historicoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirHistorico(Number(item.id))}><History className="mr-2 h-4 w-4" />Histórico</Button>
+                      </tr>
+                      <tr className="border-b bg-slate-50/40">
+                        <td colSpan={8} className="px-3 py-2">
+                          <div className="max-w-full overflow-x-auto pb-2">
+                            <div className="flex min-w-max flex-nowrap items-center gap-2">
+                              {item.status === "RASCUNHO" ? <>
+                                <Button size="sm" variant={editandoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirEdicao(Number(item.id))}><Pencil className="mr-2 h-4 w-4" />Editar</Button>
+                                <Button size="sm" variant="outline" onClick={() => validarProvaSalva(Number(item.id))} disabled={validandoId === Number(item.id)}>{validandoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Salvar e validar</Button>
+                              </> : item.status === "VALIDADA" ? <>
+                                <Button size="sm" onClick={() => iniciarTesteAdmin(Number(item.id))} disabled={processandoHomologacaoId === Number(item.id)}>
+                                  {processandoHomologacaoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+                                  {item.aplicacaoTesteId ? "Abrir teste" : "Iniciar teste"}
+                                </Button>
+                                {item.aplicacaoTesteId && <Button size="sm" variant="outline" onClick={() => abrirResultadoTeste(Number(item.id))}><Eye className="mr-2 h-4 w-4" />Resultado do teste</Button>}
+                                {item.homologacaoStatus === "TESTADA" && <Button size="sm" variant="outline" onClick={() => homologarTeste(Number(item.id))} disabled={processandoHomologacaoId === Number(item.id)}><ShieldCheck className="mr-2 h-4 w-4" />Homologar</Button>}
+                                {["TESTADA","HOMOLOGADA"].includes(String(item.homologacaoStatus)) && <Button size="sm" variant="outline" onClick={() => refazerTeste(Number(item.id))} disabled={processandoHomologacaoId === Number(item.id)}><RotateCcw className="mr-2 h-4 w-4" />Refazer teste</Button>}
+                                <Button size="sm" variant="outline" onClick={() => reabrirProva(Number(item.id))} disabled={reabrindoId === Number(item.id)}>{reabrindoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pencil className="mr-2 h-4 w-4" />}Reabrir</Button>
+                              </> : null}
+                              {["RASCUNHO", "VALIDADA"].includes(String(item.status)) && <Button size="sm" variant={invalidandoId === Number(item.id) ? "destructive" : "outline"} onClick={() => abrirInvalidacao(Number(item.id))}><Ban className="mr-2 h-4 w-4" />Invalidar prova</Button>}
+                              {item.status !== "INVALIDADA" && <Button size="sm" variant={visualizandoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirPreview(Number(item.id))}><Eye className="mr-2 h-4 w-4" />Visualizar como candidato</Button>}
+                              <Button size="sm" variant={historicoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirHistorico(Number(item.id))}><History className="mr-2 h-4 w-4" />Histórico</Button>
+                            </div>
                           </div>
                         </td>
                       </tr>
 
                       {homologacaoId === Number(item.id) && (
                         <tr className="border-b bg-violet-50/40">
-                          <td colSpan={9} className="p-4">
+                          <td colSpan={8} className="p-4">
                             <div className="rounded-lg border border-violet-200 bg-white p-5 shadow-sm">
                               <div className="mb-4 flex items-start justify-between gap-3">
                                 <div>
@@ -951,7 +955,7 @@ export default function ImportarProvas() {
 
                       {invalidandoId === Number(item.id) && (
                         <tr className="border-b bg-red-50/50">
-                          <td colSpan={9} className="p-4">
+                          <td colSpan={8} className="p-4">
                             <div className="rounded-lg border border-red-200 bg-white p-5 shadow-sm">
                               <div className="mb-3">
                                 <h3 className="font-semibold text-red-900">Invalidar prova: {item.codigo}</h3>
@@ -981,7 +985,7 @@ export default function ImportarProvas() {
 
                       {editandoId === Number(item.id) && (
                         <tr className="border-b bg-slate-50/70">
-                          <td colSpan={9} className="p-4">
+                          <td colSpan={8} className="p-4">
                             <div className="rounded-lg border bg-white p-5 shadow-sm">
                               <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                                 <div><h3 className="text-lg font-semibold">Editar prova: {item.nome}</h3><p className="text-sm text-muted-foreground">A edição fica junto da prova selecionada. Salve antes de validar.</p></div>
@@ -1052,7 +1056,7 @@ export default function ImportarProvas() {
 
                       {visualizandoId === Number(item.id) && (
                         <tr className="border-b bg-blue-50/40">
-                          <td colSpan={9} className="p-4">
+                          <td colSpan={8} className="p-4">
                             <div className="rounded-lg border border-blue-200 bg-white p-5 shadow-sm">
                               <div className="mb-4 flex items-start justify-between gap-3">
                                 <div><h3 className="text-lg font-semibold">Pré-visualização como candidato</h3><p className="text-sm text-muted-foreground">Esta prévia reproduz a ordem, enunciado e alternativas que o candidato verá.</p></div>
@@ -1085,7 +1089,7 @@ export default function ImportarProvas() {
 
                       {historicoId === Number(item.id) && (
                         <tr className="border-b bg-amber-50/30">
-                          <td colSpan={9} className="p-4">
+                          <td colSpan={8} className="p-4">
                             <div className="rounded-lg border bg-white p-5 shadow-sm">
                               <div className="mb-4 flex items-start justify-between gap-3"><div><h3 className="text-lg font-semibold">Histórico de auditoria</h3><p className="text-sm text-muted-foreground">Registro permanente de importações, ajustes, validações e reaberturas.</p></div><Button variant="outline" size="sm" onClick={() => setHistoricoId(null)}><X className="mr-2 h-4 w-4" />Fechar</Button></div>
                               {historicoQuery.isLoading ? <p className="text-sm text-muted-foreground">Carregando histórico...</p> : (historicoQuery.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">Ainda não há eventos registrados para esta prova.</p> : <div className="space-y-3">
