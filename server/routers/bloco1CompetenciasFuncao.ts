@@ -1,8 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { adminProcedure, router } from "../_core/customTrpc";
-import { getDb } from "../db";
+import { adminProcedure, protectedProcedure, router } from "../_core/customTrpc";
+import { getDb, getSubordinates } from "../db";
 import { ensureHomologacaoTables } from "../services/homologacaoProvas";
 import { ensureTechnicalMatrixTables } from "../services/technicalMatrixSchema";
 import { avaliacoes, medicoesCompetencias } from "../../drizzle/avaliacoes-schema";
@@ -57,10 +57,10 @@ async function dbObrigatorio() {
 }
 
 export const bloco1CompetenciasFuncaoRouter = router({
-  empregados: adminProcedure.query(async () => {
+  empregados: protectedProcedure.query(async ({ ctx }) => {
     const db = await dbObrigatorio();
 
-    return db
+    const lista = await db
       .select({
         id: users.id,
         nome: users.name,
@@ -89,11 +89,30 @@ export const bloco1CompetenciasFuncaoRouter = router({
         ),
       )
       .orderBy(users.name);
+
+    if (ctx.user.role === "admin" || ctx.user.role === "Administrador" || ctx.user.role === "gerente") {
+      return lista;
+    }
+
+    if (ctx.user.role === "colaborador") {
+      return lista.filter((item: any) => Number(item.id) === Number(ctx.user.id));
+    }
+
+    if (ctx.user.role === "lider") {
+      const subordinados = await getSubordinates(Number(ctx.user.id));
+      const permitidos = new Set<number>([
+        Number(ctx.user.id),
+        ...subordinados.map((item: any) => Number(item.id)),
+      ]);
+      return lista.filter((item: any) => permitidos.has(Number(item.id)));
+    }
+
+    return [];
   }),
 
-  mapaIndividual: adminProcedure
+  mapaIndividual: protectedProcedure
     .input(z.object({ colaboradorId: z.number().int().positive() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
 
       const empregado = (
@@ -132,6 +151,21 @@ export const bloco1CompetenciasFuncaoRouter = router({
           code: "NOT_FOUND",
           message: "Empregado não encontrado.",
         });
+      }
+
+      const role = String(ctx.user.role);
+      if (role === "colaborador" && Number(input.colaboradorId) !== Number(ctx.user.id)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Você só pode visualizar a sua própria evolução." });
+      }
+      if (role === "lider" && Number(input.colaboradorId) !== Number(ctx.user.id)) {
+        const subordinados = await getSubordinates(Number(ctx.user.id));
+        const permitido = subordinados.some((item: any) => Number(item.id) === Number(input.colaboradorId));
+        if (!permitido) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Este empregado não pertence à sua equipe." });
+        }
+      }
+      if (!["admin", "Administrador", "gerente", "lider", "colaborador"].includes(role)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Perfil sem acesso à Evolução Individual." });
       }
 
       let eixosQuestionario: any[] = [];
@@ -233,8 +267,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
       // A próxima avaliação técnica só aparece depois de uma aplicação oficial calculada.
       // Testes administrativos são sempre excluídos.
       const anoBaseTecnica = anoQuestionario ? Number(anoQuestionario) : 2025;
-      const resultadosPosterioresResult = linhasTecnicas.length > 0
-        ? await db.execute(sql`
+      const resultadosPosterioresResult = await db.execute(sql`
             SELECT rp.resultado_json AS resultadoJson,
                    rp.calculado_em AS calculadoEm,
                    a.id AS aplicacaoId,
@@ -253,12 +286,9 @@ export const bloco1CompetenciasFuncaoRouter = router({
                AND p.ano > ${anoBaseTecnica}
                AND p.codigo NOT LIKE '%HIST%'
              ORDER BY rp.calculado_em DESC, rp.id DESC
-          `)
-        : null;
+          `);
 
-      const resultadosPosteriores = resultadosPosterioresResult
-        ? rowsOf<any>(resultadosPosterioresResult)
-        : [];
+      const resultadosPosteriores = rowsOf<any>(resultadosPosterioresResult);
 
       const unidadeEmpregado = normalizarNome(empregado.departamentoNome);
       const resultadoTecnicoLinha =
@@ -282,7 +312,24 @@ export const bloco1CompetenciasFuncaoRouter = router({
         tecnicoAtualPorNome.set(normalizarNome(eixo.eixo), eixo);
       }
 
-      const tecnicas = linhasTecnicas.map((linha: any) => {
+      const nomesHistoricos = new Set(linhasTecnicas.map((linha: any) => normalizarNome(linha.eixoNome)));
+      const linhasTecnicasComNovos: any[] = [
+        ...linhasTecnicas,
+        ...(resultadoTecnico.porEixo ?? [])
+          .filter((eixo: any) => !nomesHistoricos.has(normalizarNome(eixo.eixo)))
+          .map((eixo: any, indice: number) => ({
+            eixoRegistroId: -(indice + 1),
+            eixoChave: `NOVO:${normalizarNome(eixo.eixo)}`,
+            eixoNome: String(eixo.eixo ?? "Nova competência"),
+            classificacao: eixo.relacao ?? null,
+            statusClassificacao: eixo.relacao ? "CLASSIFICADO" : "PENDENTE",
+            justificativa: null,
+            percentualAnteriorMatriz: null,
+            novoNaAvaliacao: true,
+          })),
+      ];
+
+      const tecnicas = linhasTecnicasComNovos.map((linha: any) => {
         const historico = historicoPorEixo.get(String(linha.eixoChave));
         const atual = tecnicoAtualPorNome.get(normalizarNome(linha.eixoNome));
         const valorHistorico = historico?.percentualOriginal ?? linha.percentualAnteriorMatriz;
@@ -325,7 +372,8 @@ export const bloco1CompetenciasFuncaoRouter = router({
           totalQuestoes: atual?.totalQuestoes ?? null,
           fonte: fonteTecnica,
           statusAtual: resultadoTecnicoLinha ? "PROVA_2_CALCULADA" : "AGUARDANDO_PROVA_2",
-          editavelClassificacao: linhasRegionais.length > 0,
+          editavelClassificacao: linhasRegionais.length > 0 && !linha.novoNaAvaliacao,
+          novaCompetencia: Boolean(linha.novoNaAvaliacao),
         };
       });
 
@@ -347,6 +395,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
                  mc.valor AS valor,
                  mc.escala_min AS escalaMin,
                  mc.escala_max AS escalaMax,
+                 mc.classificacao AS classificacao,
                  mc.validada AS validada
             FROM medicoes_competencias mc
             JOIN avaliacoes a ON a.id = mc.avaliacaoId
@@ -430,7 +479,9 @@ export const bloco1CompetenciasFuncaoRouter = router({
             escalaMaxAnterior: anterior ? Number(anterior.escalaMax) : null,
             escalaMinAtual: atual ? Number(atual.escalaMin) : null,
             escalaMaxAtual: atual ? Number(atual.escalaMax) : null,
+            classificacao: atual?.classificacao ?? anterior?.classificacao ?? null,
             comparavel: Boolean(anterior && atual && mesmaEscala),
+            novaCompetencia: Boolean(atual && !anterior),
             variacao,
             evolucao,
             criarNovaAcaoPdi: true,
