@@ -448,13 +448,20 @@ export const bloco1CompetenciasFuncaoRouter = router({
           const ordenadas = [...medicoes].sort((a, b) => b.periodo.ordem - a.periodo.ordem || Number(b.medicaoId) - Number(a.medicaoId));
           const atual = ordenadas[0] ?? null;
           const anterior = ordenadas.find((item) => item.avaliacaoId !== atual?.avaliacaoId) ?? null;
-          const mesmaEscala = Boolean(
-            anterior && atual &&
-            Number(anterior.escalaMin) === Number(atual.escalaMin) &&
-            Number(anterior.escalaMax) === Number(atual.escalaMax),
-          );
           const resultadoAnterior = anterior ? Number(anterior.valor) : null;
           const resultadoAtual = atual ? Number(atual.valor) : null;
+          const resultadosNaEscala03 = [resultadoAnterior, resultadoAtual]
+            .filter((valor): valor is number => valor !== null)
+            .every((valor) => Number.isFinite(valor) && valor >= 0 && valor <= 3);
+          const mesmaEscala = Boolean(
+            anterior && atual && (
+              resultadosNaEscala03 ||
+              (
+                Number(anterior.escalaMin) === Number(atual.escalaMin) &&
+                Number(anterior.escalaMax) === Number(atual.escalaMax)
+              )
+            ),
+          );
           const variacao = mesmaEscala && resultadoAnterior !== null && resultadoAtual !== null
             ? Math.round((resultadoAtual - resultadoAnterior) * 100) / 100
             : null;
@@ -475,10 +482,10 @@ export const bloco1CompetenciasFuncaoRouter = router({
             periodoAtual: atual?.periodo.rotulo ?? null,
             resultado2024: anterior?.periodo.ano === 2024 ? resultadoAnterior : (atual?.periodo.ano === 2024 ? resultadoAtual : null),
             resultado2025: anterior?.periodo.ano === 2025 ? resultadoAnterior : (atual?.periodo.ano === 2025 ? resultadoAtual : null),
-            escalaMinAnterior: anterior ? Number(anterior.escalaMin) : null,
-            escalaMaxAnterior: anterior ? Number(anterior.escalaMax) : null,
-            escalaMinAtual: atual ? Number(atual.escalaMin) : null,
-            escalaMaxAtual: atual ? Number(atual.escalaMax) : null,
+            escalaMinAnterior: anterior ? (resultadosNaEscala03 ? 0 : Number(anterior.escalaMin)) : null,
+            escalaMaxAnterior: anterior ? (resultadosNaEscala03 ? 3 : Number(anterior.escalaMax)) : null,
+            escalaMinAtual: atual ? (resultadosNaEscala03 ? 0 : Number(atual.escalaMin)) : null,
+            escalaMaxAtual: atual ? (resultadosNaEscala03 ? 3 : Number(atual.escalaMax)) : null,
             classificacao: atual?.classificacao ?? anterior?.classificacao ?? null,
             comparavel: Boolean(anterior && atual && mesmaEscala),
             novaCompetencia: Boolean(atual && !anterior),
@@ -488,7 +495,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
             motivo: !anterior
               ? "Existe apenas uma Avaliação de Desempenho válida para esta competência."
               : !mesmaEscala
-                ? "As escalas das duas avaliações são diferentes."
+                ? "As medições não puderam ser comparadas com segurança."
                 : null,
           };
         })
