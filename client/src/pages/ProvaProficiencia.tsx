@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Camera, CheckCircle2, ClipboardCheck, Loader2, PlayCircle, RefreshCw, ShieldCheck, UserCheck } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, ClipboardCheck, Loader2, Mic, MonitorUp, PlayCircle, RefreshCw, ShieldCheck, Shuffle, UserCheck, Video } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,9 +24,16 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const [cameraAtiva, setCameraAtiva] = useState(false);
   const [foto, setFoto] = useState<string | null>(null);
   const [aceiteIdentidade, setAceiteIdentidade] = useState(false);
-  const [aceiteRegras, setAceiteRegras] = useState(false);
+  const [mostrarComunicado, setMostrarComunicado] = useState(false);
+  const [aceiteComunicado, setAceiteComunicado] = useState(false);
+  const [mostrarAvisoTela, setMostrarAvisoTela] = useState(false);
+  const [aceiteTela, setAceiteTela] = useState(false);
+  const [sessaoAutorizada, setSessaoAutorizada] = useState(false);
+  const [iniciandoAmbiente, setIniciandoAmbiente] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cameraRef = useRef<MediaStream | null>(null);
+  const cameraMonitorRef = useRef<MediaStream | null>(null);
+  const telaRef = useRef<MediaStream | null>(null);
   const eventosRecentesRef = useRef<Record<string, number>>({});
 
   const provaQuery = trpc.aplicacoesProficiencia.estadoProva.useQuery(
@@ -63,6 +70,13 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     cameraRef.current = null;
     setCameraAtiva(false);
     if (videoRef.current) videoRef.current.srcObject = null;
+  };
+
+  const pararMonitoramento = () => {
+    telaRef.current?.getTracks().forEach(track => track.stop());
+    cameraMonitorRef.current?.getTracks().forEach(track => track.stop());
+    telaRef.current = null;
+    cameraMonitorRef.current = null;
   };
 
   const ativarCamera = async () => {
@@ -135,11 +149,14 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     if (["FINALIZADA", "FINALIZADA_TEMPO"].includes(String(provaQuery.data.tentativaStatus))) setFinalizada(true);
   }, [provaQuery.data]);
 
-  useEffect(() => () => pararCamera(), []);
+  useEffect(() => () => {
+    pararCamera();
+    pararMonitoramento();
+  }, []);
 
   useEffect(() => {
     const id = Number(provaQuery.data?.tentativaId ?? 0);
-    if (!id || finalizada) return;
+    if (!id || finalizada || !sessaoAutorizada) return;
 
     registrarOcorrencia("MONITORAMENTO_INICIADO", "Monitoramento de foco e navegação iniciado.", id);
 
@@ -170,7 +187,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
       document.removeEventListener("contextmenu", onContext);
       window.removeEventListener("keydown", onKey);
     };
-  }, [provaQuery.data?.tentativaId, finalizada]);
+  }, [provaQuery.data?.tentativaId, finalizada, sessaoAutorizada]);
 
   const questoes = (provaQuery.data?.prova?.questoes ?? []) as Questao[];
   const questao = questoes[indice];
@@ -186,22 +203,75 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     salvarMutation.mutate({ aplicacaoId, tentativaId, questaoChave: questaoId, resposta: letra });
   };
 
-  const iniciarAvaliacao = async () => {
-    if (!identidadeQuery.data?.identidadeConfirmada) {
-      setMensagem("Confirme sua identidade antes de iniciar a avaliação.");
-      return;
-    }
-    if (!aceiteRegras) {
-      setMensagem("Leia e confirme as orientações antes de iniciar.");
-      return;
-    }
-    registrarOcorrencia("ABERTURA_CONFIRMADA", "O participante confirmou as orientações de realização.");
+  const abrirComunicado = () => {
+    setMensagem(null);
+    setAceiteComunicado(false);
+    setMostrarComunicado(true);
+  };
+
+  const concluirComunicado = () => {
+    if (!aceiteComunicado) return;
+    registrarOcorrencia("ACEITE_REGRAS", "O participante leu e aceitou as regras obrigatórias da avaliação.");
+    setMostrarComunicado(false);
+    setAceiteTela(false);
+    setMostrarAvisoTela(true);
+  };
+
+  const iniciarAmbienteMonitorado = async () => {
+    if (!aceiteTela || iniciandoAmbiente) return;
+    setIniciandoAmbiente(true);
+    setMensagem(null);
     try {
-      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
-    } catch {
-      registrarOcorrencia("TELA_CHEIA_NAO_AUTORIZADA", "O navegador não entrou em tela cheia no início da avaliação.");
+      if (!navigator.mediaDevices?.getDisplayMedia || !navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Este navegador não oferece os recursos de câmera, microfone e compartilhamento de tela exigidos.");
+      }
+
+      const tela = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      });
+      const trilhaTela = tela.getVideoTracks()[0];
+      const configuracoesTela = trilhaTela?.getSettings?.() as MediaTrackSettings & { displaySurface?: string };
+      if (configuracoesTela?.displaySurface && configuracoesTela.displaySurface !== "monitor") {
+        tela.getTracks().forEach(track => track.stop());
+        registrarOcorrencia("COMPARTILHAMENTO_INVALIDO", "Foi selecionada uma janela ou guia em vez da tela inteira.");
+        throw new Error("Selecione TELA INTEIRA. Janela ou guia do navegador não são aceitas.");
+      }
+
+      const cameraMic = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: true,
+      });
+
+      telaRef.current = tela;
+      cameraMonitorRef.current = cameraMic;
+      trilhaTela?.addEventListener("ended", () => {
+        registrarOcorrencia("INTERRUPCAO_COMPARTILHAMENTO", "O compartilhamento da tela foi interrompido durante a avaliação.", Number(provaQuery.data?.tentativaId ?? 0) || undefined);
+      });
+      cameraMic.getTracks().forEach(track => {
+        track.addEventListener("ended", () => {
+          registrarOcorrencia("INTERRUPCAO_CAMERA_MICROFONE", "Câmera ou microfone foi interrompido durante a avaliação.", Number(provaQuery.data?.tentativaId ?? 0) || undefined);
+        });
+      });
+
+      registrarOcorrencia("AMBIENTE_MONITORADO_AUTORIZADO", "Câmera, microfone e compartilhamento de tela foram autorizados.");
+      try {
+        if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+      } catch {
+        registrarOcorrencia("TELA_CHEIA_NAO_AUTORIZADA", "O navegador não entrou em tela cheia no início da avaliação.");
+      }
+
+      const inicio = await iniciarMutation.mutateAsync({ aplicacaoId });
+      registrarOcorrencia("MONITORAMENTO_INICIADO", "Monitoramento iniciado no mesmo ambiente da aplicação oficial.", Number(inicio.tentativaId));
+      setSessaoAutorizada(true);
+      setMostrarAvisoTela(false);
+      await provaQuery.refetch();
+    } catch (error: any) {
+      pararMonitoramento();
+      setMensagem(error?.message || "Não foi possível preparar o ambiente monitorado.");
+    } finally {
+      setIniciandoAmbiente(false);
     }
-    iniciarMutation.mutate({ aplicacaoId });
   };
 
   const finalizar = () => {
