@@ -27,7 +27,6 @@ export default function AdminAplicacoesProficiencia() {
   const [titulo, setTitulo] = useState("");
   const [agendadaPara, setAgendadaPara] = useState("");
   const [busca, setBusca] = useState("");
-  const [departamento, setDepartamento] = useState("");
   const [selecionados, setSelecionados] = useState<number[]>([]);
   const [aplicacaoSelecionada, setAplicacaoSelecionada] = useState<number | null>(null);
   const [mensagem, setMensagem] = useState<string | null>(null);
@@ -93,46 +92,34 @@ export default function AdminAplicacoesProficiencia() {
     [provasQuery.data, cicloId],
   );
 
-  const participantesBase = (participantesQuery.data ?? []) as any[];
-  const catalogoDepartamentos = (departamentosQuery.data ?? []) as any[];
-
-  // Um líder mantém sua lotação principal, mas também integra operacionalmente
-  // todos os departamentos que lidera. A pessoa continua aparecendo uma única vez.
-  const participantes = useMemo(() => participantesBase.map(item => {
-    const lotacaoPrincipal = String(item.departamentoNome ?? "").trim();
-    const departamentosLiderados = catalogoDepartamentos
-      .filter(dept => dept.status === "ativo" && Number(dept.leaderId) === Number(item.id))
-      .map(dept => String(dept.nome ?? "").trim())
-      .filter(Boolean);
-    const departamentosVinculados = Array.from(new Set([
-      ...(lotacaoPrincipal ? [lotacaoPrincipal] : []),
-      ...departamentosLiderados,
-    ]));
-
-    return {
-      ...item,
-      departamentosLiderados,
-      departamentosVinculados,
-    };
-  }), [participantesBase, catalogoDepartamentos]);
-
-  const departamentos = useMemo(
-    () => Array.from(new Set(
-      participantes.flatMap(item => (item.departamentosVinculados ?? []) as string[]),
-    )).sort((a, b) => a.localeCompare(b, "pt-BR")),
-    [participantes],
+  const provaSelecionada = useMemo(
+    () => provasValidas.find((item: any) => Number(item.id) === Number(provaId)) ?? null,
+    [provasValidas, provaId],
   );
+
+  const normalizarUnidade = (valor: unknown) =>
+    String(valor ?? "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+
+  const participantes = (participantesQuery.data ?? []) as any[];
+
+  // A unidade da aplicação é determinada pela própria prova.
+  // Não existe seleção manual de unidade nesta etapa.
+  const participantesDaUnidade = useMemo(() => {
+    if (!provaSelecionada?.unidade) return [];
+    const unidadeProva = normalizarUnidade(provaSelecionada.unidade);
+    return participantes.filter((item: any) =>
+      normalizarUnidade(item.departamentoNome) === unidadeProva,
+    );
+  }, [participantes, provaSelecionada]);
 
   const participantesFiltrados = useMemo(() => {
     const termo = busca.trim().toLocaleLowerCase("pt-BR");
-    return participantes.filter(item => {
-      const departamentosVinculados = (item.departamentosVinculados ?? []) as string[];
-      if (departamento && !departamentosVinculados.includes(departamento)) return false;
+    return participantesDaUnidade.filter((item: any) => {
       if (!termo) return true;
-      return [item.name, item.email, item.cargo, ...departamentosVinculados]
+      return [item.name, item.email, item.cargo, item.departamentoNome]
         .some(valor => String(valor ?? "").toLocaleLowerCase("pt-BR").includes(termo));
     });
-  }, [busca, departamento, participantes]);
+  }, [busca, participantesDaUnidade]);
 
   const alternarParticipante = (id: number) => {
     setSelecionados(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
@@ -201,6 +188,8 @@ export default function AdminAplicacoesProficiencia() {
                   const id = event.target.value ? Number(event.target.value) : null;
                   setCicloId(id);
                   setProvaId(null);
+                  setSelecionados([]);
+                  setBusca("");
                 }}
               >
                 <option value="">Selecione o ciclo</option>
@@ -220,6 +209,8 @@ export default function AdminAplicacoesProficiencia() {
                 onChange={event => {
                   const id = event.target.value ? Number(event.target.value) : null;
                   setProvaId(id);
+                  setSelecionados([]);
+                  setBusca("");
                   const prova = provasValidas.find((item: any) => Number(item.id) === id);
                   if (prova && !titulo.trim()) setTitulo(`${prova.nome} — ${prova.unidade}`);
                 }}
@@ -247,22 +238,27 @@ export default function AdminAplicacoesProficiencia() {
 
           <div className="rounded-lg border p-4 space-y-4">
             <div className="flex flex-wrap items-end gap-3">
-              <label className="min-w-64 flex-1 space-y-1.5 text-sm font-medium">
-                <span>Unidade</span>
-                <select className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={departamento} onChange={event => setDepartamento(event.target.value)}>
-                  <option value="">Todas as unidades</option>
-                  {departamentos.map(item => <option key={item} value={item}>{item}</option>)}
-                </select>
-              </label>
+              <div className="min-w-64 flex-1 space-y-1.5 text-sm font-medium">
+                <span>Unidade da aplicação</span>
+                <div className="flex h-10 w-full items-center rounded-md border bg-slate-50 px-3 text-sm font-semibold">
+                  {provaSelecionada?.unidade || "Selecione uma prova validada"}
+                </div>
+                <p className="text-xs font-normal text-muted-foreground">
+                  Definida automaticamente pela prova. Somente empregados desta unidade podem ser selecionados.
+                </p>
+              </div>
               <label className="min-w-64 flex-1 space-y-1.5 text-sm font-medium">
                 <span>Pesquisar participante</span>
                 <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><input className="h-10 w-full rounded-md border bg-background pl-9 pr-3 text-sm" value={busca} onChange={event => setBusca(event.target.value)} placeholder="Nome, e-mail ou cargo" /></div>
               </label>
-              <Button variant="outline" onClick={selecionarFiltrados}>Selecionar filtrados</Button>
+              <Button variant="outline" onClick={selecionarFiltrados} disabled={!provaSelecionada}>Selecionar filtrados</Button>
               <Button variant="ghost" onClick={() => setSelecionados([])}>Limpar seleção</Button>
             </div>
 
-            <div className="flex items-center gap-2 text-sm"><Users className="h-4 w-4" /><strong>{selecionados.length}</strong> participante(s) selecionado(s)</div>
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <span className="inline-flex items-center gap-2"><Users className="h-4 w-4" /><strong>{selecionados.length}</strong> participante(s) selecionado(s)</span>
+              {provaSelecionada && <span className="text-muted-foreground">{participantesDaUnidade.length} empregado(s) elegível(is) na unidade da prova.</span>}
+            </div>
             <div className="max-h-72 overflow-auto rounded-md border">
               <table className="w-full min-w-[760px] text-sm">
                 <thead className="sticky top-0 bg-background"><tr className="border-b text-left"><th className="px-3 py-2">Selecionar</th><th className="px-3 py-2">Participante</th><th className="px-3 py-2">Cargo</th><th className="px-3 py-2">Unidade</th></tr></thead>
@@ -274,13 +270,11 @@ export default function AdminAplicacoesProficiencia() {
                       <td className="px-3 py-2">{item.cargo || "—"}</td>
                       <td className="px-3 py-2">
                         <p>{item.departamentoNome || "Sem unidade"}</p>
-                        {item.departamentosLiderados?.length > 0 && (
-                          <p className="text-xs text-muted-foreground">Lidera: {item.departamentosLiderados.join(", ")}</p>
-                        )}
+
                       </td>
                     </tr>
                   ))}
-                  {participantesFiltrados.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">Nenhum participante encontrado.</td></tr>}
+                  {participantesFiltrados.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">{provaSelecionada ? "Nenhum empregado ativo foi encontrado na unidade vinculada a esta prova." : "Selecione uma prova para carregar os empregados da unidade correspondente."}</td></tr>}
                 </tbody>
               </table>
             </div>
