@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { macroRelacionadaDaAD } from "../../../shared/competenciasAdRelacionamento";
+import { ChevronDown, ChevronUp, Sparkles, ShieldCheck, Target, TrendingUp } from "lucide-react";
 
 const relacaoLabel: Record<string, string> = {
   ESSENCIAL: "Essencial",
@@ -22,8 +24,109 @@ const evolucaoLabel: Record<string, string> = {
   SEM_COMPARACAO: "Sem comparação",
 };
 
+
+type ItemVisual = {
+  nome: string;
+  tipo: "Técnica" | "Comportamental";
+  intensidade: number;
+  motivo?: string;
+};
+
+const ECO = {
+  roxo: "#5E2B8A",
+  roxoClaro: "#7650A5",
+  azul: "#4E7CCF",
+  turquesa: "#2FC7D8",
+};
+
+function limitar(valor: number, minimo = 12, maximo = 100) {
+  return Math.max(minimo, Math.min(maximo, Number.isFinite(valor) ? valor : minimo));
+}
+
+function classificacaoNaoEssencial(valor: unknown) {
+  const normalizado = String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\s-]+/g, "_")
+    .toUpperCase();
+  return normalizado.includes("NAO_ESSENCIAL") || normalizado.includes("NAO_APLICAVEL");
+}
+
+function normalizarNivel(valor: number | null | undefined, minimo: number | null | undefined, maximo: number | null | undefined) {
+  if (valor === null || valor === undefined || minimo === null || minimo === undefined || maximo === null || maximo === undefined) return null;
+  const amplitude = Number(maximo) - Number(minimo);
+  if (!Number.isFinite(amplitude) || amplitude <= 0) return null;
+  return ((Number(valor) - Number(minimo)) / amplitude) * 100;
+}
+
+function GraficoVisual({
+  titulo,
+  descricao,
+  itens,
+  accent,
+  icon: Icon,
+  vazio,
+}: {
+  titulo: string;
+  descricao: string;
+  itens: ItemVisual[];
+  accent: string;
+  icon: any;
+  vazio: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+      <div className="mb-5 flex items-start gap-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl" style={{ background: `${accent}16`, color: accent }}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <h3 className="font-semibold text-slate-900">{titulo}</h3>
+          <p className="mt-1 text-xs leading-5 text-slate-500">{descricao}</p>
+        </div>
+      </div>
+      {itens.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-5 text-sm text-slate-500">{vazio}</div>
+      ) : (
+        <div className="space-y-4">
+          {itens.map((item, indice) => (
+            <div key={`${item.tipo}:${item.nome}:${indice}`} className="space-y-1.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="min-w-0 truncate text-sm font-medium text-slate-800" title={item.nome}>{item.nome}</span>
+                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                  {item.tipo}
+                </span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${limitar(item.intensidade)}%`,
+                    background: `linear-gradient(90deg, ${accent}, ${ECO.turquesa})`,
+                  }}
+                  aria-label={`${item.nome}: intensidade visual`}
+                />
+              </div>
+              {item.motivo && <p className="text-[11px] leading-4 text-slate-500">{item.motivo}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Bloco1CompetenciasFuncao() {
+  const { user } = useAuth();
   const [, navigate] = useLocation();
+  const role = String(user?.role ?? "");
+  const isAdmin = role === "admin" || role === "Administrador";
+  const isGerente = role === "gerente";
+  const isLider = role === "lider";
+  const isColaborador = role === "colaborador";
+  const podeSelecionarEmpregado = !isColaborador;
+  const podeEditarClassificacao = isAdmin;
+  const podeCriarAcao = isAdmin || isLider;
   const [colaboradorId, setColaboradorId] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get("colaboradorId") || "";
@@ -35,13 +138,30 @@ export default function Bloco1CompetenciasFuncao() {
   const [justificativaEdicao, setJustificativaEdicao] = useState("");
   const [motivoEdicao, setMotivoEdicao] = useState("Revisão da classificação do eixo técnico");
   const [mensagemEdicao, setMensagemEdicao] = useState("");
+  const [sinteseAberta, setSinteseAberta] = useState(true);
 
-  const empregados = trpc.bloco1CompetenciasFuncao.empregados.useQuery();
-  const pdis = trpc.pdis.list.useQuery();
+  const empregados = trpc.bloco1CompetenciasFuncao.empregados.useQuery(undefined, {
+    enabled: Boolean(user),
+  });
+  const pdisAdmin = trpc.pdis.list.useQuery(undefined, { enabled: Boolean(user && (isAdmin || isGerente)) });
+  const pdisEquipe = trpc.pdis.teamPDIs.useQuery(undefined, { enabled: Boolean(user && isLider) });
+  const pdisMeus = trpc.pdis.myPDIs.useQuery(undefined, { enabled: Boolean(user && (isColaborador || isLider)) });
   const mapa = trpc.bloco1CompetenciasFuncao.mapaIndividual.useQuery(
     { colaboradorId: Number(colaboradorId || 0) },
     { enabled: Boolean(colaboradorId) },
   );
+
+  useEffect(() => {
+    if (isColaborador && user?.id) {
+      setColaboradorId(String(user.id));
+    }
+  }, [isColaborador, user?.id]);
+
+  useEffect(() => {
+    if (!podeSelecionarEmpregado || !colaboradorId || !empregados.data) return;
+    const permitido = (empregados.data as any[]).some((item: any) => Number(item.id) === Number(colaboradorId));
+    if (!permitido) setColaboradorId("");
+  }, [podeSelecionarEmpregado, colaboradorId, empregados.data]);
 
   const salvarEixoMutation = (trpc as any).questionarioAtividades.salvarEixosTecnicos.useMutation({
     onSuccess: async () => {
@@ -118,16 +238,31 @@ export default function Bloco1CompetenciasFuncao() {
     );
   }, [empregados.data, busca]);
 
+  const pdisDisponiveis = useMemo(() => {
+    const todos = [
+      ...((pdisAdmin.data ?? []) as any[]),
+      ...((pdisEquipe.data ?? []) as any[]),
+      ...((pdisMeus.data ?? []) as any[]),
+    ];
+    const unicos = new Map<number, any>();
+    for (const pdi of todos) {
+      const id = Number(pdi.id ?? pdi.pdiId);
+      if (id) unicos.set(id, pdi);
+    }
+    return Array.from(unicos.values());
+  }, [pdisAdmin.data, pdisEquipe.data, pdisMeus.data]);
+
   const pdiDoEmpregado = useMemo(() => {
     if (!colaboradorId) return null;
-    return (pdis.data ?? []).find(
+    return pdisDisponiveis.find(
       (pdi: any) => Number(pdi.colaboradorId) === Number(colaboradorId),
     ) ?? null;
-  }, [pdis.data, colaboradorId]);
+  }, [pdisDisponiveis, colaboradorId]);
 
   const abrirBiblioteca = (eixo: string, macroId?: number | null, macroRelacionada?: string | null) => {
     const params = new URLSearchParams();
-    if (pdiDoEmpregado?.pdiId) params.set("pdiId", String(pdiDoEmpregado.pdiId));
+    const pdiId = pdiDoEmpregado?.pdiId ?? pdiDoEmpregado?.id;
+    if (pdiId) params.set("pdiId", String(pdiId));
     if (eixo) params.set("eixo", eixo);
     if (macroId) params.set("macroId", String(macroId));
     if (macroRelacionada) params.set("macroRelacionada", macroRelacionada);
@@ -136,16 +271,84 @@ export default function Bloco1CompetenciasFuncao() {
     navigate(`/acoes/nova?${params.toString()}`);
   };
 
+  const sintese = useMemo(() => {
+    const tecnicas = (mapa.data?.tecnico?.competencias ?? []) as any[];
+    const comportamentais = (mapa.data?.comportamental?.competencias ?? []) as any[];
+
+    const forca: ItemVisual[] = [];
+    const mantidas: ItemVisual[] = [];
+    const potencialidades: ItemVisual[] = [];
+    const focos: ItemVisual[] = [];
+
+    for (const item of tecnicas) {
+      const anterior = item.percentualAnterior === null || item.percentualAnterior === undefined ? null : Number(item.percentualAnterior);
+      const atual = item.percentualAtual === null || item.percentualAtual === undefined ? null : Number(item.percentualAtual);
+      const delta = anterior !== null && atual !== null ? atual - anterior : null;
+
+      if (delta !== null && delta >= 10) {
+        forca.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: delta });
+      } else if (delta !== null && Math.abs(delta) < 10) {
+        mantidas.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: atual ?? 50 });
+      }
+
+      const nivelPotencial = atual ?? anterior;
+      if (classificacaoNaoEssencial(item.classificacao) && nivelPotencial !== null) {
+        potencialidades.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: nivelPotencial });
+      }
+
+      if (item.novaCompetencia) {
+        focos.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: atual ?? 50, motivo: "Nova competência incluída na avaliação." });
+      } else if (delta !== null && delta <= -10) {
+        focos.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: Math.abs(delta), motivo: "Ponto de atenção para o próximo ciclo de desenvolvimento." });
+      }
+    }
+
+    for (const item of comportamentais) {
+      const anterior = item.resultadoAnterior === null || item.resultadoAnterior === undefined ? null : Number(item.resultadoAnterior);
+      const atual = item.resultadoAtual === null || item.resultadoAtual === undefined ? null : Number(item.resultadoAtual);
+      const min = item.escalaMinAtual ?? item.escalaMinAnterior;
+      const max = item.escalaMaxAtual ?? item.escalaMaxAnterior;
+      const anteriorNorm = normalizarNivel(anterior, min, max);
+      const atualNorm = normalizarNivel(atual, min, max);
+      const deltaNorm = anteriorNorm !== null && atualNorm !== null ? atualNorm - anteriorNorm : null;
+
+      if (deltaNorm !== null && deltaNorm >= 10) {
+        forca.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: deltaNorm });
+      } else if (deltaNorm !== null && Math.abs(deltaNorm) < 10) {
+        mantidas.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: atualNorm ?? 50 });
+      }
+
+      if (classificacaoNaoEssencial(item.classificacao) && atualNorm !== null) {
+        potencialidades.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: atualNorm });
+      }
+
+      if (item.novaCompetencia) {
+        focos.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: atualNorm ?? 50, motivo: "Nova competência incluída na avaliação." });
+      } else if (deltaNorm !== null && deltaNorm <= -10) {
+        focos.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: Math.abs(deltaNorm), motivo: "Ponto de atenção para o próximo ciclo de desenvolvimento." });
+      }
+    }
+
+    const ordem = (a: ItemVisual, b: ItemVisual) => b.intensidade - a.intensidade || a.nome.localeCompare(b.nome, "pt-BR");
+    return {
+      forca: forca.sort(ordem),
+      mantidas: mantidas.sort(ordem),
+      potencialidades: potencialidades.sort(ordem),
+      focos: focos.sort(ordem),
+    };
+  }, [mapa.data]);
+
   return (
     <div className="flex-1 w-full min-w-0 space-y-6 p-2 md:p-6">
       <div>
-        <h1 className="text-3xl font-bold">Evolução Individual</h1>
+        <h1 className="text-3xl font-bold">{isColaborador ? "Minha Evolução" : "Evolução Individual"}</h1>
         <p className="text-muted-foreground max-w-4xl">
           A análise é individual. O objetivo é acompanhar se houve desenvolvimento das competências
           técnicas e comportamentais após as ações do PDI.
         </p>
       </div>
 
+      {podeSelecionarEmpregado && (
       <Card>
         <CardHeader>
           <CardTitle>1. Selecionar empregado</CardTitle>
@@ -173,6 +376,7 @@ export default function Bloco1CompetenciasFuncao() {
           </Select>
         </CardContent>
       </Card>
+      )}
 
       {colaboradorId && mapa.isLoading && (
         <Card>
@@ -252,7 +456,7 @@ export default function Bloco1CompetenciasFuncao() {
                                   ? "Pendente"
                                   : relacaoLabel[item.classificacao] || item.classificacao || "Sem classificação"}
                               </Badge>
-                              {item.editavelClassificacao !== false && (
+                              {podeEditarClassificacao && item.editavelClassificacao !== false && (
                                 <Button size="sm" variant="ghost" onClick={() => abrirJustificativa(item)}>
                                   {eixoAberto === Number(item.eixoRegistroId) ? "Fechar" : "Ver / editar justificativa"}
                                 </Button>
@@ -281,9 +485,13 @@ export default function Bloco1CompetenciasFuncao() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Button size="sm" variant="outline" onClick={() => abrirBiblioteca(item.eixoNome)}>
-                              Criar ação no PDI
-                            </Button>
+                            {podeCriarAcao ? (
+                              <Button size="sm" variant="outline" onClick={() => abrirBiblioteca(item.eixoNome)}>
+                                Criar ação no PDI
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Visualização</span>
+                            )}
                           </TableCell>
                         </TableRow>
                         {eixoAberto === Number(item.eixoRegistroId) && (
@@ -424,17 +632,21 @@ export default function Bloco1CompetenciasFuncao() {
                             ) : null}
                           </TableCell>
                           <TableCell>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => abrirBiblioteca(
-                                item.competenciaNome || "",
-                                Number(item.competenciaMacroId),
-                                macroRelacionadaDaAD(item.competenciaNome),
-                              )}
-                            >
-                              Criar ação no PDI
-                            </Button>
+                            {podeCriarAcao ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => abrirBiblioteca(
+                                  item.competenciaNome || "",
+                                  Number(item.competenciaMacroId),
+                                  macroRelacionadaDaAD(item.competenciaNome),
+                                )}
+                              >
+                                Criar ação no PDI
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Visualização</span>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))
@@ -447,6 +659,70 @@ export default function Bloco1CompetenciasFuncao() {
               </p>
             </CardContent>
           </Card>
+
+          <div className="overflow-hidden rounded-3xl border border-violet-200/80 bg-white shadow-sm">
+            <button
+              type="button"
+              onClick={() => setSinteseAberta((valor) => !valor)}
+              className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left text-white md:px-7"
+              style={{ background: `linear-gradient(105deg, ${ECO.roxo} 0%, ${ECO.azul} 55%, ${ECO.turquesa} 100%)` }}
+            >
+              <div>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  <h2 className="text-lg font-semibold md:text-xl">Síntese Visual da Evolução</h2>
+                </div>
+                <p className="mt-1 max-w-4xl text-sm text-white/85">
+                  Uma leitura visual das evoluções relevantes, competências mantidas, potencialidades e pontos de foco para o próximo PDI.
+                </p>
+              </div>
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15">
+                {sinteseAberta ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </div>
+            </button>
+
+            {sinteseAberta && (
+              <div className="bg-gradient-to-b from-[#F8F6FC] via-white to-[#F2FBFC] p-4 md:p-7">
+                <div className="mb-5 rounded-2xl border border-violet-100 bg-white/80 p-4 text-sm text-slate-600">
+                  <strong className="text-slate-800">Como ler:</strong> os gráficos não apresentam notas ou percentuais. A intensidade das barras serve apenas para destacar visualmente as competências. Evoluções relevantes consideram diferença de pelo menos 10% da amplitude da escala; pequenas oscilações ficam em “Competências Mantidas”.
+                </div>
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <GraficoVisual
+                    titulo="Força da Evolução"
+                    descricao="Competências que apresentaram crescimento relevante entre as avaliações."
+                    itens={sintese.forca}
+                    accent={ECO.roxo}
+                    icon={TrendingUp}
+                    vazio="Ainda não há evolução relevante comparável para destacar."
+                  />
+                  <GraficoVisual
+                    titulo="Competências Mantidas"
+                    descricao="Competências que permaneceram dentro da faixa de estabilidade entre as avaliações."
+                    itens={sintese.mantidas}
+                    accent={ECO.azul}
+                    icon={ShieldCheck}
+                    vazio="Ainda não há competências comparáveis classificadas como mantidas."
+                  />
+                  <GraficoVisual
+                    titulo="Potencialidades"
+                    descricao="Nível de desenvolvimento observado em competências classificadas como não essenciais."
+                    itens={sintese.potencialidades}
+                    accent={ECO.turquesa}
+                    icon={Sparkles}
+                    vazio="Não há potencialidades não essenciais disponíveis para esta leitura."
+                  />
+                  <GraficoVisual
+                    titulo="Pontos de Foco para o Próximo PDI"
+                    descricao="Novas competências e mudanças relevantes que merecem atenção no próximo ciclo de desenvolvimento."
+                    itens={sintese.focos}
+                    accent={ECO.roxoClaro}
+                    icon={Target}
+                    vazio="Nenhum ponto de foco foi identificado pelos critérios atuais."
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
           <Card>
             <CardHeader>
