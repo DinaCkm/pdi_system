@@ -174,6 +174,28 @@ export default function Bloco1CompetenciasFuncao() {
         </CardContent>
       </Card>
 
+      {colaboradorId && mapa.isLoading && (
+        <Card>
+          <CardContent className="p-6 text-sm text-muted-foreground">
+            Carregando histórico técnico e Avaliação de Desempenho do empregado selecionado...
+          </CardContent>
+        </Card>
+      )}
+
+      {colaboradorId && mapa.error && (
+        <Card className="border-red-200">
+          <CardHeader>
+            <CardTitle>Não foi possível carregar a evolução individual</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-red-800">{mapa.error.message}</p>
+            <Button size="sm" variant="outline" onClick={() => mapa.refetch()}>
+              Tentar novamente
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {mapa.data && (
         <>
           <Card>
@@ -194,6 +216,11 @@ export default function Bloco1CompetenciasFuncao() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {mapa.data.comportamental.erroCarregamento && (
+                <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+                  Os dados técnicos foram carregados, mas houve falha ao consultar a Avaliação de Desempenho: {mapa.data.comportamental.erroCarregamento}
+                </div>
+              )}
               <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
