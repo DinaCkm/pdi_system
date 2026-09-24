@@ -182,13 +182,13 @@ export const actionsRouter = router({
       if (input.tipoCompetencia === 'COMPORTAMENTAL' && !input.macroId) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'A competência comportamental precisa estar vinculada às Competências do B.E.M.' });
       }
-      if (input.tipoCompetencia === 'TECNICA') {
-        await ensureTechnicalActionSchema();
+      if (input.tipoCompetencia === 'TECNICA' && !input.macroId) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'O eixo técnico precisa estar vinculado à sua macrocompetência técnica.' });
       }
 
       const actionId = await db.createAction({
         pdiId: input.pdiId,
-        macroId: input.tipoCompetencia === 'TECNICA' ? null : (input.macroId || 1),
+        macroId: input.macroId || 1,
         microcompetencia: input.microcompetencia,
         titulo: input.titulo,
         descricao: input.descricao,
