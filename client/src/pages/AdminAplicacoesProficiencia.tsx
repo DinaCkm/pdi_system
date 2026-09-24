@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CalendarClock, Calculator, CheckCircle2, ClipboardCheck, PlayCircle, RefreshCw, Search, Users } from "lucide-react";
+import { Activity, CalendarClock, Calculator, CheckCircle2, ClipboardCheck, Eye, PlayCircle, RefreshCw, Search, ShieldCheck, UserCheck, Users, X } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,8 @@ export default function AdminAplicacoesProficiencia() {
   const [selecionados, setSelecionados] = useState<number[]>([]);
   const [aplicacaoSelecionada, setAplicacaoSelecionada] = useState<number | null>(null);
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [logsColaboradorId, setLogsColaboradorId] = useState<number | null>(null);
+  const [identidadeColaboradorId, setIdentidadeColaboradorId] = useState<number | null>(null);
 
   const provasQuery = trpc.aplicacoesProficiencia.listarProvasValidas.useQuery(undefined, {
     enabled: Boolean(user && isAdmin),
@@ -51,6 +53,14 @@ export default function AdminAplicacoesProficiencia() {
       refetchInterval: 2000,
       refetchOnWindowFocus: true,
     },
+  );
+  const ocorrenciasQuery = trpc.aplicacoesProficiencia.listarOcorrencias.useQuery(
+    { aplicacaoId: aplicacaoSelecionada ?? 1, colaboradorId: logsColaboradorId ?? undefined },
+    { enabled: Boolean(user && isAdmin && aplicacaoSelecionada && logsColaboradorId), refetchInterval: 2000, refetchOnWindowFocus: true },
+  );
+  const identidadeQuery = trpc.aplicacoesProficiencia.consultarIdentidade.useQuery(
+    { aplicacaoId: aplicacaoSelecionada ?? 1, colaboradorId: identidadeColaboradorId ?? 1 },
+    { enabled: Boolean(user && isAdmin && aplicacaoSelecionada && identidadeColaboradorId), refetchOnWindowFocus: false },
   );
 
   const criarMutation = trpc.aplicacoesProficiencia.criar.useMutation({
@@ -304,7 +314,12 @@ export default function AdminAplicacoesProficiencia() {
               <tbody>
                 {(aplicacoesQuery.data ?? []).map((item: any) => (
                   <tr key={item.id} className="border-b last:border-0">
-                    <td className="px-3 py-3 font-medium">{item.titulo}</td>
+                    <td className="px-3 py-3 font-medium">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>{item.titulo}</span>
+                        {item.modoTeste && <Badge variant="outline" className="border-violet-300 bg-violet-50 text-violet-900">MODO TESTE</Badge>}
+                      </div>
+                    </td>
                     <td className="px-3 py-3">{item.provaCodigo} — {item.provaUnidade}</td>
                     <td className="px-3 py-3">{formatarData(item.agendadaPara)}</td>
                     <td className="px-3 py-3"><Badge variant={statusVariant(String(item.status))}>{item.status}</Badge></td>
@@ -322,7 +337,10 @@ export default function AdminAplicacoesProficiencia() {
       {aplicacaoSelecionada && (
         <Card className="border-blue-200">
           <CardHeader>
-            <CardTitle>Operação e status da aplicação</CardTitle>
+            <CardTitle className="flex flex-wrap items-center gap-2">
+              Operação e status da aplicação
+              {monitoramento?.modoTeste && <Badge variant="outline" className="border-violet-300 bg-violet-50 text-violet-900">MODO TESTE — MESMO AMBIENTE DO CANDIDATO</Badge>}
+            </CardTitle>
             <CardDescription>{aplicacaoMonitorada ? `${aplicacaoMonitorada.titulo} — ${formatarData(aplicacaoMonitorada.agendadaPara)}` : "Carregando aplicação..."}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -354,14 +372,24 @@ export default function AdminAplicacoesProficiencia() {
 
                 <div className="overflow-x-auto rounded-md border">
                   <table className="w-full min-w-[960px] text-sm">
-                    <thead><tr className="border-b text-left"><th className="px-3 py-3">Participante</th><th className="px-3 py-3">Unidade</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Realização</th><th className="px-3 py-3">Início</th><th className="px-3 py-3">Término</th></tr></thead>
+                    <thead><tr className="border-b text-left"><th className="px-3 py-3">Participante</th><th className="px-3 py-3">Unidade</th><th className="px-3 py-3">Identidade</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Realização</th><th className="px-3 py-3">Ocorrências</th><th className="px-3 py-3">Início</th><th className="px-3 py-3">Término</th></tr></thead>
                     <tbody>
                       {monitoramento.participantes.map((item: any) => (
                         <tr key={item.colaboradorId} className="border-b last:border-0">
                           <td className="px-3 py-3 font-medium">{item.colaboradorNome}</td>
                           <td className="px-3 py-3">{item.departamentoNome || "—"}</td>
+                          <td className="px-3 py-3">
+                            {Number(item.identidadeConfirmada || 0) > 0 ? (
+                              <Button size="sm" variant="outline" onClick={() => setIdentidadeColaboradorId(Number(item.colaboradorId))}><UserCheck className="mr-1 h-4 w-4" />Confirmada</Button>
+                            ) : <Badge variant="secondary">Pendente</Badge>}
+                          </td>
                           <td className="px-3 py-3"><Badge variant={item.situacao === "FINALIZOU" ? "secondary" : item.situacao === "EM_ANDAMENTO" ? "default" : "outline"}>{item.situacao === "NAO_INICIOU" ? "Não iniciou" : item.situacao === "EM_ANDAMENTO" ? "Em andamento" : "Finalizou"}</Badge></td>
                           <td className="px-3 py-3"><div className="flex items-center gap-2"><div className="h-2 w-32 overflow-hidden rounded-full bg-slate-200"><div className="h-full bg-slate-700" style={{ width: `${Math.min(100, Number(item.percentualRealizacao || 0))}%` }} /></div><span>{Number(item.percentualRealizacao || 0)}%</span></div></td>
+                          <td className="px-3 py-3">
+                            <Button size="sm" variant="outline" onClick={() => setLogsColaboradorId(Number(item.colaboradorId))}>
+                              <Activity className="mr-1 h-4 w-4" />{Number(item.totalOcorrencias || 0)} log(s)
+                            </Button>
+                          </td>
                           <td className="px-3 py-3">{formatarData(item.iniciadaEm)}</td>
                           <td className="px-3 py-3">{item.finalizadaEm ? <span className="inline-flex items-center gap-1"><CheckCircle2 className="h-4 w-4 text-green-700" />{formatarData(item.finalizadaEm)}</span> : "—"}</td>
                         </tr>
@@ -373,6 +401,59 @@ export default function AdminAplicacoesProficiencia() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {logsColaboradorId && aplicacaoSelecionada && (
+        <div className="fixed inset-0 z-[220] grid place-items-center bg-black/70 p-4">
+          <div className="max-h-[85vh] w-full max-w-4xl overflow-auto rounded-xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="flex items-center gap-2 text-xl font-semibold"><Activity className="h-5 w-5 text-blue-700" />Logs da tentativa</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Eventos registrados no mesmo ambiente utilizado pelo candidato.</p>
+              </div>
+              <Button variant="outline" onClick={() => setLogsColaboradorId(null)}><X className="mr-1 h-4 w-4" />Fechar</Button>
+            </div>
+            <div className="mt-5 space-y-2">
+              {ocorrenciasQuery.isLoading ? <p className="text-sm text-muted-foreground">Carregando logs...</p> :
+                (ocorrenciasQuery.data ?? []).length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma ocorrência registrada.</p> :
+                (ocorrenciasQuery.data ?? []).map((log: any) => (
+                  <div key={log.id} className="rounded-md border p-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <strong>{log.tipo}</strong>
+                      <span className="text-xs text-muted-foreground">{formatarData(log.createdAt)}</span>
+                    </div>
+                    {log.detalhe && <p className="mt-1 text-muted-foreground">{log.detalhe}</p>}
+                    {log.tentativaId && <p className="mt-1 text-xs text-muted-foreground">Tentativa #{log.tentativaId}</p>}
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {identidadeColaboradorId && aplicacaoSelecionada && (
+        <div className="fixed inset-0 z-[230] grid place-items-center bg-black/75 p-4">
+          <div className="w-full max-w-3xl rounded-xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="flex items-center gap-2 text-xl font-semibold"><ShieldCheck className="h-5 w-5 text-blue-700" />Identidade registrada</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Conferência visual manual vinculada a esta aplicação.</p>
+              </div>
+              <Button variant="outline" onClick={() => setIdentidadeColaboradorId(null)}><X className="mr-1 h-4 w-4" />Fechar</Button>
+            </div>
+            {identidadeQuery.isLoading ? <p className="mt-5 text-sm text-muted-foreground">Carregando identidade...</p> : identidadeQuery.data ? (
+              <div className="mt-5 grid gap-5 md:grid-cols-[280px_1fr]">
+                <img src={identidadeQuery.data.fotoData} alt="Fotografia de identidade" className="aspect-video w-full rounded-lg border object-cover" />
+                <div className="space-y-3 text-sm">
+                  <p><strong>Participante:</strong> {identidadeQuery.data.nome || "—"}</p>
+                  <p><strong>E-mail:</strong> {identidadeQuery.data.email || "—"}</p>
+                  <p><strong>Confirmado em:</strong> {formatarData(identidadeQuery.data.confirmadoEm)}</p>
+                  <div className="rounded-md border bg-slate-50 p-3 leading-6">{identidadeQuery.data.declaracao}</div>
+                </div>
+              </div>
+            ) : <p className="mt-5 text-sm text-muted-foreground">Não há identidade registrada.</p>}
+          </div>
+        </div>
       )}
     </div>
   );
