@@ -2,9 +2,33 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/customTrpc";
 import * as db from "../db";
 import { actions as acoes } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificate } from "./certificateGenerator";
+
+let technicalActionSchemaReady = false;
+
+async function ensureTechnicalActionSchema() {
+  if (technicalActionSchemaReady) return;
+  const conn = await db.getDb();
+  if (!conn) throw new Error("Database not available");
+
+  const result = await conn.execute(sql`
+    SELECT IS_NULLABLE AS isNullable
+      FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = 'actions'
+       AND COLUMN_NAME = 'macroId'
+     LIMIT 1
+  `);
+  const rows = Array.isArray((result as any)?.[0]) ? (result as any)[0] : result;
+  const isNullable = String(rows?.[0]?.isNullable ?? "").toUpperCase() === "YES";
+
+  if (!isNullable) {
+    await conn.execute(sql`ALTER TABLE actions MODIFY COLUMN macroId INT NULL`);
+  }
+  technicalActionSchemaReady = true;
+}
 
 // Router de Ações Simplificado
 export const actionsRouter = router({
@@ -141,6 +165,7 @@ export const actionsRouter = router({
       prazo: z.string(),
       macroId: z.number().optional(),
       microcompetencia: z.string().optional(),
+      tipoCompetencia: z.enum(['TECNICA', 'COMPORTAMENTAL']).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       if (ctx.user.role !== 'admin' && ctx.user.role !== 'lider') {
@@ -154,9 +179,16 @@ export const actionsRouter = router({
         prazoDate = input.prazo as Date;
       }
       
+      if (input.tipoCompetencia === 'COMPORTAMENTAL' && !input.macroId) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'A competência comportamental precisa estar vinculada às Competências do B.E.M.' });
+      }
+      if (input.tipoCompetencia === 'TECNICA') {
+        await ensureTechnicalActionSchema();
+      }
+
       const actionId = await db.createAction({
         pdiId: input.pdiId,
-        macroId: input.macroId || 1,
+        macroId: input.tipoCompetencia === 'TECNICA' ? null : (input.macroId || 1),
         microcompetencia: input.microcompetencia,
         titulo: input.titulo,
         descricao: input.descricao,
