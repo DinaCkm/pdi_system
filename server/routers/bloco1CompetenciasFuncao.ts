@@ -134,39 +134,45 @@ export const bloco1CompetenciasFuncaoRouter = router({
         });
       }
 
-      const eixosQuestionario = await db
-        .select({
-          eixoRegistroId: questionarioAtividadesEixosTecnicos.id,
-          questionarioId: questionariosAtividadesFuncao.id,
-          anoQuestionario: questionariosAtividadesFuncao.ano,
-          versaoQuestionario: questionariosAtividadesFuncao.versao,
-          statusQuestionario: questionariosAtividadesFuncao.status,
-          fonteQuestionario: questionariosAtividadesFuncao.fonte,
-          provaId: questionarioAtividadesEixosTecnicos.provaId,
-          origemProvaChave: questionarioAtividadesEixosTecnicos.origemProvaChave,
-          eixoChave: questionarioAtividadesEixosTecnicos.eixoChave,
-          eixoNome: questionarioAtividadesEixosTecnicos.eixoNome,
-          classificacao: questionarioAtividadesEixosTecnicos.classificacao,
-          statusClassificacao: questionarioAtividadesEixosTecnicos.statusClassificacao,
-          justificativa: questionarioAtividadesEixosTecnicos.justificativa,
-        })
-        .from(questionarioAtividadesEixosTecnicos)
-        .innerJoin(
-          questionariosAtividadesFuncao,
-          eq(questionarioAtividadesEixosTecnicos.questionarioId, questionariosAtividadesFuncao.id),
-        )
-        .where(
-          and(
-            eq(questionariosAtividadesFuncao.colaboradorId, input.colaboradorId),
-            eq(questionarioAtividadesEixosTecnicos.origemProva, "PROVA_HISTORICA"),
-          ),
-        )
-        .orderBy(
-          desc(questionariosAtividadesFuncao.ano),
-          desc(questionariosAtividadesFuncao.versao),
-          desc(questionariosAtividadesFuncao.id),
-          desc(questionarioAtividadesEixosTecnicos.id),
-        );
+      let eixosQuestionario: any[] = [];
+      try {
+        eixosQuestionario = await db
+          .select({
+            eixoRegistroId: questionarioAtividadesEixosTecnicos.id,
+            questionarioId: questionariosAtividadesFuncao.id,
+            anoQuestionario: questionariosAtividadesFuncao.ano,
+            versaoQuestionario: questionariosAtividadesFuncao.versao,
+            statusQuestionario: questionariosAtividadesFuncao.status,
+            fonteQuestionario: questionariosAtividadesFuncao.fonte,
+            provaId: questionarioAtividadesEixosTecnicos.provaId,
+            origemProvaChave: questionarioAtividadesEixosTecnicos.origemProvaChave,
+            eixoChave: questionarioAtividadesEixosTecnicos.eixoChave,
+            eixoNome: questionarioAtividadesEixosTecnicos.eixoNome,
+            classificacao: questionarioAtividadesEixosTecnicos.classificacao,
+            statusClassificacao: questionarioAtividadesEixosTecnicos.statusClassificacao,
+            justificativa: questionarioAtividadesEixosTecnicos.justificativa,
+          })
+          .from(questionarioAtividadesEixosTecnicos)
+          .innerJoin(
+            questionariosAtividadesFuncao,
+            eq(questionarioAtividadesEixosTecnicos.questionarioId, questionariosAtividadesFuncao.id),
+          )
+          .where(
+            and(
+              eq(questionariosAtividadesFuncao.colaboradorId, input.colaboradorId),
+              eq(questionarioAtividadesEixosTecnicos.origemProva, "PROVA_HISTORICA"),
+            ),
+          )
+          .orderBy(
+            desc(questionariosAtividadesFuncao.ano),
+            desc(questionariosAtividadesFuncao.versao),
+            desc(questionariosAtividadesFuncao.id),
+            desc(questionarioAtividadesEixosTecnicos.id),
+          );
+      } catch (error) {
+        console.warn("[EVOLUCAO_INDIVIDUAL] Histórico regional indisponível; usando matriz individual.", error);
+        eixosQuestionario = [];
+      }
 
       const eixoReferencia = eixosQuestionario[0] ?? null;
       const questionarioId = eixoReferencia?.questionarioId ?? null;
@@ -323,39 +329,40 @@ export const bloco1CompetenciasFuncaoRouter = router({
         };
       });
 
-      const comportamentais = await db
-        .select({
-          medicaoId: medicoesCompetencias.id,
-          avaliacaoId: avaliacoes.id,
-          avaliacaoTitulo: avaliacoes.titulo,
-          avaliacaoStatus: avaliacoes.status,
-          dataReferencia: avaliacoes.dataReferencia,
-          cicloId: avaliacoes.cicloId,
-          cicloNome: ciclos.nome,
-          cicloDataInicio: ciclos.dataInicio,
-          cicloDataFim: ciclos.dataFim,
-          competenciaMacroId: medicoesCompetencias.competenciaMacroId,
-          competenciaNome: competenciasMacros.nome,
-          valor: medicoesCompetencias.valor,
-          escalaMin: medicoesCompetencias.escalaMin,
-          escalaMax: medicoesCompetencias.escalaMax,
-          validada: medicoesCompetencias.validada,
-        })
-        .from(medicoesCompetencias)
-        .innerJoin(avaliacoes, eq(medicoesCompetencias.avaliacaoId, avaliacoes.id))
-        .leftJoin(ciclos, eq(avaliacoes.cicloId, ciclos.id))
-        .leftJoin(
-          competenciasMacros,
-          eq(medicoesCompetencias.competenciaMacroId, competenciasMacros.id),
-        )
-        .where(
-          and(
-            eq(medicoesCompetencias.colaboradorId, input.colaboradorId),
-            eq(medicoesCompetencias.tipoCompetencia, "COMPORTAMENTAL"),
-            eq(medicoesCompetencias.fonte, "AVALIACAO_DESEMPENHO"),
-          ),
-        )
-        .orderBy(desc(avaliacoes.dataReferencia), desc(medicoesCompetencias.id));
+      let comportamentais: any[] = [];
+      let erroComportamental: string | null = null;
+      try {
+        const comportamentaisResult = await db.execute(sql`
+          SELECT mc.id AS medicaoId,
+                 a.id AS avaliacaoId,
+                 a.titulo AS avaliacaoTitulo,
+                 a.status AS avaliacaoStatus,
+                 a.data_referencia AS dataReferencia,
+                 a.cicloId AS cicloId,
+                 c.nome AS cicloNome,
+                 c.dataInicio AS cicloDataInicio,
+                 c.dataFim AS cicloDataFim,
+                 mc.competenciaMacroId AS competenciaMacroId,
+                 cm.nome AS competenciaNome,
+                 mc.valor AS valor,
+                 mc.escala_min AS escalaMin,
+                 mc.escala_max AS escalaMax,
+                 mc.validada AS validada
+            FROM medicoes_competencias mc
+            JOIN avaliacoes a ON a.id = mc.avaliacaoId
+            LEFT JOIN ciclos c ON c.id = a.cicloId
+            LEFT JOIN competencias_macros cm ON cm.id = mc.competenciaMacroId
+           WHERE mc.colaboradorId = ${input.colaboradorId}
+             AND mc.tipoCompetencia = 'COMPORTAMENTAL'
+             AND mc.fonte = 'AVALIACAO_DESEMPENHO'
+           ORDER BY a.data_referencia DESC, mc.id DESC
+        `);
+        comportamentais = rowsOf<any>(comportamentaisResult);
+      } catch (error: any) {
+        console.error("[EVOLUCAO_INDIVIDUAL] Falha ao carregar Avaliação de Desempenho.", error);
+        erroComportamental = error?.message || "Não foi possível carregar as competências comportamentais.";
+        comportamentais = [];
+      }
 
       function periodoMedicao(item: any): { ano: number; rotulo: string; ordem: number } {
         const data = String(item.dataReferencia ?? "");
@@ -456,6 +463,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
           regraAtual:
             "Comparação entre as duas Avaliações de Desempenho válidas mais recentes da mesma competência e na mesma escala.",
           discNoCalculo: false,
+          erroCarregamento: erroComportamental,
         },
       };
     }),
