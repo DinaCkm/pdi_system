@@ -16,7 +16,7 @@ export default function RichTextDisplay({ content, className = '' }: RichTextDis
   const isHtml = /<[a-z][\s\S]*>/i.test(content);
 
   if (!isHtml) {
-    return <span className={className}>{content}</span>;
+    return <span className={`whitespace-pre-wrap ${className}`}>{content}</span>;
   }
 
   const sanitized = DOMPurify.sanitize(content, {
