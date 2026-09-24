@@ -287,7 +287,7 @@ export default function Bloco1CompetenciasFuncao() {
 
       if (delta !== null && delta >= 10) {
         forca.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: delta });
-      } else if (delta !== null && Math.abs(delta) < 10) {
+      } else if (delta !== null && delta > 0 && delta < 10) {
         mantidas.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: atual ?? 50 });
       }
 
@@ -298,8 +298,10 @@ export default function Bloco1CompetenciasFuncao() {
 
       if (item.novaCompetencia) {
         focos.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: atual ?? 50, motivo: "Nova competência incluída na avaliação." });
-      } else if (delta !== null && delta <= -10) {
-        focos.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: Math.abs(delta), motivo: "Ponto de atenção para o próximo ciclo de desenvolvimento." });
+      } else if (delta !== null && delta < 0) {
+        focos.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: Math.abs(delta), motivo: "Houve redução em relação à avaliação anterior." });
+      } else if (delta === 0) {
+        focos.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: 12, motivo: "Não houve crescimento entre as avaliações." });
       }
     }
 
@@ -321,7 +323,7 @@ export default function Bloco1CompetenciasFuncao() {
 
       if (deltaNorm !== null && deltaNorm >= 10) {
         forca.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: deltaNorm });
-      } else if (deltaNorm !== null && Math.abs(deltaNorm) < 10) {
+      } else if (deltaNorm !== null && deltaNorm > 0 && deltaNorm < 10) {
         mantidas.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: atualNorm ?? 50 });
       }
 
@@ -331,8 +333,10 @@ export default function Bloco1CompetenciasFuncao() {
 
       if (semHistoricoComparavel || item.novaCompetencia) {
         focos.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: atualNorm ?? 50, motivo: "Competência sem histórico comparável; considerar no próximo ciclo de desenvolvimento." });
-      } else if (deltaNorm !== null && deltaNorm <= -10) {
-        focos.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: Math.abs(deltaNorm), motivo: "Ponto de atenção para o próximo ciclo de desenvolvimento." });
+      } else if (deltaNorm !== null && deltaNorm < 0) {
+        focos.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: Math.abs(deltaNorm), motivo: "Houve redução em relação à avaliação anterior." });
+      } else if (deltaNorm === 0) {
+        focos.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: 12, motivo: "Não houve crescimento entre as avaliações." });
       }
     }
 
@@ -418,6 +422,70 @@ export default function Bloco1CompetenciasFuncao() {
               </CardDescription>
             </CardHeader>
           </Card>
+
+          <div className="overflow-hidden rounded-3xl border border-violet-200/80 bg-white shadow-sm">
+            <button
+              type="button"
+              onClick={() => setSinteseAberta((valor) => !valor)}
+              className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left text-white md:px-7"
+              style={{ background: `linear-gradient(105deg, ${ECO.roxo} 0%, ${ECO.azul} 55%, ${ECO.turquesa} 100%)` }}
+            >
+              <div>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  <h2 className="text-lg font-semibold md:text-xl">Síntese Visual da Evolução</h2>
+                </div>
+                <p className="mt-1 max-w-4xl text-sm text-white/85">
+                  Uma leitura visual das evoluções relevantes, crescimentos positivos, potencialidades e pontos de foco para o próximo PDI.
+                </p>
+              </div>
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15">
+                {sinteseAberta ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </div>
+            </button>
+
+            {sinteseAberta && (
+              <div className="bg-gradient-to-b from-[#F8F6FC] via-white to-[#F2FBFC] p-4 md:p-7">
+                <div className="mb-5 rounded-2xl border border-violet-100 bg-white/80 p-4 text-sm text-slate-600">
+                  <strong className="text-slate-800">Como ler:</strong> os gráficos não apresentam notas ou percentuais. A intensidade das barras serve apenas para destacar visualmente as competências. “Força da Evolução” considera crescimento de pelo menos 10% da amplitude da escala. Para “Pontos de Foco”, não existe margem de tolerância: qualquer redução ou ausência de crescimento entra como foco do próximo PDI.
+                </div>
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <GraficoVisual
+                    titulo="Força da Evolução"
+                    descricao="Competências que apresentaram crescimento relevante entre as avaliações."
+                    itens={sintese.forca}
+                    accent={ECO.roxo}
+                    icon={TrendingUp}
+                    vazio="Ainda não há evolução relevante comparável para destacar."
+                  />
+                  <GraficoVisual
+                    titulo="Potencialidades"
+                    descricao="Nível de desenvolvimento observado em competências classificadas como não essenciais."
+                    itens={sintese.potencialidades}
+                    accent={ECO.turquesa}
+                    icon={Sparkles}
+                    vazio="Não há potencialidades não essenciais disponíveis para esta leitura."
+                  />
+                  <GraficoVisual
+                    titulo="Crescimento Positivo"
+                    descricao="Competências que cresceram positivamente, mas abaixo do limiar de 10% usado para destacar a Força da Evolução."
+                    itens={sintese.mantidas}
+                    accent={ECO.azul}
+                    icon={ShieldCheck}
+                    vazio="Ainda não há crescimentos positivos abaixo do limiar de destaque."
+                  />
+                  <GraficoVisual
+                    titulo="Pontos de Foco para o Próximo PDI"
+                    descricao="Novas competências, qualquer redução e qualquer ausência de crescimento entram como foco do próximo PDI."
+                    itens={sintese.focos}
+                    accent={ECO.roxoClaro}
+                    icon={Target}
+                    vazio="Nenhum ponto de foco foi identificado pelos critérios atuais."
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
           <Card>
             <CardHeader>
@@ -667,70 +735,6 @@ export default function Bloco1CompetenciasFuncao() {
             </CardContent>
           </Card>
 
-          <div className="overflow-hidden rounded-3xl border border-violet-200/80 bg-white shadow-sm">
-            <button
-              type="button"
-              onClick={() => setSinteseAberta((valor) => !valor)}
-              className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left text-white md:px-7"
-              style={{ background: `linear-gradient(105deg, ${ECO.roxo} 0%, ${ECO.azul} 55%, ${ECO.turquesa} 100%)` }}
-            >
-              <div>
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" />
-                  <h2 className="text-lg font-semibold md:text-xl">Síntese Visual da Evolução</h2>
-                </div>
-                <p className="mt-1 max-w-4xl text-sm text-white/85">
-                  Uma leitura visual das evoluções relevantes, competências mantidas, potencialidades e pontos de foco para o próximo PDI.
-                </p>
-              </div>
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15">
-                {sinteseAberta ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-              </div>
-            </button>
-
-            {sinteseAberta && (
-              <div className="bg-gradient-to-b from-[#F8F6FC] via-white to-[#F2FBFC] p-4 md:p-7">
-                <div className="mb-5 rounded-2xl border border-violet-100 bg-white/80 p-4 text-sm text-slate-600">
-                  <strong className="text-slate-800">Como ler:</strong> os gráficos não apresentam notas ou percentuais. A intensidade das barras serve apenas para destacar visualmente as competências. Evoluções relevantes consideram diferença de pelo menos 10% da amplitude da escala; pequenas oscilações ficam em “Competências Mantidas”.
-                </div>
-                <div className="grid gap-5 xl:grid-cols-2">
-                  <GraficoVisual
-                    titulo="Força da Evolução"
-                    descricao="Competências que apresentaram crescimento relevante entre as avaliações."
-                    itens={sintese.forca}
-                    accent={ECO.roxo}
-                    icon={TrendingUp}
-                    vazio="Ainda não há evolução relevante comparável para destacar."
-                  />
-                  <GraficoVisual
-                    titulo="Competências Mantidas"
-                    descricao="Competências que permaneceram dentro da faixa de estabilidade entre as avaliações."
-                    itens={sintese.mantidas}
-                    accent={ECO.azul}
-                    icon={ShieldCheck}
-                    vazio="Ainda não há competências comparáveis classificadas como mantidas."
-                  />
-                  <GraficoVisual
-                    titulo="Potencialidades"
-                    descricao="Nível de desenvolvimento observado em competências classificadas como não essenciais."
-                    itens={sintese.potencialidades}
-                    accent={ECO.turquesa}
-                    icon={Sparkles}
-                    vazio="Não há potencialidades não essenciais disponíveis para esta leitura."
-                  />
-                  <GraficoVisual
-                    titulo="Pontos de Foco para o Próximo PDI"
-                    descricao="Novas competências e mudanças relevantes que merecem atenção no próximo ciclo de desenvolvimento."
-                    itens={sintese.focos}
-                    accent={ECO.roxoClaro}
-                    icon={Target}
-                    vazio="Nenhum ponto de foco foi identificado pelos critérios atuais."
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
           <Card>
             <CardHeader>
               <CardTitle>Regra metodológica aplicada</CardTitle>
@@ -739,7 +743,7 @@ export default function Bloco1CompetenciasFuncao() {
               <p><strong>Técnicas:</strong> histórico técnico válido = indicador anterior; próxima Avaliação de Proficiência oficial = indicador atual; enquanto ela não ocorrer, o campo permanece em branco.</p>
               <p><strong>Comportamentais:</strong> comparação das duas Avaliações de Desempenho válidas mais recentes da mesma competência e mesma escala.</p>
               <p><strong>Leitura:</strong> resultado maior = evolução; resultado igual = estabilidade; resultado menor = redução.</p>
-              <p><strong>PDI:</strong> estabilidade ou redução sinaliza necessidade de atenção, mas a criação de nova ação permanece disponível em qualquer resultado, inclusive quando houve evolução.</p>
+              <p><strong>PDI:</strong> para definição de foco do próximo ciclo não há margem de 10%: qualquer redução, ausência de crescimento ou competência nova entra como ponto de foco. O limiar de 10% é usado apenas para destacar a força da evolução.</p>
               <p><strong>DISC:</strong> não participa do cálculo atual; fica reservado para funcionalidade futura.</p>
             </CardContent>
           </Card>
