@@ -61,6 +61,35 @@ async function dbObrigatorio() {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco de dados indisponível." });
   await ensureHomologacaoTables(db);
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS proficiencia_identidades (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      aplicacao_id INT NOT NULL,
+      colaborador_id INT NOT NULL,
+      foto_data LONGTEXT NOT NULL,
+      declaracao TEXT NOT NULL,
+      confirmado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY prof_identidade_aplicacao_colaborador (aplicacao_id, colaborador_id),
+      INDEX prof_identidade_aplicacao_idx (aplicacao_id),
+      INDEX prof_identidade_colaborador_idx (colaborador_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `));
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS proficiencia_ocorrencias (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      aplicacao_id INT NOT NULL,
+      tentativa_id INT NULL,
+      colaborador_id INT NOT NULL,
+      tipo VARCHAR(80) NOT NULL,
+      detalhe VARCHAR(500) NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX prof_ocorrencia_aplicacao_idx (aplicacao_id),
+      INDEX prof_ocorrencia_tentativa_idx (tentativa_id),
+      INDEX prof_ocorrencia_colaborador_idx (colaborador_id),
+      INDEX prof_ocorrencia_created_idx (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `));
   return db;
 }
 
@@ -385,13 +414,19 @@ export const aplicacoesProficienciaRouter = router({
         SELECT ap.colaborador_id AS colaboradorId, u.name AS colaboradorNome,
                d.nome AS departamentoNome, t.id AS tentativaId, t.status AS tentativaStatus,
                t.iniciada_em AS iniciadaEm, t.ultima_atividade_em AS ultimaAtividadeEm,
-               t.finalizada_em AS finalizadaEm, COUNT(r.id) AS respostasSalvas
+               t.finalizada_em AS finalizadaEm, COUNT(r.id) AS respostasSalvas,
+               MAX(CASE WHEN pi.id IS NOT NULL THEN 1 ELSE 0 END) AS identidadeConfirmada,
+               (SELECT COUNT(*) FROM proficiencia_ocorrencias po
+                 WHERE po.aplicacao_id = ap.aplicacao_id
+                   AND po.colaborador_id = ap.colaborador_id) AS totalOcorrencias
           FROM aplicacoes_proficiencia_participantes ap
           JOIN users u ON u.id = ap.colaborador_id
           LEFT JOIN departamentos d ON d.id = u.departamentoId
           LEFT JOIN tentativas_proficiencia t
             ON t.aplicacao_id = ap.aplicacao_id AND t.colaborador_id = ap.colaborador_id
           LEFT JOIN respostas_proficiencia r ON r.tentativa_id = t.id
+          LEFT JOIN proficiencia_identidades pi
+            ON pi.aplicacao_id = ap.aplicacao_id AND pi.colaborador_id = ap.colaborador_id
          WHERE ap.aplicacao_id = ${input.aplicacaoId}
          GROUP BY ap.colaborador_id, u.name, d.nome, t.id, t.status,
                   t.iniciada_em, t.ultima_atividade_em, t.finalizada_em
@@ -421,6 +456,137 @@ export const aplicacoesProficienciaRouter = router({
         },
         participantes,
       };
+    }),
+
+
+  estadoIdentidade: assessmentProcedure
+    .input(z.object({ aplicacaoId: z.number().int().positive() }))
+    .query(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
+      const result = await db.execute(sql`
+        SELECT confirmado_em AS confirmadoEm
+          FROM proficiencia_identidades
+         WHERE aplicacao_id = ${input.aplicacaoId}
+           AND colaborador_id = ${ctx.user.id}
+         LIMIT 1
+      `);
+      const identidade = rowsOf<any>(result)[0] ?? null;
+      return { necessaria: true, identidadeConfirmada: Boolean(identidade), confirmadoEm: identidade?.confirmadoEm ?? null };
+    }),
+
+  registrarIdentidade: assessmentProcedure
+    .input(z.object({
+      aplicacaoId: z.number().int().positive(),
+      fotoDataUrl: z.string().min(100).max(2500000),
+      aceiteDeclaracao: z.literal(true),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
+      if (!input.fotoDataUrl.startsWith("data:image/")) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "A fotografia capturada é inválida." });
+      }
+      const nome = String(ctx.user.name || "Participante").trim();
+      const declaracao = "Declaro que sou " + nome + ", participante identificado(a) nesta plataforma, e que sou a pessoa que realizará esta Avaliação de Proficiência para a Função. Confirmo que esta fotografia foi capturada por mim imediatamente antes do início da avaliação.";
+      await db.execute(sql`
+        INSERT INTO proficiencia_identidades
+          (aplicacao_id, colaborador_id, foto_data, declaracao, confirmado_em)
+        VALUES
+          (${input.aplicacaoId}, ${ctx.user.id}, ${input.fotoDataUrl}, ${declaracao}, NOW())
+        ON DUPLICATE KEY UPDATE
+          foto_data = VALUES(foto_data),
+          declaracao = VALUES(declaracao),
+          confirmado_em = NOW(),
+          updated_at = NOW()
+      `);
+      await db.execute(sql`
+        INSERT INTO proficiencia_ocorrencias
+          (aplicacao_id, tentativa_id, colaborador_id, tipo, detalhe)
+        VALUES
+          (${input.aplicacaoId}, NULL, ${ctx.user.id}, 'IDENTIDADE_CONFIRMADA', 'Fotografia e declaração registradas antes do início da avaliação.')
+      `);
+      return { confirmada: true };
+    }),
+
+  registrarOcorrencia: assessmentProcedure
+    .input(z.object({
+      aplicacaoId: z.number().int().positive(),
+      tentativaId: z.number().int().positive().nullable().optional(),
+      tipo: z.string().trim().min(2).max(80),
+      detalhe: z.string().trim().max(500).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
+      if (input.tentativaId) {
+        const tentativaResult = await db.execute(sql`
+          SELECT id FROM tentativas_proficiencia
+           WHERE id = ${input.tentativaId}
+             AND aplicacao_id = ${input.aplicacaoId}
+             AND colaborador_id = ${ctx.user.id}
+           LIMIT 1
+        `);
+        if (!rowsOf<any>(tentativaResult).length) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Tentativa inválida para o registro de ocorrência." });
+        }
+      }
+      await db.execute(sql`
+        INSERT INTO proficiencia_ocorrencias
+          (aplicacao_id, tentativa_id, colaborador_id, tipo, detalhe)
+        VALUES
+          (${input.aplicacaoId}, ${input.tentativaId ?? null}, ${ctx.user.id}, ${input.tipo}, ${input.detalhe ?? null})
+      `);
+      return { registrada: true };
+    }),
+
+  listarOcorrencias: adminProcedure
+    .input(z.object({
+      aplicacaoId: z.number().int().positive(),
+      colaboradorId: z.number().int().positive().optional(),
+    }))
+    .query(async ({ input }) => {
+      const db = await dbObrigatorio();
+      const result = input.colaboradorId
+        ? await db.execute(sql`
+            SELECT po.id, po.aplicacao_id AS aplicacaoId, po.tentativa_id AS tentativaId,
+                   po.colaborador_id AS colaboradorId, u.name AS colaboradorNome,
+                   po.tipo, po.detalhe, po.created_at AS createdAt
+              FROM proficiencia_ocorrencias po
+              LEFT JOIN users u ON u.id = po.colaborador_id
+             WHERE po.aplicacao_id = ${input.aplicacaoId}
+               AND po.colaborador_id = ${input.colaboradorId}
+             ORDER BY po.created_at DESC, po.id DESC
+             LIMIT 500
+          `)
+        : await db.execute(sql`
+            SELECT po.id, po.aplicacao_id AS aplicacaoId, po.tentativa_id AS tentativaId,
+                   po.colaborador_id AS colaboradorId, u.name AS colaboradorNome,
+                   po.tipo, po.detalhe, po.created_at AS createdAt
+              FROM proficiencia_ocorrencias po
+              LEFT JOIN users u ON u.id = po.colaborador_id
+             WHERE po.aplicacao_id = ${input.aplicacaoId}
+             ORDER BY po.created_at DESC, po.id DESC
+             LIMIT 500
+          `);
+      return rowsOf<any>(result);
+    }),
+
+  consultarIdentidade: adminProcedure
+    .input(z.object({ aplicacaoId: z.number().int().positive(), colaboradorId: z.number().int().positive() }))
+    .query(async ({ input }) => {
+      const db = await dbObrigatorio();
+      const result = await db.execute(sql`
+        SELECT pi.aplicacao_id AS aplicacaoId, pi.colaborador_id AS colaboradorId,
+               u.name AS nome, u.email, pi.foto_data AS fotoData,
+               pi.declaracao, pi.confirmado_em AS confirmadoEm
+          FROM proficiencia_identidades pi
+          LEFT JOIN users u ON u.id = pi.colaborador_id
+         WHERE pi.aplicacao_id = ${input.aplicacaoId}
+           AND pi.colaborador_id = ${input.colaboradorId}
+         LIMIT 1
+      `);
+      return rowsOf<any>(result)[0] ?? null;
     }),
 
   minhasAplicacoes: assessmentProcedure.query(async ({ ctx }) => {
@@ -478,6 +644,15 @@ export const aplicacoesProficienciaRouter = router({
       const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
       if (vinculo.status !== "LIBERADA") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Esta prova ainda não está liberada para início." });
+      }
+      const identidadeResult = await db.execute(sql`
+        SELECT id FROM proficiencia_identidades
+         WHERE aplicacao_id = ${input.aplicacaoId}
+           AND colaborador_id = ${ctx.user.id}
+         LIMIT 1
+      `);
+      if (!rowsOf<any>(identidadeResult).length) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Confirme sua identidade antes de iniciar a avaliação." });
       }
       if (vinculo.tentativaId) return { tentativaId: Number(vinculo.tentativaId), criada: false };
       try {
