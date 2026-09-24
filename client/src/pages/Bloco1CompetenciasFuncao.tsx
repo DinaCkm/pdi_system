@@ -306,11 +306,18 @@ export default function Bloco1CompetenciasFuncao() {
     for (const item of comportamentais) {
       const anterior = item.resultadoAnterior === null || item.resultadoAnterior === undefined ? null : Number(item.resultadoAnterior);
       const atual = item.resultadoAtual === null || item.resultadoAtual === undefined ? null : Number(item.resultadoAtual);
-      const min = item.escalaMinAtual ?? item.escalaMinAnterior;
-      const max = item.escalaMaxAtual ?? item.escalaMaxAnterior;
-      const anteriorNorm = normalizarNivel(anterior, min, max);
-      const atualNorm = normalizarNivel(atual, min, max);
+
+      // A Avaliação de Desempenho utiliza escala 0–3.
+      // A normalização é apenas interna para aplicar o limiar visual de 10%;
+      // as notas continuam aparecendo somente na tabela de comparação.
+      const anteriorNorm = anterior !== null && anterior >= 0 && anterior <= 3
+        ? normalizarNivel(anterior, 0, 3)
+        : normalizarNivel(anterior, item.escalaMinAnterior, item.escalaMaxAnterior);
+      const atualNorm = atual !== null && atual >= 0 && atual <= 3
+        ? normalizarNivel(atual, 0, 3)
+        : normalizarNivel(atual, item.escalaMinAtual, item.escalaMaxAtual);
       const deltaNorm = anteriorNorm !== null && atualNorm !== null ? atualNorm - anteriorNorm : null;
+      const semHistoricoComparavel = atualNorm !== null && anteriorNorm === null;
 
       if (deltaNorm !== null && deltaNorm >= 10) {
         forca.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: deltaNorm });
@@ -322,8 +329,8 @@ export default function Bloco1CompetenciasFuncao() {
         potencialidades.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: atualNorm });
       }
 
-      if (item.novaCompetencia) {
-        focos.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: atualNorm ?? 50, motivo: "Nova competência incluída na avaliação." });
+      if (semHistoricoComparavel || item.novaCompetencia) {
+        focos.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: atualNorm ?? 50, motivo: "Competência sem histórico comparável; considerar no próximo ciclo de desenvolvimento." });
       } else if (deltaNorm !== null && deltaNorm <= -10) {
         focos.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: Math.abs(deltaNorm), motivo: "Ponto de atenção para o próximo ciclo de desenvolvimento." });
       }
