@@ -435,43 +435,6 @@ export const bloco1CompetenciasFuncaoRouter = router({
         .sort((a, b) => String(a.competenciaNome || "").localeCompare(String(b.competenciaNome || ""), "pt-BR"));
 
       return {
-              ...item,
-              comparavel: false,
-              variacao: null,
-              evolucao: "SEM_COMPARACAO",
-              criarNovaAcaoPdi: false,
-              motivo: !possuiDoisCiclos
-                ? "É necessário ter resultados válidos em 2024 e 2025."
-                : "As escalas dos dois ciclos são diferentes.",
-            };
-          }
-
-          const variacao =
-            Math.round((item.resultado2025 - item.resultado2024) * 100) / 100;
-          const evolucao =
-            variacao > 0
-              ? "EVOLUCAO"
-              : variacao < 0
-                ? "REDUCAO"
-                : "ESTABILIDADE";
-
-          return {
-            ...item,
-            comparavel: true,
-            variacao,
-            evolucao,
-            criarNovaAcaoPdi: evolucao !== "EVOLUCAO",
-            motivo: null,
-          };
-        })
-        .sort((a: any, b: any) =>
-          String(a.competenciaNome || "").localeCompare(
-            String(b.competenciaNome || ""),
-            "pt-BR",
-          ),
-        );
-
-      return {
         empregado,
         tecnico: {
           matrizId: null,
