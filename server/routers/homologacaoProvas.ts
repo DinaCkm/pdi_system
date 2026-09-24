@@ -105,9 +105,14 @@ async function criarAplicacaoTeste(db: any, provaId: number, usuarioId: number) 
   const prova = await obterProvaAtual(db, provaId);
   let homologacao = await obterHomologacaoAtual(db, provaId);
 
+  const snapshotJson = JSON.stringify(prova);
+  const snapshotHash = gerarHashSnapshot(prova);
+
   if (
     homologacao?.aplicacaoTesteId &&
-    ["EM_TESTE", "TESTADA", "HOMOLOGADA"].includes(String(homologacao.status))
+    ["EM_TESTE", "TESTADA", "HOMOLOGADA"].includes(String(homologacao.status)) &&
+    homologacao.snapshotHash &&
+    String(homologacao.snapshotHash) === snapshotHash
   ) {
     return {
       prova,
@@ -117,12 +122,38 @@ async function criarAplicacaoTeste(db: any, provaId: number, usuarioId: number) 
     };
   }
 
+  if (
+    homologacao?.aplicacaoTesteId &&
+    ["EM_TESTE", "TESTADA", "HOMOLOGADA"].includes(String(homologacao.status)) &&
+    (!homologacao.snapshotHash || String(homologacao.snapshotHash) !== snapshotHash)
+  ) {
+    await db.execute(sql`
+      UPDATE provas_importadas_homologacao
+         SET status = 'SUBSTITUIDA_POR_NOVO_TESTE',
+             homologada_em = NULL,
+             homologada_por = NULL,
+             updated_at = NOW()
+       WHERE id = ${Number(homologacao.id)}
+    `);
+    await registrarHistorico(db, {
+      provaId,
+      acao: "TESTE_DESATUALIZADO_SUBSTITUIDO",
+      usuarioId,
+      resumo: [
+        { campo: "Aplicação de teste anterior", antes: Number(homologacao.aplicacaoTesteId), depois: "Substituída" },
+        { campo: "Motivo", antes: null, depois: "A prova validada foi alterada após a criação do snapshot do teste." },
+      ],
+    });
+    await db.execute(sql`
+      INSERT INTO provas_importadas_homologacao (prova_id, status)
+      VALUES (${provaId}, 'PENDENTE')
+    `);
+    homologacao = await obterHomologacaoAtual(db, provaId);
+  }
+
   if (!homologacao || String(homologacao.status) !== "PENDENTE") {
     homologacao = await marcarPendenciaHomologacao(db, provaId);
   }
-
-  const snapshotJson = JSON.stringify(prova);
-  const snapshotHash = gerarHashSnapshot(prova);
 
   const criado = await db.transaction(async (tx: any) => {
     const result = await tx.execute(sql`

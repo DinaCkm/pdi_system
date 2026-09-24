@@ -21,6 +21,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const [respostas, setRespostas] = useState<Record<string, string>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [finalizada, setFinalizada] = useState(false);
+  const [revisandoPendentes, setRevisandoPendentes] = useState(false);
   const [cameraAtiva, setCameraAtiva] = useState(false);
   const [foto, setFoto] = useState<string | null>(null);
   const [aceiteIdentidade, setAceiteIdentidade] = useState(false);
@@ -247,11 +248,34 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const totalRespondidas = useMemo(() => questoes.filter(item => Boolean(respostas[String(item.id)])).length, [questoes, respostas]);
   const percentual = questoes.length ? Math.round((totalRespondidas / questoes.length) * 100) : 0;
 
-  const responder = (questaoId: string, letra: string) => {
+  const responder = async (questaoId: string, letra: string) => {
     if (!provaQuery.data || !tentativaId || finalizada) return;
-    setRespostas(current => ({ ...current, [questaoId]: letra }));
+    const novasRespostas = { ...respostas, [questaoId]: letra };
+    setRespostas(novasRespostas);
     setMensagem(null);
-    salvarMutation.mutate({ aplicacaoId, tentativaId, questaoChave: questaoId, resposta: letra });
+    try {
+      await salvarMutation.mutateAsync({ aplicacaoId, tentativaId, questaoChave: questaoId, resposta: letra });
+
+      const faltantes = questoes
+        .map((item, idx) => ({ item, idx }))
+        .filter(({ item }) => !novasRespostas[String(item.id)]);
+
+      if (faltantes.length === 0) {
+        setMensagem("Todas as questões foram respondidas. Finalizando a avaliação...");
+        finalizarMutation.mutate({ aplicacaoId, tentativaId });
+        return;
+      }
+
+      if (revisandoPendentes) {
+        const proxima = faltantes.find(({ idx }) => idx > indice) ?? faltantes[0];
+        if (proxima) {
+          setIndice(proxima.idx);
+          setMensagem(`Ainda faltam ${faltantes.length} questão(ões). As pendentes estão sendo reapresentadas.`);
+        }
+      }
+    } catch (error: any) {
+      setMensagem(error?.message || "Não foi possível salvar a resposta.");
+    }
   };
 
   const abrirComunicado = () => {
@@ -341,13 +365,47 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     }
   };
 
+  const irParaPendentes = () => {
+    const faltantes = questoes
+      .map((item, idx) => ({ item, idx }))
+      .filter(({ item }) => !respostas[String(item.id)]);
+
+    if (faltantes.length === 0) {
+      finalizarMutation.mutate({ aplicacaoId, tentativaId });
+      return;
+    }
+
+    setRevisandoPendentes(true);
+    const proxima = faltantes.find(({ idx }) => idx !== indice) ?? faltantes[0];
+    setIndice(proxima.idx);
+    setMensagem(
+      `Ainda faltam ${faltantes.length} questão(ões). Todas precisam ser marcadas. Caso não saiba a resposta, marque “Não sei”.`,
+    );
+  };
+
   const finalizar = () => {
     if (!tentativaId) return;
     if (totalRespondidas < questoes.length) {
-      setMensagem(`Ainda faltam ${questoes.length - totalRespondidas} questão(ões). Você pode revisar antes de finalizar.`);
+      irParaPendentes();
       return;
     }
     finalizarMutation.mutate({ aplicacaoId, tentativaId });
+  };
+
+  const avancar = () => {
+    if (revisandoPendentes) {
+      irParaPendentes();
+      return;
+    }
+    if (indice < questoes.length - 1) {
+      setIndice(value => Math.min(questoes.length - 1, value + 1));
+      return;
+    }
+    if (totalRespondidas < questoes.length) {
+      irParaPendentes();
+      return;
+    }
+    finalizar();
   };
 
   if (provaQuery.isLoading) {
@@ -647,7 +705,10 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between gap-3"><Badge variant="secondary">Questão {indice + 1} de {questoes.length}</Badge></div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Badge variant="secondary">Questão {indice + 1} de {questoes.length}</Badge>
+              {revisandoPendentes && <Badge variant="destructive">Revisão de questões pendentes</Badge>}
+            </div>
             <div className="pt-2 text-lg font-semibold leading-relaxed">
               <RichTextDisplay
                 content={questao.enunciado}
@@ -662,7 +723,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
                 <button
                   key={`${questao.id}-${opcao.letra}`}
                   type="button"
-                  onClick={() => responder(String(questao.id), String(opcao.letra))}
+                  onClick={() => void responder(String(questao.id), String(opcao.letra))}
                   className={`flex w-full items-start gap-3 rounded-lg border p-4 text-left transition ${selecionada ? "border-blue-600 bg-blue-50" : "bg-white hover:bg-slate-50"}`}
                 >
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border text-sm font-semibold">{opcao.letra}</span>
@@ -678,11 +739,19 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
         <div className="flex flex-wrap justify-between gap-3">
           <Button variant="outline" disabled={indice === 0} onClick={() => setIndice(value => Math.max(0, value - 1))}>Anterior</Button>
-          <div className="flex gap-2">
-            {indice < questoes.length - 1 ? (
-              <Button onClick={() => setIndice(value => Math.min(questoes.length - 1, value + 1))}>Próxima</Button>
+          <div className="flex flex-wrap gap-2">
+            {totalRespondidas < questoes.length ? (
+              <Button onClick={avancar}>
+                {revisandoPendentes
+                  ? `PRÓXIMA PENDENTE (${questoes.length - totalRespondidas})`
+                  : indice < questoes.length - 1
+                    ? "Próxima"
+                    : `REVISAR ${questoes.length - totalRespondidas} PENDENTE(S)`}
+              </Button>
             ) : (
-              <Button onClick={finalizar} disabled={finalizarMutation.isPending}>{finalizarMutation.isPending ? "FINALIZANDO..." : "FINALIZAR AVALIAÇÃO"}</Button>
+              <Button onClick={finalizar} disabled={finalizarMutation.isPending}>
+                {finalizarMutation.isPending ? "FINALIZANDO..." : "FINALIZAR AVALIAÇÃO"}
+              </Button>
             )}
           </div>
         </div>
