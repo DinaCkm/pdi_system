@@ -22,6 +22,7 @@ type ProvaSnapshot = {
   nome: string;
   unidade: string;
   ano: number;
+  cicloId: number | null;
   totalQuestoes: number;
   questoes: QuestaoImportada[];
 };
@@ -54,7 +55,7 @@ async function dbObrigatorio() {
 
 async function obterProvaValidada(db: any, provaId: number) {
   const result = await db.execute(sql`
-    SELECT id, codigo, nome, unidade, ano, total_questoes AS totalQuestoes,
+    SELECT id, codigo, nome, unidade, ano, ciclo_id AS cicloId, total_questoes AS totalQuestoes,
            questoes_json AS questoesJson, status
       FROM provas_importadas
      WHERE id = ${provaId}
@@ -73,6 +74,7 @@ async function obterProvaValidada(db: any, provaId: number) {
       nome: String(prova.nome),
       unidade: String(prova.unidade),
       ano: Number(prova.ano),
+      cicloId: prova.cicloId ? Number(prova.cicloId) : null,
       totalQuestoes: Number(prova.totalQuestoes),
       questoes,
     } satisfies ProvaSnapshot;
@@ -219,8 +221,11 @@ export const aplicacoesProficienciaRouter = router({
   listarProvasValidas: adminProcedure.query(async () => {
     const db = await dbObrigatorio();
     const result = await db.execute(sql`
-      SELECT p.id, p.codigo, p.nome, p.unidade, p.ano, p.total_questoes AS totalQuestoes
+      SELECT p.id, p.codigo, p.nome, p.unidade, p.ano,
+             p.ciclo_id AS cicloId, c.nome AS cicloNome,
+             p.total_questoes AS totalQuestoes
         FROM provas_importadas p
+        LEFT JOIN ciclos c ON c.id = p.ciclo_id
         LEFT JOIN (
           SELECT h1.prova_id, h1.status
             FROM provas_importadas_homologacao h1
@@ -253,6 +258,7 @@ export const aplicacoesProficienciaRouter = router({
   criar: adminProcedure
     .input(z.object({
       provaId: z.number().int().positive(),
+      cicloId: z.number().int().positive(),
       titulo: z.string().trim().min(3).max(255),
       agendadaPara: z.string().min(10).max(40),
       colaboradorIds: z.array(z.number().int().positive()).min(1).max(1000),
@@ -260,6 +266,9 @@ export const aplicacoesProficienciaRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
       const prova = await obterProvaValidada(db, input.provaId);
+      if (!prova.cicloId || Number(prova.cicloId) !== Number(input.cicloId)) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A prova selecionada não pertence ao ciclo informado. Atualize a tela e selecione novamente." });
+      }
       const homologacao = await obterHomologacaoAtual(db, input.provaId);
       if (homologacao && String(homologacao.status) !== "HOMOLOGADA") {
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Esta prova precisa ser testada e homologada antes de uma aplicação oficial." });
