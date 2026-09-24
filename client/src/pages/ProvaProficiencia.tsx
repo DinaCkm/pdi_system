@@ -35,6 +35,10 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const cameraMonitorRef = useRef<MediaStream | null>(null);
   const telaRef = useRef<MediaStream | null>(null);
   const eventosRecentesRef = useRef<Record<string, number>>({});
+  const violacoesRef = useRef(0);
+  const [violacoes, setViolacoes] = useState(0);
+  const [bloqueada, setBloqueada] = useState(false);
+  const LIMITE_VIOLACOES = 3;
 
   const provaQuery = trpc.aplicacoesProficiencia.estadoProva.useQuery(
     { aplicacaoId },
@@ -56,6 +60,16 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const salvarMutation = trpc.aplicacoesProficiencia.salvarResposta.useMutation({
     onError: error => setMensagem(error.message),
   });
+  const bloquearMutation = trpc.aplicacoesProficiencia.bloquearTentativa.useMutation({
+    onSuccess: async () => {
+      setBloqueada(true);
+      setSessaoAutorizada(false);
+      pararMonitoramento();
+      if (document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+      await provaQuery.refetch();
+    },
+  });
+
   const finalizarMutation = trpc.aplicacoesProficiencia.finalizar.useMutation({
     onSuccess: () => {
       setFinalizada(true);
@@ -160,32 +174,69 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
     registrarOcorrencia("MONITORAMENTO_INICIADO", "Monitoramento de foco e navegação iniciado.", id);
 
-    const onVisibility = () => {
-      if (document.hidden) registrarOcorrencia("TROCA_ABA", "A aba da avaliação perdeu visibilidade.", id);
+    const registrarViolacao = (tipo: string, detalhe: string) => {
+      registrarOcorrencia(tipo, detalhe, id);
+      violacoesRef.current += 1;
+      setViolacoes(violacoesRef.current);
+      setMensagem(`Ação não permitida. Ocorrência ${violacoesRef.current} de ${LIMITE_VIOLACOES} registrada.`);
+      if (violacoesRef.current >= LIMITE_VIOLACOES) {
+        bloquearMutation.mutate({ aplicacaoId, tentativaId: id, motivo: "SEGURANCA" });
+      }
     };
-    const onBlur = () => registrarOcorrencia("SAIDA_FOCO", "A janela da avaliação perdeu o foco.", id);
-    const onFullscreen = () => {
-      if (!document.fullscreenElement) registrarOcorrencia("SAIDA_TELA_CHEIA", "O participante saiu do modo de tela cheia.", id);
-    };
-    const onContext = (event: MouseEvent) => {
-      registrarOcorrencia("MENU_CONTEXTO", "Foi acionado o menu de contexto durante a avaliação.", id);
+
+    const bloquearConteudo = (event: Event) => {
       event.preventDefault();
+      registrarViolacao("CONTEUDO_PROTEGIDO", "Tentativa de selecionar, copiar, colar, recortar, imprimir, salvar ou reproduzir conteúdo.");
+    };
+    const onVisibility = () => {
+      if (document.hidden) registrarViolacao("TROCA_ABA", "A aba da avaliação perdeu visibilidade.");
+    };
+    const onBlur = () => registrarViolacao("SAIDA_FOCO", "A janela da avaliação perdeu o foco.");
+    const onFullscreen = () => {
+      if (!document.fullscreenElement) registrarViolacao("SAIDA_TELA_CHEIA", "O participante saiu do modo de tela cheia.");
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "PrintScreen") registrarOcorrencia("PRINT_SCREEN", "Foi detectada tecla Print Screen durante a avaliação.", id);
+      const tecla = event.key.toLowerCase();
+      if ((event.ctrlKey || event.metaKey) && ["c", "x", "v", "p", "s", "u", "a"].includes(tecla)) {
+        bloquearConteudo(event);
+        return;
+      }
+      if (event.key === "PrintScreen") {
+        event.preventDefault();
+        registrarViolacao("PRINT_SCREEN", "Tecla Print Screen detectada pelo navegador.");
+      }
+    };
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+      registrarOcorrencia("TENTATIVA_FECHAMENTO", "Tentativa de fechar ou recarregar a página durante a avaliação.", id);
     };
 
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onBlur);
     document.addEventListener("fullscreenchange", onFullscreen);
-    document.addEventListener("contextmenu", onContext);
-    window.addEventListener("keydown", onKey);
+    document.addEventListener("selectstart", bloquearConteudo);
+    document.addEventListener("contextmenu", bloquearConteudo);
+    document.addEventListener("copy", bloquearConteudo);
+    document.addEventListener("cut", bloquearConteudo);
+    document.addEventListener("paste", bloquearConteudo);
+    document.addEventListener("dragstart", bloquearConteudo);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("beforeprint", bloquearConteudo);
+    window.addEventListener("beforeunload", onBeforeUnload);
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("blur", onBlur);
       document.removeEventListener("fullscreenchange", onFullscreen);
-      document.removeEventListener("contextmenu", onContext);
-      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("selectstart", bloquearConteudo);
+      document.removeEventListener("contextmenu", bloquearConteudo);
+      document.removeEventListener("copy", bloquearConteudo);
+      document.removeEventListener("cut", bloquearConteudo);
+      document.removeEventListener("paste", bloquearConteudo);
+      document.removeEventListener("dragstart", bloquearConteudo);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("beforeprint", bloquearConteudo);
+      window.removeEventListener("beforeunload", onBeforeUnload);
     };
   }, [provaQuery.data?.tentativaId, finalizada, sessaoAutorizada]);
 
@@ -226,6 +277,20 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
         throw new Error("Este navegador não oferece os recursos de câmera, microfone e compartilhamento de tela exigidos.");
       }
 
+      const getScreenDetails = (window as any).getScreenDetails;
+      if (typeof getScreenDetails === "function") {
+        try {
+          const detalhes = await getScreenDetails.call(window);
+          const quantidade = Array.isArray(detalhes?.screens) ? detalhes.screens.length : 0;
+          if (quantidade > 1) {
+            registrarOcorrencia("MULTIPLAS_TELAS", `Foram detectadas ${quantidade} telas/monitores conectados.`);
+            throw new Error("Foram identificadas múltiplas telas/monitores. Para iniciar, mantenha somente uma tela ativa.");
+          }
+        } catch (error: any) {
+          if (/múltiplas telas/i.test(String(error?.message ?? ""))) throw error;
+        }
+      }
+
       const tela = await navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: false,
@@ -254,7 +319,9 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
         });
       });
 
-      registrarOcorrencia("AMBIENTE_MONITORADO_AUTORIZADO", "Câmera, microfone e compartilhamento de tela foram autorizados.");
+      registrarOcorrencia("AMBIENTE_MONITORADO_AUTORIZADO", "Câmera, microfone e compartilhamento de tela inteira foram autorizados.");
+      violacoesRef.current = 0;
+      setViolacoes(0);
       try {
         if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
       } catch {
@@ -291,6 +358,24 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     return (
       <div className="mx-auto max-w-2xl p-6">
         <Card className="border-red-200"><CardHeader><CardTitle>Prova indisponível</CardTitle></CardHeader><CardContent className="space-y-4"><p className="text-sm text-red-800">{provaQuery.error.message}</p><Button variant="outline" onClick={() => setLocation("/avaliacoes")}>Voltar para Avaliações</Button></CardContent></Card>
+      </div>
+    );
+  }
+
+  if (bloqueada || String(provaQuery.data?.tentativaStatus) === "BLOQUEADA") {
+    return (
+      <div className="grid min-h-screen place-items-center bg-slate-950 p-6">
+        <Card className="w-full max-w-2xl border-amber-400">
+          <CardHeader>
+            <CardTitle className="text-xl">Avaliação bloqueada por segurança</CardTitle>
+            <CardDescription>As respostas já registradas foram preservadas.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+              O limite de ocorrências de segurança foi atingido. Entre em contato com o administrador para análise dos logs e eventual liberação.
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -540,7 +625,8 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   if (!questao) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-6">
+    <div className="prova-protegida min-h-screen bg-slate-50 p-4 md:p-6">
+      <style>{`.prova-protegida,.prova-protegida *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}@media print{body *{visibility:hidden!important}.prova-protegida:before{visibility:visible!important;content:'CONTEÚDO PROTEGIDO — IMPRESSÃO NÃO AUTORIZADA';position:fixed;inset:0;display:grid;place-items:center;font-size:24px;font-weight:700}}`}</style>
       <div className="mx-auto max-w-4xl space-y-4">
         {provaQuery.data.modoTeste && <div className="rounded-md border border-violet-300 bg-violet-50 p-3 text-center text-sm font-semibold text-violet-950">MODO TESTE — ADMINISTRADOR — MESMA EXPERIÊNCIA DO CANDIDATO — RESULTADO FORA DOS INDICADORES</div>}
         <Card>
@@ -553,6 +639,10 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
           </CardHeader>
         </Card>
 
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-white p-3 text-xs">
+          <span>Ambiente protegido: seleção, cópia, impressão e atalhos bloqueados.</span>
+          <Badge variant={violacoes ? "destructive" : "secondary"}>Ocorrências {violacoes}/{LIMITE_VIOLACOES}</Badge>
+        </div>
         {mensagem && <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">{mensagem}</div>}
 
         <Card>
