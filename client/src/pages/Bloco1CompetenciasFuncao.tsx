@@ -24,7 +24,10 @@ const evolucaoLabel: Record<string, string> = {
 
 export default function Bloco1CompetenciasFuncao() {
   const [, navigate] = useLocation();
-  const [colaboradorId, setColaboradorId] = useState("");
+  const [colaboradorId, setColaboradorId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("colaboradorId") || "";
+  });
   const [busca, setBusca] = useState("");
   const [eixoAberto, setEixoAberto] = useState<number | null>(null);
   const [statusEdicao, setStatusEdicao] = useState<"CLASSIFICADO" | "PENDENTE">("CLASSIFICADO");
@@ -187,8 +190,7 @@ export default function Bloco1CompetenciasFuncao() {
             <CardHeader>
               <CardTitle>2. Competências Técnicas</CardTitle>
               <CardDescription>
-                A classificação funcional vem do Questionário de Atividades/Função. O indicador anterior é o marco zero da prova histórica regional.
-                O resultado atual somente será preenchido pela Prova 2, quando ela for aplicada.
+                O indicador histórico mostra a última referência técnica válida já registrada. A nova avaliação permanece em branco até existir uma aplicação oficial calculada para o empregado.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -198,8 +200,8 @@ export default function Bloco1CompetenciasFuncao() {
                     <TableRow>
                       <TableHead>Eixo / competência técnica</TableHead>
                       <TableHead>Classificação individual</TableHead>
-                      <TableHead>Histórico (marco zero)</TableHead>
-                      <TableHead>Prova 2</TableHead>
+                      <TableHead>Avaliação histórica</TableHead>
+                      <TableHead>Próxima avaliação</TableHead>
                       <TableHead>Evolução</TableHead>
                       <TableHead>Próxima ação</TableHead>
                     </TableRow>
@@ -208,7 +210,7 @@ export default function Bloco1CompetenciasFuncao() {
                     {mapa.data.tecnico.competencias.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          Nenhum registro histórico regional vinculado ao Questionário de Atividades/Função foi localizado para este empregado.
+                          Nenhum resultado técnico histórico foi localizado para este empregado.
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -223,16 +225,18 @@ export default function Bloco1CompetenciasFuncao() {
                                   ? "Pendente"
                                   : relacaoLabel[item.classificacao] || item.classificacao || "Sem classificação"}
                               </Badge>
-                              <Button size="sm" variant="ghost" onClick={() => abrirJustificativa(item)}>
-                                {eixoAberto === Number(item.eixoRegistroId) ? "Fechar" : "Ver / editar justificativa"}
-                              </Button>
+                              {item.editavelClassificacao !== false && (
+                                <Button size="sm" variant="ghost" onClick={() => abrirJustificativa(item)}>
+                                  {eixoAberto === Number(item.eixoRegistroId) ? "Fechar" : "Ver / editar justificativa"}
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>
                             {item.percentualAnterior === null ? "—" : `${Number(item.percentualAnterior).toFixed(1)}%`}
                           </TableCell>
                           <TableCell>
-                            {item.percentualAtual === null ? "Aguardando Prova 2" : `${Number(item.percentualAtual).toFixed(1)}%`}
+                            {item.percentualAtual === null ? "" : `${Number(item.percentualAtual).toFixed(1)}%`}
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -245,7 +249,7 @@ export default function Bloco1CompetenciasFuncao() {
                               }
                             >
                               {item.evolucao === "SEM_COMPARACAO"
-                                ? "Aguardando Prova 2"
+                                ? "—"
                                 : `${evolucaoLabel[item.evolucao] || item.evolucao} ${item.evolucaoPp === null ? "" : `(${Number(item.evolucaoPp) > 0 ? "+" : ""}${Number(item.evolucaoPp).toFixed(1)} p.p.)`}`}
                             </Badge>
                           </TableCell>
@@ -327,10 +331,9 @@ export default function Bloco1CompetenciasFuncao() {
 
           <Card>
             <CardHeader>
-              <CardTitle>3. Competências Comportamentais — Evolução 2024 × 2025</CardTitle>
+              <CardTitle>3. Competências Comportamentais — Avaliação de Desempenho</CardTitle>
               <CardDescription>
-                Nesta etapa, a evolução considera exclusivamente a mesma competência comportamental
-                medida em 2024 e 2025. O DISC não participa deste cálculo.
+                Compara as duas Avaliações de Desempenho válidas mais recentes da mesma competência e na mesma escala. O DISC não participa deste cálculo.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -339,8 +342,8 @@ export default function Bloco1CompetenciasFuncao() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Competência comportamental</TableHead>
-                      <TableHead>2024</TableHead>
-                      <TableHead>2025</TableHead>
+                      <TableHead>Avaliação anterior</TableHead>
+                      <TableHead>Avaliação atual</TableHead>
                       <TableHead>Variação</TableHead>
                       <TableHead>Evolução</TableHead>
                       <TableHead>Próxima ação</TableHead>
@@ -350,7 +353,7 @@ export default function Bloco1CompetenciasFuncao() {
                     {mapa.data.comportamental.competencias.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center text-muted-foreground">
-                          Nenhuma competência comportamental comparável localizada para este empregado.
+                          Nenhum resultado de Avaliação de Desempenho comportamental foi localizado para este empregado.
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -365,10 +368,12 @@ export default function Bloco1CompetenciasFuncao() {
                             ) : null}
                           </TableCell>
                           <TableCell>
-                            {item.resultado2024 === null ? "—" : Number(item.resultado2024).toFixed(2)}
+                            <div>{item.resultadoAnterior === null ? "—" : Number(item.resultadoAnterior).toFixed(2)}</div>
+                            {item.periodoAnterior && <div className="text-xs text-muted-foreground">{item.periodoAnterior}</div>}
                           </TableCell>
                           <TableCell>
-                            {item.resultado2025 === null ? "—" : Number(item.resultado2025).toFixed(2)}
+                            <div>{item.resultadoAtual === null ? "—" : Number(item.resultadoAtual).toFixed(2)}</div>
+                            {item.periodoAtual && <div className="text-xs text-muted-foreground">{item.periodoAtual}</div>}
                           </TableCell>
                           <TableCell>
                             {item.variacao === null
@@ -421,8 +426,8 @@ export default function Bloco1CompetenciasFuncao() {
               <CardTitle>Regra metodológica aplicada</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground space-y-2">
-              <p><strong>Técnicas:</strong> Questionário de Atividades/Função = classificação funcional; prova histórica regional = indicador original (marco zero); Prova 2 = indicador atual; evolução = Prova 2 − histórico.</p>
-              <p><strong>Comportamentais:</strong> comparar a mesma competência entre 2024 e 2025.</p>
+              <p><strong>Técnicas:</strong> histórico técnico válido = indicador anterior; próxima Avaliação de Proficiência oficial = indicador atual; enquanto ela não ocorrer, o campo permanece em branco.</p>
+              <p><strong>Comportamentais:</strong> comparação das duas Avaliações de Desempenho válidas mais recentes da mesma competência e mesma escala.</p>
               <p><strong>Leitura:</strong> resultado maior = evolução; resultado igual = estabilidade; resultado menor = redução.</p>
               <p><strong>PDI:</strong> estabilidade ou redução sinaliza necessidade de atenção, mas a criação de nova ação permanece disponível em qualquer resultado, inclusive quando houve evolução.</p>
               <p><strong>DISC:</strong> não participa do cálculo atual; fica reservado para funcionalidade futura.</p>
