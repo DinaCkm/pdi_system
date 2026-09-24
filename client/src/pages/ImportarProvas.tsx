@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { trpc } from "@/lib/trpc";
+import RichTextEditor from "@/components/RichTextEditor";
+import RichTextDisplay from "@/components/RichTextDisplay";
 
 type Opcao = { letra: string; texto: string; naoSei: boolean };
 type Questao = {
@@ -1028,11 +1030,32 @@ export default function ImportarProvas() {
                                       <div className="grid gap-3 md:grid-cols-2">
                                         <label className="text-sm">ID<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.id} onChange={e => atualizarQuestao(questaoIndex, { id: e.target.value })} /></label>
                                         <label className="text-sm">Gabarito<select className="mt-1 w-full rounded-md border px-3 py-2" value={questao.gabarito} onChange={e => atualizarQuestao(questaoIndex, { gabarito: e.target.value })}><option value="">Selecione</option>{questao.opcoes.map(opcao => <option key={opcao.letra} value={opcao.letra}>{opcao.letra}</option>)}</select></label>
-                                        <label className="text-sm md:col-span-2">Enunciado<textarea className="mt-1 w-full rounded-md border px-3 py-2" rows={3} value={questao.enunciado} onChange={e => atualizarQuestao(questaoIndex, { enunciado: e.target.value })} /></label>
+                                        <div className="text-sm md:col-span-2">
+                                          <span>Enunciado</span>
+                                          <div className="mt-1">
+                                            <RichTextEditor
+                                              value={questao.enunciado}
+                                              onChange={value => atualizarQuestao(questaoIndex, { enunciado: value })}
+                                              placeholder="Digite o enunciado da questão"
+                                              minHeight="120px"
+                                            />
+                                          </div>
+                                        </div>
                                       </div>
                                       <div className="space-y-2">
                                         <div className="flex items-center justify-between gap-2"><span className="text-sm font-medium">Alternativas</span><Button type="button" variant="outline" size="sm" onClick={() => adicionarAlternativa(questaoIndex)}><Plus className="mr-2 h-4 w-4" />Adicionar</Button></div>
-                                        {questao.opcoes.map((opcao, opcaoIndex) => <div key={opcaoIndex} className="grid gap-2 md:grid-cols-[48px_1fr_auto]"><span className="pt-2 text-sm font-semibold">{opcao.letra}</span><textarea className="min-h-[42px] rounded-md border px-3 py-2 text-sm" value={opcao.texto} onChange={e => atualizarOpcao(questaoIndex, opcaoIndex, e.target.value)} /><Button type="button" variant="outline" size="sm" onClick={() => removerAlternativa(questaoIndex, opcaoIndex)}><Trash2 className="h-4 w-4" /></Button></div>)}
+                                        {questao.opcoes.map((opcao, opcaoIndex) => (
+                                          <div key={opcaoIndex} className="grid gap-2 md:grid-cols-[48px_1fr_auto]">
+                                            <span className="pt-2 text-sm font-semibold">{opcao.letra}</span>
+                                            <RichTextEditor
+                                              value={opcao.texto}
+                                              onChange={value => atualizarOpcao(questaoIndex, opcaoIndex, value)}
+                                              placeholder={`Texto da alternativa ${opcao.letra}`}
+                                              minHeight="70px"
+                                            />
+                                            <Button type="button" variant="outline" size="sm" onClick={() => removerAlternativa(questaoIndex, opcaoIndex)}><Trash2 className="h-4 w-4" /></Button>
+                                          </div>
+                                        ))}
                                       </div>
                                       <div className="grid gap-3 md:grid-cols-2">
                                         <label className="text-sm md:col-span-2"><strong>Eixo(s) Técnico(s) da questão</strong> — separados por vírgula<input className="mt-1 w-full rounded-md border px-3 py-2" value={questao.eixos.map(eixo => eixo.nome).join(", ")} onChange={e => atualizarQuestao(questaoIndex, { eixos: e.target.value.split(",").map(item => item.trim()).filter(Boolean).map(nome => ({ nome })) })} /></label>
@@ -1073,8 +1096,13 @@ export default function ImportarProvas() {
                                   </div>
                                   <div className="rounded-lg border p-5">
                                     <div className="mb-3 flex items-center justify-between gap-3"><span className="text-sm font-medium">Questão {previewIndice + 1}</span></div>
-                                    <p className="mb-5 text-lg font-semibold leading-relaxed">{q.enunciado}</p>
-                                    <div className="space-y-3">{q.opcoes.map(opcao => <div key={opcao.letra} className="flex w-full items-start gap-3 rounded-lg border bg-white p-4 text-left"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border text-sm font-semibold">{opcao.letra}</span><span className="pt-0.5 text-sm leading-relaxed">{opcao.texto}</span></div>)}</div>
+                                    <div className="mb-5 text-lg font-semibold leading-relaxed">
+                                      <RichTextDisplay
+                                        content={q.enunciado}
+                                        className="text-lg font-semibold leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-1"
+                                      />
+                                    </div>
+                                    <div className="space-y-3">{q.opcoes.map(opcao => <div key={opcao.letra} className="flex w-full items-start gap-3 rounded-lg border bg-white p-4 text-left"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border text-sm font-semibold">{opcao.letra}</span><RichTextDisplay content={opcao.texto} className="min-w-0 flex-1 pt-0.5 text-sm leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:my-1 [&_ol]:my-1" /></div>)}</div>
                                   </div>
                                   <div className="flex justify-between gap-3">
                                     <Button variant="outline" disabled={previewIndice === 0} onClick={() => setPreviewIndice(v => Math.max(0, v - 1))}>Anterior</Button>
