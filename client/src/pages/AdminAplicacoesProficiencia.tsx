@@ -40,9 +40,6 @@ export default function AdminAplicacoesProficiencia() {
   const participantesQuery = trpc.aplicacoesProficiencia.listarParticipantesDisponiveis.useQuery(undefined, {
     enabled: Boolean(user && isAdmin),
   });
-  const departamentosQuery = trpc.departamentos.list.useQuery(undefined, {
-    enabled: Boolean(user && isAdmin),
-  });
   const aplicacoesQuery = trpc.aplicacoesProficiencia.listar.useQuery(undefined, {
     enabled: Boolean(user && isAdmin),
     refetchInterval: 5000,
@@ -98,7 +95,14 @@ export default function AdminAplicacoesProficiencia() {
   );
 
   const normalizarUnidade = (valor: unknown) =>
-    String(valor ?? "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+    String(valor ?? "")
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase("pt-BR")
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
 
   const participantes = (participantesQuery.data ?? []) as any[];
 
