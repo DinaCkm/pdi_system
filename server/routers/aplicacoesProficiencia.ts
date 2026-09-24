@@ -37,6 +37,17 @@ function normalizar(valor: string) {
   return valor.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
 }
 
+function normalizarUnidade(valor: string) {
+  return valor
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function arredondar(valor: number) {
   return Math.round(valor * 10) / 10;
 }
@@ -275,13 +286,28 @@ export const aplicacoesProficienciaRouter = router({
       }
       const ids = Array.from(new Set(input.colaboradorIds));
       const usuariosResult = await db.execute(sql.raw(`
-        SELECT id FROM users
-         WHERE status = 'ativo'
-           AND role IN ('colaborador','lider','gerente')
-           AND id IN (${ids.map(id => Number(id)).join(",")})
+        SELECT u.id, u.name, d.nome AS departamentoNome
+          FROM users u
+          LEFT JOIN departamentos d ON d.id = u.departamentoId
+         WHERE u.status = 'ativo'
+           AND u.role IN ('colaborador','lider','gerente')
+           AND u.id IN (${ids.map(id => Number(id)).join(",")})
       `));
-      if (rowsOf<{ id: number }>(usuariosResult).length !== ids.length) {
+      const usuariosSelecionados = rowsOf<{ id: number; name: string | null; departamentoNome: string | null }>(usuariosResult);
+      if (usuariosSelecionados.length !== ids.length) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Um ou mais participantes selecionados não estão ativos ou não podem receber a prova." });
+      }
+
+      const unidadeProva = normalizarUnidade(prova.unidade);
+      const incompativeis = usuariosSelecionados.filter(usuario =>
+        normalizarUnidade(String(usuario.departamentoNome ?? "")) !== unidadeProva,
+      );
+      if (incompativeis.length > 0) {
+        const nomes = incompativeis.map(usuario => usuario.name || `ID ${usuario.id}`).slice(0, 10).join(", ");
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `Aplicação bloqueada: a prova “${prova.codigo}” pertence à unidade “${prova.unidade}”. Há participante(s) de outra unidade na seleção: ${nomes}${incompativeis.length > 10 ? "..." : ""}.`,
+        });
       }
       const data = new Date(input.agendadaPara);
       if (Number.isNaN(data.getTime())) throw new TRPCError({ code: "BAD_REQUEST", message: "Data e horário inválidos." });
