@@ -509,6 +509,46 @@ export const aplicacoesProficienciaRouter = router({
       return { confirmada: true };
     }),
 
+  bloquearTentativa: assessmentProcedure
+    .input(z.object({
+      aplicacaoId: z.number().int().positive(),
+      tentativaId: z.number().int().positive(),
+      motivo: z.enum(["SEGURANCA", "INATIVIDADE", "INTERRUPCAO_TECNICA"]),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const tentativaResult = await db.execute(sql`
+        SELECT id, status
+          FROM tentativas_proficiencia
+         WHERE id = ${input.tentativaId}
+           AND aplicacao_id = ${input.aplicacaoId}
+           AND colaborador_id = ${ctx.user.id}
+         LIMIT 1
+      `);
+      const tentativa = rowsOf<any>(tentativaResult)[0];
+      if (!tentativa) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Tentativa não encontrada." });
+      }
+      if (["FINALIZADA", "FINALIZADA_TEMPO"].includes(String(tentativa.status))) {
+        return { bloqueada: false, status: tentativa.status };
+      }
+      await db.transaction(async (tx: any) => {
+        await tx.execute(sql`
+          UPDATE tentativas_proficiencia
+             SET status = 'BLOQUEADA', ultima_atividade_em = NOW()
+           WHERE id = ${input.tentativaId}
+             AND colaborador_id = ${ctx.user.id}
+        `);
+        await tx.execute(sql`
+          INSERT INTO proficiencia_ocorrencias
+            (aplicacao_id, tentativa_id, colaborador_id, tipo, detalhe)
+          VALUES
+            (${input.aplicacaoId}, ${input.tentativaId}, ${ctx.user.id}, 'BLOQUEIO_SEGURANCA', ${"Tentativa bloqueada automaticamente. Motivo: " + input.motivo})
+        `);
+      });
+      return { bloqueada: true, status: "BLOQUEADA" as const };
+    }),
+
   registrarOcorrencia: assessmentProcedure
     .input(z.object({
       aplicacaoId: z.number().int().positive(),
