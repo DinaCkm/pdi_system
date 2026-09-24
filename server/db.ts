@@ -83,7 +83,7 @@ export async function deleteMacro(id: number) {
 
 export async function createAction(data: {
   pdiId: number;
-  macroId: number;
+  macroId?: number | null;
   microcompetencia?: string | null;
   titulo: string;
   descricao?: string;
@@ -95,7 +95,7 @@ export async function createAction(data: {
 
   const result = await db.insert(actions).values({
     pdiId: data.pdiId,
-    macroId: data.macroId,
+    macroId: data.macroId ?? null,
     microcompetencia: data.microcompetencia || null,
     titulo: data.titulo,
     descricao: data.descricao || "",

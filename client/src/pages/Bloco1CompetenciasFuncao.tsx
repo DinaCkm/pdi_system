@@ -259,12 +259,16 @@ export default function Bloco1CompetenciasFuncao() {
     ) ?? null;
   }, [pdisDisponiveis, colaboradorId]);
 
-  const abrirBiblioteca = (eixo: string, macroId?: number | null, macroRelacionada?: string | null) => {
+  const abrirBiblioteca = (
+    eixo: string,
+    tipoCompetencia: "TECNICA" | "COMPORTAMENTAL",
+    macroRelacionada?: string | null,
+  ) => {
     const params = new URLSearchParams();
     const pdiId = pdiDoEmpregado?.pdiId ?? pdiDoEmpregado?.id;
     if (pdiId) params.set("pdiId", String(pdiId));
     if (eixo) params.set("eixo", eixo);
-    if (macroId) params.set("macroId", String(macroId));
+    params.set("tipoCompetencia", tipoCompetencia);
     if (macroRelacionada) params.set("macroRelacionada", macroRelacionada);
     params.set("origem", "evolucao_individual");
     params.set("modo", "biblioteca");
@@ -561,7 +565,7 @@ export default function Bloco1CompetenciasFuncao() {
                           </TableCell>
                           <TableCell>
                             {podeCriarAcao ? (
-                              <Button size="sm" variant="outline" onClick={() => abrirBiblioteca(item.eixoNome)}>
+                              <Button size="sm" variant="outline" onClick={() => abrirBiblioteca(item.eixoNome, "TECNICA")}>
                                 Criar ação no PDI
                               </Button>
                             ) : (
@@ -713,7 +717,7 @@ export default function Bloco1CompetenciasFuncao() {
                                 variant="outline"
                                 onClick={() => abrirBiblioteca(
                                   item.competenciaNome || "",
-                                  Number(item.competenciaMacroId),
+                                  "COMPORTAMENTAL",
                                   macroRelacionadaDaAD(item.competenciaNome),
                                 )}
                               >

@@ -17,7 +17,7 @@ export const acoesHistorico = mysqlTable("acoes_historico", {
 export const actions = mysqlTable("actions", {
 	id: int().autoincrement().notNull().primaryKey(),
 	pdiId: int().notNull(),
-	macroId: int().notNull(),
+	macroId: int(),
 	microcompetencia: varchar({ length: 255 }),
 	titulo: varchar({ length: 255 }).notNull(),
 	descricao: text(),
