@@ -694,7 +694,7 @@ export function AcoesNova() {
       if (data.success && data.sugestao) {
         setAcaoPreview({
           origem: "ia",
-          foco: subcompetenciaSelecionada,
+          foco: fluxoTecnico ? eixoOrigem : subcompetenciaSelecionada,
           titulo: data.sugestao.titulo,
           descricao: data.sugestao.detalhes,
           macroId: formData.macroId,
