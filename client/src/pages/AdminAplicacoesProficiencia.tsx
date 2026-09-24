@@ -22,6 +22,7 @@ function statusVariant(status: string): "default" | "secondary" | "destructive" 
 export default function AdminAplicacoesProficiencia() {
   const { loading, user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "Administrador";
+  const [cicloId, setCicloId] = useState<number | null>(null);
   const [provaId, setProvaId] = useState<number | null>(null);
   const [titulo, setTitulo] = useState("");
   const [agendadaPara, setAgendadaPara] = useState("");
@@ -32,6 +33,9 @@ export default function AdminAplicacoesProficiencia() {
   const [mensagem, setMensagem] = useState<string | null>(null);
 
   const provasQuery = trpc.aplicacoesProficiencia.listarProvasValidas.useQuery(undefined, {
+    enabled: Boolean(user && isAdmin),
+  });
+  const ciclosQuery = trpc.ciclos.list.useQuery(undefined, {
     enabled: Boolean(user && isAdmin),
   });
   const participantesQuery = trpc.aplicacoesProficiencia.listarParticipantesDisponiveis.useQuery(undefined, {
@@ -83,6 +87,11 @@ export default function AdminAplicacoesProficiencia() {
     },
     onError: error => setMensagem(error.message),
   });
+
+  const provasValidas = useMemo(
+    () => ((provasQuery.data ?? []) as any[]).filter((prova: any) => cicloId && Number(prova.cicloId) === Number(cicloId)),
+    [provasQuery.data, cicloId],
+  );
 
   const participantesBase = (participantesQuery.data ?? []) as any[];
   const catalogoDepartamentos = (departamentosQuery.data ?? []) as any[];
@@ -136,8 +145,8 @@ export default function AdminAplicacoesProficiencia() {
 
   const criarAplicacao = () => {
     setMensagem(null);
-    if (!provaId || !titulo.trim() || !agendadaPara || selecionados.length === 0) {
-      setMensagem("Informe a prova, o título, a data/horário e selecione pelo menos um participante.");
+    if (!cicloId || !provaId || !titulo.trim() || !agendadaPara || selecionados.length === 0) {
+      setMensagem("Informe o ciclo, a prova, o título, a data/horário e selecione pelo menos um participante.");
       return;
     }
     const data = new Date(agendadaPara);
@@ -147,6 +156,7 @@ export default function AdminAplicacoesProficiencia() {
     }
     criarMutation.mutate({
       provaId,
+      cicloId,
       titulo: titulo.trim(),
       agendadaPara: data.toISOString(),
       colaboradorIds: selecionados,
@@ -178,29 +188,52 @@ export default function AdminAplicacoesProficiencia() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><CalendarClock className="h-5 w-5" />Planejar nova aplicação</CardTitle>
-          <CardDescription>Somente provas com status VALIDADA podem ser selecionadas.</CardDescription>
+          <CardDescription>Selecione primeiro o ciclo. Depois, somente provas VALIDADA vinculadas a esse ciclo ficam disponíveis.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
+            <label className="space-y-1.5 text-sm font-medium">
+              <span>Ciclo do PDI</span>
+              <select
+                className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                value={cicloId ?? ""}
+                onChange={event => {
+                  const id = event.target.value ? Number(event.target.value) : null;
+                  setCicloId(id);
+                  setProvaId(null);
+                }}
+              >
+                <option value="">Selecione o ciclo</option>
+                {(ciclosQuery.data ?? []).map((ciclo: any) => (
+                  <option key={ciclo.id} value={Number(ciclo.id)}>
+                    {ciclo.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="space-y-1.5 text-sm font-medium">
               <span>Prova validada</span>
               <select
                 className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 value={provaId ?? ""}
+                disabled={!cicloId}
                 onChange={event => {
                   const id = event.target.value ? Number(event.target.value) : null;
                   setProvaId(id);
-                  const prova = (provasQuery.data ?? []).find((item: any) => Number(item.id) === id);
+                  const prova = provasValidas.find((item: any) => Number(item.id) === id);
                   if (prova && !titulo.trim()) setTitulo(`${prova.nome} — ${prova.unidade}`);
                 }}
               >
-                <option value="">Selecione</option>
-                {(provasQuery.data ?? []).map((prova: any) => (
+                <option value="">{cicloId ? "Selecione a prova" : "Selecione primeiro o ciclo"}</option>
+                {provasValidas.map((prova: any) => (
                   <option key={prova.id} value={Number(prova.id)}>
                     {prova.codigo} — {prova.nome} — {prova.unidade}
                   </option>
                 ))}
               </select>
+              {cicloId && provasValidas.length === 0 && (
+                <span className="block text-xs font-normal text-amber-700">Não há prova VALIDADA disponível neste ciclo.</span>
+              )}
             </label>
             <label className="space-y-1.5 text-sm font-medium">
               <span>Título da aplicação</span>
