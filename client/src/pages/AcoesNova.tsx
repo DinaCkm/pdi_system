@@ -485,6 +485,62 @@ const aliasesCompetenciasHistoricas: Record<string, string> = {
   'Atuação Colaborativa': 'COMPORTAMENTAL - Integração Organizacional e Trabalho Interáreas',
 };
 
+const aliasesMacroTecnicaPorEixo: Record<string, string> = {
+  "administracao e apoio operacional": "gestao administrativa e processos de apoio",
+  "contabilidade publica": "financas orcamento e contabilidade publica",
+  "financas": "financas orcamento e contabilidade publica",
+  "gestao orcamentaria": "gestao orcamentaria e financeira",
+  "orcamento": "gestao orcamentaria e financeira",
+  "tributaria": "tributaria",
+  "auditoria": "auditoria interna e prestacao de contas",
+  "compras e licitacoes": "compras licitacoes facilities e gestao contratual",
+  "licitacoes": "compras licitacoes facilities e gestao contratual",
+  "ouvidoria": "ouvidoria e relacionamento institucional",
+  "marketing": "marketing institucional e inteligencia de mercado",
+};
+
+function normalizarNomeCompetencia(valor: unknown) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/^tecnica\s*-\s*/i, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function resolverMacroTecnica(eixo: string, macros: any[]) {
+  const alvo = normalizarNomeCompetencia(eixo);
+  if (!alvo) return null;
+  const tecnicas = macros.filter((macro: any) =>
+    /^t[eé]cnica\s*-/i.test(String(macro.nome ?? "").trim())
+  );
+  const alias = aliasesMacroTecnicaPorEixo[alvo];
+  if (alias) {
+    const encontrada = tecnicas.find((macro: any) => normalizarNomeCompetencia(macro.nome) === alias);
+    if (encontrada) return encontrada;
+  }
+
+  const exata = tecnicas.find((macro: any) => normalizarNomeCompetencia(macro.nome) === alvo);
+  if (exata) return exata;
+
+  const tokensAlvo = alvo.split(" ").filter((token) => token.length >= 4);
+  if (!tokensAlvo.length) return null;
+  const pontuadas = tecnicas
+    .map((macro: any) => {
+      const nome = normalizarNomeCompetencia(macro.nome);
+      const tokensMacro = new Set(nome.split(" ").filter((token) => token.length >= 4));
+      const comuns = tokensAlvo.filter((token) => tokensMacro.has(token)).length;
+      return { macro, score: comuns / tokensAlvo.length };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  if (!pontuadas[0] || pontuadas[0].score < 0.6) return null;
+  if (pontuadas[1] && pontuadas[0].score - pontuadas[1].score < 0.2) return null;
+  return pontuadas[0].macro;
+}
+
 export function AcoesNova() {
   const [, navigate] = useLocation();
   const searchString = useSearch();
@@ -510,6 +566,7 @@ export function AcoesNova() {
   const [grupoAberto, setGrupoAberto] = useState<"basicas" | "essenciais" | "master" | null>(null);
   const [subcompetenciaSelecionada, setSubcompetenciaSelecionada] = useState("");
   const [mostrarTodosModelosMacro, setMostrarTodosModelosMacro] = useState(false);
+  const [criandoAcaoTecnica, setCriandoAcaoTecnica] = useState(false);
   const [acaoPreview, setAcaoPreview] = useState<null | {
     origem: "modelo" | "ia";
     foco: string;
@@ -600,6 +657,18 @@ export function AcoesNova() {
       macro.nome.toLowerCase().includes(term)
     );
   }, [macros, macroSearchTerm]);
+
+  const macrosTecnicas = useMemo(
+    () => (macros as any[])
+      .filter((macro: any) => /^t[eé]cnica\s*-/i.test(String(macro.nome ?? "").trim()))
+      .sort((a: any, b: any) => String(a.nome).localeCompare(String(b.nome), "pt-BR")),
+    [macros],
+  );
+
+  const macroTecnicaSugerida = useMemo(
+    () => fluxoTecnico ? resolverMacroTecnica(eixoOrigem, macros as any[]) : null,
+    [fluxoTecnico, eixoOrigem, macros],
+  );
   
   // Obter nome da macro selecionada
   const selectedMacroName = useMemo(() => {
@@ -634,15 +703,19 @@ export function AcoesNova() {
       .trim();
 
   const modelosTecnicos = useMemo(() => {
-    if (!fluxoTecnico || !eixoOrigem) return [];
+    if (!fluxoTecnico || !formData.macroId) return [];
     const alvo = normalizarBusca(eixoOrigem);
-    return (biblioteca as any[]).filter((modelo) => {
-      const micro = normalizarBusca(modelo.microcompetencia);
-      const titulo = normalizarBusca(modelo.titulo);
-      const descricao = normalizarBusca(modelo.descricao);
-      return micro === alvo || micro.includes(alvo) || titulo.includes(alvo) || descricao.includes(alvo);
-    });
-  }, [biblioteca, fluxoTecnico, eixoOrigem]);
+    return (biblioteca as any[])
+      .filter((modelo) => String(modelo.macroId ?? "") === formData.macroId)
+      .sort((a, b) => {
+        const microA = normalizarBusca(a.microcompetencia);
+        const microB = normalizarBusca(b.microcompetencia);
+        const diretoA = alvo && (microA === alvo || microA.includes(alvo) || alvo.includes(microA)) ? 1 : 0;
+        const diretoB = alvo && (microB === alvo || microB.includes(alvo) || alvo.includes(microB)) ? 1 : 0;
+        if (diretoA !== diretoB) return diretoB - diretoA;
+        return Number(b.utilizacoes ?? 0) - Number(a.utilizacoes ?? 0);
+      });
+  }, [biblioteca, fluxoTecnico, eixoOrigem, formData.macroId]);
 
   const modelosRelacionadosASubcompetencia = (nome: string) => {
     const alvo = normalizarBusca(nome);
@@ -724,13 +797,17 @@ export function AcoesNova() {
       ...prev,
       ...(urlPdiId ? { pdiId: urlPdiId } : {}),
       ...(eixo ? { microcompetencia: eixo } : {}),
-      ...(tipo === 'TECNICA' ? { macroId: '' } : {}),
     }));
 
     if (tipo === 'TECNICA' && eixo) {
       setEixoBiblioteca(eixo);
-      setMacroBiblioteca('');
       setSubcompetenciaSelecionada(eixo);
+      const macroTecnica = resolverMacroTecnica(eixo, macros as any[]);
+      if (macroTecnica) {
+        const id = String(macroTecnica.id);
+        setFormData(prev => ({ ...prev, macroId: id, microcompetencia: eixo }));
+        setMacroBiblioteca(id);
+      }
     }
 
     if (tipo === 'COMPORTAMENTAL' && macroRelacionada && macros.length > 0) {
@@ -784,7 +861,7 @@ export function AcoesNova() {
 
   const handleSugerirComIA = () => {
     const macroSelecionada = macros.find((m: any) => String(m.id) === formData.macroId);
-    const referencia = fluxoTecnico ? eixoOrigem : macroSelecionada?.nome;
+    const referencia = fluxoTecnico ? (macroSelecionada?.nome || eixoOrigem) : macroSelecionada?.nome;
 
     if (!referencia) {
       setErrors({ submit: fluxoTecnico ? 'Eixo técnico não identificado.' : 'Não foi possível localizar as Competências do B.E.M. relacionadas.' });
@@ -808,6 +885,7 @@ export function AcoesNova() {
     const newErrors: Record<string, string> = {};
     if (!formData.pdiId) newErrors.pdiId = 'Selecione o PDI vinculado';
     if (fluxoComportamental && !formData.macroId) newErrors.macroId = 'Não foi possível relacionar esta competência às Competências do B.E.M.';
+    if (fluxoTecnico && !formData.macroId) newErrors.macroId = 'Selecione a macrocompetência técnica relacionada a este eixo.';
     if (!formData.titulo.trim()) newErrors.titulo = 'Título é obrigatório';
     if (!formData.prazo) newErrors.prazo = 'Prazo é obrigatório';
     return newErrors;
@@ -881,7 +959,7 @@ export function AcoesNova() {
     setErrors({});
   };
 
-  const canSuggest = Boolean((fluxoTecnico ? eixoOrigem : formData.macroId) && subcompetenciaSelecionada && !isSuggesting);
+  const canSuggest = Boolean(formData.macroId && subcompetenciaSelecionada && !isSuggesting);
   const [sugestaoGerada, setSugestaoGerada] = useState(false);
 
   const competenciaAdAtual = fluxoComportamental
@@ -1165,12 +1243,44 @@ export function AcoesNova() {
             </h2>
 
             {fluxoTecnico ? (
-              <div style={{ padding: '14px 16px', borderRadius: '9px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#64748b', fontWeight: 750 }}>Eixo técnico selecionado na Evolução</div>
-                <div style={{ marginTop: '5px', fontWeight: 750, fontSize: '17px' }}>{eixoOrigem || 'Eixo não identificado'}</div>
-                <div style={{ marginTop: '7px', color: '#64748b', fontSize: '13px' }}>
-                  Não é necessário selecionar macrocompetência. A ação ficará vinculada diretamente a este eixo técnico.
+              <div style={{ display: 'grid', gap: '10px' }}>
+                <div style={{ padding: '14px 16px', borderRadius: '9px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#64748b', fontWeight: 750 }}>Eixo técnico selecionado na Evolução</div>
+                  <div style={{ marginTop: '5px', fontWeight: 750, fontSize: '17px' }}>{eixoOrigem || 'Eixo não identificado'}</div>
                 </div>
+
+                <div style={{ padding: '14px 16px', borderRadius: '9px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                  <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#1d4ed8', fontWeight: 750 }}>Macrocompetência técnica relacionada</div>
+                  <div style={{ marginTop: '5px', fontWeight: 750 }}>
+                    {selectedMacroName || 'Selecione a macrocompetência técnica'}
+                  </div>
+                  <div style={{ marginTop: '5px', color: '#475569', fontSize: '13px' }}>
+                    As ações existentes são buscadas pela macrocompetência técnica e o eixo fica registrado como foco específico da ação.
+                  </div>
+                </div>
+
+                <select
+                  value={formData.macroId}
+                  onChange={(event) => {
+                    const id = event.target.value;
+                    setFormData(prev => ({ ...prev, macroId: id, microcompetencia: eixoOrigem }));
+                    setMacroBiblioteca(id);
+                    setErrors(prev => ({ ...prev, macroId: '', submit: '' }));
+                    setAcaoPreview(null);
+                  }}
+                  style={{ width: '100%', padding: '11px 12px', border: errors.macroId ? '2px solid #dc2626' : '1px solid #cbd5e1', borderRadius: '7px', background: '#fff' }}
+                >
+                  <option value="">Selecione a macrocompetência técnica</option>
+                  {macrosTecnicas.map((macro: any) => (
+                    <option key={macro.id} value={String(macro.id)}>{macro.nome}</option>
+                  ))}
+                </select>
+                {macroTecnicaSugerida && selectedMacroName && (
+                  <div style={{ fontSize: '12px', color: '#166534' }}>
+                    Relação técnica identificada automaticamente. Você pode alterar se necessário.
+                  </div>
+                )}
+                {errors.macroId && <div style={{ color: '#b91c1c', fontSize: '13px' }}>{errors.macroId}</div>}
               </div>
             ) : (
               <>
@@ -1206,10 +1316,14 @@ export function AcoesNova() {
               <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Etapa 3</div>
               <h2 style={{ margin: '4px 0 6px', fontSize: '20px' }}>Escolha a ação para o eixo técnico</h2>
               <p style={{ margin: '0 0 14px', color: '#64748b', fontSize: '14px' }}>
-                Use uma ação já existente para este eixo ou peça uma sugestão específica à IA. Nenhuma macrocompetência comportamental será vinculada.
+                Veja as ações já ligadas à macrocompetência técnica, escolha uma para atribuir ao PDI, crie uma nova ação ou peça uma sugestão específica à IA.
               </p>
 
-              {modelosTecnicos.length > 0 ? (
+              {!formData.macroId ? (
+                <div style={{ border: '1px dashed #cbd5e1', borderRadius: '9px', padding: '14px', color: '#64748b', fontSize: '13px' }}>
+                  Selecione primeiro a macrocompetência técnica para visualizar as ações disponíveis.
+                </div>
+              ) : modelosTecnicos.length > 0 ? (
                 <div style={{ display: 'grid', gap: '10px' }}>
                   {modelosTecnicos.slice(0, 8).map((modelo: any) => (
                     <div key={modelo.modeloId} style={{ border: '1px solid #e2e8f0', borderRadius: '9px', padding: '13px', display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
@@ -1226,7 +1340,7 @@ export function AcoesNova() {
                             foco: eixoOrigem,
                             titulo: modelo.titulo || "",
                             descricao: modelo.descricao || "",
-                            macroId: "",
+                            macroId: formData.macroId,
                           });
                           setErrors({});
                         }}
@@ -1239,24 +1353,93 @@ export function AcoesNova() {
                 </div>
               ) : (
                 <div style={{ border: '1px dashed #cbd5e1', borderRadius: '9px', padding: '14px', color: '#64748b', fontSize: '13px' }}>
-                  Ainda não existe modelo específico classificado para este eixo técnico.
+                  Ainda não existem ações cadastradas para esta macrocompetência técnica. Você pode criar uma nova ação abaixo.
                 </div>
               )}
 
-              <div style={{ marginTop: '14px' }}>
+              <div style={{ marginTop: '14px', display: 'flex', gap: '9px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  disabled={!formData.macroId}
+                  onClick={() => {
+                    setSubcompetenciaSelecionada(eixoOrigem);
+                    setCriandoAcaoTecnica(true);
+                    setAcaoPreview(null);
+                    setFormData(prev => ({ ...prev, microcompetencia: eixoOrigem, titulo: '', descricao: '' }));
+                    setErrors({});
+                  }}
+                  style={{ border: 'none', borderRadius: '7px', padding: '10px 14px', background: formData.macroId ? '#5E2B8A' : '#94a3b8', color: '#fff', fontWeight: 700, cursor: formData.macroId ? 'pointer' : 'not-allowed' }}
+                >
+                  Criar nova ação para este eixo
+                </button>
                 <button
                   type="button"
                   onClick={() => {
                     setSubcompetenciaSelecionada(eixoOrigem);
                     handleSugerirComIA();
                   }}
-                  disabled={isSuggesting}
-                  style={{ border: 'none', borderRadius: '7px', padding: '10px 14px', background: '#0284c7', color: '#fff', fontWeight: 700, cursor: isSuggesting ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: '7px' }}
+                  disabled={!formData.macroId || isSuggesting}
+                  style={{ border: 'none', borderRadius: '7px', padding: '10px 14px', background: formData.macroId && !isSuggesting ? '#0284c7' : '#94a3b8', color: '#fff', fontWeight: 700, cursor: formData.macroId && !isSuggesting ? 'pointer' : 'not-allowed', display: 'inline-flex', alignItems: 'center', gap: '7px' }}
                 >
                   <Sparkles size={16} />
                   {isSuggesting ? 'Gerando sugestão...' : 'Sugerir ação para este eixo com IA'}
                 </button>
               </div>
+
+              {criandoAcaoTecnica && (
+                <div style={{ marginTop: '16px', border: '1px solid #c4b5fd', borderRadius: '10px', padding: '16px', background: '#faf8ff' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 750, color: '#5E2B8A', textTransform: 'uppercase' }}>Nova ação técnica</div>
+                  <div style={{ marginTop: '12px', display: 'grid', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 700, marginBottom: '5px' }}>Título da ação</label>
+                      <input
+                        name="titulo"
+                        value={formData.titulo}
+                        onChange={handleChange}
+                        placeholder="Ex.: Curso, projeto, prática, mentoria ou outra ação de desenvolvimento"
+                        style={{ width: '100%', padding: '10px 12px', border: errors.titulo ? '2px solid #dc2626' : '1px solid #cbd5e1', borderRadius: '7px' }}
+                      />
+                      {errors.titulo && <div style={{ color: '#b91c1c', marginTop: '5px', fontSize: '12px' }}>{errors.titulo}</div>}
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 700, marginBottom: '5px' }}>Descrição da ação</label>
+                      <RichTextEditor
+                        value={formData.descricao}
+                        onChange={(value) => setFormData(prev => ({ ...prev, descricao: value }))}
+                        placeholder="Descreva o que deverá ser realizado e a evidência esperada."
+                        minHeight="110px"
+                      />
+                    </div>
+                    <div style={{ maxWidth: '280px' }}>
+                      <label style={{ display: 'block', fontWeight: 700, marginBottom: '5px' }}>Prazo</label>
+                      <input
+                        name="prazo"
+                        type="date"
+                        value={formData.prazo}
+                        onChange={handleChange}
+                        style={{ width: '100%', padding: '10px 12px', border: errors.prazo ? '2px solid #dc2626' : '1px solid #cbd5e1', borderRadius: '7px' }}
+                      />
+                      {errors.prazo && <div style={{ color: '#b91c1c', marginTop: '5px', fontSize: '12px' }}>{errors.prazo}</div>}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        type="submit"
+                        disabled={createMutation.isPending}
+                        style={{ border: 'none', borderRadius: '7px', padding: '10px 14px', background: '#166534', color: '#fff', fontWeight: 700, cursor: createMutation.isPending ? 'not-allowed' : 'pointer' }}
+                      >
+                        {createMutation.isPending ? 'Incluindo...' : 'Criar e incluir no PDI'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCriandoAcaoTecnica(false)}
+                        style={{ border: '1px solid #cbd5e1', borderRadius: '7px', padding: '10px 14px', background: '#fff', fontWeight: 650, cursor: 'pointer' }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {acaoPreview && acaoPreview.foco === eixoOrigem && (
                 <div style={{ marginTop: '14px', border: '2px solid #93c5fd', borderRadius: '10px', padding: '16px', background: '#f8fbff' }}>
