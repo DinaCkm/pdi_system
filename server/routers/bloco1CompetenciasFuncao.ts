@@ -4,6 +4,7 @@ import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
 import { ensureHomologacaoTables } from "../services/homologacaoProvas";
+import { ensureTechnicalMatrixTables } from "../services/technicalMatrixSchema";
 import { avaliacoes, medicoesCompetencias } from "../../drizzle/avaliacoes-schema";
 import {
   ciclos,
@@ -51,6 +52,7 @@ async function dbObrigatorio() {
     });
   }
   await ensureHomologacaoTables(db);
+  await ensureTechnicalMatrixTables();
   return db;
 }
 
@@ -500,6 +502,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
           LEFT JOIN provas_importadas_homologacao ph ON ph.aplicacao_teste_id = a.id
           JOIN provas_importadas p ON p.id = a.prova_id
          WHERE ph.id IS NULL
+           AND p.ano > 2025
            AND p.codigo NOT LIKE '%HIST%'
          ORDER BY rp.calculado_em DESC, rp.id DESC
       `),
