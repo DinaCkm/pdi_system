@@ -239,11 +239,11 @@ export default function ImportarEixosAvaliacoes() {
   return (
     <div className="space-y-6 p-6">
       <div className="space-y-2">
-        <div className="flex items-center gap-3"><FileSpreadsheet className="h-7 w-7 text-blue-600" /><h1 className="text-2xl font-semibold">Uploads das Avaliações</h1></div>
-        <p className="max-w-4xl text-sm text-muted-foreground">Área administrativa para upload de eixos e provas, sempre com conferência antes da gravação.</p>
+        <div className="flex items-center gap-3"><FileSpreadsheet className="h-7 w-7 text-blue-600" /><h1 className="text-2xl font-semibold">Upload de Dados</h1></div>
+        <p className="max-w-4xl text-sm text-muted-foreground">Área administrativa única para upload de dados: eixos técnicos, eixos comportamentais e provas, sempre com conferência antes da gravação.</p>
       </div>
 
-      <Card><CardHeader><CardTitle>1. Escolha o tipo de upload</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-3">
+      <Card><CardHeader><CardTitle>1. Escolha o tipo de dado</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-3">
         <Button variant={tipo === "TECNICA" ? "default" : "outline"} onClick={() => limpar("TECNICA")}>Eixos técnicos</Button>
         <Button variant={tipo === "COMPORTAMENTAL" ? "default" : "outline"} onClick={() => limpar("COMPORTAMENTAL")}>Eixos comportamentais</Button>
         <Button variant={tipo === "PROVA" ? "default" : "outline"} onClick={() => limpar("PROVA")}>Provas / Avaliações de Proficiência</Button>
