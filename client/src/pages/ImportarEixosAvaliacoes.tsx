@@ -122,7 +122,7 @@ export function lerPlanilha(buffer: ArrayBuffer, tipo: Exclude<TipoImportacao, "
       unidade: texto(valorColuna(linha, cabecalhos, ["unidade", "departamento"])), eixoNome,
       pontuacao: numero(pontuacaoValor, "Pontuação", numeroLinha),
       escalaMin: String(escalaMinValor).trim() === "" ? 0 : numero(escalaMinValor, "Escala mínima", numeroLinha),
-      escalaMax: String(escalaMaxValor).trim() === "" ? 5 : numero(escalaMaxValor, "Escala máxima", numeroLinha),
+      escalaMax: String(escalaMaxValor).trim() === "" ? 3 : numero(escalaMaxValor, "Escala máxima", numeroLinha),
       classificacao: texto(valorColuna(linha, cabecalhos, ["classificacao", "faixa", "conceito"])),
       observacao: texto(valorColuna(linha, cabecalhos, ["observacoes", "observacao"])),
     };
