@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
+import RichTextDisplay from "@/components/RichTextDisplay";
 
 type Questao = {
   id: string;
@@ -153,7 +154,12 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between gap-3"><Badge variant="secondary">Questão {indice + 1} de {questoes.length}</Badge></div>
-            <CardTitle className="pt-2 text-lg leading-relaxed">{questao.enunciado}</CardTitle>
+            <div className="pt-2 text-lg font-semibold leading-relaxed">
+              <RichTextDisplay
+                content={questao.enunciado}
+                className="text-lg font-semibold leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-1"
+              />
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             {questao.opcoes.map(opcao => {
@@ -166,7 +172,10 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
                   className={`flex w-full items-start gap-3 rounded-lg border p-4 text-left transition ${selecionada ? "border-blue-600 bg-blue-50" : "bg-white hover:bg-slate-50"}`}
                 >
                   <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border text-sm font-semibold">{opcao.letra}</span>
-                  <span className="pt-0.5 text-sm leading-relaxed">{opcao.texto}</span>
+                  <RichTextDisplay
+                    content={opcao.texto}
+                    className="min-w-0 flex-1 pt-0.5 text-sm leading-relaxed [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:my-1 [&_ol]:my-1"
+                  />
                 </button>
               );
             })}
