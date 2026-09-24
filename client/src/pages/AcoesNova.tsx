@@ -545,9 +545,7 @@ export function AcoesNova() {
   const [, navigate] = useLocation();
   const searchString = useSearch();
   const paramsOrigem = useMemo(() => new URLSearchParams(searchString), [searchString]);
-  const tipoCompetenciaOrigem = paramsOrigem.get("tipoCompetencia") === "TECNICA" ? "TECNICA" : "COMPORTAMENTAL";
-  const fluxoTecnico = tipoCompetenciaOrigem === "TECNICA";
-  const fluxoComportamental = !fluxoTecnico;
+  const tipoCompetenciaParam = paramsOrigem.get("tipoCompetencia");
   const eixoOrigem = paramsOrigem.get("eixo") || "";
 
   const [formData, setFormData] = useState({
@@ -592,6 +590,14 @@ export function AcoesNova() {
   const { data: pdis = [], isLoading: loadingPdis } = trpc.pdis.list.useQuery();
   const { data: macros = [], isLoading: loadingMacros } = trpc.competencias.listAllMacros.useQuery();
   const { data: biblioteca = [], isLoading: loadingBiblioteca } = trpc.actions.library.useQuery();
+  const macroTecnicaInferida = useMemo(
+    () => eixoOrigem ? resolverMacroTecnica(eixoOrigem, macros as any[]) : null,
+    [eixoOrigem, macros],
+  );
+  const fluxoTecnico = tipoCompetenciaParam === "TECNICA"
+    || (!tipoCompetenciaParam && Boolean(macroTecnicaInferida));
+  const fluxoComportamental = !fluxoTecnico;
+  const tipoCompetenciaOrigem: "TECNICA" | "COMPORTAMENTAL" = fluxoTecnico ? "TECNICA" : "COMPORTAMENTAL";
   const { data: historicoEmpregado = [] } = trpc.actions.historyForPdi.useQuery(
     { pdiId: Number(formData.pdiId) },
     { enabled: Boolean(formData.pdiId) && Number(formData.pdiId) > 0 },
@@ -665,10 +671,7 @@ export function AcoesNova() {
     [macros],
   );
 
-  const macroTecnicaSugerida = useMemo(
-    () => fluxoTecnico ? resolverMacroTecnica(eixoOrigem, macros as any[]) : null,
-    [fluxoTecnico, eixoOrigem, macros],
-  );
+  const macroTecnicaSugerida = fluxoTecnico ? macroTecnicaInferida : null;
   
   // Obter nome da macro selecionada
   const selectedMacroName = useMemo(() => {
@@ -791,7 +794,7 @@ export function AcoesNova() {
     const macroRelacionada = params.get('macroRelacionada');
     const origem = params.get('origem');
     const modo = params.get('modo');
-    const tipo = params.get('tipoCompetencia') === 'TECNICA' ? 'TECNICA' : 'COMPORTAMENTAL';
+    const tipo = tipoCompetenciaOrigem;
 
     setFormData(prev => ({
       ...prev,
@@ -825,7 +828,7 @@ export function AcoesNova() {
     if (modo === "biblioteca" || origem === "evolucao_individual") {
       setModoCriacao("nova");
     }
-  }, [searchString, macros]);
+  }, [searchString, macros, tipoCompetenciaOrigem, eixoOrigem]);
   
   const utils = trpc.useUtils();
   
@@ -1244,6 +1247,11 @@ export function AcoesNova() {
 
             {fluxoTecnico ? (
               <div style={{ display: 'grid', gap: '10px' }}>
+                {!tipoCompetenciaParam && macroTecnicaInferida && (
+                  <div style={{ padding: '10px 12px', borderRadius: '8px', background: '#ecfdf5', border: '1px solid #bbf7d0', color: '#166534', fontSize: '13px' }}>
+                    Este eixo foi reconhecido automaticamente como competência técnica.
+                  </div>
+                )}
                 <div style={{ padding: '14px 16px', borderRadius: '9px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                   <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#64748b', fontWeight: 750 }}>Eixo técnico selecionado na Evolução</div>
                   <div style={{ marginTop: '5px', fontWeight: 750, fontSize: '17px' }}>{eixoOrigem || 'Eixo não identificado'}</div>
