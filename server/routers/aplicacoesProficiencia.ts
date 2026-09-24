@@ -368,6 +368,7 @@ export const aplicacoesProficienciaRouter = router({
       SELECT a.id, a.titulo, a.agendada_para AS agendadaPara, a.status,
              a.liberada_em AS liberadaEm, a.calculada_em AS calculadaEm,
              a.prova_snapshot_json AS provaSnapshotJson,
+             MAX(CASE WHEN ph.id IS NOT NULL THEN 1 ELSE 0 END) AS modoTeste,
              COUNT(ap.id) AS totalParticipantes,
              SUM(CASE WHEN t.id IS NULL THEN 1 ELSE 0 END) AS naoIniciaram,
              SUM(CASE WHEN t.status IN ('EM_ANDAMENTO','BLOQUEADA','LIBERADA_CONTINUIDADE') THEN 1 ELSE 0 END) AS emAndamento,
@@ -376,13 +377,12 @@ export const aplicacoesProficienciaRouter = router({
         LEFT JOIN aplicacoes_proficiencia_participantes ap ON ap.aplicacao_id = a.id
         LEFT JOIN tentativas_proficiencia t ON t.aplicacao_id = a.id AND t.colaborador_id = ap.colaborador_id
         LEFT JOIN provas_importadas_homologacao ph ON ph.aplicacao_teste_id = a.id
-       WHERE ph.id IS NULL
        GROUP BY a.id, a.titulo, a.agendada_para, a.status, a.liberada_em, a.calculada_em, a.prova_snapshot_json
        ORDER BY a.agendada_para DESC, a.id DESC
     `);
     return rowsOf<any>(result).map(item => {
       const prova = parseJson<ProvaSnapshot>(item.provaSnapshotJson);
-      return { ...item, provaId: prova.id, provaCodigo: prova.codigo, provaNome: prova.nome, provaUnidade: prova.unidade };
+      return { ...item, modoTeste: Boolean(Number(item.modoTeste ?? 0)), provaId: prova.id, provaCodigo: prova.codigo, provaNome: prova.nome, provaUnidade: prova.unidade };
     });
   }),
 
