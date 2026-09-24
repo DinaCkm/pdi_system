@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Camera, CheckCircle2, ClipboardCheck, Loader2, PlayCircle, RefreshCw, ShieldCheck, UserCheck } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, ClipboardCheck, Loader2, Mic, MonitorUp, PlayCircle, RefreshCw, ShieldCheck, Shuffle, UserCheck, Video } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,9 +24,16 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const [cameraAtiva, setCameraAtiva] = useState(false);
   const [foto, setFoto] = useState<string | null>(null);
   const [aceiteIdentidade, setAceiteIdentidade] = useState(false);
-  const [aceiteRegras, setAceiteRegras] = useState(false);
+  const [mostrarComunicado, setMostrarComunicado] = useState(false);
+  const [aceiteComunicado, setAceiteComunicado] = useState(false);
+  const [mostrarAvisoTela, setMostrarAvisoTela] = useState(false);
+  const [aceiteTela, setAceiteTela] = useState(false);
+  const [sessaoAutorizada, setSessaoAutorizada] = useState(false);
+  const [iniciandoAmbiente, setIniciandoAmbiente] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cameraRef = useRef<MediaStream | null>(null);
+  const cameraMonitorRef = useRef<MediaStream | null>(null);
+  const telaRef = useRef<MediaStream | null>(null);
   const eventosRecentesRef = useRef<Record<string, number>>({});
 
   const provaQuery = trpc.aplicacoesProficiencia.estadoProva.useQuery(
@@ -63,6 +70,13 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     cameraRef.current = null;
     setCameraAtiva(false);
     if (videoRef.current) videoRef.current.srcObject = null;
+  };
+
+  const pararMonitoramento = () => {
+    telaRef.current?.getTracks().forEach(track => track.stop());
+    cameraMonitorRef.current?.getTracks().forEach(track => track.stop());
+    telaRef.current = null;
+    cameraMonitorRef.current = null;
   };
 
   const ativarCamera = async () => {
@@ -135,11 +149,14 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     if (["FINALIZADA", "FINALIZADA_TEMPO"].includes(String(provaQuery.data.tentativaStatus))) setFinalizada(true);
   }, [provaQuery.data]);
 
-  useEffect(() => () => pararCamera(), []);
+  useEffect(() => () => {
+    pararCamera();
+    pararMonitoramento();
+  }, []);
 
   useEffect(() => {
     const id = Number(provaQuery.data?.tentativaId ?? 0);
-    if (!id || finalizada) return;
+    if (!id || finalizada || !sessaoAutorizada) return;
 
     registrarOcorrencia("MONITORAMENTO_INICIADO", "Monitoramento de foco e navegação iniciado.", id);
 
@@ -170,7 +187,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
       document.removeEventListener("contextmenu", onContext);
       window.removeEventListener("keydown", onKey);
     };
-  }, [provaQuery.data?.tentativaId, finalizada]);
+  }, [provaQuery.data?.tentativaId, finalizada, sessaoAutorizada]);
 
   const questoes = (provaQuery.data?.prova?.questoes ?? []) as Questao[];
   const questao = questoes[indice];
@@ -186,22 +203,75 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     salvarMutation.mutate({ aplicacaoId, tentativaId, questaoChave: questaoId, resposta: letra });
   };
 
-  const iniciarAvaliacao = async () => {
-    if (!identidadeQuery.data?.identidadeConfirmada) {
-      setMensagem("Confirme sua identidade antes de iniciar a avaliação.");
-      return;
-    }
-    if (!aceiteRegras) {
-      setMensagem("Leia e confirme as orientações antes de iniciar.");
-      return;
-    }
-    registrarOcorrencia("ABERTURA_CONFIRMADA", "O participante confirmou as orientações de realização.");
+  const abrirComunicado = () => {
+    setMensagem(null);
+    setAceiteComunicado(false);
+    setMostrarComunicado(true);
+  };
+
+  const concluirComunicado = () => {
+    if (!aceiteComunicado) return;
+    registrarOcorrencia("ACEITE_REGRAS", "O participante leu e aceitou as regras obrigatórias da avaliação.");
+    setMostrarComunicado(false);
+    setAceiteTela(false);
+    setMostrarAvisoTela(true);
+  };
+
+  const iniciarAmbienteMonitorado = async () => {
+    if (!aceiteTela || iniciandoAmbiente) return;
+    setIniciandoAmbiente(true);
+    setMensagem(null);
     try {
-      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
-    } catch {
-      registrarOcorrencia("TELA_CHEIA_NAO_AUTORIZADA", "O navegador não entrou em tela cheia no início da avaliação.");
+      if (!navigator.mediaDevices?.getDisplayMedia || !navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Este navegador não oferece os recursos de câmera, microfone e compartilhamento de tela exigidos.");
+      }
+
+      const tela = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      });
+      const trilhaTela = tela.getVideoTracks()[0];
+      const configuracoesTela = trilhaTela?.getSettings?.() as MediaTrackSettings & { displaySurface?: string };
+      if (configuracoesTela?.displaySurface && configuracoesTela.displaySurface !== "monitor") {
+        tela.getTracks().forEach(track => track.stop());
+        registrarOcorrencia("COMPARTILHAMENTO_INVALIDO", "Foi selecionada uma janela ou guia em vez da tela inteira.");
+        throw new Error("Selecione TELA INTEIRA. Janela ou guia do navegador não são aceitas.");
+      }
+
+      const cameraMic = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: true,
+      });
+
+      telaRef.current = tela;
+      cameraMonitorRef.current = cameraMic;
+      trilhaTela?.addEventListener("ended", () => {
+        registrarOcorrencia("INTERRUPCAO_COMPARTILHAMENTO", "O compartilhamento da tela foi interrompido durante a avaliação.", Number(provaQuery.data?.tentativaId ?? 0) || undefined);
+      });
+      cameraMic.getTracks().forEach(track => {
+        track.addEventListener("ended", () => {
+          registrarOcorrencia("INTERRUPCAO_CAMERA_MICROFONE", "Câmera ou microfone foi interrompido durante a avaliação.", Number(provaQuery.data?.tentativaId ?? 0) || undefined);
+        });
+      });
+
+      registrarOcorrencia("AMBIENTE_MONITORADO_AUTORIZADO", "Câmera, microfone e compartilhamento de tela foram autorizados.");
+      try {
+        if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+      } catch {
+        registrarOcorrencia("TELA_CHEIA_NAO_AUTORIZADA", "O navegador não entrou em tela cheia no início da avaliação.");
+      }
+
+      const inicio = await iniciarMutation.mutateAsync({ aplicacaoId });
+      registrarOcorrencia("MONITORAMENTO_INICIADO", "Monitoramento iniciado no mesmo ambiente da aplicação oficial.", Number(inicio.tentativaId));
+      setSessaoAutorizada(true);
+      setMostrarAvisoTela(false);
+      await provaQuery.refetch();
+    } catch (error: any) {
+      pararMonitoramento();
+      setMensagem(error?.message || "Não foi possível preparar o ambiente monitorado.");
+    } finally {
+      setIniciandoAmbiente(false);
     }
-    iniciarMutation.mutate({ aplicacaoId });
   };
 
   const finalizar = () => {
@@ -243,24 +313,31 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
   if (!provaQuery.data) return null;
 
-  if (!iniciou) {
+  if (!sessaoAutorizada) {
     const identidadeConfirmada = Boolean(identidadeQuery.data?.identidadeConfirmada);
     const nome = String(user?.name || "Participante");
     return (
       <div className="min-h-screen bg-slate-100 p-4 md:p-6">
         <div className="mx-auto max-w-4xl space-y-5">
-          {provaQuery.data.modoTeste && <div className="rounded-md border border-violet-300 bg-violet-50 p-3 text-center text-sm font-semibold text-violet-950">MODO TESTE — ADMINISTRADOR — MESMA EXPERIÊNCIA DO CANDIDATO — RESULTADO FORA DOS INDICADORES</div>}
+          {provaQuery.data.modoTeste && (
+            <div className="rounded-md border border-violet-300 bg-violet-50 p-3 text-center text-sm font-semibold text-violet-950">
+              MODO TESTE — ADMINISTRADOR — MESMA EXPERIÊNCIA DO CANDIDATO — RESULTADO FORA DOS INDICADORES
+            </div>
+          )}
 
           <Card className="border-blue-200">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-6 w-6 text-blue-700" />Abertura da Avaliação de Proficiência para a Função</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheck className="h-6 w-6 text-blue-700" />
+                Abertura da Avaliação de Proficiência para a Função
+              </CardTitle>
               <CardDescription>{provaQuery.data.aplicacao.titulo} — {provaQuery.data.prova.unidade}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm leading-6">
-              <p>Antes de iniciar, confirme sua identidade e leia as orientações. Durante a avaliação, ocorrências de foco e navegação são registradas para acompanhamento administrativo.</p>
-              <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-amber-950">
-                <div className="flex items-start gap-2"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" /><span>Evite trocar de aba, minimizar a janela ou sair da tela cheia. Essas ocorrências serão registradas no histórico da tentativa.</span></div>
-              </div>
+              <p>
+                Esta etapa reproduz a abertura da aplicação oficial. A avaliação somente será liberada após identificação,
+                leitura e aceite das regras, autorização de câmera e microfone e compartilhamento da tela inteira.
+              </p>
               <p><strong>Total de questões:</strong> {questoes.length}</p>
             </CardContent>
           </Card>
@@ -268,54 +345,194 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
           {!identidadeConfirmada ? (
             <Card className="border-blue-200">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><UserCheck className="h-5 w-5 text-blue-700" />Confirmação de identidade</CardTitle>
-                <CardDescription>A fotografia deve ser capturada agora, pela câmera deste dispositivo.</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCheck className="h-5 w-5 text-blue-700" />
+                  1. Confirmação de identidade
+                </CardTitle>
+                <CardDescription>A fotografia deve ser capturada agora pela câmera deste dispositivo.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="overflow-hidden rounded-lg border bg-slate-950">
-                    {foto ? <img src={foto} alt="Fotografia capturada" className="aspect-video w-full object-cover" /> : <video ref={videoRef} autoPlay muted playsInline className="aspect-video w-full object-cover scale-x-[-1]" />}
+                    {foto ? (
+                      <img src={foto} alt="Fotografia capturada" className="aspect-video w-full object-cover" />
+                    ) : (
+                      <video ref={videoRef} autoPlay muted playsInline className="aspect-video w-full object-cover scale-x-[-1]" />
+                    )}
                   </div>
                   <div className="flex flex-col justify-center gap-3">
-                    {!cameraAtiva && !foto && <Button onClick={() => void ativarCamera()}><Camera className="mr-2 h-5 w-5" />ATIVAR CÂMERA</Button>}
-                    {cameraAtiva && !foto && <Button onClick={tirarFoto}><Camera className="mr-2 h-5 w-5" />TIRAR FOTO</Button>}
-                    {foto && <Button variant="outline" onClick={() => void ativarCamera()}><RefreshCw className="mr-2 h-4 w-4" />REFAZER FOTO</Button>}
+                    {!cameraAtiva && !foto && (
+                      <Button onClick={() => void ativarCamera()}>
+                        <Camera className="mr-2 h-5 w-5" />ATIVAR CÂMERA
+                      </Button>
+                    )}
+                    {cameraAtiva && !foto && (
+                      <Button onClick={tirarFoto}>
+                        <Camera className="mr-2 h-5 w-5" />TIRAR FOTO
+                      </Button>
+                    )}
+                    {foto && (
+                      <Button variant="outline" onClick={() => void ativarCamera()}>
+                        <RefreshCw className="mr-2 h-4 w-4" />REFAZER FOTO
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="rounded-lg border bg-slate-50 p-4 text-sm leading-6">
                   Declaro que sou <strong>{nome}</strong>, participante identificado(a) nesta plataforma, e que sou a pessoa que realizará esta avaliação.
                 </div>
                 <label className="flex items-start gap-3 rounded-md border p-4 text-sm font-semibold">
-                  <input type="checkbox" className="mt-1 h-5 w-5" checked={aceiteIdentidade} onChange={e => setAceiteIdentidade(e.target.checked)} />
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-5 w-5"
+                    checked={aceiteIdentidade}
+                    onChange={e => setAceiteIdentidade(e.target.checked)}
+                  />
                   Confirmo minha identidade e a fotografia capturada.
                 </label>
                 <Button onClick={() => void confirmarIdentidade()} disabled={!foto || !aceiteIdentidade || registrarIdentidadeMutation.isPending}>
-                  <UserCheck className="mr-2 h-5 w-5" />{registrarIdentidadeMutation.isPending ? "REGISTRANDO..." : "CONFIRMAR IDENTIDADE"}
+                  <UserCheck className="mr-2 h-5 w-5" />
+                  {registrarIdentidadeMutation.isPending ? "REGISTRANDO..." : "CONFIRMAR IDENTIDADE"}
                 </Button>
               </CardContent>
             </Card>
           ) : (
-            <Card className="border-emerald-300 bg-emerald-50/40">
-              <CardContent className="pt-6"><div className="flex items-center gap-2 font-semibold text-emerald-900"><CheckCircle2 className="h-5 w-5" />Identidade confirmada para esta aplicação.</div></CardContent>
-            </Card>
-          )}
+            <>
+              <Card className="border-emerald-300 bg-emerald-50/40">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 font-semibold text-emerald-900">
+                    <CheckCircle2 className="h-5 w-5" />Identidade confirmada para esta aplicação.
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardContent className="space-y-4 pt-6">
-              <label className="flex items-start gap-3 rounded-md border p-4 text-sm font-semibold">
-                <input type="checkbox" className="mt-1 h-5 w-5" checked={aceiteRegras} onChange={e => setAceiteRegras(e.target.checked)} />
-                Li as orientações e estou ciente de que ocorrências de navegação e foco serão registradas durante a avaliação.
-              </label>
+              <Card>
+                <CardHeader>
+                  <CardTitle>2. Requisitos da avaliação</CardTitle>
+                  <CardDescription>Confira os requisitos antes de abrir o comunicado obrigatório.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3 md:grid-cols-2">
+                  <div className="rounded-md border p-4">
+                    <Video className="mb-2 h-5 w-5" />
+                    <strong>Computador com câmera</strong>
+                    <p className="mt-1 text-sm text-muted-foreground">A câmera deverá permanecer conectada, ligada e autorizada.</p>
+                  </div>
+                  <div className="rounded-md border p-4">
+                    <Mic className="mb-2 h-5 w-5" />
+                    <strong>Microfone obrigatório</strong>
+                    <p className="mt-1 text-sm text-muted-foreground">O microfone deverá permanecer conectado, ligado e autorizado.</p>
+                  </div>
+                  <div className="rounded-md border p-4">
+                    <MonitorUp className="mb-2 h-5 w-5" />
+                    <strong>Compartilhar tela inteira</strong>
+                    <p className="mt-1 text-sm text-muted-foreground">Janela ou guia do navegador não serão aceitas quando o navegador permitir essa validação.</p>
+                  </div>
+                  <div className="rounded-md border p-4">
+                    <Shuffle className="mb-2 h-5 w-5" />
+                    <strong>Ambiente monitorado</strong>
+                    <p className="mt-1 text-sm text-muted-foreground">Troca de aba, perda de foco, saída de tela cheia e interrupções são registradas nos logs.</p>
+                  </div>
+                </CardContent>
+              </Card>
+
               {mensagem && <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{mensagem}</div>}
+
               <div className="flex flex-wrap gap-3">
-                <Button onClick={() => void iniciarAvaliacao()} disabled={!identidadeConfirmada || !aceiteRegras || iniciarMutation.isPending}>
-                  <PlayCircle className="mr-2 h-5 w-5" />{iniciarMutation.isPending ? "INICIANDO..." : "INICIAR AVALIAÇÃO"}
+                <Button size="lg" onClick={abrirComunicado}>
+                  <PlayCircle className="mr-2 h-5 w-5" />LER REGRAS E PROSSEGUIR
                 </Button>
                 <Button variant="outline" onClick={() => setLocation("/avaliacoes")}>Voltar</Button>
               </div>
-            </CardContent>
-          </Card>
+            </>
+          )}
         </div>
+
+        {mostrarComunicado && (
+          <div className="fixed inset-0 z-[100] grid place-items-center bg-black/75 p-4">
+            <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white shadow-2xl">
+              <div className="sticky top-0 bg-red-700 p-6 text-white">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="h-9 w-9" />
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-wider">Comunicado obrigatório</p>
+                    <h2 className="text-2xl font-bold">Leia todas as regras antes de iniciar a avaliação</h2>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-5 p-6 text-sm leading-relaxed">
+                <p className="text-base font-semibold">
+                  Ao prosseguir, você declara que está ciente das condições abaixo e concorda em realizar a prova em ambiente monitorado.
+                </p>
+                <div className="space-y-3">
+                  <p><strong>1. Equipamento:</strong> computador com câmera e microfone conectados, ligados e autorizados durante toda a avaliação.</p>
+                  <p><strong>2. Tela única:</strong> utilize somente a tela da prova durante a realização.</p>
+                  <p><strong>3. Compartilhamento:</strong> selecione exclusivamente <strong>TELA INTEIRA</strong>. Janela ou guia não serão aceitas quando tecnicamente identificáveis.</p>
+                  <p><strong>4. Navegação:</strong> trocar de aba, minimizar a janela, perder o foco ou sair da tela cheia gera ocorrência registrada.</p>
+                  <p><strong>5. Interrupções:</strong> interromper câmera, microfone ou compartilhamento de tela gera ocorrência para análise administrativa.</p>
+                  <p><strong>6. Conteúdo protegido:</strong> tentativas de copiar, imprimir, usar menu de contexto ou capturar conteúdo podem ser registradas pelo navegador.</p>
+                  <p><strong>7. Auditoria:</strong> a fotografia de identidade, os aceites e as ocorrências ficam vinculados à tentativa para conferência administrativa.</p>
+                  <p><strong>8. Finalização:</strong> ao finalizar a avaliação, a tentativa é encerrada e as respostas registradas são preservadas.</p>
+                </div>
+                <div className="rounded-lg border-2 border-red-300 bg-red-50 p-4">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      className="mt-1 h-5 w-5"
+                      type="checkbox"
+                      checked={aceiteComunicado}
+                      onChange={event => setAceiteComunicado(event.target.checked)}
+                    />
+                    <span className="font-semibold text-red-900">
+                      LI, COMPREENDI E CONCORDO COM AS REGRAS DE MONITORAMENTO E REALIZAÇÃO DA AVALIAÇÃO.
+                    </span>
+                  </label>
+                </div>
+                <div className="flex justify-end gap-3">
+                  <Button variant="outline" onClick={() => setMostrarComunicado(false)}>Cancelar</Button>
+                  <Button disabled={!aceiteComunicado} onClick={concluirComunicado}>Continuar</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {mostrarAvisoTela && (
+          <div className="fixed inset-0 z-[120] grid place-items-center bg-black/80 p-4">
+            <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-2xl">
+              <div className="flex items-start gap-3">
+                <MonitorUp className="h-9 w-9 shrink-0 text-blue-700" />
+                <div>
+                  <h2 className="text-xl font-bold">3. Autorize o ambiente monitorado</h2>
+                  <p className="mt-2 text-sm leading-relaxed">
+                    Ao continuar, o navegador solicitará o compartilhamento da <strong>TELA INTEIRA</strong> e autorização para câmera e microfone.
+                    Depois dessas permissões, a avaliação entrará em tela cheia.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm">
+                <strong>Importante:</strong> não selecione uma guia ou apenas uma janela. O teste administrativo segue exatamente esta mesma etapa.
+              </div>
+              <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-md border p-4">
+                <input
+                  className="mt-1 h-5 w-5"
+                  type="checkbox"
+                  checked={aceiteTela}
+                  onChange={event => setAceiteTela(event.target.checked)}
+                />
+                <span className="font-semibold">
+                  Estou ciente e vou autorizar tela inteira, câmera e microfone para iniciar a avaliação.
+                </span>
+              </label>
+              {mensagem && <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{mensagem}</div>}
+              <div className="mt-6 flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setMostrarAvisoTela(false)} disabled={iniciandoAmbiente}>Cancelar</Button>
+                <Button disabled={!aceiteTela || iniciandoAmbiente} onClick={() => void iniciarAmbienteMonitorado()}>
+                  {iniciandoAmbiente ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MonitorUp className="mr-2 h-4 w-4" />}
+                  {iniciandoAmbiente ? "PREPARANDO..." : "AUTORIZAR E INICIAR"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
