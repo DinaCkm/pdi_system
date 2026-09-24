@@ -487,7 +487,12 @@ const aliasesCompetenciasHistoricas: Record<string, string> = {
 
 export function AcoesNova() {
   const [, navigate] = useLocation();
-  const searchString = useSearch(); 
+  const searchString = useSearch();
+  const paramsOrigem = useMemo(() => new URLSearchParams(searchString), [searchString]);
+  const tipoCompetenciaOrigem = paramsOrigem.get("tipoCompetencia") === "TECNICA" ? "TECNICA" : "COMPORTAMENTAL";
+  const fluxoTecnico = tipoCompetenciaOrigem === "TECNICA";
+  const fluxoComportamental = !fluxoTecnico;
+  const eixoOrigem = paramsOrigem.get("eixo") || "";
 
   const [formData, setFormData] = useState({
     pdiId: '',
@@ -628,6 +633,17 @@ export function AcoesNova() {
       .toLocaleLowerCase("pt-BR")
       .trim();
 
+  const modelosTecnicos = useMemo(() => {
+    if (!fluxoTecnico || !eixoOrigem) return [];
+    const alvo = normalizarBusca(eixoOrigem);
+    return (biblioteca as any[]).filter((modelo) => {
+      const micro = normalizarBusca(modelo.microcompetencia);
+      const titulo = normalizarBusca(modelo.titulo);
+      const descricao = normalizarBusca(modelo.descricao);
+      return micro === alvo || micro.includes(alvo) || titulo.includes(alvo) || descricao.includes(alvo);
+    });
+  }, [biblioteca, fluxoTecnico, eixoOrigem]);
+
   const modelosRelacionadosASubcompetencia = (nome: string) => {
     const alvo = normalizarBusca(nome);
     return acoesDisponiveisDaMacro.filter((modelo: any) => {
@@ -694,31 +710,33 @@ export function AcoesNova() {
     },
   });
   
-  // Preencher e filtrar a biblioteca quando vier da Evolução Individual
+  // Preencher o fluxo correto quando a ação nasce na Evolução Individual.
   useEffect(() => {
     const params = new URLSearchParams(searchString);
     const urlPdiId = params.get('pdiId');
-    const eixo = params.get('eixo');
-    const macroId = params.get('macroId');
+    const eixo = params.get('eixo') || '';
     const macroRelacionada = params.get('macroRelacionada');
     const origem = params.get('origem');
     const modo = params.get('modo');
+    const tipo = params.get('tipoCompetencia') === 'TECNICA' ? 'TECNICA' : 'COMPORTAMENTAL';
 
-    if (urlPdiId || eixo || macroId) {
-      setFormData(prev => ({
-        ...prev,
-        ...(urlPdiId ? { pdiId: urlPdiId } : {}),
-        ...(eixo ? { microcompetencia: eixo } : {}),
-        ...(macroId ? { macroId } : {}),
-      }));
+    setFormData(prev => ({
+      ...prev,
+      ...(urlPdiId ? { pdiId: urlPdiId } : {}),
+      ...(eixo ? { microcompetencia: eixo } : {}),
+      ...(tipo === 'TECNICA' ? { macroId: '' } : {}),
+    }));
+
+    if (tipo === 'TECNICA' && eixo) {
+      setEixoBiblioteca(eixo);
+      setMacroBiblioteca('');
+      setSubcompetenciaSelecionada(eixo);
     }
 
-    if (macroId) setMacroBiblioteca(macroId);
-
-    if (macroRelacionada && macros.length > 0) {
+    if (tipo === 'COMPORTAMENTAL' && macroRelacionada && macros.length > 0) {
+      const alvo = macroRelacionada.replace(/^COMPORTAMENTAL\s*-\s*/i, 'COMPORTAMENTAL - ').trim();
       const macroEncontrada = (macros as any[]).find((macro) =>
-        String(macro.nome ?? '').replace(/^COMPORTAMENTAL\s*-\s*/i, 'COMPORTAMENTAL - ').trim()
-        === macroRelacionada.replace(/^COMPORTAMENTAL\s*-\s*/i, 'COMPORTAMENTAL - ').trim()
+        String(macro.nome ?? '').replace(/^COMPORTAMENTAL\s*-\s*/i, 'COMPORTAMENTAL - ').trim() === alvo
       );
       if (macroEncontrada) {
         const macroRelacionadaId = String(macroEncontrada.id);
@@ -727,7 +745,6 @@ export function AcoesNova() {
       }
     }
 
-    if (eixo && !macroId && !macroRelacionada) setEixoBiblioteca(eixo);
     if (modo === "biblioteca" || origem === "evolucao_individual") {
       setModoCriacao("nova");
     }
@@ -766,30 +783,31 @@ export function AcoesNova() {
   };
 
   const handleSugerirComIA = () => {
-    if (!formData.macroId) {
-      setErrors({ macroId: 'Selecione uma competência Macro primeiro' });
+    const macroSelecionada = macros.find((m: any) => String(m.id) === formData.macroId);
+    const referencia = fluxoTecnico ? eixoOrigem : macroSelecionada?.nome;
+
+    if (!referencia) {
+      setErrors({ submit: fluxoTecnico ? 'Eixo técnico não identificado.' : 'Não foi possível localizar as Competências do B.E.M. relacionadas.' });
       return;
     }
 
-    const macroSelecionada = macros.find((m: any) => String(m.id) === formData.macroId);
-    if (!macroSelecionada) {
-      setErrors({ submit: 'Competência não encontrada' });
-      return;
+    if (fluxoTecnico && !subcompetenciaSelecionada) {
+      setSubcompetenciaSelecionada(eixoOrigem);
     }
 
     setIsSuggesting(true);
     setErrors({});
     
     sugerirAcaoMutation.mutate({
-      competenciaMacro: macroSelecionada.nome,
-      competenciaMicro: formData.microcompetencia || undefined,
+      competenciaMacro: referencia,
+      competenciaMicro: fluxoTecnico ? eixoOrigem : (formData.microcompetencia || undefined),
     });
   };
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.pdiId) newErrors.pdiId = 'Selecione o PDI vinculado';
-    if (!formData.macroId) newErrors.macroId = 'Selecione a competência Macro';
+    if (fluxoComportamental && !formData.macroId) newErrors.macroId = 'Não foi possível relacionar esta competência às Competências do B.E.M.';
     if (!formData.titulo.trim()) newErrors.titulo = 'Título é obrigatório';
     if (!formData.prazo) newErrors.prazo = 'Prazo é obrigatório';
     return newErrors;
@@ -806,7 +824,7 @@ export function AcoesNova() {
 
     // Conversão segura
     const pdiIdNumerico = Number(formData.pdiId);
-    const macroIdNumerico = Number(formData.macroId);
+    const macroIdNumerico = formData.macroId ? Number(formData.macroId) : undefined;
 
     // Validação final de segurança
     if (!pdiIdNumerico || isNaN(pdiIdNumerico)) {
@@ -822,8 +840,9 @@ export function AcoesNova() {
     
     createMutation.mutate({
       pdiId: pdiIdNumerico,
-      macroId: macroIdNumerico, 
-      microcompetencia: formData.microcompetencia || undefined,
+      ...(macroIdNumerico ? { macroId: macroIdNumerico } : {}),
+      tipoCompetencia: tipoCompetenciaOrigem,
+      microcompetencia: formData.microcompetencia || eixoOrigem || undefined,
       titulo: formData.titulo,
       descricao: formData.descricao,
       prazo: prazoFormatado,
@@ -845,9 +864,9 @@ export function AcoesNova() {
       const mesmaMacro = macroAlvo && String(acao.macroId ?? "") === macroAlvo;
       const mesmoTitulo = Boolean(tituloAlvo && titulo === tituloAlvo);
       const mesmaSubcompetencia = Boolean(focoAlvo && micro.includes(focoAlvo));
-      return mesmoTitulo || (mesmaMacro && mesmaSubcompetencia);
+      return mesmoTitulo || (fluxoTecnico ? mesmaSubcompetencia : (mesmaMacro && mesmaSubcompetencia));
     });
-  }, [acaoPreview, historicoEmpregado]);
+  }, [acaoPreview, historicoEmpregado, fluxoTecnico]);
 
   const aprovarPreview = () => {
     if (!acaoPreview) return;
@@ -862,14 +881,12 @@ export function AcoesNova() {
     setErrors({});
   };
 
-  const canSuggest = Boolean(formData.macroId && subcompetenciaSelecionada && !isSuggesting);
+  const canSuggest = Boolean((fluxoTecnico ? eixoOrigem : formData.macroId) && subcompetenciaSelecionada && !isSuggesting);
   const [sugestaoGerada, setSugestaoGerada] = useState(false);
 
-  const competenciaAdAtual =
-    new URLSearchParams(searchString).get("eixo")
-    || competenciaADRelacionadaDaMacro(selectedMacroName)
-    || selectedMacroReference?.competenciaAD
-    || "";
+  const competenciaAdAtual = fluxoComportamental
+    ? (eixoOrigem || competenciaADRelacionadaDaMacro(selectedMacroName) || selectedMacroReference?.competenciaAD || "")
+    : "";
 
   const renderModelosDoFoco = (foco: string) => {
     const modelos = modelosRelacionadosASubcompetencia(foco);
@@ -1143,54 +1160,132 @@ export function AcoesNova() {
 
           <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px' }}>
             <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Etapa 2</div>
-            <h2 style={{ margin: '4px 0 14px', fontSize: '20px' }}>Qual competência estamos desenvolvendo?</h2>
+            <h2 style={{ margin: '4px 0 14px', fontSize: '20px' }}>
+              {fluxoTecnico ? 'Qual eixo técnico estamos desenvolvendo?' : 'Qual competência estamos desenvolvendo?'}
+            </h2>
 
-            {competenciaAdAtual && (
-              <div style={{ marginBottom: '10px', padding: '12px 14px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#64748b', fontWeight: 750 }}>Competência da Avaliação de Desempenho</div>
-                <div style={{ marginTop: '4px', fontWeight: 700 }}>{competenciaAdAtual}</div>
+            {fluxoTecnico ? (
+              <div style={{ padding: '14px 16px', borderRadius: '9px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#64748b', fontWeight: 750 }}>Eixo técnico selecionado na Evolução</div>
+                <div style={{ marginTop: '5px', fontWeight: 750, fontSize: '17px' }}>{eixoOrigem || 'Eixo não identificado'}</div>
+                <div style={{ marginTop: '7px', color: '#64748b', fontSize: '13px' }}>
+                  Não é necessário selecionar macrocompetência. A ação ficará vinculada diretamente a este eixo técnico.
+                </div>
               </div>
-            )}
-
-            <div style={{ padding: '12px 14px', borderRadius: '8px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-              <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#1d4ed8', fontWeight: 750 }}>Macrocompetência relacionada da Biblioteca</div>
-              <div style={{ marginTop: '4px', fontWeight: 700 }}>{selectedMacroName || 'Selecione a macrocompetência'}</div>
-            </div>
-
-            {!selectedMacroName && (
-              <div ref={macroDropdownRef} style={{ position: 'relative', marginTop: '10px' }}>
-                <button
-                  type="button"
-                  onClick={() => setMacroDropdownOpen(!macroDropdownOpen)}
-                  style={{ width: '100%', padding: '11px', border: '1px solid #cbd5e1', borderRadius: '7px', background: '#fff', cursor: 'pointer' }}
-                >
-                  Selecionar macrocompetência
-                </button>
-                {macroDropdownOpen && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', maxHeight: '280px', overflowY: 'auto' }}>
-                    {filteredMacros.map((macro: any) => (
-                      <button
-                        type="button"
-                        key={macro.id}
-                        onClick={() => handleSelectMacro(String(macro.id), macro.nome)}
-                        style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: '#fff', border: 'none', borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}
-                      >
-                        {macro.nome}
-                      </button>
-                    ))}
+            ) : (
+              <>
+                {competenciaAdAtual && (
+                  <div style={{ marginBottom: '10px', padding: '12px 14px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#64748b', fontWeight: 750 }}>Competência comportamental selecionada na Evolução</div>
+                    <div style={{ marginTop: '4px', fontWeight: 700 }}>{competenciaAdAtual}</div>
                   </div>
                 )}
-              </div>
+
+                <div style={{ padding: '12px 14px', borderRadius: '8px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+                  <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#1d4ed8', fontWeight: 750 }}>Competências do B.E.M. relacionadas</div>
+                  <div style={{ marginTop: '4px', fontWeight: 700 }}>
+                    {selectedMacroName || 'Relação não localizada automaticamente'}
+                  </div>
+                  <div style={{ marginTop: '5px', color: '#475569', fontSize: '13px' }}>
+                    A competência escolhida na Evolução abre automaticamente a trilha B.E.M. correspondente. Não é necessário selecionar manualmente uma macrocompetência.
+                  </div>
+                </div>
+
+                {!selectedMacroName && (
+                  <div style={{ marginTop: '10px', border: '1px solid #fecaca', background: '#fff7f7', color: '#991b1b', borderRadius: '8px', padding: '11px 13px', fontSize: '13px' }}>
+                    Não foi possível localizar automaticamente a trilha das Competências do B.E.M. para esta competência. Revise o relacionamento cadastrado antes de criar a ação.
+                  </div>
+                )}
+                {errors.macroId && <div style={{ color: '#b91c1c', marginTop: '6px', fontSize: '13px' }}>{errors.macroId}</div>}
+              </>
             )}
-            {errors.macroId && <div style={{ color: '#b91c1c', marginTop: '6px', fontSize: '13px' }}>{errors.macroId}</div>}
           </section>
+
+          {fluxoTecnico && eixoOrigem && (
+            <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Etapa 3</div>
+              <h2 style={{ margin: '4px 0 6px', fontSize: '20px' }}>Escolha a ação para o eixo técnico</h2>
+              <p style={{ margin: '0 0 14px', color: '#64748b', fontSize: '14px' }}>
+                Use uma ação já existente para este eixo ou peça uma sugestão específica à IA. Nenhuma macrocompetência comportamental será vinculada.
+              </p>
+
+              {modelosTecnicos.length > 0 ? (
+                <div style={{ display: 'grid', gap: '10px' }}>
+                  {modelosTecnicos.slice(0, 8).map((modelo: any) => (
+                    <div key={modelo.modeloId} style={{ border: '1px solid #e2e8f0', borderRadius: '9px', padding: '13px', display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ fontWeight: 750 }}>{modelo.titulo}</div>
+                        {modelo.descricao ? <div style={{ marginTop: '5px', color: '#64748b', fontSize: '13px' }} dangerouslySetInnerHTML={{ __html: modelo.descricao }} /> : null}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSubcompetenciaSelecionada(eixoOrigem);
+                          setAcaoPreview({
+                            origem: "modelo",
+                            foco: eixoOrigem,
+                            titulo: modelo.titulo || "",
+                            descricao: modelo.descricao || "",
+                            macroId: "",
+                          });
+                          setErrors({});
+                        }}
+                        style={{ flexShrink: 0, border: '1px solid #5E2B8A', borderRadius: '7px', padding: '8px 11px', background: '#5E2B8A', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Usar como modelo
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ border: '1px dashed #cbd5e1', borderRadius: '9px', padding: '14px', color: '#64748b', fontSize: '13px' }}>
+                  Ainda não existe modelo específico classificado para este eixo técnico.
+                </div>
+              )}
+
+              <div style={{ marginTop: '14px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSubcompetenciaSelecionada(eixoOrigem);
+                    handleSugerirComIA();
+                  }}
+                  disabled={isSuggesting}
+                  style={{ border: 'none', borderRadius: '7px', padding: '10px 14px', background: '#0284c7', color: '#fff', fontWeight: 700, cursor: isSuggesting ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: '7px' }}
+                >
+                  <Sparkles size={16} />
+                  {isSuggesting ? 'Gerando sugestão...' : 'Sugerir ação para este eixo com IA'}
+                </button>
+              </div>
+
+              {acaoPreview && acaoPreview.foco === eixoOrigem && (
+                <div style={{ marginTop: '14px', border: '2px solid #93c5fd', borderRadius: '10px', padding: '16px', background: '#f8fbff' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Prévia da ação</div>
+                  <div style={{ marginTop: '6px', fontSize: '18px', fontWeight: 750, color: '#0f172a' }}>{acaoPreview.titulo}</div>
+                  <div style={{ marginTop: '10px', color: '#475569', lineHeight: 1.55 }} dangerouslySetInnerHTML={{ __html: acaoPreview.descricao || '<p>Sem descrição.</p>' }} />
+                  <div style={{ marginTop: '14px', display: 'grid', gridTemplateColumns: 'minmax(180px, 260px) 1fr', gap: '12px', alignItems: 'end' }}>
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 700, marginBottom: '5px' }}>Prazo para incluir no PDI</label>
+                      <input name="prazo" type="date" value={formData.prazo} onChange={handleChange} style={{ width: '100%', padding: '10px', border: errors.prazo ? '2px solid #dc2626' : '1px solid #cbd5e1', borderRadius: '7px' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button type="button" onClick={aprovarPreview} style={{ border: 'none', borderRadius: '7px', padding: '10px 14px', background: '#2563eb', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Aprovar esta ação</button>
+                      <button type="submit" onClick={aprovarPreview} disabled={!formData.prazo || createMutation.isPending} style={{ border: 'none', borderRadius: '7px', padding: '10px 14px', background: formData.prazo ? '#166534' : '#94a3b8', color: '#fff', fontWeight: 700, cursor: formData.prazo ? 'pointer' : 'not-allowed' }}>
+                        {createMutation.isPending ? 'Incluindo...' : 'Aprovar e incluir no PDI'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
 
           {selectedMacroReference && (
             <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px' }}>
               <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Etapa 3</div>
-              <h2 style={{ margin: '4px 0 6px', fontSize: '20px' }}>Qual é o foco do desenvolvimento?</h2>
+              <h2 style={{ margin: '4px 0 6px', fontSize: '20px' }}>Quais Competências do B.E.M. serão desenvolvidas?</h2>
               <p style={{ margin: '0 0 14px', color: '#64748b', fontSize: '14px' }}>
-                Abra um grupo e escolha a subcompetência que esta ação deve desenvolver.
+                A competência comportamental selecionada na Evolução abriu automaticamente sua trilha B.E.M. Escolha a competência do B.E.M. que será foco da ação.
               </p>
 
               {([
