@@ -338,6 +338,33 @@ export const aplicacoesProficienciaRouter = router({
           message: `Aplicação bloqueada: a prova “${prova.codigo}” pertence à unidade “${prova.unidade}”. Há participante(s) de outra unidade na seleção: ${nomes}${incompativeis.length > 10 ? "..." : ""}.`,
         });
       }
+      // Regra: o mesmo empregado não pode estar em duas aplicações ativas da mesma prova,
+      // nem refazer uma prova que já finalizou. Reaplicação é permitida para quem faltou
+      // (participante AUSENTE ou que não iniciou numa aplicação já encerrada/calculada).
+      const conflitosResult = await db.execute(sql.raw(`
+        SELECT u.name AS nome, a.id AS aplicacaoId, a.status, a.agendada_para AS agendadaPara, ap.situacao
+          FROM aplicacoes_proficiencia_participantes ap
+          JOIN aplicacoes_proficiencia a ON a.id = ap.aplicacao_id
+          JOIN users u ON u.id = ap.colaborador_id
+         WHERE a.prova_id = ${Number(input.provaId)}
+           AND ap.colaborador_id IN (${ids.map(id => Number(id)).join(",")})
+           AND NOT EXISTS (SELECT 1 FROM provas_importadas_homologacao h WHERE h.aplicacao_teste_id = a.id)
+           AND (a.status IN ('AGENDADA','LIBERADA') OR (a.status <> 'CANCELADA' AND ap.situacao = 'FINALIZADO'))
+      `));
+      const conflitos = rowsOf<any>(conflitosResult);
+      if (conflitos.length > 0) {
+        const detalhes = conflitos.slice(0, 10).map(c => {
+          const quando = c.agendadaPara ? new Date(c.agendadaPara).toLocaleDateString("pt-BR") : "";
+          return c.situacao === "FINALIZADO" && !["AGENDADA", "LIBERADA"].includes(String(c.status))
+            ? `${c.nome} (já finalizou esta prova na aplicação ${c.aplicacaoId})`
+            : `${c.nome} (já está na aplicação ${c.aplicacaoId}, ${String(c.status).toLowerCase()} para ${quando})`;
+        }).join("; ");
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `Agendamento bloqueado: ${conflitos.length} participante(s) já têm esta prova ativa ou concluída — ${detalhes}${conflitos.length > 10 ? "..." : ""}. Para reaplicar, selecione somente quem faltou ou cancele a aplicação anterior.`,
+        });
+      }
+
       const data = new Date(input.agendadaPara);
       if (Number.isNaN(data.getTime())) throw new TRPCError({ code: "BAD_REQUEST", message: "Data e horário inválidos." });
       const snapshotJson = JSON.stringify(prova);
@@ -386,6 +413,37 @@ export const aplicacoesProficienciaRouter = router({
     });
   }),
 
+  cancelar: adminProcedure
+    .input(z.object({ aplicacaoId: z.number().int().positive(), motivo: z.string().trim().min(5).max(1000) }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const aplicacao = await obterAplicacao(db, input.aplicacaoId);
+      if (aplicacao.status !== "AGENDADA") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Somente aplicações AGENDADA (ainda não liberadas) podem ser canceladas." });
+      }
+      await db.execute(sql.raw(`
+        CREATE TABLE IF NOT EXISTS aplicacoes_proficiencia_cancelamentos (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          aplicacao_id INT NOT NULL,
+          motivo TEXT NOT NULL,
+          cancelada_por INT NULL,
+          created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          INDEX aplic_cancel_aplicacao_idx (aplicacao_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `));
+      await db.transaction(async (tx: any) => {
+        await tx.execute(sql`
+          UPDATE aplicacoes_proficiencia SET status = 'CANCELADA'
+           WHERE id = ${input.aplicacaoId} AND status = 'AGENDADA'
+        `);
+        await tx.execute(sql`
+          INSERT INTO aplicacoes_proficiencia_cancelamentos (aplicacao_id, motivo, cancelada_por)
+          VALUES (${input.aplicacaoId}, ${input.motivo}, ${ctx.user.id})
+        `);
+      });
+      return { cancelada: true, status: "CANCELADA" as const };
+    }),
+
   liberar: adminProcedure
     .input(z.object({ aplicacaoId: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
@@ -396,6 +454,18 @@ export const aplicacoesProficienciaRouter = router({
       }
       if (Date.now() < new Date(aplicacao.agendadaPara).getTime()) {
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A aplicação só pode ser liberada a partir da data e horário agendados." });
+      }
+      const testeDestaAplicacao = await obterTestePorAplicacao(db, input.aplicacaoId);
+      if (!testeDestaAplicacao) {
+        const statusProvaResult = await db.execute(sql`SELECT status FROM provas_importadas WHERE id = ${Number(aplicacao.provaId)} LIMIT 1`);
+        const statusProva = String(rowsOf<any>(statusProvaResult)[0]?.status ?? "");
+        if (statusProva !== "VALIDADA") {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A prova desta aplicação está em edição (RASCUNHO). Valide a prova antes de liberar." });
+        }
+        const homologacaoAtual = await obterHomologacaoAtual(db, Number(aplicacao.provaId));
+        if (homologacaoAtual && String(homologacaoAtual.status) !== "HOMOLOGADA") {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "O conteúdo da prova foi alterado e ela ainda não foi testada e homologada novamente. Homologue a prova antes de liberar." });
+        }
       }
       await db.execute(sql`
         UPDATE aplicacoes_proficiencia

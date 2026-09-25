@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
+import { ajustarHomologacaoAposValidacao, listarAplicacoesAtivas, sincronizarAplicacoesAgendadas } from "../services/sincronizacaoProvas";
 import { getDb } from "../db";
 import {
   ensureHomologacaoTables,
@@ -589,7 +590,30 @@ export const importacaoProvasRouter = router({
           depois: { status: "VALIDADA" },
         });
       });
-      await marcarPendenciaHomologacao(db, input.id);
+      const homologacaoInfo = await ajustarHomologacaoAposValidacao(db, input.id);
+      const sincronizacao = await sincronizarAplicacoesAgendadas(db, input.id);
+      if (sincronizacao.atualizadas.length) {
+        await registrarHistorico({
+          db,
+          provaId: input.id,
+          acao: "SINCRONIZACAO_APLICACOES",
+          usuarioId: ctx.user.id,
+          resumo: sincronizacao.atualizadas.map((a: any) => ({ campo: `Aplicação ${a.id}`, antes: "versão anterior da prova", depois: "versão validada atual" })),
+          antes: null,
+          depois: { aplicacoes: sincronizacao.atualizadas.map((a: any) => Number(a.id)) },
+        });
+      }
+      return {
+        id: registro.id,
+        codigo: registro.codigo,
+        status: "VALIDADA",
+        validada: true,
+        ...validacao,
+        homologacaoMantida: homologacaoInfo.homologacaoMantida,
+        homologacaoInvalidada: homologacaoInfo.homologacaoInvalidada,
+        aplicacoesAtualizadas: sincronizacao.atualizadas,
+        aplicacoesNaoAtualizadas: sincronizacao.naoAtualizadas,
+      };
     } else if (registro.status !== "VALIDADA") {
       throw new Error(`A prova está com status ${registro.status} e não pode ser validada.`);
     }
@@ -601,6 +625,11 @@ export const importacaoProvasRouter = router({
       validada: true,
       ...validacao,
     };
+  }),
+
+  aplicacoesAtivas: adminProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
+    const db = await ensureTables();
+    return await listarAplicacoesAtivas(db, input.id);
   }),
 
   reabrirParaEdicao: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input, ctx }) => {
@@ -635,7 +664,8 @@ export const importacaoProvasRouter = router({
         SET status = 'RASCUNHO'
         WHERE id = ${input.id} AND status = 'VALIDADA'
       `);
-      await invalidarHomologacoes(tx, input.id, "INVALIDADA_POR_EDICAO");
+      // A homologação NÃO cai na reabertura: ao validar de novo, ela só é invalidada
+      // se o conteúdo (enunciado, alternativas, gabarito) tiver mudado.
       await registrarHistorico({
         db: tx,
         provaId: input.id,
@@ -652,7 +682,7 @@ export const importacaoProvasRouter = router({
       codigo: registro.codigo,
       status: "RASCUNHO",
       reaberta: true,
-      mensagem: "Prova reaberta para edição. Será necessário validar novamente antes de utilizá-la em novos processos de avaliação.",
+      mensagem: "Prova reaberta para edição. Será necessário validar novamente antes de utilizá-la em novos processos de avaliação. Ao validar, as aplicações agendadas desta prova recebem a nova versão.",
     };
   }),
 
