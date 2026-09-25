@@ -223,8 +223,19 @@ export const importacaoEixosRouter = router({
         const matriz = rowsOf<{ id: number }>(matrizResult)[0];
         if (!matriz) throw new Error("Não foi possível preparar a matriz do empregado.");
         const existentesResult = await tx.execute(sql`SELECT eixo_id AS eixoId, eixo_nome AS eixoNome, relacao, status_classificacao AS statusClassificacao, justificativa, percentual_anterior AS pontuacao FROM prova_utic_matriz_eixos WHERE matriz_id = ${matriz.id}`);
-        const existentes = rowsOf<any>(existentesResult);
+        let existentes = rowsOf<any>(existentesResult);
         const mantidos = new Set<string>();
+        if (substituirTudo) {
+          // Substituição completa: remove todos os eixos atuais do empregado ANTES de gravar os do arquivo.
+          // Evita conflito de chave quando um eixo antigo já usa o mesmo código do eixo novo.
+          for (const antigo of existentes) {
+            await tx.execute(sql`DELETE FROM prova_utic_matriz_eixos WHERE matriz_id = ${matriz.id} AND eixo_id = ${antigo.eixoId}`);
+            await tx.execute(sql`INSERT INTO prova_utic_matriz_historico (matriz_id, eixo_id, valor_anterior, valor_novo, motivo, observacao, alterado_por)
+              VALUES (${matriz.id}, ${antigo.eixoId}, ${JSON.stringify(antigo)}, ${JSON.stringify({ removido: true })}, 'Eixo removido na substituição completa da matriz', ${`Importação: ${input.arquivoNome}`}, ${ctx.user.id})`);
+            removidos++;
+          }
+          existentes = [];
+        }
         for (const linha of linhas) {
           const existente = existentes.find(item => (linha.eixoId && item.eixoId === linha.eixoId) || normalizarTexto(item.eixoNome) === normalizarTexto(linha.eixoNome));
           if (existente && !input.substituirExistentes && !substituirTudo) { mantidos.add(existente.eixoId); ignorados++; continue; }
@@ -260,13 +271,6 @@ export const importacaoEixosRouter = router({
             VALUES (${matriz.id}, ${eixoId}, ${existente ? JSON.stringify(existente) : null}, ${JSON.stringify(valorNovo)}, 'Importação administrativa de eixos técnicos', ${detalhes}, ${ctx.user.id})`);
         }
         if (substituirTudo) {
-          for (const antigo of existentes) {
-            if (mantidos.has(antigo.eixoId)) continue;
-            await tx.execute(sql`DELETE FROM prova_utic_matriz_eixos WHERE matriz_id = ${matriz.id} AND eixo_id = ${antigo.eixoId}`);
-            await tx.execute(sql`INSERT INTO prova_utic_matriz_historico (matriz_id, eixo_id, valor_anterior, valor_novo, motivo, observacao, alterado_por)
-              VALUES (${matriz.id}, ${antigo.eixoId}, ${JSON.stringify(antigo)}, ${JSON.stringify({ removido: true })}, 'Eixo removido na substituição completa da matriz', ${`Importação: ${input.arquivoNome}`}, ${ctx.user.id})`);
-            removidos++;
-          }
           await tx.execute(sql`UPDATE prova_utic_matrizes SET status = ${temPendencia ? "PENDENTE_HISTORICO" : "VALIDADA_PROVISORIA"},
             fonte = ${`Importação: ${input.arquivoNome}`}, atualizado_por = ${ctx.user.id}, updated_at = NOW() WHERE id = ${matriz.id}`);
         }
