@@ -32,6 +32,7 @@ export default function AdminAplicacoesProficiencia() {
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [logsColaboradorId, setLogsColaboradorId] = useState<number | null>(null);
   const [identidadeColaboradorId, setIdentidadeColaboradorId] = useState<number | null>(null);
+  const [filtroStatus, setFiltroStatus] = useState<string>("ATIVAS");
 
   const provasQuery = trpc.aplicacoesProficiencia.listarProvasValidas.useQuery(undefined, {
     enabled: Boolean(user && isAdmin),
@@ -109,6 +110,13 @@ export default function AdminAplicacoesProficiencia() {
     },
     onError: error => setMensagem(error.message),
   });
+
+  const aplicacoesFiltradas = useMemo(() => {
+    const todas = (aplicacoesQuery.data ?? []) as any[];
+    if (filtroStatus === "TODAS") return todas;
+    if (filtroStatus === "ATIVAS") return todas.filter((item: any) => String(item.status) !== "CANCELADA");
+    return todas.filter((item: any) => String(item.status) === filtroStatus);
+  }, [aplicacoesQuery.data, filtroStatus]);
 
   const provasValidas = useMemo(
     () => ((provasQuery.data ?? []) as any[]).filter((prova: any) => cicloId && Number(prova.cicloId) === Number(cicloId)),
@@ -320,7 +328,23 @@ export default function AdminAplicacoesProficiencia() {
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
             <div><CardTitle>Aplicações cadastradas</CardTitle><CardDescription>Abra uma aplicação para liberar, acompanhar e calcular os resultados.</CardDescription></div>
+            <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={filtroStatus}
+              onChange={event => setFiltroStatus(event.target.value)}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+              aria-label="Filtrar aplicações por status"
+            >
+              <option value="ATIVAS">Ativas (sem canceladas)</option>
+              <option value="AGENDADA">Agendadas</option>
+              <option value="LIBERADA">Liberadas</option>
+              <option value="ENCERRADA">Encerradas</option>
+              <option value="CALCULADA">Calculadas</option>
+              <option value="CANCELADA">Canceladas</option>
+              <option value="TODAS">Todas</option>
+            </select>
             <Button variant="outline" onClick={() => aplicacoesQuery.refetch()} disabled={aplicacoesQuery.isFetching}><RefreshCw className={`mr-2 h-4 w-4 ${aplicacoesQuery.isFetching ? "animate-spin" : ""}`} />Atualizar</Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -328,7 +352,7 @@ export default function AdminAplicacoesProficiencia() {
             <table className="w-full min-w-[920px] text-sm">
               <thead><tr className="border-b text-left"><th className="px-3 py-3">Aplicação</th><th className="px-3 py-3">Prova</th><th className="px-3 py-3">Agendamento</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Participantes</th><th className="px-3 py-3">Ação</th></tr></thead>
               <tbody>
-                {(aplicacoesQuery.data ?? []).map((item: any) => (
+                {aplicacoesFiltradas.map((item: any) => (
                   <tr key={item.id} className="border-b last:border-0">
                     <td className="px-3 py-3 font-medium">
                       <div className="flex flex-wrap items-center gap-2">
@@ -343,7 +367,7 @@ export default function AdminAplicacoesProficiencia() {
                     <td className="px-3 py-3"><Button size="sm" variant={Number(item.id) === aplicacaoSelecionada ? "default" : "outline"} onClick={() => setAplicacaoSelecionada(Number(item.id))}>Abrir aplicação</Button></td>
                   </tr>
                 ))}
-                {(aplicacoesQuery.data ?? []).length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">Nenhuma aplicação cadastrada.</td></tr>}
+                {aplicacoesFiltradas.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">{(aplicacoesQuery.data ?? []).length === 0 ? "Nenhuma aplicação cadastrada." : "Nenhuma aplicação com este filtro."}</td></tr>}
               </tbody>
             </table>
           </div>
