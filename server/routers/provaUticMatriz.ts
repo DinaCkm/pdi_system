@@ -95,12 +95,18 @@ export const provaUticMatrizRouter = router({
       }
     }
 
+    // Departamentos de apoio que, nos painéis, são consolidados na unidade à qual pertencem
+    // (ex.: a Secretaria da DIREX tem líder administrativo em outra unidade, mas compõe a DIREX).
+    const UNIDADE_CONSOLIDADA: Record<string, string> = {
+      "SECRETARIA DIREX": "DIREX - UNIDADE DIRETORIA EXECUTIVA",
+    };
     const unidadeDoColaborador = (colaboradorId: number) => {
       const liderada = unidadeLideradaPorUsuario.get(colaboradorId);
       if (liderada) return liderada;
       const usuario = usuarioPorId.get(colaboradorId);
       const departamento = usuario?.departamentoId ? departamentoPorId.get(Number(usuario.departamentoId)) : null;
-      return String(departamento?.nome ?? "Sem unidade");
+      const nome = String(departamento?.nome ?? "Sem unidade");
+      return UNIDADE_CONSOLIDADA[nome.trim().toUpperCase()] ?? nome;
     };
 
     const empregadosPorUnidade = new Map<string, Set<number>>();
