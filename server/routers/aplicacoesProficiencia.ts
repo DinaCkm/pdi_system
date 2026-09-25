@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, assessmentProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
-import { ensureHomologacaoTables, obterHomologacaoAtual, obterTestePorAplicacao } from "../services/homologacaoProvas";
+import { ensureHomologacaoTables, marcarPendenciaHomologacao, obterHomologacaoAtual, obterTestePorAplicacao } from "../services/homologacaoProvas";
 
 type QuestaoImportada = {
   id: string;
@@ -418,8 +418,17 @@ export const aplicacoesProficienciaRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
       const aplicacao = await obterAplicacao(db, input.aplicacaoId);
-      if (aplicacao.status !== "AGENDADA") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Somente aplicações AGENDADA (ainda não liberadas) podem ser canceladas." });
+      const teste = await obterTestePorAplicacao(db, input.aplicacaoId);
+      // Aplicação oficial: só pode ser cancelada antes de liberada.
+      // Aplicação de TESTE (homologação): pode ser cancelada também depois de liberada.
+      const podeCancelar = aplicacao.status === "AGENDADA" || (Boolean(teste) && aplicacao.status === "LIBERADA");
+      if (!podeCancelar) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: teste
+            ? "Esta aplicação de teste já foi encerrada ou calculada e não pode ser cancelada."
+            : "Somente aplicações AGENDADA (ainda não liberadas) podem ser canceladas.",
+        });
       }
       await db.execute(sql.raw(`
         CREATE TABLE IF NOT EXISTS aplicacoes_proficiencia_cancelamentos (
@@ -434,14 +443,24 @@ export const aplicacoesProficienciaRouter = router({
       await db.transaction(async (tx: any) => {
         await tx.execute(sql`
           UPDATE aplicacoes_proficiencia SET status = 'CANCELADA'
-           WHERE id = ${input.aplicacaoId} AND status = 'AGENDADA'
+           WHERE id = ${input.aplicacaoId} AND status IN ('AGENDADA','LIBERADA')
         `);
+        // Teste de homologação cancelado: a homologação volta a ficar pendente de um novo teste
+        // (se a prova já estava HOMOLOGADA, a homologação é mantida).
+        if (teste && String(teste.status) !== "HOMOLOGADA") {
+          await tx.execute(sql`
+            UPDATE provas_importadas_homologacao
+               SET status = 'SUBSTITUIDA_POR_NOVO_TESTE', updated_at = NOW()
+             WHERE id = ${Number(teste.id)}
+          `);
+          await marcarPendenciaHomologacao(tx, Number(aplicacao.provaId));
+        }
         await tx.execute(sql`
           INSERT INTO aplicacoes_proficiencia_cancelamentos (aplicacao_id, motivo, cancelada_por)
           VALUES (${input.aplicacaoId}, ${input.motivo}, ${ctx.user.id})
         `);
       });
-      return { cancelada: true, status: "CANCELADA" as const };
+      return { cancelada: true, status: "CANCELADA" as const, teste: Boolean(teste) };
     }),
 
   liberar: adminProcedure
