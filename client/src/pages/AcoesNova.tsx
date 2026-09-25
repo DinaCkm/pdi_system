@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useSearch } from 'wouter';
 import { trpc } from '@/lib/trpc';
-import { Sparkles, Loader2, Search, ChevronDown, X, Check } from 'lucide-react';
+import { Sparkles, Loader2, Search, ChevronDown, X, Check, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import RichTextEditor from '@/components/RichTextEditor';
 import { competenciaADRelacionadaDaMacro } from '../../../shared/competenciasAdRelacionamento';
 
@@ -590,6 +591,27 @@ export function AcoesNova() {
   const { data: pdis = [], isLoading: loadingPdis } = trpc.pdis.list.useQuery();
   const { data: macros = [], isLoading: loadingMacros } = trpc.competencias.listAllMacros.useQuery();
   const { data: biblioteca = [], isLoading: loadingBiblioteca } = trpc.actions.library.useQuery();
+  const baixarBiblioteca = () => {
+    const macroPorId = new Map((macros as any[]).map((macro) => [Number(macro.id), String(macro.nome ?? '')]));
+    const cabecalhos = [
+      'ID do modelo', 'Título da ação', 'Descrição atual', 'ID da macro atual',
+      'Macrocompetência atual', 'Microcompetência atual', 'Utilizações',
+      'Eixo de desenvolvimento (revisar)', 'Competência original do eixo (revisar)',
+      'Competência B.E.M. (revisar)', 'Nível B.E.M. (revisar)', 'Observações / ajuste',
+    ];
+    const linhas = (biblioteca as any[]).map((modelo) => [
+      modelo.modeloId, modelo.titulo ?? '', modelo.descricao ?? '', modelo.macroId ?? '',
+      macroPorId.get(Number(modelo.macroId)) ?? '', modelo.microcompetencia ?? '',
+      modelo.utilizacoes ?? 0, '', '', '', '', '',
+    ]);
+    const aba = XLSX.utils.aoa_to_sheet([cabecalhos, ...linhas]);
+    aba['!cols'] = [16, 42, 65, 20, 46, 40, 16, 42, 44, 40, 26, 50].map((wch) => ({ wch }));
+    aba['!autofilter'] = { ref: `A1:L${linhas.length + 1}` };
+    const arquivo = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(arquivo, aba, 'Ações da biblioteca');
+    const data = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(arquivo, `biblioteca_acoes_pdi_${data}.xlsx`);
+  };
   const macroTecnicaInferida = useMemo(
     () => eixoOrigem ? resolverMacroTecnica(eixoOrigem, macros as any[]) : null,
     [eixoOrigem, macros],
@@ -1156,6 +1178,14 @@ export function AcoesNova() {
           <p style={{ color: '#64748b', marginTop: '7px' }}>
             Escolha primeiro o foco de desenvolvimento. Depois utilize um modelo, crie a ação ou peça uma sugestão à IA.
           </p>
+          <button
+            type="button"
+            onClick={baixarBiblioteca}
+            disabled={loadingBiblioteca || loadingMacros || biblioteca.length === 0}
+            style={{ marginTop: '10px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '9px 12px', border: '1px solid #0f766e', borderRadius: '7px', background: '#fff', color: '#0f766e', fontWeight: 700, cursor: loadingBiblioteca || loadingMacros || biblioteca.length === 0 ? 'not-allowed' : 'pointer' }}
+          >
+            <Download size={17} /> Baixar biblioteca de ações (.xlsx)
+          </button>
         </div>
 
         <div style={{
