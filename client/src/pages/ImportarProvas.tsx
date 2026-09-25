@@ -442,7 +442,12 @@ export default function ImportarProvas() {
             Number(item.id) === id ? { ...item, status: "VALIDADA" } : item,
           ),
         );
-        setMensagemAcao(`Prova ${resposta.codigo} salva e validada com sucesso.`);
+        const extras: string[] = [];
+        if (resposta?.aplicacoesAtualizadas?.length) extras.push(`${resposta.aplicacoesAtualizadas.length} aplicação(ões) agendada(s) receberam a nova versão.`);
+        if (resposta?.aplicacoesNaoAtualizadas?.length) extras.push(`${resposta.aplicacoesNaoAtualizadas.length} aplicação(ões) já liberada(s) NÃO foram alteradas.`);
+        if (resposta?.homologacaoMantida) extras.push("Conteúdo sem alteração: a homologação continua válida.");
+        if (resposta?.homologacaoInvalidada) extras.push("O conteúdo mudou: a prova precisa ser testada e homologada de novo antes da liberação.");
+        setMensagemAcao(`Prova ${resposta.codigo} salva e validada com sucesso.${extras.length ? " " + extras.join(" ") : ""}`);
         setVisualizandoId(id);
         setPreviewIndice(0);
         setHistoricoId(null);
@@ -572,6 +577,22 @@ export default function ImportarProvas() {
     setErroLeitura("");
     setValidacaoSalva(null);
     setMensagemAcao("");
+    try {
+      const ativas: any[] = await (utils as any).importacaoProvas.aplicacoesAtivas.fetch({ id });
+      if (ativas?.length) {
+        const lista = ativas.map((a: any) => `• ${new Date(a.agendadaPara).toLocaleString("pt-BR")} — ${a.status === "AGENDADA" ? "agendada" : "já liberada"}`).join("\n");
+        const temLiberada = ativas.some((a: any) => a.status !== "AGENDADA");
+        const ok = window.confirm(
+          `Esta prova tem ${ativas.length} aplicação(ões) ativa(s):\n${lista}\n\n` +
+          "Ao validar a nova versão, as aplicações AGENDADAS receberão a prova corrigida." +
+          (temLiberada ? "\nAtenção: aplicações JÁ LIBERADAS não são alteradas." : "") +
+          "\nSe você alterar enunciado, alternativas ou gabarito, a prova precisará ser testada e homologada de novo antes da liberação.\n\nDeseja reabrir a prova para edição?",
+        );
+        if (!ok) return;
+      }
+    } catch {
+      // Se a consulta falhar, segue com a reabertura normal.
+    }
     setReabrindoId(id);
     try {
       const resposta = await reabrirParaEdicao.mutateAsync({ id });

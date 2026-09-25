@@ -84,6 +84,22 @@ export default function AdminAplicacoesProficiencia() {
     onError: error => setMensagem(error.message),
   });
 
+  const cancelarMutation = (trpc as any).aplicacoesProficiencia.cancelar.useMutation({
+    onSuccess: async () => {
+      setMensagem("Aplicação cancelada. Os participantes podem ser agendados novamente.");
+      await Promise.all([aplicacoesQuery.refetch(), monitoramentoQuery.refetch()]);
+    },
+    onError: (error: any) => setMensagem(error.message),
+  });
+
+  const cancelarAplicacao = () => {
+    if (!aplicacaoSelecionada) return;
+    const motivo = window.prompt("Motivo do cancelamento (obrigatório, mínimo 5 caracteres):", "");
+    if (motivo === null) return;
+    if (motivo.trim().length < 5) { setMensagem("Informe um motivo com pelo menos 5 caracteres."); return; }
+    cancelarMutation.mutate({ aplicacaoId: aplicacaoSelecionada, motivo: motivo.trim() });
+  };
+
   const calcularMutation = trpc.aplicacoesProficiencia.calcular.useMutation({
     onSuccess: async data => {
       setMensagem(
@@ -352,6 +368,14 @@ export default function AdminAplicacoesProficiencia() {
                     disabled={liberarMutation.isPending || aplicacaoMonitorada?.status !== "AGENDADA"}
                   >
                     <PlayCircle className="mr-2 h-4 w-4" />LIBERAR PROVA
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-red-300 text-red-700 hover:bg-red-50"
+                    onClick={cancelarAplicacao}
+                    disabled={cancelarMutation.isPending || aplicacaoMonitorada?.status !== "AGENDADA"}
+                  >
+                    <X className="mr-2 h-4 w-4" />CANCELAR AGENDAMENTO
                   </Button>
                   <Button
                     variant="outline"
