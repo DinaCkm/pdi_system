@@ -86,7 +86,7 @@ export default function AdminAplicacoesProficiencia() {
 
   const cancelarMutation = (trpc as any).aplicacoesProficiencia.cancelar.useMutation({
     onSuccess: async () => {
-      setMensagem("Aplicação cancelada. Os participantes podem ser agendados novamente.");
+      setMensagem("Aplicação cancelada. Os participantes podem ser agendados novamente. Se era um teste de homologação, a prova volta a aguardar um novo teste.");
       await Promise.all([aplicacoesQuery.refetch(), monitoramentoQuery.refetch()]);
     },
     onError: (error: any) => setMensagem(error.message),
@@ -373,9 +373,9 @@ export default function AdminAplicacoesProficiencia() {
                     variant="outline"
                     className="border-red-300 text-red-700 hover:bg-red-50"
                     onClick={cancelarAplicacao}
-                    disabled={cancelarMutation.isPending || aplicacaoMonitorada?.status !== "AGENDADA"}
+                    disabled={cancelarMutation.isPending || !(aplicacaoMonitorada?.status === "AGENDADA" || (monitoramento?.modoTeste && aplicacaoMonitorada?.status === "LIBERADA"))}
                   >
-                    <X className="mr-2 h-4 w-4" />CANCELAR AGENDAMENTO
+                    <X className="mr-2 h-4 w-4" />{monitoramento?.modoTeste ? "CANCELAR TESTE" : "CANCELAR AGENDAMENTO"}
                   </Button>
                   <Button
                     variant="outline"
