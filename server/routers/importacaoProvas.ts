@@ -825,6 +825,84 @@ export const importacaoProvasRouter = router({
     };
   }),
 
+  // Acrescenta "Relacionamento Institucional e Parcerias" como eixo adicional nas 6 questões de
+  // articulação/parcerias (37, 38, 49, 50, 52 e 53) das 8 provas históricas 2025 das Regionais.
+  // Altera somente o campo de eixos; enunciados, alternativas, gabaritos e status são preservados.
+  acrescentarEixoRelacionamentoRegionaisHist: adminProcedure.mutation(async ({ ctx }) => {
+    const db = await ensureTables();
+    const EIXO = "Relacionamento Institucional e Parcerias";
+    const QUESTOES: Array<[number, string]> = [
+      [37, "Como gerente regional, é sua responsabilidade articular"],
+      [38, "O Sebrae, em diferentes estados, apoiou"],
+      [49, "Em um grande evento regional, a equipe local recebe"],
+      [50, "O Sebrae Tocantins executa o Programa ALI"],
+      [52, "O EMPRETEC é um dos principais"],
+      [53, "Em evento com múltiplos parceiros"],
+    ];
+    const registrosResult = await db.execute(sql`
+      SELECT id, codigo, status, questoes_json AS questoesJson
+        FROM provas_importadas
+       WHERE codigo LIKE 'REGIONAIS_2025_%_HIST' AND status <> 'INVALIDADA'
+    `);
+    const registros = Array.isArray(registrosResult) ? (registrosResult[0] as any[]) : [];
+    if (!registros.length) throw new Error("Nenhuma prova histórica das Regionais foi encontrada.");
+
+    const preparados: Array<{ id: number; codigo: string; antes: any[]; depois: any[]; alteradas: number[] }> = [];
+    for (const registro of registros) {
+      let questoes: any[];
+      try {
+        questoes = JSON.parse(registro.questoesJson);
+      } catch {
+        throw new Error(`Não foi possível ler as questões da prova ${registro.codigo}. Nenhuma alteração foi gravada.`);
+      }
+      if (!Array.isArray(questoes) || questoes.length !== 65) {
+        throw new Error(`A prova ${registro.codigo} precisa ter 65 questões. Nenhuma alteração foi gravada.`);
+      }
+      const alteradas: number[] = [];
+      const depois = questoes.map((questao: any, indice: number) => {
+        const alvo = QUESTOES.find(([numero]) => numero === indice + 1);
+        if (!alvo) return questao;
+        const enunciado = normalizarTexto(String(questao?.enunciado ?? ""));
+        if (!enunciado.startsWith(normalizarTexto(alvo[1]))) {
+          throw new Error(`A questão ${alvo[0]} da prova ${registro.codigo} não corresponde ao texto esperado. Nenhuma alteração foi gravada.`);
+        }
+        const eixos = Array.isArray(questao?.eixos) ? questao.eixos : [];
+        if (eixos.some((eixo: any) => String(eixo?.nome ?? "").trim() === EIXO)) return questao;
+        alteradas.push(alvo[0]);
+        return { ...questao, eixos: [...eixos, { nome: EIXO }] };
+      });
+      preparados.push({ id: Number(registro.id), codigo: String(registro.codigo), antes: questoes, depois, alteradas });
+    }
+
+    await db.transaction(async (tx: any) => {
+      for (const item of preparados) {
+        if (!item.alteradas.length) continue;
+        await tx.execute(sql`
+          UPDATE provas_importadas
+             SET questoes_json = ${JSON.stringify(item.depois)}
+           WHERE id = ${item.id}
+        `);
+        await registrarHistorico({
+          db: tx,
+          provaId: item.id,
+          acao: "EIXO_ADICIONAL_REGIONAIS_HIST",
+          usuarioId: ctx.user.id,
+          resumo: [
+            { campo: "Eixo acrescentado", antes: null, depois: EIXO },
+            { campo: "Questões", antes: null, depois: item.alteradas.join(", ") },
+          ],
+          antes: { questoes: item.antes.map((q: any) => ({ id: q?.id, eixos: q?.eixos ?? [] })) },
+          depois: { questoes: item.depois.map((q: any) => ({ id: q?.id, eixos: q?.eixos ?? [] })) },
+        });
+      }
+    });
+
+    return {
+      resultados: preparados.map(item => ({ codigo: item.codigo, questoesAlteradas: item.alteradas })),
+      mensagem: `${preparados.filter(item => item.alteradas.length).length} prova(s) atualizada(s); ${preparados.filter(item => !item.alteradas.length).length} já estava(m) com o eixo.`,
+    };
+  }),
+
   replicarEixos: adminProcedure.input(z.object({
     origemId: z.number().int().positive(),
     destinoIds: z.array(z.number().int().positive()).min(1).max(20),
