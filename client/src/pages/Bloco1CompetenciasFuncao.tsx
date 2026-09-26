@@ -499,6 +499,11 @@ export default function Bloco1CompetenciasFuncao() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {mapa.data.tecnico.alerta && (
+                <div className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm font-medium text-red-900">
+                  ⚠ {mapa.data.tecnico.alerta}
+                </div>
+              )}
               {mapa.data.comportamental.erroCarregamento && (
                 <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
                   Os dados técnicos foram carregados, mas houve falha ao consultar a Avaliação de Desempenho: {mapa.data.comportamental.erroCarregamento}
