@@ -4,7 +4,8 @@ import { trpc } from '@/lib/trpc';
 import { Sparkles, Loader2, Search, ChevronDown, X, Check, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import RichTextEditor from '@/components/RichTextEditor';
-import { competenciaADRelacionadaDaMacro } from '../../../shared/competenciasAdRelacionamento';
+import { COMPETENCIAS_AD_HISTORICAS, competenciaADRelacionadaDaMacro, macroRelacionadaDaAD } from '../../../shared/competenciasAdRelacionamento';
+import { useAuth } from '@/_core/hooks/useAuth';
 
 
 type SubcompetenciaReferencia = {
@@ -559,6 +560,11 @@ export function AcoesNova() {
   });
 
   const [modoCriacao, setModoCriacao] = useState<"nova" | "biblioteca">("nova");
+  const [tipoEscolhido, setTipoEscolhido] = useState<"" | "TECNICA" | "COMPORTAMENTAL">("");
+  const [eixoEscolhido, setEixoEscolhido] = useState("");
+  const [buscaGeral, setBuscaGeral] = useState("");
+  const [mensagemLastro, setMensagemLastro] = useState("");
+  const { user } = useAuth();
   const [buscaBiblioteca, setBuscaBiblioteca] = useState("");
   const [macroBiblioteca, setMacroBiblioteca] = useState("");
   const [eixoBiblioteca, setEixoBiblioteca] = useState("");
@@ -596,17 +602,19 @@ export function AcoesNova() {
     const cabecalhos = [
       'ID do modelo', 'Título da ação', 'Descrição atual', 'ID da macro atual',
       'Macrocompetência atual', 'Microcompetência atual', 'Utilizações',
-      'Eixo de desenvolvimento (revisar)', 'Competência original do eixo (revisar)',
-      'Competência B.E.M. (revisar)', 'Nível B.E.M. (revisar)', 'Observações / ajuste',
+      'Tipo (lastro)', 'Eixo (lastro)', 'Já usado para',
     ];
     const linhas = (biblioteca as any[]).map((modelo) => [
       modelo.modeloId, modelo.titulo ?? '', modelo.descricao ?? '', modelo.macroId ?? '',
       macroPorId.get(Number(modelo.macroId)) ?? '', modelo.microcompetencia ?? '',
-      modelo.utilizacoes ?? 0, '', '', '', '', '',
+      modelo.utilizacoes ?? 0,
+      modelo.tipoCompetencia === 'TECNICA' ? 'TÉCNICA' : modelo.tipoCompetencia === 'COMPORTAMENTAL' ? 'COMPORTAMENTAL' : '',
+      modelo.eixoNome ?? '',
+      descreverUsos(modelo),
     ]);
     const aba = XLSX.utils.aoa_to_sheet([cabecalhos, ...linhas]);
-    aba['!cols'] = [16, 42, 65, 20, 46, 40, 16, 42, 44, 40, 26, 50].map((wch) => ({ wch }));
-    aba['!autofilter'] = { ref: `A1:L${linhas.length + 1}` };
+    aba['!cols'] = [16, 42, 65, 20, 46, 40, 16, 18, 42, 60].map((wch) => ({ wch }));
+    aba['!autofilter'] = { ref: `A1:J${linhas.length + 1}` };
     const arquivo = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(arquivo, aba, 'Ações da biblioteca');
     const data = new Date().toISOString().slice(0, 10);
@@ -616,10 +624,20 @@ export function AcoesNova() {
     () => eixoOrigem ? resolverMacroTecnica(eixoOrigem, macros as any[]) : null,
     [eixoOrigem, macros],
   );
-  const fluxoTecnico = tipoCompetenciaParam === "TECNICA"
-    || (!tipoCompetenciaParam && Boolean(macroTecnicaInferida));
-  const fluxoComportamental = !fluxoTecnico;
+  // O tipo vem da linha da Evolução Individual (URL) ou é escolhido na Etapa 2 (menu Ações → Nova ação).
+  const tipoEfetivo: "" | "TECNICA" | "COMPORTAMENTAL" =
+    tipoCompetenciaParam === "TECNICA" || tipoCompetenciaParam === "COMPORTAMENTAL"
+      ? tipoCompetenciaParam
+      : tipoEscolhido;
+  const fluxoTecnico = tipoEfetivo === "TECNICA";
+  const fluxoComportamental = tipoEfetivo === "COMPORTAMENTAL";
   const tipoCompetenciaOrigem: "TECNICA" | "COMPORTAMENTAL" = fluxoTecnico ? "TECNICA" : "COMPORTAMENTAL";
+  const eixoAtual = eixoOrigem || eixoEscolhido;
+  const { data: eixosDisponiveis } = trpc.actions.eixosDisponiveis.useQuery(
+    { pdiId: Number(formData.pdiId) },
+    { enabled: Boolean(formData.pdiId) && Number(formData.pdiId) > 0 },
+  );
+  const importarLastroMutation = trpc.actions.importarLastro.useMutation();
   const { data: historicoEmpregado = [] } = trpc.actions.historyForPdi.useQuery(
     { pdiId: Number(formData.pdiId) },
     { enabled: Boolean(formData.pdiId) && Number(formData.pdiId) > 0 },
@@ -715,10 +733,13 @@ export function AcoesNova() {
 
   const acoesDisponiveisDaMacro = useMemo(() => {
     if (!formData.macroId) return [];
+    const competencia = eixoOrigem || eixoEscolhido;
     return (biblioteca as any[]).filter(
-      (modelo) => String(modelo.macroId ?? '') === formData.macroId,
+      (modelo) => String(modelo.macroId ?? '') === formData.macroId
+        || (competencia && (modelo.usos ?? []).some((uso: any) =>
+          uso.tipoCompetencia === 'COMPORTAMENTAL' && uso.eixoNome === competencia)),
     );
-  }, [biblioteca, formData.macroId]);
+  }, [biblioteca, formData.macroId, eixoOrigem, eixoEscolhido]);
 
   const normalizarBusca = (valor: unknown) =>
     String(valor ?? "")
@@ -728,19 +749,30 @@ export function AcoesNova() {
       .trim();
 
   const modelosTecnicos = useMemo(() => {
-    if (!fluxoTecnico || !formData.macroId) return [];
-    const alvo = normalizarBusca(eixoOrigem);
+    if (!fluxoTecnico || !eixoAtual) return [];
+    const alvo = normalizarBusca(eixoAtual);
     return (biblioteca as any[])
-      .filter((modelo) => String(modelo.macroId ?? "") === formData.macroId)
-      .sort((a, b) => {
-        const microA = normalizarBusca(a.microcompetencia);
-        const microB = normalizarBusca(b.microcompetencia);
-        const diretoA = alvo && (microA === alvo || microA.includes(alvo) || alvo.includes(microA)) ? 1 : 0;
-        const diretoB = alvo && (microB === alvo || microB.includes(alvo) || alvo.includes(microB)) ? 1 : 0;
-        if (diretoA !== diretoB) return diretoB - diretoA;
-        return Number(b.utilizacoes ?? 0) - Number(a.utilizacoes ?? 0);
-      });
-  }, [biblioteca, fluxoTecnico, eixoOrigem, formData.macroId]);
+      .filter((modelo) => (modelo.usos ?? []).some((uso: any) =>
+        uso.tipoCompetencia === "TECNICA" && normalizarBusca(uso.eixoNome) === alvo))
+      .sort((a, b) => Number(b.utilizacoes ?? 0) - Number(a.utilizacoes ?? 0));
+  }, [biblioteca, fluxoTecnico, eixoAtual]);
+
+  const resultadosBuscaGeral = useMemo(() => {
+    const termo = normalizarBusca(buscaGeral);
+    if (termo.length < 3) return [];
+    return (biblioteca as any[])
+      .filter((modelo) => [modelo.titulo, modelo.descricao]
+        .some((valor) => normalizarBusca(String(valor ?? "").replace(/<[^>]+>/g, " ")).includes(termo)))
+      .slice(0, 12);
+  }, [biblioteca, buscaGeral]);
+
+  const descreverUsos = (modelo: any) => {
+    const usos = (modelo.usos ?? []) as any[];
+    if (!usos.length) return "Ainda sem eixo registrado";
+    return usos.slice(0, 3)
+      .map((uso) => `${uso.eixoNome} (${uso.tipoCompetencia === "TECNICA" ? "técnico" : "comportamental"}) · ${uso.vezes}×`)
+      .join("; ");
+  };
 
   const modelosRelacionadosASubcompetencia = (nome: string) => {
     const alvo = normalizarBusca(nome);
@@ -792,7 +824,7 @@ export function AcoesNova() {
       if (data.success && data.sugestao) {
         setAcaoPreview({
           origem: "ia",
-          foco: fluxoTecnico ? eixoOrigem : subcompetenciaSelecionada,
+          foco: fluxoTecnico ? eixoAtual : subcompetenciaSelecionada,
           titulo: data.sugestao.titulo,
           descricao: data.sugestao.detalhes,
           macroId: formData.macroId,
@@ -827,12 +859,6 @@ export function AcoesNova() {
     if (tipo === 'TECNICA' && eixo) {
       setEixoBiblioteca(eixo);
       setSubcompetenciaSelecionada(eixo);
-      const macroTecnica = resolverMacroTecnica(eixo, macros as any[]);
-      if (macroTecnica) {
-        const id = String(macroTecnica.id);
-        setFormData(prev => ({ ...prev, macroId: id, microcompetencia: eixo }));
-        setMacroBiblioteca(id);
-      }
     }
 
     if (tipo === 'COMPORTAMENTAL' && macroRelacionada && macros.length > 0) {
@@ -852,6 +878,17 @@ export function AcoesNova() {
     }
   }, [searchString, macros, tipoCompetenciaOrigem, eixoOrigem]);
   
+  useEffect(() => {
+    if (!fluxoComportamental || eixoOrigem || !eixoEscolhido || macros.length === 0) return;
+    const alvo = String(macroRelacionadaDaAD(eixoEscolhido) ?? "").replace(/^COMPORTAMENTAL\s*-\s*/i, 'COMPORTAMENTAL - ').trim();
+    const macroEncontrada = (macros as any[]).find((macro) =>
+      String(macro.nome ?? '').replace(/^COMPORTAMENTAL\s*-\s*/i, 'COMPORTAMENTAL - ').trim() === alvo
+    );
+    setFormData(prev => ({ ...prev, macroId: macroEncontrada ? String(macroEncontrada.id) : '' }));
+    setSubcompetenciaSelecionada('');
+    setAcaoPreview(null);
+  }, [fluxoComportamental, eixoOrigem, eixoEscolhido, macros]);
+
   const utils = trpc.useUtils();
   
   const createMutation = trpc.actions.create.useMutation({
@@ -886,7 +923,7 @@ export function AcoesNova() {
 
   const handleSugerirComIA = () => {
     const macroSelecionada = macros.find((m: any) => String(m.id) === formData.macroId);
-    const referencia = fluxoTecnico ? (macroSelecionada?.nome || eixoOrigem) : macroSelecionada?.nome;
+    const referencia = fluxoTecnico ? eixoAtual : macroSelecionada?.nome;
 
     if (!referencia) {
       setErrors({ submit: fluxoTecnico ? 'Eixo técnico não identificado.' : 'Não foi possível localizar as Competências do B.E.M. relacionadas.' });
@@ -894,7 +931,7 @@ export function AcoesNova() {
     }
 
     if (fluxoTecnico && !subcompetenciaSelecionada) {
-      setSubcompetenciaSelecionada(eixoOrigem);
+      setSubcompetenciaSelecionada(eixoAtual);
     }
 
     setIsSuggesting(true);
@@ -902,15 +939,17 @@ export function AcoesNova() {
     
     sugerirAcaoMutation.mutate({
       competenciaMacro: referencia,
-      competenciaMicro: fluxoTecnico ? eixoOrigem : (formData.microcompetencia || undefined),
+      competenciaMicro: fluxoTecnico ? eixoAtual : (formData.microcompetencia || undefined),
     });
   };
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.pdiId) newErrors.pdiId = 'Selecione o PDI vinculado';
-    if (fluxoComportamental && !formData.macroId) newErrors.macroId = 'Não foi possível relacionar esta competência às Competências do B.E.M.';
-    if (fluxoTecnico && !formData.macroId) newErrors.macroId = 'Selecione a macrocompetência técnica relacionada a este eixo.';
+    if (!tipoEfetivo) newErrors.macroId = 'Escolha se a ação desenvolve um eixo técnico ou uma competência comportamental.';
+    if (fluxoComportamental && !competenciaAdAtual) newErrors.macroId = 'Escolha a competência comportamental que a ação vai desenvolver.';
+    if (fluxoComportamental && competenciaAdAtual && !subcompetenciaSelecionada) newErrors.macroId = 'Escolha o foco B.E.M. (Básica, Essencial ou Master) da ação.';
+    if (fluxoTecnico && !eixoAtual) newErrors.macroId = 'Escolha o eixo técnico que a ação vai desenvolver.';
     if (!formData.titulo.trim()) newErrors.titulo = 'Título é obrigatório';
     if (!formData.prazo) newErrors.prazo = 'Prazo é obrigatório';
     return newErrors;
@@ -927,7 +966,6 @@ export function AcoesNova() {
 
     // Conversão segura
     const pdiIdNumerico = Number(formData.pdiId);
-    const macroIdNumerico = formData.macroId ? Number(formData.macroId) : undefined;
 
     // Validação final de segurança
     if (!pdiIdNumerico || isNaN(pdiIdNumerico)) {
@@ -941,11 +979,12 @@ export function AcoesNova() {
       prazoFormatado = formData.prazo.toISOString().split('T')[0];
     }
     
+    // Ação nova: sem macro e sem microcompetência. O vínculo é tipo + eixo (+ foco B.E.M.).
     createMutation.mutate({
       pdiId: pdiIdNumerico,
-      ...(macroIdNumerico ? { macroId: macroIdNumerico } : {}),
       tipoCompetencia: tipoCompetenciaOrigem,
-      microcompetencia: formData.microcompetencia || eixoOrigem || undefined,
+      eixoNome: fluxoTecnico ? eixoAtual : competenciaAdAtual,
+      ...(fluxoComportamental && subcompetenciaSelecionada ? { focoBem: focoBemComNivel(subcompetenciaSelecionada) } : {}),
       titulo: formData.titulo,
       descricao: formData.descricao,
       prazo: prazoFormatado,
@@ -984,12 +1023,102 @@ export function AcoesNova() {
     setErrors({});
   };
 
-  const canSuggest = Boolean(formData.macroId && subcompetenciaSelecionada && !isSuggesting);
+  const canSuggest = Boolean((fluxoTecnico ? eixoAtual : formData.macroId) && subcompetenciaSelecionada && !isSuggesting);
   const [sugestaoGerada, setSugestaoGerada] = useState(false);
 
   const competenciaAdAtual = fluxoComportamental
-    ? (eixoOrigem || competenciaADRelacionadaDaMacro(selectedMacroName) || selectedMacroReference?.competenciaAD || "")
+    ? (eixoOrigem || eixoEscolhido || competenciaADRelacionadaDaMacro(selectedMacroName) || selectedMacroReference?.competenciaAD || "")
     : "";
+
+  const importarLastroDoArquivo = async (arquivo: File | undefined) => {
+    if (!arquivo) return;
+    setMensagemLastro('Lendo o arquivo...');
+    try {
+      const dados = await arquivo.arrayBuffer();
+      const planilha = XLSX.read(dados, { type: 'array' });
+      const linhasArquivo = XLSX.utils.sheet_to_json<any>(planilha.Sheets[planilha.SheetNames[0]], { defval: '' });
+      const linhas = linhasArquivo
+        .map((linha: any) => {
+          const tipoTexto = normalizarBusca(linha['Tipo']);
+          return {
+            modeloId: Number(linha['ID']),
+            tipoCompetencia: (tipoTexto.startsWith('tec') ? 'TECNICA' : tipoTexto.startsWith('comp') ? 'COMPORTAMENTAL' : '') as any,
+            eixoNome: String(linha['Eixo'] ?? '').trim(),
+          };
+        })
+        .filter((linha: any) => linha.modeloId > 0 && linha.tipoCompetencia && linha.eixoNome);
+      if (!linhas.length) {
+        setMensagemLastro('Nenhuma linha válida. O arquivo precisa das colunas ID, Tipo e Eixo.');
+        return;
+      }
+      setMensagemLastro(`Gravando o lastro de ${linhas.length} modelos...`);
+      let modelos = 0;
+      let acoes = 0;
+      const erros: string[] = [];
+      for (let i = 0; i < linhas.length; i += 200) {
+        const resposta = await importarLastroMutation.mutateAsync({ linhas: linhas.slice(i, i + 200) });
+        modelos += resposta.modelosAtualizados;
+        acoes += resposta.acoesAtualizadas;
+        erros.push(...resposta.erros);
+      }
+      await utils.actions.library.invalidate();
+      setMensagemLastro(`Lastro gravado: ${modelos} modelos, ${acoes} ações.${erros.length ? ` ${erros.length} linha(s) com erro: ${erros.slice(0, 3).join(' ')}` : ''}`);
+    } catch (error: any) {
+      setMensagemLastro(`Não foi possível importar: ${error?.message ?? error}`);
+    }
+  };
+
+  const focoBemComNivel = (nome: string) => {
+    const ref = selectedMacroReference;
+    if (!ref) return nome;
+    if (ref.basicas.some((item) => item.nome === nome)) return `${nome} (Básica)`;
+    if (ref.essenciais.some((item) => item.nome === nome)) return `${nome} (Essencial)`;
+    if (ref.master?.nome === nome) return `${nome} (Master)`;
+    return nome;
+  };
+
+  const usarModeloDaBusca = (modelo: any) => {
+    const foco = fluxoTecnico ? eixoAtual : subcompetenciaSelecionada;
+    if (!foco) {
+      setErrors({ submit: 'Escolha primeiro o foco B.E.M. (Básica, Essencial ou Master) acima; depois use o modelo.' });
+      return;
+    }
+    setSubcompetenciaSelecionada(foco);
+    setAcaoPreview({ origem: "modelo", foco, titulo: modelo.titulo || "", descricao: modelo.descricao || "", macroId: formData.macroId });
+    setErrors({});
+  };
+
+  const renderBuscaGeral = () => (
+    <div style={{ marginTop: '18px', borderTop: '1px solid #e2e8f0', paddingTop: '14px' }}>
+      <div style={{ fontWeight: 750, color: '#0f172a' }}>Buscar em toda a biblioteca</div>
+      <div style={{ marginTop: '3px', fontSize: '13px', color: '#64748b' }}>
+        Procura em todas as ações, técnicas e comportamentais. O modelo empresta só o conteúdo: o eixo desta ação continua sendo o escolhido acima.
+      </div>
+      <input
+        value={buscaGeral}
+        onChange={(e) => setBuscaGeral(e.target.value)}
+        placeholder="Digite ao menos 3 letras (ex.: oratória, Power BI, licitação)"
+        style={{ marginTop: '9px', width: '100%', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '7px' }}
+      />
+      {buscaGeral.trim().length >= 3 && (
+        <div style={{ marginTop: '10px', display: 'grid', gap: '8px' }}>
+          {resultadosBuscaGeral.length === 0 ? (
+            <div style={{ fontSize: '13px', color: '#64748b' }}>Nenhum modelo encontrado para essa busca.</div>
+          ) : resultadosBuscaGeral.map((modelo: any) => (
+            <div key={`busca-${modelo.modeloId}`} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '11px', display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start', background: '#fff' }}>
+              <div>
+                <div style={{ fontWeight: 650 }}>{modelo.titulo}</div>
+                <div style={{ marginTop: '4px', fontSize: '12px', color: '#64748b' }}>Já usado para: {descreverUsos(modelo)}</div>
+              </div>
+              <button type="button" onClick={() => usarModeloDaBusca(modelo)} style={{ flexShrink: 0, border: '1px solid #2563eb', borderRadius: '6px', padding: '8px 11px', background: '#2563eb', color: '#fff', fontWeight: 650, cursor: 'pointer' }}>
+                Usar como modelo
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   const renderModelosDoFoco = (foco: string) => {
     const modelos = modelosRelacionadosASubcompetencia(foco);
@@ -1186,6 +1315,15 @@ export function AcoesNova() {
           >
             <Download size={17} /> Baixar biblioteca de ações (.xlsx)
           </button>
+          {user?.role === 'admin' && (
+            <label style={{ marginTop: '10px', marginLeft: '10px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '9px 12px', border: '1px solid #5E2B8A', borderRadius: '7px', background: '#fff', color: '#5E2B8A', fontWeight: 700, cursor: 'pointer' }}>
+              Importar lastro das ações (.xlsx)
+              <input type="file" accept=".xlsx" style={{ display: 'none' }} onChange={(e) => { importarLastroDoArquivo(e.target.files?.[0]); e.target.value = ''; }} />
+            </label>
+          )}
+          {mensagemLastro && (
+            <div style={{ marginTop: '8px', fontSize: '13px', color: '#334155' }}>{mensagemLastro}</div>
+          )}
         </div>
 
         <div style={{
@@ -1275,53 +1413,63 @@ export function AcoesNova() {
               {fluxoTecnico ? 'Qual eixo técnico estamos desenvolvendo?' : 'Qual competência estamos desenvolvendo?'}
             </h2>
 
-            {fluxoTecnico ? (
+            {!tipoCompetenciaParam && (
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                {([['TECNICA', 'Eixo técnico'], ['COMPORTAMENTAL', 'Competência comportamental']] as const).map(([valor, rotulo]) => (
+                  <button
+                    key={valor}
+                    type="button"
+                    onClick={() => { setTipoEscolhido(valor); setEixoEscolhido(''); setAcaoPreview(null); setSubcompetenciaSelecionada(''); setFormData(prev => ({ ...prev, macroId: '' })); setErrors({}); }}
+                    style={{ border: tipoEscolhido === valor ? '2px solid #2563eb' : '1px solid #cbd5e1', borderRadius: '8px', padding: '10px 14px', background: tipoEscolhido === valor ? '#eff6ff' : '#fff', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    {rotulo}
+                  </button>
+                ))}
+              </div>
+            )}
+            {!tipoEfetivo ? (
+              <div style={{ fontSize: '13px', color: '#64748b' }}>Escolha acima se a ação vai desenvolver um eixo técnico ou uma competência comportamental.</div>
+            ) : fluxoTecnico ? (
               <div style={{ display: 'grid', gap: '10px' }}>
-                {!tipoCompetenciaParam && macroTecnicaInferida && (
-                  <div style={{ padding: '10px 12px', borderRadius: '8px', background: '#ecfdf5', border: '1px solid #bbf7d0', color: '#166534', fontSize: '13px' }}>
-                    Este eixo foi reconhecido automaticamente como competência técnica.
+                {eixoOrigem ? (
+                  <div style={{ padding: '14px 16px', borderRadius: '9px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#64748b', fontWeight: 750 }}>Eixo técnico selecionado na Evolução</div>
+                    <div style={{ marginTop: '5px', fontWeight: 750, fontSize: '17px' }}>{eixoOrigem}</div>
                   </div>
-                )}
-                <div style={{ padding: '14px 16px', borderRadius: '9px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#64748b', fontWeight: 750 }}>Eixo técnico selecionado na Evolução</div>
-                  <div style={{ marginTop: '5px', fontWeight: 750, fontSize: '17px' }}>{eixoOrigem || 'Eixo não identificado'}</div>
-                </div>
-
-                <div style={{ padding: '14px 16px', borderRadius: '9px', background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-                  <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#1d4ed8', fontWeight: 750 }}>Macrocompetência técnica relacionada</div>
-                  <div style={{ marginTop: '5px', fontWeight: 750 }}>
-                    {selectedMacroName || 'Selecione a macrocompetência técnica'}
+                ) : !formData.pdiId ? (
+                  <div style={{ fontSize: '13px', color: '#64748b' }}>Escolha primeiro o empregado na Etapa 1 para ver os eixos técnicos da matriz dele.</div>
+                ) : (eixosDisponiveis?.tecnicos ?? []).length === 0 ? (
+                  <div style={{ border: '1px solid #fecaca', background: '#fff7f7', color: '#991b1b', borderRadius: '8px', padding: '11px 13px', fontSize: '13px' }}>
+                    Este empregado ainda não tem eixos técnicos na matriz. Importe a matriz dele antes de criar uma ação técnica.
                   </div>
-                  <div style={{ marginTop: '5px', color: '#475569', fontSize: '13px' }}>
-                    As ações existentes são buscadas pela macrocompetência técnica e o eixo fica registrado como foco específico da ação.
-                  </div>
-                </div>
-
-                <select
-                  value={formData.macroId}
-                  onChange={(event) => {
-                    const id = event.target.value;
-                    setFormData(prev => ({ ...prev, macroId: id, microcompetencia: eixoOrigem }));
-                    setMacroBiblioteca(id);
-                    setErrors(prev => ({ ...prev, macroId: '', submit: '' }));
-                    setAcaoPreview(null);
-                  }}
-                  style={{ width: '100%', padding: '11px 12px', border: errors.macroId ? '2px solid #dc2626' : '1px solid #cbd5e1', borderRadius: '7px', background: '#fff' }}
-                >
-                  <option value="">Selecione a macrocompetência técnica</option>
-                  {macrosTecnicas.map((macro: any) => (
-                    <option key={macro.id} value={String(macro.id)}>{macro.nome}</option>
-                  ))}
-                </select>
-                {macroTecnicaSugerida && selectedMacroName && (
-                  <div style={{ fontSize: '12px', color: '#166534' }}>
-                    Relação técnica identificada automaticamente. Você pode alterar se necessário.
-                  </div>
+                ) : (
+                  <select
+                    value={eixoEscolhido}
+                    onChange={(event) => { setEixoEscolhido(event.target.value); setSubcompetenciaSelecionada(event.target.value); setAcaoPreview(null); setErrors({}); }}
+                    style={{ width: '100%', padding: '11px 12px', border: errors.macroId ? '2px solid #dc2626' : '1px solid #cbd5e1', borderRadius: '7px', background: '#fff' }}
+                  >
+                    <option value="">Selecione o eixo técnico da matriz do empregado</option>
+                    {(eixosDisponiveis?.tecnicos ?? []).map((eixo: string) => (
+                      <option key={eixo} value={eixo}>{eixo}</option>
+                    ))}
+                  </select>
                 )}
                 {errors.macroId && <div style={{ color: '#b91c1c', fontSize: '13px' }}>{errors.macroId}</div>}
               </div>
             ) : (
               <>
+                {!eixoOrigem && (
+                  <select
+                    value={eixoEscolhido}
+                    onChange={(event) => setEixoEscolhido(event.target.value)}
+                    style={{ width: '100%', marginBottom: '10px', padding: '11px 12px', border: errors.macroId ? '2px solid #dc2626' : '1px solid #cbd5e1', borderRadius: '7px', background: '#fff' }}
+                  >
+                    <option value="">Selecione a competência comportamental da Avaliação de Desempenho</option>
+                    {COMPETENCIAS_AD_HISTORICAS.map((competencia) => (
+                      <option key={competencia} value={competencia}>{competencia}</option>
+                    ))}
+                  </select>
+                )}
                 {competenciaAdAtual && (
                   <div style={{ marginBottom: '10px', padding: '12px 14px', borderRadius: '8px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
                     <div style={{ fontSize: '12px', textTransform: 'uppercase', color: '#64748b', fontWeight: 750 }}>Competência comportamental selecionada na Evolução</div>
@@ -1339,7 +1487,7 @@ export function AcoesNova() {
                   </div>
                 </div>
 
-                {!selectedMacroName && (
+                {competenciaAdAtual && !selectedMacroName && (
                   <div style={{ marginTop: '10px', border: '1px solid #fecaca', background: '#fff7f7', color: '#991b1b', borderRadius: '8px', padding: '11px 13px', fontSize: '13px' }}>
                     Não foi possível localizar automaticamente a trilha das Competências do B.E.M. para esta competência. Revise o relacionamento cadastrado antes de criar a ação.
                   </div>
@@ -1349,19 +1497,16 @@ export function AcoesNova() {
             )}
           </section>
 
-          {fluxoTecnico && eixoOrigem && (
+          {fluxoTecnico && eixoAtual && (
             <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px' }}>
               <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Etapa 3</div>
               <h2 style={{ margin: '4px 0 6px', fontSize: '20px' }}>Escolha a ação para o eixo técnico</h2>
               <p style={{ margin: '0 0 14px', color: '#64748b', fontSize: '14px' }}>
-                Veja as ações já ligadas à macrocompetência técnica, escolha uma para atribuir ao PDI, crie uma nova ação ou peça uma sugestão específica à IA.
+                Veja as ações já usadas para este eixo, busque em toda a biblioteca, crie uma nova ação ou peça uma sugestão à IA.
               </p>
 
-              {!formData.macroId ? (
-                <div style={{ border: '1px dashed #cbd5e1', borderRadius: '9px', padding: '14px', color: '#64748b', fontSize: '13px' }}>
-                  Selecione primeiro a macrocompetência técnica para visualizar as ações disponíveis.
-                </div>
-              ) : modelosTecnicos.length > 0 ? (
+              <div style={{ fontWeight: 750, color: '#0f172a', marginBottom: '8px' }}>Mais usados para este eixo</div>
+              {modelosTecnicos.length > 0 ? (
                 <div style={{ display: 'grid', gap: '10px' }}>
                   {modelosTecnicos.slice(0, 8).map((modelo: any) => (
                     <div key={modelo.modeloId} style={{ border: '1px solid #e2e8f0', borderRadius: '9px', padding: '13px', display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
@@ -1372,13 +1517,13 @@ export function AcoesNova() {
                       <button
                         type="button"
                         onClick={() => {
-                          setSubcompetenciaSelecionada(eixoOrigem);
+                          setSubcompetenciaSelecionada(eixoAtual);
                           setAcaoPreview({
                             origem: "modelo",
-                            foco: eixoOrigem,
+                            foco: eixoAtual,
                             titulo: modelo.titulo || "",
                             descricao: modelo.descricao || "",
-                            macroId: formData.macroId,
+                            macroId: '',
                           });
                           setErrors({});
                         }}
@@ -1391,33 +1536,35 @@ export function AcoesNova() {
                 </div>
               ) : (
                 <div style={{ border: '1px dashed #cbd5e1', borderRadius: '9px', padding: '14px', color: '#64748b', fontSize: '13px' }}>
-                  Ainda não existem ações cadastradas para esta macrocompetência técnica. Você pode criar uma nova ação abaixo.
+                  Ainda não há ações registradas para este eixo. Use a busca na biblioteca, crie uma nova ação ou peça uma sugestão à IA.
                 </div>
               )}
+
+              {renderBuscaGeral()}
 
               <div style={{ marginTop: '14px', display: 'flex', gap: '9px', flexWrap: 'wrap' }}>
                 <button
                   type="button"
-                  disabled={!formData.macroId}
+                  disabled={!eixoAtual}
                   onClick={() => {
-                    setSubcompetenciaSelecionada(eixoOrigem);
+                    setSubcompetenciaSelecionada(eixoAtual);
                     setCriandoAcaoTecnica(true);
                     setAcaoPreview(null);
-                    setFormData(prev => ({ ...prev, microcompetencia: eixoOrigem, titulo: '', descricao: '' }));
+                    setFormData(prev => ({ ...prev, microcompetencia: eixoAtual, titulo: '', descricao: '' }));
                     setErrors({});
                   }}
-                  style={{ border: 'none', borderRadius: '7px', padding: '10px 14px', background: formData.macroId ? '#5E2B8A' : '#94a3b8', color: '#fff', fontWeight: 700, cursor: formData.macroId ? 'pointer' : 'not-allowed' }}
+                  style={{ border: 'none', borderRadius: '7px', padding: '10px 14px', background: '#5E2B8A', color: '#fff', fontWeight: 700, cursor: 'pointer' }}
                 >
                   Criar nova ação para este eixo
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    setSubcompetenciaSelecionada(eixoOrigem);
+                    setSubcompetenciaSelecionada(eixoAtual);
                     handleSugerirComIA();
                   }}
-                  disabled={!formData.macroId || isSuggesting}
-                  style={{ border: 'none', borderRadius: '7px', padding: '10px 14px', background: formData.macroId && !isSuggesting ? '#0284c7' : '#94a3b8', color: '#fff', fontWeight: 700, cursor: formData.macroId && !isSuggesting ? 'pointer' : 'not-allowed', display: 'inline-flex', alignItems: 'center', gap: '7px' }}
+                  disabled={isSuggesting}
+                  style={{ border: 'none', borderRadius: '7px', padding: '10px 14px', background: !isSuggesting ? '#0284c7' : '#94a3b8', color: '#fff', fontWeight: 700, cursor: !isSuggesting ? 'pointer' : 'not-allowed', display: 'inline-flex', alignItems: 'center', gap: '7px' }}
                 >
                   <Sparkles size={16} />
                   {isSuggesting ? 'Gerando sugestão...' : 'Sugerir ação para este eixo com IA'}
@@ -1479,7 +1626,7 @@ export function AcoesNova() {
                 </div>
               )}
 
-              {acaoPreview && acaoPreview.foco === eixoOrigem && (
+              {acaoPreview && acaoPreview.foco === eixoAtual && (
                 <div style={{ marginTop: '14px', border: '2px solid #93c5fd', borderRadius: '10px', padding: '16px', background: '#f8fbff' }}>
                   <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Prévia da ação</div>
                   <div style={{ marginTop: '6px', fontSize: '18px', fontWeight: 750, color: '#0f172a' }}>{acaoPreview.titulo}</div>
@@ -1501,7 +1648,7 @@ export function AcoesNova() {
             </section>
           )}
 
-          {selectedMacroReference && (
+          {fluxoComportamental && selectedMacroReference && (
             <section style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px' }}>
               <div style={{ fontSize: '12px', fontWeight: 750, color: '#2563eb', textTransform: 'uppercase' }}>Etapa 3</div>
               <h2 style={{ margin: '4px 0 6px', fontSize: '20px' }}>Quais Competências do B.E.M. serão desenvolvidas?</h2>
@@ -1542,6 +1689,7 @@ export function AcoesNova() {
                 </div>
               ))}
 
+              {renderBuscaGeral()}
               {acoesDisponiveisDaMacro.length > 0 && (
                 <div style={{ marginTop: '12px' }}>
                   <button
