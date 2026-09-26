@@ -241,6 +241,18 @@ export const bloco1CompetenciasFuncaoRouter = router({
           `)
         : null;
       const linhasAdministrativas = matrizAdministrativaResult ? rowsOf<any>(matrizAdministrativaResult) : [];
+
+      // Alerta individual registrado na matriz (observação iniciada por "ALERTA:"), exibido ao empregado.
+      const alertaMatrizResult = await db.execute(sql`
+        SELECT observacao
+          FROM prova_utic_matrizes
+         WHERE colaborador_id = ${input.colaboradorId}
+         LIMIT 1
+      `);
+      const observacaoMatriz = String(rowsOf<any>(alertaMatrizResult)[0]?.observacao ?? "").trim();
+      const alertaTecnico = /^ALERTA:/i.test(observacaoMatriz)
+        ? observacaoMatriz.replace(/^ALERTA:\s*/i, "")
+        : null;
       const linhasTecnicas: any[] = linhasRegionais.length > 0 ? linhasRegionais : linhasAdministrativas;
       const fonteTecnica = linhasRegionais.length > 0
         ? "Prova histórica regional"
@@ -514,6 +526,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
           aplicacaoAtual: resultadoTecnicoLinha?.aplicacaoTitulo ?? null,
           provaAtual: resultadoTecnicoLinha?.provaNome ?? null,
           calculadoEm: resultadoTecnicoLinha?.calculadoEm ?? null,
+          alerta: alertaTecnico,
           competencias: tecnicas,
         },
         comportamental: {
