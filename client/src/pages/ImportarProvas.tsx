@@ -911,7 +911,7 @@ export default function ImportarProvas() {
                                 VALIDADA
                               </div>
                               <div className="mt-1 text-[11px] text-muted-foreground">
-                                Homologação: {item.homologacaoStatus || "PENDENTE"}
+                                {/_HIST$/i.test(String(item.codigo || "")) ? "Prova histórica: homologação não se aplica" : <>Homologação: {item.homologacaoStatus || "PENDENTE"}</>}
                               </div>
                             </>
                           ) : item.status}
@@ -925,6 +925,7 @@ export default function ImportarProvas() {
                                 <Button size="sm" variant={editandoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirEdicao(Number(item.id))}><Pencil className="mr-2 h-4 w-4" />Editar</Button>
                                 <Button size="sm" variant="outline" onClick={() => validarProvaSalva(Number(item.id))} disabled={validandoId === Number(item.id)}>{validandoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}Salvar e validar</Button>
                               </> : item.status === "VALIDADA" ? <>
+                                {!/_HIST$/i.test(String(item.codigo || "")) && <>
                                 <Button size="sm" onClick={() => iniciarTesteAdmin(Number(item.id))} disabled={processandoHomologacaoId === Number(item.id)}>
                                   {processandoHomologacaoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
                                   {item.aplicacaoTesteId ? "Abrir teste" : "Iniciar teste"}
@@ -932,6 +933,7 @@ export default function ImportarProvas() {
                                 {item.aplicacaoTesteId && <Button size="sm" variant="outline" onClick={() => abrirResultadoTeste(Number(item.id))}><Eye className="mr-2 h-4 w-4" />Resultado do teste</Button>}
                                 {item.homologacaoStatus === "TESTADA" && <Button size="sm" variant="outline" onClick={() => homologarTeste(Number(item.id))} disabled={processandoHomologacaoId === Number(item.id)}><ShieldCheck className="mr-2 h-4 w-4" />Homologar</Button>}
                                 {["TESTADA","HOMOLOGADA"].includes(String(item.homologacaoStatus)) && <Button size="sm" variant="outline" onClick={() => refazerTeste(Number(item.id))} disabled={processandoHomologacaoId === Number(item.id)}><RotateCcw className="mr-2 h-4 w-4" />Refazer teste</Button>}
+                                </>}
                                 <Button size="sm" variant="outline" onClick={() => reabrirProva(Number(item.id))} disabled={reabrindoId === Number(item.id)}>{reabrindoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pencil className="mr-2 h-4 w-4" />}Reabrir</Button>
                               </> : null}
                               {["RASCUNHO", "VALIDADA"].includes(String(item.status)) && <Button size="sm" variant={invalidandoId === Number(item.id) ? "destructive" : "outline"} onClick={() => abrirInvalidacao(Number(item.id))}><Ban className="mr-2 h-4 w-4" />Invalidar prova</Button>}
