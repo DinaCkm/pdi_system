@@ -135,7 +135,10 @@ export async function getAllActions() {
         updatedAt: actions.updatedAt,
         microcompetencia: actions.microcompetencia,
         pdiTitulo: pdis.titulo,
-        macroNome: competenciasMacros.nome,
+        macroNome: sql<string>`COALESCE(CASE WHEN actions.eixo_nome IS NOT NULL AND actions.eixo_nome <> '' THEN CONCAT(CASE WHEN actions.tipo_competencia = 'TECNICA' THEN 'TÉCNICA - ' ELSE 'COMPORTAMENTAL - ' END, actions.eixo_nome) END, ${competenciasMacros.nome})`,
+        tipoCompetencia: sql<string | null>`actions.tipo_competencia`,
+        eixoNome: sql<string | null>`actions.eixo_nome`,
+        focoBem: sql<string | null>`actions.foco_bem`,
         colaboradorId: pdis.colaboradorId,
         responsavelId: pdis.colaboradorId,
         colaboradorNome: users.name,
@@ -187,7 +190,10 @@ export async function getActionsByColaboradorId(colaboradorId: number) {
       createdAt: actions.createdAt,
       updatedAt: actions.updatedAt,
       pdiTitulo: pdis.titulo,
-      macroNome: competenciasMacros.nome,
+      macroNome: sql<string>`COALESCE(CASE WHEN actions.eixo_nome IS NOT NULL AND actions.eixo_nome <> '' THEN CONCAT(CASE WHEN actions.tipo_competencia = 'TECNICA' THEN 'TÉCNICA - ' ELSE 'COMPORTAMENTAL - ' END, actions.eixo_nome) END, ${competenciasMacros.nome})`,
+      tipoCompetencia: sql<string | null>`actions.tipo_competencia`,
+      eixoNome: sql<string | null>`actions.eixo_nome`,
+      focoBem: sql<string | null>`actions.foco_bem`,
       microcompetenciaNome: competenciasMacros.nome,
       colaboradorId: pdis.colaboradorId,
       responsavelId: pdis.colaboradorId,
@@ -1967,7 +1973,7 @@ export async function getAllAdjustmentRequests() {
       u.departamentoId as departamentoId,
       p.titulo as pdiTitulo,
       d.nome as departamentoNome,
-      cm.nome as macroNome
+      COALESCE(CASE WHEN a.eixo_nome IS NOT NULL AND a.eixo_nome <> '' THEN CONCAT(CASE WHEN a.tipo_competencia = 'TECNICA' THEN 'TÉCNICA - ' ELSE 'COMPORTAMENTAL - ' END, a.eixo_nome) END, cm.nome) as macroNome
     FROM adjustment_requests ar
     LEFT JOIN actions a ON ar.actionId = a.id
     LEFT JOIN users u ON ar.solicitanteId = u.id
@@ -2032,7 +2038,7 @@ export async function getAdjustmentRequestsByLeader(leaderId: number) {
       u.email as solicitanteEmail,
       p.titulo as pdiTitulo,
       d.nome as departamentoNome,
-      cm.nome as macroNome
+      COALESCE(CASE WHEN a.eixo_nome IS NOT NULL AND a.eixo_nome <> '' THEN CONCAT(CASE WHEN a.tipo_competencia = 'TECNICA' THEN 'TÉCNICA - ' ELSE 'COMPORTAMENTAL - ' END, a.eixo_nome) END, cm.nome) as macroNome
     FROM adjustment_requests ar
     LEFT JOIN actions a ON ar.actionId = a.id
     LEFT JOIN users u ON ar.solicitanteId = u.id
@@ -2385,7 +2391,8 @@ export async function getAllAcoesForExport() {
   const result = await db.execute(
     sql`SELECT a.id, a.pdiId, a.titulo, a.status, a.prazo, a.createdAt, a.updatedAt,
                u.name as userName,
-               m.nome as macroNome
+               COALESCE(CASE WHEN a.eixo_nome IS NOT NULL AND a.eixo_nome <> '' THEN CONCAT(CASE WHEN a.tipo_competencia = 'TECNICA' THEN 'TÉCNICA - ' ELSE 'COMPORTAMENTAL - ' END, a.eixo_nome) END, m.nome) as macroNome,
+               a.tipo_competencia as tipoCompetencia, a.eixo_nome as eixoNome
         FROM actions a
         LEFT JOIN pdis p ON a.pdiId = p.id
         LEFT JOIN users u ON p.colaboradorId = u.id
@@ -3031,7 +3038,7 @@ export async function getAcoesVencidas(filtros?: {
         u.name as colaboradorNome,
         u.email as colaboradorEmail,
         d.nome as departamentoNome,
-        cm.nome as macroNome
+        COALESCE(CASE WHEN a.eixo_nome IS NOT NULL AND a.eixo_nome <> '' THEN CONCAT(CASE WHEN a.tipo_competencia = 'TECNICA' THEN 'TÉCNICA - ' ELSE 'COMPORTAMENTAL - ' END, a.eixo_nome) END, cm.nome) as macroNome
       FROM actions a
       LEFT JOIN pdis p ON a.pdiId = p.id
       LEFT JOIN users u ON p.colaboradorId = u.id
@@ -3097,7 +3104,7 @@ export async function getAcoesProximasVencer(filtros?: {
         u.name as colaboradorNome,
         u.email as colaboradorEmail,
         d.nome as departamentoNome,
-        cm.nome as macroNome
+        COALESCE(CASE WHEN a.eixo_nome IS NOT NULL AND a.eixo_nome <> '' THEN CONCAT(CASE WHEN a.tipo_competencia = 'TECNICA' THEN 'TÉCNICA - ' ELSE 'COMPORTAMENTAL - ' END, a.eixo_nome) END, cm.nome) as macroNome
       FROM actions a
       LEFT JOIN pdis p ON a.pdiId = p.id
       LEFT JOIN users u ON p.colaboradorId = u.id
@@ -3171,7 +3178,7 @@ export async function getRelatorioAcoesVencidas(filtros?: {
         u.email as colaboradorEmail,
         d.id as departamentoId,
         d.nome as departamentoNome,
-        cm.nome as macroNome,
+        COALESCE(CASE WHEN a.eixo_nome IS NOT NULL AND a.eixo_nome <> '' THEN CONCAT(CASE WHEN a.tipo_competencia = 'TECNICA' THEN 'TÉCNICA - ' ELSE 'COMPORTAMENTAL - ' END, a.eixo_nome) END, cm.nome) as macroNome,
         l.name as liderNome
       FROM actions a
       INNER JOIN pdis p ON a.pdiId = p.id
