@@ -8,9 +8,17 @@ import { rootRouter } from "../rootRouter";
 import { createTRPCContext } from "./customTrpc";
 import { serveStatic, setupVite } from "./vite";
 import { timingSafeEqual } from "crypto";
+import { ensureAcoesLastroSchema } from "../services/acoesLastro";
 
 async function startServer() {
   const app = express();
+
+  // Colunas de lastro das ações (tipo + eixo) precisam existir antes das consultas de ações.
+  try {
+    await ensureAcoesLastroSchema();
+  } catch (error) {
+    console.error("[STARTUP] Falha ao preparar colunas de lastro das ações:", error);
+  }
 
   // Executa a importação de dados iniciais antes de iniciar o servidor
   // await importInitialData();
