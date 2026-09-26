@@ -45,7 +45,7 @@ export const provaUticMatrizRouter = router({
 
   // Eixos técnicos com pontuação histórica, por unidade do empregado.
   // A consolidação é feita em memória para evitar uma consulta derivada complexa
-  // e manter a precedência do histórico regional sobre a matriz administrativa.
+  // e dar precedência à matriz individual sobre o histórico regional antigo.
   listarPorDepartamento: adminProcedure.query(async () => {
     const db = await ensureTechnicalMatrixTables();
 
@@ -80,10 +80,11 @@ export const provaUticMatrizRouter = router({
     const usuarios = rowsOf<any>(usuariosResult);
     const departamentos = rowsOf<any>(departamentosResult);
 
-    const colaboradoresComHistorico = new Set(historico.map((item) => Number(item.colaboradorId)));
+    // A matriz individual tem precedência sobre o histórico regional antigo.
+    const colaboradoresComMatriz = new Set(matrizes.map((item) => Number(item.colaboradorId)));
     const base = [
-      ...historico,
-      ...matrizes.filter((item) => !colaboradoresComHistorico.has(Number(item.colaboradorId))),
+      ...matrizes,
+      ...historico.filter((item) => !colaboradoresComMatriz.has(Number(item.colaboradorId))),
     ];
 
     const usuarioPorId = new Map(usuarios.map((item) => [Number(item.id), item]));

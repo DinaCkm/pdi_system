@@ -225,8 +225,9 @@ export const bloco1CompetenciasFuncaoRouter = router({
               .sort((a, b) => Number(a.eixoRegistroId) - Number(b.eixoRegistroId))
           : [];
 
-      const matrizAdministrativaResult = linhasRegionais.length === 0
-        ? await db.execute(sql`
+      // A matriz individual (importada em Upload de Dados > Eixos técnicos) tem precedência
+      // sobre o histórico regional antigo: quando existir, ela é a fonte oficial dos eixos.
+      const matrizAdministrativaResult = await db.execute(sql`
             SELECT e.id AS eixoRegistroId,
                    e.eixo_id AS eixoChave,
                    e.eixo_nome AS eixoNome,
@@ -238,9 +239,8 @@ export const bloco1CompetenciasFuncaoRouter = router({
               JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
              WHERE m.colaborador_id = ${input.colaboradorId}
              ORDER BY e.id
-          `)
-        : null;
-      const linhasAdministrativas = matrizAdministrativaResult ? rowsOf<any>(matrizAdministrativaResult) : [];
+          `);
+      const linhasAdministrativas = rowsOf<any>(matrizAdministrativaResult);
 
       // Alerta individual registrado na matriz (observação iniciada por "ALERTA:"), exibido ao empregado.
       const alertaMatrizResult = await db.execute(sql`
@@ -253,14 +253,15 @@ export const bloco1CompetenciasFuncaoRouter = router({
       const alertaTecnico = /^ALERTA:/i.test(observacaoMatriz)
         ? observacaoMatriz.replace(/^ALERTA:\s*/i, "")
         : null;
-      const linhasTecnicas: any[] = linhasRegionais.length > 0 ? linhasRegionais : linhasAdministrativas;
-      const fonteTecnica = linhasRegionais.length > 0
+      const usarRegional = linhasAdministrativas.length === 0 && linhasRegionais.length > 0;
+      const linhasTecnicas: any[] = usarRegional ? linhasRegionais : linhasAdministrativas;
+      const fonteTecnica = usarRegional
         ? "Prova histórica regional"
         : linhasAdministrativas.length > 0
           ? "Matriz histórica individual"
           : "Sem histórico técnico localizado";
 
-      const historicosRegistrados = provaHistoricaId
+      const historicosRegistrados = usarRegional && provaHistoricaId
         ? await db
             .select()
             .from(registroHistoricoProficienciaEixos)
@@ -384,7 +385,7 @@ export const bloco1CompetenciasFuncaoRouter = router({
           totalQuestoes: atual?.totalQuestoes ?? null,
           fonte: fonteTecnica,
           statusAtual: resultadoTecnicoLinha ? "PROVA_2_CALCULADA" : "AGUARDANDO_PROVA_2",
-          editavelClassificacao: linhasRegionais.length > 0 && !linha.novoNaAvaliacao,
+          editavelClassificacao: usarRegional && !linha.novoNaAvaliacao,
           novaCompetencia: Boolean(linha.novoNaAvaliacao),
         };
       });
@@ -589,12 +590,11 @@ export const bloco1CompetenciasFuncaoRouter = router({
 
     const usuarios = rowsOf<any>(usuariosResult);
     const usuarioPorId = new Map(usuarios.map((u) => [Number(u.id), u]));
-    const regional = rowsOf<any>(historicoRegionalResult);
-    const idsComRegional = new Set(regional.map((item) => Number(item.colaboradorId)));
-    const tecnicosHistoricos = [
-      ...regional,
-      ...rowsOf<any>(matrizResult).filter((item) => !idsComRegional.has(Number(item.colaboradorId))),
-    ];
+    // A matriz individual tem precedência sobre o histórico regional antigo.
+    const matrizLinhas = rowsOf<any>(matrizResult);
+    const idsComMatriz = new Set(matrizLinhas.map((item) => Number(item.colaboradorId)));
+    const regional = rowsOf<any>(historicoRegionalResult).filter((item) => !idsComMatriz.has(Number(item.colaboradorId)));
+    const tecnicosHistoricos = [...matrizLinhas, ...regional];
 
     const ultimoResultadoPorUsuario = new Map<number, any>();
     for (const linha of rowsOf<any>(resultadosTecnicosResult)) {
