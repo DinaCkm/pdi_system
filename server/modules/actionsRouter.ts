@@ -5,6 +5,14 @@ import { actions as acoes } from "../../drizzle/schema";
 import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { generateCertificate } from "./certificateGenerator";
+import {
+  COMPETENCIAS_COMPORTAMENTAIS_AD,
+  colaboradorDoPdi,
+  eixosTecnicosDoColaborador,
+  ensureAcoesLastroSchema,
+  gravarLastro,
+  lastroDasAcoes,
+} from "../services/acoesLastro";
 
 let technicalActionSchemaReady = false;
 
@@ -96,41 +104,121 @@ export const actionsRouter = router({
       return await db.getActionsByColaboradorId(colaboradorId);
     }),
 
-  // Biblioteca dinâmica: modelos consolidados a partir das ações já existentes
+  // Biblioteca dinâmica: modelos consolidados a partir das ações já existentes.
+  // O modelo é só o conteúdo (título + descrição). O tipo e o eixo pertencem a cada uso no PDI;
+  // por isso cada modelo informa em quais eixos já foi usado ("usos").
   library: protectedProcedure.query(async ({ ctx }) => {
     if (ctx.user.role !== "admin" && ctx.user.role !== "lider" && ctx.user.role !== "gerente") {
       throw new TRPCError({ code: "FORBIDDEN", message: "Sem permissão para consultar a biblioteca de ações." });
     }
+    await ensureAcoesLastroSchema();
 
     const actions = await db.getAllActions();
+    const lastro = await lastroDasAcoes();
     const modelos = new Map<string, any>();
 
     for (const action of actions as any[]) {
       const titulo = String(action.titulo ?? "").trim();
       if (!titulo) continue;
       const descricao = String(action.descricao ?? "").trim();
-      const microcompetencia = String(action.microcompetencia ?? "").trim();
-      const macroId = Number(action.macroId ?? 0) || null;
-      const chave = [titulo.toLocaleLowerCase("pt-BR"), descricao.toLocaleLowerCase("pt-BR"), macroId ?? "", microcompetencia.toLocaleLowerCase("pt-BR")].join("|");
-      const existente = modelos.get(chave);
-      if (existente) {
-        existente.utilizacoes += 1;
-        continue;
+      const chave = [titulo.toLocaleLowerCase("pt-BR"), descricao.toLocaleLowerCase("pt-BR")].join("|");
+      const info = lastro.get(Number(action.id));
+      const tipo = info?.tipo ?? null;
+      const eixo = String(info?.eixo ?? "").trim() || null;
+      let modelo = modelos.get(chave);
+      if (!modelo) {
+        modelo = {
+          modeloId: Number(action.id),
+          titulo,
+          descricao,
+          macroId: Number(action.macroId ?? 0) || null,
+          microcompetencia: String(action.microcompetencia ?? "").trim(),
+          utilizacoes: 0,
+          usos: new Map<string, { tipoCompetencia: string; eixoNome: string; vezes: number }>(),
+        };
+        modelos.set(chave, modelo);
       }
-      modelos.set(chave, {
-        modeloId: Number(action.id),
-        titulo,
-        descricao,
-        macroId,
-        microcompetencia,
-        utilizacoes: 1,
-      });
+      modelo.utilizacoes += 1;
+      if (tipo && eixo) {
+        const k = `${tipo}|${eixo}`;
+        const uso = modelo.usos.get(k) ?? { tipoCompetencia: tipo, eixoNome: eixo, vezes: 0 };
+        uso.vezes += 1;
+        modelo.usos.set(k, uso);
+      }
     }
 
-    return Array.from(modelos.values()).sort((a, b) =>
-      b.utilizacoes - a.utilizacoes || a.titulo.localeCompare(b.titulo, "pt-BR")
-    );
+    return Array.from(modelos.values())
+      .map((modelo) => {
+        const usos = (Array.from(modelo.usos.values()) as Array<{ tipoCompetencia: string; eixoNome: string; vezes: number }>).sort((a, b) => b.vezes - a.vezes);
+        return {
+          ...modelo,
+          usos,
+          tipoCompetencia: usos[0]?.tipoCompetencia ?? null,
+          eixoNome: usos[0]?.eixoNome ?? null,
+        };
+      })
+      .sort((a, b) => b.utilizacoes - a.utilizacoes || a.titulo.localeCompare(b.titulo, "pt-BR"));
   }),
+
+  // Eixos que podem receber ação no PDI: técnicos da matriz do empregado + competências da AD.
+  eixosDisponiveis: protectedProcedure
+    .input(z.object({ pdiId: z.number() }))
+    .query(async ({ input }) => {
+      const colaboradorId = await colaboradorDoPdi(input.pdiId);
+      const tecnicos = colaboradorId ? await eixosTecnicosDoColaborador(colaboradorId) : [];
+      return { tecnicos, comportamentais: [...COMPETENCIAS_COMPORTAMENTAIS_AD] };
+    }),
+
+  // Importa o lastro (tipo + eixo) das ações já existentes, a partir dos modelos da biblioteca.
+  // Cada linha aponta o ID do modelo (ação representante); todas as ações com o mesmo título,
+  // descrição, macro e microcompetência recebem o mesmo tipo e eixo. Nada mais é alterado.
+  importarLastro: protectedProcedure
+    .input(z.object({
+      linhas: z.array(z.object({
+        modeloId: z.number().int().positive(),
+        tipoCompetencia: z.enum(["TECNICA", "COMPORTAMENTAL"]),
+        eixoNome: z.string().min(1).max(255),
+      })).min(1).max(5000),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Apenas administradores podem importar o lastro das ações." });
+      }
+      await ensureAcoesLastroSchema();
+      const conn = await db.getDb();
+      if (!conn) throw new Error("Database not available");
+
+      const erros: string[] = [];
+      let modelosAtualizados = 0;
+      let acoesAtualizadas = 0;
+      for (const linha of input.linhas) {
+        const eixo = linha.eixoNome.trim();
+        if (linha.tipoCompetencia === "COMPORTAMENTAL" && !COMPETENCIAS_COMPORTAMENTAIS_AD.includes(eixo)) {
+          erros.push(`Modelo ${linha.modeloId}: "${eixo}" não é uma competência da Avaliação de Desempenho.`);
+          continue;
+        }
+        const repResult = await conn.execute(sql`
+          SELECT titulo, descricao, macroId, microcompetencia FROM actions WHERE id = ${linha.modeloId} LIMIT 1
+        `);
+        const rep = (Array.isArray((repResult as any)?.[0]) ? (repResult as any)[0] : repResult)?.[0];
+        if (!rep) {
+          erros.push(`Modelo ${linha.modeloId}: ação não encontrada.`);
+          continue;
+        }
+        const upd = await conn.execute(sql`
+          UPDATE actions
+             SET tipo_competencia = ${linha.tipoCompetencia}, eixo_nome = ${eixo}
+           WHERE TRIM(titulo) = TRIM(${rep.titulo})
+             AND COALESCE(TRIM(descricao), '') = COALESCE(TRIM(${rep.descricao}), '')
+             AND COALESCE(macroId, 0) = COALESCE(${rep.macroId}, 0)
+             AND COALESCE(TRIM(microcompetencia), '') = COALESCE(TRIM(${rep.microcompetencia}), '')
+        `);
+        const afetadas = Number((upd as any)?.[0]?.affectedRows ?? (upd as any)?.affectedRows ?? 0);
+        modelosAtualizados += 1;
+        acoesAtualizadas += afetadas;
+      }
+      return { modelosAtualizados, acoesAtualizadas, erros };
+    }),
 
   // Obter ação por ID
   getById: protectedProcedure
@@ -165,7 +253,9 @@ export const actionsRouter = router({
       prazo: z.string(),
       macroId: z.number().optional(),
       microcompetencia: z.string().optional(),
-      tipoCompetencia: z.enum(['TECNICA', 'COMPORTAMENTAL']).optional(),
+      tipoCompetencia: z.enum(['TECNICA', 'COMPORTAMENTAL']),
+      eixoNome: z.string().min(1).max(255),
+      focoBem: z.string().max(255).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       if (ctx.user.role !== 'admin' && ctx.user.role !== 'lider') {
@@ -179,23 +269,32 @@ export const actionsRouter = router({
         prazoDate = input.prazo as Date;
       }
       
-      if (input.tipoCompetencia === 'COMPORTAMENTAL' && !input.macroId) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'A competência comportamental precisa estar vinculada às Competências do B.E.M.' });
-      }
-      if (input.tipoCompetencia === 'TECNICA' && !input.macroId) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'O eixo técnico precisa estar vinculado à sua macrocompetência técnica.' });
+      await ensureAcoesLastroSchema();
+      const eixo = input.eixoNome.trim();
+      if (input.tipoCompetencia === 'COMPORTAMENTAL') {
+        if (!COMPETENCIAS_COMPORTAMENTAIS_AD.includes(eixo)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: `"${eixo}" não é uma competência comportamental da Avaliação de Desempenho.` });
+        }
+      } else {
+        const colaboradorId = await colaboradorDoPdi(input.pdiId);
+        const eixosDoEmpregado = colaboradorId ? await eixosTecnicosDoColaborador(colaboradorId) : [];
+        if (!eixosDoEmpregado.includes(eixo)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: `O eixo técnico "${eixo}" não está na matriz deste empregado.` });
+        }
       }
 
+      // Ações novas não usam macro nem microcompetência: o vínculo é o tipo + eixo.
       const actionId = await db.createAction({
         pdiId: input.pdiId,
-        macroId: input.macroId || 1,
-        microcompetencia: input.microcompetencia,
+        macroId: null,
+        microcompetencia: null,
         titulo: input.titulo,
         descricao: input.descricao,
         prazo: prazoDate,
         status: 'nao_iniciada',
       });
-      
+      await gravarLastro(Number(actionId), input.tipoCompetencia, eixo, input.focoBem?.trim() || null);
+
       console.log('[actions.create] Ação criada com ID:', actionId);
       return { success: true, id: actionId };
     }),
