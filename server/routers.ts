@@ -6,6 +6,7 @@ import { TRPCError } from "@trpc/server";
 import * as db from "./db";
 import { authRouter } from "./authRouters"; // <--- CONECTANDO O NOVO LOGIN
 import { actionsRouter } from "./modules/actionsRouter";
+import { derivarLastroPelaMacro } from "./services/acoesLastro";
 import { adjustmentRequestsRouter } from "./modules/adjustmentRequestsRouter";
 import { dashboardRouter } from "./routers/dashboard";
 import { notificationsRouter } from "./routers/notifications";
@@ -2088,6 +2089,9 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
           justificativa: input.justificativa,
           rhId: ctx.user.id,
         });
+        if (acaoId) {
+          try { await derivarLastroPelaMacro(Number(acaoId)); } catch (e) { console.error('Erro ao gravar lastro da ação aprovada:', e); }
+        }
 
         // Notificar colaborador (in-app + email)
         try {
