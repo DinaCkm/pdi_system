@@ -197,6 +197,7 @@ export default function ImportarProvas() {
   const invalidarProva = api.invalidar.useMutation();
   const salvarRascunho = api.salvarRascunho.useMutation();
   const replicarEixos = api.replicarEixos.useMutation();
+  const acrescentarEixoRegionaisHist = api.acrescentarEixoRelacionamentoRegionaisHist.useMutation();
   const importarLote = api.importarLote.useMutation();
   const listaQuery = api.listar.useQuery(undefined, { refetchOnWindowFocus: false });
   const ciclosQuery = trpc.ciclos.list.useQuery();
@@ -326,6 +327,26 @@ export default function ImportarProvas() {
     } catch (error: any) {
       setValidacao(null);
       setErroLeitura(error?.message || "Não foi possível validar as provas carregadas.");
+    }
+  };
+
+  const acrescentarRelacionamentoRegionaisHist = async () => {
+    const confirmada = window.confirm(
+      'Acrescentar o eixo "Relacionamento Institucional e Parcerias" nas questões 37, 38, 49, 50, 52 e 53 das 8 provas históricas 2025 das Regionais? Enunciados, alternativas, gabaritos e status serão preservados.'
+    );
+    if (!confirmada) return;
+    setMensagemAcao("");
+    setErroLeitura("");
+    setProcessandoReplicacao(true);
+    try {
+      const resposta = await acrescentarEixoRegionaisHist.mutateAsync();
+      await listaQuery.refetch();
+      const resumo = (resposta?.resultados ?? []).map((item: any) => `${item.codigo}: ${item.questoesAlteradas.length ? item.questoesAlteradas.join(", ") : "já tinha"}`).join(" · ");
+      setMensagemAcao(`${resposta?.mensagem ?? "Eixo acrescentado."} ${resumo}`);
+    } catch (error: any) {
+      setErroLeitura(error?.message || "Não foi possível acrescentar o eixo nas provas históricas das Regionais.");
+    } finally {
+      setProcessandoReplicacao(false);
     }
   };
 
@@ -805,6 +826,20 @@ export default function ImportarProvas() {
               <Button type="button" variant="outline" onClick={replicarEixosRegionais} disabled={processandoReplicacao || listaQuery.isLoading}>
                 {processandoReplicacao ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
                 Sincronizar eixos das Regionais
+              </Button>
+            </div>
+          </div>
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-medium">Regionais 2025 (históricas) — eixo Relacionamento Institucional e Parcerias</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Acrescenta o eixo nas questões 37, 38, 49, 50, 52 e 53 das 8 provas REGIONAIS_2025_..._HIST, mantendo o eixo atual de cada questão, os gabaritos e o status.
+                </p>
+              </div>
+              <Button type="button" variant="outline" onClick={acrescentarRelacionamentoRegionaisHist} disabled={processandoReplicacao || listaQuery.isLoading}>
+                {processandoReplicacao ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                Acrescentar eixo nas históricas das Regionais
               </Button>
             </div>
           </div>
