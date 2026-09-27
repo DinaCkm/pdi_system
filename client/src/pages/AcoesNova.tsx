@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx';
 import RichTextEditor from '@/components/RichTextEditor';
 import { COMPETENCIAS_AD_HISTORICAS, competenciaADRelacionadaDaMacro, macroRelacionadaDaAD } from '../../../shared/competenciasAdRelacionamento';
 import { useAuth } from '@/_core/hooks/useAuth';
+import { opcoesEcoliderDaCompetenciaAD } from '../../../shared/deParaEcolider';
 
 
 type SubcompetenciaReferencia = {
@@ -568,7 +569,7 @@ export function AcoesNova() {
   const [buscaBiblioteca, setBuscaBiblioteca] = useState("");
   const [macroBiblioteca, setMacroBiblioteca] = useState("");
   const [eixoBiblioteca, setEixoBiblioteca] = useState("");
-  const [grupoAberto, setGrupoAberto] = useState<"basicas" | "essenciais" | "master" | null>(null);
+  const [grupoAberto, setGrupoAberto] = useState<"basicas" | "essenciais" | "master" | "jornada" | null>(null);
   const [subcompetenciaSelecionada, setSubcompetenciaSelecionada] = useState("");
   const [mostrarTodosModelosMacro, setMostrarTodosModelosMacro] = useState(false);
   const [criandoAcaoTecnica, setCriandoAcaoTecnica] = useState(false);
@@ -948,7 +949,7 @@ export function AcoesNova() {
     if (!formData.pdiId) newErrors.pdiId = 'Selecione o PDI vinculado';
     if (!tipoEfetivo) newErrors.macroId = 'Escolha se a ação desenvolve um eixo técnico ou uma competência comportamental.';
     if (fluxoComportamental && !competenciaAdAtual) newErrors.macroId = 'Escolha a competência comportamental que a ação vai desenvolver.';
-    if (fluxoComportamental && competenciaAdAtual && !subcompetenciaSelecionada) newErrors.macroId = 'Escolha o foco B.E.M. (Básica, Essencial ou Master) da ação.';
+    if (fluxoComportamental && competenciaAdAtual && !subcompetenciaSelecionada) newErrors.macroId = 'Escolha o foco da ação (Básica, Essencial, Master ou Jornada do Futuro).';
     if (fluxoTecnico && !eixoAtual) newErrors.macroId = 'Escolha o eixo técnico que a ação vai desenvolver.';
     if (!formData.titulo.trim()) newErrors.titulo = 'Título é obrigatório';
     if (!formData.prazo) newErrors.prazo = 'Prazo é obrigatório';
@@ -1068,12 +1069,21 @@ export function AcoesNova() {
     }
   };
 
+  const opcoesEcolider = opcoesEcoliderDaCompetenciaAD(competenciaAdAtual);
+  const mastersDaCompetencia = opcoesEcolider.master.length
+    ? opcoesEcolider.master.map((nome) => ({ nome, justificativa: `Competência Master do EcoLíder ligada a ${competenciaAdAtual}.` }))
+    : (selectedMacroReference?.master ? [selectedMacroReference.master] : []);
+  const jornadaDaCompetencia = opcoesEcolider.jornadaFuturo.map((nome) => ({ nome, justificativa: `Competência da Jornada do Futuro do EcoLíder ligada a ${competenciaAdAtual}.` }));
+
   const focoBemComNivel = (nome: string) => {
     const ref = selectedMacroReference;
     if (!ref) return nome;
     if (ref.basicas.some((item) => item.nome === nome)) return `${nome} (Básica)`;
     if (ref.essenciais.some((item) => item.nome === nome)) return `${nome} (Essencial)`;
     if (ref.master?.nome === nome) return `${nome} (Master)`;
+    const opcoes = opcoesEcoliderDaCompetenciaAD(competenciaAdAtual);
+    if (opcoes.master.includes(nome)) return `${nome} (Master)`;
+    if (opcoes.jornadaFuturo.includes(nome)) return `${nome} (Jornada do Futuro)`;
     return nome;
   };
 
@@ -1659,8 +1669,9 @@ export function AcoesNova() {
               {([
                 ['basicas', 'Básicas', selectedMacroReference.basicas],
                 ['essenciais', 'Essenciais', selectedMacroReference.essenciais],
-                ['master', 'Master', [selectedMacroReference.master]],
-              ] as const).map(([chave, titulo, itens]) => (
+                ['master', 'Master', mastersDaCompetencia],
+                ['jornada', 'Jornada do Futuro', jornadaDaCompetencia],
+              ] as const).filter(([, , itens]) => itens.length > 0).map(([chave, titulo, itens]) => (
                 <div key={chave} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', marginBottom: '10px', overflow: 'hidden' }}>
                   <button
                     type="button"
