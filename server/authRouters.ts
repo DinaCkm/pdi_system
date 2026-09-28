@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, publicProcedure, protectedProcedure } from "./_core/customTrpc";
+import { router, publicProcedure, protectedProcedure, adminProcedure } from "./_core/customTrpc";
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
 import {
@@ -12,6 +12,12 @@ import {
 import { sendPasswordResetEmail } from "./_core/email";
 import { ENV } from "./_core/env";
 import { createAuthToken } from "./_core/authToken";
+import {
+  IMPERSONACAO_COOKIE,
+  IMPERSONACAO_MINUTOS,
+  criarTokenImpersonacao,
+  opcoesCookieImpersonacao,
+} from "./_core/impersonacao";
 
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const LOGIN_BLOCK_DURATION_MINUTES = 15;
@@ -352,11 +358,51 @@ export const authRouter = router({
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
 
-    return user;
+    // impersonadoPor: preenchido quando um admin está em "Acessar como" (somente leitura)
+    return { ...user, impersonadoPor: ctx.impersonadoPor ?? null };
+  }),
+
+  // ACESSAR COMO (admin visualiza o sistema como um empregado, somente leitura)
+  acessarComo: adminProcedure
+    .input(z.object({ userId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const alvo = await db.getUserById(input.userId);
+      if (!alvo || alvo.status !== "ativo") {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Usuário não encontrado ou inativo." });
+      }
+      if (alvo.role === "admin") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Não é possível acessar como outro administrador." });
+      }
+      const token = await criarTokenImpersonacao({ adminId: ctx.user.id, alvoId: alvo.id });
+      ctx.res.cookie(IMPERSONACAO_COOKIE, token, {
+        ...opcoesCookieImpersonacao,
+        maxAge: IMPERSONACAO_MINUTOS * 60 * 1000,
+      });
+      console.warn(
+        `[AcessarComo] INÍCIO admin=${ctx.user.id} (${ctx.user.email}) visualizando usuario=${alvo.id} (${alvo.email}) em ${new Date().toISOString()}`,
+      );
+      return { success: true, nome: alvo.name };
+    }),
+
+  // VOLTAR PARA A CONTA DO ADMIN
+  pararAcessoComo: publicProcedure.mutation(async ({ ctx }) => {
+    if (ctx.impersonadoPor) {
+      console.warn(
+        `[AcessarComo] FIM admin=${ctx.impersonadoPor.id} usuario=${ctx.user?.id} em ${new Date().toISOString()}`,
+      );
+    }
+    ctx.res.clearCookie(IMPERSONACAO_COOKIE, opcoesCookieImpersonacao);
+    return { success: true };
   }),
 
   // LOGOUT
   logout: protectedProcedure.mutation(async ({ ctx }) => {
+    // Em "Acessar como", sair apenas encerra a visualização — nunca desloga o empregado real.
+    if (ctx.impersonadoPor) {
+      ctx.res.clearCookie(IMPERSONACAO_COOKIE, opcoesCookieImpersonacao);
+      return { success: true };
+    }
+    ctx.res.clearCookie(IMPERSONACAO_COOKIE, opcoesCookieImpersonacao);
     await db.incrementAuthTokenVersion(ctx.user.id);
 
     ctx.res.clearCookie("auth_token", {
