@@ -45,15 +45,20 @@ export async function finalizarAcao({
   const statusAnterior = action.status;
   await db.updateAction(actionId, { status: "concluida" });
 
+  // Falha no histórico não pode impedir o aviso e o e-mail da ação já concluída
   if (usuarioId && statusAnterior !== "concluida") {
-    await db.createAcaoHistorico({
-      actionId,
-      campo: "Status",
-      valorAnterior: statusAnterior ?? undefined,
-      valorNovo: "concluida",
-      motivoAlteracao: MOTIVO_POR_ORIGEM[origem],
-      alteradoPor: usuarioId,
-    });
+    try {
+      await db.createAcaoHistorico({
+        actionId,
+        campo: "Status",
+        valorAnterior: statusAnterior ?? undefined,
+        valorNovo: "concluida",
+        motivoAlteracao: MOTIVO_POR_ORIGEM[origem],
+        alteradoPor: usuarioId,
+      });
+    } catch (historicoErr) {
+      console.warn(`[finalizarAcao:${origem}] Erro ao gravar histórico:`, historicoErr);
+    }
   }
 
   if (aviso) {

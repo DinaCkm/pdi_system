@@ -71,4 +71,15 @@ describe('finalizarAcao', () => {
     m(sendEmailParabensEvidenciaAprovada).mockRejectedValue(new Error('smtp'));
     expect(await finalizarAcao({ actionId: 1, colaboradorId: 10, origem: 'validacao_impacto' })).toBe('concluida');
   });
+
+  it('falha no histórico não impede aviso e e-mail', async () => {
+    m(db.createAcaoHistorico).mockRejectedValue(new Error('db'));
+    const r = await finalizarAcao({
+      actionId: 1, colaboradorId: 10, origem: 'evidencia_lider', usuarioId: 99,
+      aviso: () => ({ title: 't', content: 'c' }),
+    });
+    expect(r).toBe('concluida');
+    expect(notifyOwner).toHaveBeenCalled();
+    expect(sendEmailParabensEvidenciaAprovada).toHaveBeenCalled();
+  });
 });
