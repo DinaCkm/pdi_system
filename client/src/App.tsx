@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import ChangePassword from "./pages/ChangePassword";
 import Users from "./pages/Users";
+import { ImpersonacaoBanner } from "./components/ImpersonacaoBanner";
 import ConfigurarUsuario from "./pages/ConfigurarUsuario";
 import Competencias from "./pages/Competencias";
 import Departamentos from "./pages/Departamentos";
@@ -152,6 +153,7 @@ function App() {
       <ThemeProvider defaultTheme="light">
         <Toaster />
         <Router />
+        <ImpersonacaoBanner />
       </ThemeProvider>
     </ErrorBoundary>
   );
