@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, assessmentProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
+import { sendEmail } from "../_core/email";
 import { ensureHomologacaoTables, marcarPendenciaHomologacao, obterHomologacaoAtual, obterTestePorAplicacao } from "../services/homologacaoProvas";
 
 type QuestaoImportada = {
@@ -494,13 +495,46 @@ export const aplicacoesProficienciaRouter = router({
       return { liberada: true, status: "LIBERADA" as const };
     }),
 
+  // Envia ao participante o e-mail de convocação, com o texto conferido/editado pelo admin.
+  enviarEmailConvocacao: adminProcedure
+    .input(z.object({
+      aplicacaoId: z.number().int().positive(),
+      colaboradorId: z.number().int().positive(),
+      assunto: z.string().trim().min(5).max(255),
+      corpo: z.string().trim().min(20).max(20000),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await dbObrigatorio();
+      const result = await db.execute(sql`
+        SELECT u.name, u.email
+          FROM aplicacoes_proficiencia_participantes ap
+          JOIN users u ON u.id = ap.colaborador_id
+         WHERE ap.aplicacao_id = ${input.aplicacaoId}
+           AND ap.colaborador_id = ${input.colaboradorId}
+         LIMIT 1
+      `);
+      const participante = rowsOf<{ name: string | null; email: string | null }>(result)[0];
+      if (!participante) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Este participante não pertence à aplicação selecionada." });
+      }
+      const email = String(participante.email ?? "").trim();
+      if (!email || !email.includes("@")) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: `${participante.name || "O participante"} não tem e-mail válido cadastrado.` });
+      }
+      const enviado = await sendEmail({ to: email, subject: input.assunto, body: input.corpo });
+      if (!enviado) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível enviar o e-mail. Verifique a configuração de SMTP e tente novamente." });
+      }
+      return { enviadoPara: email };
+    }),
+
   monitoramento: adminProcedure
     .input(z.object({ aplicacaoId: z.number().int().positive() }))
     .query(async ({ input }) => {
       const db = await dbObrigatorio();
       const aplicacao = await obterAplicacao(db, input.aplicacaoId);
       const participantesResult = await db.execute(sql`
-        SELECT ap.colaborador_id AS colaboradorId, u.name AS colaboradorNome,
+        SELECT ap.colaborador_id AS colaboradorId, u.name AS colaboradorNome, u.email AS colaboradorEmail,
                d.nome AS departamentoNome, t.id AS tentativaId, t.status AS tentativaStatus,
                t.iniciada_em AS iniciadaEm, t.ultima_atividade_em AS ultimaAtividadeEm,
                t.finalizada_em AS finalizadaEm, COUNT(r.id) AS respostasSalvas,
@@ -517,7 +551,7 @@ export const aplicacoesProficienciaRouter = router({
           LEFT JOIN proficiencia_identidades pi
             ON pi.aplicacao_id = ap.aplicacao_id AND pi.colaborador_id = ap.colaborador_id
          WHERE ap.aplicacao_id = ${input.aplicacaoId}
-         GROUP BY ap.colaborador_id, u.name, d.nome, t.id, t.status,
+         GROUP BY ap.colaborador_id, u.name, u.email, d.nome, t.id, t.status,
                   t.iniciada_em, t.ultima_atividade_em, t.finalizada_em
          ORDER BY u.name
       `);
