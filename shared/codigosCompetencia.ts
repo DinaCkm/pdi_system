@@ -27,6 +27,6 @@ export function codigoFocoComportamental(competenciaAD: string, focoBem: string)
 
 // TEC:<eixo_id da matriz técnica>
 export function codigoEixoTecnico(eixoId: string) {
-  const id = String(eixoId ?? "").trim();
-  return id ? `TEC:${id.toUpperCase()}` : null;
+  const id = slugCompetencia(eixoId);
+  return id ? `TEC:${id}` : null;
 }
