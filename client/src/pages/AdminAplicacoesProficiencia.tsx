@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+import { useAcessarComo } from "@/components/ImpersonacaoBanner";
 
 function formatarData(valor: unknown) {
   if (!valor) return "—";
@@ -100,6 +101,7 @@ export default function AdminAplicacoesProficiencia() {
   const [logsColaboradorId, setLogsColaboradorId] = useState<number | null>(null);
   const [emailConvocacao, setEmailConvocacao] = useState<{ colaboradorId: number; nome: string; email: string; assunto: string; corpo: string } | null>(null);
   const [emailAviso, setEmailAviso] = useState("");
+  const { acessarComo, isPending: acessarComoPendente } = useAcessarComo();
   const enviarEmailMutation = trpc.aplicacoesProficiencia.enviarEmailConvocacao.useMutation({
     onSuccess: data => {
       setEmailConvocacao(null);
@@ -523,6 +525,15 @@ export default function AdminAplicacoesProficiencia() {
                                 }}
                               >
                                 <Mail className="mr-1 h-4 w-4" />E-mail de convocação
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={acessarComoPendente}
+                                onClick={() => acessarComo(Number(item.colaboradorId), String(item.colaboradorNome || "empregado"))}
+                                title="Acessar como (somente leitura)"
+                              >
+                                <Eye className="mr-1 h-4 w-4 text-orange-600" />Acessar como
                               </Button>
                             </div>
                           </td>

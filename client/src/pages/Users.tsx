@@ -19,7 +19,9 @@ import {
   UserX,
   Mail,
   KeyRound,
+  Eye,
 } from "lucide-react";
+import { useAcessarComo } from "@/components/ImpersonacaoBanner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,6 +71,7 @@ export default function Users() {
 
   const { data: users, isLoading, refetch } = trpc.users.list.useQuery();
   const { data: departamentos } = trpc.departamentos.list.useQuery();
+  const { acessarComo, isPending: acessarComoPendente } = useAcessarComo();
   const createMutation = trpc.users.create.useMutation();
   const updateMutation = trpc.users.update.useMutation();
   const deleteMutation = trpc.users.delete.useMutation();
@@ -416,6 +419,17 @@ export default function Users() {
 
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2 flex-wrap">
+                            {user.role !== "admin" && user.status === "ativo" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={acessarComoPendente}
+                                onClick={() => acessarComo(Number(user.id), safeString(user?.name) || "empregado")}
+                                title="Acessar como (somente leitura)"
+                              >
+                                <Eye className="h-4 w-4 text-orange-600" />
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
