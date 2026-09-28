@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Activity, CalendarClock, Calculator, CheckCircle2, ClipboardCheck, Eye, PlayCircle, RefreshCw, Search, ShieldCheck, UserCheck, Users, X } from "lucide-react";
+import { Activity, CalendarClock, Calculator, CheckCircle2, ClipboardCheck, Eye, Mail, PlayCircle, RefreshCw, Search, Send, ShieldCheck, UserCheck, Users, X } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,67 @@ function formatarData(valor: unknown) {
   return Number.isNaN(data.getTime())
     ? String(valor)
     : data.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
+}
+
+// Converte o valor do banco (UTC, sem fuso) em Date.
+function paraData(valor: unknown): Date | null {
+  if (!valor) return null;
+  let texto = String(valor instanceof Date ? valor.toISOString() : valor).trim();
+  if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(texto)) texto = texto.replace(" ", "T") + "Z";
+  const data = new Date(texto);
+  return Number.isNaN(data.getTime()) ? null : data;
+}
+
+function montarEmailConvocacao(params: { nome: string; titulo: string; agendadaPara: unknown }) {
+  const data = paraData(params.agendadaPara);
+  const fuso = { timeZone: "America/Sao_Paulo" } as const;
+  const dia = data ? data.toLocaleDateString("pt-BR", fuso) : "[DATA]";
+  const semana = data ? data.toLocaleDateString("pt-BR", { ...fuso, weekday: "long" }) : "";
+  const hora = data ? data.toLocaleTimeString("pt-BR", { ...fuso, hour: "2-digit", minute: "2-digit" }).replace(":00", "h").replace(":", "h") : "[HORÁRIO]";
+  const primeiroNome = String(params.nome || "").trim().split(/\s+/)[0] || "participante";
+  const assunto = `${params.titulo} — sua prova está agendada para ${dia}, às ${hora}`;
+  const corpo = `Olá, ${primeiroNome},
+
+Sua Avaliação de Proficiência da ${params.titulo} está agendada.
+
+📅 Data: ${dia}${semana ? ` (${semana})` : ""}
+🕑 Horário: ${hora} (horário de Brasília)
+💻 Local: on-line, pela Plataforma de PDI — https://pdi.ecodobem.com
+
+COMO ACESSAR
+1. No horário agendado, entre em https://pdi.ecodobem.com com seu e-mail e senha.
+2. No menu lateral, clique em "Avaliações".
+3. Clique em "INICIAR AVALIAÇÃO". O botão aparece assim que a prova for liberada.
+
+ANTES DA PROVA, PREPARE:
+• Um computador ou notebook com câmera e microfone funcionando. Não use celular.
+• Navegador Google Chrome ou Microsoft Edge atualizado.
+• Apenas UMA tela ou monitor ligado. Desconecte monitores extras.
+• Internet estável e um ambiente silencioso, bem iluminado e sem outras pessoas.
+
+ETAPAS DE ABERTURA DA PROVA
+1. Confirmação de identidade: o sistema tira uma foto sua pela câmera, e você confirma que é a pessoa que fará a avaliação.
+2. Leitura e aceite das regras.
+3. Autorização da câmera, do microfone e do compartilhamento de tela. Selecione "TELA INTEIRA": janela ou guia do navegador não são aceitas.
+4. A prova abre em tela cheia.
+
+REGRAS DURANTE A PROVA
+A avaliação é monitorada. Estas ações ficam registradas como ocorrência e podem bloquear a prova:
+• Sair da tela cheia, trocar de aba ou abrir outra janela ou programa;
+• Copiar, colar, recortar, imprimir ou tirar print da tela;
+• Fechar ou recarregar a página;
+• Desligar a câmera, o microfone ou o compartilhamento de tela.
+
+Suas respostas são gravadas a cada questão. Se a prova for interrompida, o que você já respondeu fica preservado. Ao terminar, o resultado será calculado pela administração após o encerramento da aplicação.
+
+DÚVIDAS
+Se tiver qualquer dúvida, fale comigo pelo Fale Conosco da plataforma ou pelo WhatsApp XXXX. Recomendo testar câmera e microfone com antecedência. Se algo não funcionar, me avise antes do dia da prova.
+
+Boa prova!
+
+Dina
+CKM Talents`;
+  return { assunto, corpo };
 }
 
 function statusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
@@ -37,6 +98,16 @@ export default function AdminAplicacoesProficiencia() {
   const [aplicacaoSelecionada, setAplicacaoSelecionada] = useState<number | null>(null);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [logsColaboradorId, setLogsColaboradorId] = useState<number | null>(null);
+  const [emailConvocacao, setEmailConvocacao] = useState<{ colaboradorId: number; nome: string; email: string; assunto: string; corpo: string } | null>(null);
+  const [emailAviso, setEmailAviso] = useState("");
+  const enviarEmailMutation = trpc.aplicacoesProficiencia.enviarEmailConvocacao.useMutation({
+    onSuccess: data => {
+      setEmailConvocacao(null);
+      setEmailAviso("");
+      setMensagem(`E-mail de convocação enviado para ${data.enviadoPara}.`);
+    },
+    onError: error => setEmailAviso(error.message),
+  });
   const [identidadeColaboradorId, setIdentidadeColaboradorId] = useState<number | null>(null);
   const [filtroStatus, setFiltroStatus] = useState<string>("ATIVAS");
 
@@ -430,7 +501,31 @@ export default function AdminAplicacoesProficiencia() {
                     <tbody>
                       {monitoramento.participantes.map((item: any) => (
                         <tr key={item.colaboradorId} className="border-b last:border-0">
-                          <td className="px-3 py-3 font-medium">{item.colaboradorNome}</td>
+                          <td className="px-3 py-3 font-medium">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span>{item.colaboradorNome}</span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  const modelo = montarEmailConvocacao({
+                                    nome: String(item.colaboradorNome || ""),
+                                    titulo: String(aplicacaoMonitorada?.titulo || "Certificação Técnica"),
+                                    agendadaPara: aplicacaoMonitorada?.agendadaPara,
+                                  });
+                                  setEmailAviso("");
+                                  setEmailConvocacao({
+                                    colaboradorId: Number(item.colaboradorId),
+                                    nome: String(item.colaboradorNome || ""),
+                                    email: String(item.colaboradorEmail || ""),
+                                    ...modelo,
+                                  });
+                                }}
+                              >
+                                <Mail className="mr-1 h-4 w-4" />E-mail de convocação
+                              </Button>
+                            </div>
+                          </td>
                           <td className="px-3 py-3">{item.departamentoNome || "—"}</td>
                           <td className="px-3 py-3">
                             {Number(item.identidadeConfirmada || 0) > 0 ? (
@@ -455,6 +550,63 @@ export default function AdminAplicacoesProficiencia() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {emailConvocacao && aplicacaoSelecionada && (
+        <div className="fixed inset-0 z-[240] grid place-items-center bg-black/70 p-4">
+          <div className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-3 border-b p-6">
+              <div>
+                <h2 className="flex items-center gap-2 text-xl font-semibold"><Mail className="h-5 w-5 text-blue-700" />E-mail de convocação</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Para: <strong>{emailConvocacao.nome}</strong> — {emailConvocacao.email || "sem e-mail cadastrado"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">Confira e ajuste o texto antes de enviar.</p>
+              </div>
+              <Button variant="outline" onClick={() => setEmailConvocacao(null)}><X className="mr-1 h-4 w-4" />Fechar</Button>
+            </div>
+            <div className="space-y-4 overflow-auto p-6">
+              <label className="block space-y-1 text-sm">
+                <span className="font-medium">Assunto</span>
+                <input
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                  value={emailConvocacao.assunto}
+                  onChange={event => setEmailConvocacao({ ...emailConvocacao, assunto: event.target.value })}
+                />
+              </label>
+              <label className="block space-y-1 text-sm">
+                <span className="font-medium">Mensagem</span>
+                <textarea
+                  className="min-h-[420px] w-full rounded-md border bg-background p-3 font-mono text-sm leading-6"
+                  value={emailConvocacao.corpo}
+                  onChange={event => setEmailConvocacao({ ...emailConvocacao, corpo: event.target.value })}
+                />
+              </label>
+              {emailAviso && <p className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">{emailAviso}</p>}
+            </div>
+            <div className="flex justify-end gap-2 border-t p-4">
+              <Button variant="outline" onClick={() => setEmailConvocacao(null)}>Cancelar</Button>
+              <Button
+                disabled={enviarEmailMutation.isPending || !emailConvocacao.email}
+                onClick={() => {
+                  if (/XXXX|\[NOME\]|\[DATA\]|\[HORÁRIO\]/.test(emailConvocacao.corpo + emailConvocacao.assunto)) {
+                    setEmailAviso("Substitua os campos marcados (ex.: XXXX do WhatsApp) antes de enviar.");
+                    return;
+                  }
+                  if (!window.confirm(`Enviar o e-mail para ${emailConvocacao.nome} (${emailConvocacao.email})?`)) return;
+                  enviarEmailMutation.mutate({
+                    aplicacaoId: aplicacaoSelecionada,
+                    colaboradorId: emailConvocacao.colaboradorId,
+                    assunto: emailConvocacao.assunto,
+                    corpo: emailConvocacao.corpo,
+                  });
+                }}
+              >
+                <Send className="mr-2 h-4 w-4" />{enviarEmailMutation.isPending ? "ENVIANDO..." : "ENVIAR E-MAIL"}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {logsColaboradorId && aplicacaoSelecionada && (
