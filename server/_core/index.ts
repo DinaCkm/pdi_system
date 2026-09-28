@@ -9,6 +9,7 @@ import { createTRPCContext } from "./customTrpc";
 import { serveStatic, setupVite } from "./vite";
 import { timingSafeEqual } from "crypto";
 import { ensureAcoesLastroSchema } from "../services/acoesLastro";
+import { integracaoEcoliderRouter } from "../integracaoEcoliderRoutes";
 
 async function startServer() {
   const app = express();
@@ -28,6 +29,8 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // Cookie parser for custom auth
   app.use(cookieParser());
+  // Integração com o EcoLíder (chamadas assinadas com HMAC, sem sessão)
+  app.use(integracaoEcoliderRouter);
   // tRPC API
   app.use(
     "/api/trpc",
