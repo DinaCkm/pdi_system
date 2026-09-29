@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, protectedProcedure, router } from "../_core/customTrpc";
 import { getDb, getSubordinates } from "../db";
