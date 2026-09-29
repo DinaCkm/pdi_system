@@ -286,7 +286,16 @@ export const aplicacoesProficienciaRouter = router({
   listarParticipantesDisponiveis: adminProcedure.query(async () => {
     const db = await dbObrigatorio();
     const result = await db.execute(sql`
-      SELECT u.id, u.name, u.email, u.cargo, u.role, d.nome AS departamentoNome
+      SELECT u.id, u.name, u.email, u.cargo, u.role, d.nome AS departamentoNome,
+             CONCAT_WS('||',
+               (SELECT GROUP_CONCAT(DISTINCT dl.nome SEPARATOR '||')
+                  FROM departamentos dl
+                 WHERE dl.leaderId = u.id),
+               (SELECT GROUP_CONCAT(DISTINCT ds.nome SEPARATOR '||')
+                  FROM users s
+                  JOIN departamentos ds ON ds.id = s.departamentoId
+                 WHERE s.leaderId = u.id AND s.status = 'ativo')
+             ) AS unidadesLideradas
         FROM users u
         LEFT JOIN departamentos d ON d.id = u.departamentoId
        WHERE u.status = 'ativo'
@@ -316,22 +325,34 @@ export const aplicacoesProficienciaRouter = router({
       }
       const ids = Array.from(new Set(input.colaboradorIds));
       const usuariosResult = await db.execute(sql.raw(`
-        SELECT u.id, u.name, d.nome AS departamentoNome
+        SELECT u.id, u.name, d.nome AS departamentoNome,
+               CONCAT_WS('||',
+                 (SELECT GROUP_CONCAT(DISTINCT dl.nome SEPARATOR '||')
+                    FROM departamentos dl
+                   WHERE dl.leaderId = u.id),
+                 (SELECT GROUP_CONCAT(DISTINCT ds.nome SEPARATOR '||')
+                    FROM users s
+                    JOIN departamentos ds ON ds.id = s.departamentoId
+                   WHERE s.leaderId = u.id AND s.status = 'ativo')
+               ) AS unidadesLideradas
           FROM users u
           LEFT JOIN departamentos d ON d.id = u.departamentoId
          WHERE u.status = 'ativo'
            AND u.role IN ('colaborador','lider','gerente')
            AND u.id IN (${ids.map(id => Number(id)).join(",")})
       `));
-      const usuariosSelecionados = rowsOf<{ id: number; name: string | null; departamentoNome: string | null }>(usuariosResult);
+      const usuariosSelecionados = rowsOf<{ id: number; name: string | null; departamentoNome: string | null; unidadesLideradas: string | null }>(usuariosResult);
       if (usuariosSelecionados.length !== ids.length) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Um ou mais participantes selecionados não estão ativos ou não podem receber a prova." });
       }
 
       const unidadeProva = normalizarUnidade(prova.unidade);
-      const incompativeis = usuariosSelecionados.filter(usuario =>
-        normalizarUnidade(String(usuario.departamentoNome ?? "")) !== unidadeProva,
-      );
+      // Elegível: lotado na unidade da prova OU gestor da unidade (líder cadastrado do departamento
+      // ou líder direto de empregados lotados nela).
+      const incompativeis = usuariosSelecionados.filter(usuario => {
+        const unidades = [usuario.departamentoNome, ...String(usuario.unidadesLideradas ?? "").split("||")];
+        return !unidades.some(unidade => unidade && normalizarUnidade(String(unidade)) === unidadeProva);
+      });
       if (incompativeis.length > 0) {
         const nomes = incompativeis.map(usuario => usuario.name || `ID ${usuario.id}`).slice(0, 10).join(", ");
         throw new TRPCError({
