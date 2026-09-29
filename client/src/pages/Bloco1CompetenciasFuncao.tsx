@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { macroRelacionadaDaAD } from "../../../shared/competenciasAdRelacionamento";
-import { ChevronDown, ChevronUp, Sparkles, ShieldCheck, Target, TrendingUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Info, Sparkles, ShieldCheck, Target, TrendingUp } from "lucide-react";
 
 const relacaoLabel: Record<string, string> = {
   ESSENCIAL: "Essencial",
@@ -133,6 +133,7 @@ export default function Bloco1CompetenciasFuncao() {
   });
   const [busca, setBusca] = useState("");
   const [eixoAberto, setEixoAberto] = useState<number | null>(null);
+  const [eixoExplicacaoAberto, setEixoExplicacaoAberto] = useState<number | null>(null);
   const [statusEdicao, setStatusEdicao] = useState<"CLASSIFICADO" | "PENDENTE">("CLASSIFICADO");
   const [relacaoEdicao, setRelacaoEdicao] = useState<"ESSENCIAL" | "TRANSVERSAL" | "NAO_ESSENCIAL" | "">("");
   const [justificativaEdicao, setJustificativaEdicao] = useState("");
@@ -537,7 +538,26 @@ export default function Bloco1CompetenciasFuncao() {
                       mapa.data.tecnico.competencias.map((item: any) => (
                         <>
                         <TableRow key={item.eixoRegistroId}>
-                          <TableCell className="font-medium">{item.eixoNome}</TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <span>{item.eixoNome}</span>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                title="Entenda por que este eixo tem esta classificação"
+                                aria-label={`Explicação do eixo ${item.eixoNome}`}
+                                onClick={() => setEixoExplicacaoAberto(
+                                  eixoExplicacaoAberto === Number(item.eixoRegistroId)
+                                    ? null
+                                    : Number(item.eixoRegistroId),
+                                )}
+                              >
+                                <Info className="h-4 w-4 text-blue-600" />
+                              </Button>
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap items-center gap-2">
                               <Badge variant={item.statusClassificacao === "PENDENTE" ? "secondary" : item.classificacao === "ESSENCIAL" ? "default" : "outline"}>
@@ -583,6 +603,63 @@ export default function Bloco1CompetenciasFuncao() {
                             )}
                           </TableCell>
                         </TableRow>
+                        {eixoExplicacaoAberto === Number(item.eixoRegistroId) && (
+                          <TableRow key={`${item.eixoRegistroId}-explicacao`}>
+                            <TableCell colSpan={6} className="bg-blue-50/40">
+                              <div className="space-y-4 p-3 text-sm">
+                                <div>
+                                  <div className="font-semibold text-slate-900">Por que este eixo tem esta classificação?</div>
+                                  <p className="mt-1 text-slate-700">
+                                    <strong>Classificação atual:</strong>{" "}
+                                    {item.statusClassificacao === "PENDENTE"
+                                      ? "Pendente de análise"
+                                      : relacaoLabel[item.classificacao] || item.classificacao || "Sem classificação"}
+                                  </p>
+                                  <p className="mt-1 text-slate-700">
+                                    <strong>Justificativa baseada no Questionário de Atividades/Função:</strong>{" "}
+                                    {item.justificativa || "Ainda não há uma justificativa registrada para este eixo."}
+                                  </p>
+                                </div>
+
+                                <div className="rounded-md border bg-white p-3">
+                                  <div className="font-semibold text-slate-900">Base documental do questionário</div>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    Estas são as declarações funcionais do empregado usadas como contexto para classificar os eixos.
+                                    Quando houver uma vinculação específica entre eixo e resposta, ela poderá ser exibida aqui de forma individualizada.
+                                  </p>
+                                  {(mapa.data?.tecnico?.fundamentacaoQuestionario?.respostas ?? []).length === 0 ? (
+                                    <p className="mt-3 text-sm text-muted-foreground">
+                                      Não há respostas do questionário disponíveis para exibição neste registro.
+                                    </p>
+                                  ) : (
+                                    <div className="mt-3 space-y-3">
+                                      {(mapa.data?.tecnico?.fundamentacaoQuestionario?.respostas ?? []).map((base: any) => (
+                                        <div key={base.chave} className="rounded-md border p-3">
+                                          <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                            {base.chave === "principais_atividades"
+                                              ? "Principais atividades"
+                                              : base.chave === "conhecimentos_habilidades_indispensaveis"
+                                                ? "Conhecimentos e habilidades indispensáveis"
+                                                : base.chave === "responsabilidades_extras"
+                                                  ? "Responsabilidades extras"
+                                                  : base.pergunta}
+                                          </div>
+                                          {base.pergunta && <div className="mt-1 text-xs text-muted-foreground">{base.pergunta}</div>}
+                                          <div className="mt-2 whitespace-pre-wrap text-slate-800">{base.resposta}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {mapa.data?.tecnico?.fundamentacaoQuestionario?.ano && (
+                                    <div className="mt-3 text-xs text-muted-foreground">
+                                      Questionário de referência: {mapa.data.tecnico.fundamentacaoQuestionario.ano}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
                         {eixoAberto === Number(item.eixoRegistroId) && (
                           <TableRow key={`${item.eixoRegistroId}-justificativa`}>
                             <TableCell colSpan={6} className="bg-muted/20">
