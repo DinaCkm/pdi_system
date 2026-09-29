@@ -224,8 +224,10 @@ export default function AdminAplicacoesProficiencia() {
   const participantesDaUnidade = useMemo(() => {
     if (!provaSelecionada?.unidade) return [];
     const unidadeProva = normalizarUnidade(provaSelecionada.unidade);
+    // Elegível: lotado na unidade da prova OU gestor da unidade (líder do departamento ou da equipe lotada nela).
     return participantes.filter((item: any) =>
-      normalizarUnidade(item.departamentoNome) === unidadeProva,
+      [item.departamentoNome, ...String(item.unidadesLideradas ?? "").split("||")]
+        .some(unidade => unidade && normalizarUnidade(unidade) === unidadeProva),
     );
   }, [participantes, provaSelecionada]);
 
@@ -387,6 +389,7 @@ export default function AdminAplicacoesProficiencia() {
                       <td className="px-3 py-2">{item.cargo || "—"}</td>
                       <td className="px-3 py-2">
                         <p>{item.departamentoNome || "Sem unidade"}</p>
+                        {normalizarUnidade(item.departamentoNome) !== normalizarUnidade(provaSelecionada?.unidade) && <p className="text-xs text-blue-700">Gestor da unidade</p>}
 
                       </td>
                     </tr>
