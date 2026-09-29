@@ -148,7 +148,12 @@ export default function Bloco1CompetenciasFuncao() {
   const pdisMeus = trpc.pdis.myPDIs.useQuery(undefined, { enabled: Boolean(user && (isColaborador || isLider)) });
   const mapa = trpc.bloco1CompetenciasFuncao.mapaIndividual.useQuery(
     { colaboradorId: Number(colaboradorId || 0) },
-    { enabled: Boolean(colaboradorId) },
+    {
+      enabled: Boolean(colaboradorId),
+      staleTime: 0,
+      refetchOnMount: "always",
+      refetchOnWindowFocus: true,
+    },
   );
 
   useEffect(() => {
