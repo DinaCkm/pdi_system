@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Activity, CalendarClock, Calculator, CheckCircle2, ClipboardCheck, Eye, Mail, PlayCircle, RefreshCw, Search, Send, ShieldCheck, UserCheck, Users, X } from "lucide-react";
+import { Activity, CalendarClock, Calculator, CheckCircle2, ClipboardCheck, Eye, Mail, PlayCircle, Plus, RefreshCw, Search, Send, ShieldCheck, UserCheck, Users, X } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -112,6 +112,9 @@ export default function AdminAplicacoesProficiencia() {
   });
   const [identidadeColaboradorId, setIdentidadeColaboradorId] = useState<number | null>(null);
   const [filtroStatus, setFiltroStatus] = useState<string>("ATIVAS");
+  const [modalAdicionarAberto, setModalAdicionarAberto] = useState(false);
+  const [buscaAdicionar, setBuscaAdicionar] = useState("");
+  const [selecionadosAdicionar, setSelecionadosAdicionar] = useState<number[]>([]);
 
   const provasQuery = trpc.aplicacoesProficiencia.listarProvasValidas.useQuery(undefined, {
     enabled: Boolean(user && isAdmin),
@@ -134,6 +137,10 @@ export default function AdminAplicacoesProficiencia() {
       refetchOnWindowFocus: true,
     },
   );
+  const participantesAdicionarQuery = trpc.aplicacoesProficiencia.listarParticipantesParaAdicionar.useQuery(
+    { aplicacaoId: aplicacaoSelecionada ?? 1 },
+    { enabled: Boolean(user && isAdmin && aplicacaoSelecionada && modalAdicionarAberto), refetchOnWindowFocus: true },
+  );
   const ocorrenciasQuery = trpc.aplicacoesProficiencia.listarOcorrencias.useQuery(
     { aplicacaoId: aplicacaoSelecionada ?? 1, colaboradorId: logsColaboradorId ?? undefined },
     { enabled: Boolean(user && isAdmin && aplicacaoSelecionada && logsColaboradorId), refetchInterval: 2000, refetchOnWindowFocus: true },
@@ -152,6 +159,17 @@ export default function AdminAplicacoesProficiencia() {
       setAgendadaPara("");
       setSelecionados([]);
       await aplicacoesQuery.refetch();
+    },
+    onError: error => setMensagem(error.message),
+  });
+
+  const adicionarParticipantesMutation = trpc.aplicacoesProficiencia.adicionarParticipantes.useMutation({
+    onSuccess: async data => {
+      setMensagem(`${data.adicionados} participante(s) adicionado(s) à aplicação.`);
+      setModalAdicionarAberto(false);
+      setBuscaAdicionar("");
+      setSelecionadosAdicionar([]);
+      await Promise.all([aplicacoesQuery.refetch(), monitoramentoQuery.refetch(), participantesAdicionarQuery.refetch()]);
     },
     onError: error => setMensagem(error.message),
   });
@@ -189,6 +207,20 @@ export default function AdminAplicacoesProficiencia() {
     },
     onError: error => setMensagem(error.message),
   });
+
+  const participantesAdicionarFiltrados = useMemo(() => {
+    const termo = buscaAdicionar.trim().toLocaleLowerCase("pt-BR");
+    const lista = (participantesAdicionarQuery.data ?? []) as any[];
+    if (!termo) return lista;
+    return lista.filter((item: any) =>
+      [item.name, item.email, item.cargo, item.departamentoNome]
+        .some(valor => String(valor ?? "").toLocaleLowerCase("pt-BR").includes(termo)),
+    );
+  }, [participantesAdicionarQuery.data, buscaAdicionar]);
+
+  const alternarAdicionar = (id: number) => {
+    setSelecionadosAdicionar(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
+  };
 
   const aplicacoesFiltradas = useMemo(() => {
     const todas = (aplicacoesQuery.data ?? []) as any[];
@@ -470,6 +502,17 @@ export default function AdminAplicacoesProficiencia() {
               <>
                 <div className="flex flex-wrap gap-3">
                   <Button
+                    variant="outline"
+                    onClick={() => {
+                      setBuscaAdicionar("");
+                      setSelecionadosAdicionar([]);
+                      setModalAdicionarAberto(true);
+                    }}
+                    disabled={!["AGENDADA", "LIBERADA"].includes(String(aplicacaoMonitorada?.status))}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />ADICIONAR PARTICIPANTE
+                  </Button>
+                  <Button
                     onClick={() => liberarMutation.mutate({ aplicacaoId: aplicacaoSelecionada })}
                     disabled={liberarMutation.isPending || aplicacaoMonitorada?.status !== "AGENDADA"}
                   >
@@ -564,6 +607,62 @@ export default function AdminAplicacoesProficiencia() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {modalAdicionarAberto && aplicacaoSelecionada && (
+        <div className="fixed inset-0 z-[250] grid place-items-center bg-black/70 p-4">
+          <div className="flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between gap-3 border-b p-6">
+              <div>
+                <h2 className="flex items-center gap-2 text-xl font-semibold"><Plus className="h-5 w-5 text-blue-700" />Adicionar participante</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Somente pessoas elegíveis da unidade <strong>{aplicacaoMonitorada?.prova?.unidade || aplicacaoMonitorada?.provaUnidade || "da prova"}</strong> são exibidas.
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => setModalAdicionarAberto(false)}><X className="mr-1 h-4 w-4" />Fechar</Button>
+            </div>
+            <div className="space-y-4 overflow-auto p-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <input
+                  className="h-10 w-full rounded-md border bg-background pl-9 pr-3 text-sm"
+                  value={buscaAdicionar}
+                  onChange={event => setBuscaAdicionar(event.target.value)}
+                  placeholder="Pesquisar por nome, e-mail, cargo ou unidade"
+                />
+              </div>
+              <div className="rounded-md border">
+                <table className="w-full min-w-[760px] text-sm">
+                  <thead><tr className="border-b text-left"><th className="px-3 py-2">Selecionar</th><th className="px-3 py-2">Participante</th><th className="px-3 py-2">Cargo</th><th className="px-3 py-2">Unidade</th></tr></thead>
+                  <tbody>
+                    {participantesAdicionarQuery.isLoading ? (
+                      <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">Carregando participantes elegíveis...</td></tr>
+                    ) : participantesAdicionarFiltrados.length === 0 ? (
+                      <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">Nenhuma pessoa elegível disponível para inclusão nesta aplicação.</td></tr>
+                    ) : participantesAdicionarFiltrados.map((item: any) => (
+                      <tr key={item.id} className="border-b last:border-0">
+                        <td className="px-3 py-2"><input type="checkbox" checked={selecionadosAdicionar.includes(Number(item.id))} onChange={() => alternarAdicionar(Number(item.id))} /></td>
+                        <td className="px-3 py-2"><p className="font-medium">{item.name}</p><p className="text-xs text-muted-foreground">{item.email || "—"}</p></td>
+                        <td className="px-3 py-2">{item.cargo || "—"}</td>
+                        <td className="px-3 py-2">{item.departamentoNome || "Gestor da unidade"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-sm text-muted-foreground"><strong>{selecionadosAdicionar.length}</strong> participante(s) selecionado(s).</p>
+            </div>
+            <div className="flex justify-end gap-2 border-t p-4">
+              <Button variant="outline" onClick={() => setModalAdicionarAberto(false)}>Cancelar</Button>
+              <Button
+                disabled={selecionadosAdicionar.length === 0 || adicionarParticipantesMutation.isPending}
+                onClick={() => adicionarParticipantesMutation.mutate({ aplicacaoId: aplicacaoSelecionada, colaboradorIds: selecionadosAdicionar })}
+              >
+                {adicionarParticipantesMutation.isPending ? "ADICIONANDO..." : "ADICIONAR À APLICAÇÃO"}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {emailConvocacao && aplicacaoSelecionada && (
