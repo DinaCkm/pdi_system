@@ -62,6 +62,7 @@ function descreverValor(valor: any) {
 
 export default function AdminEixosTecnicos() {
   const api = (trpc as any).provaUticMatriz;
+  const utils = trpc.useUtils();
   const listaQuery = api.listar.useQuery(undefined, { refetchOnWindowFocus: false });
   const salvarEixoMutation = api.salvarEixo.useMutation();
   const atualizarStatusMutation = api.atualizarStatus.useMutation();
@@ -263,7 +264,11 @@ export default function AdminEixosTecnicos() {
           observacao: observacao.trim() || null,
         });
       }
-      await Promise.all([listaQuery.refetch(), historicoQuery.refetch()]);
+      await Promise.all([
+        listaQuery.refetch(),
+        historicoQuery.refetch(),
+        utils.bloco1CompetenciasFuncao.mapaIndividual.invalidate({ colaboradorId: Number(matriz.colaboradorId) }),
+      ]);
       setMensagem(
         alterados.length === 1
           ? "Correção salva. A Evolução passará a usar a classificação e a pontuação atualizadas."
