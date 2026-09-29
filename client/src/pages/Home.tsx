@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   useEffect(() => {
     // 1. Aguarda autenticação
