@@ -40,6 +40,11 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const [violacoes, setViolacoes] = useState(0);
   const [bloqueada, setBloqueada] = useState(false);
   const LIMITE_VIOLACOES = 3;
+  // Saídas de foco mais curtas que isso (ex.: clique na barra de compartilhamento do navegador)
+  // ficam só no log e não contam para o bloqueio.
+  const TOLERANCIA_SAIDA_MS = 3000;
+  // Tempo máximo fora da prova antes do bloqueio automático.
+  const LIMITE_AUSENCIA_MS = 2 * 60 * 1000;
 
   const provaQuery = trpc.aplicacoesProficiencia.estadoProva.useQuery(
     { aplicacaoId },
@@ -189,10 +194,57 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
       event.preventDefault();
       registrarViolacao("CONTEUDO_PROTEGIDO", "Tentativa de selecionar, copiar, colar, recortar, imprimir, salvar ou reproduzir conteúdo.");
     };
-    const onVisibility = () => {
-      if (document.hidden) registrarViolacao("TROCA_ABA", "A aba da avaliação perdeu visibilidade.");
+    // Controle de saída da prova: um único "episódio" por saída, para não contar em dobro
+    // (trocar de aba dispara blur + visibilitychange ao mesmo tempo).
+    let saida: { inicio: number; contada: boolean; tolerancia?: number; limite?: number } | null = null;
+    let bloqueadaPorAusencia = false;
+
+    const contarSaida = (tipo: string, detalhe: string) => {
+      if (!saida || saida.contada) return;
+      saida.contada = true;
+      if (saida.tolerancia) window.clearTimeout(saida.tolerancia);
+      registrarViolacao(tipo, detalhe);
     };
-    const onBlur = () => registrarViolacao("SAIDA_FOCO", "A janela da avaliação perdeu o foco.");
+
+    const iniciarSaida = () => {
+      if (saida || bloqueadaPorAusencia) return;
+      saida = { inicio: Date.now(), contada: false };
+      saida.tolerancia = window.setTimeout(() => {
+        contarSaida("SAIDA_FOCO", "A janela da avaliação perdeu o foco por mais de 3 segundos.");
+      }, TOLERANCIA_SAIDA_MS);
+      saida.limite = window.setTimeout(() => {
+        bloqueadaPorAusencia = true;
+        registrarOcorrencia("AUSENCIA_PROLONGADA", "O participante permaneceu mais de 2 minutos fora da tela da avaliação.", id);
+        bloquearMutation.mutate({ aplicacaoId, tentativaId: id, motivo: "SEGURANCA" });
+      }, LIMITE_AUSENCIA_MS);
+    };
+
+    const encerrarSaida = () => {
+      if (!saida) return;
+      const segundos = Math.round((Date.now() - saida.inicio) / 1000);
+      if (saida.tolerancia) window.clearTimeout(saida.tolerancia);
+      if (saida.limite) window.clearTimeout(saida.limite);
+      if (!saida.contada) {
+        registrarOcorrencia("SAIDA_FOCO_BREVE", `Saída de foco de ${segundos}s, dentro da tolerância (não conta para o bloqueio).`, id);
+      } else {
+        registrarOcorrencia("RETORNO_PROVA", `Retornou à avaliação após ${segundos}s fora.`, id);
+      }
+      saida = null;
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        iniciarSaida();
+        // Trocar de aba ou minimizar conta na hora, sem tolerância.
+        contarSaida("TROCA_ABA", "A aba da avaliação perdeu visibilidade (troca de aba ou janela minimizada).");
+      } else if (document.hasFocus()) {
+        encerrarSaida();
+      }
+    };
+    const onBlur = () => iniciarSaida();
+    const onFocus = () => {
+      if (!document.hidden) encerrarSaida();
+    };
     const onFullscreen = () => {
       if (!document.fullscreenElement) registrarViolacao("SAIDA_TELA_CHEIA", "O participante saiu do modo de tela cheia.");
     };
@@ -215,6 +267,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onBlur);
+    window.addEventListener("focus", onFocus);
     document.addEventListener("fullscreenchange", onFullscreen);
     document.addEventListener("selectstart", bloquearConteudo);
     document.addEventListener("contextmenu", bloquearConteudo);
@@ -228,6 +281,9 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("blur", onBlur);
+      window.removeEventListener("focus", onFocus);
+      if (saida?.tolerancia) window.clearTimeout(saida.tolerancia);
+      if (saida?.limite) window.clearTimeout(saida.limite);
       document.removeEventListener("fullscreenchange", onFullscreen);
       document.removeEventListener("selectstart", bloquearConteudo);
       document.removeEventListener("contextmenu", bloquearConteudo);
@@ -610,9 +666,10 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
                   <p><strong>1. Equipamento:</strong> computador com câmera e microfone conectados, ligados e autorizados durante toda a avaliação.</p>
                   <p><strong>2. Tela única:</strong> utilize somente a tela da prova durante a realização.</p>
                   <p><strong>3. Compartilhamento:</strong> selecione exclusivamente <strong>TELA INTEIRA</strong>. Janela ou guia não serão aceitas quando tecnicamente identificáveis.</p>
-                  <p><strong>4. Navegação:</strong> trocar de aba, minimizar a janela, perder o foco ou sair da tela cheia gera ocorrência registrada.</p>
+                  <p><strong>4. Navegação:</strong> cada uma destas ações gera <strong>1 ocorrência</strong>: trocar de aba, minimizar a janela, apertar <strong>ESC</strong> ou sair da tela cheia, clicar fora da prova por mais de 3 segundos, apertar <strong>Print Screen</strong>, copiar, colar ou imprimir.</p>
+                  <p className="rounded-md border border-red-300 bg-red-50 p-2 text-red-900"><strong>ATENÇÃO — BLOQUEIO AUTOMÁTICO:</strong> ao atingir <strong>{LIMITE_VIOLACOES} ocorrências</strong>, ou ao permanecer <strong>mais de 2 minutos fora da tela da prova</strong>, a avaliação é <strong>bloqueada</strong>. As respostas já registradas são preservadas, e a liberação depende de análise do administrador.</p>
                   <p><strong>5. Interrupções:</strong> interromper câmera, microfone ou compartilhamento de tela gera ocorrência para análise administrativa.</p>
-                  <p><strong>6. Conteúdo protegido:</strong> tentativas de copiar, imprimir, usar menu de contexto ou capturar conteúdo podem ser registradas pelo navegador.</p>
+                  <p><strong>6. Conteúdo protegido:</strong> é proibido copiar, imprimir, capturar ou fotografar as questões, inclusive com celular. A câmera permanece ativa e o registro fica disponível para auditoria.</p>
                   <p><strong>7. Auditoria:</strong> a fotografia de identidade, os aceites e as ocorrências ficam vinculados à tentativa para conferência administrativa.</p>
                   <p><strong>8. Finalização:</strong> ao finalizar a avaliação, a tentativa é encerrada e as respostas registradas são preservadas.</p>
                 </div>
@@ -698,7 +755,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
         </Card>
 
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-white p-3 text-xs">
-          <span>Ambiente protegido: seleção, cópia, impressão e atalhos bloqueados.</span>
+          <span>Ambiente monitorado: {LIMITE_VIOLACOES} ocorrências ou mais de 2 minutos fora da tela bloqueiam a avaliação.</span>
           <Badge variant={violacoes ? "destructive" : "secondary"}>Ocorrências {violacoes}/{LIMITE_VIOLACOES}</Badge>
         </div>
         {mensagem && <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">{mensagem}</div>}
