@@ -102,6 +102,7 @@ const getMenuItems = (userRole: string) => {
     items.push(
       { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+      { icon: ClipboardCheck, label: "Avaliações", path: "/avaliacoes" },
       { icon: FileText, label: "Meu PDI", path: "/meu-pdi" },
       { icon: CheckSquare, label: "Minhas Ações", path: "/minhas-acoes" },
       { icon: Send, label: "Minhas Solicitações de Ação", path: "/solicitacoes-acoes?aba=minhas" },
@@ -116,6 +117,7 @@ const getMenuItems = (userRole: string) => {
     items.push(
       { icon: BookOpen, label: "Normas e Regras", path: "/normas-regras" },
       { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+      { icon: ClipboardCheck, label: "Avaliações", path: "/avaliacoes" },
       { icon: TrendingUp, label: "Análise de Liderança", path: "/analise-lideranca" },
       { icon: FileText, label: "PDIs", path: "/pdis" },
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
