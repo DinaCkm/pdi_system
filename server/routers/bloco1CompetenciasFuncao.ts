@@ -11,6 +11,7 @@ import {
   competenciasMacros,
   departamentos,
   questionarioAtividadesEixosTecnicos,
+  questionarioAtividadesRespostas,
   questionariosAtividadesFuncao,
   registroHistoricoProficienciaEixos,
   users,
@@ -253,6 +254,56 @@ export const bloco1CompetenciasFuncaoRouter = router({
       const alertaTecnico = /^ALERTA:/i.test(observacaoMatriz)
         ? observacaoMatriz.replace(/^ALERTA:\s*/i, "")
         : null;
+
+      // Base documental individual: respostas do Questionário de Atividades/Função
+      // usadas como contexto para a classificação dos eixos técnicos.
+      let questionarioBaseId = questionarioId ? Number(questionarioId) : null;
+      let questionarioBaseAno = anoQuestionario ? Number(anoQuestionario) : null;
+      if (!questionarioBaseId) {
+        const questionarioBase = (
+          await db
+            .select({
+              id: questionariosAtividadesFuncao.id,
+              ano: questionariosAtividadesFuncao.ano,
+            })
+            .from(questionariosAtividadesFuncao)
+            .where(eq(questionariosAtividadesFuncao.colaboradorId, input.colaboradorId))
+            .orderBy(
+              desc(questionariosAtividadesFuncao.ano),
+              desc(questionariosAtividadesFuncao.versao),
+              desc(questionariosAtividadesFuncao.id),
+            )
+            .limit(1)
+        )[0] ?? null;
+        questionarioBaseId = questionarioBase?.id ? Number(questionarioBase.id) : null;
+        questionarioBaseAno = questionarioBase?.ano ? Number(questionarioBase.ano) : null;
+      }
+
+      const chavesFundamentacao = new Set([
+        "principais_atividades",
+        "conhecimentos_habilidades_indispensaveis",
+        "responsabilidades_extras",
+      ]);
+      const respostasFundamentacao = questionarioBaseId
+        ? await db
+            .select({
+              chave: questionarioAtividadesRespostas.chave,
+              pergunta: questionarioAtividadesRespostas.pergunta,
+              resposta: questionarioAtividadesRespostas.resposta,
+              ordem: questionarioAtividadesRespostas.ordem,
+            })
+            .from(questionarioAtividadesRespostas)
+            .where(eq(questionarioAtividadesRespostas.questionarioId, questionarioBaseId))
+            .orderBy(asc(questionarioAtividadesRespostas.ordem), asc(questionarioAtividadesRespostas.id))
+        : [];
+
+      const fundamentacaoQuestionario = respostasFundamentacao
+        .filter((item: any) => chavesFundamentacao.has(String(item.chave)) && String(item.resposta ?? "").trim())
+        .map((item: any) => ({
+          chave: String(item.chave),
+          pergunta: String(item.pergunta ?? ""),
+          resposta: String(item.resposta ?? ""),
+        }));
       const usarRegional = linhasAdministrativas.length === 0 && linhasRegionais.length > 0;
       const linhasTecnicas: any[] = usarRegional ? linhasRegionais : linhasAdministrativas;
       const fonteTecnica = usarRegional
@@ -528,6 +579,11 @@ export const bloco1CompetenciasFuncaoRouter = router({
           provaAtual: resultadoTecnicoLinha?.provaNome ?? null,
           calculadoEm: resultadoTecnicoLinha?.calculadoEm ?? null,
           alerta: alertaTecnico,
+          fundamentacaoQuestionario: {
+            questionarioId: questionarioBaseId,
+            ano: questionarioBaseAno,
+            respostas: fundamentacaoQuestionario,
+          },
           competencias: tecnicas,
         },
         comportamental: {
