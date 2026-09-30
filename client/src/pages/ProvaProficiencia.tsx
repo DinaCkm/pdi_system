@@ -782,16 +782,16 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
                       <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
                         <p className="font-semibold">Pause o processo neste momento.</p>
                         <p className="mt-1">
-                          Fale com a CKM Talents pelo WhatsApp <strong>(11) 94755-7071</strong>. A avaliação continuará bloqueada até você confirmar que a dúvida foi esclarecida.
+                          Fale com o <strong>Atendimento CKM Talents</strong> pelo WhatsApp <strong>(11) 94755-7071</strong>. A avaliação continuará bloqueada até você confirmar que a dúvida foi esclarecida.
                         </p>
                         <a
-                          href={`https://wa.me/5511947557071?text=${encodeURIComponent("Olá, CKM Talents. Estou realizando a orientação obrigatória da Avaliação de Proficiência para a Função e preciso esclarecer uma dúvida antes de iniciar a prova.")}`}
+                          href={`https://wa.me/5511947557071?text=${encodeURIComponent("Olá, Atendimento CKM Talents. Estou realizando a orientação obrigatória da Avaliação de Proficiência para a Função e preciso esclarecer uma dúvida antes de iniciar a prova.")}`}
                           target="_blank"
                           rel="noreferrer"
                           className="mt-3 inline-flex h-10 items-center justify-center rounded-md bg-green-700 px-4 text-sm font-semibold text-white transition hover:bg-green-800"
                         >
                           <MessageCircle className="mr-2 h-5 w-5" />
-                          FALAR COM A CKM TALENTS PELO WHATSAPP
+                          FALAR COM O ATENDIMENTO PELO WHATSAPP
                         </a>
                         <label className="mt-4 flex items-start gap-3 rounded-md border border-amber-400 bg-white p-3 font-semibold">
                           <input
@@ -800,7 +800,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
                             checked={duvidaEsclarecidaOrientacao}
                             onChange={event => setDuvidaEsclarecidaOrientacao(event.target.checked)}
                           />
-                          Minha dúvida foi esclarecida pela CKM Talents e posso prosseguir.
+                          Minha dúvida foi esclarecida pelo Atendimento CKM Talents e posso prosseguir.
                         </label>
                       </div>
                     )}
