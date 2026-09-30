@@ -9,8 +9,20 @@ import AdminAplicacoesProficiencia from "./AdminAplicacoesProficiencia";
 
 function formatarData(valor: unknown) {
   if (!valor) return "—";
-  const data = new Date(String(valor));
-  return Number.isNaN(data.getTime()) ? String(valor) : data.toLocaleString("pt-BR");
+  // O banco grava em UTC e pode devolver "AAAA-MM-DD HH:MM:SS" sem indicador de fuso.
+  // Tratamos esse valor explicitamente como UTC e exibimos no horário de Brasília.
+  let texto = String(valor instanceof Date ? valor.toISOString() : valor).trim();
+  if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(texto)) {
+    texto = texto.replace(" ", "T") + "Z";
+  }
+  const data = new Date(texto);
+  return Number.isNaN(data.getTime())
+    ? String(valor)
+    : data.toLocaleString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        dateStyle: "short",
+        timeStyle: "short",
+      });
 }
 
 export default function AvaliacoesProficiencia() {
