@@ -914,7 +914,7 @@ export const aplicacoesProficienciaRouter = router({
           ON t.aplicacao_id = a.id AND t.colaborador_id = ap.colaborador_id
         LEFT JOIN provas_importadas_homologacao ph ON ph.aplicacao_teste_id = a.id
        WHERE ap.colaborador_id = ${ctx.user.id}
-         AND a.status IN ('LIBERADA','ENCERRADA','CALCULADA')
+         AND a.status IN ('AGENDADA','LIBERADA','ENCERRADA','CALCULADA')
          AND ph.id IS NULL
        ORDER BY a.agendada_para DESC, a.id DESC
     `);
@@ -929,8 +929,8 @@ export const aplicacoesProficienciaRouter = router({
     .query(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
       const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
-      if (vinculo.status !== "LIBERADA" && !vinculo.tentativaId) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Esta prova ainda não está liberada para início." });
+      if (!["AGENDADA", "LIBERADA"].includes(String(vinculo.status)) && !vinculo.tentativaId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Esta avaliação não está disponível para orientação ou início." });
       }
       const respostas = vinculo.tentativaId
         ? rowsOf<any>(await db.execute(sql`
@@ -954,7 +954,14 @@ export const aplicacoesProficienciaRouter = router({
         orientacaoConcluida = rowsOf<any>(orientacaoResult).length > 0;
       }
       return {
-        aplicacao: { id: input.aplicacaoId, titulo: vinculo.titulo },
+        aplicacao: {
+          id: input.aplicacaoId,
+          titulo: vinculo.titulo,
+          status: vinculo.status,
+          liberada: vinculo.status === "LIBERADA",
+          agendadaPara: vinculo.agendadaPara ?? null,
+          liberadaEm: vinculo.liberadaEm ?? null,
+        },
         modoTeste: Boolean(testeAdmin),
         tentativaId: vinculo.tentativaId ? Number(vinculo.tentativaId) : null,
         tentativaStatus: vinculo.tentativaStatus ?? null,
@@ -970,8 +977,8 @@ export const aplicacoesProficienciaRouter = router({
       const db = await dbObrigatorio();
       const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
       if (vinculo.tentativaId) return { iniciada: true, dispensada: true };
-      if (vinculo.status !== "LIBERADA") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Esta avaliação ainda não está liberada para início." });
+      if (!["AGENDADA", "LIBERADA"].includes(String(vinculo.status))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Esta avaliação não está disponível para orientação." });
       }
 
       const concluidaResult = await db.execute(sql`
@@ -1019,8 +1026,8 @@ export const aplicacoesProficienciaRouter = router({
       const db = await dbObrigatorio();
       const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
       if (vinculo.tentativaId) return { concluida: true, dispensada: true };
-      if (vinculo.status !== "LIBERADA") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Esta avaliação ainda não está liberada para início." });
+      if (!["AGENDADA", "LIBERADA"].includes(String(vinculo.status))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Esta avaliação não está disponível para orientação." });
       }
 
       const concluidaResult = await db.execute(sql`
