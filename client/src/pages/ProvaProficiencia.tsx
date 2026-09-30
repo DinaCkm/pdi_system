@@ -102,7 +102,8 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   useEffect(() => {
     const orientacaoJaConcluida = Boolean((provaQuery.data as any)?.orientacaoConcluida);
     const tentativaExistente = Boolean(provaQuery.data?.tentativaId);
-    if (!provaQuery.data || orientacaoJaConcluida || tentativaExistente) return;
+    const modoTeste = Boolean(provaQuery.data?.modoTeste);
+    if (!provaQuery.data || orientacaoJaConcluida || tentativaExistente || modoTeste) return;
 
     let cancelado = false;
 
@@ -647,8 +648,9 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
   const orientacaoConcluida = Boolean((provaQuery.data as any).orientacaoConcluida);
   const aplicacaoLiberada = Boolean((provaQuery.data as any).aplicacao?.liberada);
+  const modoTeste = Boolean(provaQuery.data.modoTeste);
 
-  if (orientacaoConcluida && !aplicacaoLiberada && !provaQuery.data.tentativaId) {
+  if (!modoTeste && orientacaoConcluida && !aplicacaoLiberada && !provaQuery.data.tentativaId) {
     return (
       <div className="min-h-screen bg-slate-100 p-4 md:p-6">
         <div className="mx-auto max-w-3xl space-y-5">
@@ -709,7 +711,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
             </CardContent>
           </Card>
 
-          {!Boolean((provaQuery.data as any).orientacaoConcluida) && !provaQuery.data.tentativaId ? (
+          {!modoTeste && !Boolean((provaQuery.data as any).orientacaoConcluida) && !provaQuery.data.tentativaId ? (
             <Card className="border-blue-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
