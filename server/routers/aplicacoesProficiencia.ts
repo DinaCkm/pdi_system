@@ -907,7 +907,14 @@ export const aplicacoesProficienciaRouter = router({
     const result = await db.execute(sql`
       SELECT a.id, a.titulo, a.agendada_para AS agendadaPara, a.status,
              a.liberada_em AS liberadaEm, a.prova_snapshot_json AS provaSnapshotJson,
-             t.id AS tentativaId, t.status AS tentativaStatus, t.finalizada_em AS finalizadaEm
+             t.id AS tentativaId, t.status AS tentativaStatus, t.finalizada_em AS finalizadaEm,
+             EXISTS(
+               SELECT 1
+                 FROM proficiencia_ocorrencias po
+                WHERE po.aplicacao_id = a.id
+                  AND po.colaborador_id = ap.colaborador_id
+                  AND po.tipo = 'ORIENTACAO_VIDEO_CONCLUIDA'
+             ) AS orientacaoConcluida
         FROM aplicacoes_proficiencia_participantes ap
         JOIN aplicacoes_proficiencia a ON a.id = ap.aplicacao_id
         LEFT JOIN tentativas_proficiencia t
