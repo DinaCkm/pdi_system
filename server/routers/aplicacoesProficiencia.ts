@@ -947,7 +947,7 @@ export const aplicacoesProficienciaRouter = router({
           `))
         : [];
       const testeAdmin = await obterTestePorAplicacao(db, input.aplicacaoId);
-      let orientacaoConcluida = Boolean(vinculo.tentativaId);
+      let orientacaoConcluida = Boolean(vinculo.tentativaId || testeAdmin);
       if (!orientacaoConcluida) {
         const orientacaoResult = await db.execute(sql`
           SELECT id
@@ -983,7 +983,8 @@ export const aplicacoesProficienciaRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
       const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
-      if (vinculo.tentativaId) return { iniciada: true, dispensada: true };
+      const testeAdmin = await obterTestePorAplicacao(db, input.aplicacaoId);
+      if (vinculo.tentativaId || testeAdmin) return { iniciada: true, dispensada: true };
       if (!["AGENDADA", "LIBERADA"].includes(String(vinculo.status))) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Esta avaliação não está disponível para orientação." });
       }
@@ -1032,7 +1033,8 @@ export const aplicacoesProficienciaRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
       const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
-      if (vinculo.tentativaId) return { concluida: true, dispensada: true };
+      const testeAdmin = await obterTestePorAplicacao(db, input.aplicacaoId);
+      if (vinculo.tentativaId || testeAdmin) return { concluida: true, dispensada: true };
       if (!["AGENDADA", "LIBERADA"].includes(String(vinculo.status))) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Esta avaliação não está disponível para orientação." });
       }
@@ -1113,7 +1115,8 @@ export const aplicacoesProficienciaRouter = router({
       if (vinculo.status !== "LIBERADA") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Esta prova ainda não está liberada para início." });
       }
-      if (!vinculo.tentativaId) {
+      const testeAdmin = await obterTestePorAplicacao(db, input.aplicacaoId);
+      if (!vinculo.tentativaId && !testeAdmin) {
         const orientacaoResult = await db.execute(sql`
           SELECT id
             FROM proficiencia_ocorrencias
