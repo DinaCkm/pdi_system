@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Camera, CheckCircle2, ClipboardCheck, Loader2, Mic, MonitorUp, PlayCircle, RefreshCw, ShieldCheck, Shuffle, UserCheck, Video } from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, ClipboardCheck, Loader2, MessageCircle, Mic, MonitorUp, PlayCircle, RefreshCw, ShieldCheck, Shuffle, UserCheck, Video } from "lucide-react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +31,18 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const [aceiteTela, setAceiteTela] = useState(false);
   const [sessaoAutorizada, setSessaoAutorizada] = useState(false);
   const [iniciandoAmbiente, setIniciandoAmbiente] = useState(false);
+  const [videoOrientacaoPronto, setVideoOrientacaoPronto] = useState(false);
+  const [videoOrientacaoConcluido, setVideoOrientacaoConcluido] = useState(false);
+  const [duracaoVideoOrientacao, setDuracaoVideoOrientacao] = useState(0);
+  const [tempoAssistidoOrientacao, setTempoAssistidoOrientacao] = useState(0);
+  const [teveDuvidaOrientacao, setTeveDuvidaOrientacao] = useState<boolean | null>(null);
+  const [duvidaEsclarecidaOrientacao, setDuvidaEsclarecidaOrientacao] = useState(false);
+  const [aceiteOrientacao, setAceiteOrientacao] = useState(false);
+  const [concluindoOrientacao, setConcluindoOrientacao] = useState(false);
+  const videoOrientacaoPlayerRef = useRef<any>(null);
+  const videoOrientacaoTimerRef = useRef<number | null>(null);
+  const maiorTempoPermitidoRef = useRef(0);
+  const orientacaoIniciadaRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const cameraRef = useRef<MediaStream | null>(null);
   const cameraMonitorRef = useRef<MediaStream | null>(null);
@@ -56,6 +68,8 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   );
   const registrarIdentidadeMutation = trpc.aplicacoesProficiencia.registrarIdentidade.useMutation();
   const registrarOcorrenciaMutation = trpc.aplicacoesProficiencia.registrarOcorrencia.useMutation();
+  const iniciarOrientacaoMutation = trpc.aplicacoesProficiencia.iniciarOrientacao.useMutation();
+  const concluirOrientacaoMutation = trpc.aplicacoesProficiencia.concluirOrientacao.useMutation();
   const iniciarMutation = trpc.aplicacoesProficiencia.iniciar.useMutation({
     onSuccess: async () => {
       setMensagem(null);
@@ -84,6 +98,125 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     },
     onError: error => setMensagem(error.message),
   });
+
+  useEffect(() => {
+    const orientacaoJaConcluida = Boolean((provaQuery.data as any)?.orientacaoConcluida);
+    const tentativaExistente = Boolean(provaQuery.data?.tentativaId);
+    if (!provaQuery.data || orientacaoJaConcluida || tentativaExistente) return;
+
+    let cancelado = false;
+
+    const criarPlayer = () => {
+      if (cancelado || !(window as any).YT?.Player || videoOrientacaoPlayerRef.current) return;
+      const YT = (window as any).YT;
+      videoOrientacaoPlayerRef.current = new YT.Player("video-orientacao-avaliacao", {
+        videoId: "PUSIl9n_pJs",
+        playerVars: {
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          modestbranding: 1,
+          rel: 0,
+          playsinline: 1,
+        },
+        events: {
+          onReady: (event: any) => {
+            const duracao = Number(event.target.getDuration?.() || 0);
+            setDuracaoVideoOrientacao(duracao);
+            setVideoOrientacaoPronto(true);
+          },
+          onStateChange: (event: any) => {
+            if (event.data === YT.PlayerState.PLAYING) {
+              if (!orientacaoIniciadaRef.current) {
+                orientacaoIniciadaRef.current = true;
+                iniciarOrientacaoMutation.mutate({ aplicacaoId });
+              }
+              if (videoOrientacaoTimerRef.current) window.clearInterval(videoOrientacaoTimerRef.current);
+              videoOrientacaoTimerRef.current = window.setInterval(() => {
+                const player = videoOrientacaoPlayerRef.current;
+                if (!player) return;
+                const atual = Number(player.getCurrentTime?.() || 0);
+                const duracao = Number(player.getDuration?.() || 0);
+                if (duracao > 0) setDuracaoVideoOrientacao(duracao);
+
+                const limite = maiorTempoPermitidoRef.current;
+                if (atual > limite + 1.5) {
+                  player.seekTo(Math.max(0, limite), true);
+                  return;
+                }
+                if (atual > limite) maiorTempoPermitidoRef.current = atual;
+                setTempoAssistidoOrientacao(Math.max(tempo => tempo, maiorTempoPermitidoRef.current));
+              }, 500);
+            } else {
+              if (videoOrientacaoTimerRef.current) {
+                window.clearInterval(videoOrientacaoTimerRef.current);
+                videoOrientacaoTimerRef.current = null;
+              }
+              if (event.data === YT.PlayerState.ENDED) {
+                const duracao = Number(event.target.getDuration?.() || duracaoVideoOrientacao || 0);
+                maiorTempoPermitidoRef.current = Math.max(maiorTempoPermitidoRef.current, duracao);
+                setTempoAssistidoOrientacao(duracao);
+                setVideoOrientacaoConcluido(true);
+              }
+            }
+          },
+        },
+      });
+    };
+
+    if ((window as any).YT?.Player) {
+      criarPlayer();
+    } else {
+      const existente = document.querySelector('script[data-pdi-youtube-api="1"]') as HTMLScriptElement | null;
+      if (!existente) {
+        const script = document.createElement("script");
+        script.src = "https://www.youtube.com/iframe_api";
+        script.async = true;
+        script.dataset.pdiYoutubeApi = "1";
+        document.head.appendChild(script);
+      }
+      const anterior = (window as any).onYouTubeIframeAPIReady;
+      (window as any).onYouTubeIframeAPIReady = () => {
+        if (typeof anterior === "function") anterior();
+        criarPlayer();
+      };
+    }
+
+    return () => {
+      cancelado = true;
+      if (videoOrientacaoTimerRef.current) {
+        window.clearInterval(videoOrientacaoTimerRef.current);
+        videoOrientacaoTimerRef.current = null;
+      }
+      try { videoOrientacaoPlayerRef.current?.destroy?.(); } catch {}
+      videoOrientacaoPlayerRef.current = null;
+    };
+  }, [aplicacaoId, provaQuery.data?.tentativaId, (provaQuery.data as any)?.orientacaoConcluida]);
+
+  const concluirEtapaOrientacao = async () => {
+    if (!videoOrientacaoConcluido || teveDuvidaOrientacao === null || !aceiteOrientacao) return;
+    if (teveDuvidaOrientacao && !duvidaEsclarecidaOrientacao) {
+      setMensagem("Confirme que sua dúvida foi esclarecida pela CKM Talents antes de continuar.");
+      return;
+    }
+    setConcluindoOrientacao(true);
+    setMensagem(null);
+    try {
+      await concluirOrientacaoMutation.mutateAsync({
+        aplicacaoId,
+        duracaoSegundos: Math.max(10, duracaoVideoOrientacao),
+        tempoAssistidoSegundos: Math.max(0, tempoAssistidoOrientacao),
+        teveDuvida: teveDuvidaOrientacao,
+        duvidaEsclarecida: teveDuvidaOrientacao ? duvidaEsclarecidaOrientacao : true,
+        aceiteOrientacao: true,
+      });
+      await provaQuery.refetch();
+    } catch (error: any) {
+      setMensagem(error?.message || "Não foi possível concluir a orientação obrigatória.");
+    } finally {
+      setConcluindoOrientacao(false);
+    }
+  };
 
   const pararCamera = () => {
     cameraRef.current?.getTracks().forEach(track => track.stop());
@@ -512,6 +645,41 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
   if (!provaQuery.data) return null;
 
+  const orientacaoConcluida = Boolean((provaQuery.data as any).orientacaoConcluida);
+  const aplicacaoLiberada = Boolean((provaQuery.data as any).aplicacao?.liberada);
+
+  if (orientacaoConcluida && !aplicacaoLiberada && !provaQuery.data.tentativaId) {
+    return (
+      <div className="min-h-screen bg-slate-100 p-4 md:p-6">
+        <div className="mx-auto max-w-3xl space-y-5">
+          <Card className="border-emerald-300 bg-emerald-50/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-emerald-950">
+                <CheckCircle2 className="h-6 w-6 text-emerald-700" />
+                Orientação concluída
+              </CardTitle>
+              <CardDescription>
+                Você concluiu a etapa obrigatória de orientação para esta Avaliação de Proficiência para a Função.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm leading-6">
+              <div className="rounded-md border border-blue-200 bg-blue-50 p-4 text-blue-950">
+                <strong>A avaliação ainda não foi liberada.</strong>
+                <p className="mt-1">
+                  Assim que a administração liberar a aplicação, o botão para continuar ficará disponível na área de Avaliações.
+                </p>
+              </div>
+              <p>
+                Você <strong>não precisará assistir ao vídeo novamente</strong>. O sistema já registrou a conclusão desta orientação.
+              </p>
+              <Button onClick={() => setLocation("/avaliacoes")}>VOLTAR PARA A ÁREA DE AVALIAÇÕES</Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (!sessaoAutorizada) {
     const identidadeConfirmada = Boolean(identidadeQuery.data?.identidadeConfirmada);
     const nome = String(user?.name || "Participante");
@@ -534,19 +702,153 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
             </CardHeader>
             <CardContent className="space-y-4 text-sm leading-6">
               <p>
-                Esta etapa reproduz a abertura da aplicação oficial. A avaliação somente será liberada após identificação,
-                leitura e aceite das regras, autorização de câmera e microfone e compartilhamento da tela inteira.
+                Esta etapa reproduz a abertura da aplicação oficial. A avaliação somente será liberada após a orientação obrigatória em vídeo,
+                confirmação de identidade, leitura e aceite das regras, autorização de câmera e microfone e compartilhamento da tela inteira.
               </p>
               <p><strong>Total de questões:</strong> {questoes.length}</p>
             </CardContent>
           </Card>
 
-          {!identidadeConfirmada ? (
+          {!Boolean((provaQuery.data as any).orientacaoConcluida) && !provaQuery.data.tentativaId ? (
+            <Card className="border-blue-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PlayCircle className="h-5 w-5 text-blue-700" />
+                  1. Orientação obrigatória antes da avaliação
+                </CardTitle>
+                <CardDescription>
+                  Assista integralmente ao vídeo. Você pode pausar e retomar, mas não pode adiantar o conteúdo.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="overflow-hidden rounded-xl border bg-black">
+                  <div className="aspect-video w-full">
+                    <div id="video-orientacao-avaliacao" className="h-full w-full" />
+                  </div>
+                </div>
+
+                <div className="rounded-md border bg-slate-50 p-4 text-sm leading-6">
+                  <strong>Importante:</strong> o acesso à avaliação somente será liberado depois que o vídeo chegar ao final e você confirmar que compreendeu as orientações.
+                  {videoOrientacaoPronto && duracaoVideoOrientacao > 0 && (
+                    <div className="mt-3">
+                      <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                        <span>Progresso da orientação</span>
+                        <span>{Math.min(100, Math.round((tempoAssistidoOrientacao / duracaoVideoOrientacao) * 100))}%</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                        <div
+                          className="h-full bg-slate-700 transition-all"
+                          style={{ width: `${Math.min(100, Math.round((tempoAssistidoOrientacao / duracaoVideoOrientacao) * 100))}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {videoOrientacaoConcluido ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 rounded-md border border-green-300 bg-green-50 p-3 text-sm font-semibold text-green-900">
+                      <CheckCircle2 className="h-5 w-5" />
+                      Vídeo de orientação concluído.
+                    </div>
+
+                    <div className="rounded-lg border p-4">
+                      <p className="font-semibold">Ficou com alguma dúvida sobre a avaliação?</p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant={teveDuvidaOrientacao === false ? "default" : "outline"}
+                          onClick={() => {
+                            setTeveDuvidaOrientacao(false);
+                            setDuvidaEsclarecidaOrientacao(false);
+                          }}
+                        >
+                          NÃO, ESTÁ TUDO CLARO
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={teveDuvidaOrientacao === true ? "default" : "outline"}
+                          onClick={() => {
+                            setTeveDuvidaOrientacao(true);
+                            setDuvidaEsclarecidaOrientacao(false);
+                          }}
+                        >
+                          SIM, TENHO UMA DÚVIDA
+                        </Button>
+                      </div>
+                    </div>
+
+                    {teveDuvidaOrientacao === true && (
+                      <div className="rounded-lg border-2 border-amber-300 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+                        <p className="font-semibold">Pause o processo neste momento.</p>
+                        <p className="mt-1">
+                          Fale com o <strong>Atendimento CKM Talents</strong> pelo WhatsApp <strong>(11) 94755-7071</strong>. A avaliação continuará bloqueada até você confirmar que a dúvida foi esclarecida.
+                        </p>
+                        <a
+                          href={`https://wa.me/5511947557071?text=${encodeURIComponent("Olá, Atendimento CKM Talents. Estou realizando a orientação obrigatória da Avaliação de Proficiência para a Função e preciso esclarecer uma dúvida antes de iniciar a prova.")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-flex h-10 items-center justify-center rounded-md bg-green-700 px-4 text-sm font-semibold text-white transition hover:bg-green-800"
+                        >
+                          <MessageCircle className="mr-2 h-5 w-5" />
+                          FALAR COM O ATENDIMENTO PELO WHATSAPP
+                        </a>
+                        <label className="mt-4 flex items-start gap-3 rounded-md border border-amber-400 bg-white p-3 font-semibold">
+                          <input
+                            type="checkbox"
+                            className="mt-1 h-5 w-5"
+                            checked={duvidaEsclarecidaOrientacao}
+                            onChange={event => setDuvidaEsclarecidaOrientacao(event.target.checked)}
+                          />
+                          Minha dúvida foi esclarecida pelo Atendimento CKM Talents e posso prosseguir.
+                        </label>
+                      </div>
+                    )}
+
+                    {teveDuvidaOrientacao !== null && (!teveDuvidaOrientacao || duvidaEsclarecidaOrientacao) && (
+                      <label className="flex items-start gap-3 rounded-md border p-4 text-sm font-semibold">
+                        <input
+                          type="checkbox"
+                          className="mt-1 h-5 w-5"
+                          checked={aceiteOrientacao}
+                          onChange={event => setAceiteOrientacao(event.target.checked)}
+                        />
+                        Li e compreendi as orientações para realização da Avaliação de Proficiência para a Função.
+                      </label>
+                    )}
+
+                    {mensagem && <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{mensagem}</div>}
+
+                    <div className="flex flex-wrap gap-3">
+                      <Button
+                        size="lg"
+                        onClick={() => void concluirEtapaOrientacao()}
+                        disabled={
+                          teveDuvidaOrientacao === null ||
+                          !aceiteOrientacao ||
+                          (teveDuvidaOrientacao === true && !duvidaEsclarecidaOrientacao) ||
+                          concluindoOrientacao
+                        }
+                      >
+                        {concluindoOrientacao ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
+                        {concluindoOrientacao ? "REGISTRANDO..." : "CONCLUIR ORIENTAÇÃO E CONTINUAR"}
+                      </Button>
+                      <Button variant="outline" onClick={() => setLocation("/avaliacoes")}>Voltar</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+                    O botão de continuidade aparecerá somente após o vídeo terminar.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ) : !identidadeConfirmada ? (
             <Card className="border-blue-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <UserCheck className="h-5 w-5 text-blue-700" />
-                  1. Confirmação de identidade
+                  2. Confirmação de identidade
                 </CardTitle>
                 <CardDescription>A fotografia deve ser capturada agora pela câmera deste dispositivo.</CardDescription>
               </CardHeader>
@@ -607,7 +909,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
               <Card>
                 <CardHeader>
-                  <CardTitle>2. Requisitos da avaliação</CardTitle>
+                  <CardTitle>3. Requisitos da avaliação</CardTitle>
                   <CardDescription>Confira os requisitos antes de abrir o comunicado obrigatório.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-3 md:grid-cols-2">
@@ -701,7 +1003,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
               <div className="flex items-start gap-3">
                 <MonitorUp className="h-9 w-9 shrink-0 text-blue-700" />
                 <div>
-                  <h2 className="text-xl font-bold">3. Autorize o ambiente monitorado</h2>
+                  <h2 className="text-xl font-bold">4. Autorize o ambiente monitorado</h2>
                   <p className="mt-2 text-sm leading-relaxed">
                     Ao continuar, o navegador solicitará o compartilhamento da <strong>TELA INTEIRA</strong> e autorização para câmera e microfone.
                     Depois dessas permissões, a avaliação entrará em tela cheia.

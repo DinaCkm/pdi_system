@@ -907,14 +907,21 @@ export const aplicacoesProficienciaRouter = router({
     const result = await db.execute(sql`
       SELECT a.id, a.titulo, a.agendada_para AS agendadaPara, a.status,
              a.liberada_em AS liberadaEm, a.prova_snapshot_json AS provaSnapshotJson,
-             t.id AS tentativaId, t.status AS tentativaStatus, t.finalizada_em AS finalizadaEm
+             t.id AS tentativaId, t.status AS tentativaStatus, t.finalizada_em AS finalizadaEm,
+             EXISTS(
+               SELECT 1
+                 FROM proficiencia_ocorrencias po
+                WHERE po.aplicacao_id = a.id
+                  AND po.colaborador_id = ap.colaborador_id
+                  AND po.tipo = 'ORIENTACAO_VIDEO_CONCLUIDA'
+             ) AS orientacaoConcluida
         FROM aplicacoes_proficiencia_participantes ap
         JOIN aplicacoes_proficiencia a ON a.id = ap.aplicacao_id
         LEFT JOIN tentativas_proficiencia t
           ON t.aplicacao_id = a.id AND t.colaborador_id = ap.colaborador_id
         LEFT JOIN provas_importadas_homologacao ph ON ph.aplicacao_teste_id = a.id
        WHERE ap.colaborador_id = ${ctx.user.id}
-         AND a.status IN ('LIBERADA','ENCERRADA','CALCULADA')
+         AND a.status IN ('AGENDADA','LIBERADA','ENCERRADA','CALCULADA')
          AND ph.id IS NULL
        ORDER BY a.agendada_para DESC, a.id DESC
     `);
@@ -929,8 +936,8 @@ export const aplicacoesProficienciaRouter = router({
     .query(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
       const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
-      if (vinculo.status !== "LIBERADA" && !vinculo.tentativaId) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Esta prova ainda não está liberada para início." });
+      if (!["AGENDADA", "LIBERADA"].includes(String(vinculo.status)) && !vinculo.tentativaId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Esta avaliação não está disponível para orientação ou início." });
       }
       const respostas = vinculo.tentativaId
         ? rowsOf<any>(await db.execute(sql`
@@ -940,14 +947,162 @@ export const aplicacoesProficienciaRouter = router({
           `))
         : [];
       const testeAdmin = await obterTestePorAplicacao(db, input.aplicacaoId);
+      let orientacaoConcluida = Boolean(vinculo.tentativaId);
+      if (!orientacaoConcluida) {
+        const orientacaoResult = await db.execute(sql`
+          SELECT id
+            FROM proficiencia_ocorrencias
+           WHERE aplicacao_id = ${input.aplicacaoId}
+             AND colaborador_id = ${ctx.user.id}
+             AND tipo = 'ORIENTACAO_VIDEO_CONCLUIDA'
+           ORDER BY id DESC
+           LIMIT 1
+        `);
+        orientacaoConcluida = rowsOf<any>(orientacaoResult).length > 0;
+      }
       return {
-        aplicacao: { id: input.aplicacaoId, titulo: vinculo.titulo },
+        aplicacao: {
+          id: input.aplicacaoId,
+          titulo: vinculo.titulo,
+          status: vinculo.status,
+          liberada: vinculo.status === "LIBERADA",
+          agendadaPara: vinculo.agendadaPara ?? null,
+          liberadaEm: vinculo.liberadaEm ?? null,
+        },
         modoTeste: Boolean(testeAdmin),
         tentativaId: vinculo.tentativaId ? Number(vinculo.tentativaId) : null,
         tentativaStatus: vinculo.tentativaStatus ?? null,
+        orientacaoConcluida,
         prova: provaParaParticipante(vinculo.prova),
         respostas,
       };
+    }),
+
+  iniciarOrientacao: assessmentProcedure
+    .input(z.object({ aplicacaoId: z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
+      if (vinculo.tentativaId) return { iniciada: true, dispensada: true };
+      if (!["AGENDADA", "LIBERADA"].includes(String(vinculo.status))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Esta avaliação não está disponível para orientação." });
+      }
+
+      const concluidaResult = await db.execute(sql`
+        SELECT id
+          FROM proficiencia_ocorrencias
+         WHERE aplicacao_id = ${input.aplicacaoId}
+           AND colaborador_id = ${ctx.user.id}
+           AND tipo = 'ORIENTACAO_VIDEO_CONCLUIDA'
+         LIMIT 1
+      `);
+      if (rowsOf<any>(concluidaResult).length) return { iniciada: true, concluida: true };
+
+      const iniciadaResult = await db.execute(sql`
+        SELECT id, created_at AS createdAt
+          FROM proficiencia_ocorrencias
+         WHERE aplicacao_id = ${input.aplicacaoId}
+           AND colaborador_id = ${ctx.user.id}
+           AND tipo = 'ORIENTACAO_VIDEO_INICIADA'
+         ORDER BY id ASC
+         LIMIT 1
+      `);
+      const existente = rowsOf<any>(iniciadaResult)[0];
+      if (existente) return { iniciada: true, iniciadaEm: existente.createdAt };
+
+      await db.execute(sql`
+        INSERT INTO proficiencia_ocorrencias
+          (aplicacao_id, tentativa_id, colaborador_id, tipo, detalhe)
+        VALUES
+          (${input.aplicacaoId}, NULL, ${ctx.user.id}, 'ORIENTACAO_VIDEO_INICIADA',
+           'Início do vídeo obrigatório de orientação para a Avaliação de Proficiência para a Função.')
+      `);
+      return { iniciada: true };
+    }),
+
+  concluirOrientacao: assessmentProcedure
+    .input(z.object({
+      aplicacaoId: z.number().int().positive(),
+      duracaoSegundos: z.number().min(10).max(7200),
+      tempoAssistidoSegundos: z.number().min(0).max(7200),
+      teveDuvida: z.boolean(),
+      duvidaEsclarecida: z.boolean(),
+      aceiteOrientacao: z.literal(true),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
+      if (vinculo.tentativaId) return { concluida: true, dispensada: true };
+      if (!["AGENDADA", "LIBERADA"].includes(String(vinculo.status))) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Esta avaliação não está disponível para orientação." });
+      }
+
+      const concluidaResult = await db.execute(sql`
+        SELECT id
+          FROM proficiencia_ocorrencias
+         WHERE aplicacao_id = ${input.aplicacaoId}
+           AND colaborador_id = ${ctx.user.id}
+           AND tipo = 'ORIENTACAO_VIDEO_CONCLUIDA'
+         LIMIT 1
+      `);
+      if (rowsOf<any>(concluidaResult).length) return { concluida: true };
+
+      if (input.tempoAssistidoSegundos + 3 < input.duracaoSegundos) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "O vídeo de orientação precisa ser assistido integralmente antes de continuar.",
+        });
+      }
+      if (input.teveDuvida && !input.duvidaEsclarecida) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Confirme que sua dúvida foi esclarecida pela CKM Talents antes de continuar.",
+        });
+      }
+
+      const inicioResult = await db.execute(sql`
+        SELECT TIMESTAMPDIFF(SECOND, created_at, NOW()) AS segundosDecorridos
+          FROM proficiencia_ocorrencias
+         WHERE aplicacao_id = ${input.aplicacaoId}
+           AND colaborador_id = ${ctx.user.id}
+           AND tipo = 'ORIENTACAO_VIDEO_INICIADA'
+         ORDER BY id ASC
+         LIMIT 1
+      `);
+      const inicio = rowsOf<any>(inicioResult)[0];
+      if (!inicio) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Inicie o vídeo de orientação antes de concluir esta etapa.",
+        });
+      }
+      const segundosDecorridos = Number(inicio.segundosDecorridos ?? 0);
+      if (segundosDecorridos + 5 < input.duracaoSegundos) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "A orientação ainda não atingiu o tempo mínimo necessário para conclusão.",
+        });
+      }
+
+      await db.transaction(async (tx: any) => {
+        if (input.teveDuvida) {
+          await tx.execute(sql`
+            INSERT INTO proficiencia_ocorrencias
+              (aplicacao_id, tentativa_id, colaborador_id, tipo, detalhe)
+            VALUES
+              (${input.aplicacaoId}, NULL, ${ctx.user.id}, 'ORIENTACAO_DUVIDA_ESCLARECIDA',
+               'O participante informou dúvida durante a orientação e confirmou que ela foi esclarecida antes do início da avaliação.')
+          `);
+        }
+        await tx.execute(sql`
+          INSERT INTO proficiencia_ocorrencias
+            (aplicacao_id, tentativa_id, colaborador_id, tipo, detalhe)
+          VALUES
+            (${input.aplicacaoId}, NULL, ${ctx.user.id}, 'ORIENTACAO_VIDEO_CONCLUIDA',
+             ${"Vídeo obrigatório assistido integralmente. Duração informada pelo player: " + Math.round(input.duracaoSegundos) + "s. Aceite das orientações confirmado."})
+        `);
+      });
+      return { concluida: true };
     }),
 
   iniciar: assessmentProcedure
@@ -957,6 +1112,22 @@ export const aplicacoesProficienciaRouter = router({
       const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
       if (vinculo.status !== "LIBERADA") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Esta prova ainda não está liberada para início." });
+      }
+      if (!vinculo.tentativaId) {
+        const orientacaoResult = await db.execute(sql`
+          SELECT id
+            FROM proficiencia_ocorrencias
+           WHERE aplicacao_id = ${input.aplicacaoId}
+             AND colaborador_id = ${ctx.user.id}
+             AND tipo = 'ORIENTACAO_VIDEO_CONCLUIDA'
+           LIMIT 1
+        `);
+        if (!rowsOf<any>(orientacaoResult).length) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Assista integralmente ao vídeo obrigatório de orientação antes de iniciar a avaliação.",
+          });
+        }
       }
       const identidadeResult = await db.execute(sql`
         SELECT id FROM proficiencia_identidades

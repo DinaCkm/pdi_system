@@ -32,7 +32,7 @@ export default function AvaliacoesProficiencia() {
     <div className="space-y-6 p-6">
       <div className="space-y-2">
         <div className="flex items-center gap-3"><ClipboardCheck className="h-7 w-7 text-blue-600" /><h1 className="text-2xl font-semibold">Avaliações</h1></div>
-        <p className="max-w-3xl text-sm text-muted-foreground">Quando o administrador liberar uma aplicação para você, ela aparecerá nesta área para início ou continuidade.</p>
+        <p className="max-w-3xl text-sm text-muted-foreground">As aplicações agendadas aparecem nesta área para que você conclua a orientação obrigatória. A prova somente poderá ser iniciada depois da liberação administrativa.</p>
       </div>
 
       {minhasQuery.isLoading ? (
@@ -45,21 +45,47 @@ export default function AvaliacoesProficiencia() {
         <div className="grid gap-4 lg:grid-cols-2">
           {aplicacoes.map((item: any) => {
             const encerrada = ["FINALIZADA", "FINALIZADA_TEMPO"].includes(String(item.tentativaStatus));
+            const liberada = String(item.status) === "LIBERADA";
+            const orientacaoConcluida = Boolean(Number(item.orientacaoConcluida));
+            const emAndamento = Boolean(item.tentativaId) && !encerrada;
+            const badge = encerrada
+              ? "Finalizada"
+              : emAndamento
+                ? "Em andamento"
+                : liberada
+                  ? orientacaoConcluida ? "Liberada" : "Liberada — orientação pendente"
+                  : orientacaoConcluida ? "Orientação concluída — aguardando liberação" : "Orientação disponível";
+
             return (
               <Card key={item.id} className={encerrada ? "border-green-200" : "border-blue-200"}>
                 <CardHeader>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div><CardTitle>{item.titulo}</CardTitle><CardDescription>{item.provaNome} — {item.provaUnidade}</CardDescription></div>
-                    <Badge variant={encerrada ? "secondary" : "default"}>{encerrada ? "Finalizada" : item.tentativaId ? "Em andamento" : "Liberada"}</Badge>
+                    <Badge variant={encerrada ? "secondary" : "default"}>{badge}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid gap-2 text-sm sm:grid-cols-2"><p><strong>Data prevista:</strong> {formatarData(item.agendadaPara)}</p><p><strong>Questões:</strong> {Number(item.totalQuestoes || 0)}</p></div>
                   {encerrada ? (
                     <div className="flex items-start gap-2 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-900"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /><span>Avaliação finalizada. Aguarde o cálculo dos resultados pelo administrador.</span></div>
+                  ) : !liberada && orientacaoConcluida ? (
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+                        <span>Orientação obrigatória concluída. Aguarde a liberação administrativa da avaliação. Você não precisará assistir ao vídeo novamente.</span>
+                      </div>
+                      <Button variant="outline" onClick={() => setLocation(`/avaliacoes/proficiencia/${Number(item.id)}`)}>
+                        VER SITUAÇÃO DA AVALIAÇÃO
+                      </Button>
+                    </div>
                   ) : (
                     <Button onClick={() => setLocation(`/avaliacoes/proficiencia/${Number(item.id)}`)}>
-                      <PlayCircle className="mr-2 h-5 w-5" />{item.tentativaId ? "CONTINUAR AVALIAÇÃO" : "INICIAR AVALIAÇÃO"}
+                      <PlayCircle className="mr-2 h-5 w-5" />
+                      {item.tentativaId
+                        ? "CONTINUAR AVALIAÇÃO"
+                        : !orientacaoConcluida
+                          ? "ASSISTIR ORIENTAÇÃO OBRIGATÓRIA"
+                          : "INICIAR AVALIAÇÃO"}
                     </Button>
                   )}
                 </CardContent>
