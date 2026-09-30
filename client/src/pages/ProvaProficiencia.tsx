@@ -645,6 +645,41 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
   if (!provaQuery.data) return null;
 
+  const orientacaoConcluida = Boolean((provaQuery.data as any).orientacaoConcluida);
+  const aplicacaoLiberada = Boolean((provaQuery.data as any).aplicacao?.liberada);
+
+  if (orientacaoConcluida && !aplicacaoLiberada && !provaQuery.data.tentativaId) {
+    return (
+      <div className="min-h-screen bg-slate-100 p-4 md:p-6">
+        <div className="mx-auto max-w-3xl space-y-5">
+          <Card className="border-emerald-300 bg-emerald-50/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-emerald-950">
+                <CheckCircle2 className="h-6 w-6 text-emerald-700" />
+                Orientação concluída
+              </CardTitle>
+              <CardDescription>
+                Você concluiu a etapa obrigatória de orientação para esta Avaliação de Proficiência para a Função.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm leading-6">
+              <div className="rounded-md border border-blue-200 bg-blue-50 p-4 text-blue-950">
+                <strong>A avaliação ainda não foi liberada.</strong>
+                <p className="mt-1">
+                  Assim que a administração liberar a aplicação, o botão para continuar ficará disponível na área de Avaliações.
+                </p>
+              </div>
+              <p>
+                Você <strong>não precisará assistir ao vídeo novamente</strong>. O sistema já registrou a conclusão desta orientação.
+              </p>
+              <Button onClick={() => setLocation("/avaliacoes")}>VOLTAR PARA A ÁREA DE AVALIAÇÕES</Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (!sessaoAutorizada) {
     const identidadeConfirmada = Boolean(identidadeQuery.data?.identidadeConfirmada);
     const nome = String(user?.name || "Participante");
