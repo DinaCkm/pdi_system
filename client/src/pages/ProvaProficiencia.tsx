@@ -506,7 +506,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
       }
 
       const tela = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
+        video: { displaySurface: "monitor" } as MediaTrackConstraints,
         audio: false,
       });
       const trilhaTela = tela.getVideoTracks()[0];
@@ -1020,8 +1020,17 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
                   </p>
                 </div>
               </div>
-              <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm">
-                <strong>Importante:</strong> não selecione uma guia ou apenas uma janela. O teste administrativo segue exatamente esta mesma etapa.
+              <div className="mt-4 space-y-3 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm">
+                <p><strong>Importante:</strong> não selecione uma guia ou apenas uma janela. O teste administrativo segue exatamente esta mesma etapa.</p>
+                <div className="rounded-md border border-blue-200 bg-white p-3 text-slate-800">
+                  <p className="font-semibold">Quando a janela de compartilhamento do navegador abrir:</p>
+                  <ol className="mt-2 list-decimal space-y-1 pl-5">
+                    <li>Clique na opção <strong>TELA INTEIRA</strong>. No Microsoft Edge ou Chrome ela pode aparecer ao lado de “Guia” e “Janela”.</li>
+                    <li>Clique na miniatura da sua tela para deixá-la selecionada.</li>
+                    <li>Clique em <strong>Compartilhar</strong>.</li>
+                  </ol>
+                  <p className="mt-2 text-xs text-slate-600">Se selecionar “Guia” ou “Janela”, a avaliação não será iniciada e você poderá tentar novamente.</p>
+                </div>
               </div>
               <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-md border p-4">
                 <input
