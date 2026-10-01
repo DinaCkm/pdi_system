@@ -239,8 +239,8 @@ export default function AdminAplicacoesProficiencia() {
     [provasValidas, provaId],
   );
 
-  const normalizarUnidade = (valor: unknown) =>
-    String(valor ?? "")
+  const normalizarUnidade = (valor: unknown) => {
+    const normalizada = String(valor ?? "")
       .trim()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
@@ -248,6 +248,13 @@ export default function AdminAplicacoesProficiencia() {
       .replace(/[^a-z0-9]+/g, " ")
       .replace(/\s+/g, " ")
       .trim();
+
+    // O cadastro pode usar sigla + nome completo, enquanto a prova usa apenas a sigla.
+    // "US" e "UAS" representam a mesma Unidade de Administração e Suprimentos.
+    const primeiroToken = normalizada.split(" ")[0] ?? "";
+    const codigo = /^[a-z]{2,8}$/.test(primeiroToken) ? primeiroToken : normalizada;
+    return codigo === "us" ? "uas" : codigo;
+  };
 
   const participantes = (participantesQuery.data ?? []) as any[];
 
