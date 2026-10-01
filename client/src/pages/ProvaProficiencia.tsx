@@ -31,6 +31,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const [aceiteTela, setAceiteTela] = useState(false);
   const [sessaoAutorizada, setSessaoAutorizada] = useState(false);
   const [iniciandoAmbiente, setIniciandoAmbiente] = useState(false);
+  const [reconciliandoRetomada, setReconciliandoRetomada] = useState(false);
   const [videoOrientacaoPronto, setVideoOrientacaoPronto] = useState(false);
   const [videoOrientacaoConcluido, setVideoOrientacaoConcluido] = useState(false);
   const [duracaoVideoOrientacao, setDuracaoVideoOrientacao] = useState(0);
@@ -567,8 +568,12 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
       const inicio = await iniciarMutation.mutateAsync({ aplicacaoId });
       registrarOcorrencia("MONITORAMENTO_INICIADO", "Monitoramento iniciado no mesmo ambiente da aplicação oficial.", Number(inicio.tentativaId));
 
-      // Em retomadas, carregue e aplique primeiro as respostas confirmadas pelo servidor.
-      // Só depois abra a prova, evitando a sensação de que a tentativa voltou vazia.
+      // Em retomadas, a prova só é exibida depois da reconciliação com o servidor.
+      // Isso evita que o participante veja uma tela aparentemente vazia enquanto as
+      // respostas preservadas ainda estão sendo carregadas.
+      const retomada = !Boolean((inicio as any).criada);
+      if (retomada) setReconciliandoRetomada(true);
+
       const atualizado = await provaQuery.refetch();
       const respostasServidor: Record<string, string> = {};
       for (const item of atualizado.data?.respostas ?? []) respostasServidor[String(item.questaoChave)] = String(item.resposta);
@@ -577,16 +582,24 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
       const questoesServidor = (atualizado.data?.prova?.questoes ?? []) as Questao[];
       const respondidasServidor = questoesServidor.filter(item => Boolean(respostasServidor[String(item.id)])).length;
       const primeiraPendente = questoesServidor.findIndex(item => !respostasServidor[String(item.id)]);
-      if (respondidasServidor > 0 && primeiraPendente >= 0) {
-        setIndice(primeiraPendente);
-        setRevisandoPendentes(true);
-        setMensagem(`Retomada da avaliação: ${respondidasServidor} resposta(s) já estavam salvas no servidor. Continue pelas questões pendentes.`);
+      if (retomada) {
+        if (respondidasServidor > 0 && primeiraPendente >= 0) {
+          setIndice(primeiraPendente);
+          setRevisandoPendentes(true);
+          setMensagem(`Avaliação recuperada com segurança: ${respondidasServidor} resposta(s) já estavam salvas. Continue somente pelas questões pendentes.`);
+        } else if (respondidasServidor === questoesServidor.length && questoesServidor.length > 0) {
+          setMensagem("Todas as respostas já estavam preservadas no servidor. Você pode finalizar a avaliação.");
+        } else {
+          setMensagem("Sua tentativa foi retomada com segurança. Nenhuma resposta previamente gravada foi perdida.");
+        }
       }
 
       setSessaoAutorizada(true);
       setMostrarAvisoTela(false);
+      setReconciliandoRetomada(false);
     } catch (error: any) {
       pararMonitoramento();
+      setReconciliandoRetomada(false);
       setMensagem(error?.message || "Não foi possível preparar o ambiente monitorado.");
     } finally {
       setIniciandoAmbiente(false);
@@ -636,8 +649,26 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     finalizar();
   };
 
-  if (provaQuery.isLoading) {
-    return <div className="grid min-h-screen place-items-center"><div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" />Carregando prova...</div></div>;
+  if (provaQuery.isLoading || reconciliandoRetomada) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-slate-100 p-6">
+        <Card className="w-full max-w-xl border-blue-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-950">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Recuperando sua avaliação com segurança
+            </CardTitle>
+            <CardDescription>
+              Estamos conferindo no servidor as respostas que você já enviou antes de exibir novamente a prova.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-slate-700">
+            <p><strong>Não feche esta página.</strong> Suas respostas já gravadas serão preservadas.</p>
+            <p>A avaliação será aberta somente depois que a recuperação for confirmada.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   if (provaQuery.error) {

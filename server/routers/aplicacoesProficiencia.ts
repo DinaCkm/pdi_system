@@ -189,6 +189,23 @@ async function obterVinculoParticipante(db: any, aplicacaoId: number, colaborado
   return { ...item, prova: parseJson<ProvaSnapshot>(item.provaSnapshotJson) };
 }
 
+async function registrarRetomadaAvaliacao(db: any, aplicacaoId: number, tentativaId: number, colaboradorId: number) {
+  const contagemResult = await db.execute(sql`
+    SELECT COUNT(*) AS total
+      FROM respostas_proficiencia
+     WHERE tentativa_id = ${tentativaId}
+  `);
+  const respostasRecuperadas = Number(rowsOf<any>(contagemResult)[0]?.total ?? 0);
+  await db.execute(sql`
+    INSERT INTO proficiencia_ocorrencias
+      (aplicacao_id, tentativa_id, colaborador_id, tipo, detalhe)
+    VALUES
+      (${aplicacaoId}, ${tentativaId}, ${colaboradorId}, 'RETOMADA_AVALIACAO',
+       ${`Retomada da avaliação confirmada pelo servidor com ${respostasRecuperadas} resposta(s) já preservada(s).`})
+  `);
+  return respostasRecuperadas;
+}
+
 async function obterQuestoesAnuladas(db: any, aplicacaoId: number) {
   const result = await db.execute(sql`
     SELECT questao_chave AS questaoChave
@@ -1310,7 +1327,16 @@ export const aplicacoesProficienciaRouter = router({
             : "Capture uma nova fotografia e confirme sua identidade imediatamente antes de iniciar a avaliação.",
         });
       }
-      if (vinculo.tentativaId) return { tentativaId: Number(vinculo.tentativaId), criada: false };
+      if (vinculo.tentativaId) {
+        const tentativaId = Number(vinculo.tentativaId);
+        const respostasRecuperadas = await registrarRetomadaAvaliacao(
+          db,
+          input.aplicacaoId,
+          tentativaId,
+          ctx.user.id,
+        );
+        return { tentativaId, criada: false, respostasRecuperadas };
+      }
       try {
         const result = await db.execute(sql`
           INSERT INTO tentativas_proficiencia
@@ -1324,7 +1350,16 @@ export const aplicacoesProficienciaRouter = router({
         return { tentativaId, criada: true };
       } catch {
         const existente = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
-        if (existente.tentativaId) return { tentativaId: Number(existente.tentativaId), criada: false };
+        if (existente.tentativaId) {
+          const tentativaId = Number(existente.tentativaId);
+          const respostasRecuperadas = await registrarRetomadaAvaliacao(
+            db,
+            input.aplicacaoId,
+            tentativaId,
+            ctx.user.id,
+          );
+          return { tentativaId, criada: false, respostasRecuperadas };
+        }
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível iniciar a avaliação." });
       }
     }),
