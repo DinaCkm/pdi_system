@@ -39,7 +39,7 @@ function normalizar(valor: string) {
 }
 
 function normalizarUnidade(valor: string) {
-  return valor
+  const normalizada = valor
     .trim()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -47,6 +47,13 @@ function normalizarUnidade(valor: string) {
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+  // Os departamentos podem estar gravados com sigla + nome completo
+  // (ex.: "UAS-UNIDADE DE ADMINISTRAÇÃO E SUPRIMENTOS"), enquanto a prova
+  // pode trazer somente a sigla. Também tratamos "US" como o alias histórico de "UAS".
+  const primeiroToken = normalizada.split(" ")[0] ?? "";
+  const codigo = /^[a-z]{2,8}$/.test(primeiroToken) ? primeiroToken : normalizada;
+  return codigo === "us" ? "uas" : codigo;
 }
 
 function arredondar(valor: number) {
