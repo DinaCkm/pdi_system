@@ -281,6 +281,43 @@ function calcularResultado(
   };
 }
 
+async function recalcularResultadosFinalizados(
+  db: any,
+  aplicacao: { prova: ProvaSnapshot },
+  aplicacaoId: number,
+) {
+  const questoesAnuladas = await obterQuestoesAnuladas(db, aplicacaoId);
+  const tentativas = rowsOf<any>(await db.execute(sql`
+    SELECT id, colaborador_id AS colaboradorId
+      FROM tentativas_proficiencia
+     WHERE aplicacao_id = ${aplicacaoId}
+       AND status IN ('FINALIZADA','FINALIZADA_TEMPO')
+  `));
+  let recalculados = 0;
+  for (const tentativa of tentativas) {
+    const respostas = rowsOf<any>(await db.execute(sql`
+      SELECT questao_chave AS questaoChave, resposta
+        FROM respostas_proficiencia
+       WHERE tentativa_id = ${Number(tentativa.id)}
+    `));
+    const relacoes = await obterRelacoesEixos(db, Number(tentativa.colaboradorId));
+    const resultado = calcularResultado(aplicacao.prova.questoes, respostas, relacoes, questoesAnuladas);
+    await db.execute(sql`
+      INSERT INTO resultados_proficiencia
+        (aplicacao_id, colaborador_id, tentativa_id, percentual_geral, resultado_json, calculado_em)
+      VALUES
+        (${aplicacaoId}, ${Number(tentativa.colaboradorId)}, ${Number(tentativa.id)},
+         ${String(resultado.percentualGeral)}, ${JSON.stringify(resultado)}, NOW())
+      ON DUPLICATE KEY UPDATE tentativa_id = VALUES(tentativa_id),
+                              percentual_geral = VALUES(percentual_geral),
+                              resultado_json = VALUES(resultado_json),
+                              calculado_em = NOW()
+    `);
+    recalculados += 1;
+  }
+  return { recalculados, questoesAnuladas };
+}
+
 function provaParaParticipante(prova: ProvaSnapshot) {
   return {
     id: prova.id,
@@ -1373,7 +1410,8 @@ export const aplicacoesProficienciaRouter = router({
             FROM respostas_proficiencia
            WHERE tentativa_id = ${input.tentativaId}
         `));
-        const resultado = calcularResultado(aplicacao.prova.questoes, respostas, new Map());
+        const questoesAnuladas = await obterQuestoesAnuladas(db, input.aplicacaoId);
+        const resultado = calcularResultado(aplicacao.prova.questoes, respostas, new Map(), questoesAnuladas);
         await db.transaction(async (tx: any) => {
           await tx.execute(sql`
             INSERT INTO resultados_proficiencia
@@ -1411,34 +1449,7 @@ export const aplicacoesProficienciaRouter = router({
       if (!["LIBERADA", "ENCERRADA", "CALCULADA"].includes(String(aplicacao.status))) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "A aplicação precisa ter sido liberada antes do cálculo." });
       }
-      const tentativas = rowsOf<any>(await db.execute(sql`
-        SELECT id, colaborador_id AS colaboradorId
-          FROM tentativas_proficiencia
-         WHERE aplicacao_id = ${input.aplicacaoId}
-           AND status IN ('FINALIZADA','FINALIZADA_TEMPO')
-      `));
-      let calculados = 0;
-      for (const tentativa of tentativas) {
-        const respostas = rowsOf<any>(await db.execute(sql`
-          SELECT questao_chave AS questaoChave, resposta
-            FROM respostas_proficiencia
-           WHERE tentativa_id = ${Number(tentativa.id)}
-        `));
-        const relacoes = await obterRelacoesEixos(db, Number(tentativa.colaboradorId));
-        const resultado = calcularResultado(aplicacao.prova.questoes, respostas, relacoes);
-        await db.execute(sql`
-          INSERT INTO resultados_proficiencia
-            (aplicacao_id, colaborador_id, tentativa_id, percentual_geral, resultado_json, calculado_em)
-          VALUES
-            (${input.aplicacaoId}, ${Number(tentativa.colaboradorId)}, ${Number(tentativa.id)},
-             ${String(resultado.percentualGeral)}, ${JSON.stringify(resultado)}, NOW())
-          ON DUPLICATE KEY UPDATE tentativa_id = VALUES(tentativa_id),
-                                  percentual_geral = VALUES(percentual_geral),
-                                  resultado_json = VALUES(resultado_json),
-                                  calculado_em = NOW()
-        `);
-        calculados += 1;
-      }
+      const { recalculados: calculados } = await recalcularResultadosFinalizados(db, aplicacao, input.aplicacaoId);
       const contagem = rowsOf<any>(await db.execute(sql`
         SELECT COUNT(*) AS total,
                SUM(CASE WHEN t.status IN ('FINALIZADA','FINALIZADA_TEMPO') THEN 1 ELSE 0 END) AS finalizados
@@ -1464,6 +1475,92 @@ export const aplicacoesProficienciaRouter = router({
         pendentes: Math.max(0, total - finalizados),
         status: todosFinalizados ? "CALCULADA" : aplicacao.status,
       };
+    }),
+
+  listarQuestoesAplicacao: adminProcedure
+    .input(z.object({ aplicacaoId: z.number().int().positive() }))
+    .query(async ({ input }) => {
+      const db = await dbObrigatorio();
+      const aplicacao = await obterAplicacao(db, input.aplicacaoId);
+      const anulacoes = rowsOf<any>(await db.execute(sql`
+        SELECT questao_chave AS questaoChave, motivo, ativa,
+               anulada_por AS anuladaPor, anulada_em AS anuladaEm,
+               restaurada_por AS restauradaPor, restaurada_em AS restauradaEm
+          FROM proficiencia_questoes_anuladas
+         WHERE aplicacao_id = ${input.aplicacaoId}
+      `));
+      const porQuestao = new Map(anulacoes.map(item => [String(item.questaoChave), item]));
+      return aplicacao.prova.questoes.map((questao, indice) => {
+        const anulacao = porQuestao.get(String(questao.id));
+        return {
+          numero: indice + 1,
+          questaoChave: String(questao.id),
+          enunciado: questao.enunciado,
+          eixos: questao.eixos ?? [],
+          anulada: Boolean(anulacao && Number(anulacao.ativa) === 1),
+          motivo: anulacao?.motivo ?? null,
+          anuladaEm: anulacao?.anuladaEm ?? null,
+          restauradaEm: anulacao?.restauradaEm ?? null,
+        };
+      });
+    }),
+
+  anularQuestao: adminProcedure
+    .input(z.object({
+      aplicacaoId: z.number().int().positive(),
+      questaoChave: z.string().trim().min(1).max(80),
+      motivo: z.string().trim().min(10).max(2000),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const aplicacao = await obterAplicacao(db, input.aplicacaoId);
+      if (String(aplicacao.status) === "CANCELADA") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Não é possível anular questão de uma aplicação cancelada." });
+      }
+      const existe = aplicacao.prova.questoes.some(questao => String(questao.id) === input.questaoChave);
+      if (!existe) throw new TRPCError({ code: "NOT_FOUND", message: "Questão não encontrada no snapshot desta aplicação." });
+      const atuais = await obterQuestoesAnuladas(db, input.aplicacaoId);
+      if (!atuais.has(input.questaoChave) && atuais.size >= aplicacao.prova.questoes.length - 1) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A aplicação precisa manter pelo menos uma questão válida para cálculo." });
+      }
+      await db.execute(sql`
+        INSERT INTO proficiencia_questoes_anuladas
+          (aplicacao_id, questao_chave, motivo, ativa, anulada_por, anulada_em, restaurada_por, restaurada_em)
+        VALUES
+          (${input.aplicacaoId}, ${input.questaoChave}, ${input.motivo}, 1, ${ctx.user.id}, NOW(), NULL, NULL)
+        ON DUPLICATE KEY UPDATE motivo = VALUES(motivo),
+                                ativa = 1,
+                                anulada_por = VALUES(anulada_por),
+                                anulada_em = NOW(),
+                                restaurada_por = NULL,
+                                restaurada_em = NULL,
+                                updated_at = NOW()
+      `);
+      const { recalculados } = await recalcularResultadosFinalizados(db, aplicacao, input.aplicacaoId);
+      return { anulada: true, questaoChave: input.questaoChave, recalculados };
+    }),
+
+  restaurarQuestao: adminProcedure
+    .input(z.object({
+      aplicacaoId: z.number().int().positive(),
+      questaoChave: z.string().trim().min(1).max(80),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const aplicacao = await obterAplicacao(db, input.aplicacaoId);
+      const result = await db.execute(sql`
+        UPDATE proficiencia_questoes_anuladas
+           SET ativa = 0, restaurada_por = ${ctx.user.id}, restaurada_em = NOW(), updated_at = NOW()
+         WHERE aplicacao_id = ${input.aplicacaoId}
+           AND questao_chave = ${input.questaoChave}
+           AND ativa = 1
+      `);
+      const info: any = Array.isArray(result) ? result[0] : result;
+      if (!Number(info?.affectedRows ?? 0)) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Esta questão não está anulada nesta aplicação." });
+      }
+      const { recalculados } = await recalcularResultadosFinalizados(db, aplicacao, input.aplicacaoId);
+      return { restaurada: true, questaoChave: input.questaoChave, recalculados };
     }),
 
   resultadoMaisRecente: adminProcedure
