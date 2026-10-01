@@ -743,7 +743,7 @@ export const aplicacoesProficienciaRouter = router({
     .input(z.object({ aplicacaoId: z.number().int().positive() }))
     .query(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
-      await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
+      const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
       const result = await db.execute(sql`
         SELECT confirmado_em AS confirmadoEm
           FROM proficiencia_identidades
@@ -752,7 +752,27 @@ export const aplicacoesProficienciaRouter = router({
          LIMIT 1
       `);
       const identidade = rowsOf<any>(result)[0] ?? null;
-      return { necessaria: true, identidadeConfirmada: Boolean(identidade), confirmadoEm: identidade?.confirmadoEm ?? null };
+      const tentativaExistente = Boolean(vinculo.tentativaId);
+      const identidadeRecenteResult = !tentativaExistente
+        ? await db.execute(sql`
+            SELECT id
+              FROM proficiencia_identidades
+             WHERE aplicacao_id = ${input.aplicacaoId}
+               AND colaborador_id = ${ctx.user.id}
+               AND confirmado_em >= DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+             LIMIT 1
+          `)
+        : null;
+      const identidadeValida = tentativaExistente
+        ? Boolean(identidade)
+        : rowsOf<any>(identidadeRecenteResult).length > 0;
+
+      return {
+        necessaria: true,
+        identidadeConfirmada: identidadeValida,
+        confirmadoEm: identidade?.confirmadoEm ?? null,
+        exigeCapturaAtual: !tentativaExistente,
+      };
     }),
 
   registrarIdentidade: assessmentProcedure
@@ -1196,14 +1216,29 @@ export const aplicacoesProficienciaRouter = router({
           });
         }
       }
-      const identidadeResult = await db.execute(sql`
-        SELECT id FROM proficiencia_identidades
-         WHERE aplicacao_id = ${input.aplicacaoId}
-           AND colaborador_id = ${ctx.user.id}
-         LIMIT 1
-      `);
+      const identidadeResult = await db.execute(
+        vinculo.tentativaId
+          ? sql`
+              SELECT id FROM proficiencia_identidades
+               WHERE aplicacao_id = ${input.aplicacaoId}
+                 AND colaborador_id = ${ctx.user.id}
+               LIMIT 1
+            `
+          : sql`
+              SELECT id FROM proficiencia_identidades
+               WHERE aplicacao_id = ${input.aplicacaoId}
+                 AND colaborador_id = ${ctx.user.id}
+                 AND confirmado_em >= DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+               LIMIT 1
+            `
+      );
       if (!rowsOf<any>(identidadeResult).length) {
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Confirme sua identidade antes de iniciar a avaliação." });
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: vinculo.tentativaId
+            ? "Não foi localizado o registro de identidade desta tentativa."
+            : "Capture uma nova fotografia e confirme sua identidade imediatamente antes de iniciar a avaliação.",
+        });
       }
       if (vinculo.tentativaId) return { tentativaId: Number(vinculo.tentativaId), criada: false };
       try {

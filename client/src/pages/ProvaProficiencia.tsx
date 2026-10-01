@@ -684,6 +684,8 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
   if (!sessaoAutorizada) {
     const identidadeConfirmada = Boolean(identidadeQuery.data?.identidadeConfirmada);
+    const exigeCapturaAtual = Boolean((identidadeQuery.data as any)?.exigeCapturaAtual);
+    const identidadeAnteriorExpirada = exigeCapturaAtual && Boolean((identidadeQuery.data as any)?.confirmadoEm) && !identidadeConfirmada;
     const nome = String(user?.name || "Participante");
     return (
       <div className="min-h-screen bg-slate-100 p-4 md:p-6">
@@ -710,6 +712,12 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
               <p><strong>Total de questões:</strong> {questoes.length}</p>
             </CardContent>
           </Card>
+
+          {identidadeAnteriorExpirada && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+              A fotografia registrada anteriormente não será reutilizada para iniciar uma nova tentativa. Ative a câmera e capture uma nova foto agora.
+            </div>
+          )}
 
           {!modoTeste && !Boolean((provaQuery.data as any).orientacaoConcluida) && !provaQuery.data.tentativaId ? (
             <Card className="border-blue-200">
