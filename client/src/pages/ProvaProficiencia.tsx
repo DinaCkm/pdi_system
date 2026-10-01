@@ -40,6 +40,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const [aceiteOrientacao, setAceiteOrientacao] = useState(false);
   const [concluindoOrientacao, setConcluindoOrientacao] = useState(false);
   const videoOrientacaoPlayerRef = useRef<any>(null);
+  const videoOrientacaoContainerRef = useRef<HTMLDivElement | null>(null);
   const videoOrientacaoTimerRef = useRef<number | null>(null);
   const maiorTempoPermitidoRef = useRef(0);
   const orientacaoIniciadaRef = useRef(false);
@@ -110,7 +111,12 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     const criarPlayer = () => {
       if (cancelado || !(window as any).YT?.Player || videoOrientacaoPlayerRef.current) return;
       const YT = (window as any).YT;
-      videoOrientacaoPlayerRef.current = new YT.Player("video-orientacao-avaliacao", {
+      const container = videoOrientacaoContainerRef.current;
+      if (!container) return;
+      const alvo = document.createElement("div");
+      alvo.id = "video-orientacao-avaliacao";
+      container.appendChild(alvo);
+      videoOrientacaoPlayerRef.current = new YT.Player(alvo, {
         videoId: "PUSIl9n_pJs",
         playerVars: {
           controls: 0,
@@ -733,7 +739,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
               <CardContent className="space-y-5">
                 <div className="overflow-hidden rounded-xl border bg-black">
                   <div className="aspect-video w-full">
-                    <div id="video-orientacao-avaliacao" className="h-full w-full" />
+                    <div ref={videoOrientacaoContainerRef} className="h-full w-full" />
                   </div>
                 </div>
 
