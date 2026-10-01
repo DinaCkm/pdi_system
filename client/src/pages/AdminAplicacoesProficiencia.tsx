@@ -141,6 +141,10 @@ export default function AdminAplicacoesProficiencia() {
     { aplicacaoId: aplicacaoSelecionada ?? 1 },
     { enabled: Boolean(user && isAdmin && aplicacaoSelecionada && modalAdicionarAberto), refetchOnWindowFocus: true },
   );
+  const questoesAplicacaoQuery = trpc.aplicacoesProficiencia.listarQuestoesAplicacao.useQuery(
+    { aplicacaoId: aplicacaoSelecionada ?? 1 },
+    { enabled: Boolean(user && isAdmin && aplicacaoSelecionada), refetchOnWindowFocus: true },
+  );
   const ocorrenciasQuery = trpc.aplicacoesProficiencia.listarOcorrencias.useQuery(
     { aplicacaoId: aplicacaoSelecionada ?? 1, colaboradorId: logsColaboradorId ?? undefined },
     { enabled: Boolean(user && isAdmin && aplicacaoSelecionada && logsColaboradorId), refetchInterval: 2000, refetchOnWindowFocus: true },
@@ -178,6 +182,22 @@ export default function AdminAplicacoesProficiencia() {
     onSuccess: async data => {
       setMensagem(`Continuidade liberada para ${data.colaboradorNome || "o participante"}. As respostas já registradas foram preservadas.`);
       await Promise.all([aplicacoesQuery.refetch(), monitoramentoQuery.refetch()]);
+    },
+    onError: error => setMensagem(error.message),
+  });
+
+  const anularQuestaoMutation = trpc.aplicacoesProficiencia.anularQuestao.useMutation({
+    onSuccess: async data => {
+      setMensagem(`Questão anulada nesta aplicação. Ela não contará no resultado geral nem nos eixos. ${data.recalculados ? `${data.recalculados} resultado(s) finalizado(s) foram recalculados automaticamente.` : ""}`);
+      await Promise.all([questoesAplicacaoQuery.refetch(), monitoramentoQuery.refetch(), aplicacoesQuery.refetch()]);
+    },
+    onError: error => setMensagem(error.message),
+  });
+
+  const restaurarQuestaoMutation = trpc.aplicacoesProficiencia.restaurarQuestao.useMutation({
+    onSuccess: async data => {
+      setMensagem(`Questão restaurada no cálculo desta aplicação. ${data.recalculados ? `${data.recalculados} resultado(s) finalizado(s) foram recalculados automaticamente.` : ""}`);
+      await Promise.all([questoesAplicacaoQuery.refetch(), monitoramentoQuery.refetch(), aplicacoesQuery.refetch()]);
     },
     onError: error => setMensagem(error.message),
   });
@@ -550,6 +570,93 @@ export default function AdminAplicacoesProficiencia() {
                   </Button>
                   <Badge variant={statusVariant(String(aplicacaoMonitorada?.status))}>{aplicacaoMonitorada?.status}</Badge>
                 </div>
+
+                <details className="rounded-lg border bg-white">
+                  <summary className="cursor-pointer select-none px-4 py-3 font-semibold">
+                    Gerenciar questões desta aplicação
+                    <span className="ml-2 text-sm font-normal text-muted-foreground">
+                      {(questoesAplicacaoQuery.data ?? []).filter((item: any) => item.anulada).length} anulada(s)
+                    </span>
+                  </summary>
+                  <div className="border-t p-4">
+                    <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+                      Uma questão anulada continua registrada na prova e nas respostas, mas deixa de contar no resultado geral e em todos os eixos vinculados. Resultados já finalizados são recalculados automaticamente.
+                    </div>
+                    {questoesAplicacaoQuery.isLoading ? (
+                      <p className="text-sm text-muted-foreground">Carregando questões...</p>
+                    ) : (
+                      <div className="max-h-[420px] overflow-auto rounded-md border">
+                        <table className="w-full min-w-[900px] text-sm">
+                          <thead className="sticky top-0 bg-background">
+                            <tr className="border-b text-left">
+                              <th className="px-3 py-2">Questão</th>
+                              <th className="px-3 py-2">Enunciado</th>
+                              <th className="px-3 py-2">Eixo(s)</th>
+                              <th className="px-3 py-2">Situação</th>
+                              <th className="px-3 py-2">Ação</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(questoesAplicacaoQuery.data ?? []).map((item: any) => (
+                              <tr key={item.questaoChave} className="border-b align-top last:border-0">
+                                <td className="px-3 py-3 font-semibold">Questão {item.numero}</td>
+                                <td className="max-w-xl px-3 py-3">
+                                  <div className="line-clamp-3">{String(item.enunciado || "").replace(/<[^>]*>/g, " ")}</div>
+                                  {item.anulada && item.motivo && <p className="mt-2 text-xs text-amber-800"><strong>Motivo:</strong> {item.motivo}</p>}
+                                </td>
+                                <td className="px-3 py-3">{(item.eixos ?? []).map((eixo: any) => eixo.nome).filter(Boolean).join(", ") || "—"}</td>
+                                <td className="px-3 py-3">
+                                  {item.anulada ? <Badge variant="destructive">ANULADA</Badge> : <Badge variant="outline">VÁLIDA</Badge>}
+                                </td>
+                                <td className="px-3 py-3">
+                                  {item.anulada ? (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={restaurarQuestaoMutation.isPending}
+                                      onClick={() => {
+                                        if (!window.confirm(`Restaurar a Questão ${item.numero} no cálculo desta aplicação?`)) return;
+                                        restaurarQuestaoMutation.mutate({ aplicacaoId: Number(aplicacaoSelecionada), questaoChave: String(item.questaoChave) });
+                                      }}
+                                    >
+                                      RESTAURAR
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-red-300 text-red-700 hover:bg-red-50"
+                                      disabled={anularQuestaoMutation.isPending || String(aplicacaoMonitorada?.status) === "CANCELADA"}
+                                      onClick={() => {
+                                        const motivo = window.prompt(
+                                          `Motivo da anulação da Questão ${item.numero} (obrigatório):`,
+                                          "",
+                                        );
+                                        if (motivo === null) return;
+                                        if (motivo.trim().length < 10) {
+                                          setMensagem("Informe um motivo com pelo menos 10 caracteres para manter o registro de auditoria.");
+                                          return;
+                                        }
+                                        if (!window.confirm(`Confirmar a anulação da Questão ${item.numero} somente nesta aplicação? Ela deixará de contar na nota geral e nos eixos.`)) return;
+                                        anularQuestaoMutation.mutate({
+                                          aplicacaoId: Number(aplicacaoSelecionada),
+                                          questaoChave: String(item.questaoChave),
+                                          motivo: motivo.trim(),
+                                        });
+                                      }}
+                                    >
+                                      ANULAR NESTA APLICAÇÃO
+                                    </Button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </details>
 
                 <div className="grid gap-4 md:grid-cols-4">
                   <Card><CardHeader className="pb-2"><CardDescription>Total previsto</CardDescription><CardTitle className="text-3xl">{monitoramento.resumo.total}</CardTitle></CardHeader></Card>
