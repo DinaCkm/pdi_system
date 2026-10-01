@@ -306,7 +306,23 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     const existentes: Record<string, string> = {};
     for (const item of provaQuery.data.respostas ?? []) existentes[String(item.questaoChave)] = String(item.resposta);
     setRespostas(existentes);
-    if (["FINALIZADA", "FINALIZADA_TEMPO"].includes(String(provaQuery.data.tentativaStatus))) setFinalizada(true);
+
+    const statusTentativa = String(provaQuery.data.tentativaStatus ?? "");
+    if (["FINALIZADA", "FINALIZADA_TEMPO"].includes(statusTentativa)) {
+      setFinalizada(true);
+      return;
+    }
+
+    const questoesServidor = (provaQuery.data.prova?.questoes ?? []) as Questao[];
+    const respondidasServidor = questoesServidor.filter(item => Boolean(existentes[String(item.id)])).length;
+    if (provaQuery.data.tentativaId && respondidasServidor > 0) {
+      const primeiraPendente = questoesServidor.findIndex(item => !existentes[String(item.id)]);
+      if (primeiraPendente >= 0) {
+        setIndice(primeiraPendente);
+        setRevisandoPendentes(true);
+        setMensagem(`Retomada da avaliação: ${respondidasServidor} resposta(s) já estavam salvas no servidor. Continue pelas questões pendentes.`);
+      }
+    }
   }, [provaQuery.data]);
 
   useEffect(() => () => {
@@ -550,9 +566,25 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
       const inicio = await iniciarMutation.mutateAsync({ aplicacaoId });
       registrarOcorrencia("MONITORAMENTO_INICIADO", "Monitoramento iniciado no mesmo ambiente da aplicação oficial.", Number(inicio.tentativaId));
+
+      // Em retomadas, carregue e aplique primeiro as respostas confirmadas pelo servidor.
+      // Só depois abra a prova, evitando a sensação de que a tentativa voltou vazia.
+      const atualizado = await provaQuery.refetch();
+      const respostasServidor: Record<string, string> = {};
+      for (const item of atualizado.data?.respostas ?? []) respostasServidor[String(item.questaoChave)] = String(item.resposta);
+      setRespostas(respostasServidor);
+
+      const questoesServidor = (atualizado.data?.prova?.questoes ?? []) as Questao[];
+      const respondidasServidor = questoesServidor.filter(item => Boolean(respostasServidor[String(item.id)])).length;
+      const primeiraPendente = questoesServidor.findIndex(item => !respostasServidor[String(item.id)]);
+      if (respondidasServidor > 0 && primeiraPendente >= 0) {
+        setIndice(primeiraPendente);
+        setRevisandoPendentes(true);
+        setMensagem(`Retomada da avaliação: ${respondidasServidor} resposta(s) já estavam salvas no servidor. Continue pelas questões pendentes.`);
+      }
+
       setSessaoAutorizada(true);
       setMostrarAvisoTela(false);
-      await provaQuery.refetch();
     } catch (error: any) {
       pararMonitoramento();
       setMensagem(error?.message || "Não foi possível preparar o ambiente monitorado.");
