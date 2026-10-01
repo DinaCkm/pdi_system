@@ -134,6 +134,35 @@ export const respostasProficiencia = mysqlTable(
   }),
 );
 
+
+export const questoesAnuladasProficiencia = mysqlTable(
+  "proficiencia_questoes_anuladas",
+  {
+    id: int().autoincrement().notNull().primaryKey(),
+    aplicacaoId: int("aplicacao_id")
+      .notNull()
+      .references(() => aplicacoesProficiencia.id, { onDelete: "cascade" }),
+    questaoChave: varchar("questao_chave", { length: 80 }).notNull(),
+    motivo: text().notNull(),
+    ativa: int().default(1).notNull(),
+    anuladaPor: int("anulada_por")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    anuladaEm: timestamp("anulada_em", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    restauradaPor: int("restaurada_por").references(() => users.id, { onDelete: "set null" }),
+    restauradaEm: timestamp("restaurada_em", { mode: "string" }),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .onUpdateNow()
+      .notNull(),
+  },
+  table => ({
+    unicaIdx: uniqueIndex("prof_questao_anulada_aplicacao_questao_idx").on(table.aplicacaoId, table.questaoChave),
+    aplicacaoIdx: index("prof_questao_anulada_aplicacao_idx").on(table.aplicacaoId),
+    ativaIdx: index("prof_questao_anulada_ativa_idx").on(table.ativa),
+  }),
+);
+
 export const resultadosProficiencia = mysqlTable(
   "resultados_proficiencia",
   {
