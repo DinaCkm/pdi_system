@@ -98,6 +98,23 @@ async function dbObrigatorio() {
       INDEX prof_ocorrencia_created_idx (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `));
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS proficiencia_questoes_anuladas (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      aplicacao_id INT NOT NULL,
+      questao_chave VARCHAR(80) NOT NULL,
+      motivo TEXT NOT NULL,
+      ativa TINYINT NOT NULL DEFAULT 1,
+      anulada_por INT NOT NULL,
+      anulada_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      restaurada_por INT NULL,
+      restaurada_em DATETIME NULL,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY prof_questao_anulada_aplicacao_questao_idx (aplicacao_id, questao_chave),
+      INDEX prof_questao_anulada_aplicacao_idx (aplicacao_id),
+      INDEX prof_questao_anulada_ativa_idx (ativa)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `));
   return db;
 }
 
@@ -172,6 +189,16 @@ async function obterVinculoParticipante(db: any, aplicacaoId: number, colaborado
   return { ...item, prova: parseJson<ProvaSnapshot>(item.provaSnapshotJson) };
 }
 
+async function obterQuestoesAnuladas(db: any, aplicacaoId: number) {
+  const result = await db.execute(sql`
+    SELECT questao_chave AS questaoChave
+      FROM proficiencia_questoes_anuladas
+     WHERE aplicacao_id = ${aplicacaoId}
+       AND ativa = 1
+  `);
+  return new Set(rowsOf<any>(result).map(item => String(item.questaoChave)));
+}
+
 async function obterRelacoesEixos(db: any, colaboradorId: number) {
   const result = await db.execute(sql`
     SELECT e.eixo_nome AS eixoNome, e.relacao, e.percentual_anterior AS percentualAnterior
@@ -194,13 +221,16 @@ function calcularResultado(
   questoes: QuestaoImportada[],
   respostas: Array<{ questaoChave: string; resposta: string }>,
   relacoes: Map<string, { relacao: string | null; percentualAnterior: number | null }>,
+  questoesAnuladas: Set<string> = new Set(),
 ) {
   const porQuestao = new Map(respostas.map(item => [String(item.questaoChave), String(item.resposta).toUpperCase()]));
   const eixoMap = new Map<string, { eixo: string; totalQuestoes: number; respondidas: number; acertos: number; naoSei: number }>();
   let totalAcertos = 0;
   let totalRespondidas = 0;
 
-  for (const questao of questoes) {
+  const questoesValidas = questoes.filter(questao => !questoesAnuladas.has(String(questao.id)));
+
+  for (const questao of questoesValidas) {
     const resposta = porQuestao.get(String(questao.id));
     const gabarito = String(questao.gabarito ?? "").toUpperCase();
     const acertou = Boolean(resposta && resposta === gabarito);
@@ -239,11 +269,14 @@ function calcularResultado(
   });
 
   return {
-    totalQuestoes: questoes.length,
+    totalQuestoesOriginal: questoes.length,
+    totalQuestoesAnuladas: questoes.length - questoesValidas.length,
+    questoesAnuladas: Array.from(questoesAnuladas),
+    totalQuestoes: questoesValidas.length,
     totalRespondidas,
-    totalNaoRespondidas: Math.max(0, questoes.length - totalRespondidas),
+    totalNaoRespondidas: Math.max(0, questoesValidas.length - totalRespondidas),
     totalAcertos,
-    percentualGeral: questoes.length ? arredondar((totalAcertos / questoes.length) * 100) : 0,
+    percentualGeral: questoesValidas.length ? arredondar((totalAcertos / questoesValidas.length) * 100) : 0,
     porEixo,
   };
 }
