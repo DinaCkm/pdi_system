@@ -174,6 +174,14 @@ export default function AdminAplicacoesProficiencia() {
     onError: error => setMensagem(error.message),
   });
 
+  const liberarContinuidadeMutation = trpc.aplicacoesProficiencia.liberarContinuidadeTentativa.useMutation({
+    onSuccess: async data => {
+      setMensagem(`Continuidade liberada para ${data.colaboradorNome || "o participante"}. As respostas já registradas foram preservadas.`);
+      await Promise.all([aplicacoesQuery.refetch(), monitoramentoQuery.refetch()]);
+    },
+    onError: error => setMensagem(error.message),
+  });
+
   const liberarMutation = trpc.aplicacoesProficiencia.liberar.useMutation({
     onSuccess: async () => {
       setMensagem("Prova liberada. Os participantes selecionados já podem iniciar.");
@@ -596,7 +604,32 @@ export default function AdminAplicacoesProficiencia() {
                               <Button size="sm" variant="outline" onClick={() => setIdentidadeColaboradorId(Number(item.colaboradorId))}><UserCheck className="mr-1 h-4 w-4" />Confirmada</Button>
                             ) : <Badge variant="secondary">Pendente</Badge>}
                           </td>
-                          <td className="px-3 py-3"><Badge variant={item.situacao === "FINALIZOU" ? "secondary" : item.situacao === "EM_ANDAMENTO" ? "default" : "outline"}>{item.situacao === "NAO_INICIOU" ? "Não iniciou" : item.situacao === "EM_ANDAMENTO" ? "Em andamento" : "Finalizou"}</Badge></td>
+                          <td className="px-3 py-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge variant={item.situacao === "FINALIZOU" ? "secondary" : item.tentativaStatus === "BLOQUEADA" ? "destructive" : item.situacao === "EM_ANDAMENTO" ? "default" : "outline"}>
+                                {item.tentativaStatus === "BLOQUEADA" ? "Bloqueada" : item.situacao === "NAO_INICIOU" ? "Não iniciou" : item.situacao === "EM_ANDAMENTO" ? "Em andamento" : "Finalizou"}
+                              </Badge>
+                              {item.tentativaStatus === "BLOQUEADA" && item.tentativaId && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-amber-400 text-amber-800 hover:bg-amber-50"
+                                  disabled={liberarContinuidadeMutation.isPending}
+                                  onClick={() => {
+                                    const observacao = window.prompt("Observação da liberação (opcional):", "Liberação após análise das ocorrências.");
+                                    if (observacao === null) return;
+                                    liberarContinuidadeMutation.mutate({
+                                      aplicacaoId: Number(aplicacaoSelecionada),
+                                      tentativaId: Number(item.tentativaId),
+                                      observacao: observacao.trim() || undefined,
+                                    });
+                                  }}
+                                >
+                                  LIBERAR CONTINUIDADE
+                                </Button>
+                              )}
+                            </div>
+                          </td>
                           <td className="px-3 py-3"><div className="flex items-center gap-2"><div className="h-2 w-32 overflow-hidden rounded-full bg-slate-200"><div className="h-full bg-slate-700" style={{ width: `${Math.min(100, Number(item.percentualRealizacao || 0))}%` }} /></div><span>{Number(item.percentualRealizacao || 0)}%</span></div></td>
                           <td className="px-3 py-3">
                             <Button size="sm" variant="outline" onClick={() => setLogsColaboradorId(Number(item.colaboradorId))}>
