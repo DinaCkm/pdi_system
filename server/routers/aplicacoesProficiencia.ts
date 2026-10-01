@@ -829,6 +829,63 @@ export const aplicacoesProficienciaRouter = router({
       return { bloqueada: true, status: "BLOQUEADA" as const };
     }),
 
+  liberarContinuidadeTentativa: adminProcedure
+    .input(z.object({
+      aplicacaoId: z.number().int().positive(),
+      tentativaId: z.number().int().positive(),
+      observacao: z.string().trim().max(500).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const tentativaResult = await db.execute(sql`
+        SELECT t.id, t.status, t.colaborador_id AS colaboradorId, u.name AS colaboradorNome
+          FROM tentativas_proficiencia t
+          JOIN users u ON u.id = t.colaborador_id
+         WHERE t.id = ${input.tentativaId}
+           AND t.aplicacao_id = ${input.aplicacaoId}
+         LIMIT 1
+      `);
+      const tentativa = rowsOf<any>(tentativaResult)[0];
+      if (!tentativa) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Tentativa não encontrada." });
+      }
+      if (String(tentativa.status) !== "BLOQUEADA") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Somente tentativas bloqueadas podem ser liberadas para continuidade.",
+        });
+      }
+
+      const detalhe = input.observacao
+        ? `Continuidade liberada pelo administrador. Observação: ${input.observacao}`
+        : "Continuidade liberada pelo administrador.";
+
+      await db.transaction(async (tx: any) => {
+        await tx.execute(sql`
+          UPDATE tentativas_proficiencia
+             SET status = 'EM_ANDAMENTO', ultima_atividade_em = NOW()
+           WHERE id = ${input.tentativaId}
+             AND aplicacao_id = ${input.aplicacaoId}
+             AND status = 'BLOQUEADA'
+        `);
+        await tx.execute(sql`
+          INSERT INTO proficiencia_ocorrencias
+            (aplicacao_id, tentativa_id, colaborador_id, tipo, detalhe)
+          VALUES
+            (${input.aplicacaoId}, ${input.tentativaId}, ${tentativa.colaboradorId},
+             'LIBERACAO_CONTINUIDADE_ADMIN', ${detalhe})
+        `);
+      });
+
+      return {
+        liberada: true,
+        tentativaId: Number(input.tentativaId),
+        colaboradorId: Number(tentativa.colaboradorId),
+        colaboradorNome: String(tentativa.colaboradorNome ?? ""),
+        liberadaPor: Number(ctx.user.id),
+      };
+    }),
+
   registrarOcorrencia: assessmentProcedure
     .input(z.object({
       aplicacaoId: z.number().int().positive(),
