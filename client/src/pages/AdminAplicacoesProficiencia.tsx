@@ -210,6 +210,22 @@ export default function AdminAplicacoesProficiencia() {
     onError: error => setMensagem(error.message),
   });
 
+  const encerrarMutation = trpc.aplicacoesProficiencia.encerrar.useMutation({
+    onSuccess: async data => {
+      setMensagem(`Aplicação encerrada. ${data.ausentes} participante(s) ficaram registrados como ausentes. Agora os resultados podem ser calculados.`);
+      await Promise.all([aplicacoesQuery.refetch(), monitoramentoQuery.refetch()]);
+    },
+    onError: error => setMensagem(error.message),
+  });
+
+  const reabrirMutation = trpc.aplicacoesProficiencia.reabrir.useMutation({
+    onSuccess: async () => {
+      setMensagem("Aplicação reaberta. Participantes ausentes voltaram a ficar disponíveis e novos participantes podem ser incluídos.");
+      await Promise.all([aplicacoesQuery.refetch(), monitoramentoQuery.refetch()]);
+    },
+    onError: error => setMensagem(error.message),
+  });
+
   const cancelarMutation = (trpc as any).aplicacoesProficiencia.cancelar.useMutation({
     onSuccess: async () => {
       setMensagem("Aplicação cancelada. Os participantes podem ser agendados novamente. Se era um teste de homologação, a prova volta a aguardar um novo teste.");
@@ -561,6 +577,52 @@ export default function AdminAplicacoesProficiencia() {
                   >
                     <X className="mr-2 h-4 w-4" />{monitoramento?.modoTeste ? "CANCELAR TESTE" : "CANCELAR AGENDAMENTO"}
                   </Button>
+                  {String(aplicacaoMonitorada?.status) === "LIBERADA" && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const motivo = window.prompt(
+                          "Motivo do encerramento (obrigatório):",
+                          "Período de realização concluído.",
+                        );
+                        if (motivo === null) return;
+                        if (motivo.trim().length < 5) {
+                          setMensagem("Informe um motivo com pelo menos 5 caracteres.");
+                          return;
+                        }
+                        const pendentes = Number(monitoramento.resumo.total || 0) - Number(monitoramento.resumo.finalizados || 0);
+                        const texto = pendentes > 0
+                          ? `Encerrar a aplicação agora? ${pendentes} participante(s) que não concluíram serão registrados como ausentes.`
+                          : "Encerrar a aplicação? Depois disso ninguém poderá iniciar a prova até uma eventual reabertura.";
+                        if (!window.confirm(texto)) return;
+                        encerrarMutation.mutate({ aplicacaoId: aplicacaoSelecionada, motivo: motivo.trim() });
+                      }}
+                      disabled={encerrarMutation.isPending}
+                    >
+                      ENCERRAR APLICAÇÃO
+                    </Button>
+                  )}
+                  {String(aplicacaoMonitorada?.status) === "ENCERRADA" && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const motivo = window.prompt(
+                          "Motivo da reabertura (obrigatório):",
+                          "Inclusão de participante após o encerramento.",
+                        );
+                        if (motivo === null) return;
+                        if (motivo.trim().length < 5) {
+                          setMensagem("Informe um motivo com pelo menos 5 caracteres.");
+                          return;
+                        }
+                        if (!window.confirm("Reabrir esta aplicação? Os ausentes voltarão a ficar disponíveis e será possível incluir novos participantes.")) return;
+                        reabrirMutation.mutate({ aplicacaoId: aplicacaoSelecionada, motivo: motivo.trim() });
+                      }}
+                      disabled={reabrirMutation.isPending}
+                    >
+                      REABRIR APLICAÇÃO
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -573,7 +635,7 @@ export default function AdminAplicacoesProficiencia() {
                       }
                       calcularMutation.mutate({ aplicacaoId: aplicacaoSelecionada });
                     }}
-                    disabled={calcularMutation.isPending || !["LIBERADA", "ENCERRADA", "CALCULADA"].includes(String(aplicacaoMonitorada?.status)) || Number(monitoramento.resumo.finalizados) === 0}
+                    disabled={calcularMutation.isPending || !["ENCERRADA", "CALCULADA"].includes(String(aplicacaoMonitorada?.status)) || Number(monitoramento.resumo.finalizados) === 0}
                   >
                     <Calculator className="mr-2 h-4 w-4" />
                     {String(aplicacaoMonitorada?.status) === "CALCULADA" ? "RECALCULAR RESULTADOS" : "CALCULAR RESULTADOS"}

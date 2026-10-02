@@ -739,6 +739,150 @@ export const aplicacoesProficienciaRouter = router({
       return { liberada: true, status: "LIBERADA" as const };
     }),
 
+  encerrar: adminProcedure
+    .input(z.object({
+      aplicacaoId: z.number().int().positive(),
+      motivo: z.string().trim().min(5).max(1000),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const aplicacao = await obterAplicacao(db, input.aplicacaoId);
+      if (String(aplicacao.status) !== "LIBERADA") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Somente aplicações LIBERADA podem ser encerradas.",
+        });
+      }
+
+      const teste = await obterTestePorAplicacao(db, input.aplicacaoId);
+      if (teste) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Aplicações de teste seguem o fluxo próprio de homologação e não podem ser encerradas manualmente.",
+        });
+      }
+
+      const emAndamentoResult = await db.execute(sql`
+        SELECT COUNT(*) AS total
+          FROM tentativas_proficiencia
+         WHERE aplicacao_id = ${input.aplicacaoId}
+           AND status IN ('EM_ANDAMENTO','BLOQUEADA','LIBERADA_CONTINUIDADE')
+      `);
+      const emAndamento = Number(rowsOf<any>(emAndamentoResult)[0]?.total ?? 0);
+      if (emAndamento > 0) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `Não é possível encerrar enquanto ${emAndamento} participante(s) possui(em) tentativa em andamento ou bloqueada.`,
+        });
+      }
+
+      await db.execute(sql.raw(`
+        CREATE TABLE IF NOT EXISTS aplicacoes_proficiencia_eventos (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          aplicacao_id INT NOT NULL,
+          acao VARCHAR(40) NOT NULL,
+          motivo TEXT NOT NULL,
+          executada_por INT NULL,
+          created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          INDEX aplic_evento_aplicacao_idx (aplicacao_id),
+          INDEX aplic_evento_acao_idx (acao)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `));
+
+      const ausentesResult = await db.execute(sql`
+        SELECT COUNT(*) AS total
+          FROM aplicacoes_proficiencia_participantes ap
+          LEFT JOIN tentativas_proficiencia t
+            ON t.aplicacao_id = ap.aplicacao_id
+           AND t.colaborador_id = ap.colaborador_id
+         WHERE ap.aplicacao_id = ${input.aplicacaoId}
+           AND (t.id IS NULL OR t.status NOT IN ('FINALIZADA','FINALIZADA_TEMPO'))
+      `);
+      const ausentes = Number(rowsOf<any>(ausentesResult)[0]?.total ?? 0);
+
+      await db.transaction(async (tx: any) => {
+        await tx.execute(sql`
+          UPDATE aplicacoes_proficiencia_participantes ap
+          LEFT JOIN tentativas_proficiencia t
+            ON t.aplicacao_id = ap.aplicacao_id
+           AND t.colaborador_id = ap.colaborador_id
+             SET ap.situacao = 'AUSENTE'
+           WHERE ap.aplicacao_id = ${input.aplicacaoId}
+             AND (t.id IS NULL OR t.status NOT IN ('FINALIZADA','FINALIZADA_TEMPO'))
+        `);
+        await tx.execute(sql`
+          UPDATE aplicacoes_proficiencia
+             SET status = 'ENCERRADA', encerrada_em = NOW()
+           WHERE id = ${input.aplicacaoId}
+             AND status = 'LIBERADA'
+        `);
+        await tx.execute(sql`
+          INSERT INTO aplicacoes_proficiencia_eventos
+            (aplicacao_id, acao, motivo, executada_por)
+          VALUES
+            (${input.aplicacaoId}, 'ENCERRADA', ${input.motivo}, ${ctx.user.id})
+        `);
+      });
+
+      return { encerrada: true, status: "ENCERRADA" as const, ausentes };
+    }),
+
+  reabrir: adminProcedure
+    .input(z.object({
+      aplicacaoId: z.number().int().positive(),
+      motivo: z.string().trim().min(5).max(1000),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const aplicacao = await obterAplicacao(db, input.aplicacaoId);
+      if (String(aplicacao.status) !== "ENCERRADA") {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "Somente aplicações ENCERRADA e ainda não calculadas podem ser reabertas.",
+        });
+      }
+
+      await db.execute(sql.raw(`
+        CREATE TABLE IF NOT EXISTS aplicacoes_proficiencia_eventos (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          aplicacao_id INT NOT NULL,
+          acao VARCHAR(40) NOT NULL,
+          motivo TEXT NOT NULL,
+          executada_por INT NULL,
+          created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          INDEX aplic_evento_aplicacao_idx (aplicacao_id),
+          INDEX aplic_evento_acao_idx (acao)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+      `));
+
+      await db.transaction(async (tx: any) => {
+        await tx.execute(sql`
+          UPDATE aplicacoes_proficiencia_participantes ap
+          LEFT JOIN tentativas_proficiencia t
+            ON t.aplicacao_id = ap.aplicacao_id
+           AND t.colaborador_id = ap.colaborador_id
+             SET ap.situacao = 'SELECIONADO'
+           WHERE ap.aplicacao_id = ${input.aplicacaoId}
+             AND ap.situacao = 'AUSENTE'
+             AND (t.id IS NULL OR t.status NOT IN ('FINALIZADA','FINALIZADA_TEMPO'))
+        `);
+        await tx.execute(sql`
+          UPDATE aplicacoes_proficiencia
+             SET status = 'LIBERADA', encerrada_em = NULL
+           WHERE id = ${input.aplicacaoId}
+             AND status = 'ENCERRADA'
+        `);
+        await tx.execute(sql`
+          INSERT INTO aplicacoes_proficiencia_eventos
+            (aplicacao_id, acao, motivo, executada_por)
+          VALUES
+            (${input.aplicacaoId}, 'REABERTA', ${input.motivo}, ${ctx.user.id})
+        `);
+      });
+
+      return { reaberta: true, status: "LIBERADA" as const };
+    }),
+
   // Envia ao participante o e-mail de convocação, com o texto conferido/editado pelo admin.
   enviarEmailConvocacao: adminProcedure
     .input(z.object({
@@ -1481,8 +1625,11 @@ export const aplicacoesProficienciaRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
       const aplicacao = await obterAplicacao(db, input.aplicacaoId);
-      if (!["LIBERADA", "ENCERRADA", "CALCULADA"].includes(String(aplicacao.status))) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "A aplicação precisa ter sido liberada antes do cálculo." });
+      if (!["ENCERRADA", "CALCULADA"].includes(String(aplicacao.status))) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Encerre a aplicação antes de calcular os resultados.",
+        });
       }
       const { recalculados: calculados } = await recalcularResultadosFinalizados(db, aplicacao, input.aplicacaoId);
       const contagem = rowsOf<any>(await db.execute(sql`
@@ -1495,20 +1642,20 @@ export const aplicacoesProficienciaRouter = router({
       `))[0] ?? { total: 0, finalizados: 0 };
       const total = Number(contagem.total ?? 0);
       const finalizados = Number(contagem.finalizados ?? 0);
-      const todosFinalizados = total > 0 && finalizados === total;
+      const pendentes = Math.max(0, total - finalizados);
       await db.execute(sql`
         UPDATE aplicacoes_proficiencia
            SET calculada_em = NOW(), calculada_por = ${ctx.user.id},
-               status = ${todosFinalizados ? "CALCULADA" : aplicacao.status},
-               encerrada_em = ${todosFinalizados ? new Date() : aplicacao.encerradaEm ?? null}
+               status = 'CALCULADA',
+               encerrada_em = COALESCE(encerrada_em, NOW())
          WHERE id = ${input.aplicacaoId}
       `);
       return {
         calculados,
         totalParticipantes: total,
         finalizados,
-        pendentes: Math.max(0, total - finalizados),
-        status: todosFinalizados ? "CALCULADA" : aplicacao.status,
+        pendentes,
+        status: "CALCULADA" as const,
       };
     }),
 
