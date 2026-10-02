@@ -1625,8 +1625,11 @@ export const aplicacoesProficienciaRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
       const aplicacao = await obterAplicacao(db, input.aplicacaoId);
-      if (!["LIBERADA", "ENCERRADA", "CALCULADA"].includes(String(aplicacao.status))) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "A aplicação precisa ter sido liberada antes do cálculo." });
+      if (!["ENCERRADA", "CALCULADA"].includes(String(aplicacao.status))) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Encerre a aplicação antes de calcular os resultados.",
+        });
       }
       const { recalculados: calculados } = await recalcularResultadosFinalizados(db, aplicacao, input.aplicacaoId);
       const contagem = rowsOf<any>(await db.execute(sql`
@@ -1639,20 +1642,20 @@ export const aplicacoesProficienciaRouter = router({
       `))[0] ?? { total: 0, finalizados: 0 };
       const total = Number(contagem.total ?? 0);
       const finalizados = Number(contagem.finalizados ?? 0);
-      const todosFinalizados = total > 0 && finalizados === total;
+      const pendentes = Math.max(0, total - finalizados);
       await db.execute(sql`
         UPDATE aplicacoes_proficiencia
            SET calculada_em = NOW(), calculada_por = ${ctx.user.id},
-               status = ${todosFinalizados ? "CALCULADA" : aplicacao.status},
-               encerrada_em = ${todosFinalizados ? new Date() : aplicacao.encerradaEm ?? null}
+               status = 'CALCULADA',
+               encerrada_em = COALESCE(encerrada_em, NOW())
          WHERE id = ${input.aplicacaoId}
       `);
       return {
         calculados,
         totalParticipantes: total,
         finalizados,
-        pendentes: Math.max(0, total - finalizados),
-        status: todosFinalizados ? "CALCULADA" : aplicacao.status,
+        pendentes,
+        status: "CALCULADA" as const,
       };
     }),
 
