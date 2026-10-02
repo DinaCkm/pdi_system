@@ -48,6 +48,7 @@ export default function Users() {
   const [editingUser, setEditingUser] = useState<number | null>(null);
   const [filterDepartamento, setFilterDepartamento] = useState<number | undefined>(undefined);
   const [filterStatus, setFilterStatus] = useState<"" | "ativo" | "inativo">("");
+  const [filterCargo, setFilterCargo] = useState("");
   const [temporaryPasswordModal, setTemporaryPasswordModal] = useState<{
     open: boolean;
     userName: string;
@@ -257,13 +258,25 @@ export default function Users() {
       const matchesStatus =
         !filterStatus || user.status === filterStatus;
 
-      return matchesSearch && matchesDepartamento && matchesStatus;
+      const matchesCargo =
+        !filterCargo || safeString(user?.cargo) === filterCargo;
+
+      return matchesSearch && matchesDepartamento && matchesStatus && matchesCargo;
     }) || [];
+
+  const cargosDisponiveis = Array.from(
+    new Set(
+      (users || [])
+        .map((user: any) => safeString(user?.cargo))
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   const handleResetFilters = () => {
     setSearchTerm("");
     setFilterDepartamento(undefined);
     setFilterStatus("");
+    setFilterCargo("");
     setCurrentPage(1);
   };
 
@@ -336,6 +349,22 @@ export default function Users() {
                 <option value="inativo">Inativo</option>
               </select>
 
+              <select
+                value={filterCargo}
+                onChange={(e) => {
+                  setFilterCargo(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-2 border border-input rounded-md bg-background text-sm"
+              >
+                <option value="">Todos os Cargos</option>
+                {cargosDisponiveis.map((cargo) => (
+                  <option key={cargo} value={cargo}>
+                    {cargo}
+                  </option>
+                ))}
+              </select>
+
               <Button onClick={handleResetFilters} variant="outline" className="whitespace-nowrap">
                 Limpar Filtros
               </Button>
@@ -359,6 +388,7 @@ export default function Users() {
                   <TableHead>ID do Aluno</TableHead>
                   <TableHead>Depto. Pertence</TableHead>
                   <TableHead>Depto. Lidera</TableHead>
+                  <TableHead>Cargo</TableHead>
                   <TableHead>Perfil</TableHead>
                   <TableHead>Líder</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -368,7 +398,7 @@ export default function Users() {
               <TableBody>
                 {paginatedUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center text-muted-foreground">
                       Nenhum usuário encontrado
                     </TableCell>
                   </TableRow>
@@ -408,6 +438,8 @@ export default function Users() {
                             <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
+
+                        <TableCell>{safeString(user?.cargo) || "-"}</TableCell>
 
                         <TableCell>{getRoleBadge(safeString(user?.role))}</TableCell>
 
