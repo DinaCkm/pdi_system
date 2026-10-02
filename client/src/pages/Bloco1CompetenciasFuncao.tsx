@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { macroRelacionadaDaAD } from "../../../shared/competenciasAdRelacionamento";
-import { ChevronDown, ChevronUp, Sparkles, ShieldCheck, Target, TrendingUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Lock, Sparkles, ShieldCheck, Target, TrendingUp, Unlock } from "lucide-react";
 
 const relacaoLabel: Record<string, string> = {
   ESSENCIAL: "Essencial",
@@ -146,10 +146,17 @@ export default function Bloco1CompetenciasFuncao() {
   const pdisAdmin = trpc.pdis.list.useQuery(undefined, { enabled: Boolean(user && (isAdmin || isGerente)) });
   const pdisEquipe = trpc.pdis.teamPDIs.useQuery(undefined, { enabled: Boolean(user && isLider) });
   const pdisMeus = trpc.pdis.myPDIs.useQuery(undefined, { enabled: Boolean(user && (isColaborador || isLider)) });
+  const liberacao = trpc.bloco1CompetenciasFuncao.statusLiberacaoEvolucao.useQuery(undefined, {
+    enabled: Boolean(user && (isColaborador || isAdmin)),
+  });
+  const bloqueadoParaEmpregado = isColaborador && liberacao.data?.liberado !== true;
+  const definirLiberacao = trpc.bloco1CompetenciasFuncao.definirLiberacaoEvolucao.useMutation({
+    onSuccess: () => liberacao.refetch(),
+  });
   const mapa = trpc.bloco1CompetenciasFuncao.mapaIndividual.useQuery(
     { colaboradorId: Number(colaboradorId || 0) },
     {
-      enabled: Boolean(colaboradorId),
+      enabled: Boolean(colaboradorId) && !bloqueadoParaEmpregado,
       staleTime: 0,
       refetchOnMount: "always",
       refetchOnWindowFocus: true,
@@ -358,6 +365,28 @@ export default function Bloco1CompetenciasFuncao() {
     };
   }, [mapa.data]);
 
+  if (bloqueadoParaEmpregado) {
+    return (
+      <div className="flex-1 w-full min-w-0 space-y-6 p-2 md:p-6">
+        <h1 className="text-3xl font-bold">Minha Evolução</h1>
+        <Card className="border-amber-300">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-700">
+              <Lock className="h-5 w-5" />
+              {liberacao.isLoading ? "Verificando acesso..." : "Ainda não liberada"}
+            </CardTitle>
+            {!liberacao.isLoading && (
+              <CardDescription>
+                A sua evolução está em preparação e será liberada pela coordenação do programa.
+                Você será avisado quando estiver disponível.
+              </CardDescription>
+            )}
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 w-full min-w-0 space-y-6 p-2 md:p-6">
       <div>
@@ -367,6 +396,52 @@ export default function Bloco1CompetenciasFuncao() {
           técnicas e comportamentais após as ações do PDI.
         </p>
       </div>
+
+      {isAdmin && (
+        <Card className={liberacao.data?.liberado ? "border-emerald-300" : "border-amber-300"}>
+          <CardContent className="flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start gap-3">
+              {liberacao.data?.liberado ? (
+                <Unlock className="mt-0.5 h-5 w-5 text-emerald-600" />
+              ) : (
+                <Lock className="mt-0.5 h-5 w-5 text-amber-600" />
+              )}
+              <div>
+                <p className="font-semibold">
+                  {liberacao.data?.liberado
+                    ? "\"Minha Evolução\" está LIBERADA para os empregados"
+                    : "\"Minha Evolução\" está BLOQUEADA para os empregados"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Vale para o perfil colaborador. Líderes, gerentes e administradores continuam acessando normalmente.
+                  {liberacao.data?.atualizadoEm
+                    ? ` Última alteração: ${new Date(liberacao.data.atualizadoEm).toLocaleString("pt-BR")}.`
+                    : ""}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant={liberacao.data?.liberado ? "outline" : "default"}
+              disabled={liberacao.isLoading || definirLiberacao.isPending}
+              onClick={() => {
+                const liberar = !liberacao.data?.liberado;
+                const ok = window.confirm(
+                  liberar
+                    ? "Liberar a tela \"Minha Evolução\" para TODOS os empregados agora?"
+                    : "Bloquear a tela \"Minha Evolução\" para os empregados?",
+                );
+                if (ok) definirLiberacao.mutate({ liberado: liberar });
+              }}
+            >
+              {definirLiberacao.isPending
+                ? "Salvando..."
+                : liberacao.data?.liberado
+                  ? "Bloquear para empregados"
+                  : "Liberar para empregados"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {podeSelecionarEmpregado && (
       <Card>

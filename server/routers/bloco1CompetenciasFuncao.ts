@@ -56,7 +56,57 @@ async function dbObrigatorio() {
   return db;
 }
 
+// ============= LIBERAÇÃO DA "MINHA EVOLUÇÃO" PARA O EMPREGADO =============
+// O administrador decide quando o empregado (perfil colaborador) pode abrir a tela.
+// Enquanto não for liberada, a tela fica bloqueada para o colaborador (padrão: bloqueada).
+const FLAG_EVOLUCAO_EMPREGADO = "evolucao_empregado_liberada";
+let appFlagsGarantida = false;
+
+async function garantirTabelaAppFlags(db: any) {
+  if (appFlagsGarantida) return;
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS app_flags (
+      flag_key VARCHAR(100) NOT NULL PRIMARY KEY,
+      enabled BOOLEAN NOT NULL DEFAULT false,
+      updated_by INT NULL,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+  appFlagsGarantida = true;
+}
+
+async function lerLiberacaoEvolucao(db: any) {
+  await garantirTabelaAppFlags(db);
+  const rows = rowsOf<any>(
+    await db.execute(sql`SELECT enabled, updated_at FROM app_flags WHERE flag_key = ${FLAG_EVOLUCAO_EMPREGADO} LIMIT 1`),
+  );
+  const row = rows[0];
+  return {
+    liberado: Boolean(row?.enabled),
+    atualizadoEm: row?.updated_at ? new Date(row.updated_at) : null,
+  };
+}
+
 export const bloco1CompetenciasFuncaoRouter = router({
+  statusLiberacaoEvolucao: protectedProcedure.query(async () => {
+    const db = await dbObrigatorio();
+    return lerLiberacaoEvolucao(db);
+  }),
+
+  definirLiberacaoEvolucao: adminProcedure
+    .input(z.object({ liberado: z.boolean() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      await garantirTabelaAppFlags(db);
+      await db.execute(sql`
+        INSERT INTO app_flags (flag_key, enabled, updated_by)
+        VALUES (${FLAG_EVOLUCAO_EMPREGADO}, ${input.liberado}, ${Number(ctx.user.id)})
+        ON DUPLICATE KEY UPDATE enabled = VALUES(enabled), updated_by = VALUES(updated_by)
+      `);
+      console.log(`[evolucao] liberacao para empregados = ${input.liberado} por usuario ${ctx.user.id}`);
+      return lerLiberacaoEvolucao(db);
+    }),
+
   empregados: protectedProcedure.query(async ({ ctx }) => {
     const db = await dbObrigatorio();
 
@@ -114,6 +164,16 @@ export const bloco1CompetenciasFuncaoRouter = router({
     .input(z.object({ colaboradorId: z.number().int().positive() }))
     .query(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
+
+      if (ctx.user.role === "colaborador") {
+        const { liberado } = await lerLiberacaoEvolucao(db);
+        if (!liberado) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "A sua evolução ainda não foi liberada. Você será avisado quando estiver disponível.",
+          });
+        }
+      }
 
       const empregado = (
         await db
