@@ -188,7 +188,7 @@ export default function AdminAplicacoesProficiencia() {
 
   const anularQuestaoMutation = trpc.aplicacoesProficiencia.anularQuestao.useMutation({
     onSuccess: async data => {
-      setMensagem(`Questão anulada nesta aplicação. Ela não contará no resultado geral nem nos eixos. ${data.recalculados ? `${data.recalculados} resultado(s) finalizado(s) foram recalculados automaticamente.` : ""}`);
+      setMensagem(`Questão anulada nesta aplicação. Para cada participante, se algum conhecimento/eixo da questão for ESSENCIAL, a questão será contabilizada como acerto integral; caso contrário, será retirada do cálculo. ${data.recalculados ? `${data.recalculados} resultado(s) finalizado(s) foram recalculados automaticamente.` : ""}`);
       await Promise.all([questoesAplicacaoQuery.refetch(), monitoramentoQuery.refetch(), aplicacoesQuery.refetch()]);
     },
     onError: error => setMensagem(error.message),

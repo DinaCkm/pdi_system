@@ -245,24 +245,63 @@ function calcularResultado(
   let totalAcertos = 0;
   let totalRespondidas = 0;
 
-  const questoesValidas = questoes.filter(questao => !questoesAnuladas.has(String(questao.id)));
+  // Regra permanente para provas ja aplicadas:
+  // - questao anulada + pelo menos um eixo ESSENCIAL para a pessoa = acerto integral;
+  // - questao anulada sem eixo ESSENCIAL = retirada do calculo, sem prejuizo.
+  //
+  // A resposta original continua preservada em respostas_proficiencia. O credito
+  // existe apenas na apuracao, permitindo auditoria e restauracao da questao.
+  const anuladasComCreditoEssencial = new Set<string>();
+  const anuladasDesconsideradas = new Set<string>();
 
-  for (const questao of questoesValidas) {
-    const resposta = porQuestao.get(String(questao.id));
+  const questoesConsideradas = questoes.filter(questao => {
+    const questaoChave = String(questao.id);
+    if (!questoesAnuladas.has(questaoChave)) return true;
+
+    const temConhecimentoEssencial = (questao.eixos ?? []).some(eixoQuestao => {
+      const nome = String(eixoQuestao.nome ?? "").trim();
+      if (!nome) return false;
+      const relacao = relacoes.get(normalizar(nome))?.relacao;
+      return String(relacao ?? "").trim().toUpperCase() === "ESSENCIAL";
+    });
+
+    if (temConhecimentoEssencial) {
+      anuladasComCreditoEssencial.add(questaoChave);
+      return true;
+    }
+
+    anuladasDesconsideradas.add(questaoChave);
+    return false;
+  });
+
+  for (const questao of questoesConsideradas) {
+    const questaoChave = String(questao.id);
+    const anuladaComCredito = anuladasComCreditoEssencial.has(questaoChave);
+    const resposta = porQuestao.get(questaoChave);
     const gabarito = String(questao.gabarito ?? "").toUpperCase();
-    const acertou = Boolean(resposta && resposta === gabarito);
+    const acertou = anuladaComCredito || Boolean(resposta && resposta === gabarito);
     const opcaoRespondida = questao.opcoes.find(opcao => String(opcao.letra).toUpperCase() === resposta);
-    const naoSei = Boolean(opcaoRespondida?.naoSei);
-    if (resposta) totalRespondidas += 1;
+    const naoSei = anuladaComCredito ? false : Boolean(opcaoRespondida?.naoSei);
+
+    if (anuladaComCredito || resposta) totalRespondidas += 1;
     if (acertou) totalAcertos += 1;
 
     for (const eixoQuestao of questao.eixos ?? []) {
       const nome = String(eixoQuestao.nome ?? "").trim();
       if (!nome) continue;
       const chave = normalizar(nome);
+      const relacaoEixo = relacoes.get(chave) ?? { relacao: null, percentualAnterior: null };
+
+      // Em questao anulada com credito, somente os conhecimentos/eixos ESSENCIAIS
+      // recebem o acerto. Eixos transversais, nao essenciais, nao aplicaveis ou
+      // sem classificacao permanecem fora do calculo daquela questao.
+      if (anuladaComCredito && String(relacaoEixo.relacao ?? "").trim().toUpperCase() !== "ESSENCIAL") {
+        continue;
+      }
+
       const item = eixoMap.get(chave) ?? { eixo: nome, totalQuestoes: 0, respondidas: 0, acertos: 0, naoSei: 0 };
       item.totalQuestoes += 1;
-      if (resposta) item.respondidas += 1;
+      if (anuladaComCredito || resposta) item.respondidas += 1;
       if (acertou) item.acertos += 1;
       if (naoSei) item.naoSei += 1;
       eixoMap.set(chave, item);
@@ -285,15 +324,21 @@ function calcularResultado(
     };
   });
 
+  const totalQuestoesAnuladas = questoes.filter(questao => questoesAnuladas.has(String(questao.id))).length;
+
   return {
     totalQuestoesOriginal: questoes.length,
-    totalQuestoesAnuladas: questoes.length - questoesValidas.length,
+    totalQuestoesAnuladas,
     questoesAnuladas: Array.from(questoesAnuladas),
-    totalQuestoes: questoesValidas.length,
+    totalQuestoesAnuladasComCreditoEssencial: anuladasComCreditoEssencial.size,
+    questoesAnuladasComCreditoEssencial: Array.from(anuladasComCreditoEssencial),
+    totalQuestoesAnuladasDesconsideradas: anuladasDesconsideradas.size,
+    questoesAnuladasDesconsideradas: Array.from(anuladasDesconsideradas),
+    totalQuestoes: questoesConsideradas.length,
     totalRespondidas,
-    totalNaoRespondidas: Math.max(0, questoesValidas.length - totalRespondidas),
+    totalNaoRespondidas: Math.max(0, questoesConsideradas.length - totalRespondidas),
     totalAcertos,
-    percentualGeral: questoesValidas.length ? arredondar((totalAcertos / questoesValidas.length) * 100) : 0,
+    percentualGeral: questoesConsideradas.length ? arredondar((totalAcertos / questoesConsideradas.length) * 100) : 0,
     porEixo,
   };
 }
