@@ -686,12 +686,13 @@ export const aplicacoesProficienciaRouter = router({
              a.liberada_em AS liberadaEm, a.calculada_em AS calculadaEm,
              a.prova_snapshot_json AS provaSnapshotJson,
              MAX(CASE WHEN ph.id IS NOT NULL THEN 1 ELSE 0 END) AS modoTeste,
-             COUNT(ap.id) AS totalParticipantes,
-             SUM(CASE WHEN t.id IS NULL THEN 1 ELSE 0 END) AS naoIniciaram,
-             SUM(CASE WHEN t.status IN ('EM_ANDAMENTO','BLOQUEADA','LIBERADA_CONTINUIDADE') THEN 1 ELSE 0 END) AS emAndamento,
-             SUM(CASE WHEN t.status IN ('FINALIZADA','FINALIZADA_TEMPO') THEN 1 ELSE 0 END) AS finalizados
+             COUNT(CASE WHEN u.status = 'ativo' OR t.id IS NOT NULL OR a.status IN ('ENCERRADA','CALCULADA') THEN ap.id END) AS totalParticipantes,
+             SUM(CASE WHEN (u.status = 'ativo' OR t.id IS NOT NULL OR a.status IN ('ENCERRADA','CALCULADA')) AND t.id IS NULL THEN 1 ELSE 0 END) AS naoIniciaram,
+             SUM(CASE WHEN (u.status = 'ativo' OR t.id IS NOT NULL OR a.status IN ('ENCERRADA','CALCULADA')) AND t.status IN ('EM_ANDAMENTO','BLOQUEADA','LIBERADA_CONTINUIDADE') THEN 1 ELSE 0 END) AS emAndamento,
+             SUM(CASE WHEN (u.status = 'ativo' OR t.id IS NOT NULL OR a.status IN ('ENCERRADA','CALCULADA')) AND t.status IN ('FINALIZADA','FINALIZADA_TEMPO') THEN 1 ELSE 0 END) AS finalizados
         FROM aplicacoes_proficiencia a
         LEFT JOIN aplicacoes_proficiencia_participantes ap ON ap.aplicacao_id = a.id
+        LEFT JOIN users u ON u.id = ap.colaborador_id
         LEFT JOIN tentativas_proficiencia t ON t.aplicacao_id = a.id AND t.colaborador_id = ap.colaborador_id
         LEFT JOIN provas_importadas_homologacao ph ON ph.aplicacao_teste_id = a.id
        GROUP BY a.id, a.titulo, a.agendada_para, a.status, a.liberada_em, a.calculada_em, a.prova_snapshot_json
@@ -939,16 +940,19 @@ export const aplicacoesProficienciaRouter = router({
     .mutation(async ({ input }) => {
       const db = await dbObrigatorio();
       const result = await db.execute(sql`
-        SELECT u.name, u.email
+        SELECT u.name, u.email, u.status
           FROM aplicacoes_proficiencia_participantes ap
           JOIN users u ON u.id = ap.colaborador_id
          WHERE ap.aplicacao_id = ${input.aplicacaoId}
            AND ap.colaborador_id = ${input.colaboradorId}
          LIMIT 1
       `);
-      const participante = rowsOf<{ name: string | null; email: string | null }>(result)[0];
+      const participante = rowsOf<{ name: string | null; email: string | null; status: string | null }>(result)[0];
       if (!participante) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Este participante não pertence à aplicação selecionada." });
+      }
+      if (String(participante.status) !== "ativo") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Este colaborador está inativo e não pode receber convocação para a avaliação." });
       }
       const email = String(participante.email ?? "").trim();
       if (!email || !email.includes("@")) {
@@ -968,7 +972,7 @@ export const aplicacoesProficienciaRouter = router({
       const aplicacao = await obterAplicacao(db, input.aplicacaoId);
       const participantesResult = await db.execute(sql`
         SELECT ap.colaborador_id AS colaboradorId, u.name AS colaboradorNome, u.email AS colaboradorEmail,
-               d.nome AS departamentoNome, t.id AS tentativaId, t.status AS tentativaStatus,
+               u.status AS colaboradorStatus, d.nome AS departamentoNome, t.id AS tentativaId, t.status AS tentativaStatus,
                t.iniciada_em AS iniciadaEm, t.ultima_atividade_em AS ultimaAtividadeEm,
                t.finalizada_em AS finalizadaEm, COUNT(r.id) AS respostasSalvas,
                MAX(CASE WHEN pi.id IS NOT NULL THEN 1 ELSE 0 END) AS identidadeConfirmada,
@@ -989,7 +993,13 @@ export const aplicacoesProficienciaRouter = router({
          ORDER BY u.name
       `);
       const totalQuestoes = Math.max(1, Number(aplicacao.prova.totalQuestoes || aplicacao.prova.questoes.length));
-      const participantes = rowsOf<any>(participantesResult).map(item => ({
+      const participantesBase = rowsOf<any>(participantesResult);
+      // Em aplicações ainda ativas, um colaborador inativado que nunca iniciou deixa de aparecer
+      // na convocação/monitoramento. Se já existe tentativa, o histórico é preservado.
+      const participantesVisiveis = ["AGENDADA", "LIBERADA"].includes(String(aplicacao.status))
+        ? participantesBase.filter(item => String(item.colaboradorStatus) === "ativo" || Boolean(item.tentativaId))
+        : participantesBase;
+      const participantes = participantesVisiveis.map(item => ({
         ...item,
         percentualRealizacao: arredondar((Number(item.respostasSalvas ?? 0) / totalQuestoes) * 100),
         situacao: !item.tentativaId
@@ -1681,9 +1691,11 @@ export const aplicacoesProficienciaRouter = router({
         SELECT COUNT(*) AS total,
                SUM(CASE WHEN t.status IN ('FINALIZADA','FINALIZADA_TEMPO') THEN 1 ELSE 0 END) AS finalizados
           FROM aplicacoes_proficiencia_participantes ap
+          JOIN users u ON u.id = ap.colaborador_id
           LEFT JOIN tentativas_proficiencia t
             ON t.aplicacao_id = ap.aplicacao_id AND t.colaborador_id = ap.colaborador_id
          WHERE ap.aplicacao_id = ${input.aplicacaoId}
+           AND (u.status = 'ativo' OR t.id IS NOT NULL)
       `))[0] ?? { total: 0, finalizados: 0 };
       const total = Number(contagem.total ?? 0);
       const finalizados = Number(contagem.finalizados ?? 0);
