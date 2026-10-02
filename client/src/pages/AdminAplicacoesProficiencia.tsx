@@ -563,10 +563,20 @@ export default function AdminAplicacoesProficiencia() {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => calcularMutation.mutate({ aplicacaoId: aplicacaoSelecionada })}
+                    onClick={() => {
+                      const jaCalculada = String(aplicacaoMonitorada?.status) === "CALCULADA";
+                      if (jaCalculada) {
+                        const confirmado = window.confirm(
+                          "Recalcular os resultados desta aplicação? As respostas originais dos participantes serão preservadas. Apenas os resultados, percentuais e cálculos por eixo serão atualizados com as regras válidas atuais.",
+                        );
+                        if (!confirmado) return;
+                      }
+                      calcularMutation.mutate({ aplicacaoId: aplicacaoSelecionada });
+                    }}
                     disabled={calcularMutation.isPending || !["LIBERADA", "ENCERRADA", "CALCULADA"].includes(String(aplicacaoMonitorada?.status)) || Number(monitoramento.resumo.finalizados) === 0}
                   >
-                    <Calculator className="mr-2 h-4 w-4" />CALCULAR RESULTADOS
+                    <Calculator className="mr-2 h-4 w-4" />
+                    {String(aplicacaoMonitorada?.status) === "CALCULADA" ? "RECALCULAR RESULTADOS" : "CALCULAR RESULTADOS"}
                   </Button>
                   <Badge variant={statusVariant(String(aplicacaoMonitorada?.status))}>{aplicacaoMonitorada?.status}</Badge>
                 </div>
