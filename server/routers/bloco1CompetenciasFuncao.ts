@@ -303,18 +303,11 @@ export const bloco1CompetenciasFuncaoRouter = router({
 
       const resultadosPosteriores = rowsOf<any>(resultadosPosterioresResult);
 
-      const unidadeEmpregado = normalizarNome(empregado.departamentoNome);
-      const resultadoTecnicoLinha =
-        resultadosPosteriores.find((linha: any) => {
-          const unidadeProva = normalizarNome(linha.provaUnidade);
-          return Boolean(
-            unidadeEmpregado &&
-              unidadeProva &&
-              (unidadeProva === unidadeEmpregado ||
-                unidadeProva.includes(unidadeEmpregado) ||
-                unidadeEmpregado.includes(unidadeProva)),
-          );
-        }) ?? null;
+      // O resultado oficial pertence ao próprio empregado porque a consulta acima
+      // já filtra por rp.colaborador_id. A unidade da prova é apenas informativa
+      // e não deve invalidar um resultado oficial quando o cadastro do empregado
+      // estiver associado a outro departamento/unidade.
+      const resultadoTecnicoLinha = resultadosPosteriores[0] ?? null;
 
       const resultadoTecnico = resultadoTecnicoLinha
         ? parseResultadoProficiencia(resultadoTecnicoLinha.resultadoJson)
