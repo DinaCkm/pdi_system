@@ -12,6 +12,7 @@ import confetti from "canvas-confetti";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { EvidenciaModal } from "@/components/EvidenciaModal";
+import { competenciaDaAcao } from "../../../shared/focosCompetencias";
 import { SolicitarAjusteModal } from "@/components/SolicitarAjusteModal";
 import { IIPDashboard } from "@/components/IIPDashboard";
 import { SolicitarAjusteModalMelhorado } from "@/components/SolicitarAjusteModalMelhorado";
@@ -71,19 +72,6 @@ function CertificateButton({ actionId, variant = 'card' }: { actionId: number; v
       )}
     </button>
   );
-}
-
-// Hook para buscar nomes de competências
-function useMacroNames(macroIds: number[]) {
-  const { data: competencias = [] } = trpc.competencias.listAllMacros.useQuery();
-  
-  return useMemo(() => {
-    const map: Record<number, string> = {};
-    competencias.forEach((comp: any) => {
-      map[comp.id] = comp.nome;
-    });
-    return map;
-  }, [competencias]);
 }
 
 // Componente para exibir evidência rejeitada com opção de contestação
@@ -257,9 +245,6 @@ export default function MinhasPendencias() {
     { enabled: !!userId }
   );
   
-  // Buscar nomes de competências
-  const macroIds = useMemo(() => [...new Set((acoes || []).map((a: any) => a.macroId).filter(Boolean))], [acoes]);
-  const macroNames = useMacroNames(macroIds);
 
   // Buscando histórico de uma ação específica
   const { data: actionHistory } = trpc.actions.getHistory.useQuery(
@@ -369,6 +354,19 @@ export default function MinhasPendencias() {
       return prazoA - prazoB;
     });
   }, [minhasAcoes, searchTerm, filterStatus]);
+
+  // Ações agrupadas pela competência de origem, na ordem do prazo mais próximo
+  const gruposDeAcoes = useMemo(() => {
+    const grupos = new Map<string, { info: ReturnType<typeof competenciaDaAcao>; acoes: any[] }>();
+    for (const acao of filteredAcoes) {
+      const info = competenciaDaAcao(acao);
+      const grupo = grupos.get(info.chave) ?? { info, acoes: [] };
+      grupo.acoes.push(acao);
+      grupos.set(info.chave, grupo);
+    }
+    const todos = Array.from(grupos.values());
+    return [...todos.filter((g) => g.info.informada), ...todos.filter((g) => !g.info.informada)];
+  }, [filteredAcoes]);
 
   // Função para obter badge de status
   const getStatusBadge = (status: string) => {
@@ -502,8 +500,18 @@ export default function MinhasPendencias() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
-          {filteredAcoes.map((acao: any) => {
+        <div className="space-y-8">
+          {gruposDeAcoes.map((grupo) => (
+          <section key={grupo.info.chave} className="space-y-3">
+            <div className={`border-l-4 pl-3 ${grupo.info.informada ? "border-blue-500" : "border-red-500"}`}>
+              <h2 className="text-lg font-semibold">
+                {grupo.info.competencia}
+                {grupo.info.nivel && <span className="ml-2 text-sm font-medium text-blue-700">· {grupo.info.nivel}</span>}
+              </h2>
+              <p className={`text-xs ${grupo.info.informada ? "text-muted-foreground" : "text-red-600"}`}>{grupo.info.origem}</p>
+            </div>
+            <div className="grid gap-4">
+          {grupo.acoes.map((acao: any) => {
             return (
             <Card key={acao.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
@@ -536,21 +544,19 @@ export default function MinhasPendencias() {
                     </div>
                   </div>
 
-                  {/* Macro Competência */}
-                  {acao.macroId && (
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Macro</p>
-                      <p className="text-sm font-medium mt-1">{macroNames[acao.macroId] || `Competência ${acao.macroId}`}</p>
-                    </div>
-                  )}
-
-                  {/* Micro Competência */}
-                  {acao.microcompetencia && (
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Micro</p>
-                      <p className="text-sm font-medium mt-1 truncate">{acao.microcompetencia}</p>
-                    </div>
-                  )}
+                  {/* Competência de origem */}
+                  {(() => {
+                    const info = competenciaDaAcao(acao);
+                    return (
+                      <div className="col-span-1 md:col-span-3">
+                        <p className="text-xs text-muted-foreground font-medium">Competência</p>
+                        <p className={`text-sm font-medium mt-1 ${info.informada ? "" : "text-red-600"}`}>
+                          {info.competencia}{info.nivel ? ` (${info.nivel})` : ""}
+                          {info.informada && info.origem && <span className="text-muted-foreground font-normal"> · {info.origem}</span>}
+                        </p>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Botões de Ação */}
@@ -645,7 +651,7 @@ export default function MinhasPendencias() {
                       // CASO 1: AÇÃO APROVADA/CONCLUÍDA - PRIORIDADE MÁXIMA
                       if (acao.status === 'concluida') {
                         const linkedinText = encodeURIComponent(
-                          `Concluí mais uma etapa do meu Plano de Desenvolvimento Individual (PDI)!\n\nAção: "${acao.titulo}"${acao.macroId && macroNames[acao.macroId] ? `\nCompetência: "${macroNames[acao.macroId]}"` : ''}\n\nInvestindo no meu crescimento profissional com o programa Eco do Bem - EVOLUIR!\n\n@competênciasdobem @ecobem\n\n#DesenvolvimentoProfissional #PDI #EcoDoBem #EVOLUIR #CrescimentoProfissional`
+                          `Concluí mais uma etapa do meu Plano de Desenvolvimento Individual (PDI)!\n\nAção: "${acao.titulo}"${competenciaDaAcao(acao).informada ? `\nCompetência: "${competenciaDaAcao(acao).competencia}"` : ''}\n\nInvestindo no meu crescimento profissional com o programa Eco do Bem - EVOLUIR!\n\n@competênciasdobem @ecobem\n\n#DesenvolvimentoProfissional #PDI #EcoDoBem #EVOLUIR #CrescimentoProfissional`
                         );
                         const linkedinUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${linkedinText}`;
                         return (
@@ -712,6 +718,9 @@ export default function MinhasPendencias() {
             </Card>
             );
           })}
+            </div>
+          </section>
+          ))}
         </div>
       )}
 
@@ -854,19 +863,18 @@ export default function MinhasPendencias() {
                   <p className="mt-1">{formatDate(selectedAcao.prazo)}</p>
                 </div>
 
-                {selectedAcao.macroId && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Macro Competência</p>
-                    <p className="mt-1">{macroNames[selectedAcao.macroId] || `Competência ${selectedAcao.macroId}`}</p>
-                  </div>
-                )}
-
-                {selectedAcao.microcompetencia && (
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Micro Competência</p>
-                    <p className="mt-1">{selectedAcao.microcompetencia}</p>
-                  </div>
-                )}
+                {(() => {
+                  const info = competenciaDaAcao(selectedAcao);
+                  return (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Competência</p>
+                      <p className={`mt-1 ${info.informada ? "" : "text-red-600"}`}>
+                        {info.competencia}{info.nivel ? ` (${info.nivel})` : ""}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{info.origem}</p>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}

@@ -11,7 +11,10 @@ import {
   eixosTecnicosDoColaborador,
   ensureAcoesLastroSchema,
   gravarLastro,
+  lastroDaAcao,
   lastroDasAcoes,
+  rotuloDoEixo,
+  validarLastro,
 } from "../services/acoesLastro";
 
 let technicalActionSchemaReady = false;
@@ -221,6 +224,10 @@ export const actionsRouter = router({
     }),
 
   // Obter ação por ID
+  lastro: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => await lastroDaAcao(input.id)),
+
   getById: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
@@ -270,17 +277,9 @@ export const actionsRouter = router({
       }
       
       await ensureAcoesLastroSchema();
-      const eixo = input.eixoNome.trim();
-      if (input.tipoCompetencia === 'COMPORTAMENTAL') {
-        if (!COMPETENCIAS_COMPORTAMENTAIS_AD.includes(eixo)) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: `"${eixo}" não é uma competência comportamental da Avaliação de Desempenho.` });
-        }
-      } else {
-        const colaboradorId = await colaboradorDoPdi(input.pdiId);
-        const eixosDoEmpregado = colaboradorId ? await eixosTecnicosDoColaborador(colaboradorId) : [];
-        if (!eixosDoEmpregado.includes(eixo)) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: `O eixo técnico "${eixo}" não está na matriz deste empregado.` });
-        }
+      const lastro = await validarLastro(input.pdiId, input.tipoCompetencia, input.eixoNome, input.focoBem);
+      if ('erro' in lastro) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: lastro.erro });
       }
 
       // Ações novas não usam macro nem microcompetência: o vínculo é o tipo + eixo.
@@ -293,7 +292,7 @@ export const actionsRouter = router({
         prazo: prazoDate,
         status: 'nao_iniciada',
       });
-      await gravarLastro(Number(actionId), input.tipoCompetencia, eixo, input.focoBem?.trim() || null);
+      await gravarLastro(Number(actionId), input.tipoCompetencia, lastro.eixo, lastro.foco);
 
       console.log('[actions.create] Ação criada com ID:', actionId);
       return { success: true, id: actionId };
@@ -308,13 +307,44 @@ export const actionsRouter = router({
       status: z.string().optional(),
       prazo: z.string().optional(),
       macroId: z.number().optional(),
+      // Competência de origem: enviados juntos, só pelo admin
+      tipoCompetencia: z.enum(['TECNICA', 'COMPORTAMENTAL']).optional(),
+      eixoNome: z.string().min(1).max(255).optional(),
+      focoBem: z.string().max(255).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       if (ctx.user.role !== 'admin' && ctx.user.role !== 'lider') {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Sem permissão' });
       }
-      
-      const { id, ...data } = input;
+
+      const { id, tipoCompetencia, eixoNome, focoBem, ...data } = input;
+      if (tipoCompetencia || eixoNome) {
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Apenas o administrador altera a competência da ação.' });
+        }
+        if (!tipoCompetencia || !eixoNome) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Informe o tipo e a competência da ação.' });
+        }
+        const atual = await lastroDaAcao(id);
+        if (!atual) throw new TRPCError({ code: 'NOT_FOUND', message: 'Ação não encontrada' });
+        const lastro = await validarLastro(atual.pdiId, tipoCompetencia, eixoNome, focoBem);
+        if ('erro' in lastro) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: lastro.erro });
+        }
+        const antes = [rotuloDoEixo(atual.tipo, atual.eixo), atual.foco].filter(Boolean).join(' › ');
+        const depois = [rotuloDoEixo(tipoCompetencia, lastro.eixo), lastro.foco].filter(Boolean).join(' › ');
+        if (antes !== depois) {
+          await gravarLastro(id, tipoCompetencia, lastro.eixo, lastro.foco);
+          await db.createAcaoHistorico({
+            actionId: id,
+            campo: 'Competência',
+            valorAnterior: antes || undefined,
+            valorNovo: depois,
+            alteradoPor: Number(ctx.user.id),
+          });
+        }
+      }
+
       await db.updateAction(id, data, Number(ctx.user.id));
       
       console.log('[actions.update] Ação atualizada:', id);

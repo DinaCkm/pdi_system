@@ -3,6 +3,8 @@ import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { formatDateForInput, formatDateDisplay } from '@/lib/dateUtils';
 import RichTextEditor from '@/components/RichTextEditor';
+import { useAuth } from '@/_core/hooks/useAuth';
+import { focosPermitidosDaCompetenciaAD } from '../../../shared/focosCompetencias';
 
 export default function AcoesEditar() {
   const [, navigate] = useLocation();
@@ -18,11 +20,24 @@ export default function AcoesEditar() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Competência de origem (tipo + eixo + foco); só o admin altera
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const [lastroForm, setLastroForm] = useState({ tipo: '', eixo: '', foco: '' });
+  const [lastroOriginal, setLastroOriginal] = useState({ tipo: '', eixo: '', foco: '' });
 
   // Queries
   const { data: acao } = trpc.actions.getById.useQuery({ id: acaoId }, { enabled: !!acaoId });
   const { data: macros = [] } = trpc.competencias.listAllMacros.useQuery();
   const { data: historico = [] } = trpc.actions.getHistory.useQuery({ actionId: acaoId }, { enabled: !!acaoId });
+  const { data: lastro } = trpc.actions.lastro.useQuery({ id: acaoId }, { enabled: !!acaoId });
+  const { data: eixosDisponiveis } = trpc.actions.eixosDisponiveis.useQuery(
+    { pdiId: Number(lastro?.pdiId ?? 0) },
+    { enabled: isAdmin && Number(lastro?.pdiId ?? 0) > 0 },
+  );
+  const focosDoEixo = lastroForm.tipo === 'COMPORTAMENTAL' && lastroForm.eixo
+    ? focosPermitidosDaCompetenciaAD(lastroForm.eixo)
+    : [];
 
   // Utils para invalidar cache
   const utils = trpc.useUtils();
@@ -40,6 +55,13 @@ export default function AcoesEditar() {
       setErrors({ submit: error.message });
     },
   });
+
+  useEffect(() => {
+    if (!lastro) return;
+    const inicial = { tipo: lastro.tipo ?? '', eixo: lastro.eixo ?? '', foco: lastro.foco ?? '' };
+    setLastroForm(inicial);
+    setLastroOriginal(inicial);
+  }, [lastro]);
 
   // Carregar dados da ação - ÚNICO useEffect para evitar duplicação
   useEffect(() => {
@@ -82,6 +104,22 @@ export default function AcoesEditar() {
       return;
     }
 
+    const lastroMudou = isAdmin && (
+      lastroForm.tipo !== lastroOriginal.tipo ||
+      lastroForm.eixo !== lastroOriginal.eixo ||
+      lastroForm.foco !== lastroOriginal.foco
+    );
+    if (lastroMudou) {
+      if (!lastroForm.tipo || !lastroForm.eixo) {
+        setErrors({ lastro: 'Escolha o tipo e a competência da ação.' });
+        return;
+      }
+      if (lastroForm.tipo === 'COMPORTAMENTAL' && !lastroForm.foco) {
+        setErrors({ lastro: 'Escolha o foco da ação (Básica, Essencial, Master ou Jornada do Futuro).' });
+        return;
+      }
+    }
+
     updateMutation.mutate({
       id: acaoId,
       titulo: formData.titulo,
@@ -89,6 +127,11 @@ export default function AcoesEditar() {
       prazo: formData.prazo, // Enviar como string no formato YYYY-MM-DD
       status: formData.status,
       macroId: formData.macroId ? parseInt(formData.macroId) : undefined,
+      ...(lastroMudou ? {
+        tipoCompetencia: lastroForm.tipo as 'TECNICA' | 'COMPORTAMENTAL',
+        eixoNome: lastroForm.eixo,
+        ...(lastroForm.tipo === 'COMPORTAMENTAL' ? { focoBem: lastroForm.foco } : {}),
+      } : {}),
     });
   };
 
@@ -152,9 +195,63 @@ export default function AcoesEditar() {
             />
           </div>
 
+          {/* Competência de origem */}
+          {isAdmin && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <span style={{ fontWeight: '500' }}>Competência de origem *</span>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {([['COMPORTAMENTAL', 'Comportamental'], ['TECNICA', 'Técnica']] as const).map(([valor, rotulo]) => (
+                  <label key={valor} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px' }}>
+                    <input
+                      type="radio"
+                      name="lastroTipo"
+                      checked={lastroForm.tipo === valor}
+                      onChange={() => { setLastroForm({ tipo: valor, eixo: '', foco: '' }); setErrors(prev => ({ ...prev, lastro: '' })); }}
+                    />
+                    {rotulo}
+                  </label>
+                ))}
+              </div>
+              {lastroForm.tipo && (
+                <select
+                  id="lastroEixo"
+                  value={lastroForm.eixo}
+                  onChange={(e) => { setLastroForm(prev => ({ ...prev, eixo: e.target.value, foco: '' })); setErrors(prev => ({ ...prev, lastro: '' })); }}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: 'white', color: 'black', fontSize: '14px' }}
+                >
+                  <option value="">{lastroForm.tipo === 'TECNICA' ? 'Selecione o eixo técnico' : 'Selecione a competência'}</option>
+                  {(lastroForm.tipo === 'TECNICA' ? eixosDisponiveis?.tecnicos ?? [] : eixosDisponiveis?.comportamentais ?? []).map((nome: string) => (
+                    <option key={nome} value={nome}>{nome}</option>
+                  ))}
+                  {lastroForm.eixo && !(lastroForm.tipo === 'TECNICA' ? eixosDisponiveis?.tecnicos ?? [] : eixosDisponiveis?.comportamentais ?? []).includes(lastroForm.eixo) && (
+                    <option value={lastroForm.eixo}>{lastroForm.eixo}</option>
+                  )}
+                </select>
+              )}
+              {lastroForm.tipo === 'COMPORTAMENTAL' && lastroForm.eixo && (
+                <select
+                  id="lastroFoco"
+                  value={lastroForm.foco}
+                  onChange={(e) => { setLastroForm(prev => ({ ...prev, foco: e.target.value })); setErrors(prev => ({ ...prev, lastro: '' })); }}
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #ccc', borderRadius: '4px', backgroundColor: 'white', color: 'black', fontSize: '14px' }}
+                >
+                  <option value="">Selecione o foco (Básica, Essencial, Master ou Jornada do Futuro)</option>
+                  {focosDoEixo.map((foco) => <option key={foco} value={foco}>{foco}</option>)}
+                  {lastroForm.foco && !focosDoEixo.includes(lastroForm.foco) && (
+                    <option value={lastroForm.foco}>{lastroForm.foco} (fora da referência)</option>
+                  )}
+                </select>
+              )}
+              {!lastroOriginal.eixo && (
+                <span style={{ color: '#b45309', fontSize: '12px' }}>Esta ação ainda não tem competência de origem. Escolha para que ela apareça corretamente para o empregado.</span>
+              )}
+              {errors.lastro && <span style={{ color: 'red', fontSize: '12px' }}>{errors.lastro}</span>}
+            </div>
+          )}
+
           {/* Competência */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label htmlFor="macroId" style={{ fontWeight: '500' }}>Competência</label>
+            <label htmlFor="macroId" style={{ fontWeight: '500' }}>Macrocompetência (cadastro anterior)</label>
             <select
               id="macroId"
               name="macroId"

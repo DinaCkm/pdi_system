@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { COMPETENCIAS_AD_HISTORICAS, competenciaADRelacionadaDaMacro } from "../../shared/competenciasAdRelacionamento";
+import { focosPermitidosDaCompetenciaAD } from "../../shared/focosCompetencias";
 
 // Lastro das ações: toda ação fica ligada a um eixo técnico (matriz da unidade)
 // ou a uma competência comportamental da Avaliação de Desempenho.
@@ -59,6 +60,43 @@ export async function colaboradorDoPdi(pdiId: number): Promise<number | null> {
   if (!conn) return null;
   const linhas = rowsOf<any>(await conn.execute(sql`SELECT colaboradorId FROM pdis WHERE id = ${pdiId} LIMIT 1`));
   return linhas[0]?.colaboradorId ? Number(linhas[0].colaboradorId) : null;
+}
+
+// Toda ação precisa da competência de origem: tipo + eixo e, no comportamental, o foco
+// (Básica, Essencial, Master ou Jornada do Futuro) ligado àquela competência da AD.
+export async function validarLastro(pdiId: number, tipo: TipoCompetencia, eixoNome: string, focoBem?: string | null) {
+  const eixo = String(eixoNome ?? "").trim();
+  const foco = String(focoBem ?? "").trim() || null;
+  if (tipo === "COMPORTAMENTAL") {
+    if (!COMPETENCIAS_COMPORTAMENTAIS_AD.includes(eixo)) {
+      return { erro: `"${eixo}" não é uma competência comportamental da Avaliação de Desempenho.` } as const;
+    }
+    if (!foco) {
+      return { erro: "Escolha o foco da ação (Básica, Essencial, Master ou Jornada do Futuro)." } as const;
+    }
+    if (!focosPermitidosDaCompetenciaAD(eixo).includes(foco)) {
+      return { erro: `O foco "${foco}" não pertence à competência "${eixo}".` } as const;
+    }
+    return { eixo, foco } as const;
+  }
+  const colaboradorId = await colaboradorDoPdi(pdiId);
+  const eixosDoEmpregado = colaboradorId ? await eixosTecnicosDoColaborador(colaboradorId) : [];
+  if (!eixosDoEmpregado.includes(eixo)) {
+    return { erro: `O eixo técnico "${eixo}" não está na matriz deste empregado.` } as const;
+  }
+  return { eixo, foco: null } as const;
+}
+
+export async function lastroDaAcao(actionId: number) {
+  await ensureAcoesLastroSchema();
+  const conn = await getDb();
+  if (!conn) return null;
+  const linhas = rowsOf<any>(await conn.execute(sql`
+    SELECT pdiId, tipo_competencia AS tipo, eixo_nome AS eixo, foco_bem AS foco FROM actions WHERE id = ${actionId} LIMIT 1
+  `));
+  const l = linhas[0];
+  if (!l) return null;
+  return { pdiId: Number(l.pdiId), tipo: (l.tipo ?? null) as TipoCompetencia | null, eixo: l.eixo ?? null, foco: l.foco ?? null };
 }
 
 export async function gravarLastro(actionId: number, tipo: TipoCompetencia, eixo: string, foco: string | null) {
