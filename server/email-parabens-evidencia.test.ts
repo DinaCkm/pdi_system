@@ -11,11 +11,13 @@ describe('E-mail de parabéns por evidência aprovada', () => {
   });
 
   it('deve ter a função integrada na procedure approve de evidências', async () => {
-    // Verificar que o import existe no routers.ts
+    // O envio fica centralizado em finalizarAcao, chamada pela procedure approve
     const fs = await import('fs');
     const routersContent = fs.readFileSync('./server/routers.ts', 'utf-8');
-    expect(routersContent).toContain('sendEmailParabensEvidenciaAprovada');
-    expect(routersContent).toContain('Erro ao enviar e-mail de parabéns');
+    const servicoContent = fs.readFileSync('./server/services/finalizacaoAcao.ts', 'utf-8');
+    expect(routersContent).toContain('finalizarAcao');
+    expect(servicoContent).toContain('sendEmailParabensEvidenciaAprovada');
+    expect(servicoContent).toContain('Erro ao enviar e-mail de parabéns');
   });
 
   it('deve ter o texto de incentivo ao LinkedIn na função de e-mail', async () => {
@@ -30,7 +32,7 @@ describe('E-mail de parabéns por evidência aprovada', () => {
     const fs = await import('fs');
     const routersContent = fs.readFileSync('./server/routers.ts', 'utf-8');
     // Verificar que está integrado tanto na aprovação pelo admin quanto pelo líder
-    expect(routersContent).toContain('[evidences.approve] Erro ao enviar e-mail de parabéns');
-    expect(routersContent).toContain('[evidences.aprovar-lider] Erro ao enviar e-mail de parabéns');
+    expect(routersContent).toContain("origem: 'evidencia_admin'");
+    expect(routersContent).toContain("origem: 'evidencia_lider'");
   });
 });
