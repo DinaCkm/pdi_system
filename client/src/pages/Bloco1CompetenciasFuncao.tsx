@@ -54,13 +54,31 @@ function limitar(valor: number, minimo = 12, maximo = 100) {
   return Math.max(minimo, Math.min(maximo, Number.isFinite(valor) ? valor : minimo));
 }
 
-function classificacaoNaoEssencial(valor: unknown) {
-  const normalizado = String(valor ?? "")
+function normalizarClassificacao(valor: unknown) {
+  return String(valor ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[\s-]+/g, "_")
     .toUpperCase();
-  return normalizado.includes("NAO_ESSENCIAL") || normalizado.includes("NAO_APLICAVEL");
+}
+
+function classificacaoEssencial(valor: unknown) {
+  return normalizarClassificacao(valor) === "ESSENCIAL";
+}
+
+function classificacaoForaDoEssencial(valor: unknown) {
+  const normalizado = normalizarClassificacao(valor);
+  return ["TRANSVERSAL", "NAO_ESSENCIAL", "NAO_APLICAVEL"].includes(normalizado);
+}
+
+function conceitoVisual(percentual: number | null | undefined) {
+  if (percentual === null || percentual === undefined || !Number.isFinite(Number(percentual))) return null;
+  const valor = Math.max(0, Math.min(100, Number(percentual)));
+  if (valor >= 90) return "Referência";
+  if (valor >= 85) return "Conhecimento Avançado";
+  if (valor >= 75) return "Conhecimento Consolidado";
+  if (valor >= 65) return "Conhecimento Aplicado";
+  return "Em Desenvolvimento";
 }
 
 function normalizarNivel(valor: number | null | undefined, minimo: number | null | undefined, maximo: number | null | undefined) {
@@ -320,16 +338,44 @@ export default function Bloco1CompetenciasFuncao() {
       }
 
       const nivelPotencial = atual ?? anterior;
-      if (classificacaoNaoEssencial(item.classificacao) && nivelPotencial !== null) {
-        potencialidades.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: nivelPotencial });
+      if (classificacaoForaDoEssencial(item.classificacao) && nivelPotencial !== null && nivelPotencial > 0) {
+        const conceito = atual !== null
+          ? (item.conceitoAtual ? conceitoConhecimentoLabel[item.conceitoAtual as keyof typeof conceitoConhecimentoLabel] : conceitoVisual(atual))
+          : (item.conceitoAnterior ? conceitoConhecimentoLabel[item.conceitoAnterior as keyof typeof conceitoConhecimentoLabel] : conceitoVisual(anterior));
+        const relacao = relacaoLabel[item.classificacao] || "Conhecimento adicional";
+        potencialidades.push({
+          nome: item.eixoNome,
+          tipo: "Técnica",
+          intensidade: nivelPotencial,
+          motivo: `${conceito || "Conhecimento demonstrado"} · ${relacao}`,
+        });
       }
 
-      if (item.novaCompetencia) {
-        focos.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: atual ?? 50, motivo: "Nova competência incluída na avaliação." });
-      } else if (delta !== null && delta < 0) {
-        focos.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: Math.abs(delta), motivo: "Houve redução em relação à avaliação anterior." });
-      } else if (delta === 0) {
-        focos.push({ nome: item.eixoNome, tipo: "Técnica", intensidade: 12, motivo: "Não houve crescimento entre as avaliações." });
+      const essencial = classificacaoEssencial(item.classificacao);
+      const nivelAtualBaixo = item.conceitoAtual === "EM_DESENVOLVIMENTO" || item.conceitoAtual === "CONHECIMENTO_APLICADO";
+      const houveQuedaConceitual = item.evolucaoConceitual === "OPORTUNIDADE_DESENVOLVIMENTO";
+
+      if (essencial && atual !== null && nivelAtualBaixo) {
+        focos.push({
+          nome: item.eixoNome,
+          tipo: "Técnica",
+          intensidade: Math.max(12, 100 - atual),
+          motivo: "Conhecimento essencial ainda em desenvolvimento; recomenda-se continuidade no próximo PDI.",
+        });
+      } else if (essencial && atual !== null && houveQuedaConceitual) {
+        focos.push({
+          nome: item.eixoNome,
+          tipo: "Técnica",
+          intensidade: Math.max(12, Math.abs(delta ?? 0)),
+          motivo: "Houve redução suficiente para alterar o nível de conhecimento entre os ciclos.",
+        });
+      } else if (essencial && item.novaCompetencia && atual === null) {
+        focos.push({
+          nome: item.eixoNome,
+          tipo: "Técnica",
+          intensidade: 50,
+          motivo: "Conhecimento essencial novo ainda sem leitura atual disponível.",
+        });
       }
     }
 
@@ -355,16 +401,41 @@ export default function Bloco1CompetenciasFuncao() {
         mantidas.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: atualNorm ?? 50 });
       }
 
-      if (classificacaoNaoEssencial(item.classificacao) && atualNorm !== null) {
-        potencialidades.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: atualNorm });
+      if (classificacaoForaDoEssencial(item.classificacao) && atualNorm !== null && atualNorm > 0) {
+        potencialidades.push({
+          nome: item.competenciaNome,
+          tipo: "Comportamental",
+          intensidade: atualNorm,
+          motivo: conceitoVisual(atualNorm) || "Competência adicional demonstrada",
+        });
       }
 
-      if (semHistoricoComparavel || item.novaCompetencia) {
-        focos.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: atualNorm ?? 50, motivo: "Competência sem histórico comparável; considerar no próximo ciclo de desenvolvimento." });
-      } else if (deltaNorm !== null && deltaNorm < 0) {
-        focos.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: Math.abs(deltaNorm), motivo: "Houve redução em relação à avaliação anterior." });
-      } else if (deltaNorm === 0) {
-        focos.push({ nome: item.competenciaNome, tipo: "Comportamental", intensidade: 12, motivo: "Não houve crescimento entre as avaliações." });
+      const conceitoAnteriorComportamental = conceitoVisual(anteriorNorm);
+      const conceitoAtualComportamental = conceitoVisual(atualNorm);
+      const nivelComportamentalBaixo = atualNorm !== null && atualNorm < 75;
+      const quedaConceitualComportamental =
+        anteriorNorm !== null &&
+        atualNorm !== null &&
+        conceitoAnteriorComportamental !== null &&
+        conceitoAtualComportamental !== null &&
+        deltaNorm !== null &&
+        deltaNorm < 0 &&
+        conceitoAnteriorComportamental !== conceitoAtualComportamental;
+
+      if (nivelComportamentalBaixo) {
+        focos.push({
+          nome: item.competenciaNome,
+          tipo: "Comportamental",
+          intensidade: Math.max(12, 100 - (atualNorm ?? 0)),
+          motivo: "Nível atual indica oportunidade de desenvolvimento no próximo PDI.",
+        });
+      } else if (quedaConceitualComportamental) {
+        focos.push({
+          nome: item.competenciaNome,
+          tipo: "Comportamental",
+          intensidade: Math.max(12, Math.abs(deltaNorm ?? 0)),
+          motivo: "Houve redução suficiente para alterar o nível observado entre os ciclos.",
+        });
       }
     }
 
@@ -543,7 +614,7 @@ export default function Bloco1CompetenciasFuncao() {
             {sinteseAberta && (
               <div className="bg-gradient-to-b from-[#F8F6FC] via-white to-[#F2FBFC] p-4 md:p-7">
                 <div className="mb-5 rounded-2xl border border-violet-100 bg-white/80 p-4 text-sm text-slate-600">
-                  <strong className="text-slate-800">Como ler:</strong> os gráficos não apresentam notas ou percentuais. A intensidade das barras serve apenas para destacar visualmente as competências. “Força da Evolução” considera crescimento de pelo menos 10% da amplitude da escala. Para “Pontos de Foco”, não existe margem de tolerância: qualquer redução ou ausência de crescimento entra como foco do próximo PDI.
+                  <strong className="text-slate-800">Como ler:</strong> os gráficos não apresentam notas ou percentuais. “Força da Evolução” destaca crescimentos relevantes. “Potencialidades” mostra conhecimentos demonstrados além dos Essenciais, mesmo quando não houve evolução entre ciclos. “Pontos de Foco” considera necessidades reais de desenvolvimento: conhecimento Essencial ainda não consolidado ou redução suficiente para mudar de nível. Manter um conhecimento já consolidado, avançado ou de referência não gera foco automaticamente.
                 </div>
                 <div className="grid gap-5 xl:grid-cols-2">
                   <GraficoVisual
@@ -556,11 +627,11 @@ export default function Bloco1CompetenciasFuncao() {
                   />
                   <GraficoVisual
                     titulo="Potencialidades"
-                    descricao="Nível de desenvolvimento observado em competências classificadas como não essenciais."
+                    descricao="Conhecimentos demonstrados além daqueles Essenciais para a função atual. Podem estar em desenvolvimento ou já consolidados."
                     itens={sintese.potencialidades}
                     accent={ECO.turquesa}
                     icon={Sparkles}
-                    vazio="Não há potencialidades não essenciais disponíveis para esta leitura."
+                    vazio="Ainda não há conhecimentos adicionais disponíveis para esta leitura."
                   />
                   <GraficoVisual
                     titulo="Crescimento Positivo"
@@ -572,11 +643,11 @@ export default function Bloco1CompetenciasFuncao() {
                   />
                   <GraficoVisual
                     titulo="Pontos de Foco para o Próximo PDI"
-                    descricao="Novas competências, qualquer redução e qualquer ausência de crescimento entram como foco do próximo PDI."
+                    descricao="Conhecimentos e competências que ainda precisam ser fortalecidos ou que apresentaram uma redução relevante de nível."
                     itens={sintese.focos}
                     accent={ECO.roxoClaro}
                     icon={Target}
-                    vazio="Nenhum ponto de foco foi identificado pelos critérios atuais."
+                    vazio="Nenhuma necessidade prioritária de desenvolvimento foi identificada nesta leitura."
                   />
                 </div>
               </div>
@@ -937,7 +1008,8 @@ export default function Bloco1CompetenciasFuncao() {
               <p><strong>Conhecimentos técnicos:</strong> o Ciclo 2025 preserva a referência histórica. O Ciclo 2026 apresenta o nível de conhecimento integrado. Nos eixos Essenciais, o engajamento no PDI pode calibrar o indicador em até 10%, sem alterar a medição técnica original.</p>
               <p><strong>Competências comportamentais:</strong> comparação das duas referências válidas mais recentes da mesma competência e mesma escala.</p>
               <p><strong>Leitura:</strong> a interface prioriza conceitos de conhecimento e desenvolvimento. Percentuais e memória de cálculo ficam disponíveis somente ao administrador.</p>
-              <p><strong>PDI:</strong> para definição de foco do próximo ciclo não há margem de 10%: qualquer redução, ausência de crescimento ou competência nova entra como ponto de foco. O limiar de 10% é usado apenas para destacar a força da evolução.</p>
+              <p><strong>Potencialidades:</strong> conhecimentos fora do grupo Essencial aparecem quando há conhecimento demonstrado, independentemente de ter havido crescimento entre ciclos.</p>
+              <p><strong>Pontos de Foco:</strong> estabilidade, por si só, não gera foco. Nos conhecimentos técnicos, entram os Essenciais ainda em desenvolvimento ou que tenham sofrido queda suficiente para mudar de nível. Nas competências comportamentais, o foco considera nível atual que ainda exige desenvolvimento ou queda conceitual relevante.</p>
               <p><strong>DISC:</strong> não participa do cálculo atual; fica reservado para funcionalidade futura.</p>
             </CardContent>
           </Card>
