@@ -31,6 +31,7 @@ import AvaliacoesProficiencia from "./pages/AvaliacoesProficiencia";
 import EvolucaoProficiencia from "./pages/EvolucaoProficiencia";
 import Evolucao from "./pages/Evolucao";
 import AdminEixosTecnicos from "./pages/AdminEixosTecnicos";
+import MeusEixosTecnicos from "./pages/MeusEixosTecnicos";
 import ImportarEixosAvaliacoes from "./pages/ImportarEixosAvaliacoes";
 import ImportarProvas from "./pages/ImportarProvas";
 import AdminAplicacoesProficiencia from "./pages/AdminAplicacoesProficiencia";
@@ -113,6 +114,7 @@ function Router() {
       <Route path={"/avaliacoes"}><DashboardLayout><AvaliacoesProficiencia /></DashboardLayout></Route>
       <Route path={"/evolucao"}><DashboardLayout><Evolucao /></DashboardLayout></Route>
       <Route path={"/admin-eixos-tecnicos"}><DashboardLayout><AdminEixosTecnicos /></DashboardLayout></Route>
+      <Route path={"/meus-eixos-tecnicos"}><DashboardLayout><MeusEixosTecnicos /></DashboardLayout></Route>
       <Route path={"/importar-eixos-avaliacoes"}><DashboardLayout><ImportarEixosAvaliacoes /></DashboardLayout></Route>
       <Route path={"/importar-provas"}><DashboardLayout><ImportarProvas /></DashboardLayout></Route>
       <Route path={"/admin-aplicacoes-proficiencia"}><DashboardLayout><AdminAplicacoesProficiencia /></DashboardLayout></Route>

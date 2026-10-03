@@ -68,6 +68,31 @@ export async function ensureTechnicalMatrixTables() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `));
 
+  // Solicitações de reclassificação feitas pelo próprio empregado.
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS prova_utic_eixo_solicitacoes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      matriz_id INT NOT NULL,
+      colaborador_id INT NOT NULL,
+      eixo_id VARCHAR(40) NOT NULL,
+      eixo_nome VARCHAR(255) NOT NULL,
+      relacao_atual VARCHAR(20) NULL,
+      relacao_solicitada ENUM('ESSENCIAL','TRANSVERSAL','NAO_ESSENCIAL') NOT NULL,
+      justificativa TEXT NOT NULL,
+      status ENUM('PENDENTE','AJUSTADA','MANTIDA') NOT NULL DEFAULT 'PENDENTE',
+      relacao_final VARCHAR(20) NULL,
+      resposta_admin TEXT NULL,
+      respondido_por INT NULL,
+      respondido_em DATETIME NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_eixo_solic_status (status),
+      INDEX idx_eixo_solic_colaborador (colaborador_id),
+      INDEX idx_eixo_solic_matriz (matriz_id),
+      CONSTRAINT fk_eixo_solic_matriz FOREIGN KEY (matriz_id) REFERENCES prova_utic_matrizes(id) ON DELETE CASCADE,
+      CONSTRAINT fk_eixo_solic_colaborador FOREIGN KEY (colaborador_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `));
+
   const colunasResult = await db.execute(sql`
     SELECT COLUMN_NAME AS columnName, COLUMN_TYPE AS columnType, IS_NULLABLE AS isNullable
       FROM information_schema.COLUMNS

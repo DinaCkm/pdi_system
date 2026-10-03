@@ -1,13 +1,183 @@
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
-import { adminProcedure, router } from "../_core/customTrpc";
+import { adminProcedure, assessmentProcedure, router } from "../_core/customTrpc";
+import { sendEmail } from "../_core/email";
+import * as dbApi from "../db";
 import { ensureTechnicalMatrixTables } from "../services/technicalMatrixSchema";
 
 function rowsOf<T>(result: any): T[] {
   if (Array.isArray(result?.[0])) return result[0] as T[];
   if (Array.isArray(result)) return result as T[];
   return [];
+}
+
+
+const RELACAO_TEXTO: Record<string, string> = {
+  ESSENCIAL: "Essencial",
+  TRANSVERSAL: "Transversal",
+  NAO_ESSENCIAL: "Não essencial",
+};
+const textoRelacao = (valor: unknown) => RELACAO_TEXTO[String(valor ?? "")] ?? "Pendente de análise";
+
+type GravacaoEixo = {
+  matrizId: number;
+  eixoId: string;
+  eixo: string;
+  relacao: "ESSENCIAL" | "TRANSVERSAL" | "NAO_ESSENCIAL" | null;
+  statusClassificacao: "CLASSIFICADO" | "PENDENTE";
+  justificativa?: string | null;
+  anterior: number | null;
+  motivo: string;
+  observacao?: string;
+};
+
+// Grava o eixo da matriz e registra a auditoria. Usado pela correção manual do admin
+// e pela resposta às solicitações de reclassificação dos empregados.
+async function gravarEixo(db: any, input: GravacaoEixo, usuarioId: number) {
+  const anteriorResult = await db.execute(sql`
+    SELECT eixo_nome AS eixo, relacao,
+           status_classificacao AS statusClassificacao,
+           justificativa, percentual_anterior AS anterior
+      FROM prova_utic_matriz_eixos
+     WHERE matriz_id = ${input.matrizId} AND eixo_id = ${input.eixoId}
+     LIMIT 1
+  `);
+  const anterior = rowsOf<any>(anteriorResult)[0] ?? null;
+  const novo = {
+    eixo: input.eixo,
+    relacao: input.relacao,
+    statusClassificacao: input.statusClassificacao,
+    justificativa: input.justificativa ?? null,
+    anterior: input.anterior,
+  };
+
+  await db.execute(sql`
+    INSERT INTO prova_utic_matriz_eixos
+      (matriz_id, eixo_id, eixo_nome, relacao, status_classificacao, justificativa, percentual_anterior)
+    VALUES
+      (${input.matrizId}, ${input.eixoId}, ${input.eixo}, ${input.relacao},
+       ${input.statusClassificacao}, ${input.justificativa ?? null}, ${input.anterior})
+    ON DUPLICATE KEY UPDATE
+      eixo_nome = VALUES(eixo_nome),
+      relacao = VALUES(relacao),
+      status_classificacao = VALUES(status_classificacao),
+      justificativa = VALUES(justificativa),
+      percentual_anterior = VALUES(percentual_anterior),
+      updated_at = NOW()
+  `);
+
+  await db.execute(sql`
+    UPDATE prova_utic_matrizes
+       SET atualizado_por = ${usuarioId}, updated_at = NOW()
+     WHERE id = ${input.matrizId}
+  `);
+
+  await db.execute(sql`
+    INSERT INTO prova_utic_matriz_historico
+      (matriz_id, eixo_id, valor_anterior, valor_novo, motivo, observacao, alterado_por)
+    VALUES
+      (${input.matrizId}, ${input.eixoId}, ${anterior ? JSON.stringify(anterior) : null},
+       ${JSON.stringify(novo)}, ${input.motivo}, ${input.observacao ?? null}, ${usuarioId})
+  `);
+}
+
+async function listarSolicitacoesDb(db: any, filtro: { colaboradorId?: number; status?: string }) {
+  const result = await db.execute(sql`
+    SELECT s.id, s.matriz_id AS matrizId, s.colaborador_id AS colaboradorId,
+           u.name AS colaboradorNome, u.email AS colaboradorEmail, d.nome AS unidadeNome,
+           s.eixo_id AS eixoId, s.eixo_nome AS eixo,
+           s.relacao_atual AS relacaoAtual, s.relacao_solicitada AS relacaoSolicitada,
+           s.justificativa, s.status, s.relacao_final AS relacaoFinal,
+           s.resposta_admin AS respostaAdmin, s.respondido_em AS respondidoEm,
+           r.name AS respondidoPorNome, s.created_at AS createdAt
+      FROM prova_utic_eixo_solicitacoes s
+      JOIN users u ON u.id = s.colaborador_id
+      LEFT JOIN departamentos d ON d.id = u.departamentoId
+      LEFT JOIN users r ON r.id = s.respondido_por
+     WHERE (${filtro.colaboradorId ?? null} IS NULL OR s.colaborador_id = ${filtro.colaboradorId ?? null})
+       AND (${filtro.status ?? null} IS NULL OR s.status = ${filtro.status ?? null})
+     ORDER BY (s.status = 'PENDENTE') DESC, s.created_at DESC, s.id DESC
+  `);
+  return rowsOf<any>(result);
+}
+
+async function notificarAdminsSolicitacao(params: {
+  colaboradorNome: string;
+  unidadeNome: string | null;
+  eixo: string;
+  relacaoAtual: string | null;
+  relacaoSolicitada: string;
+  justificativa: string;
+  solicitacaoId: number;
+}) {
+  const admins = await dbApi.getUsersByRole("admin");
+  const titulo = "Solicitação de reclassificação de eixo técnico";
+  const mensagem = `${params.colaboradorNome} solicitou reclassificar o eixo "${params.eixo}" de ${textoRelacao(params.relacaoAtual)} para ${textoRelacao(params.relacaoSolicitada)}.`;
+  const corpo = `
+Prezado(a) Administrador(a),
+
+${params.colaboradorNome}${params.unidadeNome ? ` (${params.unidadeNome})` : ""} solicitou a reclassificação de um eixo técnico.
+
+Eixo: ${params.eixo}
+Classificação atual: ${textoRelacao(params.relacaoAtual)}
+Classificação solicitada: ${textoRelacao(params.relacaoSolicitada)}
+
+Justificativa do empregado:
+${params.justificativa}
+
+Para analisar, acesse https://pdi.ecodobem.com/admin-eixos-tecnicos (Avaliações > Eixos Técnicos por Empregado).
+
+⚠️ NÃO RESPONDA ESTE EMAIL - O FLUXO É VIA SISTEMA ⚠️
+  `.trim();
+
+  for (const admin of admins as any[]) {
+    if (String(admin.status ?? "ativo") !== "ativo") continue;
+    try {
+      await dbApi.createNotification({ destinatarioId: admin.id, tipo: "eixo_reclassificacao_solicitada", titulo, mensagem, referenciaId: params.solicitacaoId });
+    } catch (error) {
+      console.warn("[Eixos] Falha ao criar notificação para admin", admin.id, error);
+    }
+    if (admin.email) {
+      await sendEmail({ to: admin.email, subject: `AÇÃO NECESSÁRIA — Reclassificação de eixo técnico — ${params.colaboradorNome}`, body: corpo });
+    }
+  }
+}
+
+async function notificarEmpregadoResposta(params: {
+  colaboradorId: number;
+  colaboradorNome: string;
+  colaboradorEmail: string | null;
+  eixo: string;
+  decisao: "AJUSTADA" | "MANTIDA";
+  relacaoFinal: string | null;
+  resposta: string;
+  solicitacaoId: number;
+}) {
+  const ajustada = params.decisao === "AJUSTADA";
+  const titulo = ajustada ? "Eixo técnico reclassificado" : "Classificação de eixo técnico mantida";
+  const mensagem = ajustada
+    ? `Sua solicitação foi aceita: o eixo "${params.eixo}" agora é ${textoRelacao(params.relacaoFinal)}. A sua Evolução já considera a nova classificação.`
+    : `Sua solicitação para o eixo "${params.eixo}" foi analisada e a classificação ${textoRelacao(params.relacaoFinal)} foi mantida.`;
+  try {
+    await dbApi.createNotification({ destinatarioId: params.colaboradorId, tipo: "eixo_reclassificacao_respondida", titulo, mensagem, referenciaId: params.solicitacaoId });
+  } catch (error) {
+    console.warn("[Eixos] Falha ao criar notificação para empregado", params.colaboradorId, error);
+  }
+  if (!params.colaboradorEmail) return;
+  const corpo = `
+Prezado(a) ${params.colaboradorNome},
+
+${mensagem}
+
+Resposta da administração:
+${params.resposta}
+
+Consulte em https://pdi.ecodobem.com/meus-eixos-tecnicos (Avaliações > Meus Eixos Técnicos).
+
+⚠️ NÃO RESPONDA ESTE EMAIL - O FLUXO É VIA SISTEMA ⚠️
+  `.trim();
+  await sendEmail({ to: params.colaboradorEmail, subject: `PARA A SUA CIÊNCIA — ${titulo}`, body: corpo });
 }
 
 export const provaUticMatrizRouter = router({
@@ -39,6 +209,15 @@ export const provaUticMatrizRouter = router({
         anterior: eixo.anterior === null ? null : Number(eixo.anterior),
       }));
     }
+
+    const pendentesResult = await db.execute(sql`
+      SELECT matriz_id AS matrizId, COUNT(*) AS total
+        FROM prova_utic_eixo_solicitacoes
+       WHERE status = 'PENDENTE'
+       GROUP BY matriz_id
+    `);
+    const pendentes = new Map(rowsOf<any>(pendentesResult).map((item) => [Number(item.matrizId), Number(item.total)]));
+    for (const matriz of matrizes) matriz.solicitacoesPendentes = pendentes.get(Number(matriz.id)) ?? 0;
 
     return matrizes;
   }),
@@ -213,52 +392,7 @@ export const provaUticMatrizRouter = router({
       }
 
       const db = await ensureTechnicalMatrixTables();
-      const anteriorResult = await db.execute(sql`
-        SELECT eixo_nome AS eixo, relacao,
-               status_classificacao AS statusClassificacao,
-               justificativa, percentual_anterior AS anterior
-          FROM prova_utic_matriz_eixos
-         WHERE matriz_id = ${input.matrizId} AND eixo_id = ${input.eixoId}
-         LIMIT 1
-      `);
-      const anterior = rowsOf<any>(anteriorResult)[0] ?? null;
-      const novo = {
-        eixo: input.eixo,
-        relacao: input.relacao,
-        statusClassificacao: input.statusClassificacao,
-        justificativa: input.justificativa ?? null,
-        anterior: input.anterior,
-      };
-
-      await db.execute(sql`
-        INSERT INTO prova_utic_matriz_eixos
-          (matriz_id, eixo_id, eixo_nome, relacao, status_classificacao, justificativa, percentual_anterior)
-        VALUES
-          (${input.matrizId}, ${input.eixoId}, ${input.eixo}, ${input.relacao},
-           ${input.statusClassificacao}, ${input.justificativa ?? null}, ${input.anterior})
-        ON DUPLICATE KEY UPDATE
-          eixo_nome = VALUES(eixo_nome),
-          relacao = VALUES(relacao),
-          status_classificacao = VALUES(status_classificacao),
-          justificativa = VALUES(justificativa),
-          percentual_anterior = VALUES(percentual_anterior),
-          updated_at = NOW()
-      `);
-
-      await db.execute(sql`
-        UPDATE prova_utic_matrizes
-           SET atualizado_por = ${ctx.user.id}, updated_at = NOW()
-         WHERE id = ${input.matrizId}
-      `);
-
-      await db.execute(sql`
-        INSERT INTO prova_utic_matriz_historico
-          (matriz_id, eixo_id, valor_anterior, valor_novo, motivo, observacao, alterado_por)
-        VALUES
-          (${input.matrizId}, ${input.eixoId}, ${anterior ? JSON.stringify(anterior) : null},
-           ${JSON.stringify(novo)}, ${input.motivo}, ${input.observacao ?? null}, ${ctx.user.id})
-      `);
-
+      await gravarEixo(db, input, ctx.user.id);
       return { salvo: true };
     }),
 
@@ -312,5 +446,168 @@ export const provaUticMatrizRouter = router({
       `);
 
       return { atualizado: true };
+    }),
+
+  // ===== Visão do empregado =====
+  // Mostra apenas classificação, situação e justificativa (sem pontuação histórica).
+  meusEixos: assessmentProcedure.query(async ({ ctx }) => {
+    const db = await ensureTechnicalMatrixTables();
+    const matrizResult = await db.execute(sql`
+      SELECT m.id, m.status, u.name AS colaboradorNome, u.cargo, d.nome AS unidadeNome
+        FROM prova_utic_matrizes m
+        JOIN users u ON u.id = m.colaborador_id
+        LEFT JOIN departamentos d ON d.id = u.departamentoId
+       WHERE m.colaborador_id = ${ctx.user.id}
+       LIMIT 1
+    `);
+    const matriz = rowsOf<any>(matrizResult)[0] ?? null;
+    if (!matriz) return { matriz: null, eixos: [], solicitacoes: [] };
+
+    const eixosResult = await db.execute(sql`
+      SELECT eixo_id AS eixoId, eixo_nome AS eixo, relacao,
+             status_classificacao AS statusClassificacao, justificativa
+        FROM prova_utic_matriz_eixos
+       WHERE matriz_id = ${matriz.id}
+       ORDER BY id
+    `);
+    const solicitacoes = await listarSolicitacoesDb(db, { colaboradorId: ctx.user.id });
+    return {
+      matriz,
+      eixos: rowsOf<any>(eixosResult),
+      solicitacoes: solicitacoes.map(({ colaboradorEmail, ...resto }: any) => resto),
+    };
+  }),
+
+  solicitarReclassificacao: assessmentProcedure
+    .input(z.object({
+      eixoId: z.string().min(1).max(40),
+      relacaoSolicitada: z.enum(["ESSENCIAL", "TRANSVERSAL", "NAO_ESSENCIAL"]),
+      justificativa: z.string().trim().min(20, "Descreva a justificativa com pelo menos 20 caracteres.").max(3000),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await ensureTechnicalMatrixTables();
+      const eixoResult = await db.execute(sql`
+        SELECT m.id AS matrizId, e.eixo_nome AS eixo, e.relacao,
+               u.name AS colaboradorNome, d.nome AS unidadeNome
+          FROM prova_utic_matrizes m
+          JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
+          JOIN users u ON u.id = m.colaborador_id
+          LEFT JOIN departamentos d ON d.id = u.departamentoId
+         WHERE m.colaborador_id = ${ctx.user.id} AND e.eixo_id = ${input.eixoId}
+         LIMIT 1
+      `);
+      const eixo = rowsOf<any>(eixoResult)[0];
+      if (!eixo) throw new TRPCError({ code: "NOT_FOUND", message: "Eixo técnico não encontrado na sua matriz." });
+      if (eixo.relacao === input.relacaoSolicitada) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Este eixo já possui a classificação solicitada." });
+      }
+      const pendenteResult = await db.execute(sql`
+        SELECT id FROM prova_utic_eixo_solicitacoes
+         WHERE colaborador_id = ${ctx.user.id} AND eixo_id = ${input.eixoId} AND status = 'PENDENTE'
+         LIMIT 1
+      `);
+      if (rowsOf<any>(pendenteResult).length > 0) {
+        throw new TRPCError({ code: "CONFLICT", message: "Já existe uma solicitação em análise para este eixo." });
+      }
+
+      const insertResult: any = await db.execute(sql`
+        INSERT INTO prova_utic_eixo_solicitacoes
+          (matriz_id, colaborador_id, eixo_id, eixo_nome, relacao_atual, relacao_solicitada, justificativa)
+        VALUES
+          (${eixo.matrizId}, ${ctx.user.id}, ${input.eixoId}, ${eixo.eixo}, ${eixo.relacao ?? null},
+           ${input.relacaoSolicitada}, ${input.justificativa})
+      `);
+      const solicitacaoId = Number(insertResult?.[0]?.insertId ?? insertResult?.insertId ?? 0);
+
+      try {
+        await notificarAdminsSolicitacao({
+          colaboradorNome: eixo.colaboradorNome,
+          unidadeNome: eixo.unidadeNome ?? null,
+          eixo: eixo.eixo,
+          relacaoAtual: eixo.relacao ?? null,
+          relacaoSolicitada: input.relacaoSolicitada,
+          justificativa: input.justificativa,
+          solicitacaoId,
+        });
+      } catch (error) {
+        console.warn("[Eixos] Falha ao notificar administradores", error);
+      }
+      return { solicitacaoId };
+    }),
+
+  // ===== Visão do administrador =====
+  listarSolicitacoes: adminProcedure
+    .input(z.object({ status: z.enum(["PENDENTE", "AJUSTADA", "MANTIDA"]).optional() }).optional())
+    .query(async ({ input }) => {
+      const db = await ensureTechnicalMatrixTables();
+      return listarSolicitacoesDb(db, { status: input?.status });
+    }),
+
+  responderSolicitacao: adminProcedure
+    .input(z.object({
+      id: z.number().int().positive(),
+      decisao: z.enum(["AJUSTADA", "MANTIDA"]),
+      relacaoFinal: z.enum(["ESSENCIAL", "TRANSVERSAL", "NAO_ESSENCIAL"]).optional(),
+      resposta: z.string().trim().min(5, "Informe a resposta ao empregado.").max(3000),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await ensureTechnicalMatrixTables();
+      const [solicitacao] = (await listarSolicitacoesDb(db, {})).filter((item: any) => Number(item.id) === input.id);
+      if (!solicitacao) throw new TRPCError({ code: "NOT_FOUND", message: "Solicitação não encontrada." });
+      if (solicitacao.status !== "PENDENTE") {
+        throw new TRPCError({ code: "CONFLICT", message: "Esta solicitação já foi respondida." });
+      }
+
+      const eixoResult = await db.execute(sql`
+        SELECT eixo_nome AS eixo, relacao, justificativa, percentual_anterior AS anterior
+          FROM prova_utic_matriz_eixos
+         WHERE matriz_id = ${solicitacao.matrizId} AND eixo_id = ${solicitacao.eixoId}
+         LIMIT 1
+      `);
+      const eixoAtual = rowsOf<any>(eixoResult)[0];
+      if (!eixoAtual) throw new TRPCError({ code: "NOT_FOUND", message: "Eixo não encontrado na matriz do empregado." });
+
+      let relacaoFinal: string | null = eixoAtual.relacao ?? null;
+      if (input.decisao === "AJUSTADA") {
+        const novaRelacao = input.relacaoFinal ?? solicitacao.relacaoSolicitada;
+        relacaoFinal = novaRelacao;
+        await gravarEixo(db, {
+          matrizId: Number(solicitacao.matrizId),
+          eixoId: solicitacao.eixoId,
+          eixo: eixoAtual.eixo,
+          relacao: novaRelacao,
+          statusClassificacao: "CLASSIFICADO",
+          justificativa: input.resposta,
+          anterior: eixoAtual.anterior === null || eixoAtual.anterior === undefined ? null : Number(eixoAtual.anterior),
+          motivo: "Reclassificação solicitada pelo empregado",
+          observacao: `Solicitação #${input.id}: ${solicitacao.justificativa}`.slice(0, 1000),
+        }, ctx.user.id);
+      }
+
+      await db.execute(sql`
+        UPDATE prova_utic_eixo_solicitacoes
+           SET status = ${input.decisao},
+               relacao_final = ${relacaoFinal},
+               resposta_admin = ${input.resposta},
+               respondido_por = ${ctx.user.id},
+               respondido_em = NOW()
+         WHERE id = ${input.id}
+      `);
+
+      try {
+        await notificarEmpregadoResposta({
+          colaboradorId: Number(solicitacao.colaboradorId),
+          colaboradorNome: solicitacao.colaboradorNome,
+          colaboradorEmail: solicitacao.colaboradorEmail ?? null,
+          eixo: solicitacao.eixo,
+          decisao: input.decisao,
+          relacaoFinal,
+          resposta: input.resposta,
+          solicitacaoId: input.id,
+        });
+      } catch (error) {
+        console.warn("[Eixos] Falha ao notificar empregado", error);
+      }
+      return { decisao: input.decisao, relacaoFinal };
     }),
 });
