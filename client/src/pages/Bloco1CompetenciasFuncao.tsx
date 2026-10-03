@@ -595,8 +595,8 @@ export default function Bloco1CompetenciasFuncao() {
                     <TableRow>
                       <TableHead>Eixo / competência técnica</TableHead>
                       <TableHead>Classificação individual</TableHead>
-                      <TableHead>Avaliação histórica</TableHead>
-                      <TableHead>Próxima avaliação</TableHead>
+                      <TableHead>Ciclo 2025</TableHead>
+                      <TableHead>Ciclo 2026</TableHead>
                       <TableHead>Evolução</TableHead>
                       <TableHead>Próxima ação</TableHead>
                     </TableRow>
