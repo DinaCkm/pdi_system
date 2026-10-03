@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  aplicarCalibragemDesenvolvimento,
   calcularIndiceProgresso,
   calcularPerformanceNaFuncao,
   calcularProntidao,
   calcularVariacaoComparavel,
   classificarPerformanceTecnica,
+  compararConceitos,
+  conceitoConhecimento,
+  engajamentoDesenvolvimento,
+  fatorCalibragemDesenvolvimento,
   podeCalcularEvolucao,
 } from "../shared/evolucaoDomain";
 
@@ -103,5 +108,70 @@ describe("evolucaoDomain", () => {
 
     expect(podeCalcularEvolucao(anterior, atual)).toBe(true);
     expect(calcularVariacaoComparavel(anterior, atual)).toBe(0.9);
+  });
+
+  it("converte indicadores tecnicos em conceitos de conhecimento", () => {
+    expect(conceitoConhecimento(64.9)).toBe("EM_DESENVOLVIMENTO");
+    expect(conceitoConhecimento(65)).toBe("CONHECIMENTO_APLICADO");
+    expect(conceitoConhecimento(75)).toBe("CONHECIMENTO_CONSOLIDADO");
+    expect(conceitoConhecimento(85)).toBe("CONHECIMENTO_AVANCADO");
+    expect(conceitoConhecimento(90)).toBe("REFERENCIA");
+  });
+
+  it("calibra apenas conhecimentos essenciais conforme execucao do PDI", () => {
+    expect(fatorCalibragemDesenvolvimento(49)).toBe(0);
+    expect(fatorCalibragemDesenvolvimento(50)).toBe(3);
+    expect(fatorCalibragemDesenvolvimento(75)).toBe(5);
+    expect(fatorCalibragemDesenvolvimento(90)).toBe(8);
+    expect(fatorCalibragemDesenvolvimento(100)).toBe(10);
+
+    expect(
+      aplicarCalibragemDesenvolvimento({
+        percentualTecnico: 70,
+        classificacao: "ESSENCIAL",
+        percentualPdi: 100,
+      })
+    ).toMatchObject({
+      percentualIntegrado: 77,
+      fatorPercentual: 10,
+      aplicada: true,
+      conceito: "CONHECIMENTO_CONSOLIDADO",
+    });
+
+    expect(
+      aplicarCalibragemDesenvolvimento({
+        percentualTecnico: 70,
+        classificacao: "TRANSVERSAL",
+        percentualPdi: 100,
+      })
+    ).toMatchObject({
+      percentualIntegrado: 70,
+      fatorPercentual: 0,
+      aplicada: false,
+      conceito: "CONHECIMENTO_APLICADO",
+    });
+  });
+
+  it("limita o indicador integrado a 100 e classifica o engajamento", () => {
+    expect(
+      aplicarCalibragemDesenvolvimento({
+        percentualTecnico: 96,
+        classificacao: "ESSENCIAL",
+        percentualPdi: 100,
+      }).percentualIntegrado
+    ).toBe(100);
+
+    expect(engajamentoDesenvolvimento(null)).toBe("SEM_BASE");
+    expect(engajamentoDesenvolvimento(40)).toBe("EM_DESENVOLVIMENTO");
+    expect(engajamentoDesenvolvimento(60)).toBe("MODERADO");
+    expect(engajamentoDesenvolvimento(80)).toBe("CONSISTENTE");
+    expect(engajamentoDesenvolvimento(95)).toBe("ELEVADO");
+  });
+
+  it("compara a evolucao pelos conceitos apresentados", () => {
+    expect(compararConceitos("CONHECIMENTO_APLICADO", "CONHECIMENTO_CONSOLIDADO")).toBe("EVOLUCAO");
+    expect(compararConceitos("CONHECIMENTO_CONSOLIDADO", "CONHECIMENTO_CONSOLIDADO")).toBe("CONSOLIDACAO");
+    expect(compararConceitos("CONHECIMENTO_AVANCADO", "CONHECIMENTO_APLICADO")).toBe("OPORTUNIDADE_DESENVOLVIMENTO");
+    expect(compararConceitos(null, "CONHECIMENTO_APLICADO")).toBe("SEM_COMPARACAO");
   });
 });
