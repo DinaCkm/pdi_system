@@ -9,6 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { macroRelacionadaDaAD } from "../../../shared/competenciasAdRelacionamento";
+import {
+  conceitoConhecimentoLabel,
+  engajamentoDesenvolvimentoLabel,
+} from "../../../shared/evolucaoDomain";
 import { ChevronDown, ChevronUp, Lock, Sparkles, ShieldCheck, Target, TrendingUp, Unlock } from "lucide-react";
 
 const relacaoLabel: Record<string, string> = {
@@ -21,6 +25,13 @@ const evolucaoLabel: Record<string, string> = {
   EVOLUCAO: "Evolução",
   ESTABILIDADE: "Estabilidade",
   REDUCAO: "Redução",
+  SEM_COMPARACAO: "Sem comparação",
+};
+
+const evolucaoConceitualLabel: Record<string, string> = {
+  EVOLUCAO: "Desenvolvimento relevante",
+  CONSOLIDACAO: "Conhecimento mantido",
+  OPORTUNIDADE_DESENVOLVIMENTO: "Oportunidade de desenvolvimento",
   SEM_COMPARACAO: "Sem comparação",
 };
 
@@ -133,6 +144,7 @@ export default function Bloco1CompetenciasFuncao() {
   });
   const [busca, setBusca] = useState("");
   const [eixoAberto, setEixoAberto] = useState<number | null>(null);
+  const [calculoAberto, setCalculoAberto] = useState<number | null>(null);
   const [statusEdicao, setStatusEdicao] = useState<"CLASSIFICADO" | "PENDENTE">("CLASSIFICADO");
   const [relacaoEdicao, setRelacaoEdicao] = useState<"ESSENCIAL" | "TRANSVERSAL" | "NAO_ESSENCIAL" | "">("");
   const [justificativaEdicao, setJustificativaEdicao] = useState("");
@@ -575,7 +587,7 @@ export default function Bloco1CompetenciasFuncao() {
             <CardHeader>
               <CardTitle>2. Competências Técnicas</CardTitle>
               <CardDescription>
-                O indicador histórico mostra a última referência técnica válida já registrada. A nova avaliação permanece em branco até existir uma aplicação oficial calculada para o empregado.
+                A leitura apresenta níveis de conhecimento por ciclo. Nos conhecimentos Essenciais, o Ciclo 2026 também reconhece o engajamento nas ações do PDI, preservando separadamente o indicador técnico original.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -589,14 +601,31 @@ export default function Bloco1CompetenciasFuncao() {
                   Os dados técnicos foram carregados, mas houve falha ao consultar a Avaliação de Desempenho: {mapa.data.comportamental.erroCarregamento}
                 </div>
               )}
+              {mapa.data.tecnico.desenvolvimentoPdi && (
+                <div className="mb-4 rounded-xl border bg-slate-50 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">Engajamento no Desenvolvimento</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        A execução do PDI contribui para a leitura integrada somente dos conhecimentos classificados como Essenciais.
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-sm">
+                      {engajamentoDesenvolvimentoLabel[
+                        mapa.data.tecnico.desenvolvimentoPdi.engajamento as keyof typeof engajamentoDesenvolvimentoLabel
+                      ] || "Sem base suficiente"}
+                    </Badge>
+                  </div>
+                </div>
+              )}
               <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Eixo / competência técnica</TableHead>
                       <TableHead>Classificação individual</TableHead>
-                      <TableHead>Avaliação histórica</TableHead>
-                      <TableHead>Próxima avaliação</TableHead>
+                      <TableHead>Ciclo 2025</TableHead>
+                      <TableHead>Ciclo 2026</TableHead>
                       <TableHead>Evolução</TableHead>
                       <TableHead>Próxima ação</TableHead>
                     </TableRow>
@@ -628,24 +657,48 @@ export default function Bloco1CompetenciasFuncao() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {item.percentualAnterior === null ? "—" : `${Number(item.percentualAnterior).toFixed(1)}%`}
+                            {item.conceitoAnterior
+                              ? conceitoConhecimentoLabel[item.conceitoAnterior as keyof typeof conceitoConhecimentoLabel]
+                              : "—"}
                           </TableCell>
                           <TableCell>
-                            {item.percentualAtual === null ? "" : `${Number(item.percentualAtual).toFixed(1)}%`}
+                            <div className="space-y-2">
+                              <div>
+                                {item.conceitoAtual
+                                  ? conceitoConhecimentoLabel[item.conceitoAtual as keyof typeof conceitoConhecimentoLabel]
+                                  : "—"}
+                              </div>
+                              {isAdmin && item.percentualAtual !== null && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-auto px-0 py-0 text-xs text-blue-700 hover:bg-transparent hover:text-blue-900"
+                                  onClick={() =>
+                                    setCalculoAberto(
+                                      calculoAberto === Number(item.eixoRegistroId)
+                                        ? null
+                                        : Number(item.eixoRegistroId),
+                                    )
+                                  }
+                                >
+                                  {calculoAberto === Number(item.eixoRegistroId)
+                                    ? "Fechar composição"
+                                    : "Entender cálculo"}
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge
                               variant={
-                                item.evolucao === "EVOLUCAO"
+                                item.evolucaoConceitual === "EVOLUCAO"
                                   ? "default"
-                                  : item.evolucao === "SEM_COMPARACAO"
+                                  : item.evolucaoConceitual === "SEM_COMPARACAO"
                                     ? "outline"
                                     : "secondary"
                               }
                             >
-                              {item.evolucao === "SEM_COMPARACAO"
-                                ? "—"
-                                : `${evolucaoLabel[item.evolucao] || item.evolucao} ${item.evolucaoPp === null ? "" : `(${Number(item.evolucaoPp) > 0 ? "+" : ""}${Number(item.evolucaoPp).toFixed(1)} p.p.)`}`}
+                              {evolucaoConceitualLabel[item.evolucaoConceitual] || "Sem comparação"}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -658,6 +711,58 @@ export default function Bloco1CompetenciasFuncao() {
                             )}
                           </TableCell>
                         </TableRow>
+                        {isAdmin && calculoAberto === Number(item.eixoRegistroId) && (
+                          <TableRow key={`${item.eixoRegistroId}-calculo`}>
+                            <TableCell colSpan={6} className="bg-blue-50/40">
+                              <div className="grid gap-4 p-4 md:grid-cols-2 xl:grid-cols-4">
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ciclo 2025 — indicador técnico preservado</p>
+                                  <p className="mt-1 text-lg font-semibold">
+                                    {item.percentualAnterior === null ? "Sem referência" : `${Number(item.percentualAnterior).toFixed(1)}%`}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ciclo 2026 — indicador técnico preservado</p>
+                                  <p className="mt-1 text-lg font-semibold">
+                                    {item.percentualAtual === null ? "Sem referência" : `${Number(item.percentualAtual).toFixed(1)}%`}
+                                  </p>
+                                  {item.totalQuestoes !== null && (
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                      {item.totalQuestoes} item(ns) considerado(s); {item.acertos ?? 0} resposta(s) demonstraram domínio.
+                                    </p>
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Engajamento no PDI</p>
+                                  <p className="mt-1 text-lg font-semibold">
+                                    {mapa.data.tecnico.desenvolvimentoPdi?.percentualConclusao === null
+                                      ? "Sem base"
+                                      : `${Number(mapa.data.tecnico.desenvolvimentoPdi?.percentualConclusao ?? 0).toFixed(1)}%`}
+                                  </p>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {mapa.data.tecnico.desenvolvimentoPdi?.acoesConcluidas ?? 0} de {mapa.data.tecnico.desenvolvimentoPdi?.totalAcoes ?? 0} ações concluídas.
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nível integrado</p>
+                                  <p className="mt-1 text-lg font-semibold">
+                                    {item.percentualIntegrado === null ? "Sem referência" : `${Number(item.percentualIntegrado).toFixed(1)}%`}
+                                  </p>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {item.classificacao === "ESSENCIAL"
+                                      ? `Calibragem aplicada: +${Number(item.fatorCalibragemPdi ?? 0).toFixed(0)}%. O indicador técnico original permanece inalterado.`
+                                      : "Sem calibragem: este conhecimento não está classificado como Essencial."}
+                                  </p>
+                                  <p className="mt-2 text-sm font-medium">
+                                    {item.conceitoAtual
+                                      ? conceitoConhecimentoLabel[item.conceitoAtual as keyof typeof conceitoConhecimentoLabel]
+                                      : "Sem conceito"}
+                                  </p>
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
                         {eixoAberto === Number(item.eixoRegistroId) && (
                           <TableRow key={`${item.eixoRegistroId}-justificativa`}>
                             <TableCell colSpan={6} className="bg-muted/20">
@@ -730,9 +835,9 @@ export default function Bloco1CompetenciasFuncao() {
 
           <Card>
             <CardHeader>
-              <CardTitle>3. Competências Comportamentais — Avaliação de Desempenho</CardTitle>
+              <CardTitle>3. Competências Comportamentais — Evolução entre Ciclos</CardTitle>
               <CardDescription>
-                Compara as duas Avaliações de Desempenho válidas mais recentes da mesma competência e na mesma escala. O DISC não participa deste cálculo.
+                Compara as duas referências válidas mais recentes da mesma competência e na mesma escala. O DISC não participa deste cálculo.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -741,8 +846,8 @@ export default function Bloco1CompetenciasFuncao() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Competência comportamental</TableHead>
-                      <TableHead>Avaliação anterior</TableHead>
-                      <TableHead>Avaliação atual</TableHead>
+                      <TableHead>Ciclo anterior</TableHead>
+                      <TableHead>Ciclo atual</TableHead>
                       <TableHead>Variação</TableHead>
                       <TableHead>Evolução</TableHead>
                       <TableHead>Próxima ação</TableHead>
@@ -829,9 +934,9 @@ export default function Bloco1CompetenciasFuncao() {
               <CardTitle>Regra metodológica aplicada</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground space-y-2">
-              <p><strong>Técnicas:</strong> histórico técnico válido = indicador anterior; próxima Avaliação de Proficiência oficial = indicador atual; enquanto ela não ocorrer, o campo permanece em branco.</p>
-              <p><strong>Comportamentais:</strong> comparação das duas Avaliações de Desempenho válidas mais recentes da mesma competência e mesma escala.</p>
-              <p><strong>Leitura:</strong> resultado maior = evolução; resultado igual = estabilidade; resultado menor = redução.</p>
+              <p><strong>Conhecimentos técnicos:</strong> o Ciclo 2025 preserva a referência histórica. O Ciclo 2026 apresenta o nível de conhecimento integrado. Nos eixos Essenciais, o engajamento no PDI pode calibrar o indicador em até 10%, sem alterar a medição técnica original.</p>
+              <p><strong>Competências comportamentais:</strong> comparação das duas referências válidas mais recentes da mesma competência e mesma escala.</p>
+              <p><strong>Leitura:</strong> a interface prioriza conceitos de conhecimento e desenvolvimento. Percentuais e memória de cálculo ficam disponíveis somente ao administrador.</p>
               <p><strong>PDI:</strong> para definição de foco do próximo ciclo não há margem de 10%: qualquer redução, ausência de crescimento ou competência nova entra como ponto de foco. O limiar de 10% é usado apenas para destacar a força da evolução.</p>
               <p><strong>DISC:</strong> não participa do cálculo atual; fica reservado para funcionalidade futura.</p>
             </CardContent>

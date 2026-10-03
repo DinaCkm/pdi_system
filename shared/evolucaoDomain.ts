@@ -129,3 +129,157 @@ export function calcularVariacaoComparavel(
 
   return Number(((atual?.valor ?? 0) - (anterior?.valor ?? 0)).toFixed(2));
 }
+
+
+export type ConceitoConhecimento =
+  | "EM_DESENVOLVIMENTO"
+  | "CONHECIMENTO_APLICADO"
+  | "CONHECIMENTO_CONSOLIDADO"
+  | "CONHECIMENTO_AVANCADO"
+  | "REFERENCIA";
+
+export type EngajamentoDesenvolvimento =
+  | "SEM_BASE"
+  | "EM_DESENVOLVIMENTO"
+  | "MODERADO"
+  | "CONSISTENTE"
+  | "ELEVADO";
+
+export type EvolucaoConceitual =
+  | "SEM_COMPARACAO"
+  | "EVOLUCAO"
+  | "CONSOLIDACAO"
+  | "OPORTUNIDADE_DESENVOLVIMENTO";
+
+export const conceitoConhecimentoLabel: Record<ConceitoConhecimento, string> = {
+  EM_DESENVOLVIMENTO: "Em Desenvolvimento",
+  CONHECIMENTO_APLICADO: "Conhecimento Aplicado",
+  CONHECIMENTO_CONSOLIDADO: "Conhecimento Consolidado",
+  CONHECIMENTO_AVANCADO: "Conhecimento Avançado",
+  REFERENCIA: "Referência",
+};
+
+export const engajamentoDesenvolvimentoLabel: Record<EngajamentoDesenvolvimento, string> = {
+  SEM_BASE: "Sem base suficiente",
+  EM_DESENVOLVIMENTO: "Em desenvolvimento",
+  MODERADO: "Moderado",
+  CONSISTENTE: "Consistente",
+  ELEVADO: "Elevado",
+};
+
+export function conceitoConhecimento(
+  percentual?: number | null
+): ConceitoConhecimento | null {
+  if (percentual === null || percentual === undefined || !Number.isFinite(Number(percentual))) {
+    return null;
+  }
+
+  const valor = Math.max(0, Math.min(100, Number(percentual)));
+  if (valor >= 90) return "REFERENCIA";
+  if (valor >= 85) return "CONHECIMENTO_AVANCADO";
+  if (valor >= 75) return "CONHECIMENTO_CONSOLIDADO";
+  if (valor >= 65) return "CONHECIMENTO_APLICADO";
+  return "EM_DESENVOLVIMENTO";
+}
+
+export function nivelConceitoConhecimento(
+  conceito?: ConceitoConhecimento | null
+): number | null {
+  if (!conceito) return null;
+  const niveis: Record<ConceitoConhecimento, number> = {
+    EM_DESENVOLVIMENTO: 1,
+    CONHECIMENTO_APLICADO: 2,
+    CONHECIMENTO_CONSOLIDADO: 3,
+    CONHECIMENTO_AVANCADO: 4,
+    REFERENCIA: 5,
+  };
+  return niveis[conceito];
+}
+
+export function engajamentoDesenvolvimento(
+  percentual?: number | null
+): EngajamentoDesenvolvimento {
+  if (percentual === null || percentual === undefined || !Number.isFinite(Number(percentual))) {
+    return "SEM_BASE";
+  }
+
+  const valor = Math.max(0, Math.min(100, Number(percentual)));
+  if (valor >= 90) return "ELEVADO";
+  if (valor >= 75) return "CONSISTENTE";
+  if (valor >= 50) return "MODERADO";
+  return "EM_DESENVOLVIMENTO";
+}
+
+/**
+ * A calibragem reconhece a execução do PDI sem substituir a medição técnica.
+ * Ela só é aplicada aos eixos classificados como ESSENCIAL.
+ *
+ * 0–49% do PDI concluído: sem calibragem
+ * 50–74%: +3%
+ * 75–89%: +5%
+ * 90–99%: +8%
+ * 100%: +10%
+ */
+export function fatorCalibragemDesenvolvimento(
+  percentualPdi?: number | null
+): number {
+  if (percentualPdi === null || percentualPdi === undefined || !Number.isFinite(Number(percentualPdi))) {
+    return 0;
+  }
+
+  const valor = Math.max(0, Math.min(100, Number(percentualPdi)));
+  if (valor >= 100) return 10;
+  if (valor >= 90) return 8;
+  if (valor >= 75) return 5;
+  if (valor >= 50) return 3;
+  return 0;
+}
+
+export function aplicarCalibragemDesenvolvimento(params: {
+  percentualTecnico?: number | null;
+  classificacao?: string | null;
+  percentualPdi?: number | null;
+}) {
+  const { percentualTecnico, classificacao, percentualPdi } = params;
+
+  if (
+    percentualTecnico === null ||
+    percentualTecnico === undefined ||
+    !Number.isFinite(Number(percentualTecnico))
+  ) {
+    return {
+      percentualIntegrado: null,
+      fatorPercentual: 0,
+      aplicada: false,
+      conceito: null as ConceitoConhecimento | null,
+    };
+  }
+
+  const bruto = Math.max(0, Math.min(100, Number(percentualTecnico)));
+  const essencial = String(classificacao ?? "").trim().toUpperCase() === "ESSENCIAL";
+  const fatorPercentual = essencial ? fatorCalibragemDesenvolvimento(percentualPdi) : 0;
+  const percentualIntegrado = Math.min(
+    100,
+    Math.round(bruto * (1 + fatorPercentual / 100) * 10) / 10
+  );
+
+  return {
+    percentualIntegrado,
+    fatorPercentual,
+    aplicada: essencial && fatorPercentual > 0,
+    conceito: conceitoConhecimento(percentualIntegrado),
+  };
+}
+
+export function compararConceitos(
+  anterior?: ConceitoConhecimento | null,
+  atual?: ConceitoConhecimento | null
+): EvolucaoConceitual {
+  const nivelAnterior = nivelConceitoConhecimento(anterior);
+  const nivelAtual = nivelConceitoConhecimento(atual);
+
+  if (nivelAnterior === null || nivelAtual === null) return "SEM_COMPARACAO";
+  if (nivelAtual > nivelAnterior) return "EVOLUCAO";
+  if (nivelAtual < nivelAnterior) return "OPORTUNIDADE_DESENVOLVIMENTO";
+  return "CONSOLIDACAO";
+}
