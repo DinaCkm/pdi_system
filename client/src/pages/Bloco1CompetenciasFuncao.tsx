@@ -678,7 +678,7 @@ export default function Bloco1CompetenciasFuncao() {
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Engajamento no Desenvolvimento</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        A execução do PDI contribui para a leitura integrada somente dos conhecimentos classificados como Essenciais.
+                        A execução do PDI contribui para a leitura integrada somente dos conhecimentos classificados como Essenciais. Conhecimentos Transversais e Não Essenciais não recebem calibragem pelo PDI.
                       </p>
                     </div>
                     <Badge variant="outline" className="text-sm">
@@ -823,6 +823,9 @@ export default function Bloco1CompetenciasFuncao() {
                                     {item.classificacao === "ESSENCIAL"
                                       ? `Calibragem aplicada: +${Number(item.fatorCalibragemPdi ?? 0).toFixed(0)}%. O indicador técnico original permanece inalterado.`
                                       : "Sem calibragem: este conhecimento não está classificado como Essencial."}
+                                  </p>
+                                  <p className="mt-2 rounded-md border border-blue-100 bg-white/70 p-2 text-xs leading-5 text-slate-600">
+                                    <strong>Importante:</strong> o engajamento no PDI calibra somente os conhecimentos classificados como Essenciais. Conhecimentos Transversais e Não Essenciais preservam o indicador técnico original, sem calibragem pelo PDI.
                                   </p>
                                   <p className="mt-2 text-sm font-medium">
                                     {item.conceitoAtual
