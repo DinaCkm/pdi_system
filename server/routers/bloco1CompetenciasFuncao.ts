@@ -19,6 +19,13 @@ import {
   funcoesOrganizacionais,
   usuariosFuncoesOrganizacionais,
 } from "../../drizzle/comportamental-schema";
+import {
+  aplicarCalibragemDesenvolvimento,
+  compararConceitos,
+  conceitoConhecimento,
+  engajamentoDesenvolvimento,
+  fatorCalibragemDesenvolvimento,
+} from "../../shared/evolucaoDomain";
 
 function rowsOf<T>(result: any): T[] {
   if (Array.isArray(result?.[0])) return result[0] as T[];
@@ -378,6 +385,35 @@ export const bloco1CompetenciasFuncaoRouter = router({
         tecnicoAtualPorNome.set(normalizarNome(eixo.eixo), eixo);
       }
 
+      // O engajamento do PDI calibra somente os conhecimentos ESSENCIAIS.
+      // A medição técnica original nunca é sobrescrita: o indicador integrado é complementar.
+      // Consideramos os PDIs não cancelados vinculados a ciclos que alcançam 2026.
+      const desenvolvimentoPdiResult = await db.execute(sql`
+        SELECT COUNT(DISTINCT p.id) AS totalPdis,
+               COUNT(a.id) AS totalAcoes,
+               SUM(CASE WHEN a.status = 'concluida' THEN 1 ELSE 0 END) AS acoesConcluidas
+          FROM pdis p
+          JOIN ciclos c ON c.id = p.cicloId
+          LEFT JOIN actions a ON a.pdiId = p.id
+         WHERE p.colaboradorId = ${input.colaboradorId}
+           AND p.status <> 'cancelado'
+           AND (
+             c.nome LIKE '%2026%'
+             OR YEAR(c.dataInicio) = 2026
+             OR YEAR(c.dataFim) = 2026
+           )
+      `);
+      const desenvolvimentoPdiLinha = rowsOf<any>(desenvolvimentoPdiResult)[0] ?? {};
+      const totalPdisDesenvolvimento = Number(desenvolvimentoPdiLinha.totalPdis ?? 0);
+      const totalAcoesDesenvolvimento = Number(desenvolvimentoPdiLinha.totalAcoes ?? 0);
+      const acoesConcluidasDesenvolvimento = Number(desenvolvimentoPdiLinha.acoesConcluidas ?? 0);
+      const percentualPdi =
+        totalAcoesDesenvolvimento > 0
+          ? Math.round((acoesConcluidasDesenvolvimento / totalAcoesDesenvolvimento) * 1000) / 10
+          : null;
+      const engajamentoPdi = engajamentoDesenvolvimento(percentualPdi);
+      const fatorPdi = fatorCalibragemDesenvolvimento(percentualPdi);
+
       const nomesHistoricos = new Set(linhasTecnicas.map((linha: any) => normalizarNome(linha.eixoNome)));
       const linhasTecnicasComNovos: any[] = [
         ...linhasTecnicas,
@@ -411,6 +447,14 @@ export const bloco1CompetenciasFuncaoRouter = router({
           percentualAnterior === null || percentualAtual === null
             ? null
             : Math.round((percentualAtual - percentualAnterior) * 10) / 10;
+        const conceitoAnterior = conceitoConhecimento(percentualAnterior);
+        const calibragem = aplicarCalibragemDesenvolvimento({
+          percentualTecnico: percentualAtual,
+          classificacao: linha.classificacao,
+          percentualPdi,
+        });
+        const conceitoAtual = calibragem.conceito;
+        const evolucaoConceitual = compararConceitos(conceitoAnterior, conceitoAtual);
 
         return {
           eixoRegistroId: Number(linha.eixoRegistroId),
@@ -423,6 +467,12 @@ export const bloco1CompetenciasFuncaoRouter = router({
           percentualAnterior,
           indicadorOriginalStatus: historico?.status ?? (percentualAnterior !== null ? "HISTORICO_VALIDO" : "PENDENTE_VALIDACAO"),
           percentualAtual,
+          percentualIntegrado: calibragem.percentualIntegrado,
+          fatorCalibragemPdi: calibragem.fatorPercentual,
+          calibragemAplicada: calibragem.aplicada,
+          conceitoAnterior,
+          conceitoAtual,
+          evolucaoConceitual,
           evolucaoPp,
           comparavel: percentualAnterior !== null && percentualAtual !== null,
           evolucao:
@@ -581,6 +631,14 @@ export const bloco1CompetenciasFuncaoRouter = router({
           provaAtual: resultadoTecnicoLinha?.provaNome ?? null,
           calculadoEm: resultadoTecnicoLinha?.calculadoEm ?? null,
           alerta: alertaTecnico,
+          desenvolvimentoPdi: {
+            totalPdis: totalPdisDesenvolvimento,
+            totalAcoes: totalAcoesDesenvolvimento,
+            acoesConcluidas: acoesConcluidasDesenvolvimento,
+            percentualConclusao: percentualPdi,
+            engajamento: engajamentoPdi,
+            fatorCalibragemEssenciais: fatorPdi,
+          },
           competencias: tecnicas,
         },
         comportamental: {
