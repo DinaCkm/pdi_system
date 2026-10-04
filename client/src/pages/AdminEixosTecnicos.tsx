@@ -162,6 +162,7 @@ export default function AdminEixosTecnicos() {
   const [observacao, setObservacao] = useState("");
   const [status, setStatus] = useState<StatusMatriz>("PENDENTE_HISTORICO");
   const [mensagem, setMensagem] = useState("");
+  const [mensagemSalvar, setMensagemSalvar] = useState("");
   const [aba, setAba] = useState<"individual" | "departamento" | "solicitacoes" | "revisoes">("individual");
   const [filtroSolicitacao, setFiltroSolicitacao] = useState<"PENDENTE" | "TODAS">("PENDENTE");
   const [mensagemSolicitacao, setMensagemSolicitacao] = useState("");
@@ -303,11 +304,12 @@ export default function AdminEixosTecnicos() {
         historicoQuery.refetch(),
         utils.bloco1CompetenciasFuncao.mapaIndividual.invalidate({ colaboradorId: Number(revisao.colaboradorId) }),
       ]);
-      setMensagem(
+      const textoDecisao =
         decisao === "AJUSTADA"
-          ? `A classificação de "${revisao.eixo}" foi ajustada para ${RELACAO_LABEL[revisao.relacaoSugerida as RelacaoEixo]}.`
-          : `A classificação atual de "${revisao.eixo}" foi mantida.`,
-      );
+          ? `Ajuste salvo: "${revisao.eixo}" foi classificado como ${RELACAO_LABEL[revisao.relacaoSugerida as RelacaoEixo]}.`
+          : `Decisão salva: a classificação atual de "${revisao.eixo}" foi mantida.`;
+      setMensagem(textoDecisao);
+      setMensagemSalvar(textoDecisao);
     } catch (error: any) {
       setMensagem(error?.message || "Não foi possível registrar a decisão.");
     }
@@ -344,7 +346,6 @@ export default function AdminEixosTecnicos() {
     setFonte(matriz.fonte ?? "");
     setObservacao(matriz.observacao ?? "");
     setStatus(matriz.status as StatusMatriz);
-    setMensagem("");
   }, [matriz]);
 
   const gerarCatalogo = async () => {
@@ -455,6 +456,7 @@ export default function AdminEixosTecnicos() {
 
   const salvar = async () => {
     if (!matriz) return;
+    setMensagemSalvar("");
     const linhas = Object.values(edicoes);
     if (linhas.length === 0) {
       setMensagem("Este empregado ainda não possui eixos importados.");
@@ -487,7 +489,9 @@ export default function AdminEixosTecnicos() {
       (matriz.observacao ?? "") !== observacao.trim();
 
     if (alterados.length === 0 && !metadadosAlterados) {
-      setMensagem("Nenhuma alteração foi identificada.");
+      const texto = "Nenhuma alteração adicional para salvar. Os ajustes aceitos anteriormente já estão registrados.";
+      setMensagem(texto);
+      setMensagemSalvar(texto);
       return;
     }
 
@@ -519,13 +523,16 @@ export default function AdminEixosTecnicos() {
         historicoQuery.refetch(),
         utils.bloco1CompetenciasFuncao.mapaIndividual.invalidate({ colaboradorId: Number(matriz.colaboradorId) }),
       ]);
-      setMensagem(
+      const textoSalvo =
         alterados.length === 1
-          ? "Correção salva. A Evolução passará a usar a classificação e a pontuação atualizadas."
-          : `${alterados.length} correções salvas. A Evolução passará a usar os valores atualizados.`,
-      );
+          ? "Correção salva com sucesso."
+          : `${alterados.length} correções salvas com sucesso.`;
+      setMensagem(textoSalvo);
+      setMensagemSalvar(textoSalvo);
     } catch (error: any) {
-      setMensagem(error?.message || "Não foi possível salvar a correção.");
+      const textoErro = error?.message || "Não foi possível salvar a correção.";
+      setMensagem(textoErro);
+      setMensagemSalvar(textoErro);
     }
   };
 
@@ -599,6 +606,8 @@ export default function AdminEixosTecnicos() {
               onChange={(event) => {
                 const valor = event.target.value;
                 setMatrizSelecionada(valor ? Number(valor) : null);
+                setMensagem("");
+                setMensagemSalvar("");
               }}
               disabled={matrizesFiltradas.length === 0}
               className="h-10 w-full rounded-md border bg-background px-3 font-normal"
@@ -688,25 +697,12 @@ export default function AdminEixosTecnicos() {
                           <tr key={eixo.eixoId} className="border-b last:border-0">
                             <td className="px-4 py-3 align-top">
                               <div className="min-w-[280px]">
-                                {eixo.eixoDescricao && (
-                                  <details className="mb-2 w-fit max-w-full text-xs font-normal">
-                                    <summary className="cursor-pointer list-none rounded-md border bg-slate-50 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100">
-                                      Sobre este eixo
-                                    </summary>
-                                    <div className="mt-2 max-w-xl rounded-md border bg-slate-50 p-3">
-                                      <p className="leading-5 text-slate-600">{eixo.eixoDescricao}</p>
-                                      {Array.isArray(eixo.conhecimentos) && eixo.conhecimentos.length > 0 && (
-                                        <div className="mt-2">
-                                          <p className="font-medium text-slate-700">Conhecimentos que abrange</p>
-                                          <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-600">
-                                            {eixo.conhecimentos.map((item: string, indice: number) => <li key={indice}>{item}</li>)}
-                                          </ul>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </details>
-                                )}
-                                <p className="font-medium">{eixo.eixo}</p>
+                                <p
+                                  className={`font-medium ${eixo.eixoDescricao ? "cursor-help decoration-dotted underline-offset-4 hover:underline" : ""}`}
+                                  title={eixo.eixoDescricao || undefined}
+                                >
+                                  {eixo.eixo}
+                                </p>
                                 {eixosComPedido.has(eixo.eixoId) && <Badge variant="outline" className="mt-2 border-amber-300 bg-amber-50 text-amber-800">Solicitação pendente</Badge>}
                               </div>
                             </td>
@@ -754,18 +750,6 @@ export default function AdminEixosTecnicos() {
                                         Atual: {revisao.relacaoAtual ? RELACAO_LABEL[revisao.relacaoAtual as RelacaoEixo] : "Pendente"} → Sugerida: {RELACAO_LABEL[revisao.relacaoSugerida as RelacaoEixo]}
                                       </span>
                                     </div>
-                                    {revisao.eixoDescricao && (
-                                      <div className="mt-3 text-xs leading-5">
-                                        <p className="font-semibold text-slate-800">O que é este eixo</p>
-                                        <p className="mt-1 text-slate-600">{revisao.eixoDescricao}</p>
-                                      </div>
-                                    )}
-                                    {Array.isArray(revisao.conhecimentos) && revisao.conhecimentos.length > 0 && (
-                                      <div className="mt-3 text-xs leading-5">
-                                        <p className="font-semibold text-slate-800">Conhecimentos que abrange</p>
-                                        <p className="mt-1 text-slate-600">{revisao.conhecimentos.join(" · ")}</p>
-                                      </div>
-                                    )}
                                     <div className="mt-3 rounded-md bg-white/80 p-3 text-xs leading-5 text-slate-700">
                                       <p className="font-semibold">Justificativa fundamentada no questionário</p>
                                       <p className="mt-1">{revisao.justificativaSugerida}</p>
@@ -852,10 +836,15 @@ export default function AdminEixosTecnicos() {
                 </label>
               </div>
 
-              <Button onClick={salvar} disabled={salvando || (matriz.eixos ?? []).length === 0}>
-                <Save className="mr-2 h-4 w-4" />
-                {salvando ? "Salvando..." : "Salvar correções"}
-              </Button>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button onClick={salvar} disabled={salvando || (matriz.eixos ?? []).length === 0}>
+                  <Save className="mr-2 h-4 w-4" />
+                  {salvando ? "Salvando..." : "Salvar correções"}
+                </Button>
+                {mensagemSalvar && (
+                  <span className="text-sm font-medium text-green-700">{mensagemSalvar}</span>
+                )}
+              </div>
             </CardContent>
           </Card>
 
