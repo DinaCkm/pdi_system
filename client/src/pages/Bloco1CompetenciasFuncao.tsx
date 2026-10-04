@@ -161,7 +161,7 @@ export default function Bloco1CompetenciasFuncao() {
   const isGerente = role === "gerente";
   const isLider = role === "lider";
   const isColaborador = role === "colaborador";
-  const podeVerNumeroOriginalComportamental = isAdmin || isGerente || isLider;
+  const podeVerNumeroOriginalComportamental = true;
   const podeSelecionarEmpregado = !isColaborador;
   const podeEditarClassificacao = isAdmin;
   const podeCriarAcao = isAdmin || isLider;
@@ -1159,8 +1159,8 @@ export default function Bloco1CompetenciasFuncao() {
             <CardContent className="text-sm text-muted-foreground space-y-2">
               <p><strong>Conhecimentos técnicos:</strong> o Ciclo 2025 preserva a referência histórica. O Ciclo 2026 apresenta o nível de conhecimento integrado. Nos eixos Essenciais, o engajamento no PDI pode calibrar o indicador em até 10%, sem alterar a medição técnica original.</p>
               <p><strong>Competências comportamentais:</strong> o resultado vem da Avaliação de Desempenho da Umanni, preservado na escala original de 0 a 3. O PDI-System converte apenas a posição na escala para os conceitos Em Desenvolvimento, Conhecimento Aplicado, Conhecimento Consolidado, Conhecimento Avançado e Referência, sem recalcular o resultado oficial.</p>
-              <p><strong>Sinalização Umanni:</strong> os relatórios enviados utilizam luzes/barras por faixa. A leitura visual reproduz essa lógica: laranja abaixo de 50% da escala, amarelo de 50% até antes de 70% e verde a partir de 70%. O empregado pode abrir a explicação da conversão; os números originais da Umanni ficam visíveis para administrador, gerente e líder.</p>
-              <p><strong>Leitura:</strong> a interface prioriza conceitos de conhecimento e desenvolvimento. Percentuais e memória de cálculo ficam disponíveis somente ao administrador.</p>
+              <p><strong>Sinalização Umanni:</strong> os relatórios enviados utilizam luzes/barras por faixa. A leitura visual reproduz essa lógica: laranja abaixo de 50% da escala, amarelo de 50% até antes de 70% e verde a partir de 70%. Ao expandir a competência, empregado, gestor e administrador visualizam os resultados originais recebidos da Umanni.</p>
+              <p><strong>Leitura:</strong> a interface prioriza conceitos de conhecimento e desenvolvimento. Os resultados originais da Umanni ficam disponíveis a todos os perfis na competência comportamental; a memória de cálculo técnica permanece restrita ao administrador.</p>
               <p><strong>Potencialidades:</strong> conhecimentos fora do grupo Essencial aparecem quando há conhecimento demonstrado, independentemente de ter havido crescimento entre ciclos.</p>
               <p><strong>Pontos de Foco:</strong> estabilidade, por si só, não gera foco. Nos conhecimentos técnicos, entram os Essenciais ainda em desenvolvimento ou que tenham sofrido queda suficiente para mudar de nível. Nas competências comportamentais, o foco considera nível atual que ainda exige desenvolvimento ou queda conceitual relevante.</p>
               <p><strong>DISC:</strong> não participa do cálculo atual; fica reservado para funcionalidade futura.</p>
