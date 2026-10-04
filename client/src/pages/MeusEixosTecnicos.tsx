@@ -154,10 +154,28 @@ export default function MeusEixosTecnicos() {
                           <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-800">Pendente de análise</Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">Justificativa: </span>
-                        {eixo.justificativa?.trim() || "Justificativa ainda não registrada."}
-                      </p>
+                      {eixo.eixoDescricao && (
+                        <div className="rounded-md border bg-slate-50 p-3 text-sm">
+                          <p className="font-medium text-slate-900">O que é este eixo</p>
+                          <p className="mt-1 text-slate-700">{eixo.eixoDescricao}</p>
+                          {Array.isArray(eixo.conhecimentos) && eixo.conhecimentos.length > 0 && (
+                            <details className="mt-2 text-xs text-slate-600">
+                              <summary className="cursor-pointer font-medium">Conhecimentos que este eixo abrange</summary>
+                              <ul className="mt-2 list-disc space-y-1 pl-5">
+                                {eixo.conhecimentos.map((item: string, indice: number) => (
+                                  <li key={indice}>{item}</li>
+                                ))}
+                              </ul>
+                            </details>
+                          )}
+                        </div>
+                      )}
+                      <div className="rounded-md border border-blue-100 bg-blue-50/60 p-3 text-sm">
+                        <p className="font-medium text-blue-950">Por que este eixo é importante para a sua função</p>
+                        <p className="mt-1 text-blue-900">
+                          {eixo.justificativa?.trim() || "Justificativa ainda não registrada com base no Questionário de Atividades/Função."}
+                        </p>
+                      </div>
                     </div>
                     <Button variant="outline" size="sm" disabled={pendente || aberto} onClick={() => abrir(eixo)}>
                       <MessageSquarePlus className="mr-2 h-4 w-4" />

@@ -678,9 +678,25 @@ export default function AdminEixosTecnicos() {
                         const edicao = edicoes[eixo.eixoId];
                         return (
                           <tr key={eixo.eixoId} className="border-b last:border-0">
-                            <td className="px-4 py-3 font-medium">
-                              {eixo.eixo}
-                              {eixosComPedido.has(eixo.eixoId) && <Badge variant="outline" className="ml-2 border-amber-300 bg-amber-50 text-amber-800">📩 Solicitação pendente</Badge>}
+                            <td className="px-4 py-3 align-top">
+                              <div className="min-w-[280px]">
+                                <p className="font-medium">{eixo.eixo}</p>
+                                {eixo.eixoDescricao && (
+                                  <details className="mt-2 rounded-md border bg-slate-50 p-2 text-xs font-normal">
+                                    <summary className="cursor-pointer font-medium text-slate-800">Descrição do eixo</summary>
+                                    <p className="mt-2 leading-5 text-slate-600">{eixo.eixoDescricao}</p>
+                                    {Array.isArray(eixo.conhecimentos) && eixo.conhecimentos.length > 0 && (
+                                      <div className="mt-2">
+                                        <p className="font-medium text-slate-700">Conhecimentos que abrange</p>
+                                        <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-600">
+                                          {eixo.conhecimentos.map((item: string, indice: number) => <li key={indice}>{item}</li>)}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </details>
+                                )}
+                                {eixosComPedido.has(eixo.eixoId) && <Badge variant="outline" className="mt-2 border-amber-300 bg-amber-50 text-amber-800">Solicitação pendente</Badge>}
+                              </div>
                             </td>
                             <td className="px-4 py-3">
                               <select

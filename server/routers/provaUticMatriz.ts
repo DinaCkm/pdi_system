@@ -198,17 +198,25 @@ export const provaUticMatrizRouter = router({
 
     for (const matriz of matrizes) {
       const eixosResult = await db.execute(sql`
-        SELECT id, eixo_id AS eixoId, eixo_nome AS eixo,
-               relacao, status_classificacao AS statusClassificacao,
-               justificativa, percentual_anterior AS anterior
-          FROM prova_utic_matriz_eixos
-         WHERE matriz_id = ${matriz.id}
-         ORDER BY id
+        SELECT e.id, e.eixo_id AS eixoId, e.eixo_nome AS eixo,
+               e.relacao, e.status_classificacao AS statusClassificacao,
+               e.justificativa, e.percentual_anterior AS anterior,
+               c.descricao AS eixoDescricao,
+               c.conhecimentos_json AS conhecimentosJson
+          FROM prova_utic_matriz_eixos e
+          LEFT JOIN prova_utic_eixo_catalogo c ON c.eixo_id = e.eixo_id
+         WHERE e.matriz_id = ${matriz.id}
+         ORDER BY e.id
       `);
-      matriz.eixos = rowsOf<any>(eixosResult).map((eixo) => ({
-        ...eixo,
-        anterior: eixo.anterior === null ? null : Number(eixo.anterior),
-      }));
+      matriz.eixos = rowsOf<any>(eixosResult).map((eixo) => {
+        let conhecimentos: string[] = [];
+        try { conhecimentos = JSON.parse(String(eixo.conhecimentosJson || "[]")); } catch {}
+        return {
+          ...eixo,
+          anterior: eixo.anterior === null ? null : Number(eixo.anterior),
+          conhecimentos,
+        };
+      });
     }
 
     const pendentesResult = await db.execute(sql`
@@ -465,16 +473,23 @@ export const provaUticMatrizRouter = router({
     if (!matriz) return { matriz: null, eixos: [], solicitacoes: [] };
 
     const eixosResult = await db.execute(sql`
-      SELECT eixo_id AS eixoId, eixo_nome AS eixo, relacao,
-             status_classificacao AS statusClassificacao, justificativa
-        FROM prova_utic_matriz_eixos
-       WHERE matriz_id = ${matriz.id}
-       ORDER BY id
+      SELECT e.eixo_id AS eixoId, e.eixo_nome AS eixo, e.relacao,
+             e.status_classificacao AS statusClassificacao, e.justificativa,
+             c.descricao AS eixoDescricao,
+             c.conhecimentos_json AS conhecimentosJson
+        FROM prova_utic_matriz_eixos e
+        LEFT JOIN prova_utic_eixo_catalogo c ON c.eixo_id = e.eixo_id
+       WHERE e.matriz_id = ${matriz.id}
+       ORDER BY e.id
     `);
     const solicitacoes = await listarSolicitacoesDb(db, { colaboradorId: ctx.user.id });
     return {
       matriz,
-      eixos: rowsOf<any>(eixosResult),
+      eixos: rowsOf<any>(eixosResult).map((eixo) => {
+        let conhecimentos: string[] = [];
+        try { conhecimentos = JSON.parse(String(eixo.conhecimentosJson || "[]")); } catch {}
+        return { ...eixo, conhecimentos };
+      }),
       solicitacoes: solicitacoes.map(({ colaboradorEmail, ...resto }: any) => resto),
     };
   }),
@@ -657,7 +672,7 @@ export const provaUticMatrizRouter = router({
 
   analisarQuestionarioEmpregado: adminProcedure
     .input(z.object({ colaboradorId: z.number().int().positive() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = await ensureTechnicalMatrixTables();
 
       const matrizResult = await db.execute(sql`
@@ -696,6 +711,7 @@ export const provaUticMatrizRouter = router({
       const eixosResult = await db.execute(sql`
         SELECT e.eixo_id AS eixoId, e.eixo_nome AS eixo,
                e.relacao AS relacaoAtual, e.justificativa AS justificativaAtual,
+               e.percentual_anterior AS percentualAnterior,
                c.descricao, c.conhecimentos_json AS conhecimentosJson
           FROM prova_utic_matriz_eixos e
           LEFT JOIN prova_utic_eixo_catalogo c ON c.eixo_id = e.eixo_id
@@ -734,12 +750,12 @@ export const provaUticMatrizRouter = router({
           {
             role: "system",
             content:
-              "Você é especialista em arquitetura de competências e análise de função. Analise SOMENTE as respostas do Questionário de Atividades/Função e o catálogo dos eixos fornecidos. Não use cargo, unidade, senso comum, internet, normas externas ou suposições. ESSENCIAL = conhecimento diretamente necessário e recorrente para executar responsabilidades centrais declaradas. TRANSVERSAL = conhecimento útil ou recorrente que apoia diversas atividades, mas não constitui o núcleo das entregas declaradas. NAO_ESSENCIAL = não há evidência suficiente de uso relevante nas atividades declaradas. Se houver ambiguidade ou evidência insuficiente para mudar, mantenha a classificação atual. A justificativa deve explicar a relação entre as atividades declaradas e o eixo, sem inventar informações. Cite somente chaves de respostas realmente utilizadas.",
+              "Você é especialista em arquitetura de competências e análise de função. Analise SOMENTE as respostas do Questionário de Atividades/Função e o catálogo dos eixos fornecidos. Não use cargo, unidade, senso comum, internet, normas externas ou suposições. ESSENCIAL = conhecimento diretamente necessário e recorrente para executar responsabilidades centrais declaradas. TRANSVERSAL = conhecimento útil ou recorrente que apoia diversas atividades, mas não constitui o núcleo das entregas declaradas. NAO_ESSENCIAL = não há evidência suficiente de uso relevante nas atividades declaradas. Se houver ambiguidade ou evidência insuficiente para mudar, mantenha a classificação atual. Para cada eixo gere também uma descricaoEixo: um texto claro, de 2 a 4 frases, que explique o que é o eixo e quais conhecimentos ele abrange, usando EXCLUSIVAMENTE a descrição e os conhecimentos avaliados fornecidos para o eixo, sem usar o questionário do empregado. A justificativa deve explicar por que o eixo tem aquela classificação para a função daquele empregado, usando SOMENTE as atividades e respostas declaradas no questionário. Cite somente chaves de respostas realmente utilizadas.",
           },
           {
             role: "user",
             content:
-              `QUESTIONÁRIO DO EMPREGADO:\n${questionarioTexto}\n\nEIXOS E CLASSIFICAÇÕES ATUAIS:\n${eixosTexto}\n\nAnalise TODOS os eixos. Para cada eixo retorne a classificação sugerida, justificativa fundamentada e as chaves das respostas utilizadas como evidência. Se não houver base suficiente para mudança, mantenha a classificação atual.`,
+              `QUESTIONÁRIO DO EMPREGADO:\n${questionarioTexto}\n\nEIXOS E CLASSIFICAÇÕES ATUAIS:\n${eixosTexto}\n\nAnalise TODOS os eixos. Para cada eixo retorne: (1) descricaoEixo, explicando o que o eixo é e os conhecimentos que abrange com base somente nas questões/conhecimentos do catálogo; (2) classificação sugerida; (3) justificativa personalizada explicando por que esse eixo tem essa classificação para a função deste empregado, com base no questionário; e (4) as chaves das respostas utilizadas como evidência. Se não houver base suficiente para mudança, mantenha a classificação atual, mas ainda produza a justificativa personalizada.`,
           },
         ],
         responseFormat: {
@@ -756,11 +772,12 @@ export const provaUticMatrizRouter = router({
                     type: "object",
                     properties: {
                       eixoId: { type: "string" },
+                      descricaoEixo: { type: "string" },
                       relacaoSugerida: { type: "string", enum: ["ESSENCIAL", "TRANSVERSAL", "NAO_ESSENCIAL"] },
                       justificativa: { type: "string" },
                       evidencias: { type: "array", items: { type: "string" } },
                     },
-                    required: ["eixoId", "relacaoSugerida", "justificativa", "evidencias"],
+                    required: ["eixoId", "descricaoEixo", "relacaoSugerida", "justificativa", "evidencias"],
                     additionalProperties: false,
                   },
                 },
@@ -796,6 +813,8 @@ export const provaUticMatrizRouter = router({
       let divergencias = 0;
       let coerentes = 0;
       let ignorados = 0;
+      let justificativasAtualizadas = 0;
+      let descricoesAtualizadas = 0;
 
       for (const analise of analises) {
         const eixo = eixoPorId.get(String(analise.eixoId));
@@ -810,9 +829,39 @@ export const provaUticMatrizRouter = router({
               .filter(Boolean)
           : [];
         const justificativa = String(analise.justificativa || "").trim();
+        const descricaoEixo = String(analise.descricaoEixo || "").trim();
         if (justificativa.length < 20 || evidencias.length === 0) { ignorados++; continue; }
 
+        if (descricaoEixo.length >= 20 && descricaoEixo !== String(eixo.descricao || "").trim()) {
+          await db.execute(sql`
+            UPDATE prova_utic_eixo_catalogo
+               SET descricao = ${descricaoEixo},
+                   atualizado_por = ${ctx.user.id},
+                   updated_at = NOW()
+             WHERE eixo_id = ${eixo.eixoId}
+          `);
+          descricoesAtualizadas++;
+        }
+
         if (sugerida === String(eixo.relacaoAtual || "")) {
+          if (justificativa !== String(eixo.justificativaAtual || "").trim()) {
+            await gravarEixo(db, {
+              matrizId: Number(matriz.matrizId),
+              eixoId: String(eixo.eixoId),
+              eixo: String(eixo.eixo),
+              relacao: sugerida as "ESSENCIAL" | "TRANSVERSAL" | "NAO_ESSENCIAL",
+              statusClassificacao: "CLASSIFICADO",
+              justificativa,
+              anterior:
+                eixo.percentualAnterior === null || eixo.percentualAnterior === undefined
+                  ? null
+                  : Number(eixo.percentualAnterior),
+              motivo: "Justificativa fundamentada no Questionário de Atividades/Função",
+              observacao:
+                "A análise confirmou a classificação atual e atualizou somente a justificativa com base nas respostas do questionário.",
+            }, Number(ctx.user.id));
+            justificativasAtualizadas++;
+          }
           coerentes++;
           continue;
         }
@@ -850,6 +899,8 @@ export const provaUticMatrizRouter = router({
         coerentes,
         divergencias,
         ignorados,
+        justificativasAtualizadas,
+        descricoesAtualizadas,
       };
     }),
 
