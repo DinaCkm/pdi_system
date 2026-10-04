@@ -161,6 +161,7 @@ export default function Bloco1CompetenciasFuncao() {
   const isGerente = role === "gerente";
   const isLider = role === "lider";
   const isColaborador = role === "colaborador";
+  const podeVerNumeroOriginalComportamental = isAdmin || isGerente || isLider;
   const podeSelecionarEmpregado = !isColaborador;
   const podeEditarClassificacao = isAdmin;
   const podeCriarAcao = isAdmin || isLider;
@@ -988,7 +989,11 @@ export default function Bloco1CompetenciasFuncao() {
                                 )
                               }
                             >
-                              {comportamentalAberta === Number(item.competenciaMacroId) ? "Fechar explicação" : "Entender resultado"}
+                              {comportamentalAberta === Number(item.competenciaMacroId)
+                                ? "Fechar explicação"
+                                : isColaborador
+                                  ? "Como este conceito foi obtido"
+                                  : "Entender resultado"}
                             </Button>
                           </TableCell>
                           <TableCell>
@@ -1042,27 +1047,38 @@ export default function Bloco1CompetenciasFuncao() {
                                   <p className="mt-1 text-lg font-semibold">0 a 3</p>
                                   <p className="mt-1 text-xs text-muted-foreground">A leitura conceitual apenas traduz a posição do resultado dentro dessa escala.</p>
                                 </div>
-                                <div>
-                                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ciclo anterior — resultado Umanni</p>
-                                  <p className="mt-1 text-lg font-semibold">
-                                    {item.resultadoAnterior === null ? "Sem resultado" : Number(item.resultadoAnterior).toFixed(2)}
-                                  </p>
-                                  {item.percentualAnterior !== null && (
-                                    <p className="mt-1 text-xs text-muted-foreground">{Number(item.percentualAnterior).toFixed(1)}% da escala · sinal {String(item.sinalAnterior || "—").toLowerCase()}</p>
-                                  )}
-                                </div>
-                                <div>
-                                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ciclo atual — resultado Umanni</p>
-                                  <p className="mt-1 text-lg font-semibold">
-                                    {item.resultadoAtual === null ? "Sem resultado" : Number(item.resultadoAtual).toFixed(2)}
-                                  </p>
-                                  {item.percentualAtual !== null && (
-                                    <p className="mt-1 text-xs text-muted-foreground">{Number(item.percentualAtual).toFixed(1)}% da escala · sinal {String(item.sinalAtual || "—").toLowerCase()}</p>
-                                  )}
-                                </div>
+                                {podeVerNumeroOriginalComportamental ? (
+                                  <>
+                                    <div>
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ciclo anterior — resultado original Umanni</p>
+                                      <p className="mt-1 text-lg font-semibold">
+                                        {item.resultadoAnterior === null ? "Sem resultado" : Number(item.resultadoAnterior).toFixed(2)}
+                                      </p>
+                                      {item.percentualAnterior !== null && (
+                                        <p className="mt-1 text-xs text-muted-foreground">{Number(item.percentualAnterior).toFixed(1)}% da escala · sinal {String(item.sinalAnterior || "—").toLowerCase()}</p>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ciclo atual — resultado original Umanni</p>
+                                      <p className="mt-1 text-lg font-semibold">
+                                        {item.resultadoAtual === null ? "Sem resultado" : Number(item.resultadoAtual).toFixed(2)}
+                                      </p>
+                                      {item.percentualAtual !== null && (
+                                        <p className="mt-1 text-xs text-muted-foreground">{Number(item.percentualAtual).toFixed(1)}% da escala · sinal {String(item.sinalAtual || "—").toLowerCase()}</p>
+                                      )}
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="md:col-span-2">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Como o conceito é obtido</p>
+                                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                                      O resultado oficial recebido da Umanni é posicionado na escala de 0 a 3 e convertido somente para uma referência percentual: resultado ÷ 3 × 100. Essa referência determina o conceito exibido, sem modificar o resultado original da avaliação.
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                               <div className="mx-4 mb-4 rounded-md border bg-white p-3 text-xs leading-5 text-slate-600">
-                                <strong>Como é feita a leitura:</strong> usamos a mesma régua conceitual adotada nos conhecimentos técnicos para facilitar a compreensão visual, adaptada à natureza comportamental: Em Desenvolvimento, Em Aplicação, Consolidado, Avançado e Referência. As luzes reproduzem a sinalização observada nos relatórios Umanni: laranja abaixo de 50% da escala, amarelo de 50% até antes de 70% e verde a partir de 70%. O número original da Umanni permanece disponível aqui para conferência.
+                                <strong>Como é feita a leitura:</strong> usamos a mesma régua conceitual adotada nos conhecimentos técnicos: Em Desenvolvimento (abaixo de 65%), Conhecimento Aplicado (65% a 74,9%), Conhecimento Consolidado (75% a 84,9%), Conhecimento Avançado (85% a 89,9%) e Referência (90% ou mais). As luzes reproduzem a sinalização observada nos relatórios Umanni: laranja abaixo de 50% da escala, amarelo de 50% até antes de 70% e verde a partir de 70%. {podeVerNumeroOriginalComportamental ? " Administradores e gestores também visualizam acima os números originais recebidos da Umanni." : " Na visão do empregado, o número original não é exibido; permanece preservado para consulta administrativa e gerencial."}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -1086,7 +1102,7 @@ export default function Bloco1CompetenciasFuncao() {
             <CardContent className="text-sm text-muted-foreground space-y-2">
               <p><strong>Conhecimentos técnicos:</strong> o Ciclo 2025 preserva a referência histórica. O Ciclo 2026 apresenta o nível de conhecimento integrado. Nos eixos Essenciais, o engajamento no PDI pode calibrar o indicador em até 10%, sem alterar a medição técnica original.</p>
               <p><strong>Competências comportamentais:</strong> o resultado vem da Avaliação de Desempenho da Umanni, preservado na escala original de 0 a 3. O PDI-System converte apenas a posição na escala para os conceitos Em Desenvolvimento, Em Aplicação, Consolidado, Avançado e Referência, sem recalcular o resultado oficial.</p>
-              <p><strong>Sinalização Umanni:</strong> os relatórios enviados utilizam luzes/barras por faixa. A leitura visual reproduz essa lógica: laranja abaixo de 50% da escala, amarelo de 50% até antes de 70% e verde a partir de 70%. O resultado numérico original permanece disponível em “Entender resultado”.</p>
+              <p><strong>Sinalização Umanni:</strong> os relatórios enviados utilizam luzes/barras por faixa. A leitura visual reproduz essa lógica: laranja abaixo de 50% da escala, amarelo de 50% até antes de 70% e verde a partir de 70%. O empregado pode abrir a explicação da conversão; os números originais da Umanni ficam visíveis para administrador, gerente e líder.</p>
               <p><strong>Leitura:</strong> a interface prioriza conceitos de conhecimento e desenvolvimento. Percentuais e memória de cálculo ficam disponíveis somente ao administrador.</p>
               <p><strong>Potencialidades:</strong> conhecimentos fora do grupo Essencial aparecem quando há conhecimento demonstrado, independentemente de ter havido crescimento entre ciclos.</p>
               <p><strong>Pontos de Foco:</strong> estabilidade, por si só, não gera foco. Nos conhecimentos técnicos, entram os Essenciais ainda em desenvolvimento ou que tenham sofrido queda suficiente para mudar de nível. Nas competências comportamentais, o foco considera nível atual que ainda exige desenvolvimento ou queda conceitual relevante.</p>
