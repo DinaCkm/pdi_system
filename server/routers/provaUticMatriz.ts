@@ -3,7 +3,6 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, assessmentProcedure, router } from "../_core/customTrpc";
 import { sendEmail } from "../_core/email";
-import { invokeLLM } from "../_core/llm";
 import * as dbApi from "../db";
 import { ensureTechnicalMatrixTables } from "../services/technicalMatrixSchema";
 
@@ -564,14 +563,12 @@ export const provaUticMatrizRouter = router({
       let questoes: any[] = [];
       try { questoes = JSON.parse(String(prova.questoesJson || "[]")); } catch { questoes = []; }
       for (const questao of Array.isArray(questoes) ? questoes : []) {
-        const enunciado = String(questao?.enunciado ?? questao?.pergunta ?? "").trim();
+        const enunciado = String(questao?.enunciado ?? questao?.pergunta ?? "").replace(/\s+/g, " ").trim();
         for (const eixo of Array.isArray(questao?.eixos) ? questao.eixos : []) {
           const nome = String(eixo?.nome ?? "").trim();
           if (!nome) continue;
           const eixoId = normalizar(nome).slice(0, 40);
-          if (!porEixo.has(eixoId)) {
-            porEixo.set(eixoId, { eixoId, eixo: nome, enunciados: new Set(), fontes: new Set() });
-          }
+          if (!porEixo.has(eixoId)) porEixo.set(eixoId, { eixoId, eixo: nome, enunciados: new Set(), fontes: new Set() });
           const item = porEixo.get(eixoId)!;
           if (enunciado) item.enunciados.add(enunciado);
           item.fontes.add(`${prova.codigo || prova.nome || "Prova"} ${prova.ano || ""}`.trim());
@@ -581,34 +578,15 @@ export const provaUticMatrizRouter = router({
 
     let salvos = 0;
     for (const item of porEixo.values()) {
-      const enunciados = Array.from(item.enunciados).slice(0, 80);
-      if (enunciados.length === 0) continue;
+      const conhecimentos = Array.from(item.enunciados)
+        .filter(Boolean)
+        .slice(0, 30)
+        .map((texto) => texto.length > 480 ? `${texto.slice(0, 477)}...` : texto);
+      if (conhecimentos.length === 0) continue;
 
-      const resposta = await invokeLLM({
-        messages: [
-          {
-            role: "system",
-            content:
-              "Você é especialista em arquitetura de competências. Use SOMENTE os enunciados fornecidos como evidência. Não invente atividades, normas ou conhecimentos ausentes. Responda em JSON válido.",
-          },
-          {
-            role: "user",
-            content:
-              `Eixo: ${item.eixo}\n\nEnunciados vinculados ao eixo:\n- ${enunciados.join("\n- ")}\n\nCrie uma descrição objetiva do que este eixo representa e uma lista de conhecimentos que ele abrange. A descrição deve ter 2 a 4 frases. Os conhecimentos devem ser concretos e dedutíveis dos enunciados. Retorne JSON com: descricao (string) e conhecimentos (array de strings).`,
-          },
-        ],
-        responseFormat: { type: "json_object" },
-      });
-
-      const texto = resposta.choices?.[0]?.message?.content;
-      const bruto = typeof texto === "string" ? texto : Array.isArray(texto) ? texto.map((p: any) => p?.text || "").join("") : "";
-      let parsed: any = {};
-      try { parsed = JSON.parse(bruto); } catch { parsed = {}; }
-      const descricao = String(parsed.descricao ?? "").trim();
-      const conhecimentos = Array.isArray(parsed.conhecimentos)
-        ? parsed.conhecimentos.map((x: any) => String(x).trim()).filter(Boolean).slice(0, 30)
-        : [];
-      if (descricao.length < 20 || conhecimentos.length === 0) continue;
+      const descricao =
+        `Eixo de conhecimento "${item.eixo}", definido a partir das questões técnicas vinculadas a este eixo nas avaliações cadastradas. ` +
+        "Os conhecimentos abrangidos abaixo reproduzem o escopo efetivamente avaliado, sem acrescentar conteúdo externo.";
 
       await db.execute(sql`
         INSERT INTO prova_utic_eixo_catalogo
