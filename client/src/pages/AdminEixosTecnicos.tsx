@@ -170,6 +170,8 @@ export default function AdminEixosTecnicos() {
   const totalPendentes = solicitacoes.filter((item) => item.status === "PENDENTE").length;
   const revisoesQuery = api.listarRevisoesQuestionario.useQuery(undefined, { refetchOnWindowFocus: false });
   const decidirRevisaoMutation = api.decidirRevisaoQuestionario.useMutation();
+  const gerarCatalogoMutation = api.gerarCatalogoEixos.useMutation();
+  const analisarQuestionarioMutation = api.analisarQuestionarioEmpregado.useMutation();
   const revisoes: any[] = revisoesQuery.data ?? [];
   const revisoesPendentes = revisoes.filter((item) => item.status === "PENDENTE");
   const totalRevisoesPendentes = revisoesPendentes.length;
@@ -333,6 +335,30 @@ export default function AdminEixosTecnicos() {
     setStatus(matriz.status as StatusMatriz);
     setMensagem("");
   }, [matriz]);
+
+  const gerarCatalogo = async () => {
+    setMensagem("");
+    try {
+      const resultado = await gerarCatalogoMutation.mutateAsync();
+      setMensagem(`Catálogo preparado: ${resultado.salvos} eixo(s) descritos a partir das questões vinculadas.`);
+    } catch (error: any) {
+      setMensagem(error?.message || "Não foi possível gerar o catálogo dos eixos.");
+    }
+  };
+
+  const analisarQuestionarioSelecionado = async () => {
+    if (!matriz?.colaboradorId) return;
+    setMensagem("");
+    try {
+      const resultado = await analisarQuestionarioMutation.mutateAsync({ colaboradorId: Number(matriz.colaboradorId) });
+      await revisoesQuery.refetch();
+      setMensagem(
+        `Análise concluída para ${resultado.colaboradorNome}: ${resultado.eixosAnalisados} eixo(s) analisados, ${resultado.coerentes} coerente(s) e ${resultado.divergencias} revisão(ões) sugerida(s). Nenhuma classificação foi alterada automaticamente.`,
+      );
+    } catch (error: any) {
+      setMensagem(error?.message || "Não foi possível analisar o questionário deste empregado.");
+    }
+  };
 
   const salvar = async () => {
     if (!matriz) return;
@@ -503,8 +529,20 @@ export default function AdminEixosTecnicos() {
         <>
           <Card>
             <CardHeader>
-              <CardTitle>{matriz.colaboradorNome}</CardTitle>
-              <CardDescription>{matriz.cargo} · {matriz.unidadeNome || "Unidade não informada"} · {matriz.email}</CardDescription>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <CardTitle>{matriz.colaboradorNome}</CardTitle>
+                  <CardDescription>{matriz.cargo} · {matriz.unidadeNome || "Unidade não informada"} · {matriz.email}</CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={analisarQuestionarioSelecionado}
+                  disabled={analisarQuestionarioMutation.isPending}
+                >
+                  {analisarQuestionarioMutation.isPending ? "Analisando questionário..." : "Analisar questionário e eixos"}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-5">
               {(matriz.eixos ?? []).length > 0 && (matriz.eixos ?? []).every((eixo: any) => eixo.anterior === null || eixo.anterior === undefined) && (
@@ -841,10 +879,22 @@ export default function AdminEixosTecnicos() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Empregados com revisão sugerida</CardTitle>
-              <CardDescription>
-                Este relatório mostra somente unidade e empregado. Abra o empregado para ler a justificativa no próprio eixo e decidir se aceita o ajuste ou mantém a classificação atual.
-              </CardDescription>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <CardTitle>Empregados com revisão sugerida</CardTitle>
+                  <CardDescription>
+                    Este relatório mostra somente unidade e empregado. Abra o empregado para ler a justificativa no próprio eixo e decidir se aceita o ajuste ou mantém a classificação atual.
+                  </CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={gerarCatalogo}
+                  disabled={gerarCatalogoMutation.isPending}
+                >
+                  {gerarCatalogoMutation.isPending ? "Preparando catálogo..." : "Preparar catálogo dos eixos"}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {revisoesQuery.isLoading ? (
