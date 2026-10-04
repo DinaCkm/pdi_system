@@ -617,7 +617,16 @@ export const provaUticMatrizRouter = router({
     `);
     const eixosMatriz = rowsOf<any>(eixosMatrizResult);
 
+    const catalogoAtualResult = await db.execute(sql`
+      SELECT eixo_id AS eixoId, descricao, conhecimentos_json AS conhecimentosJson
+        FROM prova_utic_eixo_catalogo
+    `);
+    const catalogoAtual = new Map(
+      rowsOf<any>(catalogoAtualResult).map((item) => [String(item.eixoId), item]),
+    );
+
     let salvos = 0;
+    let preservados = 0;
     let semConteudo = 0;
 
     for (const eixoMatriz of eixosMatriz) {
@@ -642,6 +651,25 @@ export const provaUticMatrizRouter = router({
         `Eixo de conhecimento "${eixoNome}", definido a partir das questões técnicas vinculadas a este eixo nas avaliações cadastradas. ` +
         "Os conhecimentos abrangidos abaixo reproduzem o escopo efetivamente avaliado, sem acrescentar conteúdo externo.";
 
+      const existente = catalogoAtual.get(eixoId);
+      const descricaoExistente = String(existente?.descricao || "").trim();
+      const catalogoEnriquecido =
+        descricaoExistente.length >= 40 &&
+        !descricaoExistente.includes("definido a partir das questões técnicas vinculadas");
+
+      if (catalogoEnriquecido) {
+        await db.execute(sql`
+          UPDATE prova_utic_eixo_catalogo
+             SET eixo_nome = ${eixoNome},
+                 fonte = ${`Questões vinculadas ao eixo em: ${Array.from(conteudo!.fontes).join("; ")}`},
+                 atualizado_por = ${ctx.user.id},
+                 updated_at = NOW()
+           WHERE eixo_id = ${eixoId}
+        `);
+        preservados++;
+        continue;
+      }
+
       await db.execute(sql`
         INSERT INTO prova_utic_eixo_catalogo
           (eixo_id, eixo_nome, descricao, conhecimentos_json, fonte, atualizado_por)
@@ -662,11 +690,12 @@ export const provaUticMatrizRouter = router({
     return {
       eixosMatriz: eixosMatriz.length,
       salvos,
+      preservados,
       semConteudo,
       mensagem:
         semConteudo > 0
-          ? `${salvos} eixo(s) preparados com o ID real da matriz; ${semConteudo} eixo(s) ainda não possuem questões vinculadas por nome.`
-          : `${salvos} eixo(s) preparados com o ID real da matriz.`,
+          ? `${salvos} eixo(s) preparados, ${preservados} descrição(ões) enriquecida(s) preservada(s) e ${semConteudo} eixo(s) ainda sem questões vinculadas por nome.`
+          : `${salvos} eixo(s) preparados e ${preservados} descrição(ões) enriquecida(s) preservada(s).`,
     };
   }),
 
