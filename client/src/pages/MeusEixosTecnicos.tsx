@@ -144,30 +144,15 @@ export default function MeusEixosTecnicos() {
               const aberto = abertoEixo === eixo.eixoId;
               return (
                 <div key={eixo.eixoId} className="rounded-lg border p-4">
-                  {eixo.eixoDescricao && (
-                    <details className="mb-3 w-fit max-w-full">
-                      <summary className="cursor-pointer list-none rounded-md border bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100">
-                        Sobre este eixo
-                      </summary>
-                      <div className="mt-2 max-w-3xl rounded-md border bg-slate-50 p-3 text-sm">
-                        <p className="text-slate-700">{eixo.eixoDescricao}</p>
-                        {Array.isArray(eixo.conhecimentos) && eixo.conhecimentos.length > 0 && (
-                          <div className="mt-3 text-xs text-slate-600">
-                            <p className="font-medium">Conhecimentos que este eixo abrange</p>
-                            <ul className="mt-2 list-disc space-y-1 pl-5">
-                              {eixo.conhecimentos.map((item: string, indice: number) => (
-                                <li key={indice}>{item}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    </details>
-                  )}
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold">{eixo.eixo}</p>
+                        <p
+                          className={`font-semibold ${eixo.eixoDescricao ? "cursor-help decoration-dotted underline-offset-4 hover:underline" : ""}`}
+                          title={eixo.eixoDescricao || undefined}
+                        >
+                          {eixo.eixo}
+                        </p>
                         {classificado ? (
                           <Badge variant="outline" className={RELACAO_COR[eixo.relacao as RelacaoEixo]}>{rotuloRelacao(eixo.relacao)}</Badge>
                         ) : (
