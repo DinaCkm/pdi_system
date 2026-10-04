@@ -750,12 +750,12 @@ export const provaUticMatrizRouter = router({
           {
             role: "system",
             content:
-              "Você é especialista em arquitetura de competências e análise de função. Analise SOMENTE as respostas do Questionário de Atividades/Função e o catálogo dos eixos fornecidos. Não use cargo, unidade, senso comum, internet, normas externas ou suposições. ESSENCIAL = conhecimento diretamente necessário e recorrente para executar responsabilidades centrais declaradas. TRANSVERSAL = conhecimento útil ou recorrente que apoia diversas atividades, mas não constitui o núcleo das entregas declaradas. NAO_ESSENCIAL = não há evidência suficiente de uso relevante nas atividades declaradas. Se houver ambiguidade ou evidência insuficiente para mudar, mantenha a classificação atual. Para cada eixo gere também uma descricaoEixo: um texto claro, de 2 a 4 frases, que explique o que é o eixo e quais conhecimentos ele abrange, usando EXCLUSIVAMENTE a descrição e os conhecimentos avaliados fornecidos para o eixo, sem usar o questionário do empregado. A justificativa deve explicar por que o eixo tem aquela classificação para a função daquele empregado, usando SOMENTE as atividades e respostas declaradas no questionário. Cite somente chaves de respostas realmente utilizadas.",
+              "Você é especialista em arquitetura de competências e análise de função. Analise UM EMPREGADO POR VEZ. Use SOMENTE as respostas do Questionário de Atividades/Função desse empregado e o catálogo dos eixos fornecidos. Não use cargo, unidade, senso comum, internet, normas externas ou suposições. ESSENCIAL = conhecimento diretamente necessário e recorrente para executar responsabilidades centrais declaradas. TRANSVERSAL = conhecimento útil ou recorrente que apoia diversas atividades, mas não constitui o núcleo das entregas declaradas. NAO_ESSENCIAL = não há evidência suficiente de uso relevante nas atividades declaradas. Se houver ambiguidade ou evidência insuficiente para mudar, mantenha a classificação atual. Para cada eixo gere uma descricaoEixo conceitual, de 2 a 4 frases, explicando o que o eixo é e os conhecimentos que abrange, usando EXCLUSIVAMENTE as questões/conhecimentos do catálogo, sem usar o questionário do empregado. Gere também conhecimentosEixo como uma lista curta de 4 a 10 tópicos conceituais, sem copiar enunciados inteiros das questões. A JUSTIFICATIVA É INDIVIDUAL e deve responder: por que ESTE eixo é essencial, transversal ou não essencial para a função DESTE empregado, segundo o que ELE declarou no questionário. A justificativa NÃO pode ser genérica, NÃO pode apenas definir o eixo e NÃO pode usar frases vagas como 'é importante para a função'. Ela deve mencionar de forma concreta uma ou mais atividades, responsabilidades, entregas, desafios ou conhecimentos declarados pelo empregado. Prefira formulações como 'No seu Questionário de Atividades/Função, você informou que...' e conecte essa evidência diretamente ao eixo. Para ESSENCIAL, identifique a atividade central que depende do eixo. Para TRANSVERSAL, identifique em que atividades o eixo atua como apoio. Para NAO_ESSENCIAL, explique que as atividades centrais declaradas não demonstram uso relevante do eixo e cite quais respostas sustentam essa conclusão. Cite somente chaves de respostas realmente utilizadas.",
           },
           {
             role: "user",
             content:
-              `QUESTIONÁRIO DO EMPREGADO:\n${questionarioTexto}\n\nEIXOS E CLASSIFICAÇÕES ATUAIS:\n${eixosTexto}\n\nAnalise TODOS os eixos. Para cada eixo retorne: (1) descricaoEixo, explicando o que o eixo é e os conhecimentos que abrange com base somente nas questões/conhecimentos do catálogo; (2) classificação sugerida; (3) justificativa personalizada explicando por que esse eixo tem essa classificação para a função deste empregado, com base no questionário; e (4) as chaves das respostas utilizadas como evidência. Se não houver base suficiente para mudança, mantenha a classificação atual, mas ainda produza a justificativa personalizada.`,
+              `QUESTIONÁRIO DO EMPREGADO ANALISADO:\n${questionarioTexto}\n\nEIXOS E CLASSIFICAÇÕES ATUAIS:\n${eixosTexto}\n\nAnalise TODOS os eixos deste empregado. Para cada eixo retorne: (1) descricaoEixo, explicando o que o eixo é com base somente nas questões/conhecimentos do catálogo; (2) conhecimentosEixo, com 4 a 10 tópicos conceituais resumidos, sem repetir enunciados completos; (3) classificação sugerida; (4) justificativa INDIVIDUAL, em 2 a 5 frases, explicando por que essa classificação se aplica a ESTE empregado e mencionando atividades/responsabilidades concretas que ELE declarou no questionário; e (5) as chaves das respostas utilizadas como evidência. Se a classificação atual estiver correta, mantenha-a, mas substitua justificativas genéricas por uma justificativa individual ancorada nas respostas do empregado. Não confunda descrição do eixo com justificativa da função.`,
           },
         ],
         responseFormat: {
@@ -773,11 +773,12 @@ export const provaUticMatrizRouter = router({
                     properties: {
                       eixoId: { type: "string" },
                       descricaoEixo: { type: "string" },
+                      conhecimentosEixo: { type: "array", items: { type: "string" } },
                       relacaoSugerida: { type: "string", enum: ["ESSENCIAL", "TRANSVERSAL", "NAO_ESSENCIAL"] },
                       justificativa: { type: "string" },
                       evidencias: { type: "array", items: { type: "string" } },
                     },
-                    required: ["eixoId", "descricaoEixo", "relacaoSugerida", "justificativa", "evidencias"],
+                    required: ["eixoId", "descricaoEixo", "conhecimentosEixo", "relacaoSugerida", "justificativa", "evidencias"],
                     additionalProperties: false,
                   },
                 },
@@ -830,12 +831,22 @@ export const provaUticMatrizRouter = router({
           : [];
         const justificativa = String(analise.justificativa || "").trim();
         const descricaoEixo = String(analise.descricaoEixo || "").trim();
-        if (justificativa.length < 20 || evidencias.length === 0) { ignorados++; continue; }
+        const conhecimentosEixo = Array.isArray(analise.conhecimentosEixo)
+          ? analise.conhecimentosEixo.map((item: any) => String(item || "").trim()).filter((item: string) => item.length >= 2).slice(0, 10)
+          : [];
+        if (justificativa.length < 40 || evidencias.length === 0) { ignorados++; continue; }
 
-        if (descricaoEixo.length >= 20 && descricaoEixo !== String(eixo.descricao || "").trim()) {
+        const descricaoAtual = String(eixo.descricao || "").trim();
+        const catalogoAindaGenerico =
+          !descricaoAtual ||
+          descricaoAtual.includes('definido a partir das questões técnicas vinculadas') ||
+          eixo.conhecimentos.some((item: string) => item.length > 180);
+
+        if (catalogoAindaGenerico && descricaoEixo.length >= 40 && conhecimentosEixo.length >= 3) {
           await db.execute(sql`
             UPDATE prova_utic_eixo_catalogo
                SET descricao = ${descricaoEixo},
+                   conhecimentos_json = ${JSON.stringify(conhecimentosEixo)},
                    atualizado_por = ${ctx.user.id},
                    updated_at = NOW()
              WHERE eixo_id = ${eixo.eixoId}
