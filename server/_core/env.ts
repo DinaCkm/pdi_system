@@ -10,6 +10,7 @@ export const ENV = {
   // legado
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  openaiApiKey: process.env.OPENAI_API_KEY ?? "",
 
   // novo storage R2
   r2AccountId: process.env.R2_ACCOUNT_ID ?? "",
