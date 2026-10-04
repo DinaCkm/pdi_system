@@ -7,10 +7,14 @@ import {
   calcularVariacaoComparavel,
   classificarPerformanceTecnica,
   compararConceitos,
+  compararConceitosComportamentais,
+  conceitoComportamentalPorResultado,
   conceitoConhecimento,
   engajamentoDesenvolvimento,
   fatorCalibragemDesenvolvimento,
+  percentualNaEscala,
   podeCalcularEvolucao,
+  sinalUmanniPorResultado,
 } from "../shared/evolucaoDomain";
 
 describe("evolucaoDomain", () => {
@@ -173,5 +177,29 @@ describe("evolucaoDomain", () => {
     expect(compararConceitos("CONHECIMENTO_CONSOLIDADO", "CONHECIMENTO_CONSOLIDADO")).toBe("CONSOLIDACAO");
     expect(compararConceitos("CONHECIMENTO_AVANCADO", "CONHECIMENTO_APLICADO")).toBe("OPORTUNIDADE_DESENVOLVIMENTO");
     expect(compararConceitos(null, "CONHECIMENTO_APLICADO")).toBe("SEM_COMPARACAO");
+  });
+
+
+  it("traduz o resultado Umanni 0 a 3 sem alterar o valor original", () => {
+    expect(percentualNaEscala(2.93, 0, 3)).toBe(97.7);
+    expect(conceitoComportamentalPorResultado(2.93, 0, 3)).toBe("REFERENCIA");
+    expect(conceitoComportamentalPorResultado(2.4, 0, 3)).toBe("CONSOLIDADO");
+    expect(conceitoComportamentalPorResultado(2.0, 0, 3)).toBe("EM_APLICACAO");
+    expect(conceitoComportamentalPorResultado(1.2, 0, 3)).toBe("EM_DESENVOLVIMENTO");
+  });
+
+  it("reproduz as faixas visuais observadas nos relatorios Umanni", () => {
+    expect(sinalUmanniPorResultado(1.0, 0, 3)).toBe("LARANJA");
+    expect(sinalUmanniPorResultado(1.5, 0, 3)).toBe("AMARELO");
+    expect(sinalUmanniPorResultado(2.0, 0, 3)).toBe("AMARELO");
+    expect(sinalUmanniPorResultado(2.13, 0, 3)).toBe("VERDE");
+    expect(sinalUmanniPorResultado(3.0, 0, 3)).toBe("VERDE");
+  });
+
+  it("compara a evolucao comportamental pelos conceitos apresentados", () => {
+    expect(compararConceitosComportamentais("EM_APLICACAO", "CONSOLIDADO")).toBe("EVOLUCAO");
+    expect(compararConceitosComportamentais("CONSOLIDADO", "CONSOLIDADO")).toBe("CONSOLIDACAO");
+    expect(compararConceitosComportamentais("AVANCADO", "EM_APLICACAO")).toBe("OPORTUNIDADE_DESENVOLVIMENTO");
+    expect(compararConceitosComportamentais(null, "CONSOLIDADO")).toBe("SEM_COMPARACAO");
   });
 });
