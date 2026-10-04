@@ -543,6 +543,191 @@ export const provaUticMatrizRouter = router({
       return listarSolicitacoesDb(db, { status: input?.status });
     }),
 
+  listarRevisoesQuestionario: adminProcedure
+    .input(z.object({ status: z.enum(["PENDENTE", "AJUSTADA", "MANTIDA"]).optional() }).optional())
+    .query(async ({ input }) => {
+      const db = await ensureTechnicalMatrixTables();
+      const result = await db.execute(sql`
+        SELECT r.id, r.matriz_id AS matrizId, r.colaborador_id AS colaboradorId,
+               u.name AS colaboradorNome, d.nome AS unidadeNome,
+               r.questionario_id AS questionarioId,
+               r.eixo_id AS eixoId, r.eixo_nome AS eixo,
+               r.relacao_atual AS relacaoAtual, r.relacao_sugerida AS relacaoSugerida,
+               r.justificativa_sugerida AS justificativaSugerida,
+               r.evidencias_json AS evidenciasJson,
+               r.status, r.relacao_final AS relacaoFinal,
+               r.decidido_em AS decididoEm, decisor.name AS decididoPorNome,
+               r.created_at AS createdAt,
+               c.descricao AS eixoDescricao,
+               c.conhecimentos_json AS conhecimentosJson
+          FROM prova_utic_eixo_revisoes_questionario r
+          JOIN users u ON u.id = r.colaborador_id
+          LEFT JOIN departamentos d ON d.id = u.departamentoId
+          LEFT JOIN users decisor ON decisor.id = r.decidido_por
+          LEFT JOIN prova_utic_eixo_catalogo c ON c.eixo_id = r.eixo_id
+         WHERE (${input?.status ?? null} IS NULL OR r.status = ${input?.status ?? null})
+         ORDER BY COALESCE(d.nome, ''), u.name, r.eixo_nome
+      `);
+
+      return rowsOf<any>(result).map((item) => {
+        const parseJson = (valor: unknown) => {
+          if (!valor) return null;
+          try { return JSON.parse(String(valor)); } catch { return null; }
+        };
+        return {
+          ...item,
+          evidencias: parseJson(item.evidenciasJson) ?? [],
+          conhecimentos: parseJson(item.conhecimentosJson) ?? [],
+        };
+      });
+    }),
+
+  registrarRevisoesQuestionario: adminProcedure
+    .input(z.object({
+      revisoes: z.array(z.object({
+        matrizId: z.number().int().positive(),
+        colaboradorId: z.number().int().positive(),
+        questionarioId: z.number().int().positive().nullable().optional(),
+        eixoId: z.string().min(1).max(40),
+        eixo: z.string().min(1).max(255),
+        relacaoAtual: z.enum(["ESSENCIAL", "TRANSVERSAL", "NAO_ESSENCIAL"]).nullable(),
+        relacaoSugerida: z.enum(["ESSENCIAL", "TRANSVERSAL", "NAO_ESSENCIAL"]),
+        justificativaSugerida: z.string().trim().min(20).max(10000),
+        evidencias: z.array(z.object({
+          chave: z.string().max(100),
+          titulo: z.string().max(255),
+          resposta: z.string().max(10000),
+        })).optional(),
+      })).min(1).max(500),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await ensureTechnicalMatrixTables();
+      let registradas = 0;
+
+      for (const item of input.revisoes) {
+        if (item.relacaoAtual === item.relacaoSugerida) continue;
+
+        await db.execute(sql`
+          INSERT INTO prova_utic_eixo_revisoes_questionario
+            (matriz_id, colaborador_id, questionario_id, eixo_id, eixo_nome,
+             relacao_atual, relacao_sugerida, justificativa_sugerida, evidencias_json, status)
+          VALUES
+            (${item.matrizId}, ${item.colaboradorId}, ${item.questionarioId ?? null},
+             ${item.eixoId}, ${item.eixo}, ${item.relacaoAtual}, ${item.relacaoSugerida},
+             ${item.justificativaSugerida}, ${JSON.stringify(item.evidencias ?? [])}, 'PENDENTE')
+          ON DUPLICATE KEY UPDATE
+            questionario_id = VALUES(questionario_id),
+            eixo_nome = VALUES(eixo_nome),
+            relacao_atual = VALUES(relacao_atual),
+            relacao_sugerida = VALUES(relacao_sugerida),
+            justificativa_sugerida = VALUES(justificativa_sugerida),
+            evidencias_json = VALUES(evidencias_json),
+            status = IF(status = 'PENDENTE', 'PENDENTE', status),
+            updated_at = NOW()
+        `);
+        registradas++;
+      }
+
+      return { registradas };
+    }),
+
+  decidirRevisaoQuestionario: adminProcedure
+    .input(z.object({
+      id: z.number().int().positive(),
+      decisao: z.enum(["AJUSTADA", "MANTIDA"]),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await ensureTechnicalMatrixTables();
+      const revisaoResult = await db.execute(sql`
+        SELECT r.*, e.eixo_nome AS eixoAtualNome, e.relacao AS eixoRelacaoAtual,
+               e.justificativa AS eixoJustificativaAtual, e.percentual_anterior AS anterior
+          FROM prova_utic_eixo_revisoes_questionario r
+          JOIN prova_utic_matriz_eixos e
+            ON e.matriz_id = r.matriz_id AND e.eixo_id = r.eixo_id
+         WHERE r.id = ${input.id}
+         LIMIT 1
+      `);
+      const revisao = rowsOf<any>(revisaoResult)[0];
+      if (!revisao) throw new TRPCError({ code: "NOT_FOUND", message: "Revisão sugerida não encontrada." });
+      if (revisao.status !== "PENDENTE") {
+        throw new TRPCError({ code: "CONFLICT", message: "Esta revisão já foi analisada." });
+      }
+
+      let relacaoFinal = revisao.eixoRelacaoAtual ?? null;
+      if (input.decisao === "AJUSTADA") {
+        relacaoFinal = revisao.relacao_sugerida;
+        await gravarEixo(db, {
+          matrizId: Number(revisao.matriz_id),
+          eixoId: String(revisao.eixo_id),
+          eixo: String(revisao.eixoAtualNome || revisao.eixo_nome),
+          relacao: revisao.relacao_sugerida,
+          statusClassificacao: "CLASSIFICADO",
+          justificativa: String(revisao.justificativa_sugerida),
+          anterior: revisao.anterior === null || revisao.anterior === undefined ? null : Number(revisao.anterior),
+          motivo: "Revisão fundamentada no Questionário de Atividades/Função",
+          observacao: "Classificação ajustada após análise administrativa de sugestão fundamentada no questionário.",
+        }, ctx.user.id);
+      }
+
+      await db.execute(sql`
+        UPDATE prova_utic_eixo_revisoes_questionario
+           SET status = ${input.decisao},
+               relacao_final = ${relacaoFinal},
+               decidido_por = ${ctx.user.id},
+               decidido_em = NOW(),
+               updated_at = NOW()
+         WHERE id = ${input.id}
+      `);
+
+      return { decisao: input.decisao, relacaoFinal };
+    }),
+
+  listarCatalogoEixos: adminProcedure.query(async () => {
+    const db = await ensureTechnicalMatrixTables();
+    const result = await db.execute(sql`
+      SELECT eixo_id AS eixoId, eixo_nome AS eixo, descricao,
+             conhecimentos_json AS conhecimentosJson, fonte, updated_at AS updatedAt
+        FROM prova_utic_eixo_catalogo
+       ORDER BY eixo_nome
+    `);
+    return rowsOf<any>(result).map((item) => {
+      let conhecimentos: string[] = [];
+      try { conhecimentos = JSON.parse(String(item.conhecimentosJson || "[]")); } catch {}
+      return { ...item, conhecimentos };
+    });
+  }),
+
+  salvarCatalogoEixos: adminProcedure
+    .input(z.object({
+      itens: z.array(z.object({
+        eixoId: z.string().min(1).max(40),
+        eixo: z.string().min(1).max(255),
+        descricao: z.string().trim().min(20).max(10000),
+        conhecimentos: z.array(z.string().trim().min(2).max(500)).min(1).max(100),
+        fonte: z.string().max(5000).nullable().optional(),
+      })).min(1).max(500),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await ensureTechnicalMatrixTables();
+      for (const item of input.itens) {
+        await db.execute(sql`
+          INSERT INTO prova_utic_eixo_catalogo
+            (eixo_id, eixo_nome, descricao, conhecimentos_json, fonte, atualizado_por)
+          VALUES
+            (${item.eixoId}, ${item.eixo}, ${item.descricao},
+             ${JSON.stringify(item.conhecimentos)}, ${item.fonte ?? null}, ${ctx.user.id})
+          ON DUPLICATE KEY UPDATE
+            eixo_nome = VALUES(eixo_nome),
+            descricao = VALUES(descricao),
+            conhecimentos_json = VALUES(conhecimentos_json),
+            fonte = VALUES(fonte),
+            atualizado_por = VALUES(atualizado_por),
+            updated_at = NOW()
+        `);
+      }
+      return { salvos: input.itens.length };
+    }),
+
   responderSolicitacao: adminProcedure
     .input(z.object({
       id: z.number().int().positive(),
