@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, History, Inbox, Save, Search, Settings2, XCircle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertCircle, CheckCircle2, History, Inbox, PanelLeftClose, PanelLeftOpen, Save, Search, Settings2, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+import { useSidebar } from "@/components/ui/sidebar";
 
 type RelacaoEixo = "ESSENCIAL" | "TRANSVERSAL" | "NAO_ESSENCIAL";
 type StatusClassificacao = "CLASSIFICADO" | "PENDENTE";
@@ -140,6 +141,10 @@ function CartaoSolicitacao({ solicitacao, onRespondida }: { solicitacao: any; on
 
 export default function AdminEixosTecnicos() {
   const api = (trpc as any).provaUticMatriz;
+  const { state: sidebarState, toggleSidebar } = useSidebar();
+  const sidebarCollapsed = sidebarState === "collapsed";
+  const tabelaScrollRef = useRef<HTMLDivElement>(null);
+  const barraScrollRef = useRef<HTMLDivElement>(null);
   const utils = trpc.useUtils();
   const listaQuery = api.listar.useQuery(undefined, { refetchOnWindowFocus: false });
   const salvarEixoMutation = api.salvarEixo.useMutation();
@@ -541,9 +546,15 @@ export default function AdminEixosTecnicos() {
   return (
     <div className="space-y-6 p-6">
       <div className="space-y-2">
-        <div className="flex items-center gap-3">
-          <Settings2 className="h-7 w-7 text-blue-600" />
-          <h1 className="text-2xl font-semibold tracking-tight">Eixos Técnicos</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Settings2 className="h-7 w-7 text-blue-600" />
+            <h1 className="text-2xl font-semibold tracking-tight">Eixos Técnicos</h1>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={toggleSidebar}>
+            {sidebarCollapsed ? <PanelLeftOpen className="mr-2 h-4 w-4" /> : <PanelLeftClose className="mr-2 h-4 w-4" />}
+            {sidebarCollapsed ? "Mostrar menu" : "Ocultar menu"}
+          </Button>
         </div>
         <p className="max-w-4xl text-sm text-muted-foreground">
           Administração das classificações e pontuações históricas utilizadas em Avaliações e Evolução.
@@ -679,15 +690,32 @@ export default function AdminEixosTecnicos() {
               {(matriz.eixos ?? []).length === 0 ? (
                 <div className="rounded-md border p-5 text-sm text-muted-foreground">Os eixos deste empregado ainda não foram importados.</div>
               ) : (
-                <div className="overflow-x-auto rounded-md border">
-                  <table className="w-full min-w-[1250px] text-sm">
+                <div className="space-y-1">
+                  <div
+                    ref={barraScrollRef}
+                    className="overflow-x-auto"
+                    onScroll={(event) => {
+                      if (tabelaScrollRef.current) tabelaScrollRef.current.scrollLeft = event.currentTarget.scrollLeft;
+                    }}
+                    aria-label="Barra de rolagem horizontal da tabela"
+                  >
+                    <div className="h-1 min-w-[1080px]" />
+                  </div>
+                  <div
+                    ref={tabelaScrollRef}
+                    className="overflow-x-auto rounded-md border"
+                    onScroll={(event) => {
+                      if (barraScrollRef.current) barraScrollRef.current.scrollLeft = event.currentTarget.scrollLeft;
+                    }}
+                  >
+                  <table className="w-full min-w-[1080px] table-fixed text-sm">
                     <thead className="bg-muted/40">
                       <tr className="border-b text-left">
-                        <th className="px-4 py-3">Eixo de conhecimento</th>
-                        <th className="px-4 py-3">Situação</th>
-                        <th className="px-4 py-3">Classificação para a função</th>
-                        <th className="px-4 py-3">Justificativa</th>
-                        <th className="px-4 py-3">Pontuação histórica (%)</th>
+                        <th className="w-[20%] px-3 py-3">Eixo de conhecimento</th>
+                        <th className="w-[15%] px-3 py-3">Situação</th>
+                        <th className="w-[18%] px-3 py-3">Classificação para a função</th>
+                        <th className="w-[32%] px-3 py-3">Justificativa</th>
+                        <th className="w-[15%] px-3 py-3">Pontuação histórica (%)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -696,7 +724,7 @@ export default function AdminEixosTecnicos() {
                         return (
                           <tr key={eixo.eixoId} className="border-b last:border-0">
                             <td className="px-4 py-3 align-top">
-                              <div className="min-w-[280px]">
+                              <div className="min-w-[180px]">
                                 <p
                                   className={`font-medium ${eixo.eixoDescricao ? "cursor-help decoration-dotted underline-offset-4 hover:underline" : ""}`}
                                   title={eixo.eixoDescricao || undefined}
@@ -717,7 +745,7 @@ export default function AdminEixosTecnicos() {
                                     relacao: event.target.value === "PENDENTE" ? "" : atual[eixo.eixoId].relacao,
                                   },
                                 }))}
-                                className="h-9 min-w-[180px] rounded-md border bg-background px-2"
+                                className="h-9 w-full min-w-[135px] rounded-md border bg-background px-2"
                               >
                                 <option value="CLASSIFICADO">Classificado</option>
                                 <option value="PENDENTE">Pendente de análise</option>
@@ -731,7 +759,7 @@ export default function AdminEixosTecnicos() {
                                   ...atual,
                                   [eixo.eixoId]: { ...atual[eixo.eixoId], relacao: event.target.value as RelacaoEixo },
                                 }))}
-                                className="h-9 min-w-[220px] rounded-md border bg-background px-2"
+                                className="h-9 w-full min-w-[155px] rounded-md border bg-background px-2"
                               >
                                 <option value="">Selecione...</option>
                                 {Object.entries(RELACAO_LABEL).map(([valor, rotulo]) => (
@@ -743,7 +771,7 @@ export default function AdminEixosTecnicos() {
                               {revisaoPorEixo.has(String(eixo.eixoId)) && (() => {
                                 const revisao = revisaoPorEixo.get(String(eixo.eixoId));
                                 return (
-                                  <div className="mb-3 min-w-[360px] rounded-lg border border-blue-200 bg-blue-50/70 p-3">
+                                  <div className="mb-3 min-w-[260px] rounded-lg border border-blue-200 bg-blue-50/70 p-3">
                                     <div className="flex flex-wrap items-center gap-2">
                                       <Badge className="bg-blue-600 text-white">Revisão sugerida</Badge>
                                       <span className="text-xs text-muted-foreground">
@@ -785,7 +813,7 @@ export default function AdminEixosTecnicos() {
                                   [eixo.eixoId]: { ...atual[eixo.eixoId], justificativa: event.target.value },
                                 }))}
                                 rows={3}
-                                className="min-w-[320px] rounded-md border bg-background p-2"
+                                className="w-full min-w-[260px] rounded-md border bg-background p-2"
                                 placeholder="Justifique a classificação deste eixo para este empregado."
                               />
                             </td>
@@ -804,7 +832,7 @@ export default function AdminEixosTecnicos() {
                                     anterior: event.target.value === "" ? null : Number(event.target.value),
                                   },
                                 }))}
-                                className="h-9 w-52 rounded-md border bg-background px-3"
+                                className="h-9 w-full min-w-[130px] rounded-md border bg-background px-3"
                               />
                             </td>
                           </tr>
@@ -812,6 +840,7 @@ export default function AdminEixosTecnicos() {
                       })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
 
