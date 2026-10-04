@@ -93,6 +93,53 @@ export async function ensureTechnicalMatrixTables() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `));
 
+
+  // Catálogo conceitual dos eixos: definição geral e conhecimentos abrangidos.
+  // Não contém classificação individual do empregado.
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS prova_utic_eixo_catalogo (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      eixo_id VARCHAR(40) NOT NULL,
+      eixo_nome VARCHAR(255) NOT NULL,
+      descricao TEXT NOT NULL,
+      conhecimentos_json LONGTEXT NOT NULL,
+      fonte TEXT NULL,
+      atualizado_por INT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_eixo_catalogo_eixo (eixo_id),
+      INDEX idx_eixo_catalogo_nome (eixo_nome)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `));
+
+  // Sugestões de revisão produzidas a partir da leitura do Questionário de Atividades/Função.
+  // Nunca alteram a classificação automaticamente: aguardam decisão do administrador.
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS prova_utic_eixo_revisoes_questionario (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      matriz_id INT NOT NULL,
+      colaborador_id INT NOT NULL,
+      questionario_id INT NULL,
+      eixo_id VARCHAR(40) NOT NULL,
+      eixo_nome VARCHAR(255) NOT NULL,
+      relacao_atual ENUM('ESSENCIAL','TRANSVERSAL','NAO_ESSENCIAL') NULL,
+      relacao_sugerida ENUM('ESSENCIAL','TRANSVERSAL','NAO_ESSENCIAL') NOT NULL,
+      justificativa_sugerida TEXT NOT NULL,
+      evidencias_json LONGTEXT NULL,
+      status ENUM('PENDENTE','AJUSTADA','MANTIDA') NOT NULL DEFAULT 'PENDENTE',
+      relacao_final VARCHAR(20) NULL,
+      decidido_por INT NULL,
+      decidido_em DATETIME NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_eixo_revisao_matriz_eixo (matriz_id, eixo_id),
+      INDEX idx_eixo_revisao_status (status),
+      INDEX idx_eixo_revisao_colaborador (colaborador_id),
+      CONSTRAINT fk_eixo_revisao_matriz FOREIGN KEY (matriz_id) REFERENCES prova_utic_matrizes(id) ON DELETE CASCADE,
+      CONSTRAINT fk_eixo_revisao_colaborador FOREIGN KEY (colaborador_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `));
+
   const colunasResult = await db.execute(sql`
     SELECT COLUMN_NAME AS columnName, COLUMN_TYPE AS columnType, IS_NULLABLE AS isNullable
       FROM information_schema.COLUMNS
