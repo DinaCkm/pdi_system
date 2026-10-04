@@ -363,7 +363,11 @@ export default function AdminEixosTecnicos() {
     setMensagem("");
     try {
       const resultado = await analisarQuestionarioMutation.mutateAsync({ colaboradorId: Number(matriz.colaboradorId) });
-      await revisoesQuery.refetch();
+      await Promise.all([
+        revisoesQuery.refetch(),
+        listaQuery.refetch(),
+        catalogoQuery.refetch(),
+      ]);
       setMensagem(
         `Análise concluída para ${resultado.colaboradorNome}: ${resultado.eixosAnalisados} eixo(s) analisados, ${resultado.coerentes} coerente(s), ${resultado.divergencias} revisão(ões) sugerida(s) e ${resultado.ignorados ?? 0} item(ns) ignorado(s). Nenhuma classificação foi alterada automaticamente.`,
       );
@@ -429,7 +433,11 @@ export default function AdminEixosTecnicos() {
       }
     }
 
-    await revisoesQuery.refetch();
+    await Promise.all([
+      revisoesQuery.refetch(),
+      listaQuery.refetch(),
+      catalogoQuery.refetch(),
+    ]);
     setProgressoUnidade({
       emAndamento: false,
       atual: pessoasDaUnidade.length,
