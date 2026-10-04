@@ -198,17 +198,25 @@ export const provaUticMatrizRouter = router({
 
     for (const matriz of matrizes) {
       const eixosResult = await db.execute(sql`
-        SELECT id, eixo_id AS eixoId, eixo_nome AS eixo,
-               relacao, status_classificacao AS statusClassificacao,
-               justificativa, percentual_anterior AS anterior
-          FROM prova_utic_matriz_eixos
-         WHERE matriz_id = ${matriz.id}
-         ORDER BY id
+        SELECT e.id, e.eixo_id AS eixoId, e.eixo_nome AS eixo,
+               e.relacao, e.status_classificacao AS statusClassificacao,
+               e.justificativa, e.percentual_anterior AS anterior,
+               c.descricao AS eixoDescricao,
+               c.conhecimentos_json AS conhecimentosJson
+          FROM prova_utic_matriz_eixos e
+          LEFT JOIN prova_utic_eixo_catalogo c ON c.eixo_id = e.eixo_id
+         WHERE e.matriz_id = ${matriz.id}
+         ORDER BY e.id
       `);
-      matriz.eixos = rowsOf<any>(eixosResult).map((eixo) => ({
-        ...eixo,
-        anterior: eixo.anterior === null ? null : Number(eixo.anterior),
-      }));
+      matriz.eixos = rowsOf<any>(eixosResult).map((eixo) => {
+        let conhecimentos: string[] = [];
+        try { conhecimentos = JSON.parse(String(eixo.conhecimentosJson || "[]")); } catch {}
+        return {
+          ...eixo,
+          anterior: eixo.anterior === null ? null : Number(eixo.anterior),
+          conhecimentos,
+        };
+      });
     }
 
     const pendentesResult = await db.execute(sql`
@@ -465,16 +473,23 @@ export const provaUticMatrizRouter = router({
     if (!matriz) return { matriz: null, eixos: [], solicitacoes: [] };
 
     const eixosResult = await db.execute(sql`
-      SELECT eixo_id AS eixoId, eixo_nome AS eixo, relacao,
-             status_classificacao AS statusClassificacao, justificativa
-        FROM prova_utic_matriz_eixos
-       WHERE matriz_id = ${matriz.id}
-       ORDER BY id
+      SELECT e.eixo_id AS eixoId, e.eixo_nome AS eixo, e.relacao,
+             e.status_classificacao AS statusClassificacao, e.justificativa,
+             c.descricao AS eixoDescricao,
+             c.conhecimentos_json AS conhecimentosJson
+        FROM prova_utic_matriz_eixos e
+        LEFT JOIN prova_utic_eixo_catalogo c ON c.eixo_id = e.eixo_id
+       WHERE e.matriz_id = ${matriz.id}
+       ORDER BY e.id
     `);
     const solicitacoes = await listarSolicitacoesDb(db, { colaboradorId: ctx.user.id });
     return {
       matriz,
-      eixos: rowsOf<any>(eixosResult),
+      eixos: rowsOf<any>(eixosResult).map((eixo) => {
+        let conhecimentos: string[] = [];
+        try { conhecimentos = JSON.parse(String(eixo.conhecimentosJson || "[]")); } catch {}
+        return { ...eixo, conhecimentos };
+      }),
       solicitacoes: solicitacoes.map(({ colaboradorEmail, ...resto }: any) => resto),
     };
   }),
