@@ -680,21 +680,25 @@ export default function AdminEixosTecnicos() {
                           <tr key={eixo.eixoId} className="border-b last:border-0">
                             <td className="px-4 py-3 align-top">
                               <div className="min-w-[280px]">
-                                <p className="font-medium">{eixo.eixo}</p>
                                 {eixo.eixoDescricao && (
-                                  <details className="mt-2 rounded-md border bg-slate-50 p-2 text-xs font-normal">
-                                    <summary className="cursor-pointer font-medium text-slate-800">Descrição do eixo</summary>
-                                    <p className="mt-2 leading-5 text-slate-600">{eixo.eixoDescricao}</p>
-                                    {Array.isArray(eixo.conhecimentos) && eixo.conhecimentos.length > 0 && (
-                                      <div className="mt-2">
-                                        <p className="font-medium text-slate-700">Conhecimentos que abrange</p>
-                                        <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-600">
-                                          {eixo.conhecimentos.map((item: string, indice: number) => <li key={indice}>{item}</li>)}
-                                        </ul>
-                                      </div>
-                                    )}
+                                  <details className="mb-2 w-fit max-w-full text-xs font-normal">
+                                    <summary className="cursor-pointer list-none rounded-md border bg-slate-50 px-3 py-1.5 font-medium text-slate-700 hover:bg-slate-100">
+                                      Sobre este eixo
+                                    </summary>
+                                    <div className="mt-2 max-w-xl rounded-md border bg-slate-50 p-3">
+                                      <p className="leading-5 text-slate-600">{eixo.eixoDescricao}</p>
+                                      {Array.isArray(eixo.conhecimentos) && eixo.conhecimentos.length > 0 && (
+                                        <div className="mt-2">
+                                          <p className="font-medium text-slate-700">Conhecimentos que abrange</p>
+                                          <ul className="mt-1 list-disc space-y-1 pl-5 text-slate-600">
+                                            {eixo.conhecimentos.map((item: string, indice: number) => <li key={indice}>{item}</li>)}
+                                          </ul>
+                                        </div>
+                                      )}
+                                    </div>
                                   </details>
                                 )}
+                                <p className="font-medium">{eixo.eixo}</p>
                                 {eixosComPedido.has(eixo.eixoId) && <Badge variant="outline" className="mt-2 border-amber-300 bg-amber-50 text-amber-800">Solicitação pendente</Badge>}
                               </div>
                             </td>
