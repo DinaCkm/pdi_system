@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { macroRelacionadaDaAD } from "../../../shared/competenciasAdRelacionamento";
 import {
   conceitoComportamentalLabel,
@@ -942,12 +941,14 @@ export default function Bloco1CompetenciasFuncao() {
                 <div className="space-y-3">
                   {mapa.data.comportamental.competencias.map((item: any) => {
                     const macroRelacionada = macroRelacionadaDaAD(item.competenciaNome);
+                    const aberta = comportamentalAberta === Number(item.competenciaMacroId);
+
                     return (
                       <div
                         key={item.competenciaMacroId}
-                        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                        className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
                       >
-                        <div className="grid gap-4 xl:grid-cols-[minmax(240px,1.6fr)_minmax(150px,0.8fr)_minmax(150px,0.8fr)_minmax(190px,0.9fr)_auto] xl:items-center">
+                        <div className="grid gap-4 p-4 lg:grid-cols-[minmax(260px,1.5fr)_minmax(180px,0.85fr)_minmax(180px,0.85fr)_minmax(220px,1fr)] lg:items-center">
                           <div className="min-w-0">
                             <p className="text-sm font-semibold leading-5 text-slate-900">
                               {item.competenciaNome || "—"}
@@ -959,9 +960,9 @@ export default function Bloco1CompetenciasFuncao() {
                             ) : null}
                           </div>
 
-                          <div className="rounded-xl bg-slate-50 p-3">
+                          <div className="min-w-0 rounded-xl bg-slate-50 p-3">
                             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Ciclo anterior</p>
-                            <div className="mt-2 flex min-w-0 items-start gap-2">
+                            <div className="mt-2 flex items-start gap-2">
                               <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${corSinalUmanni(item.sinalAnterior)}`} aria-hidden />
                               <div className="min-w-0">
                                 <p className="text-sm font-medium leading-5 text-slate-800">
@@ -974,9 +975,9 @@ export default function Bloco1CompetenciasFuncao() {
                             </div>
                           </div>
 
-                          <div className="rounded-xl bg-slate-50 p-3">
+                          <div className="min-w-0 rounded-xl bg-slate-50 p-3">
                             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Ciclo atual</p>
-                            <div className="mt-2 flex min-w-0 items-start gap-2">
+                            <div className="mt-2 flex items-start gap-2">
                               <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${corSinalUmanni(item.sinalAtual)}`} aria-hidden />
                               <div className="min-w-0">
                                 <p className="text-sm font-medium leading-5 text-slate-800">
@@ -991,48 +992,154 @@ export default function Bloco1CompetenciasFuncao() {
 
                           <div className="min-w-0">
                             <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Evolução</p>
-                            <Badge
-                              className="mt-2 whitespace-normal text-left leading-4"
-                              variant={
-                                item.evolucaoConceitual === "EVOLUCAO"
-                                  ? "default"
-                                  : item.evolucaoConceitual === "SEM_COMPARACAO"
-                                    ? "outline"
-                                    : "secondary"
-                              }
-                            >
-                              {evolucaoConceitualLabel[item.evolucaoConceitual] || "Sem comparação"}
-                            </Badge>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <Badge
+                                className="whitespace-normal text-left leading-4"
+                                variant={
+                                  item.evolucaoConceitual === "EVOLUCAO"
+                                    ? "default"
+                                    : item.evolucaoConceitual === "SEM_COMPARACAO"
+                                      ? "outline"
+                                      : "secondary"
+                                }
+                              >
+                                {evolucaoConceitualLabel[item.evolucaoConceitual] || "Sem comparação"}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 gap-1 px-2 text-xs text-blue-700 hover:text-blue-900"
+                                onClick={() =>
+                                  setComportamentalAberta(
+                                    aberta ? null : Number(item.competenciaMacroId),
+                                  )
+                                }
+                                aria-expanded={aberta}
+                              >
+                                {aberta ? (
+                                  <>
+                                    Recolher <ChevronUp className="h-4 w-4" />
+                                  </>
+                                ) : (
+                                  <>
+                                    Ver detalhes <ChevronDown className="h-4 w-4" />
+                                  </>
+                                )}
+                              </Button>
+                            </div>
                             {!item.comparavel && item.motivo ? (
                               <p className="mt-2 text-xs leading-4 text-muted-foreground">{item.motivo}</p>
                             ) : null}
                           </div>
-
-                          <div className="flex flex-wrap gap-2 xl:flex-col xl:items-stretch">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="whitespace-nowrap"
-                              onClick={() => setComportamentalAberta(Number(item.competenciaMacroId))}
-                            >
-                              {isColaborador ? "Como foi obtido" : "Entender resultado"}
-                            </Button>
-                            {podeCriarAcao ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="whitespace-nowrap"
-                                onClick={() => abrirBiblioteca(
-                                  item.competenciaNome || "",
-                                  "COMPORTAMENTAL",
-                                  macroRelacionada,
-                                )}
-                              >
-                                Criar ação no PDI
-                              </Button>
-                            ) : null}
-                          </div>
                         </div>
+
+                        {aberta && (
+                          <div className="border-t bg-slate-50/70 px-4 py-4 md:px-5 md:py-5">
+                            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                              <div className="rounded-xl border bg-white p-4">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Fonte e escala</p>
+                                <p className="mt-2 text-sm font-semibold text-slate-900">Avaliação de Desempenho — Umanni</p>
+                                <p className="mt-1 text-sm text-slate-700">Escala oficial: 0 a 3</p>
+                                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                                  O PDI-System não altera o resultado original recebido.
+                                </p>
+                              </div>
+
+                              {podeVerNumeroOriginalComportamental ? (
+                                <>
+                                  <div className="rounded-xl border bg-white p-4">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Resultado original — ciclo anterior</p>
+                                    <p className="mt-2 text-2xl font-semibold text-slate-900">
+                                      {item.resultadoAnterior === null ? "—" : Number(item.resultadoAnterior).toFixed(2)}
+                                    </p>
+                                    {item.percentualAnterior !== null && (
+                                      <p className="mt-1 text-xs text-muted-foreground">
+                                        {Number(item.percentualAnterior).toFixed(1)}% da escala
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="rounded-xl border bg-white p-4">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Resultado original — ciclo atual</p>
+                                    <p className="mt-2 text-2xl font-semibold text-slate-900">
+                                      {item.resultadoAtual === null ? "—" : Number(item.resultadoAtual).toFixed(2)}
+                                    </p>
+                                    {item.percentualAtual !== null && (
+                                      <p className="mt-1 text-xs text-muted-foreground">
+                                        {Number(item.percentualAtual).toFixed(1)}% da escala
+                                      </p>
+                                    )}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="rounded-xl border bg-white p-4 md:col-span-2">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Como o conceito é obtido</p>
+                                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                                    O resultado oficial recebido da Umanni é posicionado na escala de 0 a 3 e convertido somente para uma referência percentual:
+                                    <strong> resultado ÷ 3 × 100</strong>. Essa referência determina o conceito exibido, sem modificar o resultado original.
+                                  </p>
+                                </div>
+                              )}
+
+                              <div className="rounded-xl border bg-white p-4">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Próxima ação</p>
+                                <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                                  A ação pode ser criada independentemente do resultado de evolução.
+                                </p>
+                                {podeCriarAcao ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="mt-3"
+                                    onClick={() => abrirBiblioteca(
+                                      item.competenciaNome || "",
+                                      "COMPORTAMENTAL",
+                                      macroRelacionada,
+                                    )}
+                                  >
+                                    Criar ação no PDI
+                                  </Button>
+                                ) : (
+                                  <p className="mt-3 text-xs text-muted-foreground">Visualização</p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="mt-4 grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+                              <div className="rounded-xl border bg-white p-4">
+                                <p className="text-sm font-semibold text-slate-900">Régua conceitual</p>
+                                <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+                                  {[
+                                    ["Em Desenvolvimento", "Abaixo de 65%"],
+                                    ["Conhecimento Aplicado", "65% a 74,9%"],
+                                    ["Conhecimento Consolidado", "75% a 84,9%"],
+                                    ["Conhecimento Avançado", "85% a 89,9%"],
+                                    ["Referência", "90% ou mais"],
+                                  ].map(([titulo, faixa]) => (
+                                    <div key={titulo} className="rounded-lg bg-slate-50 p-3">
+                                      <p className="text-xs font-semibold leading-4 text-slate-800">{titulo}</p>
+                                      <p className="mt-1 text-[11px] text-muted-foreground">{faixa}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="rounded-xl border bg-white p-4">
+                                <p className="text-sm font-semibold text-slate-900">Sinalização Umanni</p>
+                                <div className="mt-3 space-y-2 text-sm text-slate-600">
+                                  <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-orange-500" /> Laranja: abaixo de 50%</div>
+                                  <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-amber-400" /> Amarelo: 50% a 69,9%</div>
+                                  <div className="flex items-center gap-2"><span className="h-3 w-3 shrink-0 rounded-full bg-emerald-500" /> Verde: 70% ou mais</div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {!podeVerNumeroOriginalComportamental && (
+                              <p className="mt-4 text-xs leading-5 text-muted-foreground">
+                                Na visão do empregado, o número original não é exibido. Ele permanece preservado para consulta administrativa e gerencial.
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -1040,144 +1147,10 @@ export default function Bloco1CompetenciasFuncao() {
               )}
 
               <p className="mt-4 text-xs leading-5 text-muted-foreground">
-                A criação de nova ação permanece disponível em qualquer resultado de evolução.
+                Use “Ver detalhes” na coluna Evolução para abrir a memória de leitura sem sair da página.
               </p>
             </CardContent>
           </Card>
-
-          <Dialog
-            open={comportamentalAberta !== null}
-            onOpenChange={(aberto) => {
-              if (!aberto) setComportamentalAberta(null);
-            }}
-          >
-            <DialogContent className="max-h-[88vh] w-[calc(100vw-2rem)] max-w-4xl overflow-y-auto p-0">
-              {(() => {
-                const item = mapa.data.comportamental.competencias.find(
-                  (competencia: any) => Number(competencia.competenciaMacroId) === Number(comportamentalAberta),
-                );
-                if (!item) return null;
-
-                return (
-                  <>
-                    <DialogHeader className="border-b bg-slate-50 px-5 py-5 text-left md:px-7">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="bg-white">Avaliação de Desempenho — Umanni</Badge>
-                        <Badge variant="outline" className="bg-white">Escala 0 a 3</Badge>
-                      </div>
-                      <DialogTitle className="pt-2 text-xl leading-7">{item.competenciaNome || "Competência comportamental"}</DialogTitle>
-                      <DialogDescription className="max-w-3xl leading-5">
-                        O PDI-System preserva o resultado original recebido da Umanni e apenas o traduz para uma leitura conceitual.
-                      </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="space-y-6 px-5 py-5 md:px-7 md:py-6">
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="rounded-2xl border bg-white p-4">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ciclo anterior</p>
-                          <div className="mt-3 flex items-start gap-3">
-                            <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ${corSinalUmanni(item.sinalAnterior)}`} aria-hidden />
-                            <div>
-                              <p className="font-semibold text-slate-900">
-                                {item.conceitoAnterior
-                                  ? conceitoComportamentalLabel[item.conceitoAnterior as keyof typeof conceitoComportamentalLabel]
-                                  : "Sem referência"}
-                              </p>
-                              {item.periodoAnterior && <p className="mt-1 text-xs text-muted-foreground">{item.periodoAnterior}</p>}
-                            </div>
-                          </div>
-                          {podeVerNumeroOriginalComportamental && (
-                            <div className="mt-4 rounded-xl bg-slate-50 p-3">
-                              <p className="text-xs text-muted-foreground">Resultado original Umanni</p>
-                              <p className="mt-1 text-2xl font-semibold text-slate-900">
-                                {item.resultadoAnterior === null ? "—" : Number(item.resultadoAnterior).toFixed(2)}
-                              </p>
-                              {item.percentualAnterior !== null && (
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  {Number(item.percentualAnterior).toFixed(1)}% da escala
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="rounded-2xl border bg-white p-4">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ciclo atual</p>
-                          <div className="mt-3 flex items-start gap-3">
-                            <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ${corSinalUmanni(item.sinalAtual)}`} aria-hidden />
-                            <div>
-                              <p className="font-semibold text-slate-900">
-                                {item.conceitoAtual
-                                  ? conceitoComportamentalLabel[item.conceitoAtual as keyof typeof conceitoComportamentalLabel]
-                                  : "Sem referência"}
-                              </p>
-                              {item.periodoAtual && <p className="mt-1 text-xs text-muted-foreground">{item.periodoAtual}</p>}
-                            </div>
-                          </div>
-                          {podeVerNumeroOriginalComportamental && (
-                            <div className="mt-4 rounded-xl bg-slate-50 p-3">
-                              <p className="text-xs text-muted-foreground">Resultado original Umanni</p>
-                              <p className="mt-1 text-2xl font-semibold text-slate-900">
-                                {item.resultadoAtual === null ? "—" : Number(item.resultadoAtual).toFixed(2)}
-                              </p>
-                              {item.percentualAtual !== null && (
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  {Number(item.percentualAtual).toFixed(1)}% da escala
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border bg-slate-50 p-4 md:p-5">
-                        <p className="text-sm font-semibold text-slate-900">Como o conceito é obtido</p>
-                        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                          O resultado oficial da Umanni é posicionado na escala de 0 a 3.
-                          Para a leitura visual, a posição é convertida em percentual pela fórmula
-                          <strong> resultado ÷ 3 × 100</strong>. Esse percentual serve somente para
-                          identificar o conceito e não altera o resultado original da avaliação.
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">Régua conceitual</p>
-                        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-                          {[
-                            ["Em Desenvolvimento", "Abaixo de 65%"],
-                            ["Conhecimento Aplicado", "65% a 74,9%"],
-                            ["Conhecimento Consolidado", "75% a 84,9%"],
-                            ["Conhecimento Avançado", "85% a 89,9%"],
-                            ["Referência", "90% ou mais"],
-                          ].map(([titulo, faixa]) => (
-                            <div key={titulo} className="rounded-xl border bg-white p-3">
-                              <p className="text-xs font-semibold leading-4 text-slate-800">{titulo}</p>
-                              <p className="mt-1 text-[11px] text-muted-foreground">{faixa}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border bg-white p-4 md:p-5">
-                        <p className="text-sm font-semibold text-slate-900">Sinalização visual da Umanni</p>
-                        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-3 text-sm text-slate-600">
-                          <span className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-orange-500" /> Laranja: abaixo de 50%</span>
-                          <span className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-amber-400" /> Amarelo: 50% a 69,9%</span>
-                          <span className="flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-emerald-500" /> Verde: 70% ou mais</span>
-                        </div>
-                      </div>
-
-                      {!podeVerNumeroOriginalComportamental && (
-                        <p className="text-xs leading-5 text-muted-foreground">
-                          Na visão do empregado, o número original não é exibido. Ele permanece preservado para consulta administrativa e gerencial.
-                        </p>
-                      )}
-                    </div>
-                  </>
-                );
-              })()}
-            </DialogContent>
-          </Dialog>
 
           <Card>
             <CardHeader>
