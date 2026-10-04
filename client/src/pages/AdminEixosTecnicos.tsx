@@ -351,7 +351,8 @@ export default function AdminEixosTecnicos() {
     setMensagem("");
     try {
       const resultado = await gerarCatalogoMutation.mutateAsync();
-      setMensagem(`Catálogo preparado: ${resultado.salvos} eixo(s) descritos a partir das questões vinculadas.`);
+      await catalogoQuery.refetch();
+      setMensagem(resultado.mensagem || `Catálogo preparado: ${resultado.salvos} eixo(s).`);
     } catch (error: any) {
       setMensagem(error?.message || "Não foi possível gerar o catálogo dos eixos.");
     }

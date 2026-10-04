@@ -547,6 +547,11 @@ export const provaUticMatrizRouter = router({
   gerarCatalogoEixos: adminProcedure.mutation(async ({ ctx }) => {
     const db = await ensureTechnicalMatrixTables();
 
+    const normalizarNome = (valor: string) =>
+      valor.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+
+    // 1) Lê todas as questões e organiza o conteúdo por NOME do eixo.
+    // O catálogo precisa depois ser gravado com o eixo_id REAL da matriz individual.
     const provasResult = await db.execute(sql`
       SELECT id, nome, codigo, unidade, ano, questoes_json AS questoesJson
         FROM provas_importadas
@@ -555,46 +560,79 @@ export const provaUticMatrizRouter = router({
        ORDER BY ano, id
     `);
     const provas = rowsOf<any>(provasResult);
-    const porEixo = new Map<string, { eixoId: string; eixo: string; enunciados: Set<string>; fontes: Set<string> }>();
-
-    const normalizar = (valor: string) =>
-      valor.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    const conteudoPorNome = new Map<string, { enunciados: Set<string>; fontes: Set<string>; nomeFonte: string }>();
 
     for (const prova of provas) {
       let questoes: any[] = [];
       try { questoes = JSON.parse(String(prova.questoesJson || "[]")); } catch { questoes = []; }
+
       for (const questao of Array.isArray(questoes) ? questoes : []) {
         const enunciado = String(questao?.enunciado ?? questao?.pergunta ?? "").replace(/\s+/g, " ").trim();
-        for (const eixo of Array.isArray(questao?.eixos) ? questao.eixos : []) {
-          const nome = String(eixo?.nome ?? "").trim();
+        const eixosQuestao = Array.isArray(questao?.eixos)
+          ? questao.eixos
+          : questao?.eixo
+            ? [{ id: questao?.eixoId, nome: questao?.eixo }]
+            : [];
+
+        for (const eixo of eixosQuestao) {
+          const nome = String(eixo?.nome ?? eixo?.eixo ?? "").trim();
           if (!nome) continue;
-          const eixoId = normalizar(nome).slice(0, 40);
-          if (!porEixo.has(eixoId)) porEixo.set(eixoId, { eixoId, eixo: nome, enunciados: new Set(), fontes: new Set() });
-          const item = porEixo.get(eixoId)!;
+          const chave = normalizarNome(nome);
+          if (!chave) continue;
+
+          if (!conteudoPorNome.has(chave)) {
+            conteudoPorNome.set(chave, { enunciados: new Set(), fontes: new Set(), nomeFonte: nome });
+          }
+          const item = conteudoPorNome.get(chave)!;
           if (enunciado) item.enunciados.add(enunciado);
           item.fontes.add(`${prova.codigo || prova.nome || "Prova"} ${prova.ano || ""}`.trim());
         }
       }
     }
 
+    // 2) Usa os IDs REAIS existentes nas matrizes individuais.
+    const eixosMatrizResult = await db.execute(sql`
+      SELECT DISTINCT eixo_id AS eixoId, eixo_nome AS eixoNome
+        FROM prova_utic_matriz_eixos
+       WHERE eixo_id IS NOT NULL
+         AND TRIM(eixo_id) <> ''
+         AND eixo_nome IS NOT NULL
+         AND TRIM(eixo_nome) <> ''
+       ORDER BY eixo_nome
+    `);
+    const eixosMatriz = rowsOf<any>(eixosMatrizResult);
+
     let salvos = 0;
-    for (const item of porEixo.values()) {
-      const conhecimentos = Array.from(item.enunciados)
-        .filter(Boolean)
-        .slice(0, 30)
-        .map((texto) => texto.length > 480 ? `${texto.slice(0, 477)}...` : texto);
-      if (conhecimentos.length === 0) continue;
+    let semConteudo = 0;
+
+    for (const eixoMatriz of eixosMatriz) {
+      const eixoId = String(eixoMatriz.eixoId).trim();
+      const eixoNome = String(eixoMatriz.eixoNome).trim();
+      const chave = normalizarNome(eixoNome);
+      const conteudo = conteudoPorNome.get(chave);
+
+      const conhecimentos = conteudo
+        ? Array.from(conteudo.enunciados)
+            .filter(Boolean)
+            .slice(0, 30)
+            .map((texto) => texto.length > 480 ? `${texto.slice(0, 477)}...` : texto)
+        : [];
+
+      if (conhecimentos.length === 0) {
+        semConteudo++;
+        continue;
+      }
 
       const descricao =
-        `Eixo de conhecimento "${item.eixo}", definido a partir das questões técnicas vinculadas a este eixo nas avaliações cadastradas. ` +
+        `Eixo de conhecimento "${eixoNome}", definido a partir das questões técnicas vinculadas a este eixo nas avaliações cadastradas. ` +
         "Os conhecimentos abrangidos abaixo reproduzem o escopo efetivamente avaliado, sem acrescentar conteúdo externo.";
 
       await db.execute(sql`
         INSERT INTO prova_utic_eixo_catalogo
           (eixo_id, eixo_nome, descricao, conhecimentos_json, fonte, atualizado_por)
         VALUES
-          (${item.eixoId}, ${item.eixo}, ${descricao}, ${JSON.stringify(conhecimentos)},
-           ${`Questões vinculadas ao eixo em: ${Array.from(item.fontes).join("; ")}`}, ${ctx.user.id})
+          (${eixoId}, ${eixoNome}, ${descricao}, ${JSON.stringify(conhecimentos)},
+           ${`Questões vinculadas ao eixo em: ${Array.from(conteudo!.fontes).join("; ")}`}, ${ctx.user.id})
         ON DUPLICATE KEY UPDATE
           eixo_nome = VALUES(eixo_nome),
           descricao = VALUES(descricao),
@@ -606,7 +644,15 @@ export const provaUticMatrizRouter = router({
       salvos++;
     }
 
-    return { eixosEncontrados: porEixo.size, salvos };
+    return {
+      eixosMatriz: eixosMatriz.length,
+      salvos,
+      semConteudo,
+      mensagem:
+        semConteudo > 0
+          ? `${salvos} eixo(s) preparados com o ID real da matriz; ${semConteudo} eixo(s) ainda não possuem questões vinculadas por nome.`
+          : `${salvos} eixo(s) preparados com o ID real da matriz.`,
+    };
   }),
 
   analisarQuestionarioEmpregado: adminProcedure
