@@ -144,6 +144,26 @@ export default function MeusEixosTecnicos() {
               const aberto = abertoEixo === eixo.eixoId;
               return (
                 <div key={eixo.eixoId} className="rounded-lg border p-4">
+                  {eixo.eixoDescricao && (
+                    <details className="mb-3 w-fit max-w-full">
+                      <summary className="cursor-pointer list-none rounded-md border bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100">
+                        Sobre este eixo
+                      </summary>
+                      <div className="mt-2 max-w-3xl rounded-md border bg-slate-50 p-3 text-sm">
+                        <p className="text-slate-700">{eixo.eixoDescricao}</p>
+                        {Array.isArray(eixo.conhecimentos) && eixo.conhecimentos.length > 0 && (
+                          <div className="mt-3 text-xs text-slate-600">
+                            <p className="font-medium">Conhecimentos que este eixo abrange</p>
+                            <ul className="mt-2 list-disc space-y-1 pl-5">
+                              {eixo.conhecimentos.map((item: string, indice: number) => (
+                                <li key={indice}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </details>
+                  )}
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
@@ -154,22 +174,6 @@ export default function MeusEixosTecnicos() {
                           <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-800">Pendente de análise</Badge>
                         )}
                       </div>
-                      {eixo.eixoDescricao && (
-                        <div className="rounded-md border bg-slate-50 p-3 text-sm">
-                          <p className="font-medium text-slate-900">O que é este eixo</p>
-                          <p className="mt-1 text-slate-700">{eixo.eixoDescricao}</p>
-                          {Array.isArray(eixo.conhecimentos) && eixo.conhecimentos.length > 0 && (
-                            <details className="mt-2 text-xs text-slate-600">
-                              <summary className="cursor-pointer font-medium">Conhecimentos que este eixo abrange</summary>
-                              <ul className="mt-2 list-disc space-y-1 pl-5">
-                                {eixo.conhecimentos.map((item: string, indice: number) => (
-                                  <li key={indice}>{item}</li>
-                                ))}
-                              </ul>
-                            </details>
-                          )}
-                        </div>
-                      )}
                       <div className="rounded-md border border-blue-100 bg-blue-50/60 p-3 text-sm">
                         <p className="font-medium text-blue-950">Por que este eixo é importante para a sua função</p>
                         <p className="mt-1 text-blue-900">
