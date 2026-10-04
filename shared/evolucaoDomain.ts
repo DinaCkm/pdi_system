@@ -283,3 +283,107 @@ export function compararConceitos(
   if (nivelAtual < nivelAnterior) return "OPORTUNIDADE_DESENVOLVIMENTO";
   return "CONSOLIDACAO";
 }
+
+
+export type ConceitoComportamental =
+  | "EM_DESENVOLVIMENTO"
+  | "EM_APLICACAO"
+  | "CONSOLIDADO"
+  | "AVANCADO"
+  | "REFERENCIA";
+
+export type SinalUmanni = "LARANJA" | "AMARELO" | "VERDE";
+
+export const conceitoComportamentalLabel: Record<ConceitoComportamental, string> = {
+  EM_DESENVOLVIMENTO: "Em Desenvolvimento",
+  EM_APLICACAO: "Conhecimento Aplicado",
+  CONSOLIDADO: "Conhecimento Consolidado",
+  AVANCADO: "Conhecimento Avançado",
+  REFERENCIA: "Referência",
+};
+
+export const sinalUmanniLabel: Record<SinalUmanni, string> = {
+  LARANJA: "Laranja",
+  AMARELO: "Amarelo",
+  VERDE: "Verde",
+};
+
+/**
+ * Converte o resultado oficial da Avaliação de Desempenho para a posição
+ * percentual dentro da escala informada. Na base Umanni atual, a escala é 0–3.
+ * O resultado original não é alterado nem substituído.
+ */
+export function percentualNaEscala(
+  valor?: number | null,
+  escalaMin = 0,
+  escalaMax = 3
+): number | null {
+  if (valor === null || valor === undefined || !Number.isFinite(Number(valor))) return null;
+  if (!Number.isFinite(escalaMin) || !Number.isFinite(escalaMax) || escalaMax <= escalaMin) return null;
+
+  const percentual = ((Number(valor) - escalaMin) / (escalaMax - escalaMin)) * 100;
+  return Math.round(Math.max(0, Math.min(100, percentual)) * 10) / 10;
+}
+
+/**
+ * Mesma lógica de cinco níveis usada na leitura técnica, com rótulos
+ * adaptados à natureza comportamental.
+ */
+export function conceitoComportamentalPorResultado(
+  valor?: number | null,
+  escalaMin = 0,
+  escalaMax = 3
+): ConceitoComportamental | null {
+  const percentual = percentualNaEscala(valor, escalaMin, escalaMax);
+  if (percentual === null) return null;
+
+  if (percentual >= 90) return "REFERENCIA";
+  if (percentual >= 85) return "AVANCADO";
+  if (percentual >= 75) return "CONSOLIDADO";
+  if (percentual >= 65) return "EM_APLICACAO";
+  return "EM_DESENVOLVIMENTO";
+}
+
+export function nivelConceitoComportamental(
+  conceito?: ConceitoComportamental | null
+): number | null {
+  if (!conceito) return null;
+  const niveis: Record<ConceitoComportamental, number> = {
+    EM_DESENVOLVIMENTO: 1,
+    EM_APLICACAO: 2,
+    CONSOLIDADO: 3,
+    AVANCADO: 4,
+    REFERENCIA: 5,
+  };
+  return niveis[conceito];
+}
+
+export function compararConceitosComportamentais(
+  anterior?: ConceitoComportamental | null,
+  atual?: ConceitoComportamental | null
+): EvolucaoConceitual {
+  const nivelAnterior = nivelConceitoComportamental(anterior);
+  const nivelAtual = nivelConceitoComportamental(atual);
+
+  if (nivelAnterior === null || nivelAtual === null) return "SEM_COMPARACAO";
+  if (nivelAtual > nivelAnterior) return "EVOLUCAO";
+  if (nivelAtual < nivelAnterior) return "OPORTUNIDADE_DESENVOLVIMENTO";
+  return "CONSOLIDACAO";
+}
+
+/**
+ * Reproduz a leitura visual observada nos relatórios Umanni enviados:
+ * laranja abaixo de 50%, amarelo de 50% até antes de 70% e verde a partir de 70%.
+ * Esta sinalização não substitui o resultado oficial 0–3.
+ */
+export function sinalUmanniPorResultado(
+  valor?: number | null,
+  escalaMin = 0,
+  escalaMax = 3
+): SinalUmanni | null {
+  const percentual = percentualNaEscala(valor, escalaMin, escalaMax);
+  if (percentual === null) return null;
+  if (percentual >= 70) return "VERDE";
+  if (percentual >= 50) return "AMARELO";
+  return "LARANJA";
+}

@@ -22,9 +22,13 @@ import {
 import {
   aplicarCalibragemDesenvolvimento,
   compararConceitos,
+  compararConceitosComportamentais,
+  conceitoComportamentalPorResultado,
   conceitoConhecimento,
   engajamentoDesenvolvimento,
   fatorCalibragemDesenvolvimento,
+  percentualNaEscala,
+  sinalUmanniPorResultado,
 } from "../../shared/evolucaoDomain";
 
 function rowsOf<T>(result: any): T[] {
@@ -589,6 +593,31 @@ export const bloco1CompetenciasFuncaoRouter = router({
                 ? "REDUCAO"
                 : "ESTABILIDADE";
 
+          const escalaMinAnterior = anterior ? (resultadosNaEscala03 ? 0 : Number(anterior.escalaMin)) : null;
+          const escalaMaxAnterior = anterior ? (resultadosNaEscala03 ? 3 : Number(anterior.escalaMax)) : null;
+          const escalaMinAtual = atual ? (resultadosNaEscala03 ? 0 : Number(atual.escalaMin)) : null;
+          const escalaMaxAtual = atual ? (resultadosNaEscala03 ? 3 : Number(atual.escalaMax)) : null;
+
+          const conceitoAnterior = anterior
+            ? conceitoComportamentalPorResultado(resultadoAnterior, escalaMinAnterior ?? 0, escalaMaxAnterior ?? 3)
+            : null;
+          const conceitoAtual = atual
+            ? conceitoComportamentalPorResultado(resultadoAtual, escalaMinAtual ?? 0, escalaMaxAtual ?? 3)
+            : null;
+          const percentualAnterior = anterior
+            ? percentualNaEscala(resultadoAnterior, escalaMinAnterior ?? 0, escalaMaxAnterior ?? 3)
+            : null;
+          const percentualAtual = atual
+            ? percentualNaEscala(resultadoAtual, escalaMinAtual ?? 0, escalaMaxAtual ?? 3)
+            : null;
+          const sinalAnterior = anterior
+            ? sinalUmanniPorResultado(resultadoAnterior, escalaMinAnterior ?? 0, escalaMaxAnterior ?? 3)
+            : null;
+          const sinalAtual = atual
+            ? sinalUmanniPorResultado(resultadoAtual, escalaMinAtual ?? 0, escalaMaxAtual ?? 3)
+            : null;
+          const evolucaoConceitual = compararConceitosComportamentais(conceitoAnterior, conceitoAtual);
+
           return {
             competenciaMacroId,
             competenciaNome: atual?.competenciaNome ?? anterior?.competenciaNome ?? "Competência",
@@ -598,10 +627,17 @@ export const bloco1CompetenciasFuncaoRouter = router({
             periodoAtual: atual?.periodo.rotulo ?? null,
             resultado2024: anterior?.periodo.ano === 2024 ? resultadoAnterior : (atual?.periodo.ano === 2024 ? resultadoAtual : null),
             resultado2025: anterior?.periodo.ano === 2025 ? resultadoAnterior : (atual?.periodo.ano === 2025 ? resultadoAtual : null),
-            escalaMinAnterior: anterior ? (resultadosNaEscala03 ? 0 : Number(anterior.escalaMin)) : null,
-            escalaMaxAnterior: anterior ? (resultadosNaEscala03 ? 3 : Number(anterior.escalaMax)) : null,
-            escalaMinAtual: atual ? (resultadosNaEscala03 ? 0 : Number(atual.escalaMin)) : null,
-            escalaMaxAtual: atual ? (resultadosNaEscala03 ? 3 : Number(atual.escalaMax)) : null,
+            escalaMinAnterior,
+            escalaMaxAnterior,
+            escalaMinAtual,
+            escalaMaxAtual,
+            percentualAnterior,
+            percentualAtual,
+            conceitoAnterior,
+            conceitoAtual,
+            sinalAnterior,
+            sinalAtual,
+            evolucaoConceitual,
             classificacao: atual?.classificacao ?? anterior?.classificacao ?? null,
             comparavel: Boolean(anterior && atual && mesmaEscala),
             novaCompetencia: Boolean(atual && !anterior),
