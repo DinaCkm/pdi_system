@@ -875,19 +875,19 @@ export const provaUticMatrizRouter = router({
         .join("\n\n---\n\n");
 
       // CAMPO 2 — justificativa individual da classificação.
-      // Aqui entram SOMENTE as respostas do empregado e a descrição fixa já pronta do eixo.
+      // A descrição do eixo é fixa e aparece em campo separado. Aqui geramos apenas a justificativa do empregado.
       const resposta = await invokeLLM({
         maxTokens: 5000,
         messages: [
           {
             role: "system",
             content:
-              "Você analisa UM EMPREGADO POR VEZ. Use SOMENTE as respostas do Questionário de Atividades/Função deste empregado e a descrição fixa dos eixos fornecidos. Não crie nem altere a descrição do eixo. Não use cargo, unidade, senso comum, internet, normas externas ou suposições. ESSENCIAL = conhecimento diretamente necessário e recorrente para executar responsabilidades centrais declaradas. TRANSVERSAL = conhecimento útil ou recorrente que apoia diversas atividades, mas não constitui o núcleo das entregas declaradas. NAO_ESSENCIAL = as atividades centrais declaradas não demonstram uso relevante daquele conhecimento. A justificativa deve explicar POR QUE a classificação se aplica a ESTE empregado. Ela precisa mencionar atividades, responsabilidades, entregas, desafios ou conhecimentos que ele declarou no questionário. Não aceite justificativa genérica nem definição do eixo como justificativa. Cite somente chaves de respostas realmente utilizadas.",
+              "Analise um empregado por vez. Para cada eixo, use SOMENTE as respostas do Questionário de Atividades/Função deste empregado. Não repita a descrição do eixo. Não use cargo, unidade ou informações externas. Retorne a classificação sugerida e uma justificativa curta, objetiva e individual. A justificativa deve ter 1 ou 2 frases e começar, sempre que possível, com: 'No Questionário de Atividades/Função, o empregado relata que...'. Cite a atividade ou responsabilidade concreta informada por ele e explique, de forma simples, por que isso sustenta a classificação. Se não houver evidência de uso relevante, diga isso objetivamente. Não use textos genéricos.",
           },
           {
             role: "user",
             content:
-              `QUESTIONÁRIO DESTE EMPREGADO:\n${questionarioTexto}\n\nEIXOS COM DESCRIÇÃO FIXA E CLASSIFICAÇÃO ATUAL:\n${eixosTexto}\n\nPara cada eixo, retorne somente: classificação sugerida, justificativa individual em 2 a 5 frases e chaves das respostas usadas como evidência. A justificativa deve se apoiar no que ESTE empregado declarou que faz. Se a classificação atual estiver correta, mantenha-a, mas escreva uma justificativa individual baseada no questionário.`,
+              `QUESTIONÁRIO DESTE EMPREGADO:\n${questionarioTexto}\n\nEIXOS E CLASSIFICAÇÃO ATUAL:\n${eixosTexto}\n\nPara cada eixo retorne somente: classificação sugerida, justificativa individual curta e chaves das respostas usadas. Exemplo de estilo: "No Questionário de Atividades/Função, o empregado relata que acompanha indicadores e organiza prioridades de execução, atividades que exigem este conhecimento de forma recorrente." Não explique o que é o eixo e não faça texto genérico.`,
           },
         ],
         responseFormat: {
@@ -905,7 +905,7 @@ export const provaUticMatrizRouter = router({
                     properties: {
                       eixoId: { type: "string" },
                       relacaoSugerida: { type: "string", enum: ["ESSENCIAL", "TRANSVERSAL", "NAO_ESSENCIAL"] },
-                      justificativa: { type: "string" },
+                      justificativa: { type: "string", minLength: 30, maxLength: 600 },
                       evidencias: { type: "array", items: { type: "string" } },
                     },
                     required: ["eixoId", "relacaoSugerida", "justificativa", "evidencias"],
