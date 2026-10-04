@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, assessmentProcedure, router } from "../_core/customTrpc";
 import { sendEmail } from "../_core/email";
+import { invokeLLM } from "../_core/llm";
 import * as dbApi from "../db";
 import { ensureTechnicalMatrixTables } from "../services/technicalMatrixSchema";
 
@@ -658,40 +659,151 @@ export const provaUticMatrizRouter = router({
       const eixos = rowsOf<any>(eixosResult).map((item) => {
         let conhecimentos: string[] = [];
         try { conhecimentos = JSON.parse(String(item.conhecimentosJson || "[]")); } catch {}
-        return {
-          eixoId: String(item.eixoId),
-          eixo: String(item.eixo),
-          relacaoAtual: item.relacaoAtual ? String(item.relacaoAtual) : null,
-          justificativaAtual: item.justificativaAtual ? String(item.justificativaAtual) : null,
-          descricao: item.descricao ? String(item.descricao) : null,
-          conhecimentos,
-        };
+        return { ...item, conhecimentos };
+      });
+      if (eixos.length === 0) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Este empregado não possui eixos técnicos cadastrados." });
+      }
+
+      const semCatalogo = eixos.filter((e) => !e.descricao || e.conhecimentos.length === 0);
+      if (semCatalogo.length > 0) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `Existem ${semCatalogo.length} eixo(s) sem descrição/conhecimentos no catálogo. Prepare o catálogo antes da análise.`,
+        });
+      }
+
+      const questionarioTexto = respostas
+        .map((r: any) => `[${r.chave}] ${r.pergunta}\nResposta: ${r.resposta}`)
+        .join("\n\n");
+      const eixosTexto = eixos
+        .map((e: any) =>
+          `EIXO_ID=${e.eixoId}\nNome: ${e.eixo}\nClassificação atual: ${e.relacaoAtual || "PENDENTE"}\nDescrição: ${e.descricao}\nConhecimentos avaliados: ${e.conhecimentos.join("; ")}`
+        )
+        .join("\n\n---\n\n");
+
+      const resposta = await invokeLLM({
+        maxTokens: 7000,
+        messages: [
+          {
+            role: "system",
+            content:
+              "Você é especialista em arquitetura de competências e análise de função. Analise SOMENTE as respostas do Questionário de Atividades/Função e o catálogo dos eixos fornecidos. Não use cargo, unidade, senso comum, internet, normas externas ou suposições. ESSENCIAL = conhecimento diretamente necessário e recorrente para executar responsabilidades centrais declaradas. TRANSVERSAL = conhecimento útil ou recorrente que apoia diversas atividades, mas não constitui o núcleo das entregas declaradas. NAO_ESSENCIAL = não há evidência suficiente de uso relevante nas atividades declaradas. Se houver ambiguidade ou evidência insuficiente para mudar, mantenha a classificação atual. A justificativa deve explicar a relação entre as atividades declaradas e o eixo, sem inventar informações. Cite somente chaves de respostas realmente utilizadas.",
+          },
+          {
+            role: "user",
+            content:
+              `QUESTIONÁRIO DO EMPREGADO:\n${questionarioTexto}\n\nEIXOS E CLASSIFICAÇÕES ATUAIS:\n${eixosTexto}\n\nAnalise TODOS os eixos. Para cada eixo retorne a classificação sugerida, justificativa fundamentada e as chaves das respostas utilizadas como evidência. Se não houver base suficiente para mudança, mantenha a classificação atual.`,
+          },
+        ],
+        responseFormat: {
+          type: "json_schema",
+          json_schema: {
+            name: "analise_eixos_questionario",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                eixos: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      eixoId: { type: "string" },
+                      relacaoSugerida: { type: "string", enum: ["ESSENCIAL", "TRANSVERSAL", "NAO_ESSENCIAL"] },
+                      justificativa: { type: "string" },
+                      evidencias: { type: "array", items: { type: "string" } },
+                    },
+                    required: ["eixoId", "relacaoSugerida", "justificativa", "evidencias"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ["eixos"],
+              additionalProperties: false,
+            },
+          },
+        },
       });
 
+      const texto = resposta.choices?.[0]?.message?.content;
+      const bruto = typeof texto === "string"
+        ? texto
+        : Array.isArray(texto)
+          ? texto.map((p: any) => p?.text || "").join("")
+          : "";
+      let parsed: any = {};
+      try { parsed = JSON.parse(bruto); } catch {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "A IA retornou uma resposta inválida. Tente novamente." });
+      }
+      const analises = Array.isArray(parsed.eixos) ? parsed.eixos : [];
+
+      const respostasPorChave = new Map(
+        respostas.map((r: any) => [String(r.chave), {
+          chave: String(r.chave),
+          titulo: String(r.pergunta),
+          resposta: String(r.resposta),
+        }]),
+      );
+      const eixoPorId = new Map(eixos.map((e: any) => [String(e.eixoId), e]));
+
+      let divergencias = 0;
+      let coerentes = 0;
+      let ignorados = 0;
+
+      for (const analise of analises) {
+        const eixo = eixoPorId.get(String(analise.eixoId));
+        if (!eixo) { ignorados++; continue; }
+
+        const sugerida = String(analise.relacaoSugerida || "");
+        if (!["ESSENCIAL", "TRANSVERSAL", "NAO_ESSENCIAL"].includes(sugerida)) { ignorados++; continue; }
+
+        const evidencias = Array.isArray(analise.evidencias)
+          ? analise.evidencias
+              .map((chave: any) => respostasPorChave.get(String(chave)))
+              .filter(Boolean)
+          : [];
+        const justificativa = String(analise.justificativa || "").trim();
+        if (justificativa.length < 20 || evidencias.length === 0) { ignorados++; continue; }
+
+        if (sugerida === String(eixo.relacaoAtual || "")) {
+          coerentes++;
+          continue;
+        }
+
+        await db.execute(sql`
+          INSERT INTO prova_utic_eixo_revisoes_questionario
+            (matriz_id, colaborador_id, questionario_id, eixo_id, eixo_nome,
+             relacao_atual, relacao_sugerida, justificativa_sugerida, evidencias_json, status)
+          VALUES
+            (${matriz.matrizId}, ${input.colaboradorId}, ${questionario.id},
+             ${eixo.eixoId}, ${eixo.eixo}, ${eixo.relacaoAtual ?? null}, ${sugerida},
+             ${justificativa}, ${JSON.stringify(evidencias)}, 'PENDENTE')
+          ON DUPLICATE KEY UPDATE
+            questionario_id = VALUES(questionario_id),
+            eixo_nome = VALUES(eixo_nome),
+            relacao_atual = VALUES(relacao_atual),
+            relacao_sugerida = VALUES(relacao_sugerida),
+            justificativa_sugerida = VALUES(justificativa_sugerida),
+            evidencias_json = VALUES(evidencias_json),
+            status = 'PENDENTE',
+            relacao_final = NULL,
+            decidido_por = NULL,
+            decidido_em = NULL,
+            updated_at = NOW()
+        `);
+        divergencias++;
+      }
+
       return {
-        modo: "ANALISE_ASSISTIDA" as const,
-        mensagem:
-          "Dados preparados para análise assistida. Nenhuma classificação foi alterada automaticamente.",
+        modo: "ANALISE_OPENAI" as const,
         colaboradorId: Number(matriz.colaboradorId),
         colaboradorNome: String(matriz.colaboradorNome),
-        unidadeNome: String(matriz.unidadeNome || "Sem unidade"),
-        matrizId: Number(matriz.matrizId),
-        questionario: {
-          id: Number(questionario.id),
-          ano: Number(questionario.ano),
-          versao: Number(questionario.versao),
-          status: String(questionario.status),
-        },
-        respostas: respostas.map((r: any) => ({
-          chave: String(r.chave),
-          pergunta: String(r.pergunta),
-          resposta: String(r.resposta),
-          ordem: Number(r.ordem),
-        })),
-        eixos,
-        eixosAnalisados: eixos.length,
-        coerentes: 0,
-        divergencias: 0,
+        questionarioId: Number(questionario.id),
+        eixosAnalisados: analises.length,
+        coerentes,
+        divergencias,
+        ignorados,
       };
     }),
 

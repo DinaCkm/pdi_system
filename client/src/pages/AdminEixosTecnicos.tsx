@@ -357,37 +357,17 @@ export default function AdminEixosTecnicos() {
     }
   };
 
-  const baixarJson = (dados: unknown, nomeArquivo: string) => {
-    const blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = nomeArquivo;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const analisarQuestionarioSelecionado = async () => {
     if (!matriz?.colaboradorId) return;
     setMensagem("");
     try {
       const resultado = await analisarQuestionarioMutation.mutateAsync({ colaboradorId: Number(matriz.colaboradorId) });
-      if (resultado?.modo === "ANALISE_ASSISTIDA") {
-        baixarJson(
-          resultado,
-          `analise_eixos_${String(resultado.colaboradorNome || "empregado").replace(/\W+/g, "_")}.json`,
-        );
-        setMensagem(
-          `Dados de ${resultado.colaboradorNome} preparados com ${resultado.eixosAnalisados} eixo(s). O arquivo JSON foi baixado para análise assistida; nenhuma classificação foi alterada.`,
-        );
-        return;
-      }
       await revisoesQuery.refetch();
       setMensagem(
-        `Análise concluída para ${resultado.colaboradorNome}: ${resultado.eixosAnalisados} eixo(s) analisados, ${resultado.coerentes} coerente(s) e ${resultado.divergencias} revisão(ões) sugerida(s). Nenhuma classificação foi alterada automaticamente.`,
+        `Análise concluída para ${resultado.colaboradorNome}: ${resultado.eixosAnalisados} eixo(s) analisados, ${resultado.coerentes} coerente(s), ${resultado.divergencias} revisão(ões) sugerida(s) e ${resultado.ignorados ?? 0} item(ns) ignorado(s). Nenhuma classificação foi alterada automaticamente.`,
       );
     } catch (error: any) {
-      setMensagem(error?.message || "Não foi possível preparar os dados deste empregado.");
+      setMensagem(error?.message || "Não foi possível analisar o questionário deste empregado.");
     }
   };
 
@@ -422,8 +402,8 @@ export default function AdminEixosTecnicos() {
     });
 
     let concluidos = 0;
+    let divergencias = 0;
     const falhas: string[] = [];
-    const pacotes: any[] = [];
 
     for (let indice = 0; indice < pessoasDaUnidade.length; indice++) {
       const pessoa = pessoasDaUnidade[indice];
@@ -433,7 +413,7 @@ export default function AdminEixosTecnicos() {
         total: pessoasDaUnidade.length,
         empregado: String(pessoa.colaboradorNome || ""),
         concluidos,
-        divergencias: 0,
+        divergencias,
         falhas: [...falhas],
       });
 
@@ -441,40 +421,26 @@ export default function AdminEixosTecnicos() {
         const resultado = await analisarQuestionarioMutation.mutateAsync({
           colaboradorId: Number(pessoa.colaboradorId),
         });
-        pacotes.push(resultado);
         concluidos++;
+        divergencias += Number(resultado.divergencias ?? 0);
       } catch (error: any) {
-        falhas.push(`${pessoa.colaboradorNome}: ${error?.message || "não foi possível preparar os dados"}`);
+        falhas.push(`${pessoa.colaboradorNome}: ${error?.message || "não foi possível analisar"}`);
       }
     }
 
+    await revisoesQuery.refetch();
     setProgressoUnidade({
       emAndamento: false,
       atual: pessoasDaUnidade.length,
       total: pessoasDaUnidade.length,
       empregado: "",
       concluidos,
-      divergencias: 0,
+      divergencias,
       falhas,
     });
 
-    if (pacotes.length > 0) {
-      baixarJson(
-        {
-          unidade: unidadeRevisao,
-          geradoEm: new Date().toISOString(),
-          criterio:
-            "Essencial = conhecimento diretamente necessário para as atividades centrais declaradas. Transversal = conhecimento de apoio ou aplicável a várias atividades. Não essencial = sem evidência suficiente de uso relevante nas atividades declaradas.",
-          instrucao:
-            "Usar somente as respostas do Questionário de Atividades/Função e o catálogo do eixo. Sugerir revisão apenas quando a conclusão for diferente da classificação atual.",
-          empregados: pacotes,
-        },
-        `analise_eixos_${unidadeRevisao.replace(/\W+/g, "_")}.json`,
-      );
-    }
-
     setMensagem(
-      `Unidade ${unidadeRevisao}: ${concluidos} empregado(s) preparado(s) para análise assistida e ${falhas.length} pendência(s). O arquivo JSON da unidade foi baixado. Nenhuma classificação foi alterada.`,
+      `Unidade ${unidadeRevisao} concluída: ${concluidos} empregado(s) analisado(s), ${divergencias} revisão(ões) sugerida(s) e ${falhas.length} pendência(s). Nenhuma classificação foi alterada automaticamente.`,
     );
   };
 
@@ -1035,7 +1001,7 @@ export default function AdminEixosTecnicos() {
                   onClick={analisarUnidadeSelecionada}
                   disabled={!unidadeRevisao || (catalogoQuery.data ?? []).length === 0 || progressoUnidade.emAndamento || gerarCatalogoMutation.isPending}
                 >
-                  {progressoUnidade.emAndamento ? "Preparando dados..." : "Preparar esta unidade para análise"}
+                  {progressoUnidade.emAndamento ? "Analisando unidade..." : "Analisar esta unidade"}
                 </Button>
               </div>
 
