@@ -296,9 +296,9 @@ export type SinalUmanni = "LARANJA" | "AMARELO" | "VERDE";
 
 export const conceitoComportamentalLabel: Record<ConceitoComportamental, string> = {
   EM_DESENVOLVIMENTO: "Em Desenvolvimento",
-  EM_APLICACAO: "Em Aplicação",
-  CONSOLIDADO: "Consolidado",
-  AVANCADO: "Avançado",
+  EM_APLICACAO: "Conhecimento Aplicado",
+  CONSOLIDADO: "Conhecimento Consolidado",
+  AVANCADO: "Conhecimento Avançado",
   REFERENCIA: "Referência",
 };
 
