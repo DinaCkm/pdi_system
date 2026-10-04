@@ -162,12 +162,17 @@ export default function AdminEixosTecnicos() {
   const [observacao, setObservacao] = useState("");
   const [status, setStatus] = useState<StatusMatriz>("PENDENTE_HISTORICO");
   const [mensagem, setMensagem] = useState("");
-  const [aba, setAba] = useState<"individual" | "departamento" | "solicitacoes">("individual");
+  const [aba, setAba] = useState<"individual" | "departamento" | "solicitacoes" | "revisoes">("individual");
   const [filtroSolicitacao, setFiltroSolicitacao] = useState<"PENDENTE" | "TODAS">("PENDENTE");
   const [mensagemSolicitacao, setMensagemSolicitacao] = useState("");
   const solicitacoesQuery = api.listarSolicitacoes.useQuery(undefined, { refetchOnWindowFocus: false });
   const solicitacoes: any[] = solicitacoesQuery.data ?? [];
   const totalPendentes = solicitacoes.filter((item) => item.status === "PENDENTE").length;
+  const revisoesQuery = api.listarRevisoesQuestionario.useQuery(undefined, { refetchOnWindowFocus: false });
+  const decidirRevisaoMutation = api.decidirRevisaoQuestionario.useMutation();
+  const revisoes: any[] = revisoesQuery.data ?? [];
+  const revisoesPendentes = revisoes.filter((item) => item.status === "PENDENTE");
+  const totalRevisoesPendentes = revisoesPendentes.length;
   const [deptSelecionado, setDeptSelecionado] = useState("");
   const [buscaEixo, setBuscaEixo] = useState("");
   const [grupo, setGrupo] = useState<"regionais" | "administrativas" | "todas">("regionais");
@@ -266,6 +271,34 @@ export default function AdminEixosTecnicos() {
     [solicitacoes, matrizSelecionada],
   );
   const eixosComPedido = useMemo(() => new Set(solicitacoesDaMatriz.map((item) => item.eixoId)), [solicitacoesDaMatriz]);
+  const revisoesDaMatriz = useMemo(
+    () => revisoesPendentes.filter((item) => Number(item.matrizId) === matrizSelecionada),
+    [revisoesPendentes, matrizSelecionada],
+  );
+  const revisaoPorEixo = useMemo(
+    () => new Map(revisoesDaMatriz.map((item) => [String(item.eixoId), item])),
+    [revisoesDaMatriz],
+  );
+
+  const decidirRevisao = async (revisao: any, decisao: "AJUSTADA" | "MANTIDA") => {
+    setMensagem("");
+    try {
+      await decidirRevisaoMutation.mutateAsync({ id: Number(revisao.id), decisao });
+      await Promise.all([
+        revisoesQuery.refetch(),
+        listaQuery.refetch(),
+        historicoQuery.refetch(),
+        utils.bloco1CompetenciasFuncao.mapaIndividual.invalidate({ colaboradorId: Number(revisao.colaboradorId) }),
+      ]);
+      setMensagem(
+        decisao === "AJUSTADA"
+          ? `A classificação de "${revisao.eixo}" foi ajustada para ${RELACAO_LABEL[revisao.relacaoSugerida as RelacaoEixo]}.`
+          : `A classificação atual de "${revisao.eixo}" foi mantida.`,
+      );
+    } catch (error: any) {
+      setMensagem(error?.message || "Não foi possível registrar a decisão.");
+    }
+  };
 
   const aoResponder = async (texto: string, colaboradorId: number) => {
     setMensagemSolicitacao(texto);
@@ -393,7 +426,7 @@ export default function AdminEixosTecnicos() {
       </div>
 
       <div className="flex gap-1 border-b">
-        {([["individual", "Por Empregado"], ["departamento", "Por Departamento"], ["solicitacoes", "Solicitações dos Empregados"]] as const).map(([valor, rotulo]) => (
+        {([["individual", "Por Empregado"], ["departamento", "Por Departamento"], ["revisoes", "Revisões do Questionário"], ["solicitacoes", "Solicitações dos Empregados"]] as const).map(([valor, rotulo]) => (
           <button
             key={valor}
             type="button"
@@ -401,6 +434,9 @@ export default function AdminEixosTecnicos() {
             className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors ${aba === valor ? "border-blue-600 text-blue-600" : "border-transparent text-muted-foreground hover:text-foreground"}`}
           >
             {rotulo}
+            {valor === "revisoes" && totalRevisoesPendentes > 0 && (
+              <span className="ml-2 rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">{totalRevisoesPendentes}</span>
+            )}
             {valor === "solicitacoes" && totalPendentes > 0 && (
               <span className="ml-2 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white">{totalPendentes}</span>
             )}
@@ -557,6 +593,56 @@ export default function AdminEixosTecnicos() {
                               </select>
                             </td>
                             <td className="px-4 py-3">
+                              {revisaoPorEixo.has(String(eixo.eixoId)) && (() => {
+                                const revisao = revisaoPorEixo.get(String(eixo.eixoId));
+                                return (
+                                  <div className="mb-3 min-w-[360px] rounded-lg border border-blue-200 bg-blue-50/70 p-3">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <Badge className="bg-blue-600 text-white">Revisão sugerida</Badge>
+                                      <span className="text-xs text-muted-foreground">
+                                        Atual: {revisao.relacaoAtual ? RELACAO_LABEL[revisao.relacaoAtual as RelacaoEixo] : "Pendente"} → Sugerida: {RELACAO_LABEL[revisao.relacaoSugerida as RelacaoEixo]}
+                                      </span>
+                                    </div>
+                                    {revisao.eixoDescricao && (
+                                      <div className="mt-3 text-xs leading-5">
+                                        <p className="font-semibold text-slate-800">O que é este eixo</p>
+                                        <p className="mt-1 text-slate-600">{revisao.eixoDescricao}</p>
+                                      </div>
+                                    )}
+                                    {Array.isArray(revisao.conhecimentos) && revisao.conhecimentos.length > 0 && (
+                                      <div className="mt-3 text-xs leading-5">
+                                        <p className="font-semibold text-slate-800">Conhecimentos que abrange</p>
+                                        <p className="mt-1 text-slate-600">{revisao.conhecimentos.join(" · ")}</p>
+                                      </div>
+                                    )}
+                                    <div className="mt-3 rounded-md bg-white/80 p-3 text-xs leading-5 text-slate-700">
+                                      <p className="font-semibold">Justificativa fundamentada no questionário</p>
+                                      <p className="mt-1">{revisao.justificativaSugerida}</p>
+                                    </div>
+                                    {Array.isArray(revisao.evidencias) && revisao.evidencias.length > 0 && (
+                                      <details className="mt-3 rounded-md border bg-white/70 p-2 text-xs">
+                                        <summary className="cursor-pointer font-medium">Ver respostas do questionário utilizadas</summary>
+                                        <div className="mt-2 space-y-2">
+                                          {revisao.evidencias.map((ev: any, indice: number) => (
+                                            <div key={`${ev.chave || "evidencia"}-${indice}`} className="rounded border bg-white p-2">
+                                              <p className="font-semibold">{ev.titulo || ev.chave}</p>
+                                              <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{ev.resposta}</p>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </details>
+                                    )}
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                      <Button size="sm" onClick={() => decidirRevisao(revisao, "AJUSTADA")} disabled={decidirRevisaoMutation.isPending}>
+                                        <CheckCircle2 className="mr-2 h-4 w-4" />Aceitar ajuste
+                                      </Button>
+                                      <Button size="sm" variant="outline" onClick={() => decidirRevisao(revisao, "MANTIDA")} disabled={decidirRevisaoMutation.isPending}>
+                                        <XCircle className="mr-2 h-4 w-4" />Manter classificação atual
+                                      </Button>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                               <textarea
                                 value={edicao?.justificativa ?? ""}
                                 onChange={(event) => setEdicoes((atual) => ({
@@ -751,6 +837,64 @@ export default function AdminEixosTecnicos() {
           )}
         </div>
       )}
+      {aba === "revisoes" && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Empregados com revisão sugerida</CardTitle>
+              <CardDescription>
+                Este relatório mostra somente unidade e empregado. Abra o empregado para ler a justificativa no próprio eixo e decidir se aceita o ajuste ou mantém a classificação atual.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {revisoesQuery.isLoading ? (
+                <p className="text-sm text-muted-foreground">Carregando revisões...</p>
+              ) : revisoesQuery.error ? (
+                <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{revisoesQuery.error.message}</div>
+              ) : (() => {
+                const pessoas = new Map<string, any>();
+                for (const item of revisoesPendentes) {
+                  const chave = `${item.unidadeNome || "Sem unidade"}::${item.colaboradorId}`;
+                  if (!pessoas.has(chave)) pessoas.set(chave, item);
+                }
+                const lista = Array.from(pessoas.values());
+                return lista.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma revisão pendente.</p>
+                ) : (
+                  <div className="overflow-hidden rounded-md border">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/40">
+                        <tr className="border-b text-left">
+                          <th className="px-4 py-3">Unidade</th>
+                          <th className="px-4 py-3">Empregado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {lista.map((item: any) => (
+                          <tr
+                            key={`${item.unidadeNome || "Sem unidade"}-${item.colaboradorId}`}
+                            className="cursor-pointer border-b last:border-0 hover:bg-blue-50/50"
+                            onClick={() => {
+                              setBusca("");
+                              setUnidade("");
+                              setMatrizSelecionada(Number(item.matrizId));
+                              setAba("individual");
+                            }}
+                          >
+                            <td className="px-4 py-3">{item.unidadeNome || "Sem unidade"}</td>
+                            <td className="px-4 py-3 font-medium text-blue-700">{item.colaboradorNome}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {aba === "solicitacoes" && (
         <div className="space-y-4">
           <Card>
