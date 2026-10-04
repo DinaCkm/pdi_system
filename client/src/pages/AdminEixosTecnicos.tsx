@@ -172,9 +172,20 @@ export default function AdminEixosTecnicos() {
   const decidirRevisaoMutation = api.decidirRevisaoQuestionario.useMutation();
   const gerarCatalogoMutation = api.gerarCatalogoEixos.useMutation();
   const analisarQuestionarioMutation = api.analisarQuestionarioEmpregado.useMutation();
+  const catalogoQuery = api.listarCatalogoEixos.useQuery(undefined, { refetchOnWindowFocus: false });
   const revisoes: any[] = revisoesQuery.data ?? [];
   const revisoesPendentes = revisoes.filter((item) => item.status === "PENDENTE");
   const totalRevisoesPendentes = revisoesPendentes.length;
+  const [unidadeRevisao, setUnidadeRevisao] = useState("");
+  const [progressoUnidade, setProgressoUnidade] = useState<{
+    emAndamento: boolean;
+    atual: number;
+    total: number;
+    empregado: string;
+    concluidos: number;
+    divergencias: number;
+    falhas: string[];
+  }>({ emAndamento: false, atual: 0, total: 0, empregado: "", concluidos: 0, divergencias: 0, falhas: [] });
   const [deptSelecionado, setDeptSelecionado] = useState("");
   const [buscaEixo, setBuscaEixo] = useState("");
   const [grupo, setGrupo] = useState<"regionais" | "administrativas" | "todas">("regionais");
@@ -358,6 +369,78 @@ export default function AdminEixosTecnicos() {
     } catch (error: any) {
       setMensagem(error?.message || "Não foi possível analisar o questionário deste empregado.");
     }
+  };
+
+  const analisarUnidadeSelecionada = async () => {
+    if (!unidadeRevisao) {
+      setMensagem("Selecione uma unidade antes de iniciar a análise.");
+      return;
+    }
+    if ((catalogoQuery.data ?? []).length === 0) {
+      setMensagem("Prepare primeiro o catálogo dos eixos. A análise individual depende da descrição e dos conhecimentos de cada eixo.");
+      return;
+    }
+
+    const pessoasDaUnidade = matrizes
+      .filter((item: any) => String(item.unidadeNome || "Sem unidade") === unidadeRevisao)
+      .sort((a: any, b: any) => String(a.colaboradorNome).localeCompare(String(b.colaboradorNome), "pt-BR"));
+
+    if (pessoasDaUnidade.length === 0) {
+      setMensagem("Nenhum empregado com matriz técnica foi localizado nesta unidade.");
+      return;
+    }
+
+    setMensagem("");
+    setProgressoUnidade({
+      emAndamento: true,
+      atual: 0,
+      total: pessoasDaUnidade.length,
+      empregado: "",
+      concluidos: 0,
+      divergencias: 0,
+      falhas: [],
+    });
+
+    let concluidos = 0;
+    let divergencias = 0;
+    const falhas: string[] = [];
+
+    for (let indice = 0; indice < pessoasDaUnidade.length; indice++) {
+      const pessoa = pessoasDaUnidade[indice];
+      setProgressoUnidade({
+        emAndamento: true,
+        atual: indice + 1,
+        total: pessoasDaUnidade.length,
+        empregado: String(pessoa.colaboradorNome || ""),
+        concluidos,
+        divergencias,
+        falhas: [...falhas],
+      });
+
+      try {
+        const resultado = await analisarQuestionarioMutation.mutateAsync({
+          colaboradorId: Number(pessoa.colaboradorId),
+        });
+        concluidos++;
+        divergencias += Number(resultado.divergencias ?? 0);
+      } catch (error: any) {
+        falhas.push(`${pessoa.colaboradorNome}: ${error?.message || "não foi possível analisar"}`);
+      }
+    }
+
+    await revisoesQuery.refetch();
+    setProgressoUnidade({
+      emAndamento: false,
+      atual: pessoasDaUnidade.length,
+      total: pessoasDaUnidade.length,
+      empregado: "",
+      concluidos,
+      divergencias,
+      falhas,
+    });
+    setMensagem(
+      `Unidade ${unidadeRevisao} concluída: ${concluidos} empregado(s) analisado(s), ${divergencias} revisão(ões) sugerida(s) e ${falhas.length} pendência(s) de análise. Nenhuma classificação foi alterada automaticamente.`,
+    );
   };
 
   const salvar = async () => {
@@ -883,20 +966,80 @@ export default function AdminEixosTecnicos() {
                 <div>
                   <CardTitle>Empregados com revisão sugerida</CardTitle>
                   <CardDescription>
-                    Este relatório mostra somente unidade e empregado. Abra o empregado para ler a justificativa no próprio eixo e decidir se aceita o ajuste ou mantém a classificação atual.
+                    Trabalhe uma unidade por vez. O relatório mostra somente unidade e empregado; a decisão continua sendo feita dentro do eixo, após a leitura da justificativa.
                   </CardDescription>
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={gerarCatalogo}
-                  disabled={gerarCatalogoMutation.isPending}
+                  disabled={gerarCatalogoMutation.isPending || progressoUnidade.emAndamento}
                 >
                   {gerarCatalogoMutation.isPending ? "Preparando catálogo..." : "Preparar catálogo dos eixos"}
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-5">
+              <div className="grid gap-4 rounded-lg border bg-slate-50/60 p-4 lg:grid-cols-[minmax(260px,1fr)_auto] lg:items-end">
+                <label className="space-y-2 text-sm font-medium">
+                  Unidade a analisar
+                  <select
+                    value={unidadeRevisao}
+                    onChange={(event) => setUnidadeRevisao(event.target.value)}
+                    disabled={progressoUnidade.emAndamento}
+                    className="h-10 w-full rounded-md border bg-background px-3 font-normal"
+                  >
+                    <option value="">Selecione uma unidade</option>
+                    {unidades.map((nome) => (
+                      <option key={String(nome)} value={String(nome)}>{String(nome)}</option>
+                    ))}
+                  </select>
+                </label>
+                <Button
+                  type="button"
+                  onClick={analisarUnidadeSelecionada}
+                  disabled={!unidadeRevisao || progressoUnidade.emAndamento || gerarCatalogoMutation.isPending}
+                >
+                  {progressoUnidade.emAndamento ? "Analisando unidade..." : "Analisar esta unidade"}
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-2 text-xs">
+                <Badge variant="outline">Catálogo: {(catalogoQuery.data ?? []).length} eixo(s)</Badge>
+                {unidadeRevisao && (
+                  <Badge variant="outline">
+                    {matrizes.filter((item: any) => String(item.unidadeNome || "Sem unidade") === unidadeRevisao).length} empregado(s) com matriz
+                  </Badge>
+                )}
+              </div>
+
+              {(progressoUnidade.emAndamento || progressoUnidade.total > 0) && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-4 text-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-semibold text-blue-950">
+                      {progressoUnidade.emAndamento ? "Análise da unidade em andamento" : "Última análise da unidade concluída"}
+                    </p>
+                    <span className="text-xs text-blue-800">
+                      {progressoUnidade.atual}/{progressoUnidade.total}
+                    </span>
+                  </div>
+                  {progressoUnidade.emAndamento && progressoUnidade.empregado && (
+                    <p className="mt-2 text-blue-900">Analisando: {progressoUnidade.empregado}</p>
+                  )}
+                  <p className="mt-2 text-xs text-blue-800">
+                    {progressoUnidade.concluidos} concluído(s) · {progressoUnidade.divergencias} revisão(ões) sugerida(s) · {progressoUnidade.falhas.length} pendência(s)
+                  </p>
+                  {progressoUnidade.falhas.length > 0 && !progressoUnidade.emAndamento && (
+                    <details className="mt-3 rounded-md border border-blue-200 bg-white/70 p-3 text-xs">
+                      <summary className="cursor-pointer font-medium">Ver pendências da análise</summary>
+                      <div className="mt-2 space-y-1 text-slate-600">
+                        {progressoUnidade.falhas.map((falha, indice) => <p key={indice}>{falha}</p>)}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              )}
+
               {revisoesQuery.isLoading ? (
                 <p className="text-sm text-muted-foreground">Carregando revisões...</p>
               ) : revisoesQuery.error ? (
