@@ -137,6 +137,42 @@ export const usuariosFuncoesOrganizacionais = mysqlTable(
   }),
 );
 
+export const recadastramentoProfissional = mysqlTable(
+  "recadastramento_profissional",
+  {
+    id: int().autoincrement().notNull().primaryKey(),
+    usuarioId: int("usuario_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    campanhaVersao: int("campanha_versao").default(1).notNull(),
+    cargoAnterior: varchar("cargo_anterior", { length: 255 }),
+    cargoConfirmado: varchar("cargo_confirmado", { length: 255 }),
+    funcaoAnteriorId: int("funcao_anterior_id").references(() => funcoesOrganizacionais.id, {
+      onDelete: "set null",
+    }),
+    funcaoConfirmadaId: int("funcao_confirmada_id").references(() => funcoesOrganizacionais.id, {
+      onDelete: "set null",
+    }),
+    perfilConfirmadoEm: timestamp("perfil_confirmado_em", { mode: "string" }),
+    eixosConfirmadosEm: timestamp("eixos_confirmados_em", { mode: "string" }),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .onUpdateNow()
+      .notNull(),
+  },
+  table => ({
+    recadUsuarioVersaoUq: uniqueIndex("recad_usuario_versao_uq").on(
+      table.usuarioId,
+      table.campanhaVersao,
+    ),
+    recadPerfilIdx: index("recad_perfil_idx").on(table.perfilConfirmadoEm),
+    recadEixosIdx: index("recad_eixos_idx").on(table.eixosConfirmadosEm),
+  }),
+);
+
 export const metodologiaCompetencias = mysqlTable(
   "metodologia_competencias",
   {
