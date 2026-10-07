@@ -38,6 +38,7 @@ import AdminAplicacoesProficiencia from "./pages/AdminAplicacoesProficiencia";
 import ResultadosProficiencia from "./pages/ResultadosProficiencia";
 import ProvaProficiencia from "./pages/ProvaProficiencia";
 import ProvaSeguraUtic from "./pages/ProvaSeguraUtic";
+import RecadastramentoProfissional from "./pages/RecadastramentoProfissional";
 
 import PDIsEquipe from "./pages/PDIsEquipe";
 import MeuPDI from "./pages/MeuPDI";
@@ -74,6 +75,7 @@ function Router() {
       <Route path={"/login"} component={Login} />
       <Route path={"/reset-password"} component={ResetPassword} />
       <Route path={"/change-password"} component={ChangePassword} />
+      <Route path={"/recadastramento-profissional"} component={RecadastramentoProfissional} />
       <Route path={"/?"} component={Home} />
       <Route path={"/avaliacoes/utic/prova-segura"}>
         <ProvaUticRealtimeGuard>
