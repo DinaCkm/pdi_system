@@ -713,8 +713,7 @@ export const provaUticMatrizRouter = router({
          WHERE m.colaborador_id = ${input.colaboradorId}
          LIMIT 1
       `);
-      const matriz = rowsOf<any>(matrizResult)[0];
-      if (!matriz) throw new TRPCError({ code: "NOT_FOUND", message: "Matriz técnica do empregado não encontrada." });
+      let matriz = rowsOf<any>(matrizResult)[0] ?? null;
 
       const questionarioResult = await db.execute(sql`
         SELECT id, ano, versao, status
@@ -737,9 +736,150 @@ export const provaUticMatrizRouter = router({
       const respostas = rowsOf<any>(respostasResult);
       if (respostas.length === 0) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "O questionário não possui respostas disponíveis para análise." });
 
+      let matrizCriada = false;
+      let eixosCriados = 0;
+
+      if (!matriz) {
+        await db.execute(sql`
+          INSERT INTO prova_utic_matrizes
+            (colaborador_id, status, fonte, observacao, atualizado_por)
+          VALUES
+            (${input.colaboradorId}, 'PENDENTE_HISTORICO',
+             'IA — Questionário de Atividades/Função',
+             'Matriz criada automaticamente a partir do questionário para classificação inicial dos eixos técnicos.',
+             ${ctx.user.id})
+        `);
+        const matrizCriadaResult = await db.execute(sql`
+          SELECT m.id AS matrizId, m.colaborador_id AS colaboradorId,
+                 u.name AS colaboradorNome, d.nome AS unidadeNome
+            FROM prova_utic_matrizes m
+            JOIN users u ON u.id = m.colaborador_id
+            LEFT JOIN departamentos d ON d.id = u.departamentoId
+           WHERE m.colaborador_id = ${input.colaboradorId}
+           LIMIT 1
+        `);
+        matriz = rowsOf<any>(matrizCriadaResult)[0] ?? null;
+        matrizCriada = true;
+      }
+
+      if (!matriz) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível preparar a matriz técnica do empregado." });
+      }
+
+      const eixosExistentesResult = await db.execute(sql`
+        SELECT COUNT(*) AS total
+          FROM prova_utic_matriz_eixos
+         WHERE matriz_id = ${matriz.matrizId}
+      `);
+      const totalEixosExistentes = Number(rowsOf<any>(eixosExistentesResult)[0]?.total ?? 0);
+
+      if (totalEixosExistentes === 0) {
+        const normalizarUnidade = (valor: unknown) =>
+          String(valor ?? "")
+            .trim()
+            .normalize("NFD")
+            .replace(/[\\u0300-\\u036f]/g, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, " ")
+            .replace(/\\s+/g, " ")
+            .trim();
+
+        const provasResult = await db.execute(sql`
+          SELECT id, codigo, nome, unidade, ano, questoes_json AS questoesJson
+            FROM provas_importadas
+           WHERE ano = ${Number(questionario.ano)}
+             AND codigo LIKE '%HIST%'
+             AND questoes_json IS NOT NULL
+             AND TRIM(questoes_json) <> ''
+           ORDER BY id DESC
+        `);
+        const unidadeEmpregado = normalizarUnidade(matriz.unidadeNome);
+        const provaHistorica = rowsOf<any>(provasResult).find((prova) => {
+          const unidadeProva = normalizarUnidade(prova.unidade);
+          return unidadeProva === unidadeEmpregado ||
+            unidadeProva.includes(unidadeEmpregado) ||
+            unidadeEmpregado.includes(unidadeProva);
+        }) ?? null;
+
+        if (!provaHistorica) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Não foi localizada prova histórica da unidade para definir o universo de eixos técnicos deste empregado.",
+          });
+        }
+
+        let questoes: any[] = [];
+        try { questoes = JSON.parse(String(provaHistorica.questoesJson || "[]")); } catch { questoes = []; }
+
+        const catalogo = new Map<string, { eixoId: string; eixoNome: string; conhecimentos: string[] }>();
+        const idEixoPorNome = (nome: string) => {
+          const chave = normalizarUnidade(nome).replace(/ /g, "-");
+          return `EIXO_AUTO_${Buffer.from(chave).toString("hex").slice(0, 24).padEnd(24, "0")}`;
+        };
+
+        for (const questao of Array.isArray(questoes) ? questoes : []) {
+          const enunciado = String(questao?.enunciado ?? questao?.pergunta ?? questao?.texto ?? "")
+            .replace(/\\s+/g, " ")
+            .trim();
+          const eixosQuestao = Array.isArray(questao?.eixos)
+            ? questao.eixos
+            : questao?.eixo
+              ? [{ id: questao?.eixoId, nome: questao?.eixo }]
+              : [];
+
+          for (const eixo of eixosQuestao) {
+            const eixoNome = String(eixo?.nome ?? eixo?.eixo ?? "").trim();
+            if (!eixoNome) continue;
+            const chave = normalizarUnidade(eixoNome);
+            if (!chave) continue;
+            const existente = catalogo.get(chave) ?? {
+              eixoId: String(eixo?.id ?? eixo?.eixoId ?? idEixoPorNome(eixoNome)),
+              eixoNome,
+              conhecimentos: [],
+            };
+            if (enunciado && !existente.conhecimentos.includes(enunciado)) existente.conhecimentos.push(enunciado);
+            catalogo.set(chave, existente);
+          }
+        }
+
+        if (catalogo.size === 0) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "A prova histórica foi localizada, mas não possui eixos técnicos identificáveis.",
+          });
+        }
+
+        for (const item of catalogo.values()) {
+          await db.execute(sql`
+            INSERT INTO prova_utic_matriz_eixos
+              (matriz_id, eixo_id, eixo_nome, relacao, status_classificacao, justificativa, percentual_anterior)
+            VALUES
+              (${matriz.matrizId}, ${item.eixoId}, ${item.eixoNome}, NULL, 'PENDENTE', NULL, NULL)
+            ON DUPLICATE KEY UPDATE
+              eixo_nome = VALUES(eixo_nome),
+              updated_at = NOW()
+          `);
+
+          const descricao = `Eixo técnico "${item.eixoNome}" pertencente à prova histórica da unidade do empregado. O escopo abaixo corresponde aos conteúdos avaliados nas questões vinculadas ao eixo.`;
+          await db.execute(sql`
+            INSERT INTO prova_utic_eixo_catalogo
+              (eixo_id, eixo_nome, descricao, conhecimentos_json, fonte, atualizado_por)
+            VALUES
+              (${item.eixoId}, ${item.eixoNome}, ${descricao}, ${JSON.stringify(item.conhecimentos.slice(0, 30))},
+               ${`Prova histórica: ${provaHistorica.codigo || provaHistorica.nome || provaHistorica.id}`}, ${ctx.user.id})
+            ON DUPLICATE KEY UPDATE
+              eixo_nome = VALUES(eixo_nome),
+              atualizado_por = VALUES(atualizado_por),
+              updated_at = NOW()
+          `);
+        }
+        eixosCriados = catalogo.size;
+      }
+
       const eixosResult = await db.execute(sql`
         SELECT e.eixo_id AS eixoId, e.eixo_nome AS eixo,
-               e.relacao AS relacaoAtual, e.justificativa AS justificativaAtual,
+               e.relacao AS relacaoAtual, e.status_classificacao AS statusClassificacao,
+               e.justificativa AS justificativaAtual,
                e.percentual_anterior AS percentualAnterior,
                c.descricao, c.conhecimentos_json AS conhecimentosJson
           FROM prova_utic_matriz_eixos e
@@ -753,7 +893,7 @@ export const provaUticMatrizRouter = router({
         return { ...item, conhecimentos };
       });
       if (eixos.length === 0) {
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Este empregado não possui eixos técnicos cadastrados." });
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Não foi possível preparar eixos técnicos para análise deste questionário." });
       }
 
       const semCatalogo = eixos.filter((e) => !e.descricao || e.conhecimentos.length === 0);
@@ -945,6 +1085,7 @@ export const provaUticMatrizRouter = router({
       let coerentes = 0;
       let ignorados = 0;
       let justificativasAtualizadas = 0;
+      let classificadosInicialmente = 0;
 
       for (const analise of analises) {
         const eixo = eixoPorId.get(String(analise.eixoId));
@@ -960,6 +1101,26 @@ export const provaUticMatrizRouter = router({
           : [];
         const justificativa = String(analise.justificativa || "").trim();
         if (justificativa.length < 40 || evidencias.length === 0) { ignorados++; continue; }
+
+        if (!eixo.relacaoAtual || String(eixo.statusClassificacao || "") === "PENDENTE") {
+          await gravarEixo(db, {
+            matrizId: Number(matriz.matrizId),
+            eixoId: String(eixo.eixoId),
+            eixo: String(eixo.eixo),
+            relacao: sugerida as "ESSENCIAL" | "TRANSVERSAL" | "NAO_ESSENCIAL",
+            statusClassificacao: "CLASSIFICADO",
+            justificativa,
+            anterior:
+              eixo.percentualAnterior === null || eixo.percentualAnterior === undefined
+                ? null
+                : Number(eixo.percentualAnterior),
+            motivo: "Classificação inicial pela IA a partir do Questionário de Atividades/Função",
+            observacao:
+              "O empregado ainda não possuía classificação para este eixo; a IA realizou a classificação inicial com base nas respostas do questionário.",
+          }, Number(ctx.user.id));
+          classificadosInicialmente++;
+          continue;
+        }
 
         if (sugerida === String(eixo.relacaoAtual || "")) {
           if (justificativa !== String(eixo.justificativaAtual || "").trim()) {
@@ -1019,6 +1180,9 @@ export const provaUticMatrizRouter = router({
         ignorados,
         justificativasAtualizadas,
         descricoesAtualizadas,
+        matrizCriada,
+        eixosCriados,
+        classificadosInicialmente,
       };
     }),
 

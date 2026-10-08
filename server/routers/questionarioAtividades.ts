@@ -13,6 +13,7 @@ import {
   users,
 } from "../../drizzle/schema";
 import { PERGUNTAS_QUESTIONARIO_ATIVIDADES } from "../../shared/questionarioAtividades";
+import { provaUticMatrizRouter } from "./provaUticMatriz";
 
 async function dbObrigatorio() {
   const db = await getDb();
@@ -725,6 +726,26 @@ export const questionarioAtividadesRouter = router({
         }
       }
 
-      return { success: true, questionarioId };
+      let analiseIA: any;
+      try {
+        const caller = provaUticMatrizRouter.createCaller(ctx as any);
+        analiseIA = await caller.analisarQuestionarioEmpregado({
+          colaboradorId: input.colaboradorId,
+        });
+      } catch (error: any) {
+        console.error("[Questionário] Falha na análise automática IA dos eixos", {
+          colaboradorId: input.colaboradorId,
+          questionarioId,
+          erro: error?.message ?? String(error),
+        });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            "O questionário foi salvo, mas a análise automática dos eixos pela IA não foi concluída. Tente salvar novamente ou acione o administrador.",
+          cause: error,
+        });
+      }
+
+      return { success: true, questionarioId, analiseIA };
     }),
 });
