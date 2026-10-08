@@ -533,6 +533,42 @@ export const questionarioAtividadesRouter = router({
       return { success: true, questionarioId: questionario.id };
     }),
 
+  reanalisarIA: adminProcedure
+    .input(
+      z.object({
+        colaboradorIds: z.array(z.number().int().positive()).min(1).max(100),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const caller = provaUticMatrizRouter.createCaller(ctx as any);
+      const resultados: Array<{
+        colaboradorId: number;
+        sucesso: boolean;
+        analise?: any;
+        erro?: string;
+      }> = [];
+
+      for (const colaboradorId of input.colaboradorIds) {
+        try {
+          const analise = await caller.analisarQuestionarioEmpregado({ colaboradorId });
+          resultados.push({ colaboradorId, sucesso: true, analise });
+        } catch (error: any) {
+          resultados.push({
+            colaboradorId,
+            sucesso: false,
+            erro: error?.message ?? String(error),
+          });
+        }
+      }
+
+      return {
+        total: resultados.length,
+        sucessos: resultados.filter((item) => item.sucesso).length,
+        falhas: resultados.filter((item) => !item.sucesso).length,
+        resultados,
+      };
+    }),
+
   historico: adminProcedure
     .input(z.object({ questionarioId: z.number().int().positive() }))
     .query(async ({ input }) => {
