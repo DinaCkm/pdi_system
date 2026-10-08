@@ -388,8 +388,35 @@ export default function QuestionarioAtividadesFuncao() {
               {eixos.isLoading ? (
                 <div className="text-sm text-muted-foreground">Carregando eixos da prova aplicada...</div>
               ) : !eixos.data?.prova ? (
-                <div className="rounded-md border p-4 text-sm text-muted-foreground">
-                  {eixos.data?.aviso || "Nenhuma prova aplicada foi encontrada para este empregado no período selecionado."}
+                <div className="space-y-3">
+                  <div className="rounded-md border p-4 text-sm text-muted-foreground">
+                    {eixos.data?.aviso || "Nenhuma prova aplicada foi encontrada para este empregado no período selecionado."}
+                  </div>
+
+                  {eixos.data?.questionarioId && (
+                    <div className="rounded-md border p-4 space-y-3">
+                      <div className="text-sm">
+                        Este empregado já pode ser reanalisado pela IA usando a matriz e os eixos técnicos históricos existentes, sem depender de localizar novamente a prova pelo nome da unidade.
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          if (!colaboradorId) {
+                            toast.error("Selecione um empregado.");
+                            return;
+                          }
+                          reanalisarIAMutation.mutate({
+                            colaboradorIds: [Number(colaboradorId)],
+                          });
+                        }}
+                        disabled={reanalisarIAMutation.isPending}
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${reanalisarIAMutation.isPending ? "animate-spin" : ""}`} />
+                        {reanalisarIAMutation.isPending ? "Analisando..." : "Reanalisar Questionário × Eixos com IA"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
