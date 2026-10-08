@@ -1169,6 +1169,25 @@ export const provaUticMatrizRouter = router({
         divergencias++;
       }
 
+      const pendenciasQuestionarioResult = await db.execute(sql`
+        SELECT COUNT(*) AS total
+          FROM prova_utic_eixo_revisoes_questionario
+         WHERE questionario_id = ${questionario.id}
+           AND status = 'PENDENTE'
+      `);
+      const pendenciasQuestionario = Number(rowsOf<any>(pendenciasQuestionarioResult)[0]?.total ?? 0);
+
+      if (pendenciasQuestionario === 0) {
+        await db.execute(sql`
+          UPDATE questionarios_atividades_funcao
+             SET status = 'validado',
+                 validado_por = ${ctx.user.id},
+                 validado_em = NOW(),
+                 updated_at = NOW()
+           WHERE id = ${questionario.id}
+        `);
+      }
+
       return {
         modo: "ANALISE_OPENAI" as const,
         colaboradorId: Number(matriz.colaboradorId),
@@ -1321,6 +1340,27 @@ export const provaUticMatrizRouter = router({
                updated_at = NOW()
          WHERE id = ${input.id}
       `);
+
+      if (revisao.questionario_id) {
+        const pendenciasResult = await db.execute(sql`
+          SELECT COUNT(*) AS total
+            FROM prova_utic_eixo_revisoes_questionario
+           WHERE questionario_id = ${revisao.questionario_id}
+             AND status = 'PENDENTE'
+        `);
+        const pendencias = Number(rowsOf<any>(pendenciasResult)[0]?.total ?? 0);
+
+        if (pendencias === 0) {
+          await db.execute(sql`
+            UPDATE questionarios_atividades_funcao
+               SET status = 'validado',
+                   validado_por = ${ctx.user.id},
+                   validado_em = NOW(),
+                   updated_at = NOW()
+             WHERE id = ${revisao.questionario_id}
+          `);
+        }
+      }
 
       return { decisao: input.decisao, relacaoFinal };
     }),

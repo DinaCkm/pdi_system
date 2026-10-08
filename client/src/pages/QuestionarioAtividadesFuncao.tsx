@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FileText, History, RefreshCw, Save, ShieldCheck } from "lucide-react";
+import { History, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -543,35 +543,18 @@ export default function QuestionarioAtividadesFuncao() {
             <CardHeader>
               <CardTitle>Validação e rastreabilidade</CardTitle>
               <CardDescription>
-                O questionário é a fonte da classificação funcional dos eixos. Toda alteração fica vinculada ao empregado, ao período e ao histórico desta análise.
+                O questionário é a fonte da classificação funcional dos eixos. Ao salvar, a IA é executada automaticamente. Se não houver divergências pendentes, o questionário é validado automaticamente; se houver, ele fica aguardando revisão até a última decisão administrativa.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-3">
                 <Button
-                  variant="outline"
-                  onClick={() => salvar("rascunho")}
-                  disabled={salvarMutation.isPending}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar rascunho
-                </Button>
-                <Button
-                  variant="secondary"
                   onClick={() => salvar("preenchido")}
                   disabled={salvarMutation.isPending}
                 >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Marcar como preenchido
+                  <Save className="h-4 w-4 mr-2" />
+                  {salvarMutation.isPending ? "Salvando e analisando..." : "Salvar questionário"}
                 </Button>
-                <Button
-                  onClick={() => salvar("validado")}
-                  disabled={salvarMutation.isPending}
-                >
-                  <ShieldCheck className="h-4 w-4 mr-2" />
-                  Validar questionário
-                </Button>
-
                 {questionario.data?.questionario?.id && (
                   <Button
                     type="button"
