@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FileText, History, RefreshCw, Save, ShieldCheck } from "lucide-react";
+import { FileText, History, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -543,7 +543,7 @@ export default function QuestionarioAtividadesFuncao() {
             <CardHeader>
               <CardTitle>Validação e rastreabilidade</CardTitle>
               <CardDescription>
-                O questionário é a fonte da classificação funcional dos eixos. Toda alteração fica vinculada ao empregado, ao período e ao histórico desta análise.
+                O questionário é a fonte da classificação funcional dos eixos. Após a análise da IA e a resolução de todas as divergências, ele é validado automaticamente. Toda alteração permanece vinculada ao empregado, ao período e ao histórico desta análise.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -564,14 +564,6 @@ export default function QuestionarioAtividadesFuncao() {
                   <FileText className="h-4 w-4 mr-2" />
                   Marcar como preenchido
                 </Button>
-                <Button
-                  onClick={() => salvar("validado")}
-                  disabled={salvarMutation.isPending}
-                >
-                  <ShieldCheck className="h-4 w-4 mr-2" />
-                  Validar questionário
-                </Button>
-
                 {questionario.data?.questionario?.id && (
                   <Button
                     type="button"
