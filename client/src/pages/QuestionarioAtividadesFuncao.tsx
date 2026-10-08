@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FileText, History, Save, ShieldCheck } from "lucide-react";
+import { FileText, History, RefreshCw, Save, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -144,6 +144,28 @@ export default function QuestionarioAtividadesFuncao() {
     },
     onError: (error) => {
       toast.error(error.message || "Não foi possível salvar o questionário.");
+    },
+  });
+
+  const reanalisarIAMutation = trpc.questionarioAtividades.reanalisarIA.useMutation({
+    onSuccess: async (resultado) => {
+      const item = resultado.resultados?.[0];
+      if (item?.sucesso) {
+        const analise = item.analise;
+        const resumo = [
+          analise?.coerentes ? `${analise.coerentes} coerente(s)` : null,
+          analise?.divergencias ? `${analise.divergencias} divergência(s)` : null,
+          analise?.classificadosInicialmente ? `${analise.classificadosInicialmente} classificado(s) inicialmente` : null,
+        ].filter(Boolean).join(" · ");
+        toast.success(resumo ? `Análise da IA concluída: ${resumo}.` : "Análise da IA concluída.");
+      } else {
+        toast.error(item?.erro || "A IA não conseguiu concluir a reanálise.");
+      }
+      await utils.questionarioAtividades.eixosTecnicos.invalidate();
+      await utils.questionarioAtividades.historico.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Não foi possível executar a reanálise da IA.");
     },
   });
 
@@ -457,6 +479,27 @@ export default function QuestionarioAtividadesFuncao() {
                   >
                     <Save className="h-4 w-4 mr-2" />
                     Salvar classificação dos eixos
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (!colaboradorId) {
+                        toast.error("Selecione um empregado.");
+                        return;
+                      }
+                      reanalisarIAMutation.mutate({
+                        colaboradorIds: [Number(colaboradorId)],
+                      });
+                    }}
+                    disabled={
+                      reanalisarIAMutation.isPending ||
+                      !eixos.data?.questionarioId
+                    }
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${reanalisarIAMutation.isPending ? "animate-spin" : ""}`} />
+                    {reanalisarIAMutation.isPending ? "Analisando..." : "Reanalisar Questionário × Eixos com IA"}
                   </Button>
 
                   {!eixos.data?.questionarioId && (
