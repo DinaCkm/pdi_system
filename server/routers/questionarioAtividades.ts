@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { adminProcedure, router } from "../_core/customTrpc";
+import { adminProcedure, assessmentProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
 import {
   departamentos,
@@ -64,6 +64,164 @@ function parseJsonSeguro<T>(valor: unknown): T | null {
 }
 
 export const questionarioAtividadesRouter = router({
+  meu: assessmentProcedure
+    .input(z.object({ ano: z.number().int().min(2020).max(2100) }))
+    .query(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const questionario = (
+        await db
+          .select()
+          .from(questionariosAtividadesFuncao)
+          .where(
+            and(
+              eq(questionariosAtividadesFuncao.colaboradorId, Number(ctx.user!.id)),
+              eq(questionariosAtividadesFuncao.ano, input.ano),
+            ),
+          )
+          .orderBy(desc(questionariosAtividadesFuncao.versao), desc(questionariosAtividadesFuncao.id))
+          .limit(1)
+      )[0] ?? null;
+
+      const respostas = questionario
+        ? await db
+            .select()
+            .from(questionarioAtividadesRespostas)
+            .where(eq(questionarioAtividadesRespostas.questionarioId, questionario.id))
+            .orderBy(asc(questionarioAtividadesRespostas.ordem), asc(questionarioAtividadesRespostas.id))
+        : [];
+
+      const respostaPorChave = new Map(respostas.map((item) => [item.chave, item.resposta ?? ""]));
+      return {
+        questionario,
+        perguntas: PERGUNTAS_QUESTIONARIO_ATIVIDADES.map((pergunta) => ({
+          ...pergunta,
+          resposta: respostaPorChave.get(pergunta.chave) ?? "",
+        })),
+      };
+    }),
+
+  salvarMeu: assessmentProcedure
+    .input(
+      z.object({
+        ano: z.number().int().min(2020).max(2100),
+        respostas: z.array(respostaSchema),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const colaboradorId = Number(ctx.user!.id);
+      const usuarioId = colaboradorId;
+
+      let questionario = (
+        await db
+          .select()
+          .from(questionariosAtividadesFuncao)
+          .where(
+            and(
+              eq(questionariosAtividadesFuncao.colaboradorId, colaboradorId),
+              eq(questionariosAtividadesFuncao.ano, input.ano),
+            ),
+          )
+          .orderBy(desc(questionariosAtividadesFuncao.versao), desc(questionariosAtividadesFuncao.id))
+          .limit(1)
+      )[0] ?? null;
+
+      let questionarioId: number;
+      if (!questionario) {
+        const result = await db
+          .insert(questionariosAtividadesFuncao)
+          .values({
+            colaboradorId,
+            ano: input.ano,
+            versao: 1,
+            status: "preenchido",
+            fonte: "manual",
+            preenchidoPor: usuarioId,
+          })
+          .execute();
+        questionarioId = Number(result[0]?.insertId || 0);
+        if (!questionarioId) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível criar o questionário." });
+        }
+      } else {
+        questionarioId = Number(questionario.id);
+        await db
+          .update(questionariosAtividadesFuncao)
+          .set({
+            status: "preenchido",
+            fonte: "manual",
+            preenchidoPor: usuarioId,
+            validadoPor: null,
+            validadoEm: null,
+          })
+          .where(eq(questionariosAtividadesFuncao.id, questionarioId));
+      }
+
+      const existentes = await db
+        .select()
+        .from(questionarioAtividadesRespostas)
+        .where(eq(questionarioAtividadesRespostas.questionarioId, questionarioId));
+      const existentePorChave = new Map(existentes.map((item) => [item.chave, item]));
+      const perguntaPorChave = new Map(PERGUNTAS_QUESTIONARIO_ATIVIDADES.map((pergunta) => [pergunta.chave, pergunta]));
+
+      for (const entrada of input.respostas) {
+        const pergunta = perguntaPorChave.get(entrada.chave);
+        if (!pergunta) continue;
+        const respostaNova = entrada.resposta?.trim() || null;
+        const existente = existentePorChave.get(entrada.chave);
+
+        if (!existente) {
+          await db.insert(questionarioAtividadesRespostas).values({
+            questionarioId,
+            chave: pergunta.chave,
+            pergunta: pergunta.pergunta,
+            resposta: respostaNova,
+            ordem: pergunta.ordem,
+          });
+          if (respostaNova) {
+            await db.insert(questionarioAtividadesHistorico).values({
+              questionarioId,
+              campo: `resposta:${pergunta.chave}`,
+              valorAnterior: null,
+              valorNovo: respostaNova,
+              alteradoPor: usuarioId,
+            });
+          }
+        } else if (String(existente.resposta ?? "") !== String(respostaNova ?? "")) {
+          await db.insert(questionarioAtividadesHistorico).values({
+            questionarioId,
+            campo: `resposta:${pergunta.chave}`,
+            valorAnterior: existente.resposta,
+            valorNovo: respostaNova,
+            alteradoPor: usuarioId,
+          });
+          await db
+            .update(questionarioAtividadesRespostas)
+            .set({ pergunta: pergunta.pergunta, resposta: respostaNova, ordem: pergunta.ordem })
+            .where(eq(questionarioAtividadesRespostas.id, existente.id));
+        }
+      }
+
+      const caller = provaUticMatrizRouter.createCaller(ctx as any);
+      let analiseIA: any;
+      try {
+        analiseIA = await caller.analisarQuestionarioEmpregado({ colaboradorId });
+      } catch (error: any) {
+        console.error("[Questionário] Falha na análise automática IA dos eixos", {
+          colaboradorId,
+          questionarioId,
+          erro: error?.message ?? String(error),
+        });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "O questionário foi salvo, mas a análise automática dos eixos pela IA não foi concluída. Tente salvar novamente ou acione o administrador.",
+          cause: error,
+        });
+      }
+
+      return { success: true, questionarioId, analiseIA };
+    }),
+
   empregados: adminProcedure.query(async () => {
     const db = await dbObrigatorio();
 
