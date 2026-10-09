@@ -17,10 +17,7 @@ async function main() {
     };
     const caller = questionarioAtividadesRouter.createCaller(ctx as any);
 
-    const reanalise = await caller.reanalisarIA({
-      colaboradorIds: [1410003],
-    });
-    console.log("[REANALISE] " + JSON.stringify(reanalise));
+    // Diagnóstico somente leitura: não reexecuta IA para evitar alterar revisões enquanto analisamos.
 
     const ids = [144,145,146,147,148,149,150,151];
     const [questionarios]: any = await db.query(
@@ -49,6 +46,50 @@ async function main() {
       [ids]
     );
     console.log("[REVISOES] " + JSON.stringify(revisoes));
+
+    const [detalhes]: any = await db.query(
+      `SELECT r.questionario_id AS questionarioId,
+              r.colaborador_id AS colaboradorId,
+              u.name,
+              r.eixo_id AS eixoId,
+              r.eixo_nome AS eixoNome,
+              r.relacao_atual AS relacaoAtual,
+              r.relacao_sugerida AS relacaoSugerida,
+              r.justificativa_sugerida AS justificativa,
+              r.evidencias_json AS evidencias,
+              r.status
+         FROM prova_utic_eixo_revisoes_questionario r
+         JOIN users u ON u.id=r.colaborador_id
+        WHERE r.questionario_id IN (?)
+          AND r.status='PENDENTE'
+        ORDER BY r.questionario_id,r.eixo_nome`,
+      [ids]
+    );
+    console.log("[DETALHES_REVISOES] " + JSON.stringify(detalhes));
+
+    const [wescleyEixos]: any = await db.query(
+      `SELECT m.id AS matrizId,
+              me.eixo_id AS eixoId,
+              COALESCE(ec.nome, me.eixo) AS eixoNome,
+              me.relacao,
+              me.status_classificacao AS statusClassificacao,
+              me.justificativa,
+              me.percentual_anterior AS percentualAnterior
+         FROM prova_utic_matrizes m
+         JOIN prova_utic_matriz_eixos me ON me.matriz_id=m.id
+         LEFT JOIN prova_utic_eixos_catalogo ec ON ec.id=me.eixo_id
+        WHERE m.colaborador_id=1410003
+        ORDER BY eixoNome`
+    );
+    console.log("[WESCLEY_EIXOS] " + JSON.stringify(wescleyEixos));
+
+    const [wescleyRespostas]: any = await db.query(
+      `SELECT r.chave,r.pergunta,r.resposta
+         FROM questionario_atividades_respostas r
+        WHERE r.questionario_id=151
+        ORDER BY r.ordem,r.id`
+    );
+    console.log("[WESCLEY_RESPOSTAS] " + JSON.stringify(wescleyRespostas));
 
     const [restantes]: any = await db.query(
       `SELECT u.id,u.name
