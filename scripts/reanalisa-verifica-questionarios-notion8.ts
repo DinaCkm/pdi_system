@@ -18,7 +18,7 @@ async function main() {
     const caller = questionarioAtividadesRouter.createCaller(ctx as any);
 
     const reanalise = await caller.reanalisarIA({
-      colaboradorIds: [1290112, 1530002, 1410003],
+      colaboradorIds: [1410003],
     });
     console.log("[REANALISE] " + JSON.stringify(reanalise));
 
