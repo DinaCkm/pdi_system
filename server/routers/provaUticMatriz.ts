@@ -699,9 +699,13 @@ export const provaUticMatrizRouter = router({
     };
   }),
 
-  analisarQuestionarioEmpregado: adminProcedure
+  analisarQuestionarioEmpregado: assessmentProcedure
     .input(z.object({ colaboradorId: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
+      const isAdmin = ctx.user?.role === "admin" || ctx.user?.role === "Administrador";
+      if (!isAdmin && Number(input.colaboradorId) !== Number(ctx.user?.id)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Você só pode analisar o seu próprio questionário." });
+      }
       const db = await ensureTechnicalMatrixTables();
 
       const matrizResult = await db.execute(sql`
