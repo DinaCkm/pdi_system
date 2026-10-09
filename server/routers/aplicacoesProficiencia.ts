@@ -1270,6 +1270,18 @@ export const aplicacoesProficienciaRouter = router({
              t.id AS tentativaId, t.status AS tentativaStatus, t.finalizada_em AS finalizadaEm,
              EXISTS(
                SELECT 1
+                 FROM questionarios_atividades_funcao qaf
+                WHERE qaf.colaborador_id = ap.colaborador_id
+             ) AS temQuestionario,
+             (
+               SELECT qaf.ano
+                 FROM questionarios_atividades_funcao qaf
+                WHERE qaf.colaborador_id = ap.colaborador_id
+                ORDER BY qaf.ano DESC, qaf.versao DESC, qaf.id DESC
+                LIMIT 1
+             ) AS questionarioAno,
+             EXISTS(
+               SELECT 1
                  FROM proficiencia_ocorrencias po
                 WHERE po.aplicacao_id = a.id
                   AND po.colaborador_id = ap.colaborador_id
