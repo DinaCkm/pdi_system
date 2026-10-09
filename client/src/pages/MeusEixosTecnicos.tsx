@@ -60,6 +60,7 @@ export default function MeusEixosTecnicos() {
   const api = (trpc as any).provaUticMatriz;
   const consulta = api.meusEixos.useQuery(undefined, { refetchOnWindowFocus: false });
   const solicitar = api.solicitarReclassificacao.useMutation();
+  const confirmar = api.confirmarEixo.useMutation();
 
   const [abertoEixo, setAbertoEixo] = useState<string | null>(null);
   const [relacaoSolicitada, setRelacaoSolicitada] = useState<RelacaoEixo | "">("");
@@ -70,6 +71,8 @@ export default function MeusEixosTecnicos() {
   const dados = consulta.data;
   const eixos: any[] = dados?.eixos ?? [];
   const solicitacoes: any[] = dados?.solicitacoes ?? [];
+  const eixosClassificados = eixos.filter((eixo) => eixo.statusClassificacao !== "PENDENTE" && eixo.relacao);
+  const totalManifestados = eixosClassificados.filter((eixo) => Boolean(eixo.manifestacao)).length;
 
   // Última solicitação de cada eixo (a lista já vem da mais recente para a mais antiga, pendentes primeiro).
   const ultimaPorEixo = useMemo(() => {
@@ -77,6 +80,18 @@ export default function MeusEixosTecnicos() {
     for (const item of solicitacoes) if (!mapa.has(item.eixoId)) mapa.set(item.eixoId, item);
     return mapa;
   }, [solicitacoes]);
+
+  const confirmarClassificacao = async (eixo: any) => {
+    setErro("");
+    setSucesso("");
+    try {
+      await confirmar.mutateAsync({ eixoId: eixo.eixoId });
+      setSucesso(`Eixo "${eixo.eixo}" confirmado.`);
+      await consulta.refetch();
+    } catch (error: any) {
+      setErro(error?.message || "Não foi possível confirmar este eixo.");
+    }
+  };
 
   const abrir = (eixo: any) => {
     setAbertoEixo(eixo.eixoId);
@@ -113,6 +128,19 @@ export default function MeusEixosTecnicos() {
           reflete as suas atividades, solicite a revisão com uma justificativa.
         </p>
       </div>
+
+      {eixosClassificados.length > 0 && (
+        <Card className={totalManifestados >= eixosClassificados.length ? "border-green-200 bg-green-50" : "border-blue-200 bg-blue-50"}>
+          <CardContent className="p-5 text-sm">
+            <p className="font-semibold">
+              Validação dos eixos: {totalManifestados} de {eixosClassificados.length} concluído(s)
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              Para concluir esta etapa, confirme cada classificação ou solicite alteração quando ela não refletir suas atividades.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="grid gap-3 p-5 text-sm md:grid-cols-3">
@@ -166,10 +194,31 @@ export default function MeusEixosTecnicos() {
                         </p>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" disabled={pendente || aberto} onClick={() => abrir(eixo)}>
-                      <MessageSquarePlus className="mr-2 h-4 w-4" />
-                      {pendente ? "Solicitação em análise" : "Solicitar alteração"}
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                      {eixo.manifestacao ? (
+                        <Badge variant="outline" className="border-green-200 bg-green-50 text-green-800">
+                          {eixo.manifestacao.tipo === "CONFIRMADO" ? "Eixo confirmado" : "Alteração solicitada"}
+                        </Badge>
+                      ) : classificado ? (
+                        <Button
+                          size="sm"
+                          onClick={() => confirmarClassificacao(eixo)}
+                          disabled={confirmar.isPending || aberto}
+                        >
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Confirmar este eixo
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={pendente || aberto || Boolean(eixo.manifestacao)}
+                        onClick={() => abrir(eixo)}
+                      >
+                        <MessageSquarePlus className="mr-2 h-4 w-4" />
+                        {pendente ? "Solicitação em análise" : "Solicitar alteração"}
+                      </Button>
+                    </div>
                   </div>
 
                   {ultima && <div className="mt-3"><StatusSolicitacao solicitacao={ultima} /></div>}
