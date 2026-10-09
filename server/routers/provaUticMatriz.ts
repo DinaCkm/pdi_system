@@ -1086,6 +1086,7 @@ export const provaUticMatrizRouter = router({
       let ignorados = 0;
       let justificativasAtualizadas = 0;
       let classificadosInicialmente = 0;
+      const eixosProcessados = new Set<string>();
 
       for (const analise of analises) {
         const eixo = eixoPorId.get(String(analise.eixoId));
@@ -1101,6 +1102,10 @@ export const provaUticMatrizRouter = router({
           : [];
         const justificativa = String(analise.justificativa || "").trim();
         if (justificativa.length < 40 || evidencias.length === 0) { ignorados++; continue; }
+
+        const eixoProcessadoId = String(eixo.eixoId);
+        if (eixosProcessados.has(eixoProcessadoId)) { ignorados++; continue; }
+        eixosProcessados.add(eixoProcessadoId);
 
         if (!eixo.relacaoAtual || String(eixo.statusClassificacao || "") === "PENDENTE") {
           await gravarEixo(db, {
@@ -1177,12 +1182,25 @@ export const provaUticMatrizRouter = router({
       `);
       const pendenciasQuestionario = Number(rowsOf<any>(pendenciasQuestionarioResult)[0]?.total ?? 0);
 
-      if (pendenciasQuestionario === 0) {
+      const analiseCompleta =
+        ignorados === 0 &&
+        eixosProcessados.size === eixos.length;
+
+      if (pendenciasQuestionario === 0 && analiseCompleta) {
         await db.execute(sql`
           UPDATE questionarios_atividades_funcao
              SET status = 'validado',
                  validado_por = ${ctx.user.id},
                  validado_em = NOW(),
+                 updated_at = NOW()
+           WHERE id = ${questionario.id}
+        `);
+      } else {
+        await db.execute(sql`
+          UPDATE questionarios_atividades_funcao
+             SET status = 'preenchido',
+                 validado_por = NULL,
+                 validado_em = NULL,
                  updated_at = NOW()
            WHERE id = ${questionario.id}
         `);
