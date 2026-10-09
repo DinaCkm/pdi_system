@@ -94,6 +94,28 @@ export async function ensureTechnicalMatrixTables() {
   `));
 
 
+  // Manifestação do empregado sobre cada eixo após a avaliação.
+  // CONFIRMADO = concordou com a classificação atual.
+  // SOLICITOU_ALTERACAO = registrou pedido de revisão, que também conta como manifestação.
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS prova_utic_eixo_manifestacoes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      matriz_id INT NOT NULL,
+      colaborador_id INT NOT NULL,
+      eixo_id VARCHAR(40) NOT NULL,
+      tipo ENUM('CONFIRMADO','SOLICITOU_ALTERACAO') NOT NULL,
+      solicitacao_id INT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_eixo_manifestacao_colaborador_eixo (colaborador_id, matriz_id, eixo_id),
+      INDEX idx_eixo_manifestacao_colaborador (colaborador_id),
+      INDEX idx_eixo_manifestacao_matriz (matriz_id),
+      CONSTRAINT fk_eixo_manifestacao_matriz FOREIGN KEY (matriz_id) REFERENCES prova_utic_matrizes(id) ON DELETE CASCADE,
+      CONSTRAINT fk_eixo_manifestacao_colaborador FOREIGN KEY (colaborador_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `));
+
+
   // Catálogo conceitual dos eixos: definição geral e conhecimentos abrangidos.
   // Não contém classificação individual do empregado.
   await db.execute(sql.raw(`

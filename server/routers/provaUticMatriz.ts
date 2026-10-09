@@ -458,6 +458,63 @@ export const provaUticMatrizRouter = router({
     }),
 
   // ===== Visão do empregado =====
+  meuFluxoPosProva: assessmentProcedure.query(async ({ ctx }) => {
+    const db = await ensureTechnicalMatrixTables();
+    const questionarioResult = await db.execute(sql`
+      SELECT id, ano, status
+        FROM questionarios_atividades_funcao
+       WHERE colaborador_id = ${ctx.user.id}
+       ORDER BY ano DESC, versao DESC, id DESC
+       LIMIT 1
+    `);
+    const questionario = rowsOf<any>(questionarioResult)[0] ?? null;
+
+    const matrizResult = await db.execute(sql`
+      SELECT id
+        FROM prova_utic_matrizes
+       WHERE colaborador_id = ${ctx.user.id}
+       LIMIT 1
+    `);
+    const matriz = rowsOf<any>(matrizResult)[0] ?? null;
+    if (!matriz) {
+      return {
+        temQuestionario: Boolean(questionario),
+        questionarioAno: questionario?.ano ? Number(questionario.ano) : null,
+        totalEixos: 0,
+        totalManifestados: 0,
+        concluido: false,
+        proximoPasso: questionario ? "EIXOS" : "QUESTIONARIO",
+      };
+    }
+
+    const contagemResult = await db.execute(sql`
+      SELECT
+        COUNT(*) AS totalEixos,
+        SUM(CASE WHEN m.id IS NOT NULL THEN 1 ELSE 0 END) AS totalManifestados
+      FROM prova_utic_matriz_eixos e
+      LEFT JOIN prova_utic_eixo_manifestacoes m
+        ON m.matriz_id = e.matriz_id
+       AND m.colaborador_id = ${ctx.user.id}
+       AND m.eixo_id = e.eixo_id
+      WHERE e.matriz_id = ${Number(matriz.id)}
+        AND e.status_classificacao <> 'PENDENTE'
+        AND e.relacao IS NOT NULL
+    `);
+    const contagem = rowsOf<any>(contagemResult)[0] ?? {};
+    const totalEixos = Number(contagem.totalEixos ?? 0);
+    const totalManifestados = Number(contagem.totalManifestados ?? 0);
+    const concluido = Boolean(questionario) && totalEixos > 0 && totalManifestados >= totalEixos;
+
+    return {
+      temQuestionario: Boolean(questionario),
+      questionarioAno: questionario?.ano ? Number(questionario.ano) : null,
+      totalEixos,
+      totalManifestados,
+      concluido,
+      proximoPasso: !questionario ? "QUESTIONARIO" : concluido ? "CONCLUIDO" : "EIXOS",
+    };
+  }),
+
   // Mostra apenas classificação, situação e justificativa (sem pontuação histórica).
   meusEixos: assessmentProcedure.query(async ({ ctx }) => {
     const db = await ensureTechnicalMatrixTables();
@@ -483,16 +540,54 @@ export const provaUticMatrizRouter = router({
        ORDER BY e.id
     `);
     const solicitacoes = await listarSolicitacoesDb(db, { colaboradorId: ctx.user.id });
+    const manifestacoesResult = await db.execute(sql`
+      SELECT eixo_id AS eixoId, tipo, solicitacao_id AS solicitacaoId, updated_at AS updatedAt
+        FROM prova_utic_eixo_manifestacoes
+       WHERE colaborador_id = ${ctx.user.id}
+         AND matriz_id = ${matriz.id}
+    `);
+    const manifestacoes = new Map(rowsOf<any>(manifestacoesResult).map((item) => [String(item.eixoId), item]));
     return {
       matriz,
       eixos: rowsOf<any>(eixosResult).map((eixo) => {
         let conhecimentos: string[] = [];
         try { conhecimentos = JSON.parse(String(eixo.conhecimentosJson || "[]")); } catch {}
-        return { ...eixo, conhecimentos };
+        return { ...eixo, conhecimentos, manifestacao: manifestacoes.get(String(eixo.eixoId)) ?? null };
       }),
       solicitacoes: solicitacoes.map(({ colaboradorEmail, ...resto }: any) => resto),
     };
   }),
+
+  confirmarEixo: assessmentProcedure
+    .input(z.object({ eixoId: z.string().min(1).max(40) }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await ensureTechnicalMatrixTables();
+      const eixoResult = await db.execute(sql`
+        SELECT m.id AS matrizId, e.eixo_id AS eixoId, e.relacao, e.status_classificacao AS statusClassificacao
+          FROM prova_utic_matrizes m
+          JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
+         WHERE m.colaborador_id = ${ctx.user.id}
+           AND e.eixo_id = ${input.eixoId}
+         LIMIT 1
+      `);
+      const eixo = rowsOf<any>(eixoResult)[0];
+      if (!eixo) throw new TRPCError({ code: "NOT_FOUND", message: "Eixo técnico não encontrado na sua matriz." });
+      if (!eixo.relacao || eixo.statusClassificacao === "PENDENTE") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Este eixo ainda está pendente de classificação e não pode ser confirmado." });
+      }
+
+      await db.execute(sql`
+        INSERT INTO prova_utic_eixo_manifestacoes
+          (matriz_id, colaborador_id, eixo_id, tipo, solicitacao_id)
+        VALUES
+          (${Number(eixo.matrizId)}, ${ctx.user.id}, ${input.eixoId}, 'CONFIRMADO', NULL)
+        ON DUPLICATE KEY UPDATE
+          tipo = 'CONFIRMADO',
+          solicitacao_id = NULL,
+          updated_at = NOW()
+      `);
+      return { success: true };
+    }),
 
   solicitarReclassificacao: assessmentProcedure
     .input(z.object({
@@ -534,6 +629,17 @@ export const provaUticMatrizRouter = router({
            ${input.relacaoSolicitada}, ${input.justificativa})
       `);
       const solicitacaoId = Number(insertResult?.[0]?.insertId ?? insertResult?.insertId ?? 0);
+
+      await db.execute(sql`
+        INSERT INTO prova_utic_eixo_manifestacoes
+          (matriz_id, colaborador_id, eixo_id, tipo, solicitacao_id)
+        VALUES
+          (${Number(eixo.matrizId)}, ${ctx.user.id}, ${input.eixoId}, 'SOLICITOU_ALTERACAO', ${solicitacaoId || null})
+        ON DUPLICATE KEY UPDATE
+          tipo = 'SOLICITOU_ALTERACAO',
+          solicitacao_id = VALUES(solicitacao_id),
+          updated_at = NOW()
+      `);
 
       try {
         await notificarAdminsSolicitacao({
@@ -699,9 +805,13 @@ export const provaUticMatrizRouter = router({
     };
   }),
 
-  analisarQuestionarioEmpregado: adminProcedure
+  analisarQuestionarioEmpregado: assessmentProcedure
     .input(z.object({ colaboradorId: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
+      const isAdmin = ctx.user?.role === "admin" || ctx.user?.role === "Administrador";
+      if (!isAdmin && Number(input.colaboradorId) !== Number(ctx.user?.id)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Você só pode analisar o seu próprio questionário." });
+      }
       const db = await ensureTechnicalMatrixTables();
 
       const matrizResult = await db.execute(sql`

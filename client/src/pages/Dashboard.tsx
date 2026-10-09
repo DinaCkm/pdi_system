@@ -6,7 +6,7 @@ import { DirecionamentoEstrategico } from "@/components/DirecionamentoEstrategic
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectContentNoPortal } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Download, TrendingUp, ArrowRight, Gauge } from "lucide-react";
+import { Download, TrendingUp, ArrowRight, Gauge, ClipboardCheck } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IIPDashboard } from "@/components/IIPDashboard";
@@ -15,6 +15,18 @@ import { VisaoExecutiva } from "@/components/VisaoExecutiva";
 export function Dashboard() {
   const { user } = useAuth();
   const [selectedDepartamento, setSelectedDepartamento] = useState<string>("");
+  const isAdmin = user?.role === "admin" || user?.role === "Administrador";
+  const minhasAvaliacoes = trpc.aplicacoesProficiencia.minhasAplicacoes.useQuery(undefined, {
+    enabled: Boolean(user && !isAdmin),
+    refetchOnWindowFocus: true,
+  });
+  const fluxoPosProva = (trpc as any).provaUticMatriz.meuFluxoPosProva.useQuery(undefined, {
+    enabled: Boolean(user && !isAdmin),
+    refetchOnWindowFocus: true,
+  });
+  const temProvaFinalizada = (minhasAvaliacoes.data ?? []).some((item: any) =>
+    ["FINALIZADA", "FINALIZADA_TEMPO"].includes(String(item.tentativaStatus)),
+  );
   
   // Carregar departamentos para filtro (Admin e Gerente)
   const { data: departamentos } = trpc.departamentos.list.useQuery(undefined, {
@@ -117,6 +129,29 @@ export function Dashboard() {
           Exportar CSV
         </Button>
       </div>
+
+      {!isAdmin && temProvaFinalizada && fluxoPosProva.data && !fluxoPosProva.data.concluido && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 p-5">
+            <div className="flex items-start gap-3 text-blue-950">
+              <ClipboardCheck className="mt-0.5 h-5 w-5 shrink-0" />
+              <div>
+                <p className="font-semibold">Você tem uma etapa pós-avaliação para concluir</p>
+                <p className="text-sm">
+                  {fluxoPosProva.data.proximoPasso === "QUESTIONARIO"
+                    ? "Preencha o Questionário de Atividades para que seus eixos técnicos sejam analisados."
+                    : `Revise seus Eixos Técnicos. Você já se manifestou sobre ${Number(fluxoPosProva.data.totalManifestados || 0)} de ${Number(fluxoPosProva.data.totalEixos || 0)} eixo(s).`}
+                </p>
+              </div>
+            </div>
+            <Link href={fluxoPosProva.data.proximoPasso === "QUESTIONARIO" ? "/meu-questionario-atividades" : "/meus-eixos-tecnicos"}>
+              <Button>
+                {fluxoPosProva.data.proximoPasso === "QUESTIONARIO" ? "PREENCHER QUESTIONÁRIO" : "REVISAR EIXOS TÉCNICOS"}
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filtro de Departamento (Admin e Gerente) */}
       {(user?.role === "admin" || user?.role === "gerente") && departamentos && departamentos.length > 0 && (

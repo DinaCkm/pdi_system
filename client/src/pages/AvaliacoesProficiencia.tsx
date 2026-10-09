@@ -34,6 +34,10 @@ export default function AvaliacoesProficiencia() {
     refetchInterval: 5000,
     refetchOnWindowFocus: true,
   });
+  const fluxoPosProva = (trpc as any).provaUticMatriz.meuFluxoPosProva.useQuery(undefined, {
+    enabled: Boolean(user && !isAdmin),
+    refetchOnWindowFocus: true,
+  });
 
   if (loading) return <div className="p-6 text-sm text-muted-foreground">Verificando acesso...</div>;
   if (isAdmin) return <AdminAplicacoesProficiencia />;
@@ -79,7 +83,33 @@ export default function AvaliacoesProficiencia() {
                 <CardContent className="space-y-4">
                   <div className="grid gap-2 text-sm sm:grid-cols-2"><p><strong>Data prevista:</strong> {formatarData(item.agendadaPara)}</p><p><strong>Questões:</strong> {Number(item.totalQuestoes || 0)}</p></div>
                   {encerrada ? (
-                    <div className="flex items-start gap-2 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-900"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /><span>Avaliação finalizada. Aguarde o cálculo dos resultados pelo administrador.</span></div>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-900">
+                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+                        <div>
+                          <p className="font-semibold">Avaliação finalizada.</p>
+                          <p>
+                            {fluxoPosProva.data?.proximoPasso === "QUESTIONARIO"
+                              ? "Próxima etapa: preencha seu Questionário de Atividades."
+                              : fluxoPosProva.data?.proximoPasso === "EIXOS"
+                                ? "Próxima etapa: revise e valide seus Eixos Técnicos."
+                                : fluxoPosProva.data?.proximoPasso === "CONCLUIDO"
+                                  ? "Sua etapa de validação pós-prova também foi concluída."
+                                  : "Estamos verificando a sua próxima etapa."}
+                          </p>
+                        </div>
+                      </div>
+                      {fluxoPosProva.data?.proximoPasso === "QUESTIONARIO" && (
+                        <Button onClick={() => setLocation("/meu-questionario-atividades")}>
+                          PREENCHER QUESTIONÁRIO DE ATIVIDADES
+                        </Button>
+                      )}
+                      {fluxoPosProva.data?.proximoPasso === "EIXOS" && (
+                        <Button onClick={() => setLocation("/meus-eixos-tecnicos")}>
+                          REVISAR MEUS EIXOS TÉCNICOS
+                        </Button>
+                      )}
+                    </div>
                   ) : !liberada && orientacaoConcluida ? (
                     <div className="space-y-3">
                       <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
