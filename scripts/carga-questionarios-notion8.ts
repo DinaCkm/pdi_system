@@ -1,7 +1,7 @@
 import mysql from "mysql2/promise";
 import { questionarioAtividadesRouter } from "../server/routers/questionarioAtividades";
 
-const aplicar = process.argv.includes("--apply");
+const aplicar = process.argv.includes("--apply") || process.env.CARGA_NOTION8_APPLY === "SIM";
 const dados = JSON.parse(process.env.NOTION8_DATA || "[]");
 
 async function main() {
