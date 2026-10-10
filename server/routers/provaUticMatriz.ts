@@ -6,6 +6,15 @@ import { sendEmail } from "../_core/email";
 import { invokeLLM } from "../_core/llm";
 import * as dbApi from "../db";
 import { ensureTechnicalMatrixTables } from "../services/technicalMatrixSchema";
+import { exigirRegraTransversal, gestorDaMatriz } from "../services/eixosTransversaisRegra";
+import {
+  EIXOS_TRANSVERSAIS_GESTORES,
+  EIXOS_TRANSVERSAIS_TODOS,
+  ehGestorPorPerfil,
+  ehTransversalPara,
+  normalizarNomeEixo,
+  textoTransversalFixo,
+} from "../../shared/eixosTransversais";
 
 function rowsOf<T>(result: any): T[] {
   if (Array.isArray(result?.[0])) return result[0] as T[];
@@ -179,6 +188,119 @@ Consulte em https://pdi.ecodobem.com/meus-eixos-tecnicos (Avaliações > Meus Ei
 ⚠️ NÃO RESPONDA ESTE EMAIL - O FLUXO É VIA SISTEMA ⚠️
   `.trim();
   await sendEmail({ to: params.colaboradorEmail, subject: `PARA A SUA CIÊNCIA — ${titulo}`, body: corpo });
+}
+
+async function diagnosticarTransversais(db: any) {
+  const linhas = rowsOf<any>(await db.execute(sql`
+    SELECT m.id AS matrizId, m.colaborador_id AS colaboradorId, u.name AS nome, u.role,
+           COALESCE(dl.nome, d.nome, 'Sem unidade') AS unidade,
+           e.eixo_id AS eixoId, e.eixo_nome AS eixo, e.relacao, e.status_classificacao AS statusClassificacao,
+           e.percentual_anterior AS anterior, e.justificativa
+      FROM prova_utic_matrizes m
+      JOIN users u ON u.id = m.colaborador_id AND u.status = 'ativo'
+      LEFT JOIN departamentos d ON d.id = u.departamentoId
+      LEFT JOIN departamentos dl ON dl.id = (
+        SELECT d2.id FROM departamentos d2 WHERE d2.leaderId = u.id AND d2.status = 'ativo' ORDER BY d2.id LIMIT 1
+      )
+      JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
+  `));
+  const revisoesPendentes = new Set<string>(
+    rowsOf<any>(await db.execute(sql`
+      SELECT matriz_id AS matrizId, eixo_id AS eixoId
+        FROM prova_utic_eixo_revisoes_questionario
+       WHERE status = 'PENDENTE'
+    `)).map((r) => `${Number(r.matrizId)}|${String(r.eixoId)}`),
+  );
+
+  const fixosParaAplicar: Array<{ matrizId: number; eixoId: string; eixo: string; relacaoAtual: string | null; anterior: number | null; nome: string }> = [];
+  const indevidos: Array<{ matrizId: number; colaboradorId: number; nome: string; unidade: string; eixoId: string; eixo: string; anterior: number | null; justificativa: string | null; emRevisao: boolean }> = [];
+  const eixosPorColaborador = new Map<number, { nome: string; unidade: string; gestor: boolean; eixos: Set<string> }>();
+
+  for (const l of linhas) {
+    const gestor = ehGestorPorPerfil(l.role);
+    const colaboradorId = Number(l.colaboradorId);
+    const reg = eixosPorColaborador.get(colaboradorId) ?? { nome: String(l.nome), unidade: String(l.unidade), gestor, eixos: new Set<string>() };
+    reg.eixos.add(String(l.eixo ?? "").trim());
+    eixosPorColaborador.set(colaboradorId, reg);
+
+    const relacao = l.relacao ? String(l.relacao) : null;
+    if (ehTransversalPara(l.eixo, gestor)) {
+      if (relacao !== "TRANSVERSAL" || l.statusClassificacao === "PENDENTE") {
+        fixosParaAplicar.push({
+          matrizId: Number(l.matrizId), eixoId: String(l.eixoId), eixo: String(l.eixo), relacaoAtual: relacao,
+          anterior: l.anterior === null || l.anterior === undefined ? null : Number(l.anterior), nome: String(l.nome),
+        });
+      }
+    } else if (relacao === "TRANSVERSAL") {
+      indevidos.push({
+        matrizId: Number(l.matrizId), colaboradorId, nome: String(l.nome), unidade: String(l.unidade),
+        eixoId: String(l.eixoId), eixo: String(l.eixo),
+        anterior: l.anterior === null || l.anterior === undefined ? null : Number(l.anterior),
+        justificativa: l.justificativa ? String(l.justificativa) : null,
+        emRevisao: revisoesPendentes.has(`${Number(l.matrizId)}|${String(l.eixoId)}`),
+      });
+    }
+  }
+
+  // Quem deveria ter um eixo transversal e ainda não tem na matriz.
+  const faltantes: Array<{ colaboradorId: number; nome: string; unidade: string; eixos: string[] }> = [];
+  for (const [colaboradorId, reg] of Array.from(eixosPorColaborador.entries())) {
+    const deveria = [...EIXOS_TRANSVERSAIS_TODOS, ...(reg.gestor ? EIXOS_TRANSVERSAIS_GESTORES : [])];
+    const chaves = new Set(Array.from(reg.eixos).map(normalizarNomeEixo));
+    const falta = deveria.filter((nome) => !chaves.has(normalizarNomeEixo(nome)));
+    if (falta.length) faltantes.push({ colaboradorId, nome: reg.nome, unidade: reg.unidade, eixos: falta });
+  }
+
+  return {
+    fixosParaAplicar,
+    totalFixosParaAplicar: fixosParaAplicar.length,
+    indevidos,
+    totalIndevidos: indevidos.length,
+    faltantes: faltantes.sort((a, b) => a.unidade.localeCompare(b.unidade, "pt-BR") || a.nome.localeCompare(b.nome, "pt-BR")),
+    revisoesPendentes: revisoesPendentes.size,
+  };
+}
+
+// Aplica a regra dos eixos transversais nas matrizes já gravadas. Idempotente.
+export async function aplicarRegraTransversais(db: any, usuarioId: number) {
+  const diag = await diagnosticarTransversais(db);
+  let transversaisAplicados = 0;
+  for (const item of diag.fixosParaAplicar) {
+    await gravarEixo(db, {
+      matrizId: item.matrizId,
+      eixoId: item.eixoId,
+      eixo: item.eixo,
+      relacao: "TRANSVERSAL",
+      statusClassificacao: "CLASSIFICADO",
+      justificativa: textoTransversalFixo(item.eixo),
+      anterior: item.anterior,
+      motivo: "Eixo transversal obrigatório definido pela instituição",
+      observacao: `Classificação anterior: ${item.relacaoAtual ?? "pendente"}. Ajuste automático pela regra dos eixos transversais.`,
+    }, usuarioId);
+    transversaisAplicados++;
+  }
+  let convertidosNaoEssencial = 0;
+  for (const item of diag.indevidos) {
+    await gravarEixo(db, {
+      matrizId: item.matrizId,
+      eixoId: item.eixoId,
+      eixo: item.eixo,
+      relacao: "NAO_ESSENCIAL",
+      statusClassificacao: "CLASSIFICADO",
+      justificativa: item.justificativa,
+      anterior: item.anterior,
+      motivo: "Regra dos eixos transversais: Transversal fora dos eixos obrigatórios passa a Não essencial",
+      observacao: "Classificação anterior: Transversal. Transversal passou a ser exclusivo dos eixos comuns a todo o SEBRAE.",
+    }, usuarioId);
+    convertidosNaoEssencial++;
+  }
+  // Sugestões antigas de "Transversal" para eixos não obrigatórios deixam de fazer sentido.
+  await db.execute(sql`
+    UPDATE prova_utic_eixo_revisoes_questionario
+       SET status = 'MANTIDA', relacao_final = relacao_atual, decidido_por = ${usuarioId}, decidido_em = NOW(), updated_at = NOW()
+     WHERE status = 'PENDENTE' AND relacao_sugerida = 'TRANSVERSAL'
+  `);
+  return { transversaisAplicados, convertidosNaoEssencial };
 }
 
 export const provaUticMatrizRouter = router({
@@ -401,6 +523,7 @@ export const provaUticMatrizRouter = router({
       }
 
       const db = await ensureTechnicalMatrixTables();
+      exigirRegraTransversal(input.eixo, input.relacao, await gestorDaMatriz(db, input.matrizId));
       await gravarEixo(db, input, ctx.user.id);
       return { salvo: true };
     }),
@@ -552,7 +675,14 @@ export const provaUticMatrizRouter = router({
       eixos: rowsOf<any>(eixosResult).map((eixo) => {
         let conhecimentos: string[] = [];
         try { conhecimentos = JSON.parse(String(eixo.conhecimentosJson || "[]")); } catch {}
-        return { ...eixo, conhecimentos, manifestacao: manifestacoes.get(String(eixo.eixoId)) ?? null };
+        const transversalFixo = ehTransversalPara(eixo.eixo, ehGestorPorPerfil(ctx.user?.role));
+        return {
+          ...eixo,
+          conhecimentos,
+          transversalFixo,
+          textoTransversalFixo: transversalFixo ? textoTransversalFixo(eixo.eixo) : null,
+          manifestacao: manifestacoes.get(String(eixo.eixoId)) ?? null,
+        };
       }),
       solicitacoes: solicitacoes.map(({ colaboradorEmail, ...resto }: any) => resto),
     };
@@ -609,6 +739,15 @@ export const provaUticMatrizRouter = router({
       `);
       const eixo = rowsOf<any>(eixoResult)[0];
       if (!eixo) throw new TRPCError({ code: "NOT_FOUND", message: "Eixo técnico não encontrado na sua matriz." });
+      if (ehTransversalPara(eixo.eixo, ehGestorPorPerfil(ctx.user?.role))) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Este é um eixo transversal obrigatório definido pela instituição. A classificação não pode ser alterada pelo empregado.",
+        });
+      }
+      if (input.relacaoSolicitada === "TRANSVERSAL") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Escolha Essencial ou Não essencial. Transversal é reservado aos eixos comuns a todo o SEBRAE." });
+      }
       if (eixo.relacao === input.relacaoSolicitada) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Este eixo já possui a classificação solicitada." });
       }
@@ -1115,10 +1254,35 @@ export const provaUticMatrizRouter = router({
         }
       }
 
+      // Eixos transversais obrigatórios: relação fixa TRANSVERSAL, sem análise da IA.
+      const ehGestorColaborador = ehGestorPorPerfil(
+        rowsOf<any>(await db.execute(sql`SELECT role FROM users WHERE id = ${input.colaboradorId} LIMIT 1`))[0]?.role,
+      );
+      let transversaisAplicados = 0;
+      for (const eixo of eixos.filter((e: any) => ehTransversalPara(e.eixo, ehGestorColaborador))) {
+        if (String(eixo.relacaoAtual || "") === "TRANSVERSAL" && String(eixo.statusClassificacao || "") !== "PENDENTE") continue;
+        await gravarEixo(db, {
+          matrizId: Number(matriz.matrizId),
+          eixoId: String(eixo.eixoId),
+          eixo: String(eixo.eixo),
+          relacao: "TRANSVERSAL",
+          statusClassificacao: "CLASSIFICADO",
+          justificativa: textoTransversalFixo(eixo.eixo),
+          anterior:
+            eixo.percentualAnterior === null || eixo.percentualAnterior === undefined
+              ? null
+              : Number(eixo.percentualAnterior),
+          motivo: "Eixo transversal obrigatório definido pela instituição",
+          observacao: "Classificação fixa: eixos transversais não são classificados pelo questionário.",
+        }, Number(ctx.user.id));
+        transversaisAplicados++;
+      }
+      const eixosParaIA = eixos.filter((e: any) => !ehTransversalPara(e.eixo, ehGestorColaborador));
+
       const questionarioTexto = respostas
         .map((r: any) => `[${r.chave}] ${r.pergunta}\nResposta: ${r.resposta}`)
         .join("\n\n");
-      const eixosTexto = eixos
+      const eixosTexto = eixosParaIA
         .map((e: any) =>
           `EIXO_ID=${e.eixoId}\nNome: ${e.eixo}\nClassificação atual: ${e.relacaoAtual || "PENDENTE"}\nDescrição: ${e.descricao}\nConhecimentos avaliados: ${e.conhecimentos.join("; ")}`
         )
@@ -1126,13 +1290,15 @@ export const provaUticMatrizRouter = router({
 
       // CAMPO 2 — justificativa individual da classificação.
       // A descrição do eixo é fixa e aparece em campo separado. Aqui geramos apenas a justificativa do empregado.
-      const resposta = await invokeLLM({
+      const resposta: any = eixosParaIA.length === 0
+        ? { choices: [{ message: { content: '{"eixos":[]}' } }] }
+        : await invokeLLM({
         maxTokens: 5000,
         messages: [
           {
             role: "system",
             content:
-              "Analise um empregado por vez. Para cada eixo, use SOMENTE as respostas do Questionário de Atividades/Função deste empregado. Não repita a descrição do eixo. Não use cargo, unidade ou informações externas. Retorne a classificação sugerida e uma justificativa curta, objetiva e individual. A justificativa deve ter 1 ou 2 frases e começar, sempre que possível, com: 'No Questionário de Atividades/Função, o empregado relata que...'. Cite a atividade ou responsabilidade concreta informada por ele e explique, de forma simples, por que isso sustenta a classificação. Se não houver evidência de uso relevante, diga isso objetivamente. Não use textos genéricos.",
+              "Analise um empregado por vez. Para cada eixo, use SOMENTE as respostas do Questionário de Atividades/Função deste empregado. Não repita a descrição do eixo. Não use cargo, unidade ou informações externas. Retorne a classificação sugerida e uma justificativa curta, objetiva e individual. A justificativa deve ter 1 ou 2 frases e começar, sempre que possível, com: 'No Questionário de Atividades/Função, o empregado relata que...'. Cite a atividade ou responsabilidade concreta informada por ele e explique, de forma simples, por que isso sustenta a classificação. Se não houver evidência de uso relevante, diga isso objetivamente. Não use textos genéricos. Classifique cada eixo SOMENTE como ESSENCIAL (conhecimento usado nas atividades da função) ou NAO_ESSENCIAL (pouco presente nas atividades atuais). Não existe a opção Transversal para estes eixos: Transversal é reservado aos eixos comuns a todo o SEBRAE, definidos pela instituição e que não estão nesta lista.",
           },
           {
             role: "user",
@@ -1154,7 +1320,7 @@ export const provaUticMatrizRouter = router({
                     type: "object",
                     properties: {
                       eixoId: { type: "string" },
-                      relacaoSugerida: { type: "string", enum: ["ESSENCIAL", "TRANSVERSAL", "NAO_ESSENCIAL"] },
+                      relacaoSugerida: { type: "string", enum: ["ESSENCIAL", "NAO_ESSENCIAL"] },
                       justificativa: { type: "string", minLength: 30, maxLength: 600 },
                       evidencias: { type: "array", items: { type: "string" } },
                     },
@@ -1189,7 +1355,7 @@ export const provaUticMatrizRouter = router({
           resposta: String(r.resposta),
         }]),
       );
-      const eixoPorId = new Map(eixos.map((e: any) => [String(e.eixoId), e]));
+      const eixoPorId = new Map(eixosParaIA.map((e: any) => [String(e.eixoId), e]));
 
       let divergencias = 0;
       let coerentes = 0;
@@ -1203,7 +1369,7 @@ export const provaUticMatrizRouter = router({
         if (!eixo) { ignorados++; continue; }
 
         const sugerida = String(analise.relacaoSugerida || "");
-        if (!["ESSENCIAL", "TRANSVERSAL", "NAO_ESSENCIAL"].includes(sugerida)) { ignorados++; continue; }
+        if (!["ESSENCIAL", "NAO_ESSENCIAL"].includes(sugerida)) { ignorados++; continue; }
 
         const evidencias = Array.isArray(analise.evidencias)
           ? analise.evidencias
@@ -1294,7 +1460,7 @@ export const provaUticMatrizRouter = router({
 
       const analiseCompleta =
         ignorados === 0 &&
-        eixosProcessados.size === eixos.length;
+        eixosProcessados.size === eixosParaIA.length;
 
       if (pendenciasQuestionario === 0 && analiseCompleta) {
         await db.execute(sql`
@@ -1330,6 +1496,7 @@ export const provaUticMatrizRouter = router({
         matrizCriada,
         eixosCriados,
         classificadosInicialmente,
+        transversaisAplicados,
       };
     }),
 
@@ -1445,6 +1612,11 @@ export const provaUticMatrizRouter = router({
 
       let relacaoFinal = revisao.eixoRelacaoAtual ?? null;
       if (input.decisao === "AJUSTADA") {
+        exigirRegraTransversal(
+          String(revisao.eixoAtualNome || revisao.eixo_nome),
+          revisao.relacao_sugerida,
+          await gestorDaMatriz(db, Number(revisao.matriz_id)),
+        );
         relacaoFinal = revisao.relacao_sugerida;
         await gravarEixo(db, {
           matrizId: Number(revisao.matriz_id),
@@ -1492,6 +1664,20 @@ export const provaUticMatrizRouter = router({
 
       return { decisao: input.decisao, relacaoFinal };
     }),
+
+  // ===== Eixos transversais obrigatórios (transição) =====
+  // Diagnóstico do que falta para a regra valer em todas as matrizes.
+  diagnosticoTransversais: adminProcedure.query(async () => {
+    const db = await ensureTechnicalMatrixTables();
+    return diagnosticarTransversais(db);
+  }),
+
+  // Aplica a regra (sem IA e sem revisão): eixos obrigatórios -> Transversal;
+  // "Transversal" em eixo não obrigatório -> Não essencial. Também roda no início do servidor.
+  aplicarRegraTransversais: adminProcedure.mutation(async ({ ctx }) => {
+    const db = await ensureTechnicalMatrixTables();
+    return aplicarRegraTransversais(db, Number(ctx.user.id));
+  }),
 
   listarCatalogoEixos: adminProcedure.query(async () => {
     const db = await ensureTechnicalMatrixTables();
@@ -1566,6 +1752,7 @@ export const provaUticMatrizRouter = router({
       let relacaoFinal: string | null = eixoAtual.relacao ?? null;
       if (input.decisao === "AJUSTADA") {
         const novaRelacao = input.relacaoFinal ?? solicitacao.relacaoSolicitada;
+        exigirRegraTransversal(eixoAtual.eixo, novaRelacao, await gestorDaMatriz(db, Number(solicitacao.matrizId)));
         relacaoFinal = novaRelacao;
         await gravarEixo(db, {
           matrizId: Number(solicitacao.matrizId),

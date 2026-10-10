@@ -9,6 +9,9 @@ import { createTRPCContext } from "./customTrpc";
 import { serveStatic, setupVite } from "./vite";
 import { timingSafeEqual } from "crypto";
 import { ensureAcoesLastroSchema } from "../services/acoesLastro";
+import { sql } from "drizzle-orm";
+import { ensureTechnicalMatrixTables } from "../services/technicalMatrixSchema";
+import { aplicarRegraTransversais } from "../routers/provaUticMatriz";
 
 async function startServer() {
   const app = express();
@@ -18,6 +21,19 @@ async function startServer() {
     await ensureAcoesLastroSchema();
   } catch (error) {
     console.error("[STARTUP] Falha ao preparar colunas de lastro das ações:", error);
+  }
+
+  // Regra dos eixos transversais obrigatórios (idempotente): ajusta as matrizes já gravadas.
+  try {
+    const db = await ensureTechnicalMatrixTables();
+    const admins: any = await db.execute(sql`SELECT id FROM users WHERE role = 'admin' AND status = 'ativo' ORDER BY id LIMIT 1`);
+    const adminId = Number((Array.isArray(admins?.[0]) ? admins[0] : admins)?.[0]?.id ?? 0);
+    if (adminId) {
+      const r = await aplicarRegraTransversais(db, adminId);
+      console.log(`[STARTUP] Regra dos eixos transversais: ${r.transversaisAplicados} gravados como Transversal, ${r.convertidosNaoEssencial} convertidos para Não essencial.`);
+    }
+  } catch (error) {
+    console.error("[STARTUP] Falha ao aplicar a regra dos eixos transversais:", error);
   }
 
   // Executa a importação de dados iniciais antes de iniciar o servidor

@@ -122,7 +122,7 @@ describe("evolucaoDomain", () => {
     expect(conceitoConhecimento(90)).toBe("REFERENCIA");
   });
 
-  it("calibra apenas conhecimentos essenciais conforme execucao do PDI", () => {
+  it("calibra conhecimentos essenciais e transversais conforme execucao do PDI", () => {
     expect(fatorCalibragemDesenvolvimento(49)).toBe(0);
     expect(fatorCalibragemDesenvolvimento(50)).toBe(3);
     expect(fatorCalibragemDesenvolvimento(75)).toBe(5);
@@ -146,6 +146,19 @@ describe("evolucaoDomain", () => {
       aplicarCalibragemDesenvolvimento({
         percentualTecnico: 70,
         classificacao: "TRANSVERSAL",
+        percentualPdi: 100,
+      })
+    ).toMatchObject({
+      percentualIntegrado: 77,
+      fatorPercentual: 10,
+      aplicada: true,
+      conceito: "CONHECIMENTO_CONSOLIDADO",
+    });
+
+    expect(
+      aplicarCalibragemDesenvolvimento({
+        percentualTecnico: 70,
+        classificacao: "NAO_ESSENCIAL",
         percentualPdi: 100,
       })
     ).toMatchObject({

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { useSidebar } from "@/components/ui/sidebar";
+import PainelEixosTransversais from "@/components/PainelEixosTransversais";
 
 type RelacaoEixo = "ESSENCIAL" | "TRANSVERSAL" | "NAO_ESSENCIAL";
 type StatusClassificacao = "CLASSIFICADO" | "PENDENTE";
@@ -168,7 +169,7 @@ export default function AdminEixosTecnicos() {
   const [status, setStatus] = useState<StatusMatriz>("PENDENTE_HISTORICO");
   const [mensagem, setMensagem] = useState("");
   const [mensagemSalvar, setMensagemSalvar] = useState("");
-  const [aba, setAba] = useState<"individual" | "departamento" | "solicitacoes" | "revisoes">("individual");
+  const [aba, setAba] = useState<"individual" | "departamento" | "solicitacoes" | "revisoes" | "transversais">("individual");
   const [filtroSolicitacao, setFiltroSolicitacao] = useState<"PENDENTE" | "TODAS">("PENDENTE");
   const [mensagemSolicitacao, setMensagemSolicitacao] = useState("");
   const solicitacoesQuery = api.listarSolicitacoes.useQuery(undefined, { refetchOnWindowFocus: false });
@@ -563,7 +564,7 @@ export default function AdminEixosTecnicos() {
       </div>
 
       <div className="flex gap-1 border-b">
-        {([["individual", "Por Empregado"], ["departamento", "Por Departamento"], ["revisoes", "Revisões do Questionário"], ["solicitacoes", "Solicitações dos Empregados"]] as const).map(([valor, rotulo]) => (
+        {([["individual", "Por Empregado"], ["departamento", "Por Departamento"], ["revisoes", "Revisões do Questionário"], ["solicitacoes", "Solicitações dos Empregados"], ["transversais", "Eixos Transversais"]] as const).map(([valor, rotulo]) => (
           <button
             key={valor}
             type="button"
@@ -1134,6 +1135,10 @@ export default function AdminEixosTecnicos() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {aba === "transversais" && (
+        <PainelEixosTransversais />
       )}
 
       {aba === "solicitacoes" && (
