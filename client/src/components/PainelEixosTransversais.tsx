@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
@@ -11,52 +10,22 @@ import {
 } from "@shared/eixosTransversais";
 
 // Transição para a regra dos eixos transversais obrigatórios (somente administrador).
-export default function PainelEixosTransversais({ onVerRevisoes }: { onVerRevisoes?: () => void }) {
+export default function PainelEixosTransversais() {
   const api = (trpc as any).provaUticMatriz;
   const diag = api.diagnosticoTransversais.useQuery(undefined, { refetchOnWindowFocus: false });
-  const aplicar = api.aplicarTransversaisFixos.useMutation();
-  const reanalisar = api.reanalisarTransversaisIndevidos.useMutation();
+  const aplicar = api.aplicarRegraTransversais.useMutation();
   const [mensagem, setMensagem] = useState("");
-  const [executando, setExecutando] = useState(false);
-  const [falhas, setFalhas] = useState<Array<{ colaboradorId: number; nome: string; erro: string }>>([]);
-  const [progresso, setProgresso] = useState({ feitos: 0, divergencias: 0 });
 
   const d: any = diag.data;
 
-  const aplicarFixos = async () => {
+  const aplicarAgora = async () => {
     setMensagem("");
     try {
       const r = await aplicar.mutateAsync();
-      setMensagem(`${r.aplicados} classificação(ões) gravada(s) como Transversal nos eixos obrigatórios.`);
+      setMensagem(`Regra aplicada: ${r.transversaisAplicados} classificação(ões) gravada(s) como Transversal e ${r.convertidosNaoEssencial} convertida(s) para Não essencial.`);
       await diag.refetch();
     } catch (error: any) {
-      setMensagem(error?.message || "Não foi possível aplicar os eixos transversais.");
-    }
-  };
-
-  const reanalisarTodos = async () => {
-    setMensagem("");
-    setExecutando(true);
-    const ignorar = new Set<number>(falhas.map((f) => f.colaboradorId));
-    let feitos = 0;
-    let divergencias = 0;
-    const novasFalhas = [...falhas];
-    try {
-      for (let rodada = 0; rodada < 200; rodada++) {
-        const r = await reanalisar.mutateAsync({ lote: 3, ignorar: Array.from(ignorar) });
-        for (const p of r.processados) { ignorar.add(p.colaboradorId); feitos++; divergencias += p.divergencias; }
-        for (const f of r.comErro) { ignorar.add(f.colaboradorId); novasFalhas.push(f); }
-        setProgresso({ feitos, divergencias });
-        setFalhas([...novasFalhas]);
-        if (r.processados.length === 0 && r.comErro.length === 0) break;
-        if (r.restantes === 0) break;
-      }
-      setMensagem(`Reanálise concluída: ${feitos} empregado(s) analisado(s) e ${divergencias} sugestão(ões) enviada(s) para a aba "Revisões do Questionário". Nada foi alterado antes da sua decisão.`);
-    } catch (error: any) {
-      setMensagem(error?.message || "A reanálise foi interrompida. Clique novamente para continuar de onde parou.");
-    } finally {
-      setExecutando(false);
-      await diag.refetch();
+      setMensagem(error?.message || "Não foi possível aplicar a regra.");
     }
   };
 
@@ -94,48 +63,24 @@ export default function PainelEixosTransversais({ onVerRevisoes }: { onVerReviso
         <>
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Passo 1 · Gravar Transversal nos eixos obrigatórios</CardTitle>
-              <CardDescription>Ajuste pela regra, sem IA. Cada alteração fica registrada no histórico da matriz.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm">
-                {d.totalFixosParaAplicar === 0
-                  ? <span className="flex items-center gap-2 text-green-700"><CheckCircle2 className="h-4 w-4" />Todos os eixos obrigatórios já estão como Transversal.</span>
-                  : <><strong>{d.totalFixosParaAplicar}</strong> classificação(ões) em eixos obrigatórios ainda não estão como Transversal.</>}
-              </p>
-              <Button onClick={aplicarFixos} disabled={aplicar.isPending || d.totalFixosParaAplicar === 0}>
-                {aplicar.isPending ? "Gravando..." : "Gravar como Transversal"}
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Passo 2 · Reclassificar "Transversal" nos demais eixos</CardTitle>
+              <CardTitle className="text-base">Situação das matrizes</CardTitle>
               <CardDescription>
-                A IA lê o questionário de cada empregado e sugere Essencial ou Não essencial. A sugestão vai para a aba "Revisões do Questionário" e só vale depois da sua decisão.
+                A regra é aplicada automaticamente sempre que o sistema é atualizado: eixos obrigatórios viram Transversal e
+                "Transversal" em qualquer outro eixo vira Não essencial. Cada alteração fica no histórico da matriz.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex flex-wrap gap-2 text-sm">
-                <Badge variant="outline">{d.totalIndevidos} classificação(ões) Transversal fora dos eixos obrigatórios</Badge>
-                <Badge variant="outline">{d.indevidosEmRevisao} já aguardando sua revisão</Badge>
-                <Badge variant="outline">{d.colaboradoresParaReanalisar.length} empregado(s) para reanalisar</Badge>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button onClick={reanalisarTodos} disabled={executando || d.colaboradoresParaReanalisar.length === 0}>
-                  {executando ? `Analisando... ${progresso.feitos} feito(s)` : "Reanalisar com IA"}
-                </Button>
-                {onVerRevisoes && (
-                  <Button variant="outline" onClick={onVerRevisoes}>Abrir Revisões do Questionário ({d.revisoesPendentes})</Button>
-                )}
-              </div>
-              {falhas.length > 0 && (
-                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
-                  <p className="flex items-center gap-2 font-medium"><AlertCircle className="h-4 w-4" />Não foi possível analisar {falhas.length} empregado(s). Corrija pela aba "Por Empregado":</p>
-                  <ul className="mt-2 list-disc space-y-1 pl-5">{falhas.map((f) => <li key={f.colaboradorId}><strong>{f.nome}</strong>: {f.erro}</li>)}</ul>
-                </div>
+            <CardContent className="flex flex-wrap items-center justify-between gap-3">
+              {d.totalFixosParaAplicar === 0 && d.totalIndevidos === 0 ? (
+                <p className="flex items-center gap-2 text-sm text-green-700"><CheckCircle2 className="h-4 w-4" />Todas as matrizes seguem a regra.</p>
+              ) : (
+                <p className="flex items-center gap-2 text-sm text-amber-800">
+                  <AlertCircle className="h-4 w-4" />
+                  {d.totalFixosParaAplicar} eixo(s) obrigatório(s) ainda não estão como Transversal e {d.totalIndevidos} eixo(s) não obrigatório(s) ainda estão como Transversal.
+                </p>
               )}
+              <Button variant="outline" onClick={aplicarAgora} disabled={aplicar.isPending || (d.totalFixosParaAplicar === 0 && d.totalIndevidos === 0)}>
+                {aplicar.isPending ? "Aplicando..." : "Aplicar agora"}
+              </Button>
             </CardContent>
           </Card>
 

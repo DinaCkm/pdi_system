@@ -1138,7 +1138,7 @@ export default function AdminEixosTecnicos() {
       )}
 
       {aba === "transversais" && (
-        <PainelEixosTransversais onVerRevisoes={() => setAba("revisoes")} />
+        <PainelEixosTransversais />
       )}
 
       {aba === "solicitacoes" && (

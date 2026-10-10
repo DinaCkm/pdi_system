@@ -195,7 +195,7 @@ async function diagnosticarTransversais(db: any) {
     SELECT m.id AS matrizId, m.colaborador_id AS colaboradorId, u.name AS nome, u.role,
            COALESCE(dl.nome, d.nome, 'Sem unidade') AS unidade,
            e.eixo_id AS eixoId, e.eixo_nome AS eixo, e.relacao, e.status_classificacao AS statusClassificacao,
-           e.percentual_anterior AS anterior
+           e.percentual_anterior AS anterior, e.justificativa
       FROM prova_utic_matrizes m
       JOIN users u ON u.id = m.colaborador_id AND u.status = 'ativo'
       LEFT JOIN departamentos d ON d.id = u.departamentoId
@@ -204,7 +204,7 @@ async function diagnosticarTransversais(db: any) {
       )
       JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
   `));
-  const revisoesPendentes = new Set(
+  const revisoesPendentes = new Set<string>(
     rowsOf<any>(await db.execute(sql`
       SELECT matriz_id AS matrizId, eixo_id AS eixoId
         FROM prova_utic_eixo_revisoes_questionario
@@ -213,7 +213,7 @@ async function diagnosticarTransversais(db: any) {
   );
 
   const fixosParaAplicar: Array<{ matrizId: number; eixoId: string; eixo: string; relacaoAtual: string | null; anterior: number | null; nome: string }> = [];
-  const indevidos: Array<{ matrizId: number; colaboradorId: number; nome: string; unidade: string; eixo: string; emRevisao: boolean }> = [];
+  const indevidos: Array<{ matrizId: number; colaboradorId: number; nome: string; unidade: string; eixoId: string; eixo: string; anterior: number | null; justificativa: string | null; emRevisao: boolean }> = [];
   const eixosPorColaborador = new Map<number, { nome: string; unidade: string; gestor: boolean; eixos: Set<string> }>();
 
   for (const l of linhas) {
@@ -233,17 +233,13 @@ async function diagnosticarTransversais(db: any) {
       }
     } else if (relacao === "TRANSVERSAL") {
       indevidos.push({
-        matrizId: Number(l.matrizId), colaboradorId, nome: String(l.nome), unidade: String(l.unidade), eixo: String(l.eixo),
+        matrizId: Number(l.matrizId), colaboradorId, nome: String(l.nome), unidade: String(l.unidade),
+        eixoId: String(l.eixoId), eixo: String(l.eixo),
+        anterior: l.anterior === null || l.anterior === undefined ? null : Number(l.anterior),
+        justificativa: l.justificativa ? String(l.justificativa) : null,
         emRevisao: revisoesPendentes.has(`${Number(l.matrizId)}|${String(l.eixoId)}`),
       });
     }
-  }
-
-  const fila = new Map<number, { colaboradorId: number; nome: string; unidade: string; eixos: string[] }>();
-  for (const item of indevidos.filter((i) => !i.emRevisao)) {
-    const reg = fila.get(item.colaboradorId) ?? { colaboradorId: item.colaboradorId, nome: item.nome, unidade: item.unidade, eixos: [] };
-    reg.eixos.push(item.eixo);
-    fila.set(item.colaboradorId, reg);
   }
 
   // Quem deveria ter um eixo transversal e ainda não tem na matriz.
@@ -258,12 +254,53 @@ async function diagnosticarTransversais(db: any) {
   return {
     fixosParaAplicar,
     totalFixosParaAplicar: fixosParaAplicar.length,
+    indevidos,
     totalIndevidos: indevidos.length,
-    indevidosEmRevisao: indevidos.filter((i) => i.emRevisao).length,
-    colaboradoresParaReanalisar: Array.from(fila.values()).sort((a, b) => a.unidade.localeCompare(b.unidade, "pt-BR") || a.nome.localeCompare(b.nome, "pt-BR")),
     faltantes: faltantes.sort((a, b) => a.unidade.localeCompare(b.unidade, "pt-BR") || a.nome.localeCompare(b.nome, "pt-BR")),
     revisoesPendentes: revisoesPendentes.size,
   };
+}
+
+// Aplica a regra dos eixos transversais nas matrizes já gravadas. Idempotente.
+export async function aplicarRegraTransversais(db: any, usuarioId: number) {
+  const diag = await diagnosticarTransversais(db);
+  let transversaisAplicados = 0;
+  for (const item of diag.fixosParaAplicar) {
+    await gravarEixo(db, {
+      matrizId: item.matrizId,
+      eixoId: item.eixoId,
+      eixo: item.eixo,
+      relacao: "TRANSVERSAL",
+      statusClassificacao: "CLASSIFICADO",
+      justificativa: textoTransversalFixo(item.eixo),
+      anterior: item.anterior,
+      motivo: "Eixo transversal obrigatório definido pela instituição",
+      observacao: `Classificação anterior: ${item.relacaoAtual ?? "pendente"}. Ajuste automático pela regra dos eixos transversais.`,
+    }, usuarioId);
+    transversaisAplicados++;
+  }
+  let convertidosNaoEssencial = 0;
+  for (const item of diag.indevidos) {
+    await gravarEixo(db, {
+      matrizId: item.matrizId,
+      eixoId: item.eixoId,
+      eixo: item.eixo,
+      relacao: "NAO_ESSENCIAL",
+      statusClassificacao: "CLASSIFICADO",
+      justificativa: item.justificativa,
+      anterior: item.anterior,
+      motivo: "Regra dos eixos transversais: Transversal fora dos eixos obrigatórios passa a Não essencial",
+      observacao: "Classificação anterior: Transversal. Transversal passou a ser exclusivo dos eixos comuns a todo o SEBRAE.",
+    }, usuarioId);
+    convertidosNaoEssencial++;
+  }
+  // Sugestões antigas de "Transversal" para eixos não obrigatórios deixam de fazer sentido.
+  await db.execute(sql`
+    UPDATE prova_utic_eixo_revisoes_questionario
+       SET status = 'MANTIDA', relacao_final = relacao_atual, decidido_por = ${usuarioId}, decidido_em = NOW(), updated_at = NOW()
+     WHERE status = 'PENDENTE' AND relacao_sugerida = 'TRANSVERSAL'
+  `);
+  return { transversaisAplicados, convertidosNaoEssencial };
 }
 
 export const provaUticMatrizRouter = router({
@@ -1635,55 +1672,12 @@ export const provaUticMatrizRouter = router({
     return diagnosticarTransversais(db);
   }),
 
-  // Grava TRANSVERSAL (fixo) nos eixos transversais das matrizes. Não usa IA.
-  aplicarTransversaisFixos: adminProcedure.mutation(async ({ ctx }) => {
+  // Aplica a regra (sem IA e sem revisão): eixos obrigatórios -> Transversal;
+  // "Transversal" em eixo não obrigatório -> Não essencial. Também roda no início do servidor.
+  aplicarRegraTransversais: adminProcedure.mutation(async ({ ctx }) => {
     const db = await ensureTechnicalMatrixTables();
-    const diag = await diagnosticarTransversais(db);
-    let aplicados = 0;
-    for (const item of diag.fixosParaAplicar) {
-      await gravarEixo(db, {
-        matrizId: item.matrizId,
-        eixoId: item.eixoId,
-        eixo: item.eixo,
-        relacao: "TRANSVERSAL",
-        statusClassificacao: "CLASSIFICADO",
-        justificativa: textoTransversalFixo(item.eixo),
-        anterior: item.anterior,
-        motivo: "Eixo transversal obrigatório definido pela instituição",
-        observacao: `Classificação anterior: ${item.relacaoAtual ?? "pendente"}. Ajuste automático pela regra dos eixos transversais.`,
-      }, Number(ctx.user.id));
-      aplicados++;
-    }
-    return { aplicados };
+    return aplicarRegraTransversais(db, Number(ctx.user.id));
   }),
-
-  // Reanalisa, em lotes, os empregados que têm "Transversal" em eixos que não são transversais.
-  // A IA sugere Essencial ou Não essencial; a sugestão entra em "Revisões do questionário"
-  // e só vale depois da decisão do administrador.
-  reanalisarTransversaisIndevidos: adminProcedure
-    .input(z.object({
-      lote: z.number().int().min(1).max(10).default(3),
-      ignorar: z.array(z.number().int().positive()).max(500).default([]),
-    }))
-    .mutation(async ({ input, ctx }) => {
-      const db = await ensureTechnicalMatrixTables();
-      const diag = await diagnosticarTransversais(db);
-      const ignorar = new Set(input.ignorar);
-      const fila = diag.colaboradoresParaReanalisar.filter((c) => !ignorar.has(c.colaboradorId));
-      const lote = fila.slice(0, input.lote);
-      const caller = provaUticMatrizRouter.createCaller(ctx as any);
-      const processados: Array<{ colaboradorId: number; nome: string; divergencias: number }> = [];
-      const comErro: Array<{ colaboradorId: number; nome: string; erro: string }> = [];
-      for (const colaborador of lote) {
-        try {
-          const resultado: any = await caller.analisarQuestionarioEmpregado({ colaboradorId: colaborador.colaboradorId });
-          processados.push({ colaboradorId: colaborador.colaboradorId, nome: colaborador.nome, divergencias: Number(resultado?.divergencias ?? 0) });
-        } catch (error: any) {
-          comErro.push({ colaboradorId: colaborador.colaboradorId, nome: colaborador.nome, erro: String(error?.message || error).slice(0, 300) });
-        }
-      }
-      return { processados, comErro, restantes: Math.max(0, fila.length - lote.length - comErro.length) };
-    }),
 
   listarCatalogoEixos: adminProcedure.query(async () => {
     const db = await ensureTechnicalMatrixTables();
