@@ -145,7 +145,7 @@ export default function MeusEixosTecnicos() {
       <Card>
         <CardContent className="grid gap-3 p-5 text-sm md:grid-cols-3">
           <div><span className="font-semibold text-blue-800">Essencial:</span> conhecimento central para executar as atividades principais da função.</div>
-          <div><span className="font-semibold text-violet-800">Transversal:</span> conhecimento de apoio, usado com frequência em diferentes atividades.</div>
+          <div><span className="font-semibold text-violet-800">Transversal:</span> conhecimento comum a todo o SEBRAE (alguns, a todos os gestores). É obrigatório, definido pela instituição e não pode ser alterado.</div>
           <div><span className="font-semibold text-slate-700">Não essencial:</span> conhecimento pouco presente nas atividades atuais da função.</div>
         </CardContent>
       </Card>
@@ -186,9 +186,12 @@ export default function MeusEixosTecnicos() {
                         ) : (
                           <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-800">Pendente de análise</Badge>
                         )}
+                        {eixo.transversalFixo && (
+                          <Badge variant="outline" className="border-slate-300 bg-slate-50 text-slate-700">Obrigatório · definido pela instituição</Badge>
+                        )}
                       </div>
                       <div className="rounded-md border border-blue-100 bg-blue-50/60 p-3 text-sm">
-                        <p className="font-medium text-blue-950">Por que este eixo é importante para a sua função</p>
+                        <p className="font-medium text-blue-950">{eixo.transversalFixo ? "Por que este eixo é obrigatório" : "Por que este eixo é importante para a sua função"}</p>
                         <p className="mt-1 text-blue-900">
                           {eixo.justificativa?.trim() || "Justificativa ainda não registrada com base no Questionário de Atividades/Função."}
                         </p>
@@ -209,15 +212,17 @@ export default function MeusEixosTecnicos() {
                           Confirmar este eixo
                         </Button>
                       ) : null}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={pendente || aberto || Boolean(eixo.manifestacao)}
-                        onClick={() => abrir(eixo)}
-                      >
-                        <MessageSquarePlus className="mr-2 h-4 w-4" />
-                        {pendente ? "Solicitação em análise" : "Solicitar alteração"}
-                      </Button>
+                      {!eixo.transversalFixo && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={pendente || aberto || Boolean(eixo.manifestacao)}
+                          onClick={() => abrir(eixo)}
+                        >
+                          <MessageSquarePlus className="mr-2 h-4 w-4" />
+                          {pendente ? "Solicitação em análise" : "Solicitar alteração"}
+                        </Button>
+                      )}
                     </div>
                   </div>
 
@@ -234,7 +239,7 @@ export default function MeusEixosTecnicos() {
                         >
                           <option value="">Selecione...</option>
                           {Object.entries(RELACAO_LABEL)
-                            .filter(([valor]) => valor !== eixo.relacao)
+                            .filter(([valor]) => valor !== eixo.relacao && valor !== "TRANSVERSAL")
                             .map(([valor, rotulo]) => <option key={valor} value={valor}>{rotulo}</option>)}
                         </select>
                       </label>

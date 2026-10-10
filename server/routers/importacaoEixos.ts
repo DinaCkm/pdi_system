@@ -5,6 +5,7 @@ import { z } from "zod";
 import { adminProcedure, router } from "../_core/customTrpc";
 import { getDb } from "../db";
 import { ensureTechnicalMatrixTables } from "../services/technicalMatrixSchema";
+import { ehGestorPorPerfil, ehTransversalPara } from "../../shared/eixosTransversais";
 
 const identificacaoSchema = z.object({
   linha: z.number().int().positive(),
@@ -35,7 +36,7 @@ const linhaComportamentalSchema = identificacaoSchema.extend({
 
 type LinhaTecnica = z.infer<typeof linhaTecnicaSchema>;
 type LinhaComportamental = z.infer<typeof linhaComportamentalSchema>;
-type UsuarioImportacao = { id: number; nome: string; email: string | null; cpf: string | null; unidade: string | null };
+type UsuarioImportacao = { id: number; nome: string; email: string | null; cpf: string | null; unidade: string | null; gestor?: boolean };
 type ErroImportacao = { linha: number; campo: string; mensagem: string };
 type AvisoImportacao = { linha: number; mensagem: string };
 
@@ -83,11 +84,12 @@ function normalizarRelacaoTecnica(relacao: LinhaTecnica["relacao"]) {
 }
 
 async function carregarUsuarios(db: any): Promise<UsuarioImportacao[]> {
-  const result = await db.execute(sql`SELECT u.id, u.name AS nome, u.email, u.cpf, d.nome AS unidade
+  const result = await db.execute(sql`SELECT u.id, u.name AS nome, u.email, u.cpf, u.role, d.nome AS unidade
     FROM users u LEFT JOIN departamentos d ON d.id = u.departamentoId WHERE u.status = 'ativo'`);
   return rowsOf<any>(result).map(item => ({
     id: Number(item.id), nome: String(item.nome ?? ""), email: item.email ? String(item.email) : null,
     cpf: item.cpf ? String(item.cpf) : null, unidade: item.unidade ? String(item.unidade) : null,
+    gestor: ehGestorPorPerfil(item.role),
   }));
 }
 
@@ -119,6 +121,17 @@ function validarTecnicas(linhas: LinhaTecnica[], usuarios: UsuarioImportacao[]) 
     chaves.add(chave);
     if (linha.unidade && usuario.unidade && normalizarTexto(linha.unidade) !== normalizarTexto(usuario.unidade)) {
       avisos.push({ linha: linha.linha, mensagem: `Unidade do arquivo: ${linha.unidade}. Cadastro atual preservado: ${usuario.unidade}.` });
+    }
+    // Regra dos eixos transversais obrigatórios.
+    if (ehTransversalPara(linha.eixoNome, Boolean(usuario.gestor))) {
+      if (linha.relacao !== "TRANSVERSAL") {
+        avisos.push({ linha: linha.linha, mensagem: `"${linha.eixoNome}" é eixo transversal obrigatório: será gravado como Transversal (no arquivo: ${linha.relacao}).` });
+        resolvidas.push({ ...linha, relacao: "TRANSVERSAL", usuario });
+        continue;
+      }
+    } else if (linha.relacao === "TRANSVERSAL") {
+      erros.push({ linha: linha.linha, campo: "Relação", mensagem: `"${linha.eixoNome}" não é eixo transversal. Use Essencial ou Não essencial.` });
+      continue;
     }
     resolvidas.push({ ...linha, usuario });
   }

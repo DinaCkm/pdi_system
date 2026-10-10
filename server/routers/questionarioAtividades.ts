@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { colaboradorEhGestor, exigirRegraTransversal } from "../services/eixosTransversaisRegra";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { adminProcedure, assessmentProcedure, router } from "../_core/customTrpc";
@@ -592,6 +593,7 @@ export const questionarioAtividadesRouter = router({
         }
       }
 
+      const colaboradorGestor = await colaboradorEhGestor(db, input.colaboradorId);
       for (const entrada of input.eixos) {
         const nomeOficial = catalogo.get(entrada.eixoChave);
         if (!nomeOficial) {
@@ -600,6 +602,7 @@ export const questionarioAtividadesRouter = router({
             message: `O eixo "${entrada.eixoNome}" não pertence à prova histórica selecionada.`,
           });
         }
+        exigirRegraTransversal(nomeOficial, entrada.classificacao ?? null, colaboradorGestor);
 
         const justificativa = entrada.justificativa?.trim() || null;
         if (entrada.classificacao && !justificativa) {

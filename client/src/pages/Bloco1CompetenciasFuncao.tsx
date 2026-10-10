@@ -63,13 +63,15 @@ function normalizarClassificacao(valor: unknown) {
     .toUpperCase();
 }
 
+// Essencial e Transversal têm o mesmo peso, a mesma meta e a mesma calibragem pelo PDI.
 function classificacaoEssencial(valor: unknown) {
-  return normalizarClassificacao(valor) === "ESSENCIAL";
+  const normalizado = normalizarClassificacao(valor);
+  return normalizado === "ESSENCIAL" || normalizado === "TRANSVERSAL";
 }
 
 function classificacaoForaDoEssencial(valor: unknown) {
   const normalizado = normalizarClassificacao(valor);
-  return ["TRANSVERSAL", "NAO_ESSENCIAL", "NAO_APLICAVEL"].includes(normalizado);
+  return ["NAO_ESSENCIAL", "NAO_APLICAVEL"].includes(normalizado);
 }
 
 function corSinalUmanni(sinal: string | null | undefined) {
@@ -370,7 +372,7 @@ export default function Bloco1CompetenciasFuncao() {
           nome: item.eixoNome,
           tipo: "Técnica",
           intensidade: Math.max(12, 100 - atual),
-          motivo: "Conhecimento essencial ainda em desenvolvimento; recomenda-se continuidade no próximo PDI.",
+          motivo: "Conhecimento essencial ou transversal ainda em desenvolvimento; recomenda-se continuidade no próximo PDI.",
         });
       } else if (essencial && atual !== null && houveQuedaConceitual) {
         focos.push({
@@ -384,7 +386,7 @@ export default function Bloco1CompetenciasFuncao() {
           nome: item.eixoNome,
           tipo: "Técnica",
           intensidade: 50,
-          motivo: "Conhecimento essencial novo ainda sem leitura atual disponível.",
+          motivo: "Conhecimento essencial ou transversal novo ainda sem leitura atual disponível.",
         });
       }
     }
@@ -637,7 +639,7 @@ export default function Bloco1CompetenciasFuncao() {
                   />
                   <GraficoVisual
                     titulo="Potencialidades"
-                    descricao="Conhecimentos demonstrados além daqueles Essenciais para a função atual. Podem estar em desenvolvimento ou já consolidados."
+                    descricao="Conhecimentos demonstrados nos eixos Não essenciais para a função atual. Podem estar em desenvolvimento ou já consolidados."
                     itens={sintese.potencialidades}
                     accent={ECO.turquesa}
                     icon={Sparkles}
@@ -668,7 +670,7 @@ export default function Bloco1CompetenciasFuncao() {
             <CardHeader>
               <CardTitle>2. Competências Técnicas</CardTitle>
               <CardDescription>
-                A leitura apresenta níveis de conhecimento por ciclo. Nos conhecimentos Essenciais, o Ciclo 2026 também reconhece o engajamento nas ações do PDI, preservando separadamente o indicador técnico original.
+                A leitura apresenta níveis de conhecimento por ciclo. Nos conhecimentos Essenciais e Transversais, o Ciclo 2026 também reconhece o engajamento nas ações do PDI, preservando separadamente o indicador técnico original.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -688,7 +690,7 @@ export default function Bloco1CompetenciasFuncao() {
                     <div>
                       <p className="text-sm font-semibold text-slate-900">Engajamento no Desenvolvimento</p>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        A execução do PDI contribui para a leitura integrada somente dos conhecimentos classificados como Essenciais. Conhecimentos Transversais e Não Essenciais não recebem calibragem pelo PDI.
+                        A execução do PDI contribui para a leitura integrada dos conhecimentos classificados como Essenciais e Transversais. Conhecimentos Não Essenciais não recebem calibragem pelo PDI.
                       </p>
                     </div>
                     <Badge variant="outline" className="text-sm">
@@ -725,7 +727,7 @@ export default function Bloco1CompetenciasFuncao() {
                           <TableCell className="font-medium">{item.eixoNome}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap items-center gap-2">
-                              <Badge variant={item.statusClassificacao === "PENDENTE" ? "secondary" : item.classificacao === "ESSENCIAL" ? "default" : "outline"}>
+                              <Badge variant={item.statusClassificacao === "PENDENTE" ? "secondary" : classificacaoEssencial(item.classificacao) ? "default" : "outline"}>
                                 {item.statusClassificacao === "PENDENTE"
                                   ? "Pendente"
                                   : relacaoLabel[item.classificacao] || item.classificacao || "Sem classificação"}
@@ -830,12 +832,12 @@ export default function Bloco1CompetenciasFuncao() {
                                     {item.percentualIntegrado === null ? "Sem referência" : `${Number(item.percentualIntegrado).toFixed(1)}%`}
                                   </p>
                                   <p className="mt-1 text-xs text-muted-foreground">
-                                    {item.classificacao === "ESSENCIAL"
+                                    {classificacaoEssencial(item.classificacao)
                                       ? `Calibragem aplicada: +${Number(item.fatorCalibragemPdi ?? 0).toFixed(0)}%. O indicador técnico original permanece inalterado.`
-                                      : "Sem calibragem: este conhecimento não está classificado como Essencial."}
+                                      : "Sem calibragem: este conhecimento está classificado como Não essencial."}
                                   </p>
                                   <p className="mt-2 rounded-md border border-blue-100 bg-white/70 p-2 text-xs leading-5 text-slate-600">
-                                    <strong>Importante:</strong> o engajamento no PDI calibra somente os conhecimentos classificados como Essenciais. Conhecimentos Transversais e Não Essenciais preservam o indicador técnico original, sem calibragem pelo PDI.
+                                    <strong>Importante:</strong> o engajamento no PDI calibra os conhecimentos classificados como Essenciais e Transversais. Conhecimentos Não Essenciais preservam o indicador técnico original, sem calibragem pelo PDI.
                                   </p>
                                   <p className="mt-2 text-sm font-medium">
                                     {item.conceitoAtual
@@ -887,7 +889,7 @@ export default function Bloco1CompetenciasFuncao() {
                                     onChange={(event) => setJustificativaEdicao(event.target.value)}
                                     rows={4}
                                     className="w-full rounded-md border bg-background p-3 font-normal"
-                                    placeholder="Explique por que este eixo é Essencial, Transversal ou Não essencial para este empregado."
+                                    placeholder="Explique por que este eixo é Essencial ou Não essencial para este empregado. Eixos transversais são sempre Transversal."
                                   />
                                 </label>
                                 <label className="space-y-2 text-sm font-medium md:col-span-2">
@@ -1157,12 +1159,12 @@ export default function Bloco1CompetenciasFuncao() {
               <CardTitle>Regra metodológica aplicada</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground space-y-2">
-              <p><strong>Conhecimentos técnicos:</strong> o Ciclo 2025 preserva a referência histórica. O Ciclo 2026 apresenta o nível de conhecimento integrado. Nos eixos Essenciais, o engajamento no PDI pode calibrar o indicador em até 10%, sem alterar a medição técnica original.</p>
+              <p><strong>Conhecimentos técnicos:</strong> o Ciclo 2025 preserva a referência histórica. O Ciclo 2026 apresenta o nível de conhecimento integrado. Nos eixos Essenciais e Transversais, o engajamento no PDI pode calibrar o indicador em até 10%, sem alterar a medição técnica original. Transversais são os eixos comuns a todo o SEBRAE (Comunicação; Ética, Integridade e Responsabilidade; Inovação e Gestão do Conhecimento) e, para gestores, Estratégia e Planejamento e Liderança e Gestão de Equipes: obrigatórios e definidos pela instituição.</p>
               <p><strong>Competências comportamentais:</strong> o resultado vem da Avaliação de Desempenho da Umanni, preservado na escala original de 0 a 3. O PDI-System converte apenas a posição na escala para os conceitos Em Desenvolvimento, Conhecimento Aplicado, Conhecimento Consolidado, Conhecimento Avançado e Referência, sem recalcular o resultado oficial.</p>
               <p><strong>Sinalização Umanni:</strong> os relatórios enviados utilizam luzes/barras por faixa. A leitura visual reproduz essa lógica: laranja abaixo de 50% da escala, amarelo de 50% até antes de 70% e verde a partir de 70%. Ao expandir a competência, empregado, gestor e administrador visualizam os resultados originais recebidos da Umanni.</p>
               <p><strong>Leitura:</strong> a interface prioriza conceitos de conhecimento e desenvolvimento. Os resultados originais da Umanni ficam disponíveis a todos os perfis na competência comportamental; a memória de cálculo técnica permanece restrita ao administrador.</p>
-              <p><strong>Potencialidades:</strong> conhecimentos fora do grupo Essencial aparecem quando há conhecimento demonstrado, independentemente de ter havido crescimento entre ciclos.</p>
-              <p><strong>Pontos de Foco:</strong> estabilidade, por si só, não gera foco. Nos conhecimentos técnicos, entram os Essenciais ainda em desenvolvimento ou que tenham sofrido queda suficiente para mudar de nível. Nas competências comportamentais, o foco considera nível atual que ainda exige desenvolvimento ou queda conceitual relevante.</p>
+              <p><strong>Potencialidades:</strong> conhecimentos dos eixos Não essenciais aparecem quando há conhecimento demonstrado, independentemente de ter havido crescimento entre ciclos.</p>
+              <p><strong>Pontos de Foco:</strong> estabilidade, por si só, não gera foco. Nos conhecimentos técnicos, entram os Essenciais e Transversais ainda em desenvolvimento ou que tenham sofrido queda suficiente para mudar de nível. Nas competências comportamentais, o foco considera nível atual que ainda exige desenvolvimento ou queda conceitual relevante.</p>
               <p><strong>DISC:</strong> não participa do cálculo atual; fica reservado para funcionalidade futura.</p>
             </CardContent>
           </Card>

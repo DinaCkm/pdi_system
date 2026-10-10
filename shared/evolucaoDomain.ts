@@ -212,7 +212,8 @@ export function engajamentoDesenvolvimento(
 
 /**
  * A calibragem reconhece a execução do PDI sem substituir a medição técnica.
- * Ela só é aplicada aos eixos classificados como ESSENCIAL.
+ * Ela é aplicada aos eixos classificados como ESSENCIAL ou TRANSVERSAL
+ * (mesmo peso e mesma meta); Não essencial não recebe calibragem.
  *
  * 0–49% do PDI concluído: sem calibragem
  * 50–74%: +3%
@@ -256,7 +257,8 @@ export function aplicarCalibragemDesenvolvimento(params: {
   }
 
   const bruto = Math.max(0, Math.min(100, Number(percentualTecnico)));
-  const essencial = String(classificacao ?? "").trim().toUpperCase() === "ESSENCIAL";
+  const relacaoCalibrada = String(classificacao ?? "").trim().toUpperCase();
+  const essencial = relacaoCalibrada === "ESSENCIAL" || relacaoCalibrada === "TRANSVERSAL";
   const fatorPercentual = essencial ? fatorCalibragemDesenvolvimento(percentualPdi) : 0;
   const percentualIntegrado = Math.min(
     100,
