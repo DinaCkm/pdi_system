@@ -28,6 +28,7 @@ export const STATUS_EVOLUCAO = [
   "LACUNA_SEM_PLANO", //      abaixo da meta e sem nenhuma ação no PDI
   "POTENCIALIDADE", //        eixo Não essencial (sem meta)
   "SEM_RESULTADO_2026", //    ainda sem prova 2026 para o eixo
+  "SEM_MEDICAO", //           eixo obrigatório sem questões na prova (nem 2025 nem 2026)
   "SEM_CLASSIFICACAO", //     eixo sem relação definida na matriz
 ] as const;
 export type StatusEvolucao = (typeof STATUS_EVOLUCAO)[number];
@@ -88,6 +89,7 @@ export function classificarEixo(item: {
 }): { status: StatusEvolucao; precisaNovaAcao: boolean } {
   if (!item.relacao) return { status: "SEM_CLASSIFICACAO", precisaNovaAcao: false };
   if (item.relacao === "NAO_ESSENCIAL") return { status: "POTENCIALIDADE", precisaNovaAcao: false };
+  if (item.atual2026 === null && item.base2025 === null) return { status: "SEM_MEDICAO", precisaNovaAcao: false };
   if (item.atual2026 === null) return { status: "SEM_RESULTADO_2026", precisaNovaAcao: false };
 
   if (item.atual2026 >= META_PROFICIENCIA) {
@@ -411,7 +413,7 @@ export const evolucaoCicloRouter = router({
     );
     const semBase2025SemAlerta = Array.from(
       agrupar(
-        itens.filter((i) => comMeta(i.relacao) && i.base2025 === null && !alertaPorColab.get(i.colaboradorId)),
+        itens.filter((i) => comMeta(i.relacao) && i.base2025 === null && i.status !== "SEM_MEDICAO" && !alertaPorColab.get(i.colaboradorId)),
         (i) => `${i.colaboradorId}`,
       ).values(),
     ).map((lista) => ({ colaboradorId: lista[0].colaboradorId, nome: lista[0].colaboradorNome, unidade: lista[0].unidade }));
