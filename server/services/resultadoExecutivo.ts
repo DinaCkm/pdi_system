@@ -34,7 +34,6 @@ import {
 // Recebe a conexão pronta; o router cuida de permissão e de garantir as tabelas.
 // Regras puras em ./resultadoExecutivoRegras.ts.
 
-const COMPETENCIAS_SO_GESTORES = new Set(["Liderança Transformadora", "Gestão de Pessoas"].map(normalizar));
 
 export type EixoAvaliado = {
   dimensao: Dimensao;
@@ -413,22 +412,21 @@ export function montarAvaliacao(base: Base): { itens: EixoAvaliado[]; periodos: 
     );
   }
 
-  // COMPORTAMENTAL: empregados e gestores ativos com matriz ou com AD.
-  const comMatriz = new Set(base.eixosMatriz.map((e) => Number(e.colaboradorId)));
+  // COMPORTAMENTAL: exatamente o que a Avaliação de Desempenho mediu.
+  // Nada é acrescentado nem alterado: só entram as competências em que a
+  // pessoa foi avaliada (na AD anterior ou na mais recente).
   const rotuloBase = ad.anoBase ? `AD ${ad.anoBase}` : null;
   const rotuloAtual = ad.anoAtual ? `AD ${ad.anoAtual}` : null;
   for (const colab of base.colaboradores) {
     const colaboradorId = Number(colab.id);
     const papel = String(colab.role ?? "");
     if (papel !== "colaborador" && papel !== "lider") continue;
-    if (!comMatriz.has(colaboradorId) && !comAD.has(colaboradorId)) continue;
-    const gestor = ehGestorPorPerfil(papel);
+    if (!comAD.has(colaboradorId)) continue;
     for (const competencia of COMPETENCIAS_AD_HISTORICAS) {
       const prefixo = chave("COMPORTAMENTAL", colaboradorId, competencia);
       const notaB = ad.anoBase ? notaAD.get(`${prefixo}|${ad.anoBase}`) ?? null : null;
       const notaA = ad.anoAtual ? notaAD.get(`${prefixo}|${ad.anoAtual}`) ?? null : null;
-      // Competências de gestão só entram para gestores ou para quem foi avaliado nelas.
-      if (COMPETENCIAS_SO_GESTORES.has(normalizar(competencia)) && !gestor && !notaB && !notaA) continue;
+      if (!notaB && !notaA) continue; // não avaliada para esta pessoa
       const transversal = normalizar(competencia) === normalizar(COMPETENCIA_COMPORTAMENTAL_TRANSVERSAL);
       // A comparação só vale na mesma escala.
       const mesmaEscala = !notaB || !notaA || (notaB.min === notaA.min && notaB.max === notaA.max);

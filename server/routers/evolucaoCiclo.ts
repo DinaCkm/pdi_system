@@ -28,10 +28,10 @@ import {
 // não for publicado. Para cada empregado cruza, separado por dimensão:
 //   TÉCNICO        matriz (Essencial/Transversal/Não essencial), linha de base
 //                  2025 (percentual_anterior) e prova de certificação 2026;
-//   COMPORTAMENTAL competências da Avaliação de Desempenho (AD anterior × AD
-//                  mais recente, escala 0–3 em % da escala). Atuação Colaborativa
-//                  é transversal (todos); Liderança Transformadora e Gestão de
-//                  Pessoas são esperadas só para gestores (perfil líder);
+//   COMPORTAMENTAL só as competências que a Avaliação de Desempenho mediu
+//                  (AD anterior × AD mais recente, escala 0–3 em % da escala),
+//                  sem acrescentar nem alterar nada. Atuação Colaborativa é
+//                  transversal; as demais contam como Essenciais (meta 70%);
 // e as ações/solicitações do PDI ligadas a cada eixo/competência, com o motivo
 // de cada lacuna. Montagem em server/services/resultadoExecutivo.ts e regras
 // puras em server/services/resultadoExecutivoRegras.ts.
@@ -192,14 +192,12 @@ export const evolucaoCicloRouter = router({
     ).map((lista) => ({ colaboradorId: lista[0].colaboradorId, nome: lista[0].colaboradorNome, unidade: lista[0].unidade }));
 
     // Informativo (não bloqueia): quem não tem a Avaliação de Desempenho mais recente.
-    const semAvaliacaoDesempenhoAtual = Array.from(
-      agrupar(
-        itens.filter((i) => i.dimensao === "COMPORTAMENTAL"),
-        (i) => `${i.colaboradorId}`,
-      ).values(),
-    )
-      .filter((lista) => lista.every((i) => i.atual === null))
-      .map((lista) => ({ colaboradorId: lista[0].colaboradorId, nome: lista[0].colaboradorNome, unidade: lista[0].unidade }));
+    const comADAtual = new Set(
+      itens.filter((i) => i.dimensao === "COMPORTAMENTAL" && i.atual !== null).map((i) => i.colaboradorId),
+    );
+    const semAvaliacaoDesempenhoAtual = base.colaboradores
+      .filter((c) => (c.role === "colaborador" || c.role === "lider") && !comADAtual.has(Number(c.id)))
+      .map((c) => ({ colaboradorId: Number(c.id), nome: String(c.name), unidade: String(c.unidade) }));
 
     const pronto =
       ativosSemMatriz.length === 0 &&
