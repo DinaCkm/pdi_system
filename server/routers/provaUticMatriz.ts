@@ -214,16 +214,22 @@ async function diagnosticarTransversais(db: any) {
 
   const fixosParaAplicar: Array<{ matrizId: number; eixoId: string; eixo: string; relacaoAtual: string | null; anterior: number | null; nome: string }> = [];
   const indevidos: Array<{ matrizId: number; colaboradorId: number; nome: string; unidade: string; eixoId: string; eixo: string; anterior: number | null; justificativa: string | null; emRevisao: boolean }> = [];
-  const eixosPorColaborador = new Map<number, { nome: string; unidade: string; gestor: boolean; eixos: Set<string> }>();
+  const eixosPorColaborador = new Map<number, { matrizId: number; nome: string; unidade: string; gestor: boolean; eixos: Set<string> }>();
 
+  const semNota = new Map<number, { colaboradorId: number; nome: string; unidade: string; eixos: string[] }>();
   for (const l of linhas) {
     const gestor = ehGestorPorPerfil(l.role);
     const colaboradorId = Number(l.colaboradorId);
-    const reg = eixosPorColaborador.get(colaboradorId) ?? { nome: String(l.nome), unidade: String(l.unidade), gestor, eixos: new Set<string>() };
+    const reg = eixosPorColaborador.get(colaboradorId) ?? { matrizId: Number(l.matrizId), nome: String(l.nome), unidade: String(l.unidade), gestor, eixos: new Set<string>() };
     reg.eixos.add(String(l.eixo ?? "").trim());
     eixosPorColaborador.set(colaboradorId, reg);
 
     const relacao = l.relacao ? String(l.relacao) : null;
+    if (ehTransversalPara(l.eixo, gestor) && (l.anterior === null || l.anterior === undefined)) {
+      const reg2 = semNota.get(colaboradorId) ?? { colaboradorId, nome: String(l.nome), unidade: String(l.unidade), eixos: [] as string[] };
+      reg2.eixos.push(String(l.eixo));
+      semNota.set(colaboradorId, reg2);
+    }
     if (ehTransversalPara(l.eixo, gestor)) {
       if (relacao !== "TRANSVERSAL" || l.statusClassificacao === "PENDENTE") {
         fixosParaAplicar.push({
@@ -243,12 +249,12 @@ async function diagnosticarTransversais(db: any) {
   }
 
   // Quem deveria ter um eixo transversal e ainda não tem na matriz.
-  const faltantes: Array<{ colaboradorId: number; nome: string; unidade: string; eixos: string[] }> = [];
+  const faltantes: Array<{ colaboradorId: number; matrizId: number; nome: string; unidade: string; eixos: string[] }> = [];
   for (const [colaboradorId, reg] of Array.from(eixosPorColaborador.entries())) {
     const deveria = [...EIXOS_TRANSVERSAIS_TODOS, ...(reg.gestor ? EIXOS_TRANSVERSAIS_GESTORES : [])];
     const chaves = new Set(Array.from(reg.eixos).map(normalizarNomeEixo));
     const falta = deveria.filter((nome) => !chaves.has(normalizarNomeEixo(nome)));
-    if (falta.length) faltantes.push({ colaboradorId, nome: reg.nome, unidade: reg.unidade, eixos: falta });
+    if (falta.length) faltantes.push({ colaboradorId, matrizId: reg.matrizId, nome: reg.nome, unidade: reg.unidade, eixos: falta });
   }
 
   return {
@@ -256,6 +262,8 @@ async function diagnosticarTransversais(db: any) {
     totalFixosParaAplicar: fixosParaAplicar.length,
     indevidos,
     totalIndevidos: indevidos.length,
+    totalFaltantes: faltantes.reduce((soma, f) => soma + f.eixos.length, 0),
+    semNota: Array.from(semNota.values()).sort((a, b) => a.unidade.localeCompare(b.unidade, "pt-BR") || a.nome.localeCompare(b.nome, "pt-BR")),
     faltantes: faltantes.sort((a, b) => a.unidade.localeCompare(b.unidade, "pt-BR") || a.nome.localeCompare(b.nome, "pt-BR")),
     revisoesPendentes: revisoesPendentes.size,
   };
@@ -294,13 +302,59 @@ export async function aplicarRegraTransversais(db: any, usuarioId: number) {
     }, usuarioId);
     convertidosNaoEssencial++;
   }
+  // Inclui na matriz o eixo obrigatório que falta (Transversal, sem nota: a prova da unidade não tem questões dele).
+  let incluidos = 0;
+  if (diag.faltantes.length > 0) {
+    const catalogo = new Map<string, { eixoId: string; descricao: string; conhecimentos: string }>();
+    for (const c of rowsOf<any>(await db.execute(sql`
+      SELECT eixo_id AS eixoId, eixo_nome AS eixo, descricao, conhecimentos_json AS conhecimentos
+        FROM prova_utic_eixo_catalogo ORDER BY id
+    `))) {
+      const chave = normalizarNomeEixo(c.eixo);
+      if (!catalogo.has(chave) && c.descricao && String(c.conhecimentos || "[]") !== "[]") {
+        catalogo.set(chave, { eixoId: String(c.eixoId), descricao: String(c.descricao), conhecimentos: String(c.conhecimentos) });
+      }
+    }
+    for (const nome of [...EIXOS_TRANSVERSAIS_TODOS, ...EIXOS_TRANSVERSAIS_GESTORES]) {
+      const chave = normalizarNomeEixo(nome);
+      if (catalogo.has(chave)) continue;
+      const eixoId = `EIXO_TRANSV_${Buffer.from(chave).toString("hex").slice(0, 26)}`;
+      const descricao = `Eixo transversal obrigatório "${nome}": conhecimento comum a todo o SEBRAE, definido pela instituição.`;
+      const conhecimentos = JSON.stringify([nome]);
+      await db.execute(sql`
+        INSERT INTO prova_utic_eixo_catalogo (eixo_id, eixo_nome, descricao, conhecimentos_json, fonte, atualizado_por)
+        VALUES (${eixoId}, ${nome}, ${descricao}, ${conhecimentos}, 'Regra dos eixos transversais', ${usuarioId})
+        ON DUPLICATE KEY UPDATE eixo_nome = VALUES(eixo_nome)
+      `);
+      catalogo.set(chave, { eixoId, descricao, conhecimentos });
+    }
+    for (const pessoa of diag.faltantes) {
+      for (const nome of pessoa.eixos) {
+        const item = catalogo.get(normalizarNomeEixo(nome));
+        if (!item) continue;
+        await gravarEixo(db, {
+          matrizId: pessoa.matrizId,
+          eixoId: item.eixoId,
+          eixo: nome,
+          relacao: "TRANSVERSAL",
+          statusClassificacao: "CLASSIFICADO",
+          justificativa: textoTransversalFixo(nome),
+          anterior: null,
+          motivo: "Eixo transversal obrigatório incluído na matriz",
+          observacao: "Incluído pela regra dos eixos transversais. Sem nota no ciclo 2025/26: a prova da unidade não tinha questões deste eixo.",
+        }, usuarioId);
+        incluidos++;
+      }
+    }
+  }
+
   // Sugestões antigas de "Transversal" para eixos não obrigatórios deixam de fazer sentido.
   await db.execute(sql`
     UPDATE prova_utic_eixo_revisoes_questionario
        SET status = 'MANTIDA', relacao_final = relacao_atual, decidido_por = ${usuarioId}, decidido_em = NOW(), updated_at = NOW()
      WHERE status = 'PENDENTE' AND relacao_sugerida = 'TRANSVERSAL'
   `);
-  return { transversaisAplicados, convertidosNaoEssencial };
+  return { transversaisAplicados, convertidosNaoEssencial, incluidos };
 }
 
 export const provaUticMatrizRouter = router({

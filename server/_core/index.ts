@@ -30,7 +30,7 @@ async function startServer() {
     const adminId = Number((Array.isArray(admins?.[0]) ? admins[0] : admins)?.[0]?.id ?? 0);
     if (adminId) {
       const r = await aplicarRegraTransversais(db, adminId);
-      console.log(`[STARTUP] Regra dos eixos transversais: ${r.transversaisAplicados} gravados como Transversal, ${r.convertidosNaoEssencial} convertidos para Não essencial.`);
+      console.log(`[STARTUP] Regra dos eixos transversais: ${r.transversaisAplicados} gravados como Transversal, ${r.convertidosNaoEssencial} convertidos para Não essencial, ${r.incluidos} incluídos nas matrizes.`);
     }
   } catch (error) {
     console.error("[STARTUP] Falha ao aplicar a regra dos eixos transversais:", error);
