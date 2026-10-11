@@ -7,6 +7,8 @@ import {
   classificarEixo,
   contarMotivos,
   motivoDaLacuna,
+  porqueDoItem,
+  situacaoDoItem,
   prazoFoiProrrogado,
   situacaoVazia,
   type SituacaoAcoes,
@@ -127,5 +129,41 @@ describe("apoio", () => {
   it("todo status e todo motivo tem legenda", () => {
     for (const s of STATUS_EVOLUCAO) expect(LEGENDA_STATUS[s].explicacao.length).toBeGreaterThan(10);
     for (const m of MOTIVOS) expect(LEGENDA_MOTIVO[m].explicacao.length).toBeGreaterThan(10);
+  });
+});
+
+describe("situação na tela", () => {
+  const base = { acoes: { concluidasAntesDaMedicao: 0 }, atual: 50 as number | null };
+
+  it("agrupa por status e motivo", () => {
+    expect(situacaoDoItem({ relacao: "ESSENCIAL", status: "DOMINIO", motivo: null })).toBe("MANTEVE");
+    expect(situacaoDoItem({ relacao: "ESSENCIAL", status: "DESENVOLVIDO", motivo: null })).toBe("ATINGIU");
+    expect(situacaoDoItem({ relacao: "ESSENCIAL", status: "EM_DESENVOLVIMENTO", motivo: "VENCIDA" })).toBe("EM_ANDAMENTO");
+    expect(situacaoDoItem({ relacao: "ESSENCIAL", status: "ACAO_SEM_EFEITO", motivo: "CONCLUIDA_SEM_EFEITO" })).toBe(
+      "CONCLUIU_ABAIXO",
+    );
+    expect(situacaoDoItem({ relacao: "TRANSVERSAL", status: "LACUNA_SEM_PLANO", motivo: "NUNCA_PLANEJADA" })).toBe("SEM_ACAO");
+    expect(situacaoDoItem({ relacao: "ESSENCIAL", status: "SEM_RESULTADO_ATUAL", motivo: "NUNCA_PLANEJADA" })).toBe(
+      "AGUARDANDO_MEDICAO",
+    );
+  });
+
+  it("Não essencial e sem classificação ficam fora", () => {
+    expect(situacaoDoItem({ relacao: "NAO_ESSENCIAL", status: "POTENCIALIDADE", motivo: null })).toBeNull();
+    expect(situacaoDoItem({ relacao: null, status: "SEM_CLASSIFICACAO", motivo: null })).toBeNull();
+  });
+
+  it("por quê de cada situação", () => {
+    expect(porqueDoItem({ ...base, situacao: "MANTEVE", status: "DOMINIO", atual: 85, motivo: null })).toBe("MANTEVE_COM_FOLGA");
+    expect(porqueDoItem({ ...base, situacao: "MANTEVE", status: "DOMINIO", atual: 72, motivo: null })).toBe(
+      "MANTEVE_PERTO_DA_META",
+    );
+    expect(
+      porqueDoItem({ ...base, situacao: "ATINGIU", status: "DESENVOLVIDO", motivo: null, acoes: { concluidasAntesDaMedicao: 1 } }),
+    ).toBe("ATINGIU_COM_ACAO");
+    expect(porqueDoItem({ ...base, situacao: "AGUARDANDO_MEDICAO", status: "SEM_MEDICAO", motivo: null })).toBe(
+      "SEM_NENHUMA_MEDICAO",
+    );
+    expect(porqueDoItem({ ...base, situacao: "SEM_ACAO", status: "LACUNA_SEM_PLANO", motivo: "SEM_PDI" })).toBe("SEM_PDI");
   });
 });

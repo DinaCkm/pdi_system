@@ -11,11 +11,16 @@ import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IIPDashboard } from "@/components/IIPDashboard";
 import { VisaoExecutiva } from "@/components/VisaoExecutiva";
+import { ResultadoExecutivoEvolucao } from "@/components/ResultadoExecutivoEvolucao";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function Dashboard() {
   const { user } = useAuth();
   const [selectedDepartamento, setSelectedDepartamento] = useState<string>("");
   const isAdmin = user?.role === "admin" || user?.role === "Administrador";
+  // Resultado Executivo: aba Evolução só para administradores até a publicação.
+  // O conteúdo de hoje vai, sem mudança, para a aba Execução.
+  const [aba, setAba] = useState<string>("evolucao");
   const minhasAvaliacoes = trpc.aplicacoesProficiencia.minhasAplicacoes.useQuery(undefined, {
     enabled: Boolean(user && !isAdmin),
     refetchOnWindowFocus: true,
@@ -120,15 +125,8 @@ export function Dashboard() {
     );
   }
 
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Dashboard Estratégico</h1>
-        <Button onClick={handleExportCSV} disabled={!stats} variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Exportar CSV
-        </Button>
-      </div>
+  const conteudoExecucao = (
+    <>
 
       {!isAdmin && temProvaFinalizada && fluxoPosProva.data && !fluxoPosProva.data.concluido && (
         <Card className="border-blue-200 bg-blue-50">
@@ -263,6 +261,37 @@ export function Dashboard() {
           <DashboardStats stats={stats} userRole={user?.role} departamentoId={selectedDepartamento && selectedDepartamento !== 'todos' ? parseInt(selectedDepartamento) : undefined} />
         </>
       ) : null}
+    </>
+  );
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Dashboard Estratégico</h1>
+        {(!isAdmin || aba === "execucao") && (
+          <Button onClick={handleExportCSV} disabled={!stats} variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Exportar CSV
+          </Button>
+        )}
+      </div>
+
+      {isAdmin ? (
+        <Tabs value={aba} onValueChange={setAba} className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="evolucao" className="min-h-[40px] px-4">Evolução</TabsTrigger>
+            <TabsTrigger value="execucao" className="min-h-[40px] px-4">Execução</TabsTrigger>
+          </TabsList>
+          <TabsContent value="evolucao">
+            <ResultadoExecutivoEvolucao />
+          </TabsContent>
+          <TabsContent value="execucao" className="space-y-6">
+            {conteudoExecucao}
+          </TabsContent>
+        </Tabs>
+      ) : (
+        conteudoExecucao
+      )}
     </div>
   );
 }
