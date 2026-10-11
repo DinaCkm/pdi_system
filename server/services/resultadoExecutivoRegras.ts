@@ -5,12 +5,16 @@
 //   - COMPORTAMENTAL: competências da Avaliação de Desempenho (escala 0–3,
 //     convertida em % da escala); base = AD anterior, atual = AD mais recente.
 //
-// Meta de 70% para Essencial e Transversal. Não essencial não tem meta: todo
+// Expectativa de desenvolvimento de 70% para Essencial e Transversal. Não essencial não tem expectativa definida: todo
 // conhecimento nele é potencialidade. Na dimensão comportamental, "Atuação
 // Colaborativa" é transversal (todos); as demais competências da AD avaliadas
 // para a pessoa têm meta como Essencial.
 
 export const META_PROFICIENCIA = 70;
+
+// Na Avaliação de Desempenho (nota oficial 0–3) a mesma expectativa de 70% da escala
+// corresponde à nota 2,1. A tela mostra o comportamental nessa escala.
+export const META_NOTA_AD = 2.1;
 
 export const DIMENSOES = ["TECNICO", "COMPORTAMENTAL"] as const;
 export type Dimensao = (typeof DIMENSOES)[number];
@@ -18,25 +22,26 @@ export type Dimensao = (typeof DIMENSOES)[number];
 export type Relacao = "ESSENCIAL" | "TRANSVERSAL" | "NAO_ESSENCIAL" | null;
 
 export const STATUS_EVOLUCAO = [
-  "DOMINIO", //                 estava na meta na base e continua na medição atual
-  "DESENVOLVIDO", //            estava abaixo da meta e atingiu na medição atual
-  "EM_DESENVOLVIMENTO", //      abaixo da meta, com ação aberta ou evoluindo
-  "AGUARDANDO_NOVA_MEDICAO", // abaixo da meta, ação concluída depois da última medição
-  "ACAO_SEM_EFEITO", //         abaixo da meta, ação concluída antes da medição e nota não subiu
-  "LACUNA_SEM_PLANO", //        abaixo da meta e sem nenhuma ação no PDI
-  "POTENCIALIDADE", //          Não essencial (sem meta)
+  "DOMINIO", //                 estava na expectativa na base e continua na medição atual
+  "DESENVOLVIDO", //            estava abaixo da expectativa e atingiu na medição atual
+  "EM_DESENVOLVIMENTO", //      abaixo da expectativa, com ação aberta ou evoluindo
+  "AGUARDANDO_NOVA_MEDICAO", // abaixo da expectativa, ação concluída depois da última medição
+  "ACAO_SEM_EFEITO", //         abaixo da expectativa, ação concluída antes da medição e nota não subiu
+  "LACUNA_SEM_PLANO", //        abaixo da expectativa e sem nenhuma ação no PDI
+  "POTENCIALIDADE", //          Não essencial (sem expectativa definida)
   "SEM_RESULTADO_ATUAL", //     tem base, ainda sem a medição atual
   "SEM_MEDICAO", //             obrigatório sem nenhuma medição (nem base nem atual)
   "SEM_CLASSIFICACAO", //       eixo sem relação definida na matriz
 ] as const;
 export type StatusEvolucao = (typeof STATUS_EVOLUCAO)[number];
 
-// Por que existe a lacuna (abaixo da meta ou sem medição) — situação das ações.
+// Por que existe a lacuna (abaixo da expectativa ou sem medição) — situação das ações.
 export const GRUPOS_MOTIVO = ["SEM_ACAO_ATIVA", "EM_ANDAMENTO", "CONCLUIDA"] as const;
 export type GrupoMotivo = (typeof GRUPOS_MOTIVO)[number];
 
 export const MOTIVOS = [
   // Sem ação ativa
+  "CAIU_DA_EXPECTATIVA",
   "SEM_PDI",
   "NUNCA_PLANEJADA",
   "ACAO_CANCELADA",
@@ -55,6 +60,7 @@ export const MOTIVOS = [
 export type Motivo = (typeof MOTIVOS)[number];
 
 export const GRUPO_DO_MOTIVO: Record<Motivo, GrupoMotivo> = {
+  CAIU_DA_EXPECTATIVA: "SEM_ACAO_ATIVA",
   SEM_PDI: "SEM_ACAO_ATIVA",
   NUNCA_PLANEJADA: "SEM_ACAO_ATIVA",
   ACAO_CANCELADA: "SEM_ACAO_ATIVA",
@@ -120,7 +126,7 @@ export function classificarEixo(item: {
     return { status: jaNaMeta ? "DOMINIO" : "DESENVOLVIDO", precisaNovaAcao: false };
   }
 
-  // Abaixo da meta na medição atual.
+  // Abaixo da expectativa na medição atual.
   if (item.acoes.abertas > 0) return { status: "EM_DESENVOLVIMENTO", precisaNovaAcao: false };
   if (item.acoes.concluidas > 0) {
     // Ação concluída depois da medição ainda não pode ter efeito nela.
@@ -149,6 +155,7 @@ export function motivoDaLacuna(
   status: StatusEvolucao,
   acoes: SituacaoAcoes,
   temPdi: boolean,
+  estavaNaExpectativa = false,
 ): Motivo | null {
   if (!STATUS_COM_MOTIVO.has(status)) return null;
 
@@ -163,6 +170,8 @@ export function motivoDaLacuna(
     if (status === "EM_DESENVOLVIMENTO") return "CONCLUIDA_EVOLUIU";
     return "CONCLUIDA_AGUARDANDO_MEDICAO";
   }
+  // Estava na expectativa na medição anterior: não havia por que planejar ação.
+  if (estavaNaExpectativa && status !== "SEM_MEDICAO" && status !== "SEM_RESULTADO_ATUAL") return "CAIU_DA_EXPECTATIVA";
   if (!temPdi) return "SEM_PDI";
   if (acoes.solicitacoesEmAnalise > 0) return "SOLICITACAO_EM_ANALISE";
   if (acoes.solicitacoesDevolvidas > 0) return "SOLICITACAO_DEVOLVIDA";
@@ -182,13 +191,13 @@ export function contarMotivos(motivos: Array<Motivo | null>) {
   return { porGrupo, porMotivo };
 }
 
-// Situação: como a tela agrupa os itens com meta (layout aprovado).
+// Situação: como a tela agrupa os itens com expectativa (layout aprovado).
 export const SITUACOES = [
-  "MANTEVE", //            já estava na meta e manteve
+  "MANTEVE", //            já estava na expectativa e manteve
   "ATINGIU", //            atingiu a meta neste ciclo
-  "EM_ANDAMENTO", //       abaixo da meta, com ação em andamento
-  "CONCLUIU_ABAIXO", //    concluiu a ação, mas ainda abaixo da meta
-  "SEM_ACAO", //           abaixo da meta, sem ação ativa
+  "EM_ANDAMENTO", //       abaixo da expectativa, com ação em andamento
+  "CONCLUIU_ABAIXO", //    concluiu a ação, mas ainda abaixo da expectativa
+  "SEM_ACAO", //           abaixo da expectativa, sem ação ativa
   "AGUARDANDO_MEDICAO", // ainda sem a medição atual
 ] as const;
 export type Situacao = (typeof SITUACOES)[number];
@@ -244,46 +253,52 @@ export function porqueDoItem(item: {
 
 export const LEGENDA_SITUACAO: Record<Situacao, { nome: string; regra: string; significa: string; recomenda: string }> = {
   MANTEVE: {
-    nome: "Já estava na meta e manteve",
+    nome: "Já estava na expectativa e manteve",
     regra: "Estava com 70% ou mais na medição anterior e continuou na medição atual.",
     significa: "Ponto forte consolidado. Não precisa de ação de desenvolvimento neste ciclo.",
-    recomenda: "Usar essas pessoas como multiplicadoras ou mentoras para colegas abaixo da meta no mesmo ponto.",
+    recomenda: "Usar essas pessoas como multiplicadoras ou mentoras para colegas abaixo da expectativa no mesmo ponto.",
   },
   ATINGIU: {
-    nome: "Atingiu a meta neste ciclo",
+    nome: "Atingiu a expectativa neste ciclo",
     regra: "Estava abaixo de 70% (ou sem medição) e chegou a 70% ou mais na medição atual.",
     significa: "É o resultado direto do ciclo: ponto que era lacuna e foi desenvolvido.",
     recomenda: "Reconhecer e registrar como caso de sucesso. Verificar quais ações do PDI funcionaram para replicar.",
   },
   EM_ANDAMENTO: {
-    nome: "Abaixo da meta, com ação em andamento",
+    nome: "Abaixo da expectativa, com ação em andamento",
     regra: "Ainda abaixo de 70%, mas existe ação do PDI ativa para o ponto.",
     significa: "O ponto está sendo tratado. O resultado deve aparecer na próxima medição.",
     recomenda: "Acompanhar o prazo. Ações vencidas precisam de cobrança do líder; prorrogadas, de confirmação da nova data.",
   },
   CONCLUIU_ABAIXO: {
-    nome: "Concluiu a ação, mas ainda abaixo da meta",
+    nome: "Concluiu a ação, mas ainda abaixo da expectativa",
     regra: "A ação do PDI foi concluída, mas o resultado da medição atual ficou abaixo de 70%.",
-    significa: "Se a ação foi feita depois da medição, o efeito só aparece na próxima. Se foi antes, o esforço não bastou para chegar à meta.",
+    significa: "Se a ação foi feita depois da medição, o efeito só aparece na próxima. Se foi antes, o esforço não bastou para chegar à expectativa.",
     recomenda: "Aguardar a próxima medição quando a ação foi recente. Nos demais casos, rever o tipo de ação ou acrescentar uma segunda no próximo PDI.",
   },
   SEM_ACAO: {
-    nome: "Abaixo da meta, sem ação ativa",
+    nome: "Abaixo da expectativa, sem ação ativa",
     regra: "Está abaixo de 70% e hoje não existe nenhuma ação do PDI ativa para o ponto.",
     significa: "Ponto que precisa de desenvolvimento e não está sendo trabalhado. O motivo mostra por que ficou sem ação.",
     recomenda: "Incluir uma ação no próximo PDI. Em ação cancelada ou reprovada, o líder precisa registrar a nova ação.",
   },
   AGUARDANDO_MEDICAO: {
     nome: "Ainda sem medição atual",
-    regra: "Eixo ou competência com meta que ainda não tem o resultado da medição atual.",
+    regra: "Eixo ou competência com expectativa que ainda não tem o resultado da medição atual.",
     significa: "Não é possível dizer se evoluiu: falta a prova 2026 (técnico) ou a Avaliação de Desempenho mais recente (comportamental).",
     recomenda: "Concluir a aplicação da prova nas unidades pendentes antes de publicar o Resultado Executivo.",
   },
 };
 
 export const LEGENDA_DETALHE_SITUACAO: Record<DetalheSituacao, { titulo: string; fonte: string }> = {
-  MANTEVE_COM_FOLGA: { titulo: "Manteve com folga (80% ou mais)", fonte: "Resultado da medição atual" },
-  MANTEVE_PERTO_DA_META: { titulo: "Manteve perto da meta (70% a 79%)", fonte: "Atenção: pode cair no próximo ciclo" },
+  MANTEVE_COM_FOLGA: {
+    titulo: "Manteve com folga (80% ou mais; na AD, nota 2,4 ou mais)",
+    fonte: "Resultado da medição atual",
+  },
+  MANTEVE_PERTO_DA_META: {
+    titulo: "Manteve perto da expectativa (70% a 79%; na AD, nota 2,1 a 2,39)",
+    fonte: "Atenção: pode cair no próximo ciclo",
+  },
   ATINGIU_COM_ACAO: { titulo: "Com ação do PDI concluída no ponto", fonte: "Ações do PDI com status Concluída" },
   ATINGIU_SEM_ACAO: { titulo: "Sem ação do PDI concluída antes da medição", fonte: "Evoluiu por outra via" },
   SEM_MEDICAO_ATUAL: { titulo: "Tem medição anterior, falta a atual", fonte: "Prova 2026 ou AD mais recente ainda não registrada" },
@@ -305,31 +320,31 @@ export function prazoFoiProrrogado(valorAnterior: unknown, valorNovo: unknown) {
 export const LEGENDA_STATUS: Record<StatusEvolucao, { titulo: string; explicacao: string }> = {
   DOMINIO: {
     titulo: "Domínio",
-    explicacao: "Já estava na meta (70%) na medição anterior e se manteve na meta na medição atual.",
+    explicacao: "Já estava na expectativa (70%) na medição anterior e se manteve nela na medição atual.",
   },
   DESENVOLVIDO: {
     titulo: "Desenvolvido no ciclo",
-    explicacao: "Estava abaixo da meta na medição anterior (ou não tinha medição) e atingiu 70% na medição atual.",
+    explicacao: "Estava abaixo da expectativa na medição anterior (ou não tinha medição) e atingiu 70% na medição atual.",
   },
   EM_DESENVOLVIMENTO: {
     titulo: "Em desenvolvimento",
-    explicacao: "Abaixo da meta, com ação do PDI em andamento ou com evolução após ação concluída.",
+    explicacao: "Abaixo da expectativa, com ação do PDI em andamento ou com evolução após ação concluída.",
   },
   AGUARDANDO_NOVA_MEDICAO: {
     titulo: "Aguardando nova medição",
-    explicacao: "Abaixo da meta na última medição, mas as ações foram feitas depois dela. O efeito aparece na próxima medição.",
+    explicacao: "Abaixo da expectativa na última medição, mas as ações foram feitas depois dela. O efeito aparece na próxima medição.",
   },
   ACAO_SEM_EFEITO: {
     titulo: "Ação sem efeito",
-    explicacao: "Abaixo da meta, a ação foi concluída antes da medição e o resultado não subiu. Precisa de nova ação.",
+    explicacao: "Abaixo da expectativa, a ação foi concluída antes da medição e o resultado não subiu. Precisa de nova ação.",
   },
   LACUNA_SEM_PLANO: {
     titulo: "Lacuna sem plano",
-    explicacao: "Abaixo da meta e sem nenhuma ação no PDI para este eixo/competência.",
+    explicacao: "Abaixo da expectativa e sem nenhuma ação no PDI para este eixo/competência.",
   },
   POTENCIALIDADE: {
     titulo: "Potencialidade",
-    explicacao: "Eixo Não essencial para a função: não tem meta; todo conhecimento nele é potencialidade.",
+    explicacao: "Eixo Não essencial para a função: não tem expectativa definida; todo conhecimento nele é potencialidade.",
   },
   SEM_RESULTADO_ATUAL: {
     titulo: "Sem resultado atual",
@@ -346,6 +361,10 @@ export const LEGENDA_STATUS: Record<StatusEvolucao, { titulo: string; explicacao
 };
 
 export const LEGENDA_MOTIVO: Record<Motivo, { titulo: string; explicacao: string }> = {
+  CAIU_DA_EXPECTATIVA: {
+    titulo: "Estava na expectativa e caiu",
+    explicacao: "Na medição anterior já alcançava a expectativa, então não havia por que planejar ação. Passa a ser ponto do próximo PDI.",
+  },
   SEM_PDI: { titulo: "Sem PDI", explicacao: "A pessoa não tem PDI ativo no ciclo." },
   NUNCA_PLANEJADA: {
     titulo: "Nunca planejada",
@@ -373,11 +392,11 @@ export const LEGENDA_MOTIVO: Record<Motivo, { titulo: string; explicacao: string
   },
   CONCLUIDA_EVOLUIU: {
     titulo: "Concluída, evoluiu",
-    explicacao: "A ação foi concluída antes da medição e o resultado subiu, mas ainda não chegou à meta.",
+    explicacao: "A ação foi concluída antes da medição e o resultado subiu, mas ainda não chegou à expectativa.",
   },
   CONCLUIDA_SEM_EFEITO: {
     titulo: "Concluída sem efeito",
-    explicacao: "A ação foi concluída antes da medição e o resultado continuou abaixo da meta.",
+    explicacao: "A ação foi concluída antes da medição e o resultado continuou abaixo da expectativa.",
   },
 };
 
@@ -389,13 +408,14 @@ export const LEGENDA_GRUPO_MOTIVO: Record<GrupoMotivo, string> = {
 
 export const LEGENDA_INDICADOR = {
   pessoas: "Empregados ativos com pelo menos um eixo/competência neste recorte.",
-  itensComMeta: "Eixos/competências Essenciais e Transversais (com meta de 70%), contando uma vez por pessoa.",
-  media: "Média do resultado (% de acerto na prova, ou % da escala 0–3 na Avaliação de Desempenho) nos itens com meta.",
+  itensComMeta: "Eixos/competências Essenciais e Transversais (com expectativa de 70%), contando uma vez por pessoa.",
+  media: "Média do resultado nos itens com expectativa: % de acerto na prova (técnico) ou nota de 0 a 3 na Avaliação de Desempenho (comportamental).",
   indiceEvolucaoPp: "Média da diferença, em pontos percentuais, entre a medição atual e a anterior, só onde existem as duas.",
-  percentualNaMeta: "Dos itens com meta que têm medição, quantos estão em 70% ou mais.",
+  percentualNaMeta:
+    "Dos itens com expectativa que têm medição, quantos a alcançam: 70% de acerto (técnico) ou nota 2,1 (comportamental).",
   efetividade:
     "Compara a evolução de quem concluiu ação do PDI antes da medição com a de quem não teve ação. Ações feitas depois da medição não entram.",
-  potencialidades: "Eixos Não essenciais (sem meta). 'Acima de 70%' mostra conhecimento além do exigido pela função.",
+  potencialidades: "Eixos Não essenciais (sem expectativa definida). 'Acima de 70%' mostra conhecimento além do exigido pela função.",
   motivos: "Por que cada lacuna existe: situação das ações e solicitações do PDI para aquele eixo/competência.",
 } as const;
 
@@ -410,6 +430,6 @@ export const DESCRICAO_DIMENSAO: Record<Dimensao, { titulo: string; base: string
     titulo: "Comportamental",
     base: "Avaliação de Desempenho anterior",
     atual: "Avaliação de Desempenho mais recente",
-    escala: "Nota oficial 0–3 convertida em % da escala (70% ≈ nota 2,1).",
+    escala: "Nota oficial da Avaliação de Desempenho, de 0 a 3. Expectativa de desenvolvimento: nota 2,1 (70% da escala).",
   },
 };
