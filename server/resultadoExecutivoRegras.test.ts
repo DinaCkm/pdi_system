@@ -102,6 +102,12 @@ describe("motivoDaLacuna", () => {
     expect(motivoDaLacuna("LACUNA_SEM_PLANO", acoes(), true)).toBe("NUNCA_PLANEJADA");
   });
 
+  it("quem estava na expectativa e caiu não aparece como nunca planejada", () => {
+    expect(motivoDaLacuna("LACUNA_SEM_PLANO", acoes(), true, true)).toBe("CAIU_DA_EXPECTATIVA");
+    expect(motivoDaLacuna("LACUNA_SEM_PLANO", acoes(), true, false)).toBe("NUNCA_PLANEJADA");
+    expect(motivoDaLacuna("EM_DESENVOLVIMENTO", acoes({ abertas: 1 }), true, true)).toBe("NO_PRAZO");
+  });
+
   it("sem medição também recebe motivo", () => {
     expect(motivoDaLacuna("SEM_MEDICAO", acoes(), true)).toBe("NUNCA_PLANEJADA");
   });

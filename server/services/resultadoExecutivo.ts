@@ -21,6 +21,7 @@ import {
   LEGENDA_INDICADOR,
   LEGENDA_MOTIVO,
   LEGENDA_STATUS,
+  META_NOTA_AD,
   META_PROFICIENCIA,
   STATUS_EVOLUCAO,
   classificarEixo,
@@ -55,6 +56,7 @@ export type EixoAvaliado = {
   notaBase: number | null; //        nota original da AD (0–3); null no técnico
   notaAtual: number | null;
   deltaPp: number | null;
+  deltaNota: number | null; //       comportamental: diferença na nota oficial 0–3
   periodoBase: string | null;
   periodoAtual: string | null;
   acoes: SituacaoAcoes;
@@ -78,6 +80,14 @@ export function normalizar(valor: unknown) {
 
 function arredondar(valor: number) {
   return Math.round(valor * 10) / 10;
+}
+
+function arredondar2(valor: number) {
+  return Math.round(valor * 100) / 100;
+}
+
+function media2(valores: number[]) {
+  return valores.length ? arredondar2(valores.reduce((s, v) => s + v, 0) / valores.length) : null;
 }
 
 function numeroOuNulo(valor: unknown): number | null {
@@ -377,7 +387,10 @@ export function montarAvaliacao(base: Base): { itens: EixoAvaliado[]; periodos: 
     const colaboradorId = Number(colab.id);
     const acoes = situacoes.get(chave(dimensao, colaboradorId, eixo)) ?? situacaoVazia();
     const { status, precisaNovaAcao } = classificarEixo({ relacao, base: valores.base, atual: valores.atual, acoes });
-    const motivo = comMeta(relacao) ? motivoDaLacuna(status, acoes, base.comPdi.has(colaboradorId)) : null;
+    const estavaNaExpectativa = valores.base !== null && valores.base >= META_PROFICIENCIA;
+    const motivo = comMeta(relacao)
+      ? motivoDaLacuna(status, acoes, base.comPdi.has(colaboradorId), estavaNaExpectativa)
+      : null;
     itens.push({
       dimensao,
       colaboradorId,
@@ -388,6 +401,10 @@ export function montarAvaliacao(base: Base): { itens: EixoAvaliado[]; periodos: 
       relacao,
       ...valores,
       deltaPp: valores.base !== null && valores.atual !== null ? arredondar(valores.atual - valores.base) : null,
+      deltaNota:
+        valores.base !== null && valores.atual !== null && valores.notaBase !== null && valores.notaAtual !== null
+          ? arredondar2(valores.notaAtual - valores.notaBase)
+          : null,
       periodoBase,
       periodoAtual,
       acoes,
@@ -476,7 +493,7 @@ export function montarAvaliacao(base: Base): { itens: EixoAvaliado[]; periodos: 
   };
 }
 
-// Quantos itens com meta em cada situação e, dentro dela, em cada "por quê".
+// Quantos itens com expectativa em cada situação e, dentro dela, em cada "por quê".
 function contarSituacoes(itens: EixoAvaliado[]) {
   const total = Object.fromEntries(SITUACOES.map((s) => [s, 0])) as Record<Situacao, number>;
   const porque = Object.fromEntries(SITUACOES.map((s) => [s, {} as Record<string, number>])) as Record<
@@ -510,6 +527,8 @@ export function amostras(itens: EixoAvaliado[], limite = 6) {
       eixo: i.eixo,
       base: i.base,
       atual: i.atual,
+      notaBase: i.notaBase,
+      notaAtual: i.notaAtual,
       porque: i.porque,
     });
   }
@@ -523,6 +542,24 @@ function contarStatus(itens: EixoAvaliado[]) {
 }
 
 // Indicadores de um recorte, sempre de uma única dimensão.
+function notaIndicadores(comMetaItens: EixoAvaliado[], comparaveis: EixoAvaliado[]) {
+  const comNota = comMetaItens.filter((i) => i.notaBase !== null || i.notaAtual !== null);
+  if (!comNota.length) return null;
+  const deltas = comparaveis.filter((i) => i.deltaNota !== null);
+  return {
+    escalaMin: 0,
+    escalaMax: 3,
+    meta: META_NOTA_AD,
+    mediaBase: media2(comNota.filter((i) => i.notaBase !== null).map((i) => i.notaBase!)),
+    mediaAtual: media2(comNota.filter((i) => i.notaAtual !== null).map((i) => i.notaAtual!)),
+    indiceEvolucao: media2(deltas.map((i) => i.deltaNota!)),
+    efetividade: {
+      evolucaoComAcaoConcluida: media2(deltas.filter((i) => i.acoes.concluidasAntesDaMedicao > 0).map((i) => i.deltaNota!)),
+      evolucaoSemAcao: media2(deltas.filter((i) => i.acoes.total === 0).map((i) => i.deltaNota!)),
+    },
+  };
+}
+
 export function indicadores(itens: EixoAvaliado[]) {
   const comMetaItens = itens.filter((i) => comMeta(i.relacao));
   const comparaveis = comMetaItens.filter((i) => i.deltaPp !== null);
@@ -555,9 +592,20 @@ export function indicadores(itens: EixoAvaliado[]) {
       total: potencialidades.length,
       acimaDe70: potencialidades.filter((i) => i.atual !== null && i.atual >= META_PROFICIENCIA).length,
     },
+    // Quanto do conhecimento está disseminado, em qualquer relação (Essencial,
+    // Transversal ou Não essencial): pessoas medidas e quantas estão em 70% ou mais.
+    disseminacao: {
+      pessoasMedidas: new Set(itens.filter((i) => i.atual !== null).map((i) => i.colaboradorId)).size,
+      pessoasEm70: new Set(
+        itens.filter((i) => i.atual !== null && i.atual >= META_PROFICIENCIA).map((i) => i.colaboradorId),
+      ).size,
+    },
     status: contarStatus(itens),
     motivos: contarMotivos(itens.map((i) => i.motivo)),
     situacoes: contarSituacoes(itens),
+    // Comportamental na escala oficial da Avaliação de Desempenho (nota 0–3),
+    // sem conversão: é assim que a tela mostra essa dimensão.
+    nota: notaIndicadores(comMetaItens, comparaveis),
     // Contagens que permitem somar recortes (ex.: Técnico + Comportamental).
     contagens: {
       comparaveis: comparaveis.length,
@@ -593,7 +641,7 @@ export function agrupar<K extends string>(itens: EixoAvaliado[], chaveDe: (i: Ei
 
 export function legendas(periodos: Record<Dimensao, { base: string | null; atual: string | null }>) {
   return {
-    meta: `Meta de ${META_PROFICIENCIA}% para itens Essenciais e Transversais. Não essencial não tem meta.`,
+    meta: `Meta de ${META_PROFICIENCIA}% para itens Essenciais e Transversais. Não essencial não tem expectativa definida.`,
     dimensoes: Object.fromEntries(
       DIMENSOES.map((d) => [d, { ...DESCRICAO_DIMENSAO[d], periodoBase: periodos[d].base, periodoAtual: periodos[d].atual }]),
     ),

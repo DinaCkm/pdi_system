@@ -101,6 +101,8 @@ export const evolucaoCicloRouter = router({
         semPlano: ind.status.LACUNA_SEM_PLANO,
         status: ind.status,
         motivos: ind.motivos,
+        situacoes: ind.situacoes.total,
+        nota: ind.nota,
       };
     });
 
@@ -129,6 +131,7 @@ export const evolucaoCicloRouter = router({
         status: z.enum(STATUS_EVOLUCAO).optional(),
         motivo: z.enum(MOTIVOS).optional(),
         situacao: z.enum(SITUACOES).optional(),
+        situacoes: z.array(z.enum(SITUACOES)).max(SITUACOES.length).optional(),
         colaboradorId: z.number().int().positive().optional(),
       }),
     )
@@ -141,6 +144,7 @@ export const evolucaoCicloRouter = router({
       if (input.status) itens = itens.filter((i) => i.status === input.status);
       if (input.motivo) itens = itens.filter((i) => i.motivo === input.motivo);
       if (input.situacao) itens = itens.filter((i) => i.situacao === input.situacao);
+      if (input.situacoes?.length) itens = itens.filter((i) => i.situacao !== null && input.situacoes!.includes(i.situacao));
       if (input.colaboradorId) itens = itens.filter((i) => i.colaboradorId === input.colaboradorId);
       return itens.sort(
         (a, b) =>
