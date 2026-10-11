@@ -15,6 +15,7 @@ import {
   normalizar,
   porDimensao,
 } from "../services/resultadoExecutivo";
+import { montarRelatorio, unidadesDoRelatorio } from "../services/fimDeCiclo";
 import {
   DIMENSOES,
   META_PROFICIENCIA,
@@ -153,6 +154,15 @@ export const evolucaoCicloRouter = router({
           a.dimensao.localeCompare(b.dimensao) ||
           a.eixo.localeCompare(b.eixo, "pt-BR"),
       );
+    }),
+
+  // Relatório de Fim de Ciclo do PDI — página da diretoria (só dados agregados, sem nomes).
+  fimDeCiclo: adminProcedure
+    .input(z.object({ unidade: z.string().trim().min(1).max(255).optional() }).optional())
+    .query(async ({ input }) => {
+      const db = await dbObrigatorio();
+      const base = await carregarBase(db);
+      return { unidades: unidadesDoRelatorio(base), ...montarRelatorio(base, input?.unidade) };
     }),
 
   // Checagem antes de publicar o Resultado Executivo: lista o que ainda falta.

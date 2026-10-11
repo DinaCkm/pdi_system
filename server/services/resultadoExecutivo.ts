@@ -90,13 +90,13 @@ function media2(valores: number[]) {
   return valores.length ? arredondar2(valores.reduce((s, v) => s + v, 0) / valores.length) : null;
 }
 
-function numeroOuNulo(valor: unknown): number | null {
+export function numeroOuNulo(valor: unknown): number | null {
   if (valor === null || valor === undefined || valor === "") return null;
   const n = Number(valor);
   return Number.isFinite(n) ? n : null;
 }
 
-function dataOuNula(valor: unknown): Date | null {
+export function dataOuNula(valor: unknown): Date | null {
   if (!valor) return null;
   const d = new Date(valor as any);
   return Number.isNaN(d.getTime()) ? null : d;
@@ -106,7 +106,7 @@ function media(valores: number[]) {
   return valores.length ? arredondar(valores.reduce((s, v) => s + v, 0) / valores.length) : null;
 }
 
-function anoDaAvaliacao(dataReferencia: unknown, titulo: unknown): number | null {
+export function anoDaAvaliacao(dataReferencia: unknown, titulo: unknown): number | null {
   const d = dataOuNula(dataReferencia);
   if (d && d.getFullYear() > 2000) return d.getFullYear();
   const m = String(titulo ?? "").match(/\b(20\d{2})\b/);
@@ -119,7 +119,7 @@ function chave(dimensao: Dimensao, colaboradorId: number, eixo: unknown) {
 }
 
 // De qual eixo/competência é a ação ou solicitação.
-function alvoDoLastro(tipo: unknown, eixo: unknown, macroNome: unknown): { dimensao: Dimensao; eixo: string } | null {
+export function alvoDoLastro(tipo: unknown, eixo: unknown, macroNome: unknown): { dimensao: Dimensao; eixo: string } | null {
   const tipoNorm = String(tipo ?? "").toUpperCase();
   const eixoNome = String(eixo ?? "").trim();
   if (eixoNome) {
@@ -157,6 +157,7 @@ export async function carregarBase(db: { execute: (q: any) => Promise<any> }, ci
     prazosR,
     evidenciasR,
     solicitacoesR,
+    catalogoR,
   ] = await Promise.all([
     // 1) Empregados ativos. Gestor entra na unidade que lidera.
     db.execute(sql`
@@ -210,7 +211,10 @@ export async function carregarBase(db: { execute: (q: any) => Promise<any> }, ci
     // 5) Ações dos PDIs não cancelados (opcionalmente de um ciclo), inclusive canceladas.
     db.execute(sql`
       SELECT a.id, p.colaboradorId, a.status, a.prazo, a.eixo_nome AS eixo,
-             a.tipo_competencia AS tipo, cm.nome AS macroNome, c.dataInicio AS cicloInicio
+             a.tipo_competencia AS tipo, cm.nome AS macroNome, c.dataInicio AS cicloInicio,
+             a.updatedAt AS atualizadaEm,
+             (SELECT MAX(ev.evaluatedAt) FROM evidences ev
+               WHERE ev.actionId = a.id AND ev.status = 'aprovada') AS evidenciaAprovadaEm
         FROM actions a
         JOIN pdis p ON p.id = a.pdiId
         LEFT JOIN ciclos c ON c.id = p.cicloId
@@ -242,6 +246,10 @@ export async function carregarBase(db: { execute: (q: any) => Promise<any> }, ci
          AND p.status <> 'cancelado'
          ${filtroCiclo}
     `),
+    // 10) Catálogo conceitual dos eixos (descrição do que cada eixo abrange).
+    db.execute(sql`
+      SELECT eixo_nome AS eixo, descricao FROM prova_utic_eixo_catalogo ORDER BY id
+    `),
   ]);
 
   return {
@@ -262,13 +270,14 @@ export async function carregarBase(db: { execute: (q: any) => Promise<any> }, ci
         .map((r) => Number(r.actionId)),
     ),
     solicitacoes: rowsOf<any>(solicitacoesR),
+    catalogo: rowsOf<any>(catalogoR),
   };
 }
 
-type Base = Awaited<ReturnType<typeof carregarBase>>;
+export type Base = Awaited<ReturnType<typeof carregarBase>>;
 
 // Períodos da AD: a mais recente é a "atual" e a anterior é a "base".
-function periodosAD(medicoes: any[]) {
+export function periodosAD(medicoes: any[]) {
   const anos = new Set<number>();
   const dataPorAno = new Map<number, Date>();
   for (const m of medicoes) {
