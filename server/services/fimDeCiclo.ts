@@ -29,7 +29,7 @@ import {
   type Grupo,
   type Instrumento,
   type ResumoInstrumento,
-} from "./fimDeCicloRegras";
+} from "../../shared/fimDeCicloRegras";
 
 // Relatório de Fim de Ciclo do PDI — página da diretoria.
 // Só dados agregados: nenhum nome de pessoa sai daqui (LGPD e NR-1).

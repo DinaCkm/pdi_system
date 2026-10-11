@@ -7,7 +7,7 @@ import {
   limitarSintese,
   sentido,
   PARAMETROS,
-} from "./services/fimDeCicloRegras";
+} from "../shared/fimDeCicloRegras";
 import { montarRelatorio } from "./services/fimDeCiclo";
 
 describe("classificação (seção 5)", () => {
