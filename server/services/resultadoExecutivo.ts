@@ -10,7 +10,14 @@ import {
   DESCRICAO_DIMENSAO,
   DIMENSOES,
   GRUPO_DO_MOTIVO,
+  LEGENDA_DETALHE_SITUACAO,
   LEGENDA_GRUPO_MOTIVO,
+  LEGENDA_SITUACAO,
+  SITUACOES,
+  porqueDoItem,
+  situacaoDoItem,
+  type Porque,
+  type Situacao,
   LEGENDA_INDICADOR,
   LEGENDA_MOTIVO,
   LEGENDA_STATUS,
@@ -55,6 +62,8 @@ export type EixoAvaliado = {
   precisaNovaAcao: boolean;
   motivo: Motivo | null;
   grupoMotivo: GrupoMotivo | null;
+  situacao: Situacao | null; //      agrupamento da tela (layout aprovado)
+  porque: Porque | null; //          motivo das ações ou detalhe da situação
 };
 
 function rowsOf<T>(result: any): T[] {
@@ -386,7 +395,16 @@ export function montarAvaliacao(base: Base): { itens: EixoAvaliado[]; periodos: 
       precisaNovaAcao,
       motivo,
       grupoMotivo: motivo ? GRUPO_DO_MOTIVO[motivo] : null,
+      situacao: null,
+      porque: null,
     });
+  };
+
+  const completar = () => {
+    for (const i of itens) {
+      i.situacao = situacaoDoItem(i);
+      i.porque = porqueDoItem(i);
+    }
   };
 
   // TÉCNICO: eixos da matriz de cada empregado ativo.
@@ -447,6 +465,8 @@ export function montarAvaliacao(base: Base): { itens: EixoAvaliado[]; periodos: 
     }
   }
 
+  completar();
+
   return {
     itens,
     periodos: {
@@ -454,6 +474,46 @@ export function montarAvaliacao(base: Base): { itens: EixoAvaliado[]; periodos: 
       COMPORTAMENTAL: { base: rotuloBase, atual: rotuloAtual },
     },
   };
+}
+
+// Quantos itens com meta em cada situação e, dentro dela, em cada "por quê".
+function contarSituacoes(itens: EixoAvaliado[]) {
+  const total = Object.fromEntries(SITUACOES.map((s) => [s, 0])) as Record<Situacao, number>;
+  const porque = Object.fromEntries(SITUACOES.map((s) => [s, {} as Record<string, number>])) as Record<
+    Situacao,
+    Record<string, number>
+  >;
+  for (const i of itens) {
+    if (!i.situacao) continue;
+    total[i.situacao] += 1;
+    if (i.porque) porque[i.situacao][i.porque] = (porque[i.situacao][i.porque] ?? 0) + 1;
+  }
+  return { total, porque };
+}
+
+// Amostra de pessoas por dimensão e situação, para a tela.
+export function amostras(itens: EixoAvaliado[], limite = 6) {
+  const saida = Object.fromEntries(
+    DIMENSOES.map((d) => [d, Object.fromEntries(SITUACOES.map((s) => [s, [] as any[]]))]),
+  ) as Record<Dimensao, Record<Situacao, any[]>>;
+  const ordenados = [...itens].sort(
+    (a, b) => Math.abs(b.deltaPp ?? 0) - Math.abs(a.deltaPp ?? 0) || a.colaboradorNome.localeCompare(b.colaboradorNome, "pt-BR"),
+  );
+  for (const i of ordenados) {
+    if (!i.situacao) continue;
+    const lista = saida[i.dimensao][i.situacao];
+    if (lista.length >= limite) continue;
+    lista.push({
+      colaboradorId: i.colaboradorId,
+      nome: i.colaboradorNome,
+      unidade: i.unidade,
+      eixo: i.eixo,
+      base: i.base,
+      atual: i.atual,
+      porque: i.porque,
+    });
+  }
+  return saida;
 }
 
 function contarStatus(itens: EixoAvaliado[]) {
@@ -497,6 +557,20 @@ export function indicadores(itens: EixoAvaliado[]) {
     },
     status: contarStatus(itens),
     motivos: contarMotivos(itens.map((i) => i.motivo)),
+    situacoes: contarSituacoes(itens),
+    // Contagens que permitem somar recortes (ex.: Técnico + Comportamental).
+    contagens: {
+      comparaveis: comparaveis.length,
+      somaDeltaPp: arredondar(comparaveis.reduce((s, i) => s + i.deltaPp!, 0)),
+      comBase,
+      comAtual,
+      naMetaBase,
+      naMetaAtual,
+      somaBase: arredondar(comMetaItens.filter((i) => i.base !== null).reduce((s, i) => s + i.base!, 0)),
+      somaAtual: arredondar(comMetaItens.filter((i) => i.atual !== null).reduce((s, i) => s + i.atual!, 0)),
+      somaComAcao: arredondar(comAcaoConcluida.reduce((s, v) => s + v, 0)),
+      somaSemAcao: arredondar(semAcao.reduce((s, v) => s + v, 0)),
+    },
   };
 }
 
@@ -527,5 +601,7 @@ export function legendas(periodos: Record<Dimensao, { base: string | null; atual
     status: LEGENDA_STATUS,
     motivos: LEGENDA_MOTIVO,
     gruposMotivo: LEGENDA_GRUPO_MOTIVO,
+    situacoes: LEGENDA_SITUACAO,
+    detalhesSituacao: LEGENDA_DETALHE_SITUACAO,
   };
 }

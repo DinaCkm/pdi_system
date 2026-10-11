@@ -182,6 +182,114 @@ export function contarMotivos(motivos: Array<Motivo | null>) {
   return { porGrupo, porMotivo };
 }
 
+// Situação: como a tela agrupa os itens com meta (layout aprovado).
+export const SITUACOES = [
+  "MANTEVE", //            já estava na meta e manteve
+  "ATINGIU", //            atingiu a meta neste ciclo
+  "EM_ANDAMENTO", //       abaixo da meta, com ação em andamento
+  "CONCLUIU_ABAIXO", //    concluiu a ação, mas ainda abaixo da meta
+  "SEM_ACAO", //           abaixo da meta, sem ação ativa
+  "AGUARDANDO_MEDICAO", // ainda sem a medição atual
+] as const;
+export type Situacao = (typeof SITUACOES)[number];
+
+// Detalhe do "por quê" de cada situação: o motivo das ações, ou um detalhe próprio.
+export const DETALHES_SITUACAO = [
+  "MANTEVE_COM_FOLGA",
+  "MANTEVE_PERTO_DA_META",
+  "ATINGIU_COM_ACAO",
+  "ATINGIU_SEM_ACAO",
+  "SEM_MEDICAO_ATUAL",
+  "SEM_NENHUMA_MEDICAO",
+] as const;
+export type DetalheSituacao = (typeof DETALHES_SITUACAO)[number];
+export type Porque = Motivo | DetalheSituacao;
+
+export function situacaoDoItem(item: {
+  relacao: Relacao;
+  status: StatusEvolucao;
+  motivo: Motivo | null;
+}): Situacao | null {
+  if (!comMeta(item.relacao)) return null;
+  if (item.status === "DOMINIO") return "MANTEVE";
+  if (item.status === "DESENVOLVIDO") return "ATINGIU";
+  if (item.status === "SEM_RESULTADO_ATUAL" || item.status === "SEM_MEDICAO") return "AGUARDANDO_MEDICAO";
+  if (item.status === "SEM_CLASSIFICACAO" || !item.motivo) return null;
+  const grupo = GRUPO_DO_MOTIVO[item.motivo];
+  if (grupo === "EM_ANDAMENTO") return "EM_ANDAMENTO";
+  if (grupo === "CONCLUIDA") return "CONCLUIU_ABAIXO";
+  return "SEM_ACAO";
+}
+
+export function porqueDoItem(item: {
+  situacao: Situacao | null;
+  status: StatusEvolucao;
+  atual: number | null;
+  motivo: Motivo | null;
+  acoes: Pick<SituacaoAcoes, "concluidasAntesDaMedicao">;
+}): Porque | null {
+  switch (item.situacao) {
+    case "MANTEVE":
+      return item.atual !== null && item.atual >= 80 ? "MANTEVE_COM_FOLGA" : "MANTEVE_PERTO_DA_META";
+    case "ATINGIU":
+      return item.acoes.concluidasAntesDaMedicao > 0 ? "ATINGIU_COM_ACAO" : "ATINGIU_SEM_ACAO";
+    case "AGUARDANDO_MEDICAO":
+      return item.status === "SEM_MEDICAO" ? "SEM_NENHUMA_MEDICAO" : "SEM_MEDICAO_ATUAL";
+    case null:
+      return null;
+    default:
+      return item.motivo;
+  }
+}
+
+export const LEGENDA_SITUACAO: Record<Situacao, { nome: string; regra: string; significa: string; recomenda: string }> = {
+  MANTEVE: {
+    nome: "Já estava na meta e manteve",
+    regra: "Estava com 70% ou mais na medição anterior e continuou na medição atual.",
+    significa: "Ponto forte consolidado. Não precisa de ação de desenvolvimento neste ciclo.",
+    recomenda: "Usar essas pessoas como multiplicadoras ou mentoras para colegas abaixo da meta no mesmo ponto.",
+  },
+  ATINGIU: {
+    nome: "Atingiu a meta neste ciclo",
+    regra: "Estava abaixo de 70% (ou sem medição) e chegou a 70% ou mais na medição atual.",
+    significa: "É o resultado direto do ciclo: ponto que era lacuna e foi desenvolvido.",
+    recomenda: "Reconhecer e registrar como caso de sucesso. Verificar quais ações do PDI funcionaram para replicar.",
+  },
+  EM_ANDAMENTO: {
+    nome: "Abaixo da meta, com ação em andamento",
+    regra: "Ainda abaixo de 70%, mas existe ação do PDI ativa para o ponto.",
+    significa: "O ponto está sendo tratado. O resultado deve aparecer na próxima medição.",
+    recomenda: "Acompanhar o prazo. Ações vencidas precisam de cobrança do líder; prorrogadas, de confirmação da nova data.",
+  },
+  CONCLUIU_ABAIXO: {
+    nome: "Concluiu a ação, mas ainda abaixo da meta",
+    regra: "A ação do PDI foi concluída, mas o resultado da medição atual ficou abaixo de 70%.",
+    significa: "Se a ação foi feita depois da medição, o efeito só aparece na próxima. Se foi antes, o esforço não bastou para chegar à meta.",
+    recomenda: "Aguardar a próxima medição quando a ação foi recente. Nos demais casos, rever o tipo de ação ou acrescentar uma segunda no próximo PDI.",
+  },
+  SEM_ACAO: {
+    nome: "Abaixo da meta, sem ação ativa",
+    regra: "Está abaixo de 70% e hoje não existe nenhuma ação do PDI ativa para o ponto.",
+    significa: "Ponto que precisa de desenvolvimento e não está sendo trabalhado. O motivo mostra por que ficou sem ação.",
+    recomenda: "Incluir uma ação no próximo PDI. Em ação cancelada ou reprovada, o líder precisa registrar a nova ação.",
+  },
+  AGUARDANDO_MEDICAO: {
+    nome: "Ainda sem medição atual",
+    regra: "Eixo ou competência com meta que ainda não tem o resultado da medição atual.",
+    significa: "Não é possível dizer se evoluiu: falta a prova 2026 (técnico) ou a Avaliação de Desempenho mais recente (comportamental).",
+    recomenda: "Concluir a aplicação da prova nas unidades pendentes antes de publicar o Resultado Executivo.",
+  },
+};
+
+export const LEGENDA_DETALHE_SITUACAO: Record<DetalheSituacao, { titulo: string; fonte: string }> = {
+  MANTEVE_COM_FOLGA: { titulo: "Manteve com folga (80% ou mais)", fonte: "Resultado da medição atual" },
+  MANTEVE_PERTO_DA_META: { titulo: "Manteve perto da meta (70% a 79%)", fonte: "Atenção: pode cair no próximo ciclo" },
+  ATINGIU_COM_ACAO: { titulo: "Com ação do PDI concluída no ponto", fonte: "Ações do PDI com status Concluída" },
+  ATINGIU_SEM_ACAO: { titulo: "Sem ação do PDI concluída antes da medição", fonte: "Evoluiu por outra via" },
+  SEM_MEDICAO_ATUAL: { titulo: "Tem medição anterior, falta a atual", fonte: "Prova 2026 ou AD mais recente ainda não registrada" },
+  SEM_NENHUMA_MEDICAO: { titulo: "Sem nenhuma medição", fonte: "Sem nota na medição anterior nem na atual" },
+};
+
 // Prazo estendido: o histórico grava as datas como dd/mm/aaaa.
 export function prazoFoiProrrogado(valorAnterior: unknown, valorNovo: unknown) {
   const paraNumero = (v: unknown) => {

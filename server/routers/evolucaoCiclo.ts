@@ -7,6 +7,7 @@ import { ensureHomologacaoTables } from "../services/homologacaoProvas";
 import { ensureTechnicalMatrixTables } from "../services/technicalMatrixSchema";
 import {
   agrupar,
+  amostras,
   carregarBase,
   indicadores,
   legendas,
@@ -18,6 +19,7 @@ import {
   DIMENSOES,
   META_PROFICIENCIA,
   MOTIVOS,
+  SITUACOES,
   STATUS_EVOLUCAO,
   comMeta,
   type Dimensao,
@@ -109,6 +111,9 @@ export const evolucaoCicloRouter = router({
       porUnidade,
       porEixo,
       matriz,
+      amostras: amostras(itens),
+      // Lista de unidades (sempre completa), para o filtro da tela.
+      unidades: Array.from(new Set(todos.map((i) => i.unidade))).sort((a, b) => a.localeCompare(b, "pt-BR")),
       legendas: legendas(periodos),
     };
   }),
@@ -123,6 +128,7 @@ export const evolucaoCicloRouter = router({
         eixo: z.string().trim().min(1).max(255).optional(),
         status: z.enum(STATUS_EVOLUCAO).optional(),
         motivo: z.enum(MOTIVOS).optional(),
+        situacao: z.enum(SITUACOES).optional(),
         colaboradorId: z.number().int().positive().optional(),
       }),
     )
@@ -134,6 +140,7 @@ export const evolucaoCicloRouter = router({
       if (input.eixo) itens = itens.filter((i) => normalizar(i.eixo) === normalizar(input.eixo!));
       if (input.status) itens = itens.filter((i) => i.status === input.status);
       if (input.motivo) itens = itens.filter((i) => i.motivo === input.motivo);
+      if (input.situacao) itens = itens.filter((i) => i.situacao === input.situacao);
       if (input.colaboradorId) itens = itens.filter((i) => i.colaboradorId === input.colaboradorId);
       return itens.sort(
         (a, b) =>
