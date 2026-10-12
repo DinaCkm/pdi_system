@@ -150,6 +150,11 @@ function resumoEixo(nome: string, avals: Avaliacao[], descricao: string | null) 
 }
 type ResumoEixo = ReturnType<typeof resumoEixo>;
 
+function conceitoDaMetade(l: Conceito[]): Conceito {
+  const ordenados = [...l].sort((a, b) => CONCEITOS.indexOf(a) - CONCEITOS.indexOf(b));
+  return ordenados[Math.floor((ordenados.length - 1) / 2)];
+}
+
 // ---------- Avaliações a partir da base ----------
 
 export function montarAvaliacoes(base: Base) {
@@ -225,6 +230,8 @@ export function montarAvaliacoes(base: Base) {
 
   const avaliacoes: Avaliacao[] = [];
   const potencialidades: Array<{ pessoa: number; unidade: string; eixo: string }> = [];
+  // Eixos não essenciais com medição: só para a Matriz de Conhecimento por empregado.
+  const naoEssenciais: Array<{ pessoa: number; unidade: string; eixo: string; antes: Conceito | null; depois: Conceito | null }> = [];
 
   for (const e of base.eixosMatriz) {
     const id = Number(e.colaboradorId);
@@ -236,6 +243,7 @@ export function montarAvaliacoes(base: Base) {
     const depois = conceitoDe(nmTecnico.has(chaveNm) ? nmTecnico.get(chaveNm)! : null);
     if (relacao === "NAO_ESSENCIAL") {
       if (naExpectativa(depois)) potencialidades.push({ pessoa: id, unidade: p.unidade, eixo });
+      naoEssenciais.push({ pessoa: id, unidade: p.unidade, eixo, antes: conceitoDe(numeroOuNulo(e.base2025)), depois });
       continue;
     }
     if (relacao !== "ESSENCIAL" && relacao !== "TRANSVERSAL") continue;
@@ -302,6 +310,7 @@ export function montarAvaliacoes(base: Base) {
   return {
     avaliacoes,
     potencialidades,
+    naoEssenciais,
     acoes: acoesRecorte,
     pessoas,
     ad: {
@@ -502,6 +511,40 @@ export function montarRelatorio(base: Base, unidade?: string, publico: Publico =
       .sort((a, b) => a.area.localeCompare(b.area, "pt-BR")),
   };
 
+  // ---- Matriz de Conhecimento por área (sem nomes): conceito mais frequente na medição atual.
+  // Célula com menos de 5 pessoas medidas não mostra conceito (privacidade e amostra pequena).
+  const ORDEM_GRUPO = { T: 0, L: 1, E: 2 } as const;
+  const celula = (l: Avaliacao[]) => {
+    const med = l.filter((a) => a.depois !== null);
+    if (med.length < MIN) return { pessoas: l.length, medidas: med.length, amostraPequena: true as const };
+    return {
+      pessoas: l.length,
+      medidas: med.length,
+      amostraPequena: false as const,
+      naExpectativa: med.filter((a) => naExpectativa(a.depois)).length,
+      // Conceito alcançado (ou superado) por pelo menos metade das pessoas.
+      metade: conceitoDaMetade(med.map((a) => a.depois as Conceito)),
+    };
+  };
+  const matrizArea = (lista: Avaliacao[], instrumento: Instrumento) => {
+    const colunas = eixos(lista, instrumento)
+      .map((e) => ({ chave: `${e.lideranca ? "L" : e.transversal ? "T" : "E"}|${e.nome}`, nome: e.nome, grupo: (e.lideranca ? "L" : e.transversal ? "T" : "E") as keyof typeof ORDEM_GRUPO, pessoas: e.pessoas }))
+      .sort((a, b) => ORDEM_GRUPO[a.grupo] - ORDEM_GRUPO[b.grupo] || b.pessoas - a.pessoas || a.nome.localeCompare(b.nome, "pt-BR"));
+    const linha = (l: Avaliacao[]) => {
+      const celulas: Record<string, ReturnType<typeof celula>> = {};
+      for (const [chave, la] of Array.from(agrupar(l, (a) => `${grupoAval(a)}|${a.eixo}`).entries())) celulas[chave] = celula(la);
+      return { pessoas: new Set(l.map((a) => a.pessoa)).size, celulas };
+    };
+    return {
+      colunas,
+      total: linha(lista),
+      linhas: Array.from(agrupar(lista, (a) => a.unidade).entries())
+        .map(([area, l]) => ({ area, ...linha(l) }))
+        .sort((a, b) => a.area.localeCompare(b.area, "pt-BR")),
+    };
+  };
+  const matriz = { TECNICO: matrizArea(tec, "TECNICO"), COMPORTAMENTAL: matrizArea(comp, "COMPORTAMENTAL") };
+
   // ---- Bloco 7: quanto investimos onde mais crescemos
   const linhaInvest = (e: ResumoEixo, tipo: Instrumento, contraste: boolean): LinhaInvestimento => {
     const l = avals.filter(
@@ -580,6 +623,7 @@ export function montarRelatorio(base: Base, unidade?: string, publico: Publico =
         ondeFocar: ondeFocar(eixosTec), eixos: eixosTec },
       COMPORTAMENTAL: { ...resumoComp, destaques: destaques(eixosComp), ondeFocar: ondeFocar(eixosComp), eixos: eixosComp },
     },
+    matriz,
     pdi,
     fortalezas,
     foco,
@@ -593,4 +637,82 @@ export function montarRelatorio(base: Base, unidade?: string, publico: Publico =
 export function unidadesDoRelatorio(base: Base) {
   const { avaliacoes } = montarAvaliacoes(base);
   return Array.from(new Set(avaliacoes.map((a) => a.unidade))).sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
+// ---------- Matriz de Conhecimento por empregado (só administradores) ----------
+// Esta visão tem nomes: fica fora do relatório da diretoria e só aparece para administradores.
+
+type Relacao = "TRANSVERSAL" | "ESSENCIAL" | "NAO_ESSENCIAL";
+type CelulaPessoa = { antes: Conceito | null; depois: Conceito | null; relacao?: Relacao };
+
+export function montarMatrizEmpregados(base: Base, unidade?: string, publico: Publico = "TODOS") {
+  const dados = montarAvaliacoes(base);
+  const nomes = new Map<number, string>(base.colaboradores.map((c: any) => [Number(c.id), String(c.name ?? "")]));
+  const incluir = (pessoa: number) => {
+    const p = dados.pessoas.get(pessoa);
+    if (!p) return false;
+    if (unidade && p.unidade !== unidade) return false;
+    if (publico === "LIDERES") return p.lider;
+    if (publico === "DEMAIS") return !p.lider;
+    return true;
+  };
+
+  const linhas = new Map<
+    number,
+    { id: number; nome: string; unidade: string; lider: boolean; tecnico: Record<string, CelulaPessoa>; comportamental: Record<string, CelulaPessoa>; acoes: { ativas: number; concluidas: number } }
+  >();
+  const linhaDe = (pessoa: number) => {
+    let l = linhas.get(pessoa);
+    if (!l) {
+      const p = dados.pessoas.get(pessoa)!;
+      l = { id: pessoa, nome: nomes.get(pessoa) || `Empregado ${pessoa}`, unidade: p.unidade, lider: p.lider, tecnico: {}, comportamental: {}, acoes: { ativas: 0, concluidas: 0 } };
+      linhas.set(pessoa, l);
+    }
+    return l;
+  };
+
+  const contagemTec = new Map<string, number>();
+  const contagemComp = new Map<string, number>();
+  for (const a of dados.avaliacoes) {
+    if (!incluir(a.pessoa)) continue;
+    const l = linhaDe(a.pessoa);
+    if (a.instrumento === "TECNICO") {
+      l.tecnico[a.eixo] = { antes: a.antes, depois: a.depois, relacao: a.transversal ? "TRANSVERSAL" : "ESSENCIAL" };
+      contagemTec.set(a.eixo, (contagemTec.get(a.eixo) ?? 0) + 1);
+    } else {
+      l.comportamental[a.eixo] = { antes: a.antes, depois: a.depois };
+      contagemComp.set(a.eixo, (contagemComp.get(a.eixo) ?? 0) + 1);
+    }
+  }
+  for (const n of dados.naoEssenciais) {
+    if (!incluir(n.pessoa) || (n.antes === null && n.depois === null)) continue;
+    linhaDe(n.pessoa).tecnico[n.eixo] = { antes: n.antes, depois: n.depois, relacao: "NAO_ESSENCIAL" };
+    contagemTec.set(n.eixo, (contagemTec.get(n.eixo) ?? 0) + 1);
+  }
+  for (const a of dados.acoes) {
+    if (!linhas.has(a.pessoa) || a.status === "cancelada") continue;
+    const l = linhas.get(a.pessoa)!;
+    l.acoes.ativas += 1;
+    if (a.status === "concluida") l.acoes.concluidas += 1;
+  }
+
+  // Colunas: transversais de todos, de liderança e demais eixos (pelo nome do eixo).
+  const grupoNome = (eixo: string) => {
+    const t = tipoTransversal(eixo);
+    return t === "TODOS" ? "T" : t === "GESTORES" ? "L" : "E";
+  };
+  const ORDEM = { T: 0, L: 1, E: 2 } as const;
+  const colunasTec = Array.from(contagemTec.entries())
+    .map(([nome, pessoas]) => ({ nome, grupo: grupoNome(nome) as keyof typeof ORDEM, pessoas }))
+    .sort((a, b) => ORDEM[a.grupo] - ORDEM[b.grupo] || b.pessoas - a.pessoas || a.nome.localeCompare(b.nome, "pt-BR"));
+  const colunasComp = Array.from(contagemComp.entries())
+    .map(([nome, pessoas]) => ({ nome, grupo: (normalizar(nome) === normalizar(COMPETENCIA_COMPORTAMENTAL_TRANSVERSAL) ? "T" : "E") as keyof typeof ORDEM, pessoas }))
+    .sort((a, b) => ORDEM[a.grupo] - ORDEM[b.grupo] || b.pessoas - a.pessoas || a.nome.localeCompare(b.nome, "pt-BR"));
+
+  return {
+    unidades: Array.from(new Set(dados.avaliacoes.map((a) => a.unidade))).sort((a, b) => a.localeCompare(b, "pt-BR")),
+    ad: dados.ad,
+    colunas: { TECNICO: colunasTec, COMPORTAMENTAL: colunasComp },
+    linhas: Array.from(linhas.values()).sort((a, b) => a.unidade.localeCompare(b.unidade, "pt-BR") || a.nome.localeCompare(b.nome, "pt-BR")),
+  };
 }

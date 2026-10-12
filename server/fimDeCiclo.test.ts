@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { classificar, conceitoDe, contarPalavras, limitarSintese, movimento } from "../shared/fimDeCicloRegras";
-import { montarRelatorio } from "./services/fimDeCiclo";
+import { montarMatrizEmpregados, montarRelatorio } from "./services/fimDeCiclo";
 
 describe("régua de conceitos", () => {
   it("Conhecimento Aplicado começa em 70", () => {
@@ -150,6 +150,37 @@ describe("relatório (blocos e seção 6)", () => {
     expect(montarRelatorio(baseExemplo(), undefined, "LIDERES").recorte.pessoas).toBe(1);
     expect(montarRelatorio(baseExemplo(), undefined, "DEMAIS").recorte.pessoas).toBe(6);
     expect(montarRelatorio(baseExemplo(), undefined, "DEMAIS").instrumentos.TECNICO.eixos.some((e) => e.lideranca)).toBe(false);
+  });
+
+  it("matriz por área: sem nomes e célula com menos de 5 medidas não mostra conceito", () => {
+    const m = r.matriz.TECNICO;
+    expect(m.colunas[0].grupo).toBe("T"); // transversais primeiro
+    const urc = m.linhas.find((l) => l.area === "URC")!;
+    const atend = urc.celulas["E|Atendimento Multicanal"] as any;
+    expect(atend.medidas).toBe(7);
+    expect(atend.metade).toBeTruthy();
+    const lider = urc.celulas["L|Estratégia e Planejamento"] as any;
+    expect(lider.amostraPequena).toBe(true);
+    expect(lider.metade).toBeUndefined();
+    expect(JSON.stringify(r.matriz)).not.toMatch(/"P\d"/);
+  });
+
+  it("conceito da metade: pelo menos metade está nele ou acima", () => {
+    const atend = r.matriz.TECNICO.linhas.find((l) => l.area === "URC")!.celulas["E|Atendimento Multicanal"] as any;
+    // atuais: 78,72,75,85,70,90,100 → mediana 78 = Consolidado
+    expect(atend.metade).toBe("CONSOLIDADO");
+  });
+
+  it("matriz por empregado: nomes, relação e não essencial", () => {
+    const m = montarMatrizEmpregados(baseExemplo());
+    expect(m.linhas).toHaveLength(7);
+    const p1 = m.linhas.find((l) => l.nome === "P1")!;
+    expect(p1.lider).toBe(true);
+    expect(p1.tecnico["Supervisão da Rede Estendida"].relacao).toBe("NAO_ESSENCIAL");
+    expect(p1.tecnico["Comunicação"].relacao).toBe("TRANSVERSAL");
+    expect(m.colunas.TECNICO.find((c) => c.nome === "Estratégia e Planejamento")!.grupo).toBe("L");
+    expect(m.linhas.some((l) => l.nome === "Admin")).toBe(false);
+    expect(montarMatrizEmpregados(baseExemplo(), undefined, "LIDERES").linhas).toHaveLength(1);
   });
 
   it("sínteses respeitam o limite", () => {

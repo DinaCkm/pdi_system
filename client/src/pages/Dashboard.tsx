@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { IIPDashboard } from "@/components/IIPDashboard";
 import { VisaoExecutiva } from "@/components/VisaoExecutiva";
 import { RelatorioFimCiclo } from "@/components/RelatorioFimCiclo";
+import { MatrizEmpregados } from "@/components/MatrizConhecimento";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function Dashboard() {
@@ -280,10 +281,14 @@ export function Dashboard() {
         <Tabs value={aba} onValueChange={setAba} className="space-y-4">
           <TabsList>
             <TabsTrigger value="evolucao" className="min-h-[40px] px-4">Fim de ciclo</TabsTrigger>
+            <TabsTrigger value="matriz" className="min-h-[40px] px-4">Matriz de conhecimento</TabsTrigger>
             <TabsTrigger value="execucao" className="min-h-[40px] px-4">Execução</TabsTrigger>
           </TabsList>
           <TabsContent value="evolucao">
             <RelatorioFimCiclo />
+          </TabsContent>
+          <TabsContent value="matriz">
+            <MatrizEmpregados />
           </TabsContent>
           <TabsContent value="execucao" className="space-y-6">
             {conteudoExecucao}
