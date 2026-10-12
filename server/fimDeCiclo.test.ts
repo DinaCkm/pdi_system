@@ -183,6 +183,13 @@ describe("relatório (blocos e seção 6)", () => {
     expect(montarMatrizEmpregados(baseExemplo(), undefined, "LIDERES").linhas).toHaveLength(1);
   });
 
+  it("eixo transversal nunca é potencialidade, mesmo cadastrado como Não essencial", () => {
+    const b = baseExemplo();
+    b.eixosMatriz.push({ colaboradorId: 2, eixo: "Inovação e Gestão do Conhecimento", relacao: "NAO_ESSENCIAL", base2025: 100 });
+    b.resultados[1].resultadoJson = JSON.stringify({ porEixo: [...JSON.parse(b.resultados[1].resultadoJson).porEixo, { eixo: "Inovação e Gestão do Conhecimento", percentualAtual: 100 }] });
+    expect(montarRelatorio(b).fortalezas.multiplicadores.total).toBe(1); // só a Supervisão da Rede Estendida
+  });
+
   it("sínteses respeitam o limite", () => {
     for (const s of Object.values(r.sinteses)) expect(contarPalavras(s)).toBeLessThanOrEqual(60);
   });
