@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { macroRelacionadaDaAD } from "../../../shared/competenciasAdRelacionamento";
 import {
+  FAIXAS_CONCEITO,
   conceitoComportamentalLabel,
   conceitoConhecimentoLabel,
   engajamentoDesenvolvimentoLabel,
@@ -84,10 +85,10 @@ function corSinalUmanni(sinal: string | null | undefined) {
 function conceitoVisual(percentual: number | null | undefined) {
   if (percentual === null || percentual === undefined || !Number.isFinite(Number(percentual))) return null;
   const valor = Math.max(0, Math.min(100, Number(percentual)));
-  if (valor >= 90) return "Referência";
-  if (valor >= 85) return "Conhecimento Avançado";
-  if (valor >= 75) return "Conhecimento Consolidado";
-  if (valor >= 65) return "Conhecimento Aplicado";
+  if (valor >= FAIXAS_CONCEITO.referencia) return "Referência";
+  if (valor >= FAIXAS_CONCEITO.avancado) return "Conhecimento Avançado";
+  if (valor >= FAIXAS_CONCEITO.consolidado) return "Conhecimento Consolidado";
+  if (valor >= FAIXAS_CONCEITO.aplicado) return "Conhecimento Aplicado";
   return "Em Desenvolvimento";
 }
 
@@ -1111,8 +1112,8 @@ export default function Bloco1CompetenciasFuncao() {
                                 <p className="text-sm font-semibold text-slate-900">Régua conceitual</p>
                                 <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
                                   {[
-                                    ["Em Desenvolvimento", "Abaixo de 65%"],
-                                    ["Conhecimento Aplicado", "65% a 74,9%"],
+                                    ["Em Desenvolvimento", `Abaixo de ${FAIXAS_CONCEITO.aplicado}%`],
+                                    ["Conhecimento Aplicado", `${FAIXAS_CONCEITO.aplicado}% a 74,9%`],
                                     ["Conhecimento Consolidado", "75% a 84,9%"],
                                     ["Conhecimento Avançado", "85% a 89,9%"],
                                     ["Referência", "90% ou mais"],
