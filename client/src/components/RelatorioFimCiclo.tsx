@@ -384,14 +384,23 @@ export function RelatorioFimCiclo() {
                 <div style={{ fontWeight: 700, fontSize: 16 }}>Eixos técnicos avaliados</div>
                 <div style={{ fontSize: 14, color: C.secundario }}>Avaliação de Proficiência 2025 → 2026 · {ctx.eixos.length} eixos</div>
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {ctx.eixos.map((e: any) => (
-                  <Chip key={e.nome} tipo={e.transversal ? "transversal" : "neutro"}>
-                    {e.nome}
-                    {e.transversal ? " · transversal" : ""}
-                  </Chip>
-                ))}
-              </div>
+              {[
+                { titulo: "Transversais · comuns a todo o Sebrae", l: ctx.eixos.filter((e: any) => e.transversal), tipo: "transversal" as const },
+                { titulo: "Essenciais · específicos de cada área", l: ctx.eixos.filter((e: any) => !e.transversal), tipo: "neutro" as const },
+              ].map((g) =>
+                g.l.length ? (
+                  <div key={g.titulo} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.secundario }}>{g.titulo}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {g.l.map((e: any) => (
+                        <Chip key={e.nome} tipo={g.tipo}>
+                          {e.nome}
+                        </Chip>
+                      ))}
+                    </div>
+                  </div>
+                ) : null,
+              )}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <div>
@@ -450,7 +459,16 @@ export function RelatorioFimCiclo() {
                     {c.x.primeiraMedicao > 0 ? `; ${c.x.primeiraMedicao} são primeira medição` : ""}.
                   </p>
                   {c.tipo === "TECNICO" ? (
-                    sobem && <p style={{ margin: 0, fontSize: 15, color: C.corpo }}>Mais cresceram: {sobem}.</p>
+                    (() => {
+                      const t = textoSobem(c.x.destaquesPorTipo.transversais);
+                      const e = textoSobem(c.x.destaquesPorTipo.essenciais);
+                      return t || e ? (
+                        <p style={{ margin: 0, fontSize: 15, color: C.corpo }}>
+                          {t ? `Mais cresceram nos transversais: ${t}. ` : ""}
+                          {e ? `Nos essenciais: ${e}.` : ""}
+                        </p>
+                      ) : null;
+                    })()
                   ) : (
                     <p style={{ margin: 0, fontSize: 15, color: C.corpo }}>
                       {sobem ? `Subiram: ${sobem}. ` : ""}
@@ -466,7 +484,8 @@ export function RelatorioFimCiclo() {
                 <span style={{ fontSize: 13, color: C.secundario }}>Em Desenvolvimento</span>
               </div>
               {[
-                { titulo: "Conhecimentos técnicos", f: tec.ondeFocar },
+                { titulo: "Eixos transversais · todo o Sebrae", f: { itens: tec.ondeFocar.itens.filter((i: any) => i.transversal), amostraPequena: 0 } },
+                { titulo: "Eixos essenciais · por área", f: { itens: tec.ondeFocar.itens.filter((i: any) => !i.transversal), amostraPequena: tec.ondeFocar.amostraPequena } },
                 { titulo: "Competências", f: comp.ondeFocar },
               ].map((b) => (
                 <div key={b.titulo} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -531,7 +550,7 @@ export function RelatorioFimCiclo() {
         {/* Bloco 4 — Onde está o conhecimento da equipe */}
         <Secao
           titulo="Onde está o conhecimento da equipe"
-          subtitulo="Como as pessoas se distribuem pelos conceitos, antes e depois, sobre as mesmas avaliações. Ordenado pelo número de pessoas avaliadas."
+          subtitulo="Como as pessoas se distribuem pelos conceitos, antes e depois, sobre as mesmas avaliações. No técnico, transversais e essenciais aparecem separados; dentro de cada grupo, do maior para o menor número de pessoas avaliadas."
           id="conhecimento"
           acao={
             <Abas
@@ -551,8 +570,22 @@ export function RelatorioFimCiclo() {
               As ações do PDI vieram depois da AD {adAtual}; estes resultados são o ponto de partida do PDI comportamental.
             </p>
           )}
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {eixosAba.map((e: any) => {
+          {(abaConhecimento === "TECNICO"
+            ? [
+                { titulo: "Eixos transversais", sub: "Comuns a todo o Sebrae: todas as pessoas são avaliadas neles.", l: eixosAba.filter((e: any) => e.transversal) },
+                { titulo: "Eixos essenciais", sub: "Específicos de cada área: só as pessoas das funções em que o eixo é essencial são avaliadas.", l: eixosAba.filter((e: any) => !e.transversal) },
+              ]
+            : [{ titulo: null as string | null, sub: null as string | null, l: eixosAba }]
+          ).map((g) =>
+            g.l.length ? (
+          <div key={g.titulo ?? "todos"} style={{ display: "flex", flexDirection: "column" }}>
+            {g.titulo && (
+              <div style={{ padding: "8px 0 12px" }}>
+                <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 17 }}>{g.titulo}</div>
+                <div style={{ fontSize: 14, color: C.secundario }}>{g.sub}</div>
+              </div>
+            )}
+            {g.l.map((e: any) => {
               const chave = `${abaConhecimento}|${e.nome}`;
               const expandido = aberto === chave;
               const inicio = abaConhecimento === "TECNICO" ? "2025" : String(adBase);
@@ -571,7 +604,6 @@ export function RelatorioFimCiclo() {
                       </button>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", fontSize: 13, color: C.secundario }}>
                         {e.comparaveis} de {e.pessoas} pessoas com as duas medições
-                        {e.transversal && abaConhecimento === "TECNICO" && <Etiqueta>transversal</Etiqueta>}
                         {e.amostraPequena && <Etiqueta>amostra pequena</Etiqueta>}
                       </div>
                     </div>
@@ -620,6 +652,8 @@ export function RelatorioFimCiclo() {
               );
             })}
           </div>
+            ) : null,
+          )}
           <Sintese texto={abaConhecimento === "TECNICO" ? r.sinteses.tecnico : r.sinteses.comportamental} />
         </Secao>
 
@@ -827,7 +861,7 @@ export function RelatorioFimCiclo() {
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}` }}>
                         <strong>{l.nome}</strong>
                         <div style={{ fontSize: 13, color: C.secundario }}>
-                          {l.tipo === "TECNICO" ? "Técnico" : "Comportamental"}
+                          {l.tipo === "TECNICO" ? (l.transversal ? "Técnico · transversal" : "Técnico · essencial") : "Comportamental"}
                           {l.contraste ? " · para comparar" : ""}
                         </div>
                       </td>

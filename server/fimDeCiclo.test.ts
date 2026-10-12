@@ -129,6 +129,14 @@ describe("relatório (blocos e seção 6)", () => {
     expect(JSON.stringify(r).toLowerCase()).not.toContain("prova");
   });
 
+  it("transversais e essenciais separados (técnico)", () => {
+    expect(tec.destaquesPorTipo.transversais.sobem.every((d) => d.transversal)).toBe(true);
+    expect(tec.destaquesPorTipo.essenciais.sobem.every((d) => !d.transversal)).toBe(true);
+    const s = r.sinteses.tecnico;
+    if (s.includes("transversais") && s.includes("essenciais")) expect(s.indexOf("transversais")).toBeLessThan(s.indexOf("essenciais"));
+    for (const l of r.investimento) expect(typeof l.transversal).toBe("boolean");
+  });
+
   it("sínteses respeitam o limite", () => {
     for (const s of Object.values(r.sinteses)) expect(contarPalavras(s)).toBeLessThanOrEqual(60);
   });

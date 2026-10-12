@@ -335,8 +335,8 @@ export function montarRelatorio(base: Base, unidade?: string) {
   const destaques = (l: ResumoEixo[]) => {
     const validos = l.filter((e) => e.comparaveis >= MIN);
     return {
-      sobem: validos.filter((e) => saldo(e) > 0).sort((a, b) => saldo(b) - saldo(a)).slice(0, 2).map((e) => ({ nome: e.nome, subiram: e.subiram, comparaveis: e.comparaveis })),
-      caem: validos.filter((e) => saldo(e) < 0).sort((a, b) => saldo(a) - saldo(b)).slice(0, 2).map((e) => ({ nome: e.nome, desceram: e.desceram, comparaveis: e.comparaveis })),
+      sobem: validos.filter((e) => saldo(e) > 0).sort((a, b) => saldo(b) - saldo(a)).slice(0, 2).map((e) => ({ nome: e.nome, subiram: e.subiram, comparaveis: e.comparaveis, transversal: e.transversal })),
+      caem: validos.filter((e) => saldo(e) < 0).sort((a, b) => saldo(a) - saldo(b)).slice(0, 2).map((e) => ({ nome: e.nome, desceram: e.desceram, comparaveis: e.comparaveis, transversal: e.transversal })),
     };
   };
 
@@ -487,6 +487,7 @@ export function montarRelatorio(base: Base, unidade?: string) {
     return {
       nome: e.nome,
       tipo,
+      transversal: e.transversal,
       pessoas: l.length,
       subiram: e.subiram,
       desceram: e.desceram,
@@ -543,7 +544,12 @@ export function montarRelatorio(base: Base, unidade?: string) {
     recorte: { unidade: unidade ?? null, pessoas: pessoasRecorte.size, amostraPequena: pessoasRecorte.size < MIN },
     contexto,
     instrumentos: {
-      TECNICO: { ...resumoTec, destaques: destaques(eixosTec), ondeFocar: ondeFocar(eixosTec), eixos: eixosTec },
+      TECNICO: {
+        ...resumoTec,
+        destaques: destaques(eixosTec),
+        // Transversais (todo o Sebrae) e essenciais (por área) lidos separadamente.
+        destaquesPorTipo: { transversais: destaques(eixosTec.filter((e) => e.transversal)), essenciais: destaques(eixosTec.filter((e) => !e.transversal)) },
+        ondeFocar: ondeFocar(eixosTec), eixos: eixosTec },
       COMPORTAMENTAL: { ...resumoComp, destaques: destaques(eixosComp), ondeFocar: ondeFocar(eixosComp), eixos: eixosComp },
     },
     pdi,
