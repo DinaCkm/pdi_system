@@ -250,6 +250,19 @@ export function MatrizPorArea({ matriz }: { matriz: any }) {
   );
 }
 
+function LegendaConceitosSimples() {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", fontSize: 13, color: C.secundario }}>
+      {CONCEITOS.map((c) => (
+        <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: COR_CONCEITO[c] }} />
+          {ROTULO_CONCEITO[c]}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function LegendaMatriz({ empregado = false }: { empregado?: boolean }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -371,6 +384,7 @@ export function MatrizEmpregados() {
   const [conceito, setConceito] = useState<FiltroConceito>("TODOS");
   const [busca, setBusca] = useState("");
   const [aberto, setAberto] = useState<number | null>(null);
+  const [verGrade, setVerGrade] = useState(false);
 
   const filtro = { ...(area ? { unidade: area } : {}), ...(publico !== "TODOS" ? { publico } : {}) };
   const consulta = api.matrizEmpregados.useQuery(Object.keys(filtro).length ? filtro : undefined, { refetchOnWindowFocus: false, keepPreviousData: true });
@@ -409,7 +423,20 @@ export function MatrizEmpregados() {
   }
 
   const eixoValido = eixo && colunas.some((c) => c.nome === eixo) ? eixo : "";
-  const modo: "EIXO" | "GRADE" | "INICIO" = eixoValido ? "EIXO" : area || termo ? "GRADE" : "INICIO";
+  // Sem eixo escolhido, a tela lista os eixos do tipo com os filtros aplicados; a grade só abre a pedido ou na busca por nome.
+  const modo: "EIXO" | "GRADE" | "VISAO" = eixoValido ? "EIXO" : termo || verGrade ? "GRADE" : "VISAO";
+  const rotuloFiltro = { TODOS: "avaliadas", FORTES: "podem ensinar (Avançado ou Referência)", EXPECTATIVA: "na expectativa", ED: "precisam desenvolver (Em Desenvolvimento)" }[conceito];
+  const visao = colunas
+    .map((c) => {
+      const com = pessoas.filter((l: any) => l[chave][c.nome]);
+      const dist = Object.fromEntries(CONCEITOS.map((k) => [k, com.filter((l: any) => l[chave][c.nome].depois === k).length])) as Record<Conceito, number>;
+      const aguardando = com.filter((l: any) => !l[chave][c.nome].depois).length;
+      const destaque = conceito === "TODOS" ? com.length : com.filter((l: any) => passaConceito(conceito, l[chave][c.nome].depois)).length;
+      return { nome: c.nome, total: com.length, dist, aguardando, destaque };
+    })
+    .filter((v) => v.total > 0)
+    .sort((a, b) => b.destaque - a.destaque || b.total - a.total || a.nome.localeCompare(b.nome, "pt-BR"));
+  const tituloTipo = { T: "Eixos transversais", L: "Eixos de liderança", E: "Eixos essenciais e demais", COMP: "Competências" }[tipo];
   const nomeTipo = { T: "eixo transversal", L: "eixo de liderança", E: "eixo", COMP: "competência" }[tipo];
   const pessoaAberta = aberto ? r.linhas.find((l: any) => l.id === aberto) : null;
 
@@ -443,7 +470,7 @@ export function MatrizEmpregados() {
           <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: C.secundario }}>Só administradores · contém nomes</div>
           <h1 style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: "clamp(24px, 4vw, 30px)", fontWeight: 700 }}>Matriz de conhecimento</h1>
           <p style={{ margin: 0, fontSize: 15, color: C.secundario }}>
-            Escolha um eixo para ver quem está em cada conceito, ou uma área para ver a equipe. Resultados individuais: não compartilhar fora da gestão (LGPD e NR-1).
+            Escolha o tipo de eixo e os filtros; clique em um eixo para ver quem está em cada conceito. Resultados individuais: não compartilhar fora da gestão (LGPD e NR-1).
           </p>
         </header>
 
@@ -522,27 +549,71 @@ export function MatrizEmpregados() {
         )}
 
         <section style={{ background: C.cartao, border: `1px solid ${C.borda}`, borderRadius: 20, padding: "clamp(16px, 3vw, 24px)", display: "flex", flexDirection: "column", gap: 16 }}>
-          {modo === "INICIO" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 0" }}>
-              <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 18 }}>Por onde começar</div>
-              <ol style={{ margin: 0, paddingLeft: 20, fontSize: 15, color: C.corpo, lineHeight: 1.7 }}>
-                <li>
-                  <strong>Quem sabe um eixo?</strong> Escolha o tipo de eixo e depois o eixo. Aparece a lista de pessoas em cada conceito.
-                </li>
-                <li>
-                  <strong>Como está uma equipe?</strong> Escolha a área. Aparece a matriz só daquela área, com os eixos do tipo escolhido.
-                </li>
-                <li>
-                  <strong>Uma pessoa?</strong> Busque pelo nome e clique nele para ver o detalhe.
-                </li>
-              </ol>
-            </div>
+          {modo === "VISAO" && (
+            <>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 12 }}>
+                <div>
+                  <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 18 }}>{tituloTipo}</div>
+                  <div style={{ fontSize: 14, color: C.secundario }}>
+                    {area ? nomeArea(area) : "Todas as áreas"}
+                    {publico !== "TODOS" ? ` · ${publico === "LIDERES" ? "líderes" : "demais empregados"}` : ""}. Clique em um {tipo === "COMP" ? "competência" : "eixo"} para ver quem está em cada conceito.
+                  </div>
+                </div>
+                {visao.length > 0 && <Botao onClick={() => setVerGrade(true)}>Ver em grade (pessoa × {tipo === "COMP" ? "competência" : "eixo"})</Botao>}
+              </div>
+              {visao.length ? (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {visao.map((v) => (
+                    <button
+                      key={v.nome}
+                      type="button"
+                      onClick={() => setEixo(v.nome)}
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "8px 16px",
+                        alignItems: "center",
+                        padding: "14px 4px",
+                        border: "none",
+                        borderTop: `1px solid ${C.linhaSuave}`,
+                        background: "none",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        textAlign: "left",
+                        color: C.texto,
+                        minHeight: 56,
+                      }}
+                    >
+                      <span style={{ flex: "1 1 240px", minWidth: 0 }}>
+                        <span style={{ display: "block", fontWeight: 600, fontSize: 15 }}>{v.nome}</span>
+                        <span style={{ fontSize: 13, color: C.secundario }}>
+                          {v.total} {v.total === 1 ? "pessoa avaliada" : "pessoas avaliadas"}
+                          {v.aguardando ? ` · ${v.aguardando} aguardando medição` : ""}
+                        </span>
+                      </span>
+                      <span role="img" aria-label={CONCEITOS.filter((k) => v.dist[k]).map((k) => `${v.dist[k]} em ${ROTULO_CONCEITO[k]}`).join(", ")} style={{ flex: "1 1 160px", display: "flex", height: 12, borderRadius: 999, overflow: "hidden", gap: 2, background: C.linhaSuave }}>
+                        {CONCEITOS.map((k) => (v.dist[k] ? <span key={k} style={{ width: `${(v.dist[k] / Math.max(v.total, 1)) * 100}%`, background: COR_CONCEITO[k] }} /> : null))}
+                      </span>
+                      <span style={{ flex: "none", marginLeft: "auto", textAlign: "right", fontSize: 14, whiteSpace: "nowrap" }}>
+                        <strong style={{ fontSize: 16 }}>{v.destaque}</strong> <span style={{ color: C.secundario }}>{conceito === "TODOS" ? "avaliadas" : rotuloFiltro.split(" (")[0]}</span> ›
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: 15, color: C.secundario }}>Ninguém avaliado neste tipo de eixo com esses filtros.</div>
+              )}
+              <LegendaConceitosSimples />
+            </>
           )}
 
           {modo === "EIXO" && (
             <>
               <div>
-                <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 18 }}>{eixoValido}</div>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+                  <Botao onClick={() => setEixo("")}>‹ Todos os eixos</Botao>
+                  <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 18 }}>{eixoValido}</div>
+                </div>
                 <div style={{ fontSize: 14, color: C.secundario }}>
                   {comEixo.length} {comEixo.length === 1 ? "pessoa avaliada" : "pessoas avaliadas"} neste {nomeTipo}
                   {area ? ` em ${nomeArea(area)}` : ""}. Conceito na medição atual. Clique no nome para ver o detalhe.
@@ -580,7 +651,8 @@ export function MatrizEmpregados() {
           {modo === "GRADE" && (
             <>
               <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 18 }}>{area ? nomeArea(area) : "Resultado da busca"}</div>
+                <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 18 }}>{termo ? "Resultado da busca" : area ? nomeArea(area) : "Todas as áreas"}</div>
+                {verGrade && !termo && <Botao onClick={() => setVerGrade(false)}>Voltar para a lista</Botao>}
                 <span style={{ fontSize: 14, color: C.secundario }}>
                   {linhasGrade.length} {linhasGrade.length === 1 ? "empregado" : "empregados"}
                 </span>
