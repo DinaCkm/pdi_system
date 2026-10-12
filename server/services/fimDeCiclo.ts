@@ -11,28 +11,34 @@ import {
 } from "./resultadoExecutivo";
 import {
   CLASSES,
+  CONCEITOS,
   GRUPOS,
   GRUPO_DA_CLASSE,
   PARAMETROS,
-  arred,
   classificar,
-  media,
+  conceitoDe,
+  conceitoPredominante,
+  distribuicaoVazia,
+  forte,
   motivoFoco,
-  pct,
+  movimento,
+  naExpectativa,
   sinteseConhecimento,
   sinteseFechamento,
   sinteseInvestimento,
   sintesePdi,
   sinteseResultado,
-  variacaoRelativa,
   type Classe,
+  type Conceito,
   type Grupo,
   type Instrumento,
+  type LinhaInvestimento,
   type ResumoInstrumento,
 } from "../../shared/fimDeCicloRegras";
 
 // Relatório de Fim de Ciclo do PDI — página da diretoria.
-// Só dados agregados: nenhum nome de pessoa sai daqui (LGPD e NR-1).
+// Só conceitos e contagens: nenhuma nota, média ou percentual sai daqui, e
+// nenhum nome de pessoa (LGPD e NR-1).
 // Universo: empregados ativos com perfil "colaborador" ou "lider" (gerentes de
 // unidade e regionais são empregados). Perfis "admin" e "gerente" do sistema são
 // acessos administrativos e ficam fora.
@@ -43,8 +49,8 @@ type Avaliacao = {
   unidade: string;
   eixo: string;
   transversal: boolean;
-  pp: number | null;
-  nm: number | null;
+  antes: Conceito | null;
+  depois: Conceito | null;
   classe: Classe;
   dataNm: Date | null;
   acoesAtivas: number; //          ações não canceladas no eixo/competência (qualquer status)
@@ -65,20 +71,10 @@ function agrupar<T>(itens: T[], chave: (i: T) => string) {
   return m;
 }
 
-// Médias arredondadas primeiro: a variação é a diferença das médias exibidas,
-// então barras e Δ sempre batem (seção 6.1).
-function mediasMesmaBase(avals: Avaliacao[]) {
-  const comp = avals.filter((a) => a.pp !== null && a.nm !== null);
-  const antes = media(comp.map((a) => a.pp!));
-  const depois = media(comp.map((a) => a.nm!));
-  return {
-    comparaveis: comp.length,
-    mediaAntes: antes,
-    mediaDepois: depois,
-    delta: antes !== null && depois !== null ? arred(depois - antes) : null,
-    pctAcimaAntes: pct(comp.filter((a) => a.pp! >= PARAMETROS.referencia).length, comp.length),
-    pctAcimaDepois: pct(comp.filter((a) => a.nm! >= PARAMETROS.referencia).length, comp.length),
-  };
+function distribuicao(conceitos: Array<Conceito | null>) {
+  const d = distribuicaoVazia();
+  for (const c of conceitos) if (c) d[c] += 1;
+  return d;
 }
 
 function contarClasses(avals: Avaliacao[]) {
@@ -91,51 +87,63 @@ function contarClasses(avals: Avaliacao[]) {
   return { classes, grupos };
 }
 
+function movimentos(avals: Avaliacao[]) {
+  let subiram = 0;
+  let mantiveram = 0;
+  let desceram = 0;
+  for (const a of avals) {
+    const m = movimento(a.antes, a.depois);
+    if (m === "SUBIU") subiram++;
+    else if (m === "DESCEU") desceram++;
+    else if (m === "MANTEVE") mantiveram++;
+  }
+  return { subiram, mantiveram, desceram };
+}
+
+// Antes e depois sempre sobre as mesmas avaliações (as que têm as duas medições).
 function resumoInstrumento(avals: Avaliacao[]): ResumoInstrumento & {
   classes: Record<Classe, number>;
-  delta: number | null;
-  variacaoRelativa: number | null;
+  distribuicaoAntes: Record<Conceito, number>;
+  distribuicaoDepois: Record<Conceito, number>;
 } {
-  const m = mediasMesmaBase(avals);
+  const comp = avals.filter((a) => a.antes !== null && a.depois !== null);
   const { classes, grupos } = contarClasses(avals);
   return {
     total: avals.length,
-    feitas: avals.filter((a) => a.nm !== null).length,
-    comparaveis: m.comparaveis,
+    feitas: avals.filter((a) => a.depois !== null).length,
+    comparaveis: comp.length,
     primeiraMedicao: classes.PRIMEIRA_MEDICAO,
     aguardando: classes.SEM_COMPARACAO,
-    pctAcimaAntes: m.pctAcimaAntes,
-    pctAcimaDepois: m.pctAcimaDepois,
-    mediaAntes: m.mediaAntes,
-    mediaDepois: m.mediaDepois,
-    delta: m.delta,
-    variacaoRelativa: variacaoRelativa(m.mediaAntes, m.mediaDepois),
+    naExpectativaAntes: comp.filter((a) => naExpectativa(a.antes)).length,
+    naExpectativaDepois: comp.filter((a) => naExpectativa(a.depois)).length,
+    ...movimentos(comp),
+    distribuicaoAntes: distribuicao(comp.map((a) => a.antes)),
+    distribuicaoDepois: distribuicao(comp.map((a) => a.depois)),
     grupos,
     classes,
   };
 }
 
 function resumoEixo(nome: string, avals: Avaliacao[], descricao: string | null) {
-  const m = mediasMesmaBase(avals);
-  const comNm = avals.filter((a) => a.nm !== null);
-  const { classes } = contarClasses(avals);
+  const comp = avals.filter((a) => a.antes !== null && a.depois !== null);
+  const comNm = avals.filter((a) => a.depois !== null);
+  const distAtual = distribuicao(comNm.map((a) => a.depois));
   return {
     nome,
     transversal: avals.some((a) => a.transversal),
     descricao,
     pessoas: avals.length,
-    comparaveis: m.comparaveis,
-    mediaAntes: m.mediaAntes,
-    mediaDepois: m.mediaDepois,
-    delta: m.delta,
+    comparaveis: comp.length,
+    distribuicaoAntes: distribuicao(comp.map((a) => a.antes)),
+    distribuicaoDepois: distribuicao(comp.map((a) => a.depois)),
+    ...movimentos(comp),
     nAtual: comNm.length,
-    mediaAtual: media(comNm.map((a) => a.nm!)),
-    abaixo: comNm.filter((a) => a.nm! < PARAMETROS.referencia).length,
-    pedemNovoFoco: classes.NOVO_FOCO_PERSISTENTE + classes.NOVO_FOCO_NOVA,
-    emEvolucao: classes.EM_EVOLUCAO,
-    atencao: classes.ATENCAO,
-    aguardando: classes.SEM_COMPARACAO,
-    amostraPequena: m.comparaveis < MIN,
+    distribuicaoAtual: distAtual,
+    predominanteAtual: conceitoPredominante(distAtual),
+    emDesenvolvimento: distAtual.EM_DESENVOLVIMENTO,
+    fortes: distAtual.AVANCADO + distAtual.REFERENCIA,
+    aguardando: avals.length - comNm.length,
+    amostraPequena: comp.length < MIN,
   };
 }
 type ResumoEixo = ReturnType<typeof resumoEixo>;
@@ -168,9 +176,9 @@ export function montarAvaliacoes(base: Base) {
     }
   }
 
-  // Avaliação de Desempenho: anterior e mais recente.
+  // Avaliação de Desempenho: anterior e mais recente (nota 0–3 lida na régua de conceitos).
   const ad = periodosAD(base.medicoesAD);
-  const notaAD = new Map<string, number>(); // % da escala
+  const notaAD = new Map<string, number>();
   const dataAdPorAno = new Map<number, Date>();
   for (const m of base.medicoesAD) {
     if (!(m.validada || m.avaliacaoStatus === "FINALIZADA")) continue;
@@ -189,7 +197,7 @@ export function montarAvaliacoes(base: Base) {
   // Ações do PDI por pessoa e eixo/competência.
   type InfoAcao = { cancelada: boolean; concluida: boolean; conclusao: Date | null };
   const acoesPorChave = new Map<string, InfoAcao[]>();
-  const acoesRecorte: Array<{ pessoa: number; status: string; inicio: Date | null; conclusao: Date | null; instrumento: Instrumento | null; chave: string | null }> = [];
+  const acoesRecorte: Array<{ pessoa: number; status: string; inicio: Date | null; conclusao: Date | null; instrumento: Instrumento | null }> = [];
   for (const a of base.acoes) {
     const id = Number(a.colaboradorId);
     if (!pessoas.has(id)) continue;
@@ -198,16 +206,15 @@ export function montarAvaliacoes(base: Base) {
     const conclusao = dataOuNula(a.evidenciaAprovadaEm) ?? (concluida ? dataOuNula(a.atualizadaEm) : null);
     const alvo = alvoDoLastro(a.tipo, a.eixo, a.macroNome);
     const instrumento: Instrumento | null = alvo ? (alvo.dimensao === "TECNICO" ? "TECNICO" : "COMPORTAMENTAL") : null;
-    const chave = alvo ? `${instrumento}|${id}|${normalizar(alvo.eixo)}` : null;
-    acoesRecorte.push({ pessoa: id, status, inicio: dataOuNula(a.cicloInicio), conclusao: concluida ? conclusao : null, instrumento, chave });
-    if (!chave) continue;
+    acoesRecorte.push({ pessoa: id, status, inicio: dataOuNula(a.cicloInicio), conclusao: concluida ? conclusao : null, instrumento });
+    if (!alvo) continue;
+    const chave = `${instrumento}|${id}|${normalizar(alvo.eixo)}`;
     const l = acoesPorChave.get(chave) ?? [];
     l.push({ cancelada: status === "cancelada", concluida, conclusao });
     acoesPorChave.set(chave, l);
   }
   const contarAcoes = (chave: string, dataNm: Date | null) => {
-    const l = acoesPorChave.get(chave) ?? [];
-    const ativas = l.filter((x) => !x.cancelada);
+    const ativas = (acoesPorChave.get(chave) ?? []).filter((x) => !x.cancelada);
     return {
       acoesAtivas: ativas.length,
       concluidasAntesNm: dataNm ? ativas.filter((x) => x.concluida && x.conclusao && x.conclusao < dataNm).length : 0,
@@ -223,23 +230,24 @@ export function montarAvaliacoes(base: Base) {
     if (!p) continue;
     const eixo = String(e.eixo ?? "").trim();
     const relacao = String(e.relacao ?? "").toUpperCase();
-    const nm = nmTecnico.has(`${id}|${normalizar(eixo)}`) ? nmTecnico.get(`${id}|${normalizar(eixo)}`)! : null;
+    const chaveNm = `${id}|${normalizar(eixo)}`;
+    const depois = conceitoDe(nmTecnico.has(chaveNm) ? nmTecnico.get(chaveNm)! : null);
     if (relacao === "NAO_ESSENCIAL") {
-      if (nm !== null && nm >= PARAMETROS.referencia) potencialidades.push({ pessoa: id, unidade: p.unidade, eixo });
+      if (naExpectativa(depois)) potencialidades.push({ pessoa: id, unidade: p.unidade, eixo });
       continue;
     }
     if (relacao !== "ESSENCIAL" && relacao !== "TRANSVERSAL") continue;
-    const pp = numeroOuNulo(e.base2025);
-    const dataNm = nm !== null ? dataNmTecnico.get(id) ?? null : null;
+    const antes = conceitoDe(numeroOuNulo(e.base2025));
+    const dataNm = depois !== null ? dataNmTecnico.get(id) ?? null : null;
     avaliacoes.push({
       instrumento: "TECNICO",
       pessoa: id,
       unidade: p.unidade,
       eixo,
       transversal: tipoTransversal(eixo) !== null,
-      pp,
-      nm,
-      classe: classificar(pp, nm),
+      antes,
+      depois,
+      classe: classificar(antes, depois),
       dataNm,
       ...contarAcoes(`TECNICO|${id}|${normalizar(eixo)}`, dataNm),
     });
@@ -261,19 +269,19 @@ export function montarAvaliacoes(base: Base) {
   for (const [id, comps] of Array.from(competenciasPorPessoa.entries())) {
     const p = pessoas.get(id)!;
     for (const k of Array.from(comps)) {
-      const pp = ad.anoBase ? notaAD.get(`${id}|${k}|${ad.anoBase}`) ?? null : null;
-      const nm = ad.anoAtual ? notaAD.get(`${id}|${k}|${ad.anoAtual}`) ?? null : null;
-      if (pp === null && nm === null) continue;
-      const dataNm = nm !== null ? dataAdAtual : null;
+      const antes = conceitoDe(ad.anoBase ? notaAD.get(`${id}|${k}|${ad.anoBase}`) ?? null : null);
+      const depois = conceitoDe(ad.anoAtual ? notaAD.get(`${id}|${k}|${ad.anoAtual}`) ?? null : null);
+      if (antes === null && depois === null) continue;
+      const dataNm = depois !== null ? dataAdAtual : null;
       avaliacoes.push({
         instrumento: "COMPORTAMENTAL",
         pessoa: id,
         unidade: p.unidade,
         eixo: nomeCompetencia.get(k)!,
         transversal: k === normalizar(COMPETENCIA_COMPORTAMENTAL_TRANSVERSAL),
-        pp,
-        nm,
-        classe: classificar(pp, nm),
+        antes,
+        depois,
+        classe: classificar(antes, depois),
         dataNm,
         ...contarAcoes(`COMPORTAMENTAL|${id}|${k}`, dataNm),
       });
@@ -323,20 +331,24 @@ export function montarRelatorio(base: Base, unidade?: string) {
   const eixosTec = eixos(tec, "TECNICO");
   const eixosComp = eixos(comp, "COMPORTAMENTAL");
 
+  const saldo = (e: ResumoEixo) => e.subiram - e.desceram;
   const destaques = (l: ResumoEixo[]) => {
-    const validos = l.filter((e) => e.comparaveis >= MIN && e.delta !== null);
+    const validos = l.filter((e) => e.comparaveis >= MIN);
     return {
-      sobem: validos.filter((e) => e.delta! > 0).sort((a, b) => b.delta! - a.delta!).slice(0, 2).map((e) => ({ nome: e.nome, delta: e.delta })),
-      caem: validos.filter((e) => e.delta! < 0).sort((a, b) => a.delta! - b.delta!).slice(0, 2).map((e) => ({ nome: e.nome, delta: e.delta })),
+      sobem: validos.filter((e) => saldo(e) > 0).sort((a, b) => saldo(b) - saldo(a)).slice(0, 2).map((e) => ({ nome: e.nome, subiram: e.subiram, comparaveis: e.comparaveis })),
+      caem: validos.filter((e) => saldo(e) < 0).sort((a, b) => saldo(a) - saldo(b)).slice(0, 2).map((e) => ({ nome: e.nome, desceram: e.desceram, comparaveis: e.comparaveis })),
     };
   };
 
-  // Onde focar (bloco 2): pessoas abaixo de 70% por eixo, só eixos com 5 pessoas ou mais.
+  // Onde focar (bloco 2): pessoas em Em Desenvolvimento por eixo, só eixos com 5 pessoas medidas ou mais.
   const ondeFocar = (l: ResumoEixo[]) => {
-    const comAbaixo = l.filter((e) => e.abaixo > 0);
+    const comFoco = l.filter((e) => e.emDesenvolvimento > 0);
     return {
-      itens: comAbaixo.filter((e) => e.nAtual >= MIN).sort((a, b) => b.abaixo - a.abaixo || a.nome.localeCompare(b.nome, "pt-BR")).map((e) => ({ nome: e.nome, abaixo: e.abaixo, transversal: e.transversal })),
-      amostraPequena: comAbaixo.filter((e) => e.nAtual < MIN).length,
+      itens: comFoco
+        .filter((e) => e.nAtual >= MIN)
+        .sort((a, b) => b.emDesenvolvimento - a.emDesenvolvimento || a.nome.localeCompare(b.nome, "pt-BR"))
+        .map((e) => ({ nome: e.nome, emDesenvolvimento: e.emDesenvolvimento, pessoas: e.nAtual, transversal: e.transversal })),
+      amostraPequena: comFoco.filter((e) => e.nAtual < MIN).length,
     };
   };
 
@@ -354,7 +366,7 @@ export function montarRelatorio(base: Base, unidade?: string) {
     pessoas: pessoasRecorte.size,
     areas,
     periodo: {
-      tecnico: { inicioAno: 2025, inicio: null as string | null, fim: iso(maxData(datasNmTec)) },
+      tecnico: { inicioAno: 2025, fim: iso(maxData(datasNmTec)) },
       comportamental: { inicio: iso(dados.ad.dataBase), fim: iso(dados.ad.dataAtual) },
     },
     execucao: { inicio: iso(minData(inicios)), fim: iso(maxData(conclusoes)) },
@@ -373,14 +385,14 @@ export function montarRelatorio(base: Base, unidade?: string) {
 
   // ---- Bloco 5a: como o PDI está acontecendo
   // Ponto de partida do PDI: técnico = Avaliação de Proficiência 2025; comportamental = AD mais recente.
-  const ppTec = tec.filter((a) => a.pp !== null && a.pp < PARAMETROS.referencia);
-  const ppComp = comp.filter((a) => a.nm !== null && a.nm < PARAMETROS.referencia);
+  const ppTec = tec.filter((a) => a.antes === "EM_DESENVOLVIMENTO");
+  const ppComp = comp.filter((a) => a.depois === "EM_DESENVOLVIMENTO");
   const planejamento = {
     TECNICO: { comPlano: ppTec.filter((a) => a.acoesAtivas > 0).length, total: ppTec.length },
     COMPORTAMENTAL: { comPlano: ppComp.filter((a) => a.acoesAtivas > 0).length, total: ppComp.length },
   };
-  const pessoasComNmTec = new Set(tec.filter((a) => a.nm !== null).map((a) => a.pessoa));
-  const dataNmPessoa = new Map<number, Date | null>();
+  const pessoasComNmTec = new Set(tec.filter((a) => a.depois !== null).map((a) => a.pessoa));
+  const dataNmPessoa = new Map<number, Date>();
   for (const a of tec) if (a.dataNm) dataNmPessoa.set(a.pessoa, a.dataNm);
   const acoesTecMedidas = acoesNaoCanceladas.filter((a) => a.instrumento === "TECNICO" && pessoasComNmTec.has(a.pessoa));
   const execucao = {
@@ -392,10 +404,10 @@ export function montarRelatorio(base: Base, unidade?: string) {
   };
   const sinais = Array.from(
     agrupar(
-      tec.filter((a) => a.pp !== null && a.nm !== null && a.pp < PARAMETROS.referencia && a.concluidasAntesNm > 0),
+      tec.filter((a) => a.antes === "EM_DESENVOLVIMENTO" && a.depois !== null && a.concluidasAntesNm > 0),
       (a) => a.unidade,
     ).entries(),
-  ).map(([area, l]) => ({ area, chegaram: l.filter((a) => a.nm! >= PARAMETROS.referencia).length, total: l.length }));
+  ).map(([area, l]) => ({ area, chegaram: l.filter((a) => naExpectativa(a.depois)).length, total: l.length }));
   const pdi = {
     planejamento,
     execucao,
@@ -404,19 +416,18 @@ export function montarRelatorio(base: Base, unidade?: string) {
   };
 
   // ---- Bloco 5b: fortalezas e multiplicadores
-  const transversais = eixosTec
-    .filter((e) => e.transversal && e.nAtual >= MIN)
-    .sort((a, b) => (b.mediaAtual ?? 0) - (a.mediaAtual ?? 0))
-    .map((e) => ({ nome: e.nome, media: e.mediaAtual, pessoas: e.nAtual }));
+  const ordenarForca = (a: ResumoEixo, b: ResumoEixo) => b.fortes * a.nAtual - a.fortes * b.nAtual || b.nAtual - a.nAtual;
+  const itemForca = (e: ResumoEixo) => ({ nome: e.nome, pessoas: e.nAtual, fortes: e.fortes, predominante: e.predominanteAtual, distribuicao: e.distribuicaoAtual });
+  const transversais = eixosTec.filter((e) => e.transversal && e.nAtual >= MIN).sort(ordenarForca).map(itemForca);
   const porAreaEspecificos = Array.from(agrupar(tec.filter((a) => !a.transversal), (a) => a.unidade).entries())
     .map(([area, l]) => ({
       area,
       eixos: Array.from(agrupar(l, (a) => a.eixo).entries())
         .map(([nome, la]) => resumoEixo(nome, la, null))
         .filter((e) => e.nAtual >= MIN)
-        .sort((a, b) => (b.mediaAtual ?? 0) - (a.mediaAtual ?? 0))
+        .sort(ordenarForca)
         .slice(0, unidade ? 10 : 2)
-        .map((e) => ({ nome: e.nome, media: e.mediaAtual, pessoas: e.nAtual })),
+        .map(itemForca),
     }))
     .filter((x) => x.eixos.length)
     .sort((a, b) => a.area.localeCompare(b.area, "pt-BR"));
@@ -432,19 +443,25 @@ export function montarRelatorio(base: Base, unidade?: string) {
   };
 
   // ---- Bloco 6: foco do próximo ciclo
-  // Pessoas = quem já tem a medição atual naquele eixo (é sobre elas que a média e o "abaixo" são calculados).
   const itemFoco = (e: ResumoEixo) => ({
     nome: e.nome,
-    delta: e.comparaveis >= MIN ? e.delta : null,
     pessoas: e.nAtual,
-    total: e.pessoas,
-    media: e.mediaAtual,
-    abaixo: e.abaixo,
+    emDesenvolvimento: e.emDesenvolvimento,
+    subiram: e.comparaveis >= MIN ? e.subiram : null,
+    desceram: e.comparaveis >= MIN ? e.desceram : null,
+    comparaveis: e.comparaveis,
+    predominante: e.predominanteAtual,
     transversal: e.transversal,
-    motivo: motivoFoco({ delta: e.comparaveis >= MIN ? e.delta : null, abaixo: e.abaixo, pessoas: e.nAtual }),
+    motivo: motivoFoco({
+      emDesenvolvimento: e.emDesenvolvimento,
+      desceram: e.comparaveis >= MIN ? e.desceram : 0,
+      subiram: e.comparaveis >= MIN ? e.subiram : 0,
+      pessoas: e.nAtual,
+    }),
   });
-  const criterioFoco = (e: ResumoEixo) => e.nAtual >= MIN && (e.abaixo > 0 || (e.comparaveis >= MIN && e.delta !== null && e.delta < 0));
-  const ordenarFoco = (a: ResumoEixo, b: ResumoEixo) => b.abaixo - a.abaixo || (a.delta ?? 0) - (b.delta ?? 0) || a.nome.localeCompare(b.nome, "pt-BR");
+  const criterioFoco = (e: ResumoEixo) => e.nAtual >= MIN && (e.emDesenvolvimento > 0 || (e.comparaveis >= MIN && e.desceram > e.subiram));
+  const ordenarFoco = (a: ResumoEixo, b: ResumoEixo) =>
+    b.emDesenvolvimento - a.emDesenvolvimento || b.desceram - b.subiram - (a.desceram - a.subiram) || a.nome.localeCompare(b.nome, "pt-BR");
   const foco = {
     sebrae: {
       tecnicos: eixosTec.filter((e) => e.transversal && criterioFoco(e)).sort(ordenarFoco).map(itemFoco),
@@ -465,31 +482,30 @@ export function montarRelatorio(base: Base, unidade?: string) {
   };
 
   // ---- Bloco 7: quanto investimos onde mais crescemos
-  const linhaInvest = (e: ResumoEixo, tipo: Instrumento, contraste: boolean) => {
-    const l = avals.filter((a) => a.instrumento === tipo && a.eixo === e.nome && a.pp !== null && a.nm !== null);
-    const acoesSoma = l.reduce((s, a) => s + a.concluidasAntesNm, 0);
+  const linhaInvest = (e: ResumoEixo, tipo: Instrumento, contraste: boolean): LinhaInvestimento => {
+    const l = avals.filter((a) => a.instrumento === tipo && a.eixo === e.nome && a.antes !== null && a.depois !== null);
     return {
       nome: e.nome,
       tipo,
       pessoas: l.length,
-      crescimento: e.delta,
-      acoesPorPessoa: l.length ? arred(acoesSoma / l.length) : null,
-      pctComAcao: pct(l.filter((a) => a.concluidasAntesNm > 0).length, l.length),
+      subiram: e.subiram,
+      desceram: e.desceram,
+      comAcao: l.filter((a) => a.concluidasAntesNm > 0).length,
+      acoes: l.reduce((s, a) => s + a.concluidasAntesNm, 0),
       contraste,
     };
   };
-  const validosInv = (l: ResumoEixo[]) => l.filter((e) => e.comparaveis >= MIN && e.delta !== null);
-  const cresceTec = validosInv(eixosTec).filter((e) => e.delta! > 0).sort((a, b) => b.delta! - a.delta!).slice(0, 2);
-  const cresceComp = validosInv(eixosComp).filter((e) => e.delta! > 0).sort((a, b) => b.delta! - a.delta!).slice(0, 2);
+  const validosInv = (l: ResumoEixo[]) => l.filter((e) => e.comparaveis >= MIN);
+  const cresce = (l: ResumoEixo[]) => validosInv(l).filter((e) => saldo(e) > 0).sort((a, b) => saldo(b) - saldo(a)).slice(0, 2);
   const quedas = [
     ...validosInv(eixosTec).map((e) => ({ e, tipo: "TECNICO" as Instrumento })),
     ...validosInv(eixosComp).map((e) => ({ e, tipo: "COMPORTAMENTAL" as Instrumento })),
   ]
-    .filter((x) => x.e.delta! < 0)
-    .sort((a, b) => a.e.delta! - b.e.delta!);
+    .filter((x) => saldo(x.e) < 0)
+    .sort((a, b) => saldo(a.e) - saldo(b.e));
   const investimento = [
-    ...cresceTec.map((e) => linhaInvest(e, "TECNICO", false)),
-    ...cresceComp.map((e) => linhaInvest(e, "COMPORTAMENTAL", false)),
+    ...cresce(eixosTec).map((e) => linhaInvest(e, "TECNICO", false)),
+    ...cresce(eixosComp).map((e) => linhaInvest(e, "COMPORTAMENTAL", false)),
     ...(quedas[0] ? [linhaInvest(quedas[0].e, quedas[0].tipo, true)] : []),
   ];
 
@@ -498,25 +514,24 @@ export function montarRelatorio(base: Base, unidade?: string) {
     planejamento.TECNICO.total - planejamento.TECNICO.comPlano + planejamento.COMPORTAMENTAL.total - planejamento.COMPORTAMENTAL.comPlano;
   const encaminhamentos = [
     ...(resumoTec.aguardando > 0 ? [`Concluir a Avaliação de Proficiência 2026 nas ${resumoTec.aguardando} avaliações pendentes`] : []),
-    ...(semPlano > 0 ? [`Líderes: incluir no próximo PDI os ${semPlano} pontos de partida abaixo de 70% ainda sem plano`] : []),
+    ...(semPlano > 0 ? [`Líderes: incluir no próximo PDI os ${semPlano} pontos de partida no conceito Em Desenvolvimento ainda sem plano`] : []),
     "Concluir a revisão dos eixos por função com cada empregado",
     ...(fortalezas.multiplicadores.total > 0 ? ["Conectar multiplicadores às prioridades"] : []),
   ];
 
   // ---- Sínteses
-  const pctPlano = pct(
-    planejamento.TECNICO.comPlano + planejamento.COMPORTAMENTAL.comPlano,
-    planejamento.TECNICO.total + planejamento.COMPORTAMENTAL.total,
-  );
   const sinteses = {
     resultado: sinteseResultado(resumoTec, resumoComp),
     fechamento: sinteseFechamento(resumoTec, resumoComp),
     tecnico: sinteseConhecimento(eixosTec, "TECNICO"),
     comportamental: sinteseConhecimento(eixosComp, "COMPORTAMENTAL"),
     pdi: sintesePdi({
-      planejamentoPct: pctPlano,
-      execucaoPct: pct(execucao.concluidasAntes, execucao.total),
-      forca: transversais[0] ?? null,
+      planejamento: {
+        comPlano: planejamento.TECNICO.comPlano + planejamento.COMPORTAMENTAL.comPlano,
+        total: planejamento.TECNICO.total + planejamento.COMPORTAMENTAL.total,
+      },
+      execucao,
+      forca: transversais[0] ? { nome: transversais[0].nome, fortes: transversais[0].fortes, pessoas: transversais[0].pessoas } : null,
       multiplicadores: fortalezas.multiplicadores.total,
     }),
     investimento: sinteseInvestimento(investimento),
@@ -524,11 +539,8 @@ export function montarRelatorio(base: Base, unidade?: string) {
 
   return {
     parametros: PARAMETROS,
-    recorte: {
-      unidade: unidade ?? null,
-      pessoas: pessoasRecorte.size,
-      amostraPequena: pessoasRecorte.size < MIN,
-    },
+    conceitos: CONCEITOS,
+    recorte: { unidade: unidade ?? null, pessoas: pessoasRecorte.size, amostraPequena: pessoasRecorte.size < MIN },
     contexto,
     instrumentos: {
       TECNICO: { ...resumoTec, destaques: destaques(eixosTec), ondeFocar: ondeFocar(eixosTec), eixos: eixosTec },

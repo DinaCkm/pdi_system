@@ -115,8 +115,8 @@ describe("evolucaoDomain", () => {
   });
 
   it("converte indicadores tecnicos em conceitos de conhecimento", () => {
-    expect(conceitoConhecimento(64.9)).toBe("EM_DESENVOLVIMENTO");
-    expect(conceitoConhecimento(65)).toBe("CONHECIMENTO_APLICADO");
+    expect(conceitoConhecimento(69.9)).toBe("EM_DESENVOLVIMENTO");
+    expect(conceitoConhecimento(70)).toBe("CONHECIMENTO_APLICADO");
     expect(conceitoConhecimento(75)).toBe("CONHECIMENTO_CONSOLIDADO");
     expect(conceitoConhecimento(85)).toBe("CONHECIMENTO_AVANCADO");
     expect(conceitoConhecimento(90)).toBe("REFERENCIA");
@@ -197,7 +197,8 @@ describe("evolucaoDomain", () => {
     expect(percentualNaEscala(2.93, 0, 3)).toBe(97.7);
     expect(conceitoComportamentalPorResultado(2.93, 0, 3)).toBe("REFERENCIA");
     expect(conceitoComportamentalPorResultado(2.4, 0, 3)).toBe("CONSOLIDADO");
-    expect(conceitoComportamentalPorResultado(2.0, 0, 3)).toBe("EM_APLICACAO");
+    expect(conceitoComportamentalPorResultado(2.1, 0, 3)).toBe("EM_APLICACAO");
+    expect(conceitoComportamentalPorResultado(2.0, 0, 3)).toBe("EM_DESENVOLVIMENTO");
     expect(conceitoComportamentalPorResultado(1.2, 0, 3)).toBe("EM_DESENVOLVIMENTO");
   });
 

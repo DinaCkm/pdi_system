@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { fmtDelta, fmtNum, fmtPct, fraseVariacao, sentido } from "../../../shared/fimDeCicloRegras";
+import { CONCEITOS, ROTULO_CONCEITO, type Conceito } from "../../../shared/fimDeCicloRegras";
 
 // Relatório de Fim de Ciclo do PDI — página da diretoria.
 // Segue a "Especificação de ajustes — Relatório de Fim de Ciclo do PDI" e o
-// protótipo visual "Página da diretoria". Só dados agregados: nenhum nome de pessoa.
+// protótipo visual "Página da diretoria", na língua do sistema: CONCEITOS.
+// Nenhuma nota, média ou percentual; só contagens. Nenhum nome de pessoa.
 
 const api = (trpc as any).evolucaoCiclo;
 
@@ -42,10 +43,19 @@ const COR_GRUPO: Record<string, string> = {
   SEM_COMPARACAO: C.neutro,
 };
 const ROTULO_GRUPO: Record<string, string> = {
-  MANTEVE: "Já acima de 70% e manteve",
-  CHEGOU: "Chegou a 70% neste ciclo",
-  ABAIXO: "Abaixo de 70%",
+  MANTEVE: "Já na expectativa e manteve",
+  CHEGOU: "Chegou à expectativa neste ciclo",
+  ABAIXO: "Em Desenvolvimento",
   SEM_COMPARACAO: "Sem comparação",
+};
+
+// Régua de conceitos: âmbar para Em Desenvolvimento, teal crescente na expectativa.
+const COR_CONCEITO: Record<Conceito, string> = {
+  EM_DESENVOLVIMENTO: "#D99A3B",
+  APLICADO: "#A8DCD6",
+  CONSOLIDADO: "#4FB3AB",
+  AVANCADO: "#1A8C84",
+  REFERENCIA: "#0B5E5E",
 };
 const GRUPOS = ["MANTEVE", "CHEGOU", "ABAIXO", "SEM_COMPARACAO"] as const;
 
@@ -69,11 +79,6 @@ function nomeArea(area: string | null | undefined) {
     .join(" ");
   return `${sigla.trim()} · ${nome}`;
 }
-
-const corDelta = (v: number | null | undefined) => {
-  const s = sentido(v);
-  return s === "positivo" ? C.positivo : s === "negativo" ? C.atencao : C.secundario;
-};
 
 // ---------- Peças visuais ----------
 
@@ -173,34 +178,32 @@ function Grade({ min = 280, gap = 16, children }: { min?: number; gap?: number; 
   return <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(min(${min}px, 100%), 1fr))`, gap }}>{children}</div>;
 }
 
-// Halteres: ponto vazio = medição anterior, ponto cheio = atual, linha = 70%.
-function Halteres({ antes, depois, rotulo }: { antes: number | null; depois: number | null; rotulo: string }) {
-  if (antes === null || depois === null) {
-    return (
-      <div style={{ flex: "2 1 300px", fontSize: 14, color: C.secundario }} aria-label={`${rotulo}: aguardando as duas medições`}>
-        Aguardando as duas medições
-      </div>
-    );
-  }
-  const lo = Math.min(antes, depois);
-  const hi = Math.max(antes, depois);
-  const d = sentido(depois - antes);
+// Barra com a distribuição de pessoas pelos cinco conceitos.
+function Distribuicao({ dist, rotulo, altura = 14 }: { dist: Record<Conceito, number>; rotulo: string; altura?: number }) {
+  const total = CONCEITOS.reduce((t, c) => t + (dist?.[c] ?? 0), 0);
+  const aria = `${rotulo}: ${CONCEITOS.filter((c) => dist?.[c]).map((c) => `${dist[c]} em ${ROTULO_CONCEITO[c]}`).join(", ") || "sem pessoas"}`;
   return (
-    <div style={{ flex: "2 1 300px", position: "relative", height: 28 }} role="img" aria-label={`${rotulo}: de ${fmtPct(antes)} para ${fmtPct(depois)}`}>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 13, height: 2, background: C.linhaSuave, borderRadius: 2 }} />
-      <div style={{ position: "absolute", left: "70%", top: 2, width: 2, height: 24, background: C.texto, opacity: 0.55 }} />
-      <div
-        style={{ position: "absolute", top: 12, height: 4, borderRadius: 4, background: d === "negativo" ? C.atencaoClaro : C.positivo, opacity: 0.35, left: `${lo}%`, width: `${hi - lo}%` }}
-      />
-      <div
-        style={{ position: "absolute", top: 6, width: 16, height: 16, borderRadius: "50%", background: C.cartao, border: "3px solid #A3ADBA", boxSizing: "border-box", left: `calc(${antes}% - 8px)` }}
-      />
-      <div
-        style={{ position: "absolute", top: 5, width: 18, height: 18, borderRadius: "50%", background: depois >= 70 ? C.positivo : C.atencaoClaro, boxShadow: `0 0 0 3px ${C.cartao}`, left: `calc(${depois}% - 9px)` }}
-      />
+    <div role="img" aria-label={aria} style={{ display: "flex", height: altura, borderRadius: 999, overflow: "hidden", gap: 2, background: "#EEF1F4", minWidth: 0 }}>
+      {total > 0 &&
+        CONCEITOS.map((c) => (dist[c] ? <div key={c} title={`${ROTULO_CONCEITO[c]}: ${dist[c]}`} style={{ width: `${(dist[c] / total) * 100}%`, background: COR_CONCEITO[c] }} /> : null))}
     </div>
   );
 }
+
+function LegendaConceitos() {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 18px", fontSize: 14, color: C.secundario }}>
+      {CONCEITOS.map((c) => (
+        <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <span style={{ width: 12, height: 12, borderRadius: 4, background: COR_CONCEITO[c] }} />
+          {ROTULO_CONCEITO[c]}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+const cont = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
 
 function Barra({ titulo, grupos, total }: { titulo: string; grupos: Record<string, number>; total: number }) {
   const aria = `${titulo}: ${GRUPOS.map((g) => `${grupos[g] ?? 0} ${ROTULO_GRUPO[g].toLowerCase()}`).join(", ")}`;
@@ -293,8 +296,10 @@ export function RelatorioFimCiclo() {
     </span>
   );
 
-  const textoCrescimento = (destaques: any) =>
-    destaques.sobem.length ? destaques.sobem.map((d: any) => `${d.nome} (${fmtDelta(d.delta)})`).join(" e ") : null;
+  const textoSobem = (destaques: any) =>
+    destaques.sobem.length ? destaques.sobem.map((d: any) => `${d.nome} (${d.subiram} de ${d.comparaveis} subiram)`).join(" e ") : null;
+  const textoCaem = (destaques: any) =>
+    destaques.caem.length ? destaques.caem.map((d: any) => `${d.nome} (${d.desceram} de ${d.comparaveis} desceram)`).join(" e ") : null;
 
   return (
     <div style={{ fontFamily: FONTE_TEXTO, color: C.texto, background: C.fundo, borderRadius: 20 }}>
@@ -403,7 +408,7 @@ export function RelatorioFimCiclo() {
             </div>
           </Grade>
           <p style={{ margin: 0, fontSize: 14, color: C.secundario }}>
-            Referência: 70% nos dois instrumentos. Cada avaliação é o resultado de uma pessoa em um eixo ou competência. Técnico e comportamental são lidos separadamente.
+            Expectativa de desenvolvimento: Conhecimento Aplicado ou acima, nos dois instrumentos. Cada avaliação é o resultado de uma pessoa em um eixo ou competência. Técnico e comportamental são lidos separadamente.
           </p>
         </Secao>
 
@@ -412,35 +417,44 @@ export function RelatorioFimCiclo() {
           <h2 id="resultado" style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: 22, fontWeight: 600 }}>
             Resultado geral
           </h2>
+          <LegendaConceitos />
           <Grade min={280}>
             {[
-              { titulo: "Conhecimento técnico", sub: "Proficiência 2025 → 2026", x: tec, rotulo: "das avaliações técnicas acima de 70%", tipo: "TECNICO" },
-              { titulo: "Competências comportamentais", sub: `AD ${adBase} → ${adAtual}`, x: comp, rotulo: "das avaliações de competências acima de 70%", tipo: "COMPORTAMENTAL" },
+              { titulo: "Conhecimento técnico", sub: "Proficiência 2025 → 2026", x: tec, tipo: "TECNICO", inicio: "2025", fim: "2026" },
+              { titulo: "Competências comportamentais", sub: `AD ${adBase} → ${adAtual}`, x: comp, tipo: "COMPORTAMENTAL", inicio: String(adBase), fim: String(adAtual) },
             ].map((c) => {
-              const cresc = textoCrescimento(c.x.destaques);
-              const quedas = c.x.destaques.caem.map((d: any) => `${d.nome} (${fmtDelta(d.delta)})`).join(" e ");
+              const sobem = textoSobem(c.x.destaques);
+              const caem = textoCaem(c.x.destaques);
               return (
-                <article key={c.titulo} style={{ background: C.cartao, border: `1px solid ${C.borda}`, borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 10 }}>
+                <article key={c.titulo} style={{ background: C.cartao, border: `1px solid ${C.borda}`, borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
                   <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: 15, fontWeight: 600, color: C.secundario }}>{c.titulo}</span>
                     <span style={{ fontSize: 13, color: C.secundario }}>{c.sub}</span>
                   </div>
-                  <div style={{ fontFamily: FONTE_TITULO, fontSize: "clamp(30px, 4vw, 38px)", fontWeight: 700, color: C.positivo }}>
-                    {fmtPct(c.x.pctAcimaAntes)} → {fmtPct(c.x.pctAcimaDepois)}
+                  <div style={{ fontFamily: FONTE_TITULO, fontSize: "clamp(28px, 4vw, 36px)", fontWeight: 700, color: C.positivo }}>
+                    {c.x.naExpectativaAntes} → {c.x.naExpectativaDepois}
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>{c.rotulo}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600 }}>
+                    de {c.x.comparaveis} avaliações na expectativa de desenvolvimento (Conhecimento Aplicado ou acima)
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "44px 1fr", gap: "6px 10px", alignItems: "center", fontSize: 13, color: C.secundario }}>
+                    <span>{c.inicio}</span>
+                    <Distribuicao dist={c.x.distribuicaoAntes} rotulo={`${c.titulo}, ${c.inicio}`} />
+                    <span>{c.fim}</span>
+                    <Distribuicao dist={c.x.distribuicaoDepois} rotulo={`${c.titulo}, ${c.fim}`} />
+                  </div>
                   <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55, color: C.corpo }}>
-                    Nota média: {fraseVariacao(c.x.mediaAntes, c.x.mediaDepois)}
-                    {c.x.variacaoRelativa !== null && sentido(c.x.delta) !== "zero" ? ` (${fmtDelta(c.x.variacaoRelativa)}% em relação ao início)` : ""}. Base: {c.x.comparaveis} de {c.x.total} avaliações com as duas medições
+                    Entre as duas medições, {cont(c.x.subiram, "avaliação subiu", "avaliações subiram")} de conceito, {c.x.mantiveram} {c.x.mantiveram === 1 ? "manteve" : "mantiveram"} e {c.x.desceram}{" "}
+                    {c.x.desceram === 1 ? "desceu" : "desceram"}. Base: {c.x.comparaveis} de {c.x.total} avaliações com as duas medições
                     {c.tipo === "TECNICO" && c.x.aguardando > 0 ? `; ${c.x.aguardando} aguardam a Avaliação de Proficiência 2026` : ""}
                     {c.x.primeiraMedicao > 0 ? `; ${c.x.primeiraMedicao} são primeira medição` : ""}.
                   </p>
                   {c.tipo === "TECNICO" ? (
-                    cresc && <p style={{ margin: 0, fontSize: 15, color: C.corpo }}>Mais cresceram: {cresc}.</p>
+                    sobem && <p style={{ margin: 0, fontSize: 15, color: C.corpo }}>Mais cresceram: {sobem}.</p>
                   ) : (
                     <p style={{ margin: 0, fontSize: 15, color: C.corpo }}>
-                      {cresc ? `Subiu ${cresc}. ` : ""}
-                      {quedas ? `Caiu ${quedas}. ` : ""}Medido antes das ações do PDI.
+                      {sobem ? `Subiram: ${sobem}. ` : ""}
+                      {caem ? `Desceram: ${caem}. ` : ""}Medido antes das ações do PDI.
                     </p>
                   )}
                 </article>
@@ -449,7 +463,7 @@ export function RelatorioFimCiclo() {
             <article style={{ background: C.cartao, border: `1px solid ${C.borda}`, borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 15, fontWeight: 600, color: C.secundario }}>Onde focar no próximo ciclo</span>
-                <span style={{ fontSize: 13, color: C.secundario }}>abaixo de 70%</span>
+                <span style={{ fontSize: 13, color: C.secundario }}>Em Desenvolvimento</span>
               </div>
               {[
                 { titulo: "Conhecimentos técnicos", f: tec.ondeFocar },
@@ -461,17 +475,17 @@ export function RelatorioFimCiclo() {
                     {b.f.itens.length ? (
                       b.f.itens.map((i: any) => (
                         <Chip key={i.nome} tipo="foco">
-                          {i.nome} · {i.abaixo}
+                          {i.nome} · {i.emDesenvolvimento} de {i.pessoas}
                         </Chip>
                       ))
                     ) : (
-                      <Chip tipo="vazio">Nenhum abaixo de 70% com 5 pessoas ou mais</Chip>
+                      <Chip tipo="vazio">Ninguém no conceito Em Desenvolvimento entre eixos com 5 pessoas ou mais</Chip>
                     )}
                     {b.f.amostraPequena > 0 && <Chip tipo="vazio">+ {b.f.amostraPequena} com amostra pequena</Chip>}
                   </div>
                 </div>
               ))}
-              <p style={{ margin: 0, fontSize: 13, color: C.secundario }}>O número é de pessoas abaixo de 70% naquele eixo ou competência.</p>
+              <p style={{ margin: 0, fontSize: 13, color: C.secundario }}>Pessoas no conceito Em Desenvolvimento, de quantas já têm a medição atual naquele eixo ou competência.</p>
             </article>
           </Grade>
           <Sintese texto={r.sinteses.resultado} />
@@ -480,7 +494,7 @@ export function RelatorioFimCiclo() {
         {/* Bloco 3 — Como as avaliações fecharam o ciclo */}
         <Secao
           titulo="Como as avaliações fecharam o ciclo"
-          subtitulo="Cada avaliação é o resultado de uma pessoa em um eixo técnico ou em uma competência, comparando a medição anterior com a atual."
+          subtitulo="Cada avaliação é o resultado de uma pessoa em um eixo técnico ou em uma competência, comparando o conceito anterior com o atual."
           id="fechamento"
         >
           <Grade min={320} gap={20}>
@@ -496,11 +510,11 @@ export function RelatorioFimCiclo() {
                   <div style={{ fontSize: 14, color: C.secundario }}>
                     Técnico {tec.grupos[g]} · Comportamental {comp.grupos[g]}
                   </div>
-                  {g === "ABAIXO" && tec.classes.EM_EVOLUCAO + comp.classes.EM_EVOLUCAO > 0 && (
-                    <div style={{ fontSize: 13, color: C.secundario }}>{tec.classes.EM_EVOLUCAO + comp.classes.EM_EVOLUCAO} em evolução (subiram 10 pontos ou mais)</div>
-                  )}
                   {g === "MANTEVE" && tec.classes.ATENCAO + comp.classes.ATENCAO > 0 && (
-                    <div style={{ fontSize: 13, color: C.secundario }}>{tec.classes.ATENCAO + comp.classes.ATENCAO} com atenção (caíram 10 pontos ou mais)</div>
+                    <div style={{ fontSize: 13, color: C.secundario }}>{tec.classes.ATENCAO + comp.classes.ATENCAO} com atenção: desceram de conceito, mas seguem na expectativa</div>
+                  )}
+                  {g === "ABAIXO" && tec.classes.ABAIXO_NOVA + comp.classes.ABAIXO_NOVA > 0 && (
+                    <div style={{ fontSize: 13, color: C.secundario }}>{tec.classes.ABAIXO_NOVA + comp.classes.ABAIXO_NOVA} estavam na expectativa e pedem novo foco</div>
                   )}
                   {g === "SEM_COMPARACAO" && (
                     <div style={{ fontSize: 13, color: C.secundario }}>
@@ -517,7 +531,7 @@ export function RelatorioFimCiclo() {
         {/* Bloco 4 — Onde está o conhecimento da equipe */}
         <Secao
           titulo="Onde está o conhecimento da equipe"
-          subtitulo="Média por eixo, antes e depois, sobre as mesmas avaliações. Ordenado pelo número de pessoas avaliadas."
+          subtitulo="Como as pessoas se distribuem pelos conceitos, antes e depois, sobre as mesmas avaliações. Ordenado pelo número de pessoas avaliadas."
           id="conhecimento"
           acao={
             <Abas
@@ -531,29 +545,18 @@ export function RelatorioFimCiclo() {
             />
           }
         >
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 20, fontSize: 14, color: C.secundario, alignItems: "center" }}>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <span style={{ width: 12, height: 12, borderRadius: "50%", background: C.cartao, border: "3px solid #A3ADBA" }} />
-              {abaConhecimento === "TECNICO" ? "Avaliação de Proficiência 2025" : `Avaliação de Desempenho ${adBase}`}
-            </span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <span style={{ width: 12, height: 12, borderRadius: "50%", background: C.positivo }} />
-              {abaConhecimento === "TECNICO" ? "Avaliação de Proficiência 2026" : `Avaliação de Desempenho ${adAtual}`}
-            </span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <span style={{ width: 2, height: 14, background: C.texto }} />
-              Referência 70%
-            </span>
-          </div>
+          <LegendaConceitos />
           {abaConhecimento === "COMPORTAMENTAL" && (
             <p style={{ margin: 0, fontSize: 14, color: C.corpo }}>
-              As ações do PDI vieram depois da AD {adAtual}; estes números são o ponto de partida do PDI comportamental. A nota da Avaliação de Desempenho (0 a 3) aparece em percentual da escala: nota 2,1 = 70%.
+              As ações do PDI vieram depois da AD {adAtual}; estes resultados são o ponto de partida do PDI comportamental.
             </p>
           )}
           <div style={{ display: "flex", flexDirection: "column" }}>
             {eixosAba.map((e: any) => {
               const chave = `${abaConhecimento}|${e.nome}`;
               const expandido = aberto === chave;
+              const inicio = abaConhecimento === "TECNICO" ? "2025" : String(adBase);
+              const fim = abaConhecimento === "TECNICO" ? "2026" : String(adAtual);
               return (
                 <div key={chave} style={{ borderTop: `1px solid ${C.linhaSuave}` }}>
                   <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 16, padding: "16px 0" }}>
@@ -572,19 +575,22 @@ export function RelatorioFimCiclo() {
                         {e.amostraPequena && <Etiqueta>amostra pequena</Etiqueta>}
                       </div>
                     </div>
-                    <Halteres antes={e.mediaAntes} depois={e.mediaDepois} rotulo={e.nome} />
-                    <div style={{ flex: "0 0 170px", display: "flex", justifyContent: "flex-end", alignItems: "baseline", gap: 10, fontVariantNumeric: "tabular-nums" }}>
-                      {e.mediaAntes !== null && e.mediaDepois !== null ? (
+                    {e.comparaveis > 0 ? (
+                      <div style={{ flex: "2 1 300px", display: "grid", gridTemplateColumns: "40px 1fr", gap: "6px 10px", alignItems: "center", fontSize: 13, color: C.secundario }}>
+                        <span>{inicio}</span>
+                        <Distribuicao dist={e.distribuicaoAntes} rotulo={`${e.nome}, ${inicio}`} altura={12} />
+                        <span>{fim}</span>
+                        <Distribuicao dist={e.distribuicaoDepois} rotulo={`${e.nome}, ${fim}`} altura={12} />
+                      </div>
+                    ) : (
+                      <div style={{ flex: "2 1 300px", fontSize: 14, color: C.secundario }}>{e.aguardando} aguardam a medição atual</div>
+                    )}
+                    <div style={{ flex: "0 0 190px", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, fontSize: 14 }}>
+                      {e.comparaveis > 0 && (
                         <>
-                          <span style={{ fontSize: 14, color: C.secundario }}>
-                            {fmtPct(e.mediaAntes)} → {fmtPct(e.mediaDepois)}
-                          </span>
-                          <span style={{ fontFamily: FONTE_TITULO, fontSize: 18, fontWeight: 700, minWidth: 56, textAlign: "right", color: corDelta(e.delta) }} aria-label={`variação de ${fmtDelta(e.delta)} pontos`}>
-                            {fmtDelta(e.delta)}
-                          </span>
+                          <span style={{ color: C.positivo, fontWeight: 700 }}>{cont(e.subiram, "subiu", "subiram")} de conceito</span>
+                          <span style={{ color: e.desceram > 0 ? C.atencao : C.secundario, fontWeight: e.desceram > 0 ? 700 : 400 }}>{cont(e.desceram, "desceu", "desceram")}</span>
                         </>
-                      ) : (
-                        <span style={{ fontSize: 14, color: C.secundario }}>{e.aguardando} aguardam medição</span>
                       )}
                     </div>
                   </div>
@@ -605,7 +611,8 @@ export function RelatorioFimCiclo() {
                         </div>
                       )}
                       <div>
-                        Hoje: {e.nAtual} pessoas com a medição atual, média {fmtPct(e.mediaAtual)}; {e.abaixo} abaixo de 70%.
+                        Hoje: {e.nAtual} pessoas com a medição atual
+                        {e.predominanteAtual ? `, conceito mais frequente: ${ROTULO_CONCEITO[e.predominanteAtual as Conceito]}` : ""}; {e.emDesenvolvimento} no conceito Em Desenvolvimento.
                       </div>
                     </div>
                   )}
@@ -627,13 +634,13 @@ export function RelatorioFimCiclo() {
               {[
                 {
                   titulo: "Planejamento · técnico",
-                  sub: "Pontos de partida abaixo de 70% (Proficiência 2025) que já têm plano",
+                  sub: "Pontos de partida no conceito Em Desenvolvimento (Proficiência 2025) que já têm plano",
                   x: r.pdi.planejamento.TECNICO.comPlano,
                   y: r.pdi.planejamento.TECNICO.total,
                 },
                 {
                   titulo: "Planejamento · competências",
-                  sub: `Pontos de partida abaixo de 70% (AD ${adAtual}) que já têm plano`,
+                  sub: `Pontos de partida no conceito Em Desenvolvimento (AD ${adAtual}) que já têm plano`,
                   x: r.pdi.planejamento.COMPORTAMENTAL.comPlano,
                   y: r.pdi.planejamento.COMPORTAMENTAL.total,
                 },
@@ -649,11 +656,8 @@ export function RelatorioFimCiclo() {
                     <div style={{ fontWeight: 600 }}>{l.titulo}</div>
                     <div style={{ fontSize: 14, color: C.secundario }}>{l.sub}</div>
                   </div>
-                  <div style={{ textAlign: "right", flex: "none" }}>
-                    <div style={{ fontFamily: FONTE_TITULO, fontSize: 24, fontWeight: 700 }}>{l.y ? fmtPct((l.x / l.y) * 100) : "Nenhum"}</div>
-                    <div style={{ fontSize: 13, color: C.secundario }}>
-                      {l.x} de {l.y}
-                    </div>
+                  <div style={{ textAlign: "right", flex: "none", fontFamily: FONTE_TITULO, fontSize: 22, fontWeight: 700 }}>
+                    {l.y ? `${l.x} de ${l.y}` : "Nenhum"}
                   </div>
                 </div>
               ))}
@@ -664,15 +668,17 @@ export function RelatorioFimCiclo() {
                     <div key={s.area} style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 12, fontSize: 15, padding: "8px 0", borderBottom: "1px solid rgba(11,85,85,0.15)" }}>
                       <span>{nomeArea(s.area)}</span>
                       <span style={{ color: C.tealTexto, fontWeight: 600 }}>
-                        {s.chegaram} de {s.total} avaliações com ação chegaram a 70%
+                        {s.chegaram} de {s.total} avaliações com ação chegaram à expectativa
                       </span>
                     </div>
                   ))
                 ) : (
-                  <div style={{ fontSize: 15, color: C.tealTexto }}>Ainda não há área com 5 ou mais avaliações técnicas que partiram de abaixo de 70% e tiveram ação concluída antes da nova medição.</div>
+                  <div style={{ fontSize: 15, color: C.tealTexto }}>
+                    Ainda não há área com 5 ou mais avaliações técnicas que partiram de Em Desenvolvimento e tiveram ação concluída antes da nova medição.
+                  </div>
                 )}
                 {r.pdi.areasAmostraPequena > 0 && (
-                  <div style={{ fontSize: 13, color: "#2E5555" }}>{r.pdi.areasAmostraPequena} área(s) com menos de 5 avaliações nessa condição ficam fora da lista.</div>
+                  <div style={{ fontSize: 13, color: "#2E5555" }}>{r.pdi.areasAmostraPequena === 1 ? "1 área com menos de 5 avaliações nessa condição fica fora da lista." : `${r.pdi.areasAmostraPequena} áreas com menos de 5 avaliações nessa condição ficam fora da lista.`}</div>
                 )}
                 <div style={{ fontSize: 13, lineHeight: 1.5, color: "#2E5555" }}>
                   Cada área é lida no seu ritmo. Uma leitura para o Sebrae como um todo virá quando houver medições comparáveis suficientes (mínimo de {r.parametros.comparacaoMinima} avaliações por grupo).
@@ -688,7 +694,7 @@ export function RelatorioFimCiclo() {
               <div style={{ display: "flex", alignItems: "center", gap: 18, padding: 18, borderRadius: 14, background: C.tealFundo }}>
                 <div style={{ fontFamily: FONTE_TITULO, fontSize: 40, fontWeight: 700, color: "#0B5555" }}>{r.fortalezas.multiplicadores.total}</div>
                 <div style={{ fontSize: 15, lineHeight: 1.5, color: C.tealTexto }}>
-                  vezes em que uma pessoa tirou 70% ou mais em um eixo técnico que não é exigido na sua função, em {r.fortalezas.multiplicadores.eixos} eixos. É conhecimento que ela pode ensinar a quem precisa.
+                  vezes em que uma pessoa alcançou Conhecimento Aplicado ou acima em um eixo técnico que não é exigido na sua função, em {r.fortalezas.multiplicadores.eixos} eixos. É conhecimento que ela pode ensinar a quem precisa.
                   {r.fortalezas.multiplicadores.porEixo.length > 0 && (
                     <> Mais frequentes: {r.fortalezas.multiplicadores.porEixo.map((e: any) => `${e.nome} (${e.vezes})`).join(", ")}.</>
                   )}
@@ -703,42 +709,57 @@ export function RelatorioFimCiclo() {
                   ["AREA", "Por área"],
                 ]}
               />
-              {abaFortalezas === "SEBRAE" ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <div style={{ fontSize: 14, color: C.secundario, paddingBottom: 6 }}>Conhecimentos comuns a todos, onde a força é da organização. Média atual entre quem já tem a medição.</div>
-                  {r.fortalezas.transversais.length ? (
-                    r.fortalezas.transversais.map((t: any) => (
-                      <div key={t.nome} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, padding: "10px 0", borderBottom: `1px solid ${C.linhaSuave}` }}>
-                        <span>
-                          <strong>{t.nome}</strong> <span style={{ color: C.secundario }}>· {t.pessoas} pessoas</span>
-                        </span>
-                        <strong>{fmtPct(t.media)}</strong>
-                      </div>
-                    ))
-                  ) : (
-                    <div style={{ fontSize: 15, color: C.secundario }}>Nenhum eixo transversal com medição de 5 pessoas ou mais neste recorte.</div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <div style={{ fontSize: 14, color: C.secundario, paddingBottom: 6 }}>Conhecimentos específicos de cada área, com no mínimo 5 pessoas.</div>
-                  {r.fortalezas.porArea.length ? (
-                    r.fortalezas.porArea.flatMap((a: any) =>
-                      a.eixos.map((e: any) => (
-                        <div key={`${a.area}|${e.nome}`} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, padding: "10px 0", borderBottom: `1px solid ${C.linhaSuave}` }}>
-                          <span>
-                            <span style={{ color: C.secundario }}>{nomeArea(a.area).split(" · ")[0]} · </span>
-                            <strong>{e.nome}</strong> <span style={{ color: C.secundario }}>· {e.pessoas} pessoas</span>
-                          </span>
-                          <strong>{fmtPct(e.media)}</strong>
-                        </div>
-                      )),
-                    )
-                  ) : (
-                    <div style={{ fontSize: 15, color: C.secundario }}>Nenhum eixo específico com medição de 5 pessoas ou mais neste recorte.</div>
-                  )}
-                </div>
-              )}
+              {(() => {
+                const linhaForca = (rotulo: React.ReactNode, e: any, chave: string) => (
+                  <div key={chave} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 0", borderBottom: `1px solid ${C.linhaSuave}` }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+                      <span>{rotulo}</span>
+                      <strong style={{ fontSize: 14 }}>
+                        {e.fortes} de {e.pessoas} em Avançado ou Referência
+                      </strong>
+                    </div>
+                    <Distribuicao dist={e.distribuicao} rotulo={e.nome} altura={8} />
+                  </div>
+                );
+                return abaFortalezas === "SEBRAE" ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div style={{ fontSize: 14, color: C.secundario, paddingBottom: 6 }}>Conhecimentos comuns a todos, onde a força é da organização. Medição atual.</div>
+                    {r.fortalezas.transversais.length ? (
+                      r.fortalezas.transversais.map((t: any) =>
+                        linhaForca(
+                          <>
+                            <strong>{t.nome}</strong> <span style={{ color: C.secundario }}>· {t.pessoas} pessoas</span>
+                          </>,
+                          t,
+                          t.nome,
+                        ),
+                      )
+                    ) : (
+                      <div style={{ fontSize: 15, color: C.secundario }}>Nenhum eixo transversal com medição de 5 pessoas ou mais neste recorte.</div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div style={{ fontSize: 14, color: C.secundario, paddingBottom: 6 }}>Conhecimentos específicos de cada área, com no mínimo 5 pessoas.</div>
+                    {r.fortalezas.porArea.length ? (
+                      r.fortalezas.porArea.flatMap((a: any) =>
+                        a.eixos.map((e: any) =>
+                          linhaForca(
+                            <>
+                              <span style={{ color: C.secundario }}>{nomeArea(a.area).split(" · ")[0]} · </span>
+                              <strong>{e.nome}</strong> <span style={{ color: C.secundario }}>· {e.pessoas} pessoas</span>
+                            </>,
+                            e,
+                            `${a.area}|${e.nome}`,
+                          ),
+                        ),
+                      )
+                    ) : (
+                      <div style={{ fontSize: 15, color: C.secundario }}>Nenhum eixo específico com medição de 5 pessoas ou mais neste recorte.</div>
+                    )}
+                  </div>
+                );
+              })()}
             </article>
           </Grade>
           <Sintese texto={r.sinteses.pdi} />
@@ -763,8 +784,8 @@ export function RelatorioFimCiclo() {
         >
           {abaFoco === "SEBRAE" ? (
             <Grade min={320}>
-              <ColunaFoco titulo="Eixos técnicos transversais" itens={r.foco.sebrae.tecnicos} vazio="Nenhum eixo transversal com pessoas abaixo de 70% ou com queda." />
-              <ColunaFoco titulo="Competências comportamentais" itens={r.foco.sebrae.competencias} vazio="Nenhuma competência com pessoas abaixo de 70% ou com queda." />
+              <ColunaFoco titulo="Eixos técnicos transversais" itens={r.foco.sebrae.tecnicos} vazio="Nenhum eixo transversal com pessoas no conceito Em Desenvolvimento ou com mais quedas do que subidas." />
+              <ColunaFoco titulo="Competências comportamentais" itens={r.foco.sebrae.competencias} vazio="Nenhuma competência com pessoas no conceito Em Desenvolvimento ou com mais quedas do que subidas." />
             </Grade>
           ) : r.foco.porArea.length ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -782,17 +803,17 @@ export function RelatorioFimCiclo() {
             <p style={{ margin: 0, fontSize: 15, color: C.secundario }}>Eixos específicos de cada área entram aqui, com no mínimo 5 pessoas por eixo. Nenhum atende ao critério neste recorte.</p>
           )}
           <p style={{ margin: 0, fontSize: 13, color: C.secundario }}>
-            Critério: eixos transversais e competências com mais pessoas abaixo de 70% ou com queda no ciclo (por área: eixos específicos). Pessoas = quem já tem a medição atual.
+            Critério: eixos transversais e competências com pessoas no conceito Em Desenvolvimento ou com mais pessoas descendo do que subindo de conceito (por área: eixos específicos). Pessoas = quem já tem a medição atual.
           </p>
         </Secao>
 
         {/* Bloco 7 — Quanto investimos onde mais crescemos */}
-        <Secao titulo="Quanto investimos onde mais crescemos" subtitulo="Número médio de ações do PDI por pessoa, comparado ao crescimento de cada eixo e competência." id="investimento">
+        <Secao titulo="Quanto investimos onde mais crescemos" subtitulo="Ações do PDI concluídas antes da nova medição, comparadas a quantas pessoas subiram de conceito." id="investimento">
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse", fontSize: 15, fontVariantNumeric: "tabular-nums" }}>
               <thead>
                 <tr style={{ textAlign: "left", color: C.secundario, fontSize: 13 }}>
-                  {["Eixo ou competência", "Pessoas", "Crescimento (pontos)", "Ações de PDI por pessoa", "% de pessoas com ação"].map((h, i) => (
+                  {["Eixo ou competência", "Pessoas", "Subiram de conceito", "Desceram", "Pessoas com ação concluída", "Ações concluídas"].map((h, i) => (
                     <th key={h} style={{ padding: "10px 12px", fontWeight: 600, borderBottom: `1px solid ${C.borda}`, textAlign: i >= 2 ? "right" : "left" }}>
                       {h}
                     </th>
@@ -811,14 +832,17 @@ export function RelatorioFimCiclo() {
                         </div>
                       </td>
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}` }}>{l.pessoas}</td>
-                      <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right", fontWeight: 700, color: corDelta(l.crescimento) }}>{fmtDelta(l.crescimento)}</td>
-                      <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right" }}>{fmtNum(l.acoesPorPessoa)}</td>
-                      <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right" }}>{fmtPct(l.pctComAcao)}</td>
+                      <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right", fontWeight: 700, color: C.positivo }}>{l.subiram}</td>
+                      <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right", color: l.desceram > 0 ? C.atencao : C.secundario }}>{l.desceram}</td>
+                      <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right" }}>
+                        {l.comAcao} de {l.pessoas}
+                      </td>
+                      <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right" }}>{l.acoes}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} style={{ padding: "14px 12px", color: C.secundario }}>
+                    <td colSpan={6} style={{ padding: "14px 12px", color: C.secundario }}>
                       Ainda não há eixo ou competência com 5 pessoas ou mais e as duas medições.
                     </td>
                   </tr>
@@ -849,25 +873,28 @@ export function RelatorioFimCiclo() {
           </summary>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: 16, marginTop: 16, fontSize: 15, lineHeight: 1.55, color: C.corpo }}>
             <p style={{ margin: 0 }}>
-              <strong>Avaliação</strong> é o resultado de uma pessoa em um eixo técnico ou em uma competência.
+              <strong>Avaliação</strong> é o resultado de uma pessoa em um eixo técnico ou em uma competência, lido em conceito.
+            </p>
+            <p style={{ margin: 0 }}>
+              <strong>Conceitos:</strong> Em Desenvolvimento, Conhecimento Aplicado, Conhecimento Consolidado, Conhecimento Avançado e Referência — a mesma régua que empregados e líderes veem no sistema, para os dois instrumentos.
+            </p>
+            <p style={{ margin: 0 }}>
+              <strong>Expectativa de desenvolvimento</strong> é alcançar Conhecimento Aplicado ou acima. Técnico e comportamental são lidos separadamente e nunca somados.
             </p>
             <p style={{ margin: 0 }}>
               <strong>Ponto de partida</strong> é a primeira medição de cada avaliação. Só existe evolução quando há uma nova medição para comparar; a primeira medição não conta como evolução.
             </p>
             <p style={{ margin: 0 }}>
-              <strong>Referência de 70%</strong> é a linha de corte usada nos dois instrumentos. Técnico e comportamental nunca são somados. Na Avaliação de Desempenho, a nota de 0 a 3 é lida em percentual da escala (nota 2,1 = 70%).
+              <strong>Subiu, manteve ou desceu</strong> compara o conceito anterior com o atual, sempre sobre as mesmas avaliações (as que têm as duas medições).
             </p>
             <p style={{ margin: 0 }}>
-              <strong>Variação</strong> é a diferença, em pontos na escala de 0 a 100%, entre a média anterior e a atual, calculadas sobre as mesmas avaliações (as que têm as duas medições).
-            </p>
-            <p style={{ margin: 0 }}>
-              <strong>Classificações:</strong> já acima de 70% e manteve; chegou a 70% neste ciclo; em evolução (abaixo de 70%, mas subiu {r.parametros.limiarEvolucaoPontos} pontos ou mais); abaixo de 70%; atenção (acima de 70%, mas caiu {r.parametros.limiarAtencaoPontos} pontos ou mais); primeira medição; aguardando medição.
+              <strong>Classificações:</strong> já na expectativa e manteve; atenção (desceu de conceito, mas segue na expectativa); chegou à expectativa neste ciclo; Em Desenvolvimento; primeira medição; aguardando medição.
             </p>
             <p style={{ margin: 0 }}>
               <strong>Amostra pequena</strong> marca eixos com menos de {r.parametros.amostraMinima} pessoas com as duas medições; esses resultados não entram em destaques nem sínteses.
             </p>
             <p style={{ margin: 0 }}>
-              <strong>Multiplicadores:</strong> vezes em que uma pessoa tirou 70% ou mais em um eixo técnico que não é exigido na sua função — conhecimento que ela pode ensinar.
+              <strong>Multiplicadores:</strong> vezes em que uma pessoa alcançou Conhecimento Aplicado ou acima em um eixo técnico que não é exigido na sua função — conhecimento que ela pode ensinar.
             </p>
             <p style={{ margin: 0 }}>
               <strong>Privacidade:</strong> esta página mostra apenas dados agregados. Resultados individuais ficam com cada pessoa e seu líder (LGPD e NR-1).
@@ -886,16 +913,18 @@ function ColunaFoco({ titulo, itens, vazio }: { titulo: string; itens: any[]; va
       {itens.length ? (
         itens.map((i) => (
           <div key={i.nome} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 14px", borderRadius: 12, background: C.cartao }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
               <strong>{i.nome}</strong>
-              {i.delta !== null && (
-                <span style={{ fontSize: 14, fontWeight: 700, color: corDelta(i.delta) }} aria-label={`variação de ${fmtDelta(i.delta)} pontos`}>
-                  {fmtDelta(i.delta)} pontos
+              {i.subiram !== null && (
+                <span style={{ fontSize: 14, color: C.secundario }}>
+                  <span style={{ color: C.positivo, fontWeight: 700 }}>{i.subiram} subiram</span> ·{" "}
+                  <span style={{ color: i.desceram > 0 ? C.atencao : C.secundario, fontWeight: i.desceram > 0 ? 700 : 400 }}>{i.desceram} desceram</span>
                 </span>
               )}
             </div>
             <div style={{ fontSize: 14, color: C.secundario }}>
-              {i.pessoas} pessoas · média {fmtPct(i.media)} · {i.abaixo} abaixo de 70%
+              {i.pessoas} pessoas
+              {i.predominante ? ` · conceito mais frequente: ${ROTULO_CONCEITO[i.predominante as Conceito]}` : ""}
             </div>
             <div style={{ fontSize: 14, color: C.corpo }}>{i.motivo}</div>
           </div>

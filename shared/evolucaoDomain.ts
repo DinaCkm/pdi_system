@@ -151,6 +151,16 @@ export type EvolucaoConceitual =
   | "CONSOLIDACAO"
   | "OPORTUNIDADE_DESENVOLVIMENTO";
 
+// Régua conceitual única (técnico e comportamental). "Conhecimento Aplicado"
+// começa em 70, que é a expectativa de desenvolvimento (decisão de 12/10/2026;
+// antes era 65). Os conceitos não são gravados no banco: são sempre calculados.
+export const FAIXAS_CONCEITO = {
+  aplicado: 70,
+  consolidado: 75,
+  avancado: 85,
+  referencia: 90,
+} as const;
+
 export const conceitoConhecimentoLabel: Record<ConceitoConhecimento, string> = {
   EM_DESENVOLVIMENTO: "Em Desenvolvimento",
   CONHECIMENTO_APLICADO: "Conhecimento Aplicado",
@@ -175,10 +185,10 @@ export function conceitoConhecimento(
   }
 
   const valor = Math.max(0, Math.min(100, Number(percentual)));
-  if (valor >= 90) return "REFERENCIA";
-  if (valor >= 85) return "CONHECIMENTO_AVANCADO";
-  if (valor >= 75) return "CONHECIMENTO_CONSOLIDADO";
-  if (valor >= 65) return "CONHECIMENTO_APLICADO";
+  if (valor >= FAIXAS_CONCEITO.referencia) return "REFERENCIA";
+  if (valor >= FAIXAS_CONCEITO.avancado) return "CONHECIMENTO_AVANCADO";
+  if (valor >= FAIXAS_CONCEITO.consolidado) return "CONHECIMENTO_CONSOLIDADO";
+  if (valor >= FAIXAS_CONCEITO.aplicado) return "CONHECIMENTO_APLICADO";
   return "EM_DESENVOLVIMENTO";
 }
 
@@ -339,10 +349,10 @@ export function conceitoComportamentalPorResultado(
   const percentual = percentualNaEscala(valor, escalaMin, escalaMax);
   if (percentual === null) return null;
 
-  if (percentual >= 90) return "REFERENCIA";
-  if (percentual >= 85) return "AVANCADO";
-  if (percentual >= 75) return "CONSOLIDADO";
-  if (percentual >= 65) return "EM_APLICACAO";
+  if (percentual >= FAIXAS_CONCEITO.referencia) return "REFERENCIA";
+  if (percentual >= FAIXAS_CONCEITO.avancado) return "AVANCADO";
+  if (percentual >= FAIXAS_CONCEITO.consolidado) return "CONSOLIDADO";
+  if (percentual >= FAIXAS_CONCEITO.aplicado) return "EM_APLICACAO";
   return "EM_DESENVOLVIMENTO";
 }
 

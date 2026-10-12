@@ -1,55 +1,43 @@
 import { describe, expect, it } from "vitest";
-import {
-  classificar,
-  contarPalavras,
-  fmtDelta,
-  fraseVariacao,
-  limitarSintese,
-  sentido,
-  PARAMETROS,
-} from "../shared/fimDeCicloRegras";
+import { classificar, conceitoDe, contarPalavras, limitarSintese, movimento } from "../shared/fimDeCicloRegras";
 import { montarRelatorio } from "./services/fimDeCiclo";
 
-describe("classificação (seção 5)", () => {
-  it("cobre todas as regras", () => {
-    expect(classificar(80, 85)).toBe("MANTEVE");
-    expect(classificar(95, 80)).toBe("ATENCAO"); // ≥ 70 com queda de 10 ou mais
-    expect(classificar(60, 75)).toBe("CHEGOU");
-    expect(classificar(40, 55)).toBe("EM_EVOLUCAO");
-    expect(classificar(40, 45)).toBe("NOVO_FOCO_PERSISTENTE");
-    expect(classificar(80, 60)).toBe("NOVO_FOCO_NOVA");
-    expect(classificar(null, 90)).toBe("PRIMEIRA_MEDICAO");
-    expect(classificar(50, null)).toBe("SEM_COMPARACAO");
-  });
-
-  it("limites de 10 pontos são parâmetros", () => {
-    expect(classificar(40, 48, { ...PARAMETROS, limiarEvolucaoPontos: 5 })).toBe("EM_EVOLUCAO");
-  });
-
-  it("primeira medição nunca conta como 'chegou a 70%' (item 4 da seção 7)", () => {
-    expect(classificar(null, 100)).not.toBe("CHEGOU");
+describe("régua de conceitos", () => {
+  it("Conhecimento Aplicado começa em 70", () => {
+    expect(conceitoDe(69.9)).toBe("EM_DESENVOLVIMENTO");
+    expect(conceitoDe(70)).toBe("APLICADO");
+    expect(conceitoDe(75)).toBe("CONSOLIDADO");
+    expect(conceitoDe(85)).toBe("AVANCADO");
+    expect(conceitoDe(90)).toBe("REFERENCIA");
+    expect(conceitoDe(null)).toBeNull();
   });
 });
 
-describe("formatação (seção 6.2)", () => {
-  it("zero nunca aparece com sinal e nunca é verde", () => {
-    expect(fmtDelta(-0.04)).toBe("0");
-    expect(fmtDelta(0)).toBe("0");
-    expect(sentido(-0.04)).toBe("zero");
-    expect(fmtDelta(-4.2)).toBe("−4,2");
-    expect(fmtDelta(6.2)).toBe("+6,2");
-    expect(sentido(-1.2)).toBe("negativo");
+describe("classificação por conceito", () => {
+  it("cobre todas as regras", () => {
+    expect(classificar("CONSOLIDADO", "AVANCADO")).toBe("MANTEVE");
+    expect(classificar("REFERENCIA", "APLICADO")).toBe("ATENCAO"); // desceu, ainda na expectativa
+    expect(classificar("EM_DESENVOLVIMENTO", "CONSOLIDADO")).toBe("CHEGOU");
+    expect(classificar("EM_DESENVOLVIMENTO", "EM_DESENVOLVIMENTO")).toBe("ABAIXO_PERSISTENTE");
+    expect(classificar("APLICADO", "EM_DESENVOLVIMENTO")).toBe("ABAIXO_NOVA");
+    expect(classificar(null, "REFERENCIA")).toBe("PRIMEIRA_MEDICAO");
+    expect(classificar("APLICADO", null)).toBe("SEM_COMPARACAO");
   });
 
-  it("variação sempre com antes e depois (seção 6.4)", () => {
-    expect(fraseVariacao(72, 78.2)).toBe("subiu 6,2 pontos, de 72% para 78,2%");
-    expect(fraseVariacao(86.1, 85.8)).toBe("praticamente igual, −0,3 ponto, de 86,1% para 85,8%");
+  it("primeira medição nunca conta como 'chegou à expectativa' (item 4 da seção 7)", () => {
+    expect(classificar(null, "REFERENCIA")).not.toBe("CHEGOU");
+  });
+
+  it("movimento de conceito", () => {
+    expect(movimento("APLICADO", "AVANCADO")).toBe("SUBIU");
+    expect(movimento("AVANCADO", "AVANCADO")).toBe("MANTEVE");
+    expect(movimento("AVANCADO", "APLICADO")).toBe("DESCEU");
+    expect(movimento(null, "APLICADO")).toBeNull();
   });
 
   it("síntese com no máximo 3 frases e 60 palavras", () => {
     const longa = "palavra ".repeat(30).trim() + ".";
-    const s = limitarSintese([longa, longa, longa, longa]);
-    expect(contarPalavras(s)).toBeLessThanOrEqual(60);
+    expect(contarPalavras(limitarSintese([longa, longa, longa, longa]))).toBeLessThanOrEqual(60);
   });
 });
 
@@ -104,32 +92,37 @@ describe("relatório (blocos e seção 6)", () => {
     expect(r.recorte.pessoas).toBe(7);
   });
 
-  it("barras e Δ usam a mesma base (item 2 da seção 7)", () => {
+  it("antes e depois sobre as mesmas avaliações (item 2 da seção 7)", () => {
     const e = tec.eixos.find((x) => x.nome === "Atendimento Multicanal")!;
     expect(e.comparaveis).toBe(6);
-    expect(e.delta).toBe(Math.round((e.mediaDepois! - e.mediaAntes!) * 10) / 10);
+    const soma = (d: Record<string, number>) => Object.values(d).reduce((s, v) => s + v, 0);
+    expect(soma(e.distribuicaoAntes)).toBe(6);
+    expect(soma(e.distribuicaoDepois)).toBe(6);
+    expect(e.subiram + e.mantiveram + e.desceram).toBe(6);
   });
 
-  it("primeira medição fica fora de 'chegou a 70%' e da comparação", () => {
+  it("primeira medição fica fora de 'chegou à expectativa' e da comparação", () => {
     expect(tec.classes.PRIMEIRA_MEDICAO).toBe(1);
     expect(tec.grupos.CHEGOU).toBe(1); // só quem saiu de 60 para 75
   });
 
-  it("Não essencial acima de 70% conta como multiplicador, nunca como avaliação", () => {
+  it("Não essencial na expectativa conta como multiplicador, nunca como avaliação", () => {
     expect(r.fortalezas.multiplicadores.total).toBe(1);
     expect(tec.eixos.some((e) => e.nome === "Supervisão da Rede Estendida")).toBe(false);
   });
 
-  it("ações canceladas não contam como plano; só ações concluídas antes da nova medição contam", () => {
+  it("só ações concluídas antes da nova medição contam", () => {
     const linha = r.investimento.find((l) => l.nome === "Tomada de Decisão");
-    if (linha) expect(linha.pctComAcao).toBe(0); // ação comportamental veio depois da AD 2025
+    if (linha) expect(linha.comAcao).toBe(0); // ação comportamental veio depois da AD 2025
     expect(r.pdi.execucao).toEqual({ concluidasAntes: 1, total: 1 });
   });
 
-  it("nenhum nome de pessoa sai no relatório", () => {
+  it("nenhum nome de pessoa, nota, média ou percentual sai no relatório", () => {
     const json = JSON.stringify(r);
     for (let i = 1; i <= 7; i++) expect(json).not.toMatch(new RegExp(`"P${i}"`));
     expect(json).not.toContain("Admin");
+    expect(json).not.toMatch(/media|percentual|"delta"/i);
+    expect(json).not.toContain("%");
   });
 
   it("nenhuma ocorrência de 'prova' nos textos", () => {
