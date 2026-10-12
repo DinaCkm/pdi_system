@@ -409,6 +409,19 @@ function situacaoDe(c: any): Situacao {
   return "SEM_PLANO";
 }
 
+// O que cada situação quer dizer, em uma linha (aparece no painel da célula).
+const EXPLICA_SITUACAO: Record<Situacao, string> = {
+  SEM_PLANO: "Está no conceito Em Desenvolvimento e não tem ação no PDI neste eixo.",
+  ACAO_SEM_EFEITO: "Concluiu ação no PDI e continua no conceito Em Desenvolvimento.",
+  EM_ANDAMENTO: "Tinha ação no PDI neste eixo e não concluiu.",
+  AGUARDANDO: "Ainda não fez a nova medição.",
+  NA_EXPECTATIVA: "Está na expectativa de desenvolvimento (Conhecimento Aplicado ou acima).",
+  DESENVOLVIDO: "Saiu do conceito Em Desenvolvimento e chegou à expectativa.",
+  DOMINIO: "Está em Conhecimento Avançado ou Referência: pode ensinar.",
+  POTENCIAL: "Eixo não exigido na função, já na expectativa: pode ensinar.",
+  NENHUMA: "",
+};
+
 const ROTULO_REL: Record<string, string> = { TRANSVERSAL: "Transversal", ESSENCIAL: "Essencial", NAO_ESSENCIAL: "Não essencial" };
 const sigla = (u: string) => nomeArea(u).split(" · ")[0];
 
@@ -655,50 +668,67 @@ export function MatrizEmpregados() {
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: C.secundario }}>Célula selecionada</div>
             {selValida && celSel && celSel.aplica ? (
               <>
-                <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 18 }}>
-                  {sigla(selValida.unidade)} · {selValida.eixo}
+                <div>
+                  <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 18 }}>{selValida.eixo}</div>
+                  <div style={{ fontSize: 14, color: C.secundario }}>{nomeArea(selValida.unidade)}</div>
                 </div>
-                {tipo !== "COMP" && (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-                    {[
-                      ["Essencial", conta("ESSENCIAL"), C.cinzaClaro, C.texto],
-                      ["Transversal", conta("TRANSVERSAL"), C.cinzaClaro, C.texto],
-                      ["Potencial.", conta("NAO_ESSENCIAL"), "#F3EFFA", "#4B2E83"],
-                    ].map(([rot, n, fundo, cor]) => (
-                      <div key={rot as string} style={{ background: fundo as string, borderRadius: 10, padding: "10px 12px" }}>
-                        <div style={{ fontSize: 12, color: C.secundario }}>{rot}</div>
-                        <div style={{ fontFamily: FONTE_TITULO, fontSize: 20, fontWeight: 600, color: cor as string }}>{n as number}</div>
-                      </div>
-                    ))}
+                {(() => {
+                  const ess = conta("ESSENCIAL");
+                  const tr = conta("TRANSVERSAL");
+                  const pot = conta("NAO_ESSENCIAL");
+                  const total = pessoasSel.length;
+                  const emp = (n: number) => `${n} ${n === 1 ? "empregado" : "empregados"}`;
+                  const partes =
+                    tipo === "COMP"
+                      ? []
+                      : [
+                          ess ? `${emp(ess)} com o eixo essencial na função` : "",
+                          tr ? `${emp(tr)} com o eixo ${tipo === "L" ? "transversal de liderança" : "transversal (comum a todo o Sebrae)"}` : "",
+                          pot ? `${emp(pot)} com o eixo não essencial (potencialidade)` : "",
+                        ].filter(Boolean);
+                  return (
+                    <p style={{ margin: 0, fontSize: 14, color: C.corpo, lineHeight: 1.5 }}>
+                      {emp(total)} avaliados {tipo === "COMP" ? "nesta competência" : "neste eixo"}
+                      {partes.length ? `: ${partes.join("; ")}` : ""}.
+                    </p>
+                  );
+                })()}
+                <div style={{ borderRadius: 10, background: C.cinzaClaro, padding: "10px 12px", fontSize: 14, color: C.corpo, lineHeight: 1.5 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.secundario }}>CONCEITO DA UNIDADE (alcançado por pelo menos metade)</div>
+                  <div>
+                    {anoBase}: <strong>{celSel.conceitoAntes ? ROTULO_CONCEITO[celSel.conceitoAntes] : "sem medição"}</strong>
                   </div>
-                )}
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, color: C.corpo, borderTop: `1px solid ${C.linhaSuave}`, paddingTop: 12 }}>
-                  <span>
-                    Conceito {anoBase} → {anoAtual}
-                  </span>
-                  <strong>
-                    {celSel.conceitoAntes ? ROTULO_CURTO[celSel.conceitoAntes] : "—"} → {celSel.conceito ? ROTULO_CURTO[celSel.conceito] : "aguardando"}
-                  </strong>
+                  <div>
+                    {anoAtual}: <strong>{celSel.conceito ? ROTULO_CONCEITO[celSel.conceito] : "aguardando a nova medição"}</strong>
+                  </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 520, overflowY: "auto" }}>
-                  {pessoasSel.map(({ l, c, s }) => (
-                    <div key={l.id} style={{ border: `1px solid ${C.borda}`, borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, fontSize: 14 }}>
-                          {l.nome}
-                          {l.lider ? <span style={{ fontWeight: 400, color: C.secundario, fontSize: 12 }}> · líder</span> : null}
+                  {pessoasSel.map(({ l, c, s }) => {
+                    const sit = SITUACAO[s as Situacao];
+                    const rel = tipo === "COMP" ? "Competência" : c.relacao === "TRANSVERSAL" && tipo === "L" ? "Transversal de liderança" : ROTULO_REL[c.relacao ?? "ESSENCIAL"];
+                    return (
+                      <div key={l.id} style={{ border: `1px solid ${C.borda}`, borderRadius: 10, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                          <div style={{ fontWeight: 600, fontSize: 14 }}>
+                            {l.nome}
+                            <span style={{ fontWeight: 400, color: C.secundario, fontSize: 12 }}>
+                              {" "}
+                              · {rel}
+                              {l.lider ? " · líder" : ""}
+                            </span>
+                          </div>
+                          {sit.rotulo && (
+                            <span style={{ flex: "none", padding: "3px 10px", borderRadius: 999, background: sit.fundo, color: sit.texto, fontSize: 12, fontWeight: 700 }}>{sit.rotulo}</span>
+                          )}
                         </div>
-                        <div style={{ fontSize: 12, color: C.secundario }}>
-                          {tipo === "COMP" ? "Competência" : ROTULO_REL[c.relacao ?? "ESSENCIAL"]} · {c.antes ? ROTULO_CURTO[c.antes as Conceito] : "—"} → {c.depois ? ROTULO_CURTO[c.depois as Conceito] : "aguardando"}
+                        <div style={{ fontSize: 13, color: C.corpo }}>
+                          {anoBase}: <strong>{c.antes ? ROTULO_CONCEITO[c.antes as Conceito] : "sem medição"}</strong> → {anoAtual}:{" "}
+                          <strong>{c.depois ? ROTULO_CONCEITO[c.depois as Conceito] : "aguardando"}</strong>
                         </div>
+                        {EXPLICA_SITUACAO[s as Situacao] && <div style={{ fontSize: 12, color: C.secundario }}>{EXPLICA_SITUACAO[s as Situacao]}</div>}
                       </div>
-                      {SITUACAO[s as Situacao].rotulo && (
-                        <span style={{ flex: "none", padding: "3px 10px", borderRadius: 999, background: SITUACAO[s as Situacao].fundo, color: SITUACAO[s as Situacao].texto, fontSize: 12, fontWeight: 700 }}>
-                          {SITUACAO[s as Situacao].rotulo}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             ) : (
