@@ -643,7 +643,7 @@ export function unidadesDoRelatorio(base: Base) {
 // Esta visão tem nomes: fica fora do relatório da diretoria e só aparece para administradores.
 
 type Relacao = "TRANSVERSAL" | "ESSENCIAL" | "NAO_ESSENCIAL";
-type CelulaPessoa = { antes: Conceito | null; depois: Conceito | null; relacao?: Relacao };
+type CelulaPessoa = { antes: Conceito | null; depois: Conceito | null; relacao?: Relacao; acoesAtivas: number; concluidasAntesNm: number };
 
 export function montarMatrizEmpregados(base: Base, unidade?: string, publico: Publico = "TODOS") {
   const dados = montarAvaliacoes(base);
@@ -677,16 +677,16 @@ export function montarMatrizEmpregados(base: Base, unidade?: string, publico: Pu
     if (!incluir(a.pessoa)) continue;
     const l = linhaDe(a.pessoa);
     if (a.instrumento === "TECNICO") {
-      l.tecnico[a.eixo] = { antes: a.antes, depois: a.depois, relacao: a.transversal ? "TRANSVERSAL" : "ESSENCIAL" };
+      l.tecnico[a.eixo] = { antes: a.antes, depois: a.depois, relacao: a.transversal ? "TRANSVERSAL" : "ESSENCIAL", acoesAtivas: a.acoesAtivas, concluidasAntesNm: a.concluidasAntesNm };
       contagemTec.set(a.eixo, (contagemTec.get(a.eixo) ?? 0) + 1);
     } else {
-      l.comportamental[a.eixo] = { antes: a.antes, depois: a.depois };
+      l.comportamental[a.eixo] = { antes: a.antes, depois: a.depois, acoesAtivas: a.acoesAtivas, concluidasAntesNm: a.concluidasAntesNm };
       contagemComp.set(a.eixo, (contagemComp.get(a.eixo) ?? 0) + 1);
     }
   }
   for (const n of dados.naoEssenciais) {
     if (!incluir(n.pessoa) || (n.antes === null && n.depois === null)) continue;
-    linhaDe(n.pessoa).tecnico[n.eixo] = { antes: n.antes, depois: n.depois, relacao: "NAO_ESSENCIAL" };
+    linhaDe(n.pessoa).tecnico[n.eixo] = { antes: n.antes, depois: n.depois, relacao: "NAO_ESSENCIAL", acoesAtivas: 0, concluidasAntesNm: 0 };
     contagemTec.set(n.eixo, (contagemTec.get(n.eixo) ?? 0) + 1);
   }
   for (const a of dados.acoes) {
