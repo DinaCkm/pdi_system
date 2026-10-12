@@ -390,7 +390,7 @@ type Situacao = "SEM_PLANO" | "ACAO_SEM_EFEITO" | "EM_ANDAMENTO" | "AGUARDANDO" 
 const SITUACAO: Record<Situacao, { rotulo: string; fundo: string; texto: string; ordem: number }> = {
   SEM_PLANO: { rotulo: "Sem plano", fundo: "#FBF1E2", texto: "#6B430C", ordem: 0 },
   ACAO_SEM_EFEITO: { rotulo: "Ação sem efeito", fundo: "#FBE4DC", texto: "#8A2E12", ordem: 1 },
-  EM_ANDAMENTO: { rotulo: "Ação em andamento", fundo: "#E3EAF6", texto: "#1A3F85", ordem: 2 },
+  EM_ANDAMENTO: { rotulo: "Ação não realizada", fundo: "#FBF1E2", texto: "#6B430C", ordem: 2 },
   AGUARDANDO: { rotulo: "Aguardando medição", fundo: "#EEF1F4", texto: "#46505E", ordem: 3 },
   NA_EXPECTATIVA: { rotulo: "Na expectativa", fundo: "#E3F2F1", texto: "#0B3B3B", ordem: 4 },
   DESENVOLVIDO: { rotulo: "Desenvolvido", fundo: "#DFF1E4", texto: "#1E5B2E", ordem: 5 },
