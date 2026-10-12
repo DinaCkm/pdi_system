@@ -171,7 +171,7 @@ export function sinteseResultado(eixos: ItemResultado[], competencias: ItemResul
     const menos = v.filter((e) => delta(e) < 0);
     const top = [...mais].sort((a, b) => delta(b) - delta(a))[0];
     const verbo = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
-    return `${v.length === 1 ? `${inicio === "Das" ? "Da única" : "Do único"} ${oQue[0]}` : `${inicio} ${v.length} ${oQue[1]}`}, ${verbo(mais.length, "ganhou", "ganharam")} pessoas na expectativa e ${verbo(menos.length, "perdeu", "perderam")}${top ? `; o maior avanço foi em ${top.nome}` : ""}.`;
+    return `${v.length === 1 ? `${inicio === "Das" ? "Da única" : "Do único"} ${oQue[0]}` : `${inicio} ${v.length} ${oQue[1]}`}, ${verbo(mais.length, "ganhou", "ganharam")} empregados na expectativa e ${verbo(menos.length, "perdeu", "perderam")}${top ? `; o maior avanço foi em ${top.nome}` : ""}.`;
   };
   const frases = [
     frase(competencias, ["competência", "competências"], "Das"),
@@ -183,8 +183,8 @@ export function sinteseResultado(eixos: ItemResultado[], competencias: ItemResul
 
 export function sinteseFechamento(t: ResumoInstrumento, c: ResumoInstrumento) {
   return limitarSintese([
-    `${t.grupos.MANTEVE + c.grupos.MANTEVE} avaliações já estavam na expectativa e se mantiveram: ${t.grupos.MANTEVE} técnicas e ${c.grupos.MANTEVE} de competências.`,
-    `${t.grupos.CHEGOU + c.grupos.CHEGOU} chegaram à expectativa neste ciclo.`,
+    `${t.grupos.MANTEVE + c.grupos.MANTEVE} resultados (empregado em um eixo ou competência) já estavam na expectativa e se mantiveram: ${t.grupos.MANTEVE} técnicos e ${c.grupos.MANTEVE} de competências.`,
+    `${t.grupos.CHEGOU + c.grupos.CHEGOU} resultados chegaram à expectativa neste ciclo.`,
     `${t.grupos.ABAIXO + c.grupos.ABAIXO} seguem no conceito Em Desenvolvimento e entram no foco do próximo ciclo.`,
   ]);
 }
