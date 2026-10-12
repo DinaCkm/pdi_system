@@ -345,8 +345,10 @@ export function RelatorioFimCiclo() {
   const tec = r.instrumentos.TECNICO;
   const comp = r.instrumentos.COMPORTAMENTAL;
   const ctx = r.contexto;
-  const adBase = ctx.ad.anoBase ?? ACARREGAR;
-  const adAtual = ctx.ad.anoAtual ?? ACARREGAR;
+  // A AD de um ano mede o ciclo seguinte: "AD 2024" = 2024/2025 e "AD 2025" = 2025/2026.
+  const rotuloAD = (ano: number | null | undefined) => (ano ? `${ano}/${ano + 1}` : ACARREGAR);
+  const adBase = rotuloAD(ctx.ad.anoBase);
+  const adAtual = rotuloAD(ctx.ad.anoAtual);
   const tecCompleto = tec.total > 0 && tec.feitas === tec.total;
   const compCompleto = comp.total > 0 && comp.feitas === comp.total;
   const nomeRecorte = (unidade ? nomeArea(unidade) : "Sebrae/TO · todas as áreas") + (publico !== "TODOS" ? ` · ${ROTULO_PUBLICO[publico]}` : "");
@@ -456,16 +458,15 @@ export function RelatorioFimCiclo() {
               }
             />
             <CartaoContexto rotulo="Ações do PDI" valor={ctx.acoes.total} detalhe={`${ctx.acoes.concluidas} concluídas · ${ctx.acoes.emAndamento} não realizadas`} />
-            <CartaoContexto rotulo="Período do ciclo" valor={<span style={{ fontSize: 22 }}>2025 a {mesAno(ctx.periodo.tecnico.fim)}</span>} detalhe="Proficiência e desempenho" />
-            <CartaoContexto rotulo="Execução do PDI" valor={<span style={{ fontSize: 22 }}>{mesAno(ctx.execucao.inicio)} a {mesAno(ctx.execucao.fim)}</span>} detalhe="Período de realização das ações" />
+            <CartaoContexto rotulo="Ciclo comportamental" valor={<span style={{ fontSize: 22 }}>AD {adBase} → {adAtual}</span>} detalhe="Avaliação de Desempenho antes e depois do PDI" />
+            <CartaoContexto rotulo="Ciclo técnico" valor={<span style={{ fontSize: 22 }}>Proficiência 2025 → 2026</span>} detalhe="Avaliação de Proficiência antes e depois do PDI" />
           </Grade>
 
           {/* Três períodos diferentes, cada um com sua marca */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {[
-              ["Avaliação de Proficiência", `2025 → ${mesAno(ctx.periodo.tecnico.fim)}`, C.tealFundo, C.tealTexto],
-              ["Avaliação de Desempenho", `${mesAno(ctx.periodo.comportamental.inicio)} → ${mesAno(ctx.periodo.comportamental.fim)}`, C.transvFundo, C.transvTexto],
-              ["Execução do PDI", `${mesAno(ctx.execucao.inicio)} → ${mesAno(ctx.execucao.fim)}`, C.focoFundo, C.focoTexto],
+              ["Avaliação de Proficiência", "2025 → 2026", C.tealFundo, C.tealTexto],
+              ["Avaliação de Desempenho", `${adBase} → ${adAtual}`, C.transvFundo, C.transvTexto],
             ].map(([rot, per, fundo, cor]) => (
               <span key={rot} style={{ padding: "8px 14px", borderRadius: 999, background: fundo, color: cor, fontSize: 14 }}>
                 <strong>{rot}:</strong> {per}
@@ -691,7 +692,7 @@ export function RelatorioFimCiclo() {
               )}
               {textoCaem(comp.destaques) && (
                 <li>
-                  <strong>Competências que mais desceram:</strong> {textoCaem(comp.destaques)}. Medido antes das ações do PDI.
+                  <strong>Competências que mais desceram:</strong> {textoCaem(comp.destaques)}.
                 </li>
               )}
             </ul>
@@ -792,11 +793,6 @@ export function RelatorioFimCiclo() {
             </span>
           </div>
           <LegendaConceitos />
-          {abaConhecimento === "COMPORTAMENTAL" && (
-            <p style={{ margin: 0, fontSize: 14, color: C.corpo }}>
-              As ações do PDI vieram depois da AD {adAtual}; estes resultados são o ponto de partida do PDI comportamental.
-            </p>
-          )}
           {(abaConhecimento === "TECNICO"
             ? GRUPOS_EIXO.map((g) => ({ titulo: g.titulo as string | null, sub: g.sub as string | null, l: eixosAba.filter(g.filtro) }))
             : [{ titulo: null as string | null, sub: null as string | null, l: eixosAba }]
@@ -898,13 +894,13 @@ export function RelatorioFimCiclo() {
                 },
                 {
                   titulo: "Planejamento · competências",
-                  sub: `Pontos de partida no conceito Em Desenvolvimento (AD ${adAtual}) que já têm plano`,
+                  sub: `Pontos de partida no conceito Em Desenvolvimento (AD ${adBase}) que já têm plano`,
                   x: r.pdi.planejamento.COMPORTAMENTAL.comPlano,
                   y: r.pdi.planejamento.COMPORTAMENTAL.total,
                 },
                 {
                   titulo: "Execução",
-                  sub: "Ações técnicas concluídas antes da nova medição, de quem já fez a Avaliação de Proficiência 2026",
+                  sub: "Ações técnicas concluídas, de quem já fez a Avaliação de Proficiência 2026",
                   x: r.pdi.execucao.concluidasAntes,
                   y: r.pdi.execucao.total,
                 },
@@ -932,7 +928,7 @@ export function RelatorioFimCiclo() {
                   ))
                 ) : (
                   <div style={{ fontSize: 15, color: C.tealTexto }}>
-                    Ainda não há área com 5 ou mais avaliações técnicas que partiram de Em Desenvolvimento e tiveram ação concluída antes da nova medição.
+                    Ainda não há área com 5 ou mais avaliações técnicas que partiram de Em Desenvolvimento e tiveram ação concluída.
                   </div>
                 )}
                 {r.pdi.areasAmostraPequena > 0 && (
@@ -1136,7 +1132,7 @@ export function RelatorioFimCiclo() {
         </Secao>
 
         {/* Bloco 7 — Quanto investimos onde mais crescemos */}
-        <Secao titulo="Quanto investimos onde mais crescemos" subtitulo="Ações do PDI concluídas antes da nova medição, comparadas a quantas pessoas subiram de conceito." id="investimento">
+        <Secao titulo="Quanto investimos onde mais crescemos" subtitulo="Ações do PDI concluídas no ciclo, comparadas a quantos empregados subiram de conceito." id="investimento">
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse", fontSize: 15, fontVariantNumeric: "tabular-nums" }}>
               <thead>
@@ -1179,7 +1175,7 @@ export function RelatorioFimCiclo() {
             </table>
           </div>
           <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: C.secundario }}>
-            Conta só ações concluídas antes da nova medição. No comportamental, as ações deste ciclo vieram depois da AD {adAtual}: a leitura vale a partir da próxima AD. A relação mostra onde o investimento acompanhou o crescimento, não demonstra causa.
+            Conta as ações concluídas no ciclo, de quem tem as duas medições (Proficiência 2025 → 2026 no técnico; AD {adBase} → {adAtual} no comportamental). A relação mostra onde o investimento acompanhou o crescimento, não demonstra causa.
           </p>
           <Sintese texto={r.sinteses.investimento} />
         </Secao>

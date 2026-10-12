@@ -55,7 +55,7 @@ type Avaliacao = {
   classe: Classe;
   dataNm: Date | null;
   acoesAtivas: number; //          ações não canceladas no eixo/competência (qualquer status)
-  concluidasAntesNm: number; //    ações concluídas antes da nova medição
+  concluidasAntesNm: number; //    ações concluídas no ciclo (sem corte por data)
 };
 
 const PERFIS_EMPREGADO = new Set(["colaborador", "lider"]);
@@ -187,6 +187,9 @@ export function montarAvaliacoes(base: Base) {
   const ad = periodosAD(base.medicoesAD);
   const notaAD = new Map<string, number>();
   const dataAdPorAno = new Map<number, Date>();
+  // A AD é aplicada depois do ciclo de PDI que ela mede: a data que separa "antes" e "depois"
+  // das ações é o lançamento da avaliação no sistema, não a data de referência (31/12).
+  const lancamentoAdPorAno = new Map<number, Date>();
   for (const m of base.medicoesAD) {
     if (!(m.validada || m.avaliacaoStatus === "FINALIZADA")) continue;
     const id = Number(m.colaboradorId);
@@ -196,6 +199,8 @@ export function montarAvaliacoes(base: Base) {
     if (!ano || valor === null) continue;
     const d = dataOuNula(m.dataReferencia);
     if (d && (!dataAdPorAno.get(ano) || d > dataAdPorAno.get(ano)!)) dataAdPorAno.set(ano, d);
+    const l = dataOuNula(m.avaliacaoLancadaEm);
+    if (l && (!lancamentoAdPorAno.get(ano) || l > lancamentoAdPorAno.get(ano)!)) lancamentoAdPorAno.set(ano, l);
     const escala03 = valor >= 0 && valor <= 3;
     const p = percentualNaEscala(valor, escala03 ? 0 : Number(m.escalaMin ?? 0), escala03 ? 3 : Number(m.escalaMax ?? 3));
     if (p !== null) notaAD.set(`${id}|${normalizar(m.competencia)}|${ano}`, p);
@@ -220,11 +225,12 @@ export function montarAvaliacoes(base: Base) {
     l.push({ cancelada: status === "cancelada", concluida, conclusao });
     acoesPorChave.set(chave, l);
   }
-  const contarAcoes = (chave: string, dataNm: Date | null) => {
+  // Decisão da Dina (12/10): não usar datas. Toda ação concluída no ciclo conta para a nova medição.
+  const contarAcoes = (chave: string, _dataNm: Date | null) => {
     const ativas = (acoesPorChave.get(chave) ?? []).filter((x) => !x.cancelada);
     return {
       acoesAtivas: ativas.length,
-      concluidasAntesNm: dataNm ? ativas.filter((x) => x.concluida && x.conclusao && x.conclusao < dataNm).length : 0,
+      concluidasAntesNm: ativas.filter((x) => x.concluida).length,
     };
   };
 
@@ -277,7 +283,7 @@ export function montarAvaliacoes(base: Base) {
     s.add(k);
     competenciasPorPessoa.set(id, s);
   }
-  const dataAdAtual = ad.anoAtual ? dataAdPorAno.get(ad.anoAtual) ?? new Date(ad.anoAtual, 11, 31) : null;
+  const dataAdAtual = ad.anoAtual ? lancamentoAdPorAno.get(ad.anoAtual) ?? dataAdPorAno.get(ad.anoAtual) ?? new Date(ad.anoAtual, 11, 31) : null;
   for (const [id, comps] of Array.from(competenciasPorPessoa.entries())) {
     const p = pessoas.get(id)!;
     for (const k of Array.from(comps)) {
@@ -436,7 +442,8 @@ export function montarRelatorio(base: Base, unidade?: string, publico: Publico =
   // ---- Bloco 5a: como o PDI está acontecendo
   // Ponto de partida do PDI: técnico = Avaliação de Proficiência 2025; comportamental = AD mais recente.
   const ppTec = tec.filter((a) => a.antes === "EM_DESENVOLVIMENTO");
-  const ppComp = comp.filter((a) => a.depois === "EM_DESENVOLVIMENTO");
+  // Ponto de partida do PDI comportamental: a AD anterior (o PDI foi feito depois dela).
+  const ppComp = comp.filter((a) => a.antes === "EM_DESENVOLVIMENTO");
   const planejamento = {
     TECNICO: { comPlano: ppTec.filter((a) => a.acoesAtivas > 0).length, total: ppTec.length },
     COMPORTAMENTAL: { comPlano: ppComp.filter((a) => a.acoesAtivas > 0).length, total: ppComp.length },
@@ -446,10 +453,7 @@ export function montarRelatorio(base: Base, unidade?: string, publico: Publico =
   for (const a of tec) if (a.dataNm) dataNmPessoa.set(a.pessoa, a.dataNm);
   const acoesTecMedidas = acoesNaoCanceladas.filter((a) => a.instrumento === "TECNICO" && pessoasComNmTec.has(a.pessoa));
   const execucao = {
-    concluidasAntes: acoesTecMedidas.filter((a) => {
-      const d = dataNmPessoa.get(a.pessoa);
-      return a.status === "concluida" && a.conclusao && d && a.conclusao < d;
-    }).length,
+    concluidasAntes: acoesTecMedidas.filter((a) => a.status === "concluida").length,
     total: acoesTecMedidas.length,
   };
   const sinais = Array.from(

@@ -225,7 +225,6 @@ export function sinteseConhecimento(eixos: EixoResumo[], instrumento: Instrument
   if (sobe.length) frases.push(`Mais pessoas subiram de conceito em ${lista(sobe.map((e) => `${e.nome} (${e.subiram} de ${e.comparaveis})`))}.`);
   if (cai.length) frases.push(`Em ${lista(cai.map((e) => `${e.nome} (${e.desceram} de ${e.comparaveis} desceram)`))}, mais pessoas desceram do que subiram, o que pede novo foco.`);
   if (!sobe.length && !cai.length) frases.push("A maior parte das pessoas manteve o conceito entre as duas medições.");
-  frases.push("Estes resultados são o ponto de partida do PDI comportamental.");
   return limitarSintese(frases);
 }
 
@@ -238,7 +237,7 @@ export function sintesePdi(args: {
   const frases: string[] = [];
   const partes: string[] = [];
   if (args.planejamento.total) partes.push(`${args.planejamento.comPlano} de ${args.planejamento.total} pontos de partida no conceito Em Desenvolvimento já têm plano`);
-  if (args.execucao.total) partes.push(`${args.execucao.concluidasAntes} de ${args.execucao.total} ações técnicas foram concluídas antes da nova medição`);
+  if (args.execucao.total) partes.push(`${args.execucao.concluidasAntes} de ${args.execucao.total} ações técnicas foram concluídas`);
   if (partes.length) frases.push(`${lista(partes)}.`);
   if (args.forca) {
     frases.push(`${args.forca.nome} é a principal força transversal: ${args.forca.fortes} de ${args.forca.pessoas} pessoas em Conhecimento Avançado ou Referência.`);
@@ -261,14 +260,13 @@ export type LinhaInvestimento = {
 };
 
 export function sinteseInvestimento(linhas: LinhaInvestimento[]) {
-  const tec = linhas.filter((l) => l.tipo === "TECNICO" && !l.contraste);
+  const itens = linhas.filter((l) => !l.contraste);
   const frases: string[] = [];
-  const acompanharam = tec.filter((l) => l.comAcao * 2 >= l.pessoas);
-  const semInvest = tec.filter((l) => l.comAcao * 2 < l.pessoas);
-  if (acompanharam.length) frases.push(`No técnico, o investimento acompanhou a subida de conceito em ${lista(acompanharam.map((l) => l.nome))}: metade ou mais das pessoas tinha ação concluída.`);
-  if (semInvest.length) frases.push(`Em ${lista(semInvest.map((l) => l.nome))}, as pessoas subiram de conceito com poucas ações concluídas antes da nova medição.`);
-  if (!tec.length) frases.push("Ainda não há eixo técnico com pelo menos 5 pessoas que subiram de conceito para relacionar com as ações do PDI.");
-  frases.push("No comportamental, a leitura vale a partir da próxima Avaliação de Desempenho.");
+  const acompanharam = itens.filter((l) => l.comAcao * 2 >= l.pessoas);
+  const semInvest = itens.filter((l) => l.comAcao * 2 < l.pessoas);
+  if (acompanharam.length) frases.push(`O investimento acompanhou a subida de conceito em ${lista(acompanharam.map((l) => l.nome))}: metade ou mais dos empregados tinha ação concluída.`);
+  if (semInvest.length) frases.push(`Em ${lista(semInvest.map((l) => l.nome))}, os empregados subiram de conceito com poucas ações concluídas.`);
+  if (!itens.length) frases.push("Ainda não há eixo ou competência com pelo menos 5 empregados que subiram de conceito para relacionar com as ações do PDI.");
   return limitarSintese(frases);
 }
 
