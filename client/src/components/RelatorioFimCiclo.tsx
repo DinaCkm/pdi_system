@@ -942,24 +942,19 @@ export function RelatorioFimCiclo() {
 
             <article style={{ background: C.cartao, border: `1px solid ${C.borda}`, borderRadius: 20, padding: 28, display: "flex", flexDirection: "column", gap: 18 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <h2 style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: 22, fontWeight: 600 }}>Fortalezas e multiplicadores</h2>
+                <h2 style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: 22, fontWeight: 600 }}>Fortalezas e potencialidades</h2>
                 <p style={{ margin: 0, fontSize: 15, color: C.secundario }}>Quem domina um eixo pode apoiar quem está desenvolvendo.</p>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 18, padding: 18, borderRadius: 14, background: C.tealFundo }}>
-                <div style={{ fontFamily: FONTE_TITULO, fontSize: 40, fontWeight: 700, color: "#0B5555" }}>{r.fortalezas.multiplicadores.total}</div>
-                <div style={{ fontSize: 15, lineHeight: 1.5, color: C.tealTexto }}>
-                  vezes em que uma pessoa alcançou Conhecimento Aplicado ou acima em um eixo técnico que não é exigido na sua função, em {r.fortalezas.multiplicadores.eixos} eixos. É conhecimento que ela pode ensinar a quem precisa.
-                  {r.fortalezas.multiplicadores.porEixo.length > 0 && (
-                    <> Mais frequentes: {r.fortalezas.multiplicadores.porEixo.map((e: any) => `${e.nome} (${e.vezes})`).join(", ")}.</>
-                  )}
-                </div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>Fortalezas · conhecimentos essenciais</div>
+                <div style={{ fontSize: 14, color: C.secundario }}>Eixos que fazem parte da função: transversais (todo o Sebrae), de liderança e essenciais de cada área.</div>
               </div>
               <Abas
                 rotulo="Recorte das fortalezas"
                 valor={abaFortalezas}
                 onChange={setAbaFortalezas}
                 opcoes={[
-                  ["SEBRAE", "Sebrae · transversais"],
+                  ["SEBRAE", "Transversais e liderança"],
                   ["AREA", "Por área"],
                 ]}
               />
@@ -1028,6 +1023,21 @@ export function RelatorioFimCiclo() {
                   </div>
                 );
               })()}
+              <div style={{ borderTop: `1px solid ${C.borda}`, paddingTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 16 }}>Potencialidades · conhecimentos não essenciais na função</div>
+                  <div style={{ fontSize: 14, color: C.secundario }}>Só eixos Não essenciais. Eixo transversal nunca é potencialidade: é essencial para todo o Sebrae.</div>
+                </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 18, padding: 18, borderRadius: 14, background: C.tealFundo }}>
+                <div style={{ fontFamily: FONTE_TITULO, fontSize: 40, fontWeight: 700, color: "#0B5555" }}>{r.fortalezas.multiplicadores.total}</div>
+                <div style={{ fontSize: 15, lineHeight: 1.5, color: C.tealTexto }}>
+                  vezes em que uma pessoa alcançou Conhecimento Aplicado ou acima em um eixo Não essencial para a sua função, em {r.fortalezas.multiplicadores.eixos} eixos. É conhecimento que ela pode ensinar a quem precisa.
+                  {r.fortalezas.multiplicadores.porEixo.length > 0 && (
+                    <> Mais frequentes: {r.fortalezas.multiplicadores.porEixo.map((e: any) => `${e.nome} (${e.vezes})`).join(", ")}.</>
+                  )}
+                </div>
+              </div>
+              </div>
             </article>
           </Grade>
           <Sintese texto={r.sinteses.pdi} />
@@ -1137,7 +1147,7 @@ export function RelatorioFimCiclo() {
             <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse", fontSize: 15, fontVariantNumeric: "tabular-nums" }}>
               <thead>
                 <tr style={{ textAlign: "left", color: C.secundario, fontSize: 13 }}>
-                  {["Eixo ou competência", "Pessoas", "Subiram de conceito", "Desceram", "Pessoas com ação concluída", "Ações concluídas"].map((h, i) => (
+                  {["Eixo ou competência", "Empregados com as duas medições", "Subiram de conceito", "Desceram", "Com ação no PDI", "Concluíram a ação", "Ações concluídas"].map((h, i) => (
                     <th key={h} style={{ padding: "10px 12px", fontWeight: 600, borderBottom: `1px solid ${C.borda}`, textAlign: i >= 2 ? "right" : "left" }}>
                       {h}
                     </th>
@@ -1159,14 +1169,17 @@ export function RelatorioFimCiclo() {
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right", fontWeight: 700, color: C.positivo }}>{l.subiram}</td>
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right", color: l.desceram > 0 ? C.atencao : C.secundario }}>{l.desceram}</td>
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right" }}>
-                        {l.comAcao} de {l.pessoas}
+                        {l.comPlano ?? "—"} de {l.pessoas}
+                      </td>
+                      <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right" }}>
+                        {l.comAcao} de {l.comPlano ?? l.pessoas}
                       </td>
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right" }}>{l.acoes}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} style={{ padding: "14px 12px", color: C.secundario }}>
+                    <td colSpan={7} style={{ padding: "14px 12px", color: C.secundario }}>
                       Ainda não há eixo ou competência com 5 pessoas ou mais e as duas medições.
                     </td>
                   </tr>
@@ -1175,7 +1188,7 @@ export function RelatorioFimCiclo() {
             </table>
           </div>
           <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: C.secundario }}>
-            Conta as ações concluídas no ciclo, de quem tem as duas medições (Proficiência 2025 → 2026 no técnico; AD {adBase} → {adAtual} no comportamental). A relação mostra onde o investimento acompanhou o crescimento, não demonstra causa.
+            A tabela considera só os empregados que fizeram as duas medições (quem fez só uma fica fora). Conta as ações concluídas no ciclo, de quem tem as duas medições (Proficiência 2025 → 2026 no técnico; AD {adBase} → {adAtual} no comportamental). A relação mostra onde o investimento acompanhou o crescimento, não demonstra causa.
           </p>
           <Sintese texto={r.sinteses.investimento} />
         </Secao>

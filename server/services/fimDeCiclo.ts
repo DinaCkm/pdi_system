@@ -248,6 +248,9 @@ export function montarAvaliacoes(base: Base) {
     const chaveNm = `${id}|${normalizar(eixo)}`;
     const depois = conceitoDe(nmTecnico.has(chaveNm) ? nmTecnico.get(chaveNm)! : null);
     if (relacao === "NAO_ESSENCIAL") {
+      // Eixo transversal é essencial para todo o Sebrae: nunca é potencialidade, mesmo com cadastro errado.
+      const tipoT = tipoTransversal(eixo);
+      if (tipoT === "TODOS" || (tipoT === "GESTORES" && p.lider)) continue;
       if (naExpectativa(depois)) potencialidades.push({ pessoa: id, unidade: p.unidade, eixo });
       naoEssenciais.push({ pessoa: id, unidade: p.unidade, eixo, antes: conceitoDe(numeroOuNulo(e.base2025)), depois });
       continue;
@@ -586,6 +589,7 @@ export function montarRelatorio(base: Base, unidade?: string, publico: Publico =
       pessoas: l.length,
       subiram: e.subiram,
       desceram: e.desceram,
+      comPlano: l.filter((a) => a.acoesAtivas > 0).length,
       comAcao: l.filter((a) => a.concluidasAntesNm > 0).length,
       acoes: l.reduce((s, a) => s + a.concluidasAntesNm, 0),
       contraste,
