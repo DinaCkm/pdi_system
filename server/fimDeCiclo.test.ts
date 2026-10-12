@@ -128,7 +128,7 @@ describe("relatório (blocos e seção 6)", () => {
   });
 
   it("nenhuma ocorrência de 'prova' nos textos", () => {
-    expect(JSON.stringify(r).toLowerCase()).not.toContain("prova");
+    expect(JSON.stringify(r).toLowerCase()).not.toMatch(/\bprovas?\b/); // "aprovada" não conta
   });
 
   it("transversais e essenciais separados (técnico)", () => {

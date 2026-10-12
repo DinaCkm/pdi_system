@@ -342,6 +342,7 @@ export function montarRelatorio(base: Base, unidade?: string, publico: Publico =
   const potenc = noRecorte(dados.potencialidades);
   const pessoasRecorte = new Set(avals.map((a) => a.pessoa));
   const acoes = dados.acoes.filter((a) => (unidade ? dados.pessoas.get(a.pessoa)?.unidade === unidade : true) && doPublico(a.pessoa));
+  const noPublicoEArea = (pessoa: number) => dados.pessoas.has(pessoa) && (unidade ? dados.pessoas.get(pessoa)?.unidade === unidade : true) && doPublico(pessoa);
 
   const tec = avals.filter((a) => a.instrumento === "TECNICO");
   const comp = avals.filter((a) => a.instrumento === "COMPORTAMENTAL");
@@ -409,6 +410,21 @@ export function montarRelatorio(base: Base, unidade?: string, publico: Publico =
       concluidas: acoes.filter((a) => a.status === "concluida").length,
       emAndamento: acoes.filter((a) => a.status !== "concluida" && a.status !== "cancelada").length,
       canceladas: acoes.filter((a) => a.status === "cancelada").length,
+      // Pedidos de alteração (prazo, título, descrição...) e de nova ação, no mesmo recorte.
+      alteracoes: (() => {
+        const l = (base.ajustes ?? []).filter((x: any) => noPublicoEArea(Number(x.colaboradorId)));
+        return { aprovadas: l.filter((x: any) => x.status === "aprovada").length, negadas: l.filter((x: any) => x.status === "reprovada").length, pendentes: l.filter((x: any) => x.status !== "aprovada" && x.status !== "reprovada").length };
+      })(),
+      novasAcoes: (() => {
+        const l = (base.pedidosAcao ?? []).filter((x: any) => noPublicoEArea(Number(x.colaboradorId)));
+        const st = (x: any) => String(x.statusGeral);
+        return {
+          aprovadas: l.filter((x: any) => Number(x.virouAcao) === 1 || st(x) === "aprovada").length,
+          vetadas: l.filter((x: any) => st(x) === "vetada_gestor" || st(x) === "vetada_rh").length,
+          encerradas: l.filter((x: any) => st(x) === "encerrada_lider").length,
+          pendentes: l.filter((x: any) => Number(x.virouAcao) !== 1 && !["aprovada", "vetada_gestor", "vetada_rh", "encerrada_lider"].includes(st(x))).length,
+        };
+      })(),
     },
     eixos: [...eixosTec]
       .sort((a, b) => Number(b.transversal) - Number(a.transversal) || b.pessoas - a.pessoas || a.nome.localeCompare(b.nome, "pt-BR"))

@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { CONCEITOS, ROTULO_CONCEITO, type Conceito } from "../../../shared/fimDeCicloRegras";
 import { Abas, C, COR_CONCEITO, FONTE_TEXTO, FONTE_TITULO, LegendaConceitos, Secao, nomeArea } from "./fimCicloEstilo";
-import { MatrizPorArea } from "./MatrizConhecimento";
 
 // Relatório de Fim de Ciclo do PDI — página da diretoria.
 // Segue a "Especificação de ajustes — Relatório de Fim de Ciclo do PDI" e o
@@ -277,8 +276,9 @@ function ListaResultado({ itens, limite = 99 }: { itens: any[]; limite?: number 
               </span>
             </div>
             <div style={{ flex: "0 0 auto", marginLeft: "auto", fontSize: 13, whiteSpace: "nowrap" }}>
-              <span style={{ color: C.positivo, fontWeight: 700 }}>▲ {e.subiram}</span>{" "}
-              <span style={{ color: e.desceram > 0 ? C.atencao : C.secundario, fontWeight: e.desceram > 0 ? 700 : 400 }}>▼ {e.desceram}</span>
+              <span style={{ color: C.positivo, fontWeight: 700 }}>▲ {e.subiram} subiram</span>{" "}
+              <span style={{ color: C.secundario }}>= {e.mantiveram} mantiveram</span>{" "}
+              <span style={{ color: e.desceram > 0 ? C.atencao : C.secundario, fontWeight: e.desceram > 0 ? 700 : 400 }}>▼ {e.desceram} desceram</span>
             </div>
           </div>
         );
@@ -499,6 +499,26 @@ export function RelatorioFimCiclo() {
                 </span>
               ))}
             </div>
+            {(ctx.acoes.alteracoes || ctx.acoes.novasAcoes) && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 10, paddingTop: 8, borderTop: `1px solid ${C.linhaSuave}` }}>
+                {ctx.acoes.alteracoes && (
+                  <div style={{ fontSize: 14, color: C.corpo, lineHeight: 1.5 }}>
+                    <strong style={{ color: C.texto }}>Pedidos de alteração de ações</strong> (prazo, título, descrição)
+                    <br />
+                    {ctx.acoes.alteracoes.aprovadas} aprovados · <span style={{ color: ctx.acoes.alteracoes.negadas ? C.atencao : undefined, fontWeight: ctx.acoes.alteracoes.negadas ? 700 : 400 }}>{ctx.acoes.alteracoes.negadas} negados</span>
+                    {ctx.acoes.alteracoes.pendentes ? ` · ${ctx.acoes.alteracoes.pendentes} sem resposta` : ""}
+                  </div>
+                )}
+                {ctx.acoes.novasAcoes && (
+                  <div style={{ fontSize: 14, color: C.corpo, lineHeight: 1.5 }}>
+                    <strong style={{ color: C.texto }}>Pedidos de nova ação</strong>
+                    <br />
+                    {ctx.acoes.novasAcoes.aprovadas} aprovados · <span style={{ color: ctx.acoes.novasAcoes.vetadas ? C.atencao : undefined, fontWeight: ctx.acoes.novasAcoes.vetadas ? 700 : 400 }}>{ctx.acoes.novasAcoes.vetadas} vetados</span> · {ctx.acoes.novasAcoes.encerradas} encerrados pelo líder
+                    {ctx.acoes.novasAcoes.pendentes ? ` · ${ctx.acoes.novasAcoes.pendentes} sem resposta` : ""}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <Grade min={340} gap={20}>
@@ -567,7 +587,7 @@ export function RelatorioFimCiclo() {
         {/* Bloco 2 — Resultado geral: quanto evoluímos, onde evoluímos e o que desenvolver */}
         <Secao titulo="Resultado geral" subtitulo="Se cada eixo e cada competência cresceu, e as prioridades para o próximo ciclo." id="resultado">
           <p style={{ margin: 0, fontSize: 15, color: C.corpo }}>
-            Cada eixo e cada competência comparado com ele mesmo: <strong>empregados na expectativa de desenvolvimento antes → depois</strong>, de quantos têm as duas medições. ▲ subiram e ▼ desceram de conceito.
+            Cada eixo e cada competência comparado com ele mesmo: <strong>empregados na expectativa de desenvolvimento antes → depois</strong>, de quantos têm as duas medições. Cada empregado subiu, manteve ou desceu de conceito: ▲ + = + ▼ somam o total.
           </p>
           <Grade min={420} gap={16}>
             <article style={{ border: `1px solid ${C.borda}`, borderRadius: 16, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -860,9 +880,6 @@ export function RelatorioFimCiclo() {
           )}
           <Sintese texto={abaConhecimento === "TECNICO" ? r.sinteses.tecnico : r.sinteses.comportamental} />
         </Secao>
-
-        {/* Matriz de conhecimento por área (sem nomes) */}
-        {r.matriz && <MatrizPorArea matriz={r.matriz} />}
 
         {/* Bloco 5 — Como o PDI está acontecendo + Fortalezas e multiplicadores */}
         <section style={{ display: "flex", flexDirection: "column", gap: 16 }}>
