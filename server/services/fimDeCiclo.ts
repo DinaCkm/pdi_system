@@ -597,7 +597,7 @@ export function montarRelatorio(base: Base, unidade?: string, publico: Publico =
 
   // ---- Sínteses
   const sinteses = {
-    resultado: sinteseResultado(resumoTec, resumoComp),
+    resultado: sinteseResultado(eixosTec, eixosComp, resumoTec.aguardando),
     fechamento: sinteseFechamento(resumoTec, resumoComp),
     tecnico: sinteseConhecimento(eixosTec, "TECNICO"),
     comportamental: sinteseConhecimento(eixosComp, "COMPORTAMENTAL"),
