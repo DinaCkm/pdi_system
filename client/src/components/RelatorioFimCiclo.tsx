@@ -176,10 +176,10 @@ function ListaPrioridades({ itens, limite = 5, comEvolucao = true, comMotivo = f
             )}
           </div>
           <div style={{ flex: "2 1 220px", display: "flex", flexDirection: "column", gap: 4 }}>
-            <BarraProporcao parte={i.emDesenvolvimento} total={i.pessoas} rotulo={`${i.emDesenvolvimento} de ${i.pessoas} em desenvolvimento`} />
+            <BarraProporcao parte={i.emDesenvolvimento} total={i.pessoas} rotulo={`${i.emDesenvolvimento} de ${i.pessoas} empregados em desenvolvimento`} />
             <span style={{ fontSize: 14 }}>
               <strong>
-                {i.emDesenvolvimento} de {i.pessoas}
+                {i.emDesenvolvimento} de {i.pessoas} empregados
               </strong>{" "}
               <span style={{ color: C.secundario }}>em desenvolvimento</span>
             </span>
@@ -217,7 +217,7 @@ function DistribuicaoGrande({ dist, rotulo }: { dist: Record<Conceito, number>; 
               title={`${ROTULO_CONCEITO[c]}: ${dist[c]}`}
               style={{ width: `${(dist[c] / total) * 100}%`, background: COR_CONCEITO[c], color: c === "CONSOLIDADO" || c === "AVANCADO" || c === "REFERENCIA" ? "#FFFFFF" : C.texto, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
             >
-              {dist[c] / total >= 0.06 ? dist[c] : ""}
+              
             </div>
           ) : null,
         )}
@@ -231,6 +231,65 @@ function CartaoContexto({ rotulo, valor, detalhe }: { rotulo: string; valor: Rea
       <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secundario }}>{rotulo}</div>
       <div style={{ fontFamily: FONTE_TITULO, fontSize: 26, fontWeight: 700, lineHeight: 1.15 }}>{valor}</div>
       <div style={{ fontSize: 15, color: C.corpo, lineHeight: 1.45 }}>{detalhe}</div>
+    </div>
+  );
+}
+
+// Resultado por eixo/competência: pessoas na expectativa antes → depois, sempre sobre as mesmas pessoas.
+function ListaResultado({ itens, limite = 99 }: { itens: any[]; limite?: number }) {
+  const [todos, setTodos] = useState(false);
+  const naExp = (d: Record<Conceito, number>) => CONCEITOS.reduce((t, c) => t + (c !== "EM_DESENVOLVIMENTO" ? d?.[c] ?? 0 : 0), 0);
+  const v = itens.filter((e) => e.comparaveis > 0);
+  if (!v.length) return <div style={{ fontSize: 14, color: C.secundario, padding: "6px 0" }}>Ainda sem pessoas com as duas medições.</div>;
+  const vis = todos ? v : v.slice(0, limite);
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {vis.map((e) => {
+        const antes = naExp(e.distribuicaoAntes);
+        const depois = naExp(e.distribuicaoDepois);
+        const d = depois - antes;
+        return (
+          <div key={e.nome} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 14px", padding: "10px 0", borderTop: `1px solid ${C.linhaSuave}` }}>
+            <div style={{ flex: "1 1 200px", minWidth: 0, fontWeight: 600, fontSize: 15 }}>
+              {e.nome}
+              {e.comparaveis < 5 && <span style={{ fontWeight: 400, fontSize: 12, color: C.secundario }}> · poucas medições</span>}
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8, whiteSpace: "nowrap" }}>
+              <span style={{ fontFamily: FONTE_TITULO, fontSize: 18, fontWeight: 700, color: C.positivo }}>
+                {antes} → {depois}
+              </span>
+              <span style={{ fontSize: 13, color: C.secundario }}>de {e.comparaveis} empregados</span>
+              <span
+                style={{
+                  minWidth: 34,
+                  textAlign: "center",
+                  padding: "2px 8px",
+                  borderRadius: 999,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  background: d > 0 ? C.tealFundo : d < 0 ? C.focoFundo : C.linhaSuave,
+                  color: d > 0 ? C.positivo : d < 0 ? C.atencao : C.secundario,
+                }}
+              >
+                {d > 0 ? `+${d}` : d < 0 ? `−${Math.abs(d)}` : "="}
+              </span>
+            </div>
+            <div style={{ flex: "0 0 auto", marginLeft: "auto", fontSize: 13, whiteSpace: "nowrap" }}>
+              <span style={{ color: C.positivo, fontWeight: 700 }}>▲ {e.subiram}</span>{" "}
+              <span style={{ color: e.desceram > 0 ? C.atencao : C.secundario, fontWeight: e.desceram > 0 ? 700 : 400 }}>▼ {e.desceram}</span>
+            </div>
+          </div>
+        );
+      })}
+      {v.length > limite && (
+        <button
+          type="button"
+          onClick={() => setTodos(!todos)}
+          style={{ alignSelf: "flex-start", marginTop: 8, minHeight: 40, padding: "0 14px", borderRadius: 10, border: `1px solid ${C.borda}`, background: C.cartao, fontFamily: "inherit", fontSize: 14, fontWeight: 600, cursor: "pointer", color: C.texto }}
+        >
+          {todos ? "Mostrar menos" : `Ver todos (${v.length})`}
+        </button>
+      )}
     </div>
   );
 }
@@ -504,60 +563,46 @@ export function RelatorioFimCiclo() {
         </Secao>
 
         {/* Bloco 2 — Resultado geral: quanto evoluímos, onde evoluímos e o que desenvolver */}
-        <Secao titulo="Resultado geral" subtitulo="Evolução das avaliações e prioridades para o próximo ciclo." id="resultado">
-          <Grade min={360} gap={16}>
-            {[
-              { titulo: "Conhecimento técnico", periodo: "Proficiência 2025 × 2026", x: tec, tipo: "TECNICO" },
-              { titulo: "Competências comportamentais", periodo: `Desempenho ${adBase} × ${adAtual}`, x: comp, tipo: "COMPORTAMENTAL" },
-            ].map((c) => {
-              const delta = c.x.naExpectativaDepois - c.x.naExpectativaAntes;
-              return (
-                <article key={c.titulo} style={{ border: `1px solid ${C.borda}`, borderRadius: 16, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8 }}>
-                    <span style={{ fontSize: 16, fontWeight: 700 }}>{c.titulo}</span>
-                    <span style={{ fontSize: 14, color: C.secundario }}>{c.periodo}</span>
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14 }}>
-                    <span style={{ fontFamily: FONTE_TITULO, fontSize: "clamp(34px, 5vw, 44px)", fontWeight: 700, color: C.positivo, letterSpacing: "-0.02em" }}>
-                      {c.x.naExpectativaAntes} → {c.x.naExpectativaDepois}
-                    </span>
-                    <span
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: 999,
-                        fontFamily: FONTE_TITULO,
-                        fontSize: 18,
-                        fontWeight: 700,
-                        background: delta > 0 ? C.tealFundo : delta < 0 ? C.focoFundo : C.linhaSuave,
-                        color: delta > 0 ? C.positivo : delta < 0 ? C.atencao : C.secundario,
-                      }}
-                    >
-                      {delta > 0 ? `+${delta}` : delta < 0 ? `−${Math.abs(delta)}` : "="}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 15, color: C.corpo }}>
-                    avaliações na expectativa de desenvolvimento, de <strong>{c.x.comparaveis}</strong> com as duas medições
-                  </div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", fontSize: 14, color: C.secundario }}>
-                    <span style={{ color: C.positivo, fontWeight: 700 }}>▲ {c.x.subiram} subiram</span>
-                    <span>= {c.x.mantiveram} mantiveram</span>
-                    <span style={{ color: C.atencao, fontWeight: 700 }}>▼ {c.x.desceram} desceram</span>
-                  </div>
-                  {c.tipo === "TECNICO" && c.x.aguardando > 0 && (
-                    <div style={{ fontSize: 13, color: C.secundario }}>
-                      {c.x.aguardando} de {c.x.total} avaliações aguardam a Avaliação de Proficiência 2026
-                      {c.x.primeiraMedicao > 0 ? ` · ${c.x.primeiraMedicao} são primeira medição` : ""}.
+        <Secao titulo="Resultado geral" subtitulo="Se cada eixo e cada competência cresceu, e as prioridades para o próximo ciclo." id="resultado">
+          <p style={{ margin: 0, fontSize: 15, color: C.corpo }}>
+            Cada eixo e cada competência comparado com ele mesmo: <strong>empregados na expectativa de desenvolvimento antes → depois</strong>, de quantos têm as duas medições. ▲ subiram e ▼ desceram de conceito.
+          </p>
+          <Grade min={420} gap={16}>
+            <article style={{ border: `1px solid ${C.borda}`, borderRadius: 16, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ fontSize: 17, fontWeight: 700 }}>Competências comportamentais</span>
+                <span style={{ fontSize: 14, color: C.secundario }}>
+                  Desempenho {adBase} × {adAtual} · {comp.eixos.length} competências
+                </span>
+              </div>
+              <ListaResultado itens={comp.eixos} />
+            </article>
+            <article style={{ border: `1px solid ${C.borda}`, borderRadius: 16, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ fontSize: 17, fontWeight: 700 }}>Conhecimento técnico</span>
+                <span style={{ fontSize: 14, color: C.secundario }}>Proficiência 2025 × 2026</span>
+              </div>
+              {GRUPOS_EIXO.map((g) => {
+                const l = tec.eixos.filter(g.filtro);
+                return l.length ? (
+                  <div key={g.chave}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: C.corpo, paddingTop: 4 }}>
+                      {g.titulo} <span style={{ fontWeight: 400, color: C.secundario }}>· {g.alcance}</span>
                     </div>
-                  )}
-                </article>
-              );
-            })}
+                    <ListaResultado itens={l} limite={g.chave === "E" ? 5 : 99} />
+                  </div>
+                ) : null;
+              })}
+              {tec.aguardando > 0 && (
+                <div style={{ fontSize: 13, color: C.secundario }}>Leitura parcial: {tec.aguardando} medições técnicas ainda aguardam a Avaliação de Proficiência 2026.</div>
+              )}
+            </article>
           </Grade>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 4 }}>
             <div>
               <h3 style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: 18, fontWeight: 600 }}>Evolução por dimensão</h3>
-              <div style={{ fontSize: 14, color: C.secundario }}>Quantas avaliações em cada conceito, antes e depois, sobre as mesmas avaliações.</div>
+              <div style={{ fontSize: 14, color: C.secundario }}>Como as pessoas se distribuem pelos conceitos, juntando todos os eixos ou todas as competências. O detalhe de cada um está em "Onde está o conhecimento da equipe".</div>
             </div>
             <LegendaConceitos />
             <Grade min={360} gap={24}>
@@ -582,7 +627,7 @@ export function RelatorioFimCiclo() {
             <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
               <div>
                 <h3 style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: 18, fontWeight: 600 }}>Prioridades para o próximo ciclo</h3>
-                <div style={{ fontSize: 14, color: C.secundario }}>Pessoas no conceito Em Desenvolvimento, de quantas já têm a medição atual. Ordenado pela proporção.</div>
+                <div style={{ fontSize: 14, color: C.secundario }}>Empregados no conceito Em Desenvolvimento, de quantos já fizeram a medição atual naquele eixo ou competência. Ordenado pela proporção.</div>
               </div>
               <a href="#foco" style={{ fontSize: 14, fontWeight: 600, color: C.positivo }}>
                 Ver o foco completo ›

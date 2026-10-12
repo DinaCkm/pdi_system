@@ -158,19 +158,26 @@ export type ResumoInstrumento = {
   grupos: Record<Grupo, number>;
 };
 
-export function sinteseResultado(t: ResumoInstrumento, c: ResumoInstrumento) {
-  const frases: string[] = [];
-  if (t.comparaveis) {
-    frases.push(
-      `No técnico, ${t.naExpectativaDepois} de ${t.comparaveis} avaliações estão na expectativa de desenvolvimento (eram ${t.naExpectativaAntes}); ${plural(t.subiram, "subiu", "subiram")} de conceito e ${plural(t.desceram, "desceu", "desceram")}.`,
-    );
-  }
-  if (c.comparaveis) {
-    frases.push(
-      `Nas competências, ${c.naExpectativaDepois} de ${c.comparaveis} estão na expectativa (eram ${c.naExpectativaAntes}); ${plural(c.subiram, "subiu", "subiram")} e ${plural(c.desceram, "desceu", "desceram")}.`,
-    );
-  }
-  if (t.aguardando > 0) frases.push(`A leitura técnica é parcial: ${t.aguardando} de ${t.total} avaliações aguardam a Avaliação de Proficiência 2026.`);
+// Resultado lido por eixo e por competência (cada uma comparada com ela mesma), não pela soma de avaliações.
+export type ItemResultado = { nome: string; comparaveis: number; distribuicaoAntes: Record<Conceito, number>; distribuicaoDepois: Record<Conceito, number> };
+export const naExpectativaDe = (d: Record<Conceito, number>) => CONCEITOS.reduce((t, c) => t + (naExpectativa(c) ? d[c] ?? 0 : 0), 0);
+
+export function sinteseResultado(eixos: ItemResultado[], competencias: ItemResultado[], aguardandoTecnico: number, minimo = PARAMETROS.amostraMinima) {
+  const frase = (l: ItemResultado[], oQue: [string, string], inicio: string) => {
+    const v = l.filter((e) => e.comparaveis >= minimo);
+    if (!v.length) return null;
+    const delta = (e: ItemResultado) => naExpectativaDe(e.distribuicaoDepois) - naExpectativaDe(e.distribuicaoAntes);
+    const mais = v.filter((e) => delta(e) > 0);
+    const menos = v.filter((e) => delta(e) < 0);
+    const top = [...mais].sort((a, b) => delta(b) - delta(a))[0];
+    const verbo = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
+    return `${v.length === 1 ? `${inicio === "Das" ? "Da única" : "Do único"} ${oQue[0]}` : `${inicio} ${v.length} ${oQue[1]}`}, ${verbo(mais.length, "ganhou", "ganharam")} pessoas na expectativa e ${verbo(menos.length, "perdeu", "perderam")}${top ? `; o maior avanço foi em ${top.nome}` : ""}.`;
+  };
+  const frases = [
+    frase(competencias, ["competência", "competências"], "Das"),
+    frase(eixos, ["eixo técnico", "eixos técnicos"], "Dos"),
+  ].filter(Boolean) as string[];
+  if (aguardandoTecnico > 0) frases.push(`A leitura técnica é parcial: ${aguardandoTecnico} medições ainda aguardam a Avaliação de Proficiência 2026.`);
   return limitarSintese(frases);
 }
 
