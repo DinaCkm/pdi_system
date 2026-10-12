@@ -388,8 +388,16 @@ export function montarRelatorio(base: Base, unidade?: string, publico: Publico =
   const minData = (l: Date[]) => (l.length ? new Date(Math.min(...l.map((d) => d.getTime()))) : null);
   const maxData = (l: Date[]) => (l.length ? new Date(Math.max(...l.map((d) => d.getTime()))) : null);
 
+  // Abrangência: quem fez cada avaliação (as pessoas avaliadas podem ter feito só uma delas).
+  const pessoasTec = new Set(tec.map((a) => a.pessoa));
+  const pessoasComp = new Set(comp.map((a) => a.pessoa));
   const contexto = {
     pessoas: pessoasRecorte.size,
+    abrangencia: {
+      tecnico: pessoasTec.size,
+      comportamental: pessoasComp.size,
+      ambas: Array.from(pessoasTec).filter((p) => pessoasComp.has(p)).length,
+    },
     areas,
     periodo: {
       tecnico: { inicioAno: 2025, fim: iso(maxData(datasNmTec)) },

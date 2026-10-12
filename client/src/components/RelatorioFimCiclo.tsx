@@ -119,6 +119,122 @@ const GRUPOS_EIXO = [
 const ROTULO_PUBLICO = { TODOS: "Todos", LIDERES: "Líderes", DEMAIS: "Demais empregados" } as const;
 type Publico = keyof typeof ROTULO_PUBLICO;
 
+// ---------- Prioridades (necessidade × evolução) ----------
+
+type Ordenacao = "PROPORCAO" | "QUANTIDADE" | "QUEDAS";
+const ROTULO_ORDENACAO: Record<Ordenacao, string> = {
+  PROPORCAO: "Maior proporção em desenvolvimento",
+  QUANTIDADE: "Maior quantidade em desenvolvimento",
+  QUEDAS: "Mais quedas de conceito",
+};
+function ordenarPrioridades<T extends { nome: string; emDesenvolvimento: number; pessoas: number; desceram?: number | null }>(l: T[], o: Ordenacao): T[] {
+  const prop = (x: T) => (x.pessoas ? x.emDesenvolvimento / x.pessoas : 0);
+  return [...l].sort((a, b) =>
+    o === "QUANTIDADE"
+      ? b.emDesenvolvimento - a.emDesenvolvimento || prop(b) - prop(a)
+      : o === "QUEDAS"
+        ? (b.desceram ?? -1) - (a.desceram ?? -1) || prop(b) - prop(a)
+        : prop(b) - prop(a) || b.emDesenvolvimento - a.emDesenvolvimento || a.nome.localeCompare(b.nome, "pt-BR"),
+  );
+}
+
+// Barra da proporção de pessoas em desenvolvimento (sem percentual escrito).
+function BarraProporcao({ parte, total, rotulo }: { parte: number; total: number; rotulo: string }) {
+  return (
+    <div role="img" aria-label={rotulo} style={{ height: 10, borderRadius: 999, background: C.linhaSuave, overflow: "hidden", minWidth: 80 }}>
+      <div style={{ width: `${total ? (parte / total) * 100 : 0}%`, height: "100%", background: C.atencaoClaro, borderRadius: 999 }} />
+    </div>
+  );
+}
+
+function Evolucao({ subiram, desceram }: { subiram: number | null | undefined; desceram: number | null | undefined }) {
+  if (subiram === null || subiram === undefined) return <span style={{ fontSize: 13, color: C.secundario }}>evolução: poucas medições</span>;
+  return (
+    <span style={{ display: "inline-flex", gap: 12, fontSize: 14, whiteSpace: "nowrap" }}>
+      <span style={{ color: C.positivo, fontWeight: 700 }}>▲ {subiram} {subiram === 1 ? "subiu" : "subiram"}</span>
+      <span style={{ color: (desceram ?? 0) > 0 ? C.atencao : C.secundario, fontWeight: (desceram ?? 0) > 0 ? 700 : 400 }}>
+        ▼ {desceram} {desceram === 1 ? "desceu" : "desceram"}
+      </span>
+    </span>
+  );
+}
+
+// Lista compacta: nome · necessidade (barra + "X de Y em desenvolvimento") · evolução (▲ ▼). Mostra os primeiros e "Ver todos".
+function ListaPrioridades({ itens, limite = 5, comEvolucao = true, comMotivo = false, vazio }: { itens: any[]; limite?: number; comEvolucao?: boolean; comMotivo?: boolean; vazio: string }) {
+  const [todos, setTodos] = useState(false);
+  if (!itens.length) return <div style={{ fontSize: 15, color: C.secundario, padding: "8px 0" }}>{vazio}</div>;
+  const vis = todos ? itens : itens.slice(0, limite);
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {vis.map((i) => (
+        <div key={i.nome} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 20px", padding: "12px 0", borderTop: `1px solid ${C.linhaSuave}` }}>
+          <div style={{ flex: "2 1 220px", minWidth: 0 }}>
+            <div style={{ fontWeight: 600, fontSize: 15 }}>{i.nome}</div>
+            {comMotivo && i.motivo && (
+              // Só a recomendação: a contagem já aparece na barra ao lado.
+              <div style={{ fontSize: 13, color: (i.desceram ?? 0) > (i.subiram ?? 0) ? C.atencao : C.secundario, fontWeight: 600 }}>{String(i.motivo).split(". ").pop()}</div>
+            )}
+          </div>
+          <div style={{ flex: "2 1 220px", display: "flex", flexDirection: "column", gap: 4 }}>
+            <BarraProporcao parte={i.emDesenvolvimento} total={i.pessoas} rotulo={`${i.emDesenvolvimento} de ${i.pessoas} em desenvolvimento`} />
+            <span style={{ fontSize: 14 }}>
+              <strong>
+                {i.emDesenvolvimento} de {i.pessoas}
+              </strong>{" "}
+              <span style={{ color: C.secundario }}>em desenvolvimento</span>
+            </span>
+          </div>
+          {comEvolucao && (
+            <div style={{ flex: "1 1 180px", textAlign: "right" }}>
+              <Evolucao subiram={i.subiram} desceram={i.desceram} />
+            </div>
+          )}
+        </div>
+      ))}
+      {itens.length > limite && (
+        <button
+          type="button"
+          onClick={() => setTodos(!todos)}
+          style={{ alignSelf: "flex-start", marginTop: 8, minHeight: 40, padding: "0 14px", borderRadius: 10, border: `1px solid ${C.borda}`, background: C.cartao, fontFamily: "inherit", fontSize: 14, fontWeight: 600, cursor: "pointer", color: C.texto }}
+        >
+          {todos ? "Mostrar menos" : `Ver todos (${itens.length})`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Barra grande por nível, com a quantidade de pessoas em cada conceito.
+function DistribuicaoGrande({ dist, rotulo }: { dist: Record<Conceito, number>; rotulo: string }) {
+  const total = CONCEITOS.reduce((t, c) => t + (dist?.[c] ?? 0), 0);
+  return (
+    <div role="img" aria-label={`${rotulo}: ${CONCEITOS.filter((c) => dist?.[c]).map((c) => `${dist[c]} em ${ROTULO_CONCEITO[c]}`).join(", ")}`} style={{ display: "flex", height: 30, borderRadius: 8, overflow: "hidden", gap: 2, background: C.linhaSuave }}>
+      {total > 0 &&
+        CONCEITOS.map((c) =>
+          dist[c] ? (
+            <div
+              key={c}
+              title={`${ROTULO_CONCEITO[c]}: ${dist[c]}`}
+              style={{ width: `${(dist[c] / total) * 100}%`, background: COR_CONCEITO[c], color: c === "CONSOLIDADO" || c === "AVANCADO" || c === "REFERENCIA" ? "#FFFFFF" : C.texto, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
+            >
+              {dist[c] / total >= 0.06 ? dist[c] : ""}
+            </div>
+          ) : null,
+        )}
+    </div>
+  );
+}
+
+function CartaoContexto({ rotulo, valor, detalhe }: { rotulo: string; valor: React.ReactNode; detalhe: React.ReactNode }) {
+  return (
+    <div style={{ padding: "18px 20px", borderRadius: 14, background: C.cinzaClaro, display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secundario }}>{rotulo}</div>
+      <div style={{ fontFamily: FONTE_TITULO, fontSize: 26, fontWeight: 700, lineHeight: 1.15 }}>{valor}</div>
+      <div style={{ fontSize: 15, color: C.corpo, lineHeight: 1.45 }}>{detalhe}</div>
+    </div>
+  );
+}
+
 // ---------- Página ----------
 
 export function RelatorioFimCiclo() {
@@ -129,6 +245,8 @@ export function RelatorioFimCiclo() {
   const [abaFortalezas, setAbaFortalezas] = useState<"SEBRAE" | "AREA">("SEBRAE");
   const [abaFoco, setAbaFoco] = useState<"SEBRAE" | "AREA">("SEBRAE");
   const [aberto, setAberto] = useState<string | null>(null);
+  const [verEssenciais, setVerEssenciais] = useState(false);
+  const [ordenacao, setOrdenacao] = useState<Ordenacao>("PROPORCAO");
 
   // Fontes do relatório (só nesta página).
   useEffect(() => {
@@ -259,163 +377,260 @@ export function RelatorioFimCiclo() {
           </div>
         )}
 
-        {/* Bloco 1 — Sobre este ciclo */}
-        <Secao titulo="Sobre este ciclo" id="sobre">
-          <Grade min={220} gap={12}>
-            <Quadro rotulo="Pessoas avaliadas" valor={ctx.pessoas} detalhe={unidade ? nomeArea(unidade) : `${ctx.areas.length} ${ctx.areas.length === 1 ? "área" : "áreas"}`} />
-            <Quadro
-              rotulo="Período do ciclo"
-              valor={<span style={{ fontSize: 18 }}>2025 a {mesAno(ctx.periodo.tecnico.fim)}</span>}
+        {/* Bloco 1 — Sobre este ciclo: quem participou, quando, o que foi avaliado e como anda o PDI */}
+        <Secao titulo="Sobre este ciclo" subtitulo="Panorama das avaliações e da execução das ações de desenvolvimento." id="sobre">
+          <Grade min={230} gap={12}>
+            <CartaoContexto
+              rotulo="Pessoas avaliadas"
+              valor={ctx.pessoas}
               detalhe={
                 <>
-                  Proficiência: 2025 (mês {ACARREGAR}) a {mesAno(ctx.periodo.tecnico.fim)}
-                  <br />
-                  Desempenho: {mesAno(ctx.periodo.comportamental.inicio)} a {mesAno(ctx.periodo.comportamental.fim)}
+                  {unidade ? nomeArea(unidade) : `${ctx.areas.length} ${ctx.areas.length === 1 ? "área participante" : "áreas participantes"}`}
+                  {ctx.abrangencia && (
+                    <span style={{ display: "block", fontSize: 13, color: C.secundario, marginTop: 4 }}>
+                      {ctx.abrangencia.tecnico} na Proficiência · {ctx.abrangencia.comportamental} no Desempenho · {ctx.abrangencia.ambas} nas duas
+                    </span>
+                  )}
                 </>
               }
             />
-            <Quadro
-              rotulo="Execução do PDI"
-              valor={<span style={{ fontSize: 18 }}>{mesAno(ctx.execucao.inicio)} a {mesAno(ctx.execucao.fim)}</span>}
-              detalhe="Período em que as ações foram realizadas"
-            />
-            <Quadro
-              rotulo="Ações de PDI"
-              valor={ctx.acoes.total}
-              detalhe={`${ctx.acoes.concluidas} concluídas · ${ctx.acoes.emAndamento} em andamento · ${ctx.acoes.canceladas} canceladas`}
-            />
+            <CartaoContexto rotulo="Ações do PDI" valor={ctx.acoes.total} detalhe={`${ctx.acoes.concluidas} concluídas · ${ctx.acoes.emAndamento} em andamento`} />
+            <CartaoContexto rotulo="Período do ciclo" valor={<span style={{ fontSize: 22 }}>2025 a {mesAno(ctx.periodo.tecnico.fim)}</span>} detalhe="Proficiência e desempenho" />
+            <CartaoContexto rotulo="Execução do PDI" valor={<span style={{ fontSize: 22 }}>{mesAno(ctx.execucao.inicio)} a {mesAno(ctx.execucao.fim)}</span>} detalhe="Período de realização das ações" />
           </Grade>
-          <Grade min={320} gap={16}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 16 }}>Eixos técnicos avaliados</div>
-                <div style={{ fontSize: 14, color: C.secundario }}>Avaliação de Proficiência 2025 → 2026 · {ctx.eixos.length} eixos</div>
-              </div>
-              {GRUPOS_EIXO.map((g) => ({ titulo: `${g.titulo} · ${g.alcance}`, l: ctx.eixos.filter(g.filtro), tipo: g.tipoChip })).map((g) =>
-                g.l.length ? (
-                  <div key={g.titulo} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: C.secundario }}>{g.titulo}</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {g.l.map((e: any) => (
-                        <Chip key={e.nome} tipo={g.tipo}>
-                          {e.nome}
-                        </Chip>
-                      ))}
-                    </div>
-                  </div>
-                ) : null,
-              )}
+
+          {/* Três períodos diferentes, cada um com sua marca */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {[
+              ["Avaliação de Proficiência", `2025 → ${mesAno(ctx.periodo.tecnico.fim)}`, C.tealFundo, C.tealTexto],
+              ["Avaliação de Desempenho", `${mesAno(ctx.periodo.comportamental.inicio)} → ${mesAno(ctx.periodo.comportamental.fim)}`, C.transvFundo, C.transvTexto],
+              ["Execução do PDI", `${mesAno(ctx.execucao.inicio)} → ${mesAno(ctx.execucao.fim)}`, C.focoFundo, C.focoTexto],
+            ].map(([rot, per, fundo, cor]) => (
+              <span key={rot} style={{ padding: "8px 14px", borderRadius: 999, background: fundo, color: cor, fontSize: 14 }}>
+                <strong>{rot}:</strong> {per}
+              </span>
+            ))}
+          </div>
+
+          <div style={{ padding: "18px 20px", borderRadius: 14, border: `1px solid ${C.borda}`, display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8 }}>
+              <strong style={{ fontSize: 16 }}>Execução das ações de PDI</strong>
+              <span style={{ fontSize: 15, color: C.corpo }}>
+                {ctx.acoes.concluidas} de {ctx.acoes.total} concluídas
+              </span>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div role="img" aria-label={`${ctx.acoes.concluidas} concluídas, ${ctx.acoes.emAndamento} em andamento, ${ctx.acoes.canceladas} canceladas`} style={{ display: "flex", height: 14, borderRadius: 999, overflow: "hidden", gap: 2, background: C.linhaSuave }}>
+              {[
+                [ctx.acoes.concluidas, C.positivo],
+                [ctx.acoes.emAndamento, C.positivoClaro],
+                [ctx.acoes.canceladas, C.neutro],
+              ].map(([n, cor], k) => ((n as number) > 0 ? <div key={k} style={{ width: `${((n as number) / Math.max(ctx.acoes.total, 1)) * 100}%`, background: cor as string }} /> : null))}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 20px", fontSize: 14, color: C.corpo }}>
+              {[
+                ["Concluídas", ctx.acoes.concluidas, C.positivo],
+                ["Em andamento", ctx.acoes.emAndamento, C.positivoClaro],
+                ["Canceladas", ctx.acoes.canceladas, C.neutro],
+              ].map(([rot, n, cor]) => (
+                <span key={rot as string} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: 3, background: cor as string }} />
+                  {rot}: <strong>{n as number}</strong>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <Grade min={340} gap={20}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 16 }}>Competências avaliadas</div>
-                <div style={{ fontSize: 14, color: C.secundario }}>
-                  Avaliação de Desempenho {adBase} → {adAtual} · {ctx.competencias.length} competências
-                </div>
+                <div style={{ fontWeight: 700, fontSize: 17 }}>Eixos técnicos avaliados</div>
+                <div style={{ fontSize: 14, color: C.secundario }}>Avaliação de Proficiência · {new Set(ctx.eixos.map((e: any) => e.nome)).size} eixos</div>
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {(() => {
+                const transv = ctx.eixos.filter(GRUPOS_EIXO[0].filtro);
+                const lider = ctx.eixos.filter(GRUPOS_EIXO[1].filtro);
+                const jaListados = new Set([...transv, ...lider].map((e: any) => e.nome));
+                const essenciais = ctx.eixos.filter((e: any) => !e.transversal && !jaListados.has(e.nome));
+                const LIMITE = 6;
+                const grupos = [
+                  { titulo: "Transversais", sub: "comuns a todo o Sebrae", l: transv, tipo: "transversal" as const },
+                  { titulo: "Liderança", sub: "comuns a todos os líderes", l: lider, tipo: "transversal" as const },
+                  { titulo: "Essenciais", sub: "específicos de cada área", l: verEssenciais ? essenciais : essenciais.slice(0, LIMITE), tipo: "neutro" as const, resto: essenciais.length - LIMITE },
+                ];
+                return grupos.map((g) =>
+                  g.l.length ? (
+                    <div key={g.titulo} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: C.corpo }}>
+                        {g.titulo} <span style={{ fontWeight: 400, color: C.secundario }}>· {g.sub}</span>
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {g.l.map((e: any) => (
+                          <Chip key={e.nome} tipo={g.tipo}>
+                            {e.nome}
+                          </Chip>
+                        ))}
+                        {"resto" in g && (g.resto ?? 0) > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setVerEssenciais(!verEssenciais)}
+                            style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${C.borda}`, background: C.cartao, fontFamily: "inherit", fontSize: 14, fontWeight: 600, cursor: "pointer", color: C.positivo }}
+                          >
+                            {verEssenciais ? "Ocultar" : `+ ${g.resto} eixos essenciais`}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : null,
+                );
+              })()}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 17 }}>Competências avaliadas</div>
+                <div style={{ fontSize: 14, color: C.secundario }}>Avaliação de Desempenho · {ctx.competencias.length} competências</div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(190px, 100%), 1fr))", gap: 8 }}>
                 {ctx.competencias.map((c: any) => (
-                  <Chip key={c.nome}>{c.nome}</Chip>
+                  <div key={c.nome} style={{ padding: "10px 12px", borderRadius: 10, background: c.transversal ? C.transvFundo : C.cinzaClaro, color: c.transversal ? C.transvTexto : C.texto, fontSize: 14, fontWeight: c.transversal ? 600 : 400 }}>
+                    {c.nome}
+                  </div>
                 ))}
               </div>
             </div>
           </Grade>
           <p style={{ margin: 0, fontSize: 14, color: C.secundario }}>
-            Expectativa de desenvolvimento: Conhecimento Aplicado ou acima, nos dois instrumentos. Cada avaliação é o resultado de uma pessoa em um eixo ou competência. Técnico e comportamental são lidos separadamente.
+            Expectativa de desenvolvimento: Conhecimento Aplicado ou acima, nos dois instrumentos. Cada avaliação é o resultado de uma pessoa em um eixo ou competência; uma pessoa pode ter feito só uma das avaliações. Técnico e comportamental são lidos separadamente.
           </p>
         </Secao>
 
-        {/* Bloco 2 — Resultado geral */}
-        <section style={{ display: "flex", flexDirection: "column", gap: 16 }} aria-labelledby="resultado">
-          <h2 id="resultado" style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: 22, fontWeight: 600 }}>
-            Resultado geral
-          </h2>
-          <LegendaConceitos />
-          <Grade min={280}>
+        {/* Bloco 2 — Resultado geral: quanto evoluímos, onde evoluímos e o que desenvolver */}
+        <Secao titulo="Resultado geral" subtitulo="Evolução das avaliações e prioridades para o próximo ciclo." id="resultado">
+          <Grade min={360} gap={16}>
             {[
-              { titulo: "Conhecimento técnico", sub: "Proficiência 2025 → 2026", x: tec, tipo: "TECNICO", inicio: "2025", fim: "2026" },
-              { titulo: "Competências comportamentais", sub: `AD ${adBase} → ${adAtual}`, x: comp, tipo: "COMPORTAMENTAL", inicio: String(adBase), fim: String(adAtual) },
+              { titulo: "Conhecimento técnico", periodo: "Proficiência 2025 × 2026", x: tec, tipo: "TECNICO" },
+              { titulo: "Competências comportamentais", periodo: `Desempenho ${adBase} × ${adAtual}`, x: comp, tipo: "COMPORTAMENTAL" },
             ].map((c) => {
-              const sobem = textoSobem(c.x.destaques);
-              const caem = textoCaem(c.x.destaques);
+              const delta = c.x.naExpectativaDepois - c.x.naExpectativaAntes;
               return (
-                <article key={c.titulo} style={{ background: C.cartao, border: `1px solid ${C.borda}`, borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: C.secundario }}>{c.titulo}</span>
-                    <span style={{ fontSize: 13, color: C.secundario }}>{c.sub}</span>
+                <article key={c.titulo} style={{ border: `1px solid ${C.borda}`, borderRadius: 16, padding: "20px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8 }}>
+                    <span style={{ fontSize: 16, fontWeight: 700 }}>{c.titulo}</span>
+                    <span style={{ fontSize: 14, color: C.secundario }}>{c.periodo}</span>
                   </div>
-                  <div style={{ fontFamily: FONTE_TITULO, fontSize: "clamp(28px, 4vw, 36px)", fontWeight: 700, color: C.positivo }}>
-                    {c.x.naExpectativaAntes} → {c.x.naExpectativaDepois}
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 14 }}>
+                    <span style={{ fontFamily: FONTE_TITULO, fontSize: "clamp(34px, 5vw, 44px)", fontWeight: 700, color: C.positivo, letterSpacing: "-0.02em" }}>
+                      {c.x.naExpectativaAntes} → {c.x.naExpectativaDepois}
+                    </span>
+                    <span
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: 999,
+                        fontFamily: FONTE_TITULO,
+                        fontSize: 18,
+                        fontWeight: 700,
+                        background: delta > 0 ? C.tealFundo : delta < 0 ? C.focoFundo : C.linhaSuave,
+                        color: delta > 0 ? C.positivo : delta < 0 ? C.atencao : C.secundario,
+                      }}
+                    >
+                      {delta > 0 ? `+${delta}` : delta < 0 ? `−${Math.abs(delta)}` : "="}
+                    </span>
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>
-                    de {c.x.comparaveis} avaliações na expectativa de desenvolvimento (Conhecimento Aplicado ou acima)
+                  <div style={{ fontSize: 15, color: C.corpo }}>
+                    avaliações na expectativa de desenvolvimento, de <strong>{c.x.comparaveis}</strong> com as duas medições
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "44px 1fr", gap: "6px 10px", alignItems: "center", fontSize: 13, color: C.secundario }}>
-                    <span>{c.inicio}</span>
-                    <Distribuicao dist={c.x.distribuicaoAntes} rotulo={`${c.titulo}, ${c.inicio}`} />
-                    <span>{c.fim}</span>
-                    <Distribuicao dist={c.x.distribuicaoDepois} rotulo={`${c.titulo}, ${c.fim}`} />
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 16px", fontSize: 14, color: C.secundario }}>
+                    <span style={{ color: C.positivo, fontWeight: 700 }}>▲ {c.x.subiram} subiram</span>
+                    <span>= {c.x.mantiveram} mantiveram</span>
+                    <span style={{ color: C.atencao, fontWeight: 700 }}>▼ {c.x.desceram} desceram</span>
                   </div>
-                  <p style={{ margin: 0, fontSize: 15, lineHeight: 1.55, color: C.corpo }}>
-                    Entre as duas medições, {cont(c.x.subiram, "avaliação subiu", "avaliações subiram")} de conceito, {c.x.mantiveram} {c.x.mantiveram === 1 ? "manteve" : "mantiveram"} e {c.x.desceram}{" "}
-                    {c.x.desceram === 1 ? "desceu" : "desceram"}. Base: {c.x.comparaveis} de {c.x.total} avaliações com as duas medições
-                    {c.tipo === "TECNICO" && c.x.aguardando > 0 ? `; ${c.x.aguardando} aguardam a Avaliação de Proficiência 2026` : ""}
-                    {c.x.primeiraMedicao > 0 ? `; ${c.x.primeiraMedicao} são primeira medição` : ""}.
-                  </p>
-                  {c.tipo === "TECNICO" ? (
-                    (() => {
-                      const partes = [
-                        ["transversais", textoSobem(c.x.destaquesPorTipo.transversais)],
-                        ["de liderança", textoSobem(c.x.destaquesPorTipo.lideranca)],
-                        ["essenciais", textoSobem(c.x.destaquesPorTipo.essenciais)],
-                      ].filter(([, t]) => t);
-                      return partes.length ? (
-                        <p style={{ margin: 0, fontSize: 15, color: C.corpo }}>
-                          Mais cresceram: {partes.map(([g, t]) => `nos eixos ${g}, ${t}`).join("; ")}.
-                        </p>
-                      ) : null;
-                    })()
-                  ) : (
-                    <p style={{ margin: 0, fontSize: 15, color: C.corpo }}>
-                      {sobem ? `Subiram: ${sobem}. ` : ""}
-                      {caem ? `Desceram: ${caem}. ` : ""}Medido antes das ações do PDI.
-                    </p>
+                  {c.tipo === "TECNICO" && c.x.aguardando > 0 && (
+                    <div style={{ fontSize: 13, color: C.secundario }}>
+                      {c.x.aguardando} de {c.x.total} avaliações aguardam a Avaliação de Proficiência 2026
+                      {c.x.primeiraMedicao > 0 ? ` · ${c.x.primeiraMedicao} são primeira medição` : ""}.
+                    </div>
                   )}
                 </article>
               );
             })}
-            <article style={{ background: C.cartao, border: `1px solid ${C.borda}`, borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: C.secundario }}>Onde focar no próximo ciclo</span>
-                <span style={{ fontSize: 13, color: C.secundario }}>Em Desenvolvimento</span>
-              </div>
+          </Grade>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 4 }}>
+            <div>
+              <h3 style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: 18, fontWeight: 600 }}>Evolução por dimensão</h3>
+              <div style={{ fontSize: 14, color: C.secundario }}>Quantas avaliações em cada conceito, antes e depois, sobre as mesmas avaliações.</div>
+            </div>
+            <LegendaConceitos />
+            <Grade min={360} gap={24}>
               {[
-                ...GRUPOS_EIXO.map((g) => ({ titulo: g.titulo, f: { itens: tec.ondeFocar.itens.filter(g.filtro), amostraPequena: g.chave === "E" ? tec.ondeFocar.amostraPequena : 0 } })).filter(
-                  (b) => b.f.itens.length || b.titulo === "Eixos essenciais",
-                ),
-                { titulo: "Competências", f: comp.ondeFocar },
-              ].map((b) => (
-                <div key={b.titulo} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{b.titulo}</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {b.f.itens.length ? (
-                      b.f.itens.map((i: any) => (
-                        <Chip key={i.nome} tipo="foco">
-                          {i.nome} · {i.emDesenvolvimento} de {i.pessoas}
-                        </Chip>
-                      ))
-                    ) : (
-                      <Chip tipo="vazio">Ninguém no conceito Em Desenvolvimento entre eixos com 5 pessoas ou mais</Chip>
-                    )}
-                    {b.f.amostraPequena > 0 && <Chip tipo="vazio">+ {b.f.amostraPequena} com amostra pequena</Chip>}
+                { titulo: "Técnica", x: tec, ini: "2025", fim: "2026" },
+                { titulo: "Comportamental", x: comp, ini: String(adBase), fim: String(adAtual) },
+              ].map((d) => (
+                <div key={d.titulo} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <strong style={{ fontSize: 15 }}>{d.titulo}</strong>
+                  <div style={{ display: "grid", gridTemplateColumns: "44px 1fr", gap: "8px 10px", alignItems: "center", fontSize: 14, color: C.secundario }}>
+                    <span>{d.ini}</span>
+                    <DistribuicaoGrande dist={d.x.distribuicaoAntes} rotulo={`${d.titulo} ${d.ini}`} />
+                    <span>{d.fim}</span>
+                    <DistribuicaoGrande dist={d.x.distribuicaoDepois} rotulo={`${d.titulo} ${d.fim}`} />
                   </div>
                 </div>
               ))}
-              <p style={{ margin: 0, fontSize: 13, color: C.secundario }}>Pessoas no conceito Em Desenvolvimento, de quantas já têm a medição atual naquele eixo ou competência.</p>
-            </article>
-          </Grade>
+            </Grade>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+              <div>
+                <h3 style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: 18, fontWeight: 600 }}>Prioridades para o próximo ciclo</h3>
+                <div style={{ fontSize: 14, color: C.secundario }}>Pessoas no conceito Em Desenvolvimento, de quantas já têm a medição atual. Ordenado pela proporção.</div>
+              </div>
+              <a href="#foco" style={{ fontSize: 14, fontWeight: 600, color: C.positivo }}>
+                Ver o foco completo ›
+              </a>
+            </div>
+            <Grade min={340} gap={20}>
+              {[
+                ...GRUPOS_EIXO.map((g) => ({ titulo: g.titulo, l: tec.ondeFocar.itens.filter(g.filtro) })),
+                { titulo: "Competências", l: comp.ondeFocar.itens },
+              ]
+                .filter((g) => g.l.length)
+                .map((g) => (
+                  <div key={g.titulo}>
+                    <div style={{ fontWeight: 700, fontSize: 15, paddingBottom: 4 }}>{g.titulo}</div>
+                    <ListaPrioridades itens={ordenarPrioridades(g.l, "PROPORCAO")} limite={3} comEvolucao={false} vazio="" />
+                  </div>
+                ))}
+            </Grade>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
+            <h3 style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: 18, fontWeight: 600 }}>Análise da evolução</h3>
+            <ul style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 6, fontSize: 15, color: C.corpo, lineHeight: 1.5 }}>
+              {[
+                ["transversais", textoSobem(tec.destaquesPorTipo.transversais)],
+                ["de liderança", textoSobem(tec.destaquesPorTipo.lideranca)],
+                ["essenciais", textoSobem(tec.destaquesPorTipo.essenciais)],
+              ]
+                .filter(([, t]) => t)
+                .map(([g, t]) => (
+                  <li key={g as string}>
+                    <strong>Técnico, eixos {g}:</strong> mais cresceram {t}.
+                  </li>
+                ))}
+              {textoSobem(comp.destaques) && (
+                <li>
+                  <strong>Competências que mais subiram:</strong> {textoSobem(comp.destaques)}.
+                </li>
+              )}
+              {textoCaem(comp.destaques) && (
+                <li>
+                  <strong>Competências que mais desceram:</strong> {textoCaem(comp.destaques)}. Medido antes das ações do PDI.
+                </li>
+              )}
+            </ul>
+          </div>
           <Sintese texto={r.sinteses.resultado} />
-        </section>
+        </Secao>
 
         {/* Bloco 3 — Como as avaliações fecharam o ciclo */}
         <Secao
@@ -758,10 +973,10 @@ export function RelatorioFimCiclo() {
           <Sintese texto={r.sinteses.pdi} />
         </section>
 
-        {/* Bloco 6 — Foco de desenvolvimento do próximo ciclo */}
+        {/* Bloco 6 — Foco de desenvolvimento: transforma os resultados em prioridades do próximo PDI */}
         <Secao
           titulo="Foco de desenvolvimento do próximo ciclo"
-          subtitulo="Os eixos e competências em que investir para a empresa crescer como um todo."
+          subtitulo="Os conhecimentos e competências que precisam de maior atenção no próximo PDI."
           id="foco"
           acao={
             <Abas
@@ -775,31 +990,84 @@ export function RelatorioFimCiclo() {
             />
           }
         >
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", justifyContent: "space-between" }}>
+            <p style={{ margin: 0, fontSize: 14, color: C.corpo, maxWidth: 680 }}>
+              <strong>Necessidade</strong>: quantas pessoas estão no conceito Em Desenvolvimento. <strong>Evolução</strong>: quantas subiram ou desceram de conceito entre as duas medições. Um item pode ter muitos avanços e ainda precisar de ações.
+            </p>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, fontWeight: 600, color: C.secundario }}>
+              Ordenar por
+              <select value={ordenacao} onChange={(e) => setOrdenacao(e.target.value as Ordenacao)} style={{ minHeight: 44, borderRadius: 10, border: `1px solid ${C.borda}`, padding: "0 12px", fontFamily: "inherit", fontSize: 15, background: C.cartao }}>
+                {(Object.keys(ROTULO_ORDENACAO) as Ordenacao[]).map((o) => (
+                  <option key={o} value={o}>
+                    {ROTULO_ORDENACAO[o]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
           {abaFoco === "SEBRAE" ? (
-            <Grade min={320}>
-              <ColunaFoco titulo="Eixos técnicos transversais" itens={r.foco.sebrae.tecnicos} vazio="Nenhum eixo transversal com pessoas no conceito Em Desenvolvimento ou com mais quedas do que subidas." />
-              {r.recorte.publico !== "DEMAIS" && (
-                <ColunaFoco titulo="Eixos de liderança" itens={r.foco.sebrae.lideranca} vazio="Nenhum eixo de liderança com líderes no conceito Em Desenvolvimento ou com mais quedas do que subidas." />
-              )}
-              <ColunaFoco titulo="Competências comportamentais" itens={r.foco.sebrae.competencias} vazio="Nenhuma competência com pessoas no conceito Em Desenvolvimento ou com mais quedas do que subidas." />
-            </Grade>
+            <>
+              <Grade min={200} gap={12}>
+                {[
+                  ["Eixos transversais", r.foco.sebrae.tecnicos.length],
+                  ...(r.recorte.publico !== "DEMAIS" ? [["Eixos de liderança", r.foco.sebrae.lideranca.length]] : []),
+                  ["Competências", r.foco.sebrae.competencias.length],
+                ].map(([rot, n]) => (
+                  <div key={rot as string} style={{ padding: "16px 18px", borderRadius: 14, background: (n as number) ? C.focoFundo : C.cinzaClaro }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: C.secundario }}>{rot}</div>
+                    <div style={{ fontFamily: FONTE_TITULO, fontSize: 28, fontWeight: 700, color: (n as number) ? C.focoTexto : C.secundario }}>{n as number}</div>
+                    <div style={{ fontSize: 14, color: C.corpo }}>{(n as number) ? "com foco de desenvolvimento" : "nenhuma prioridade identificada"}</div>
+                  </div>
+                ))}
+              </Grade>
+              {[
+                { titulo: "Eixos técnicos transversais", l: r.foco.sebrae.tecnicos, mostrar: true },
+                { titulo: "Eixos de liderança", l: r.foco.sebrae.lideranca, mostrar: r.recorte.publico !== "DEMAIS" },
+                { titulo: "Competências comportamentais", l: r.foco.sebrae.competencias, mostrar: true },
+              ]
+                .filter((g) => g.mostrar)
+                .map((g) =>
+                  g.l.length ? (
+                    <div key={g.titulo} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                        <strong style={{ fontSize: 17 }}>{g.titulo}</strong>
+                        <span style={{ fontSize: 14, color: C.secundario }}>
+                          {g.l.length} {g.l.length === 1 ? "item" : "itens"}
+                        </span>
+                      </div>
+                      <ListaPrioridades itens={ordenarPrioridades(g.l, ordenacao)} limite={5} comMotivo vazio="" />
+                    </div>
+                  ) : (
+                    <div key={g.titulo} style={{ padding: "12px 16px", borderRadius: 12, background: C.cinzaClaro, fontSize: 15, color: C.corpo }}>
+                      <strong>{g.titulo}:</strong> nenhum com pessoas no conceito Em Desenvolvimento ou com mais quedas do que avanços.
+                    </div>
+                  ),
+                )}
+            </>
           ) : r.foco.porArea.length ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
               {r.foco.porArea.map((a: any) => (
-                <div key={a.area} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <div style={{ fontWeight: 700, fontSize: 16 }}>{nomeArea(a.area)}</div>
-                  <Grade min={320}>
-                    <ColunaFoco titulo="Eixos técnicos específicos" itens={a.tecnicos} vazio="Nenhum eixo específico com 5 pessoas ou mais nesta condição." />
-                    <ColunaFoco titulo="Competências" itens={a.competencias} vazio="Nenhuma competência com 5 pessoas ou mais nesta condição." />
+                <div key={a.area} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 17 }}>{nomeArea(a.area)}</div>
+                  <Grade min={340} gap={20}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 15 }}>Eixos essenciais da área</div>
+                      <ListaPrioridades itens={ordenarPrioridades(a.tecnicos, ordenacao)} limite={4} vazio="Nenhum eixo com 5 pessoas ou mais nesta condição." />
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 15 }}>Competências</div>
+                      <ListaPrioridades itens={ordenarPrioridades(a.competencias, ordenacao)} limite={4} vazio="Nenhuma competência com 5 pessoas ou mais nesta condição." />
+                    </div>
                   </Grade>
                 </div>
               ))}
             </div>
           ) : (
-            <p style={{ margin: 0, fontSize: 15, color: C.secundario }}>Eixos específicos de cada área entram aqui, com no mínimo 5 pessoas por eixo. Nenhum atende ao critério neste recorte.</p>
+            <p style={{ margin: 0, fontSize: 15, color: C.secundario }}>Nenhum eixo ou competência atende ao critério neste recorte (mínimo de 5 pessoas).</p>
           )}
           <p style={{ margin: 0, fontSize: 13, color: C.secundario }}>
-            Critério: eixos transversais e competências com pessoas no conceito Em Desenvolvimento ou com mais pessoas descendo do que subindo de conceito (por área: eixos específicos). Pessoas = quem já tem a medição atual.
+            Critério: eixos e competências com pessoas no conceito Em Desenvolvimento ou com mais pessoas descendo do que subindo de conceito. Pessoas = quem já tem a medição atual. A ordenação só muda a leitura; a regra de prioridade é a mesma.
           </p>
         </Secao>
 
@@ -902,32 +1170,3 @@ export function RelatorioFimCiclo() {
   );
 }
 
-function ColunaFoco({ titulo, itens, vazio }: { titulo: string; itens: any[]; vazio: string }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 22, borderRadius: 16, background: C.cinzaClaro }}>
-      <div style={{ fontWeight: 700, fontSize: 17 }}>{titulo}</div>
-      {itens.length ? (
-        itens.map((i) => (
-          <div key={i.nome} style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 14px", borderRadius: 12, background: C.cartao }}>
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-              <strong>{i.nome}</strong>
-              {i.subiram !== null && (
-                <span style={{ fontSize: 14, color: C.secundario }}>
-                  <span style={{ color: C.positivo, fontWeight: 700 }}>{i.subiram} subiram</span> ·{" "}
-                  <span style={{ color: i.desceram > 0 ? C.atencao : C.secundario, fontWeight: i.desceram > 0 ? 700 : 400 }}>{i.desceram} desceram</span>
-                </span>
-              )}
-            </div>
-            <div style={{ fontSize: 14, color: C.secundario }}>
-              {i.pessoas} pessoas
-              {i.predominante ? ` · conceito mais frequente: ${ROTULO_CONCEITO[i.predominante as Conceito]}` : ""}
-            </div>
-            <div style={{ fontSize: 14, color: C.corpo }}>{i.motivo}</div>
-          </div>
-        ))
-      ) : (
-        <div style={{ fontSize: 15, color: C.secundario }}>{vazio}</div>
-      )}
-    </div>
-  );
-}
