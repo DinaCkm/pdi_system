@@ -113,9 +113,9 @@ describe("relatório (blocos e seção 6)", () => {
     expect(tec.eixos.some((e) => e.nome === "Supervisão da Rede Estendida")).toBe(false);
   });
 
-  it("só ações concluídas antes da nova medição contam", () => {
+  it("ação concluída no ciclo conta, sem corte por data (decisão de 12/10)", () => {
     const linha = r.investimento.find((l) => l.nome === "Tomada de Decisão");
-    if (linha) expect(linha.comAcao).toBe(0); // ação comportamental veio depois da AD 2025
+    if (linha) expect(linha.comAcao).toBe(1); // ação comportamental concluída conta mesmo depois da data da AD
     expect(r.pdi.execucao).toEqual({ concluidasAntes: 1, total: 1 });
   });
 

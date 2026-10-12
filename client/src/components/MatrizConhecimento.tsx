@@ -348,7 +348,7 @@ function Detalhe({ l, colunas, ad }: { l: any; colunas: any; ad: any }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div>
           <div style={{ fontWeight: 700, marginBottom: 6 }}>
-            Competências · AD {ad.anoBase ?? "[a carregar]"} → {ad.anoAtual ?? "[a carregar]"}
+            Competências · AD {ad.anoBase ? `${ad.anoBase}/${ad.anoBase + 1}` : "[a carregar]"} → {ad.anoAtual ? `${ad.anoAtual}/${ad.anoAtual + 1}` : "[a carregar]"}
           </div>
           {comp.length ? (
             <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>{comp.map((c) => item(c.nome, l.comportamental[c.nome]))}</ul>
@@ -498,8 +498,8 @@ export function MatrizEmpregados() {
   }
 
   const { unidades, colunas, grade, riscos, linhas } = dados;
-  const anoBase = tipo === "COMP" ? r.ad.anoBase ?? "anterior" : "2025";
-  const anoAtual = tipo === "COMP" ? r.ad.anoAtual ?? "atual" : "2026";
+  const anoBase = tipo === "COMP" ? (r.ad.anoBase ? `${r.ad.anoBase}/${r.ad.anoBase + 1}` : "anterior") : "2025";
+  const anoAtual = tipo === "COMP" ? (r.ad.anoAtual ? `${r.ad.anoAtual}/${r.ad.anoAtual + 1}` : "atual") : "2026";
   const selValida = sel && grade.has(`${sel.unidade}|${sel.eixo}`) && colunas.some((c) => c.nome === sel.eixo) ? sel : null;
   const celSel = selValida ? (grade.get(`${selValida.unidade}|${selValida.eixo}`) as Celula) : null;
   const pessoasSel = selValida

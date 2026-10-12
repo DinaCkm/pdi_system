@@ -203,7 +203,7 @@ export async function carregarBase(db: { execute: (q: any) => Promise<any> }, ci
       SELECT mc.colaboradorId, cm.nome AS competencia, mc.valor,
              mc.escala_min AS escalaMin, mc.escala_max AS escalaMax, mc.validada,
              a.id AS avaliacaoId, a.status AS avaliacaoStatus, a.titulo AS avaliacaoTitulo,
-             a.data_referencia AS dataReferencia
+             a.data_referencia AS dataReferencia, a.createdAt AS avaliacaoLancadaEm
         FROM medicoes_competencias mc
         JOIN avaliacoes a ON a.id = mc.avaliacaoId
         LEFT JOIN competencias_macros cm ON cm.id = mc.competenciaMacroId
