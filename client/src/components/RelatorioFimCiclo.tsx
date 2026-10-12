@@ -91,13 +91,15 @@ function Distribuicao({ dist, rotulo, altura = 14 }: { dist: Record<Conceito, nu
 
 const cont = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
 
-function Barra({ titulo, grupos, total }: { titulo: string; grupos: Record<string, number>; total: number }) {
+function Barra({ titulo, grupos, total, empregados, unidade }: { titulo: string; grupos: Record<string, number>; total: number; empregados?: number; unidade?: string }) {
   const aria = `${titulo}: ${GRUPOS.map((g) => `${grupos[g] ?? 0} ${ROTULO_GRUPO[g].toLowerCase()}`).join(", ")}`;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: "2px 12px", fontSize: 15 }}>
         <strong>{titulo}</strong>
-        <span style={{ color: C.secundario }}>{total} avaliações</span>
+        <span style={{ color: C.secundario }}>
+          <strong style={{ color: C.texto }}>{empregados ?? "—"} empregados</strong> · {total} resultados{unidade ? ` (cada empregado em cada ${unidade})` : ""}
+        </span>
       </div>
       <div style={{ display: "flex", height: 20, borderRadius: 999, overflow: "hidden", gap: 3, background: C.linhaSuave }} role="img" aria-label={aria}>
         {GRUPOS.map((g) =>
@@ -425,8 +427,8 @@ export function RelatorioFimCiclo() {
             <h1 style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: "clamp(26px, 4vw, 34px)", fontWeight: 700, letterSpacing: "-0.02em" }}>Fim de ciclo do PDI 2025–2026</h1>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {selo(tecCompleto, `Avaliação de Proficiência: ${tecCompleto ? "completa" : "parcial"} · ${tec.feitas} de ${tec.total} avaliações feitas`)}
-            {selo(compCompleto, `Avaliação de Desempenho: ${comp.feitas} de ${comp.total} avaliações`)}
+            {selo(tecCompleto, `Avaliação de Proficiência: ${tecCompleto ? "completa" : "parcial"} · ${ctx.abrangencia?.tecnico ?? ""} empregados · ${tec.feitas} de ${tec.total} resultados já medidos`)}
+            {selo(compCompleto, `Avaliação de Desempenho: ${ctx.abrangencia?.comportamental ?? ""} empregados · ${comp.feitas} de ${comp.total} resultados`)}
           </div>
         </header>
 
@@ -679,13 +681,13 @@ export function RelatorioFimCiclo() {
 
         {/* Bloco 3 — Como as avaliações fecharam o ciclo */}
         <Secao
-          titulo="Como as avaliações fecharam o ciclo"
-          subtitulo="Cada avaliação é o resultado de uma pessoa em um eixo técnico ou em uma competência, comparando o conceito anterior com o atual."
+          titulo="Como os resultados fecharam o ciclo"
+          subtitulo="Cada empregado é avaliado em vários eixos e competências. Cada eixo (ou competência) de cada empregado é um resultado: por isso há mais resultados do que empregados."
           id="fechamento"
         >
           <Grade min={320} gap={20}>
-            <Barra titulo="Técnico" grupos={tec.grupos} total={tec.total} />
-            <Barra titulo="Comportamental" grupos={comp.grupos} total={comp.total} />
+            <Barra titulo="Técnico" grupos={tec.grupos} total={tec.total} empregados={ctx.abrangencia?.tecnico} unidade="eixo" />
+            <Barra titulo="Comportamental" grupos={comp.grupos} total={comp.total} empregados={ctx.abrangencia?.comportamental} unidade="competência" />
           </Grade>
           <Grade min={220} gap={12}>
             {GRUPOS.map((g) => (
@@ -694,17 +696,17 @@ export function RelatorioFimCiclo() {
                 <div>
                   <div style={{ fontWeight: 600 }}>{ROTULO_GRUPO[g]}</div>
                   <div style={{ fontSize: 14, color: C.secundario }}>
-                    Técnico {tec.grupos[g]} · Comportamental {comp.grupos[g]}
+                    Técnico: {tec.grupos[g]} resultados · Comportamental: {comp.grupos[g]} resultados
                   </div>
                   {g === "MANTEVE" && tec.classes.ATENCAO + comp.classes.ATENCAO > 0 && (
-                    <div style={{ fontSize: 13, color: C.secundario }}>{tec.classes.ATENCAO + comp.classes.ATENCAO} com atenção: desceram de conceito, mas seguem na expectativa</div>
+                    <div style={{ fontSize: 13, color: C.secundario }}>{tec.classes.ATENCAO + comp.classes.ATENCAO} resultados com atenção: desceram de conceito, mas seguem na expectativa</div>
                   )}
                   {g === "ABAIXO" && tec.classes.ABAIXO_NOVA + comp.classes.ABAIXO_NOVA > 0 && (
-                    <div style={{ fontSize: 13, color: C.secundario }}>{tec.classes.ABAIXO_NOVA + comp.classes.ABAIXO_NOVA} estavam na expectativa e pedem novo foco</div>
+                    <div style={{ fontSize: 13, color: C.secundario }}>{tec.classes.ABAIXO_NOVA + comp.classes.ABAIXO_NOVA} resultados estavam na expectativa e pedem novo foco</div>
                   )}
                   {g === "SEM_COMPARACAO" && (
                     <div style={{ fontSize: 13, color: C.secundario }}>
-                      {tec.classes.SEM_COMPARACAO + comp.classes.SEM_COMPARACAO} aguardam medição · {tec.classes.PRIMEIRA_MEDICAO + comp.classes.PRIMEIRA_MEDICAO} primeira medição
+                      {tec.classes.SEM_COMPARACAO + comp.classes.SEM_COMPARACAO} resultados aguardam a nova medição · {tec.classes.PRIMEIRA_MEDICAO + comp.classes.PRIMEIRA_MEDICAO} são primeira medição
                     </div>
                   )}
                 </div>
