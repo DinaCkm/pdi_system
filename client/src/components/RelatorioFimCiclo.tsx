@@ -471,6 +471,44 @@ export function RelatorioFimCiclo() {
             />
           }
         >
+          {/* Filtros de departamento e público: os mesmos do topo, para filtrar sem subir a página. */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, fontWeight: 600, color: C.secundario }}>
+              Departamento
+              <select
+                value={modo === "AREA" ? area : ""}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setArea(e.target.value);
+                    setModo("AREA");
+                  } else setModo("SEBRAE");
+                }}
+                style={{ minHeight: 44, borderRadius: 10, border: `1px solid ${C.borda}`, padding: "0 12px", fontFamily: "inherit", fontSize: 15, background: C.cartao, maxWidth: "100%" }}
+              >
+                <option value="">Todos os departamentos</option>
+                {(r.unidades as string[]).map((u) => (
+                  <option key={u} value={u}>
+                    {nomeArea(u)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, fontWeight: 600, color: C.secundario }}>
+              Público
+              <select
+                value={publico}
+                onChange={(e) => setPublico(e.target.value as Publico)}
+                style={{ minHeight: 44, borderRadius: 10, border: `1px solid ${C.borda}`, padding: "0 12px", fontFamily: "inherit", fontSize: 15, background: C.cartao }}
+              >
+                <option value="TODOS">Todos</option>
+                <option value="LIDERES">Líderes</option>
+                <option value="DEMAIS">Demais empregados</option>
+              </select>
+            </label>
+            <span style={{ fontSize: 13, color: C.secundario, paddingBottom: 12 }}>
+              {consulta.isFetching ? "Atualizando…" : "Estes filtros valem para todo o relatório."}
+            </span>
+          </div>
           <LegendaConceitos />
           {abaConhecimento === "COMPORTAMENTAL" && (
             <p style={{ margin: 0, fontSize: 14, color: C.corpo }}>
