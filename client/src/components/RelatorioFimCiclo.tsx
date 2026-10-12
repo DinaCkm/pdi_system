@@ -1147,7 +1147,7 @@ export function RelatorioFimCiclo() {
             <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse", fontSize: 15, fontVariantNumeric: "tabular-nums" }}>
               <thead>
                 <tr style={{ textAlign: "left", color: C.secundario, fontSize: 13 }}>
-                  {["Eixo ou competência", "Pessoas", "Subiram de conceito", "Desceram", "Pessoas com ação concluída", "Ações concluídas"].map((h, i) => (
+                  {["Eixo ou competência", "Empregados com as duas medições", "Subiram de conceito", "Desceram", "Com ação no PDI", "Concluíram a ação", "Ações concluídas"].map((h, i) => (
                     <th key={h} style={{ padding: "10px 12px", fontWeight: 600, borderBottom: `1px solid ${C.borda}`, textAlign: i >= 2 ? "right" : "left" }}>
                       {h}
                     </th>
@@ -1169,14 +1169,17 @@ export function RelatorioFimCiclo() {
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right", fontWeight: 700, color: C.positivo }}>{l.subiram}</td>
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right", color: l.desceram > 0 ? C.atencao : C.secundario }}>{l.desceram}</td>
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right" }}>
-                        {l.comAcao} de {l.pessoas}
+                        {l.comPlano ?? "—"} de {l.pessoas}
+                      </td>
+                      <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right" }}>
+                        {l.comAcao} de {l.comPlano ?? l.pessoas}
                       </td>
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right" }}>{l.acoes}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} style={{ padding: "14px 12px", color: C.secundario }}>
+                    <td colSpan={7} style={{ padding: "14px 12px", color: C.secundario }}>
                       Ainda não há eixo ou competência com 5 pessoas ou mais e as duas medições.
                     </td>
                   </tr>
@@ -1185,7 +1188,7 @@ export function RelatorioFimCiclo() {
             </table>
           </div>
           <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: C.secundario }}>
-            Conta as ações concluídas no ciclo, de quem tem as duas medições (Proficiência 2025 → 2026 no técnico; AD {adBase} → {adAtual} no comportamental). A relação mostra onde o investimento acompanhou o crescimento, não demonstra causa.
+            A tabela considera só os empregados que fizeram as duas medições (quem fez só uma fica fora). Conta as ações concluídas no ciclo, de quem tem as duas medições (Proficiência 2025 → 2026 no técnico; AD {adBase} → {adAtual} no comportamental). A relação mostra onde o investimento acompanhou o crescimento, não demonstra causa.
           </p>
           <Sintese texto={r.sinteses.investimento} />
         </Secao>

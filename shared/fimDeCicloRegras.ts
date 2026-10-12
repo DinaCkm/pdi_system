@@ -252,6 +252,7 @@ export type LinhaInvestimento = {
   transversal: boolean;
   lideranca: boolean;
   pessoas: number;
+  comPlano: number; // empregados com ação (não cancelada) nesse eixo/competência no PDI
   subiram: number;
   desceram: number;
   comAcao: number;

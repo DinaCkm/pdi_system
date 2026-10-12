@@ -589,6 +589,7 @@ export function montarRelatorio(base: Base, unidade?: string, publico: Publico =
       pessoas: l.length,
       subiram: e.subiram,
       desceram: e.desceram,
+      comPlano: l.filter((a) => a.acoesAtivas > 0).length,
       comAcao: l.filter((a) => a.concluidasAntesNm > 0).length,
       acoes: l.reduce((s, a) => s + a.concluidasAntesNm, 0),
       contraste,
