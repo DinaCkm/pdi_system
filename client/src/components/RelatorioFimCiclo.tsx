@@ -455,7 +455,7 @@ export function RelatorioFimCiclo() {
                 </>
               }
             />
-            <CartaoContexto rotulo="Ações do PDI" valor={ctx.acoes.total} detalhe={`${ctx.acoes.concluidas} concluídas · ${ctx.acoes.emAndamento} em andamento`} />
+            <CartaoContexto rotulo="Ações do PDI" valor={ctx.acoes.total} detalhe={`${ctx.acoes.concluidas} concluídas · ${ctx.acoes.emAndamento} não realizadas`} />
             <CartaoContexto rotulo="Período do ciclo" valor={<span style={{ fontSize: 22 }}>2025 a {mesAno(ctx.periodo.tecnico.fim)}</span>} detalhe="Proficiência e desempenho" />
             <CartaoContexto rotulo="Execução do PDI" valor={<span style={{ fontSize: 22 }}>{mesAno(ctx.execucao.inicio)} a {mesAno(ctx.execucao.fim)}</span>} detalhe="Período de realização das ações" />
           </Grade>
@@ -480,17 +480,17 @@ export function RelatorioFimCiclo() {
                 {ctx.acoes.concluidas} de {ctx.acoes.total} concluídas
               </span>
             </div>
-            <div role="img" aria-label={`${ctx.acoes.concluidas} concluídas, ${ctx.acoes.emAndamento} em andamento, ${ctx.acoes.canceladas} canceladas`} style={{ display: "flex", height: 14, borderRadius: 999, overflow: "hidden", gap: 2, background: C.linhaSuave }}>
+            <div role="img" aria-label={`${ctx.acoes.concluidas} concluídas, ${ctx.acoes.emAndamento} não realizadas, ${ctx.acoes.canceladas} canceladas`} style={{ display: "flex", height: 14, borderRadius: 999, overflow: "hidden", gap: 2, background: C.linhaSuave }}>
               {[
                 [ctx.acoes.concluidas, C.positivo],
-                [ctx.acoes.emAndamento, C.positivoClaro],
+                [ctx.acoes.emAndamento, C.atencaoClaro],
                 [ctx.acoes.canceladas, C.neutro],
               ].map(([n, cor], k) => ((n as number) > 0 ? <div key={k} style={{ width: `${((n as number) / Math.max(ctx.acoes.total, 1)) * 100}%`, background: cor as string }} /> : null))}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 20px", fontSize: 14, color: C.corpo }}>
               {[
                 ["Concluídas", ctx.acoes.concluidas, C.positivo],
-                ["Em andamento", ctx.acoes.emAndamento, C.positivoClaro],
+                ["Não realizadas", ctx.acoes.emAndamento, C.atencaoClaro],
                 ["Canceladas", ctx.acoes.canceladas, C.neutro],
               ].map(([rot, n, cor]) => (
                 <span key={rot as string} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
