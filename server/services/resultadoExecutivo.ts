@@ -158,6 +158,8 @@ export async function carregarBase(db: { execute: (q: any) => Promise<any> }, ci
     evidenciasR,
     solicitacoesR,
     catalogoR,
+    ajustesR,
+    pedidosAcaoR,
   ] = await Promise.all([
     // 1) Empregados ativos. Gestor entra na unidade que lidera.
     db.execute(sql`
@@ -250,6 +252,23 @@ export async function carregarBase(db: { execute: (q: any) => Promise<any> }, ci
     db.execute(sql`
       SELECT eixo_nome AS eixo, descricao FROM prova_utic_eixo_catalogo ORDER BY id
     `),
+    // 11) Pedidos de alteração de ações (prazo, título, descrição...) e o resultado.
+    db.execute(sql`
+      SELECT p.colaboradorId, ar.status
+        FROM adjustment_requests ar
+        JOIN actions a ON a.id = ar.actionId
+        JOIN pdis p ON p.id = a.pdiId
+       WHERE p.status <> 'cancelado'
+         ${filtroCiclo}
+    `),
+    // 12) Pedidos de nova ação, inclusive os que viraram ação.
+    db.execute(sql`
+      SELECT p.colaboradorId, s.statusGeral, (s.acaoIncluidaId IS NOT NULL) AS virouAcao
+        FROM solicitacoes_acoes s
+        JOIN pdis p ON p.id = s.pdiId
+       WHERE p.status <> 'cancelado'
+         ${filtroCiclo}
+    `),
   ]);
 
   return {
@@ -271,6 +290,8 @@ export async function carregarBase(db: { execute: (q: any) => Promise<any> }, ci
     ),
     solicitacoes: rowsOf<any>(solicitacoesR),
     catalogo: rowsOf<any>(catalogoR),
+    ajustes: rowsOf<any>(ajustesR),
+    pedidosAcao: rowsOf<any>(pedidosAcaoR),
   };
 }
 
