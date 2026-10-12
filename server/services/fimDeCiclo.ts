@@ -1,4 +1,4 @@
-import { COMPETENCIA_COMPORTAMENTAL_TRANSVERSAL, tipoTransversal } from "../../shared/eixosTransversais";
+import { COMPETENCIA_COMPORTAMENTAL_TRANSVERSAL, ehGestorPorPerfil, tipoTransversal } from "../../shared/eixosTransversais";
 import { percentualNaEscala } from "../../shared/evolucaoDomain";
 import {
   alvoDoLastro,
@@ -48,7 +48,8 @@ type Avaliacao = {
   pessoa: number;
   unidade: string;
   eixo: string;
-  transversal: boolean;
+  transversal: boolean; //  transversal para esta pessoa (de todos, ou de liderança se ela é líder)
+  lideranca: boolean; //    transversal só dos líderes (Estratégia e Planejamento; Liderança e Gestão de Equipes)
   antes: Conceito | null;
   depois: Conceito | null;
   classe: Classe;
@@ -131,6 +132,7 @@ function resumoEixo(nome: string, avals: Avaliacao[], descricao: string | null) 
   return {
     nome,
     transversal: avals.some((a) => a.transversal),
+    lideranca: avals.some((a) => a.lideranca),
     descricao,
     pessoas: avals.length,
     comparaveis: comp.length,
@@ -151,10 +153,10 @@ type ResumoEixo = ReturnType<typeof resumoEixo>;
 // ---------- Avaliações a partir da base ----------
 
 export function montarAvaliacoes(base: Base) {
-  const pessoas = new Map<number, { unidade: string }>();
+  const pessoas = new Map<number, { unidade: string; lider: boolean }>();
   for (const c of base.colaboradores) {
     if (!PERFIS_EMPREGADO.has(String(c.role ?? ""))) continue;
-    pessoas.set(Number(c.id), { unidade: String(c.unidade ?? "Sem unidade") });
+    pessoas.set(Number(c.id), { unidade: String(c.unidade ?? "Sem unidade"), lider: ehGestorPorPerfil(c.role) });
   }
 
   // Avaliação de Proficiência atual (2026).
@@ -244,7 +246,9 @@ export function montarAvaliacoes(base: Base) {
       pessoa: id,
       unidade: p.unidade,
       eixo,
-      transversal: tipoTransversal(eixo) !== null,
+      // Eixo de liderança só é transversal para líderes; para os demais conta como essencial da área.
+      transversal: tipoTransversal(eixo) === "TODOS" || (tipoTransversal(eixo) === "GESTORES" && p.lider),
+      lideranca: tipoTransversal(eixo) === "GESTORES" && p.lider,
       antes,
       depois,
       classe: classificar(antes, depois),
@@ -279,6 +283,7 @@ export function montarAvaliacoes(base: Base) {
         unidade: p.unidade,
         eixo: nomeCompetencia.get(k)!,
         transversal: k === normalizar(COMPETENCIA_COMPORTAMENTAL_TRANSVERSAL),
+        lideranca: false,
         antes,
         depois,
         classe: classificar(antes, depois),
@@ -311,22 +316,34 @@ export function montarAvaliacoes(base: Base) {
 
 // ---------- Relatório ----------
 
-export function montarRelatorio(base: Base, unidade?: string) {
+export const PUBLICOS = ["TODOS", "LIDERES", "DEMAIS"] as const;
+export type Publico = (typeof PUBLICOS)[number];
+
+export function montarRelatorio(base: Base, unidade?: string, publico: Publico = "TODOS") {
   const dados = montarAvaliacoes(base);
-  const noRecorte = <T extends { unidade: string }>(l: T[]) => (unidade ? l.filter((x) => x.unidade === unidade) : l);
+  // Recorte por área e por público (líderes = perfil "lider"; demais = os outros empregados).
+  const doPublico = (pessoa: number) => {
+    if (publico === "TODOS") return true;
+    const lider = dados.pessoas.get(pessoa)?.lider ?? false;
+    return publico === "LIDERES" ? lider : !lider;
+  };
+  const noRecorte = <T extends { unidade: string; pessoa: number }>(l: T[]) =>
+    l.filter((x) => (unidade ? x.unidade === unidade : true) && doPublico(x.pessoa));
   const avals = noRecorte(dados.avaliacoes);
   const potenc = noRecorte(dados.potencialidades);
   const pessoasRecorte = new Set(avals.map((a) => a.pessoa));
-  const acoes = dados.acoes.filter((a) => (unidade ? dados.pessoas.get(a.pessoa)?.unidade === unidade : true));
+  const acoes = dados.acoes.filter((a) => (unidade ? dados.pessoas.get(a.pessoa)?.unidade === unidade : true) && doPublico(a.pessoa));
 
   const tec = avals.filter((a) => a.instrumento === "TECNICO");
   const comp = avals.filter((a) => a.instrumento === "COMPORTAMENTAL");
   const resumoTec = resumoInstrumento(tec);
   const resumoComp = resumoInstrumento(comp);
 
+  // Eixo de liderança (dos líderes) e o mesmo eixo como essencial de outra pessoa são lidos separados.
+  const grupoAval = (a: Avaliacao) => (a.lideranca ? "L" : a.transversal ? "T" : "E");
   const eixos = (lista: Avaliacao[], instrumento: Instrumento) =>
-    Array.from(agrupar(lista, (a) => a.eixo).entries())
-      .map(([nome, l]) => resumoEixo(nome, l, instrumento === "TECNICO" ? dados.descricaoEixo.get(normalizar(nome)) ?? null : null))
+    Array.from(agrupar(lista, (a) => `${grupoAval(a)}|${a.eixo}`).values())
+      .map((l) => resumoEixo(l[0].eixo, l, instrumento === "TECNICO" ? dados.descricaoEixo.get(normalizar(l[0].eixo)) ?? null : null))
       .sort((a, b) => b.pessoas - a.pessoas || a.nome.localeCompare(b.nome, "pt-BR"));
   const eixosTec = eixos(tec, "TECNICO");
   const eixosComp = eixos(comp, "COMPORTAMENTAL");
@@ -335,8 +352,8 @@ export function montarRelatorio(base: Base, unidade?: string) {
   const destaques = (l: ResumoEixo[]) => {
     const validos = l.filter((e) => e.comparaveis >= MIN);
     return {
-      sobem: validos.filter((e) => saldo(e) > 0).sort((a, b) => saldo(b) - saldo(a)).slice(0, 2).map((e) => ({ nome: e.nome, subiram: e.subiram, comparaveis: e.comparaveis, transversal: e.transversal })),
-      caem: validos.filter((e) => saldo(e) < 0).sort((a, b) => saldo(a) - saldo(b)).slice(0, 2).map((e) => ({ nome: e.nome, desceram: e.desceram, comparaveis: e.comparaveis, transversal: e.transversal })),
+      sobem: validos.filter((e) => saldo(e) > 0).sort((a, b) => saldo(b) - saldo(a)).slice(0, 2).map((e) => ({ nome: e.nome, subiram: e.subiram, comparaveis: e.comparaveis, transversal: e.transversal, lideranca: e.lideranca })),
+      caem: validos.filter((e) => saldo(e) < 0).sort((a, b) => saldo(a) - saldo(b)).slice(0, 2).map((e) => ({ nome: e.nome, desceram: e.desceram, comparaveis: e.comparaveis, transversal: e.transversal, lideranca: e.lideranca })),
     };
   };
 
@@ -347,7 +364,7 @@ export function montarRelatorio(base: Base, unidade?: string) {
       itens: comFoco
         .filter((e) => e.nAtual >= MIN)
         .sort((a, b) => b.emDesenvolvimento - a.emDesenvolvimento || a.nome.localeCompare(b.nome, "pt-BR"))
-        .map((e) => ({ nome: e.nome, emDesenvolvimento: e.emDesenvolvimento, pessoas: e.nAtual, transversal: e.transversal })),
+        .map((e) => ({ nome: e.nome, emDesenvolvimento: e.emDesenvolvimento, pessoas: e.nAtual, transversal: e.transversal, lideranca: e.lideranca })),
       amostraPequena: comFoco.filter((e) => e.nAtual < MIN).length,
     };
   };
@@ -378,7 +395,7 @@ export function montarRelatorio(base: Base, unidade?: string) {
     },
     eixos: [...eixosTec]
       .sort((a, b) => Number(b.transversal) - Number(a.transversal) || b.pessoas - a.pessoas || a.nome.localeCompare(b.nome, "pt-BR"))
-      .map((e) => ({ nome: e.nome, transversal: e.transversal, pessoas: e.pessoas })),
+      .map((e) => ({ nome: e.nome, transversal: e.transversal, lideranca: e.lideranca, pessoas: e.pessoas })),
     competencias: eixosComp.map((e) => ({ nome: e.nome, transversal: e.transversal, pessoas: e.pessoas })),
     ad: { anoBase: dados.ad.anoBase, anoAtual: dados.ad.anoAtual },
   };
@@ -418,7 +435,8 @@ export function montarRelatorio(base: Base, unidade?: string) {
   // ---- Bloco 5b: fortalezas e multiplicadores
   const ordenarForca = (a: ResumoEixo, b: ResumoEixo) => b.fortes * a.nAtual - a.fortes * b.nAtual || b.nAtual - a.nAtual;
   const itemForca = (e: ResumoEixo) => ({ nome: e.nome, pessoas: e.nAtual, fortes: e.fortes, predominante: e.predominanteAtual, distribuicao: e.distribuicaoAtual });
-  const transversais = eixosTec.filter((e) => e.transversal && e.nAtual >= MIN).sort(ordenarForca).map(itemForca);
+  const transversais = eixosTec.filter((e) => e.transversal && !e.lideranca && e.nAtual >= MIN).sort(ordenarForca).map(itemForca);
+  const lideranca = eixosTec.filter((e) => e.lideranca && e.nAtual >= MIN).sort(ordenarForca).map(itemForca);
   const porAreaEspecificos = Array.from(agrupar(tec.filter((a) => !a.transversal), (a) => a.unidade).entries())
     .map(([area, l]) => ({
       area,
@@ -434,6 +452,7 @@ export function montarRelatorio(base: Base, unidade?: string) {
   const multPorEixo = Array.from(agrupar(potenc, (p) => p.eixo).entries()).map(([nome, l]) => ({ nome, vezes: l.length }));
   const fortalezas = {
     transversais,
+    lideranca,
     porArea: porAreaEspecificos,
     multiplicadores: {
       total: potenc.length,
@@ -452,6 +471,7 @@ export function montarRelatorio(base: Base, unidade?: string) {
     comparaveis: e.comparaveis,
     predominante: e.predominanteAtual,
     transversal: e.transversal,
+    lideranca: e.lideranca,
     motivo: motivoFoco({
       emDesenvolvimento: e.emDesenvolvimento,
       desceram: e.comparaveis >= MIN ? e.desceram : 0,
@@ -464,7 +484,8 @@ export function montarRelatorio(base: Base, unidade?: string) {
     b.emDesenvolvimento - a.emDesenvolvimento || b.desceram - b.subiram - (a.desceram - a.subiram) || a.nome.localeCompare(b.nome, "pt-BR");
   const foco = {
     sebrae: {
-      tecnicos: eixosTec.filter((e) => e.transversal && criterioFoco(e)).sort(ordenarFoco).map(itemFoco),
+      tecnicos: eixosTec.filter((e) => e.transversal && !e.lideranca && criterioFoco(e)).sort(ordenarFoco).map(itemFoco),
+      lideranca: eixosTec.filter((e) => e.lideranca && criterioFoco(e)).sort(ordenarFoco).map(itemFoco),
       competencias: eixosComp.filter(criterioFoco).sort(ordenarFoco).map(itemFoco),
     },
     porArea: Array.from(agrupar(avals, (a) => a.unidade).entries())
@@ -483,11 +504,14 @@ export function montarRelatorio(base: Base, unidade?: string) {
 
   // ---- Bloco 7: quanto investimos onde mais crescemos
   const linhaInvest = (e: ResumoEixo, tipo: Instrumento, contraste: boolean): LinhaInvestimento => {
-    const l = avals.filter((a) => a.instrumento === tipo && a.eixo === e.nome && a.antes !== null && a.depois !== null);
+    const l = avals.filter(
+      (a) => a.instrumento === tipo && a.eixo === e.nome && a.transversal === e.transversal && a.lideranca === e.lideranca && a.antes !== null && a.depois !== null,
+    );
     return {
       nome: e.nome,
       tipo,
       transversal: e.transversal,
+      lideranca: e.lideranca,
       pessoas: l.length,
       subiram: e.subiram,
       desceram: e.desceram,
@@ -541,14 +565,18 @@ export function montarRelatorio(base: Base, unidade?: string) {
   return {
     parametros: PARAMETROS,
     conceitos: CONCEITOS,
-    recorte: { unidade: unidade ?? null, pessoas: pessoasRecorte.size, amostraPequena: pessoasRecorte.size < MIN },
+    recorte: { unidade: unidade ?? null, publico, pessoas: pessoasRecorte.size, amostraPequena: pessoasRecorte.size < MIN },
     contexto,
     instrumentos: {
       TECNICO: {
         ...resumoTec,
         destaques: destaques(eixosTec),
         // Transversais (todo o Sebrae) e essenciais (por área) lidos separadamente.
-        destaquesPorTipo: { transversais: destaques(eixosTec.filter((e) => e.transversal)), essenciais: destaques(eixosTec.filter((e) => !e.transversal)) },
+        destaquesPorTipo: {
+          transversais: destaques(eixosTec.filter((e) => e.transversal && !e.lideranca)),
+          lideranca: destaques(eixosTec.filter((e) => e.lideranca)),
+          essenciais: destaques(eixosTec.filter((e) => !e.transversal)),
+        },
         ondeFocar: ondeFocar(eixosTec), eixos: eixosTec },
       COMPORTAMENTAL: { ...resumoComp, destaques: destaques(eixosComp), ondeFocar: ondeFocar(eixosComp), eixos: eixosComp },
     },

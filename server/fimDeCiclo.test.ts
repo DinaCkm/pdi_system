@@ -54,6 +54,8 @@ function baseExemplo() {
       ...pessoas.slice(0, 7).map((p, i) => ({ colaboradorId: p.id, eixo: "Atendimento Multicanal", relacao: "ESSENCIAL", base2025: base2025[i] })),
       ...pessoas.slice(0, 7).map((p) => ({ colaboradorId: p.id, eixo: "Comunicação", relacao: "TRANSVERSAL", base2025: 90 })),
       { colaboradorId: 1, eixo: "Supervisão da Rede Estendida", relacao: "NAO_ESSENCIAL", base2025: 100 },
+      { colaboradorId: 1, eixo: "Estratégia e Planejamento", relacao: "TRANSVERSAL", base2025: 80 },
+      { colaboradorId: 2, eixo: "Estratégia e Planejamento", relacao: "ESSENCIAL", base2025: 80 },
       { colaboradorId: 99, eixo: "Atendimento Multicanal", relacao: "ESSENCIAL", base2025: 10 },
     ],
     resultados: pessoas.slice(0, 7).map((p, i) => ({
@@ -135,6 +137,19 @@ describe("relatório (blocos e seção 6)", () => {
     const s = r.sinteses.tecnico;
     if (s.includes("transversais") && s.includes("essenciais")) expect(s.indexOf("transversais")).toBeLessThan(s.indexOf("essenciais"));
     for (const l of r.investimento) expect(typeof l.transversal).toBe("boolean");
+  });
+
+  it("eixo de liderança dos líderes separado do mesmo eixo como essencial", () => {
+    const est = tec.eixos.filter((e) => e.nome === "Estratégia e Planejamento");
+    expect(est).toHaveLength(2);
+    expect(est.find((e) => e.lideranca)!.pessoas).toBe(1);
+    expect(est.find((e) => !e.lideranca)!.transversal).toBe(false);
+  });
+
+  it("filtro por público: líderes e demais empregados", () => {
+    expect(montarRelatorio(baseExemplo(), undefined, "LIDERES").recorte.pessoas).toBe(1);
+    expect(montarRelatorio(baseExemplo(), undefined, "DEMAIS").recorte.pessoas).toBe(6);
+    expect(montarRelatorio(baseExemplo(), undefined, "DEMAIS").instrumentos.TECNICO.eixos.some((e) => e.lideranca)).toBe(false);
   });
 
   it("sínteses respeitam o limite", () => {

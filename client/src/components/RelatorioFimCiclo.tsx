@@ -224,10 +224,20 @@ function Barra({ titulo, grupos, total }: { titulo: string; grupos: Record<strin
 
 const ACARREGAR = "[a carregar]";
 
+// Eixos técnicos em três grupos, nunca misturados.
+const GRUPOS_EIXO = [
+  { chave: "T", titulo: "Eixos transversais", alcance: "comuns a todo o Sebrae", sub: "Comuns a todo o Sebrae: todas as pessoas são avaliadas neles.", tipoChip: "transversal" as const, filtro: (e: any) => e.transversal && !e.lideranca },
+  { chave: "L", titulo: "Eixos de liderança", alcance: "comuns a todos os líderes", sub: "Transversais dos líderes: só os líderes são avaliados neles.", tipoChip: "transversal" as const, filtro: (e: any) => !!e.lideranca },
+  { chave: "E", titulo: "Eixos essenciais", alcance: "específicos de cada área", sub: "Específicos de cada área: só as pessoas das funções em que o eixo é essencial são avaliadas.", tipoChip: "neutro" as const, filtro: (e: any) => !e.transversal },
+];
+const ROTULO_PUBLICO = { TODOS: "Todos", LIDERES: "Líderes", DEMAIS: "Demais empregados" } as const;
+type Publico = keyof typeof ROTULO_PUBLICO;
+
 // ---------- Página ----------
 
 export function RelatorioFimCiclo() {
   const [modo, setModo] = useState<"SEBRAE" | "AREA">("SEBRAE");
+  const [publico, setPublico] = useState<Publico>("TODOS");
   const [area, setArea] = useState<string>("");
   const [abaConhecimento, setAbaConhecimento] = useState<"TECNICO" | "COMPORTAMENTAL">("TECNICO");
   const [abaFortalezas, setAbaFortalezas] = useState<"SEBRAE" | "AREA">("SEBRAE");
@@ -246,7 +256,8 @@ export function RelatorioFimCiclo() {
   }, []);
 
   const unidade = modo === "AREA" && area ? area : undefined;
-  const consulta = api.fimDeCiclo.useQuery(unidade ? { unidade } : undefined, { refetchOnWindowFocus: false, keepPreviousData: true });
+  const filtro = { ...(unidade ? { unidade } : {}), ...(publico !== "TODOS" ? { publico } : {}) };
+  const consulta = api.fimDeCiclo.useQuery(Object.keys(filtro).length ? filtro : undefined, { refetchOnWindowFocus: false, keepPreviousData: true });
   const r: any = consulta.data;
 
   useEffect(() => {
@@ -273,7 +284,7 @@ export function RelatorioFimCiclo() {
   const adAtual = ctx.ad.anoAtual ?? ACARREGAR;
   const tecCompleto = tec.total > 0 && tec.feitas === tec.total;
   const compCompleto = comp.total > 0 && comp.feitas === comp.total;
-  const nomeRecorte = unidade ? nomeArea(unidade) : "Sebrae/TO · todas as áreas";
+  const nomeRecorte = (unidade ? nomeArea(unidade) : "Sebrae/TO · todas as áreas") + (publico !== "TODOS" ? ` · ${ROTULO_PUBLICO[publico]}` : "");
 
   const selo = (completo: boolean, texto: string) => (
     <span
@@ -331,6 +342,16 @@ export function RelatorioFimCiclo() {
               </select>
             </label>
           )}
+          <Abas
+            rotulo="Público"
+            valor={publico}
+            onChange={(v) => setPublico(v)}
+            opcoes={[
+              ["TODOS", "Todos"],
+              ["LIDERES", "Líderes"],
+              ["DEMAIS", "Demais empregados"],
+            ]}
+          />
           {consulta.isFetching && <span style={{ fontSize: 14, color: C.secundario }}>Atualizando…</span>}
         </div>
 
@@ -348,7 +369,7 @@ export function RelatorioFimCiclo() {
 
         {r.recorte.amostraPequena && (
           <div style={{ padding: "14px 18px", borderRadius: 14, background: C.focoFundo, color: C.focoTexto, fontSize: 15 }}>
-            Esta área tem menos de 5 pessoas avaliadas: os resultados são amostra pequena e ficam fora de destaques e sínteses.
+            Este recorte tem menos de 5 pessoas avaliadas: os resultados são amostra pequena e ficam fora de destaques e sínteses.
           </div>
         )}
 
@@ -384,10 +405,7 @@ export function RelatorioFimCiclo() {
                 <div style={{ fontWeight: 700, fontSize: 16 }}>Eixos técnicos avaliados</div>
                 <div style={{ fontSize: 14, color: C.secundario }}>Avaliação de Proficiência 2025 → 2026 · {ctx.eixos.length} eixos</div>
               </div>
-              {[
-                { titulo: "Transversais · comuns a todo o Sebrae", l: ctx.eixos.filter((e: any) => e.transversal), tipo: "transversal" as const },
-                { titulo: "Essenciais · específicos de cada área", l: ctx.eixos.filter((e: any) => !e.transversal), tipo: "neutro" as const },
-              ].map((g) =>
+              {GRUPOS_EIXO.map((g) => ({ titulo: `${g.titulo} · ${g.alcance}`, l: ctx.eixos.filter(g.filtro), tipo: g.tipoChip })).map((g) =>
                 g.l.length ? (
                   <div key={g.titulo} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: C.secundario }}>{g.titulo}</div>
@@ -460,12 +478,14 @@ export function RelatorioFimCiclo() {
                   </p>
                   {c.tipo === "TECNICO" ? (
                     (() => {
-                      const t = textoSobem(c.x.destaquesPorTipo.transversais);
-                      const e = textoSobem(c.x.destaquesPorTipo.essenciais);
-                      return t || e ? (
+                      const partes = [
+                        ["transversais", textoSobem(c.x.destaquesPorTipo.transversais)],
+                        ["de liderança", textoSobem(c.x.destaquesPorTipo.lideranca)],
+                        ["essenciais", textoSobem(c.x.destaquesPorTipo.essenciais)],
+                      ].filter(([, t]) => t);
+                      return partes.length ? (
                         <p style={{ margin: 0, fontSize: 15, color: C.corpo }}>
-                          {t ? `Mais cresceram nos transversais: ${t}. ` : ""}
-                          {e ? `Nos essenciais: ${e}.` : ""}
+                          Mais cresceram: {partes.map(([g, t]) => `nos eixos ${g}, ${t}`).join("; ")}.
                         </p>
                       ) : null;
                     })()
@@ -484,8 +504,9 @@ export function RelatorioFimCiclo() {
                 <span style={{ fontSize: 13, color: C.secundario }}>Em Desenvolvimento</span>
               </div>
               {[
-                { titulo: "Eixos transversais · todo o Sebrae", f: { itens: tec.ondeFocar.itens.filter((i: any) => i.transversal), amostraPequena: 0 } },
-                { titulo: "Eixos essenciais · por área", f: { itens: tec.ondeFocar.itens.filter((i: any) => !i.transversal), amostraPequena: tec.ondeFocar.amostraPequena } },
+                ...GRUPOS_EIXO.map((g) => ({ titulo: g.titulo, f: { itens: tec.ondeFocar.itens.filter(g.filtro), amostraPequena: g.chave === "E" ? tec.ondeFocar.amostraPequena : 0 } })).filter(
+                  (b) => b.f.itens.length || b.titulo === "Eixos essenciais",
+                ),
                 { titulo: "Competências", f: comp.ondeFocar },
               ].map((b) => (
                 <div key={b.titulo} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -550,7 +571,7 @@ export function RelatorioFimCiclo() {
         {/* Bloco 4 — Onde está o conhecimento da equipe */}
         <Secao
           titulo="Onde está o conhecimento da equipe"
-          subtitulo="Como as pessoas se distribuem pelos conceitos, antes e depois, sobre as mesmas avaliações. No técnico, transversais e essenciais aparecem separados; dentro de cada grupo, do maior para o menor número de pessoas avaliadas."
+          subtitulo="Como as pessoas se distribuem pelos conceitos, antes e depois, sobre as mesmas avaliações. No técnico, eixos transversais, de liderança e essenciais aparecem separados; dentro de cada grupo, do maior para o menor número de pessoas avaliadas."
           id="conhecimento"
           acao={
             <Abas
@@ -571,10 +592,7 @@ export function RelatorioFimCiclo() {
             </p>
           )}
           {(abaConhecimento === "TECNICO"
-            ? [
-                { titulo: "Eixos transversais", sub: "Comuns a todo o Sebrae: todas as pessoas são avaliadas neles.", l: eixosAba.filter((e: any) => e.transversal) },
-                { titulo: "Eixos essenciais", sub: "Específicos de cada área: só as pessoas das funções em que o eixo é essencial são avaliadas.", l: eixosAba.filter((e: any) => !e.transversal) },
-              ]
+            ? GRUPOS_EIXO.map((g) => ({ titulo: g.titulo as string | null, sub: g.sub as string | null, l: eixosAba.filter(g.filtro) }))
             : [{ titulo: null as string | null, sub: null as string | null, l: eixosAba }]
           ).map((g) =>
             g.l.length ? (
@@ -771,6 +789,20 @@ export function RelatorioFimCiclo() {
                     ) : (
                       <div style={{ fontSize: 15, color: C.secundario }}>Nenhum eixo transversal com medição de 5 pessoas ou mais neste recorte.</div>
                     )}
+                    {r.fortalezas.lideranca.length > 0 && (
+                      <>
+                        <div style={{ fontSize: 14, color: C.secundario, padding: "14px 0 6px" }}>Eixos de liderança, comuns a todos os líderes.</div>
+                        {r.fortalezas.lideranca.map((t: any) =>
+                          linhaForca(
+                            <>
+                              <strong>{t.nome}</strong> <span style={{ color: C.secundario }}>· {t.pessoas} líderes</span>
+                            </>,
+                            t,
+                            `L|${t.nome}`,
+                          ),
+                        )}
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -819,6 +851,9 @@ export function RelatorioFimCiclo() {
           {abaFoco === "SEBRAE" ? (
             <Grade min={320}>
               <ColunaFoco titulo="Eixos técnicos transversais" itens={r.foco.sebrae.tecnicos} vazio="Nenhum eixo transversal com pessoas no conceito Em Desenvolvimento ou com mais quedas do que subidas." />
+              {r.recorte.publico !== "DEMAIS" && (
+                <ColunaFoco titulo="Eixos de liderança" itens={r.foco.sebrae.lideranca} vazio="Nenhum eixo de liderança com líderes no conceito Em Desenvolvimento ou com mais quedas do que subidas." />
+              )}
               <ColunaFoco titulo="Competências comportamentais" itens={r.foco.sebrae.competencias} vazio="Nenhuma competência com pessoas no conceito Em Desenvolvimento ou com mais quedas do que subidas." />
             </Grade>
           ) : r.foco.porArea.length ? (
@@ -861,7 +896,7 @@ export function RelatorioFimCiclo() {
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}` }}>
                         <strong>{l.nome}</strong>
                         <div style={{ fontSize: 13, color: C.secundario }}>
-                          {l.tipo === "TECNICO" ? (l.transversal ? "Técnico · transversal" : "Técnico · essencial") : "Comportamental"}
+                          {l.tipo === "TECNICO" ? (l.lideranca ? "Técnico · liderança" : l.transversal ? "Técnico · transversal" : "Técnico · essencial") : "Comportamental"}
                           {l.contraste ? " · para comparar" : ""}
                         </div>
                       </td>

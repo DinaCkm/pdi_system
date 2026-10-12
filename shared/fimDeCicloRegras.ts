@@ -182,7 +182,7 @@ export function sinteseFechamento(t: ResumoInstrumento, c: ResumoInstrumento) {
   ]);
 }
 
-export type EixoResumo = { nome: string; transversal: boolean; comparaveis: number; subiram: number; desceram: number };
+export type EixoResumo = { nome: string; transversal: boolean; lideranca?: boolean; comparaveis: number; subiram: number; desceram: number };
 
 export function sinteseConhecimento(eixos: EixoResumo[], instrumento: Instrumento, minimo = PARAMETROS.amostraMinima) {
   const validos = eixos.filter((e) => e.comparaveis >= minimo);
@@ -200,16 +200,17 @@ export function sinteseConhecimento(eixos: EixoResumo[], instrumento: Instrument
   if (instrumento === "TECNICO") {
     // Transversais (todo o Sebrae) e essenciais (específicos de cada área) nunca na mesma frase.
     for (const [grupo, l] of [
-      ["Nos eixos transversais, comuns a todo o Sebrae", validos.filter((e) => e.transversal)],
-      ["Nos eixos essenciais, específicos de cada área", validos.filter((e) => !e.transversal)],
+      ["Transversais, de todo o Sebrae", validos.filter((e) => e.transversal && !e.lideranca)],
+      ["Liderança, dos líderes", validos.filter((e) => e.lideranca)],
+      ["Essenciais, de cada área", validos.filter((e) => !e.transversal)],
     ] as const) {
       if (!l.length) continue;
       const { sobe, cai } = leitura(l);
       const partes: string[] = [];
-      if (sobe.length) partes.push(`mais pessoas subiram de conceito em ${lista(sobe.map((e) => `${e.nome} (${e.subiram} de ${e.comparaveis})`))}`);
-      if (cai.length) partes.push(`${lista(cai.map((e) => e.nome))} ${cai.length > 1 ? "pedem" : "pede"} novo foco, com mais quedas do que subidas`);
-      if (!partes.length) partes.push("a maior parte das pessoas manteve o conceito");
-      frases.push(`${grupo}, ${partes.join("; ")}.`);
+      if (sobe.length) partes.push(`mais subidas de conceito em ${lista(sobe.map((e) => e.nome))}`);
+      if (cai.length) partes.push(`novo foco em ${lista(cai.map((e) => e.nome))}`);
+      if (!partes.length) partes.push("a maioria manteve o conceito");
+      frases.push(`${grupo}: ${partes.join("; ")}.`);
     }
     return limitarSintese(frases);
   }
@@ -243,6 +244,7 @@ export type LinhaInvestimento = {
   nome: string;
   tipo: Instrumento;
   transversal: boolean;
+  lideranca: boolean;
   pessoas: number;
   subiram: number;
   desceram: number;
