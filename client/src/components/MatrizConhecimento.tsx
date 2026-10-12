@@ -367,54 +367,129 @@ function Detalhe({ l, colunas, ad }: { l: any; colunas: any; ad: any }) {
   );
 }
 
-type FiltroConceito = "TODOS" | "ED" | "EXPECTATIVA" | "FORTES";
-const passaConceito = (f: FiltroConceito, c: Conceito | null | undefined) =>
-  f === "TODOS" ||
-  (f === "ED" && c === "EM_DESENVOLVIMENTO") ||
-  (f === "EXPECTATIVA" && !!c && c !== "EM_DESENVOLVIMENTO") ||
-  (f === "FORTES" && (c === "AVANCADO" || c === "REFERENCIA"));
+// ---------- Matriz Unidade × Eixo (aba só administradores) ----------
+// Célula = conceito que pelo menos metade da unidade alcançou no eixo (quem tem o eixo como
+// Essencial ou Transversal) + setas de quantos subiram e desceram de conceito. Clique abre as pessoas.
 
-const ORDEM_LISTA: Conceito[] = ["REFERENCIA", "AVANCADO", "CONSOLIDADO", "APLICADO", "EM_DESENVOLVIMENTO"];
+const ROTULO_CURTO: Record<Conceito, string> = {
+  EM_DESENVOLVIMENTO: "Em Desenv.",
+  APLICADO: "Aplicado",
+  CONSOLIDADO: "Consolidado",
+  AVANCADO: "Avançado",
+  REFERENCIA: "Referência",
+};
+
+const conceitoDaMetade = (l: Conceito[]): Conceito | null => {
+  if (!l.length) return null;
+  const o = [...l].sort((a, b) => CONCEITOS.indexOf(a) - CONCEITOS.indexOf(b));
+  return o[Math.floor((o.length - 1) / 2)];
+};
+const nivel = (c: Conceito) => CONCEITOS.indexOf(c);
+
+type Situacao = "SEM_PLANO" | "ACAO_SEM_EFEITO" | "EM_ANDAMENTO" | "AGUARDANDO" | "NA_EXPECTATIVA" | "DESENVOLVIDO" | "DOMINIO" | "POTENCIAL" | "NENHUMA";
+const SITUACAO: Record<Situacao, { rotulo: string; fundo: string; texto: string; ordem: number }> = {
+  SEM_PLANO: { rotulo: "Sem plano", fundo: "#FBF1E2", texto: "#6B430C", ordem: 0 },
+  ACAO_SEM_EFEITO: { rotulo: "Ação sem efeito", fundo: "#FBE4DC", texto: "#8A2E12", ordem: 1 },
+  EM_ANDAMENTO: { rotulo: "Ação em andamento", fundo: "#E3EAF6", texto: "#1A3F85", ordem: 2 },
+  AGUARDANDO: { rotulo: "Aguardando medição", fundo: "#EEF1F4", texto: "#46505E", ordem: 3 },
+  NA_EXPECTATIVA: { rotulo: "Na expectativa", fundo: "#E3F2F1", texto: "#0B3B3B", ordem: 4 },
+  DESENVOLVIDO: { rotulo: "Desenvolvido", fundo: "#DFF1E4", texto: "#1E5B2E", ordem: 5 },
+  DOMINIO: { rotulo: "Domínio", fundo: "#CDE8E5", texto: "#0B3B3B", ordem: 6 },
+  POTENCIAL: { rotulo: "Potencialidade", fundo: "#ECE6F6", texto: "#4B2E83", ordem: 7 },
+  NENHUMA: { rotulo: "", fundo: "transparent", texto: C.secundario, ordem: 8 },
+};
+
+function situacaoDe(c: any): Situacao {
+  if (c.relacao === "NAO_ESSENCIAL") return c.depois && c.depois !== "EM_DESENVOLVIMENTO" ? "POTENCIAL" : "NENHUMA";
+  if (!c.depois) return "AGUARDANDO";
+  if (c.depois === "AVANCADO" || c.depois === "REFERENCIA") return "DOMINIO";
+  if (c.depois !== "EM_DESENVOLVIMENTO") return c.antes === "EM_DESENVOLVIMENTO" ? "DESENVOLVIDO" : "NA_EXPECTATIVA";
+  if (c.concluidasAntesNm > 0) return "ACAO_SEM_EFEITO";
+  if (c.acoesAtivas > 0) return "EM_ANDAMENTO";
+  return "SEM_PLANO";
+}
+
+const ROTULO_REL: Record<string, string> = { TRANSVERSAL: "Transversal", ESSENCIAL: "Essencial", NAO_ESSENCIAL: "Não essencial" };
+const sigla = (u: string) => nomeArea(u).split(" · ")[0];
+
+type Celula =
+  | { aplica: false; potencial: number }
+  | { aplica: true; n: number; medidas: number; conceito: Conceito | null; conceitoAntes: Conceito | null; subiram: number; desceram: number; naExpectativa: number; semPlano: number; potencial: number };
 
 export function MatrizEmpregados() {
-  const [area, setArea] = useState("");
   const [publico, setPublico] = useState<Publico>("TODOS");
   const [tipo, setTipo] = useState<TipoFiltro>("T");
-  const [eixo, setEixo] = useState("");
-  const [conceito, setConceito] = useState<FiltroConceito>("TODOS");
-  const [busca, setBusca] = useState("");
-  const [aberto, setAberto] = useState<number | null>(null);
-  const [verGrade, setVerGrade] = useState(false);
+  const [sel, setSel] = useState<{ unidade: string; eixo: string } | null>(null);
 
-  const filtro = { ...(area ? { unidade: area } : {}), ...(publico !== "TODOS" ? { publico } : {}) };
-  const consulta = api.matrizEmpregados.useQuery(Object.keys(filtro).length ? filtro : undefined, { refetchOnWindowFocus: false, keepPreviousData: true });
+  const consulta = api.matrizEmpregados.useQuery(publico !== "TODOS" ? { publico } : undefined, { refetchOnWindowFocus: false, keepPreviousData: true });
   const r: any = consulta.data;
-
-  const inst = tipo === "COMP" ? "COMPORTAMENTAL" : "TECNICO";
   const chave = tipo === "COMP" ? "comportamental" : "tecnico";
-  const colunas: Coluna[] = useMemo(() => {
-    if (!r) return [];
-    const todas: Coluna[] = r.colunas[inst];
-    return tipo === "COMP" ? todas : todas.filter((c) => c.grupo === tipo);
-  }, [r, inst, tipo]);
 
-  const termo = busca.trim().toLocaleLowerCase("pt-BR");
-  // A área e o público também são aplicados aqui, para a tela nunca mostrar dados de um filtro anterior.
-  const pessoas = useMemo(
-    () =>
-      r
-        ? r.linhas.filter(
-            (l: any) =>
-              (!area || l.unidade === area) &&
-              (publico === "TODOS" || (publico === "LIDERES" ? l.lider : !l.lider)) &&
-              (!termo || l.nome.toLocaleLowerCase("pt-BR").includes(termo)),
-          )
-        : [],
-    [r, termo, area, publico],
-  );
+  const dados = useMemo(() => {
+    if (!r) return null;
+    const linhas: any[] = r.linhas.filter((l: any) => publico === "TODOS" || (publico === "LIDERES" ? l.lider : !l.lider));
+    const todas: Coluna[] = r.colunas[tipo === "COMP" ? "COMPORTAMENTAL" : "TECNICO"];
+    const candidatas = tipo === "COMP" ? todas : todas.filter((c) => c.grupo === tipo);
+    const unidades = Array.from(new Set(linhas.map((l) => l.unidade as string))).sort((a, b) => sigla(a).localeCompare(sigla(b), "pt-BR"));
+    const celula = (unidade: string, eixo: string): Celula => {
+      const com = linhas.filter((l) => l.unidade === unidade && l[chave][eixo]);
+      const et = com.filter((l) => l[chave][eixo].relacao !== "NAO_ESSENCIAL");
+      const potencial = com.length - et.length;
+      if (!et.length) return { aplica: false, potencial };
+      const cs = et.map((l) => l[chave][eixo]);
+      const med = cs.filter((c) => c.depois);
+      const ambos = cs.filter((c) => c.depois && c.antes);
+      return {
+        aplica: true,
+        n: et.length,
+        medidas: med.length,
+        conceito: conceitoDaMetade(med.map((c) => c.depois)),
+        conceitoAntes: conceitoDaMetade(cs.filter((c) => c.antes).map((c) => c.antes)),
+        subiram: ambos.filter((c) => nivel(c.depois) > nivel(c.antes)).length,
+        desceram: ambos.filter((c) => nivel(c.depois) < nivel(c.antes)).length,
+        naExpectativa: med.filter((c) => c.depois !== "EM_DESENVOLVIMENTO").length,
+        semPlano: cs.filter((c) => situacaoDe(c) === "SEM_PLANO").length,
+        potencial,
+      };
+    };
+    const grade = new Map<string, Celula>();
+    for (const u of unidades) for (const c of candidatas) grade.set(`${u}|${c.nome}`, celula(u, c.nome));
+    const colunas = candidatas.filter((c) => unidades.some((u) => (grade.get(`${u}|${c.nome}`) as any).aplica));
+
+    // Riscos de conhecimento (regras simples, só células com 3 pessoas medidas ou mais).
+    const validas = Array.from(grade.entries())
+      .map(([k, c]) => ({ unidade: k.split("|")[0], eixo: k.slice(k.indexOf("|") + 1), c }))
+      .filter((x): x is { unidade: string; eixo: string; c: Extract<Celula, { aplica: true }> } => x.c.aplica && x.c.medidas >= 3);
+    const riscos: Array<{ titulo: string; texto: string; tipo: "alerta" | "multiplicador"; alvo?: { unidade: string; eixo: string } }> = [];
+    const menor = [...validas].sort((a, b) => a.c.naExpectativa / a.c.medidas - b.c.naExpectativa / b.c.medidas || b.c.n - a.c.n)[0];
+    if (menor && menor.c.naExpectativa < menor.c.medidas) {
+      riscos.push({
+        titulo: `${menor.eixo} · ${sigla(menor.unidade)}`,
+        texto: `Só ${menor.c.naExpectativa} de ${menor.c.medidas} na expectativa de desenvolvimento${menor.c.semPlano ? `; ${menor.c.semPlano} sem plano` : ""}.`,
+        tipo: "alerta",
+        alvo: { unidade: menor.unidade, eixo: menor.eixo },
+      });
+    }
+    const queda = [...validas]
+      .filter((x) => !(menor && x.unidade === menor.unidade && x.eixo === menor.eixo))
+      .sort((a, b) => b.c.desceram + b.c.semPlano - (a.c.desceram + a.c.semPlano))[0];
+    if (queda && queda.c.desceram + queda.c.semPlano > 0) {
+      riscos.push({
+        titulo: `${queda.eixo} · ${sigla(queda.unidade)}`,
+        texto: [queda.c.desceram ? `${queda.c.desceram} ${queda.c.desceram === 1 ? "desceu" : "desceram"} de conceito` : "", queda.c.semPlano ? `${queda.c.semPlano} sem plano` : ""].filter(Boolean).join(" e ") + ".",
+        tipo: "alerta",
+        alvo: { unidade: queda.unidade, eixo: queda.eixo },
+      });
+    }
+    if (menor) {
+      const fortes = linhas.filter((l) => l.unidade !== menor.unidade && l[chave][menor.eixo] && (l[chave][menor.eixo].depois === "AVANCADO" || l[chave][menor.eixo].depois === "REFERENCIA")).length;
+      if (fortes) riscos.push({ titulo: "Multiplicadores disponíveis", texto: `${fortes} ${fortes === 1 ? "pessoa" : "pessoas"} de outras unidades em Avançado ou Referência em ${menor.eixo} podem apoiar a ${sigla(menor.unidade)}.`, tipo: "multiplicador", alvo: { unidade: menor.unidade, eixo: menor.eixo } });
+    }
+    return { linhas, unidades, colunas, grade, riscos };
+  }, [r, tipo, publico, chave]);
 
   if (consulta.isLoading && !r) return <div style={{ padding: 32, fontFamily: FONTE_TEXTO, color: C.secundario }}>Carregando a matriz de conhecimento…</div>;
-  if (consulta.isError || !r) {
+  if (consulta.isError || !r || !dados) {
     return (
       <div style={{ padding: 24, borderRadius: 16, background: C.focoFundo, color: C.focoTexto, fontFamily: FONTE_TEXTO }}>
         Não foi possível carregar a matriz. {consulta.error?.message ?? ""}
@@ -422,275 +497,243 @@ export function MatrizEmpregados() {
     );
   }
 
-  const eixoValido = eixo && colunas.some((c) => c.nome === eixo) ? eixo : "";
-  // Sem eixo escolhido, a tela lista os eixos do tipo com os filtros aplicados; a grade só abre a pedido ou na busca por nome.
-  const modo: "EIXO" | "GRADE" | "VISAO" = eixoValido ? "EIXO" : termo || verGrade ? "GRADE" : "VISAO";
-  const rotuloFiltro = { TODOS: "avaliadas", FORTES: "podem ensinar (Avançado ou Referência)", EXPECTATIVA: "na expectativa", ED: "precisam desenvolver (Em Desenvolvimento)" }[conceito];
-  const visao = colunas
-    .map((c) => {
-      const com = pessoas.filter((l: any) => l[chave][c.nome]);
-      const dist = Object.fromEntries(CONCEITOS.map((k) => [k, com.filter((l: any) => l[chave][c.nome].depois === k).length])) as Record<Conceito, number>;
-      const aguardando = com.filter((l: any) => !l[chave][c.nome].depois).length;
-      const destaque = conceito === "TODOS" ? com.length : com.filter((l: any) => passaConceito(conceito, l[chave][c.nome].depois)).length;
-      return { nome: c.nome, total: com.length, dist, aguardando, destaque };
-    })
-    .filter((v) => v.total > 0)
-    .sort((a, b) => b.destaque - a.destaque || b.total - a.total || a.nome.localeCompare(b.nome, "pt-BR"));
-  const tituloTipo = { T: "Eixos transversais", L: "Eixos de liderança", E: "Eixos essenciais e demais", COMP: "Competências" }[tipo];
-  const nomeTipo = { T: "eixo transversal", L: "eixo de liderança", E: "eixo", COMP: "competência" }[tipo];
-  const pessoaAberta = aberto ? r.linhas.find((l: any) => l.id === aberto) : null;
-
-  // Grade: só pessoas que têm algum eixo do tipo escolhido e passam no filtro de conceito.
-  const linhasGrade = pessoas.filter((l: any) => colunas.some((c) => l[chave][c.nome] && passaConceito(conceito, l[chave][c.nome].depois)));
-
-  // Por eixo: pessoas agrupadas pelo conceito atual.
-  const comEixo = eixoValido ? pessoas.filter((l: any) => l[chave][eixoValido]) : [];
-  const porConceito = ORDEM_LISTA.filter((c) => passaConceito(conceito, c)).map((c) => ({ c, l: comEixo.filter((p: any) => p[chave][eixoValido].depois === c) }));
-  const aguardando = conceito === "TODOS" ? comEixo.filter((p: any) => !p[chave][eixoValido].depois) : [];
-
-  const botaoNome = (l: any, compacto = false) => (
-    <button
-      type="button"
-      onClick={() => setAberto(aberto === l.id ? null : l.id)}
-      aria-pressed={aberto === l.id}
-      style={{ background: aberto === l.id ? C.tealFundo : "none", border: "none", borderRadius: 8, padding: compacto ? "4px 6px" : 0, cursor: "pointer", fontFamily: "inherit", textAlign: "left", minHeight: compacto ? 32 : 36, color: C.texto }}
-    >
-      <span style={{ fontWeight: 600, fontSize: 14 }}>{l.nome}</span>{" "}
-      <span style={{ fontSize: 12, color: C.secundario }}>
-        {nomeArea(l.unidade).split(" · ")[0]}
-        {l.lider ? " · líder" : ""}
-      </span>
-    </button>
-  );
+  const { unidades, colunas, grade, riscos, linhas } = dados;
+  const anoBase = tipo === "COMP" ? r.ad.anoBase ?? "anterior" : "2025";
+  const anoAtual = tipo === "COMP" ? r.ad.anoAtual ?? "atual" : "2026";
+  const selValida = sel && grade.has(`${sel.unidade}|${sel.eixo}`) && colunas.some((c) => c.nome === sel.eixo) ? sel : null;
+  const celSel = selValida ? (grade.get(`${selValida.unidade}|${selValida.eixo}`) as Celula) : null;
+  const pessoasSel = selValida
+    ? linhas
+        .filter((l) => l.unidade === selValida.unidade && l[chave][selValida.eixo])
+        .map((l) => ({ l, c: l[chave][selValida.eixo], s: situacaoDe(l[chave][selValida.eixo]) }))
+        .sort((a, b) => SITUACAO[a.s].ordem - SITUACAO[b.s].ordem || a.l.nome.localeCompare(b.l.nome, "pt-BR"))
+    : [];
+  const conta = (rel: string) => pessoasSel.filter((p) => (p.c.relacao ?? "ESSENCIAL") === rel).length;
+  const cartao: React.CSSProperties = { background: C.cartao, border: `1px solid ${C.borda}`, borderRadius: 16, padding: "clamp(16px, 3vw, 24px)" };
+  const nomeTipo = { T: "Transversais", L: "Liderança", E: "Essenciais", COMP: "Competências" }[tipo];
 
   return (
     <div style={{ fontFamily: FONTE_TEXTO, color: C.texto, background: C.fundo, borderRadius: 20 }}>
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "clamp(16px, 3vw, 32px) clamp(12px, 3vw, 24px) 48px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ maxWidth: 1440, margin: "0 auto", padding: "clamp(16px, 3vw, 32px) clamp(12px, 3vw, 24px) 48px", display: "flex", flexDirection: "column", gap: 20 }}>
         <header style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: C.secundario }}>Só administradores · contém nomes</div>
+          <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: C.secundario }}>Sebrae/TO · ciclo 2025/26 · só administradores</div>
           <h1 style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: "clamp(24px, 4vw, 30px)", fontWeight: 700 }}>Matriz de conhecimento</h1>
-          <p style={{ margin: 0, fontSize: 15, color: C.secundario }}>
-            Escolha o tipo de eixo e os filtros; clique em um eixo para ver quem está em cada conceito. Resultados individuais: não compartilhar fora da gestão (LGPD e NR-1).
-          </p>
         </header>
 
-        <section style={{ background: C.cartao, border: `1px solid ${C.borda}`, borderRadius: 20, padding: "clamp(16px, 3vw, 24px)", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
           <Abas
             rotulo="Tipo de eixo"
             valor={tipo}
             onChange={(v) => {
               setTipo(v);
-              setEixo("");
+              setSel(null);
             }}
             opcoes={[
               ["T", "Transversais"],
               ["L", "Liderança"],
-              ["E", "Essenciais e demais"],
+              ["E", "Essenciais"],
               ["COMP", "Competências"],
             ]}
           />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 12 }}>
-            <Rotulado rotulo={tipo === "COMP" ? "Competência" : "Eixo"}>
-              <select value={eixoValido} onChange={(e) => setEixo(e.target.value)} style={campo}>
-                <option value="">{tipo === "COMP" ? "Todas as competências" : "Todos os eixos deste tipo"}</option>
-                {colunas.map((c) => (
-                  <option key={c.nome} value={c.nome}>
-                    {c.nome}
-                  </option>
+          <Rotulado rotulo="Público">
+            <select value={publico} onChange={(e) => setPublico(e.target.value as Publico)} style={campo}>
+              <option value="TODOS">Todos</option>
+              <option value="LIDERES">Líderes</option>
+              <option value="DEMAIS">Demais empregados</option>
+            </select>
+          </Rotulado>
+          {consulta.isFetching && <span style={{ fontSize: 14, color: C.secundario, paddingBottom: 12 }}>Atualizando…</span>}
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "flex-start" }}>
+          <section style={{ ...cartao, flex: "999 1 620px", minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+              <h2 style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: 19, fontWeight: 600 }}>
+                Unidade × {tipo === "COMP" ? "Competência" : "Eixo"} — conceito em {anoAtual}
+              </h2>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", fontSize: 13, color: C.secundario }}>
+                {CONCEITOS.map((c) => (
+                  <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ width: 12, height: 12, borderRadius: 3, background: COR_CONCEITO[c] }} />
+                    {ROTULO_CONCEITO[c]}
+                  </span>
                 ))}
-              </select>
-            </Rotulado>
-            <Rotulado rotulo="Área">
-              <select value={area} onChange={(e) => setArea(e.target.value)} style={campo}>
-                <option value="">Todas as áreas</option>
-                {(r.unidades as string[]).map((u) => (
-                  <option key={u} value={u}>
-                    {nomeArea(u)}
-                  </option>
-                ))}
-              </select>
-            </Rotulado>
-            <Rotulado rotulo="Público">
-              <select value={publico} onChange={(e) => setPublico(e.target.value as Publico)} style={campo}>
-                <option value="TODOS">Todos</option>
-                <option value="LIDERES">Líderes</option>
-                <option value="DEMAIS">Demais empregados</option>
-              </select>
-            </Rotulado>
-            <Rotulado rotulo="Conceito atual">
-              <select value={conceito} onChange={(e) => setConceito(e.target.value as FiltroConceito)} style={campo}>
-                <option value="TODOS">Todos</option>
-                <option value="FORTES">Avançado ou Referência (podem ensinar)</option>
-                <option value="EXPECTATIVA">Na expectativa (Aplicado ou acima)</option>
-                <option value="ED">Em Desenvolvimento (precisam desenvolver)</option>
-              </select>
-            </Rotulado>
-            <Rotulado rotulo="Empregado">
-              <input type="search" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar pelo nome" style={campo} />
-            </Rotulado>
-          </div>
-          {consulta.isFetching && <span style={{ fontSize: 14, color: C.secundario }}>Atualizando…</span>}
-        </section>
-
-        {pessoaAberta && (
-          <section style={{ background: C.cartao, border: `1px solid ${C.borda}`, borderRadius: 20, padding: "clamp(16px, 3vw, 24px)", display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-              <div>
-                <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 18 }}>{pessoaAberta.nome}</div>
-                <div style={{ fontSize: 13, color: C.secundario }}>
-                  {nomeArea(pessoaAberta.unidade)}
-                  {pessoaAberta.lider ? " · líder" : ""}
-                </div>
-              </div>
-              <Botao onClick={() => setAberto(null)}>Fechar</Botao>
-            </div>
-            <Detalhe l={pessoaAberta} colunas={r.colunas} ad={r.ad} />
-          </section>
-        )}
-
-        <section style={{ background: C.cartao, border: `1px solid ${C.borda}`, borderRadius: 20, padding: "clamp(16px, 3vw, 24px)", display: "flex", flexDirection: "column", gap: 16 }}>
-          {modo === "VISAO" && (
-            <>
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-end", gap: 12 }}>
-                <div>
-                  <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 18 }}>{tituloTipo}</div>
-                  <div style={{ fontSize: 14, color: C.secundario }}>
-                    {area ? nomeArea(area) : "Todas as áreas"}
-                    {publico !== "TODOS" ? ` · ${publico === "LIDERES" ? "líderes" : "demais empregados"}` : ""}. Clique em um {tipo === "COMP" ? "competência" : "eixo"} para ver quem está em cada conceito.
-                  </div>
-                </div>
-                {visao.length > 0 && <Botao onClick={() => setVerGrade(true)}>Ver em grade (pessoa × {tipo === "COMP" ? "competência" : "eixo"})</Botao>}
-              </div>
-              {visao.length ? (
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  {visao.map((v) => (
-                    <button
-                      key={v.nome}
-                      type="button"
-                      onClick={() => setEixo(v.nome)}
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "8px 16px",
-                        alignItems: "center",
-                        padding: "14px 4px",
-                        border: "none",
-                        borderTop: `1px solid ${C.linhaSuave}`,
-                        background: "none",
-                        cursor: "pointer",
-                        fontFamily: "inherit",
-                        textAlign: "left",
-                        color: C.texto,
-                        minHeight: 56,
-                      }}
-                    >
-                      <span style={{ flex: "1 1 240px", minWidth: 0 }}>
-                        <span style={{ display: "block", fontWeight: 600, fontSize: 15 }}>{v.nome}</span>
-                        <span style={{ fontSize: 13, color: C.secundario }}>
-                          {v.total} {v.total === 1 ? "pessoa avaliada" : "pessoas avaliadas"}
-                          {v.aguardando ? ` · ${v.aguardando} aguardando medição` : ""}
-                        </span>
-                      </span>
-                      <span role="img" aria-label={CONCEITOS.filter((k) => v.dist[k]).map((k) => `${v.dist[k]} em ${ROTULO_CONCEITO[k]}`).join(", ")} style={{ flex: "1 1 160px", display: "flex", height: 12, borderRadius: 999, overflow: "hidden", gap: 2, background: C.linhaSuave }}>
-                        {CONCEITOS.map((k) => (v.dist[k] ? <span key={k} style={{ width: `${(v.dist[k] / Math.max(v.total, 1)) * 100}%`, background: COR_CONCEITO[k] }} /> : null))}
-                      </span>
-                      <span style={{ flex: "none", marginLeft: "auto", textAlign: "right", fontSize: 14, whiteSpace: "nowrap" }}>
-                        <strong style={{ fontSize: 16 }}>{v.destaque}</strong> <span style={{ color: C.secundario }}>{conceito === "TODOS" ? "avaliadas" : rotuloFiltro.split(" (")[0]}</span> ›
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ fontSize: 15, color: C.secundario }}>Ninguém avaliado neste tipo de eixo com esses filtros.</div>
-              )}
-              <LegendaConceitosSimples />
-            </>
-          )}
-
-          {modo === "EIXO" && (
-            <>
-              <div>
-                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
-                  <Botao onClick={() => setEixo("")}>‹ Todos os eixos</Botao>
-                  <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 18 }}>{eixoValido}</div>
-                </div>
-                <div style={{ fontSize: 14, color: C.secundario }}>
-                  {comEixo.length} {comEixo.length === 1 ? "pessoa avaliada" : "pessoas avaliadas"} neste {nomeTipo}
-                  {area ? ` em ${nomeArea(area)}` : ""}. Conceito na medição atual. Clique no nome para ver o detalhe.
-                </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: 12 }}>
-                {porConceito.map(({ c, l }) => (
-                  <div key={c} style={{ border: `1px solid ${C.borda}`, borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                    <div style={{ background: COR_CONCEITO[c], color: corTexto(c), padding: "10px 14px", display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 14 }}>
-                      <span>{ROTULO_CONCEITO[c]}</span>
-                      <span>{l.length}</span>
-                    </div>
-                    <div style={{ padding: 8, display: "flex", flexDirection: "column", gap: 2, maxHeight: 320, overflowY: "auto" }}>
-                      {l.length ? l.map((p: any) => <div key={p.id}>{botaoNome(p, true)}</div>) : <span style={{ fontSize: 13, color: C.secundario, padding: 6 }}>Ninguém</span>}
-                    </div>
-                  </div>
-                ))}
-                {aguardando.length > 0 && (
-                  <div style={{ border: `1px dashed ${C.borda}`, borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                    <div style={{ background: C.cinzaClaro, padding: "10px 14px", display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: 14 }}>
-                      <span>Aguardando a medição atual</span>
-                      <span>{aguardando.length}</span>
-                    </div>
-                    <div style={{ padding: 8, display: "flex", flexDirection: "column", gap: 2, maxHeight: 320, overflowY: "auto" }}>
-                      {aguardando.map((p: any) => (
-                        <div key={p.id}>{botaoNome(p, true)}</div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {modo === "GRADE" && (
-            <>
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 18 }}>{termo ? "Resultado da busca" : area ? nomeArea(area) : "Todas as áreas"}</div>
-                {verGrade && !termo && <Botao onClick={() => setVerGrade(false)}>Voltar para a lista</Botao>}
-                <span style={{ fontSize: 14, color: C.secundario }}>
-                  {linhasGrade.length} {linhasGrade.length === 1 ? "empregado" : "empregados"}
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 12, height: 12, borderRadius: 3, border: `1px dashed ${C.neutro}`, background: C.cinzaClaro }} />
+                  Não se aplica
                 </span>
               </div>
-              <LegendaMatriz empregado />
-              {linhasGrade.length && colunas.length ? (
-                <Moldura rotulo="Matriz de conhecimento por empregado">
-                  <table style={estiloTabela}>
-                    <Cabecalho
-                      colunas={colunas}
-                      rotulos={(tipo === "COMP" ? ROTULO_GRUPO_COMP : { T: "Transversais · todo o Sebrae", L: "Liderança · líderes", E: "Essenciais e demais eixos" }) as Record<Grupo, string>}
-                      primeira="Empregado"
-                    />
-                    <tbody>
-                      {linhasGrade.map((l: any) => (
-                        <tr key={l.id}>
-                          <th scope="row" style={{ position: "sticky", left: 0, zIndex: 1, background: C.cartao, textAlign: "left", padding: "2px 12px 2px 0", minWidth: 220 }}>
-                            {botaoNome(l)}
-                          </th>
-                          {colunas.map((c) => {
-                            const cel = l[chave][c.nome];
-                            return conceito === "TODOS" || (cel && passaConceito(conceito, cel.depois)) ? (
-                              <CelulaPessoa key={c.nome} c={cel} eixo={c.nome} />
-                            ) : (
-                              <td key={c.nome} style={{ textAlign: "center", color: C.neutro }}>
-                                ·
+            </div>
+            {colunas.length && unidades.length ? (
+              <div role="region" aria-label={`Matriz unidade por ${nomeTipo}`} tabIndex={0} style={{ overflowX: "auto" }}>
+                <table style={{ borderCollapse: "separate", borderSpacing: 4, fontVariantNumeric: "tabular-nums" }}>
+                  <thead>
+                    <tr>
+                      <th style={{ position: "sticky", left: 0, background: C.cartao, zIndex: 2 }} />
+                      {colunas.map((c) => (
+                        <th key={c.nome} scope="col" style={{ width: 104, minWidth: 104, fontSize: 12, fontWeight: 600, color: C.corpo, textAlign: "left", verticalAlign: "bottom", padding: "0 2px 4px", lineHeight: 1.25 }}>
+                          {c.nome}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {unidades.map((u) => (
+                      <tr key={u}>
+                        <th scope="row" title={nomeArea(u)} style={{ position: "sticky", left: 0, background: C.cartao, zIndex: 1, textAlign: "left", fontSize: 14, fontWeight: 700, padding: "0 12px 0 0", whiteSpace: "nowrap" }}>
+                          {sigla(u)}
+                        </th>
+                        {colunas.map((c) => {
+                          const cel = grade.get(`${u}|${c.nome}`)!;
+                          const ativo = selValida?.unidade === u && selValida?.eixo === c.nome;
+                          if (!cel.aplica) {
+                            return (
+                              <td key={c.nome}>
+                                <div style={{ height: 54, borderRadius: 8, border: `1px dashed ${C.neutro}`, background: C.cinzaClaro, color: C.secundario, fontSize: 11, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                                  <span>—</span>
+                                  <span>não se aplica</span>
+                                </div>
                               </td>
                             );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </Moldura>
-              ) : (
-                <div style={{ fontSize: 15, color: C.secundario }}>Ninguém com esses filtros.</div>
-              )}
-            </>
+                          }
+                          const cor = cel.conceito ? COR_CONCEITO[cel.conceito] : C.linhaSuave;
+                          const txt = cel.conceito ? corTexto(cel.conceito) : C.secundario;
+                          return (
+                            <td key={c.nome}>
+                              <button
+                                type="button"
+                                aria-pressed={ativo}
+                                onClick={() => setSel(ativo ? null : { unidade: u, eixo: c.nome })}
+                                title={`${sigla(u)} · ${c.nome}: ${cel.n} ${cel.n === 1 ? "pessoa" : "pessoas"}`}
+                                style={{
+                                  width: "100%",
+                                  height: 54,
+                                  borderRadius: 8,
+                                  border: ativo ? `3px solid ${C.texto}` : "3px solid transparent",
+                                  background: cor,
+                                  color: txt,
+                                  cursor: "pointer",
+                                  fontFamily: "inherit",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: 2,
+                                  padding: 0,
+                                }}
+                              >
+                                <span style={{ fontSize: 13, fontWeight: 700 }}>{cel.conceito ? ROTULO_CURTO[cel.conceito] : "aguardando"}</span>
+                                <span style={{ fontSize: 11, fontWeight: 600 }}>
+                                  {cel.subiram || cel.desceram ? (
+                                    <>
+                                      {cel.subiram ? `▲ ${cel.subiram}` : ""}
+                                      {cel.subiram && cel.desceram ? "  " : ""}
+                                      {cel.desceram ? `▼ ${cel.desceram}` : ""}
+                                    </>
+                                  ) : (
+                                    `${cel.n} ${cel.n === 1 ? "pessoa" : "pessoas"}`
+                                  )}
+                                </span>
+                              </button>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ fontSize: 15, color: C.secundario }}>Nenhum eixo deste tipo com esses filtros.</div>
+            )}
+            <p style={{ margin: 0, fontSize: 13, color: C.secundario }}>
+              Cada célula: conceito que pelo menos metade das pessoas da unidade com o {tipo === "COMP" ? "competência" : "eixo Essencial ou Transversal"} alcançou em {anoAtual}; ▲ quantas subiram e ▼ quantas desceram de conceito desde {anoBase}. Clique para ver as pessoas.
+            </p>
+          </section>
+
+          <aside style={{ ...cartao, flex: "1 1 320px", position: "sticky", top: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: C.secundario }}>Célula selecionada</div>
+            {selValida && celSel && celSel.aplica ? (
+              <>
+                <div style={{ fontFamily: FONTE_TITULO, fontWeight: 600, fontSize: 18 }}>
+                  {sigla(selValida.unidade)} · {selValida.eixo}
+                </div>
+                {tipo !== "COMP" && (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                    {[
+                      ["Essencial", conta("ESSENCIAL"), C.cinzaClaro, C.texto],
+                      ["Transversal", conta("TRANSVERSAL"), C.cinzaClaro, C.texto],
+                      ["Potencial.", conta("NAO_ESSENCIAL"), "#F3EFFA", "#4B2E83"],
+                    ].map(([rot, n, fundo, cor]) => (
+                      <div key={rot as string} style={{ background: fundo as string, borderRadius: 10, padding: "10px 12px" }}>
+                        <div style={{ fontSize: 12, color: C.secundario }}>{rot}</div>
+                        <div style={{ fontFamily: FONTE_TITULO, fontSize: 20, fontWeight: 600, color: cor as string }}>{n as number}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, color: C.corpo, borderTop: `1px solid ${C.linhaSuave}`, paddingTop: 12 }}>
+                  <span>
+                    Conceito {anoBase} → {anoAtual}
+                  </span>
+                  <strong>
+                    {celSel.conceitoAntes ? ROTULO_CURTO[celSel.conceitoAntes] : "—"} → {celSel.conceito ? ROTULO_CURTO[celSel.conceito] : "aguardando"}
+                  </strong>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 520, overflowY: "auto" }}>
+                  {pessoasSel.map(({ l, c, s }) => (
+                    <div key={l.id} style={{ border: `1px solid ${C.borda}`, borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: 14 }}>
+                          {l.nome}
+                          {l.lider ? <span style={{ fontWeight: 400, color: C.secundario, fontSize: 12 }}> · líder</span> : null}
+                        </div>
+                        <div style={{ fontSize: 12, color: C.secundario }}>
+                          {tipo === "COMP" ? "Competência" : ROTULO_REL[c.relacao ?? "ESSENCIAL"]} · {c.antes ? ROTULO_CURTO[c.antes as Conceito] : "—"} → {c.depois ? ROTULO_CURTO[c.depois as Conceito] : "aguardando"}
+                        </div>
+                      </div>
+                      {SITUACAO[s as Situacao].rotulo && (
+                        <span style={{ flex: "none", padding: "3px 10px", borderRadius: 999, background: SITUACAO[s as Situacao].fundo, color: SITUACAO[s as Situacao].texto, fontSize: 12, fontWeight: 700 }}>
+                          {SITUACAO[s as Situacao].rotulo}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: 15, color: C.secundario }}>Clique numa célula da matriz para ver as pessoas da unidade naquele {tipo === "COMP" ? "competência" : "eixo"}.</div>
+            )}
+          </aside>
+        </div>
+
+        <section style={{ ...cartao, display: "flex", flexDirection: "column", gap: 14 }}>
+          <h2 style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: 19, fontWeight: 600 }}>Riscos de conhecimento</h2>
+          {riscos.length ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(260px, 100%), 1fr))", gap: 12 }}>
+              {riscos.map((x) => (
+                <button
+                  key={x.titulo + x.texto}
+                  type="button"
+                  onClick={() => x.alvo && setSel(x.alvo)}
+                  style={{
+                    textAlign: "left",
+                    fontFamily: "inherit",
+                    cursor: x.alvo ? "pointer" : "default",
+                    borderRadius: 12,
+                    padding: "14px 16px",
+                    border: `1px solid ${x.tipo === "multiplicador" ? "#D8CCEF" : "#F1DFA6"}`,
+                    background: x.tipo === "multiplicador" ? "#F6F2FC" : "#FFF9E8",
+                    color: C.texto,
+                  }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{x.titulo}</div>
+                  <div style={{ fontSize: 14, color: C.corpo }}>{x.texto}</div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 15, color: C.secundario }}>Nenhum risco com 3 ou mais pessoas medidas neste filtro.</div>
           )}
         </section>
       </div>
