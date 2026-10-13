@@ -143,9 +143,10 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
               videoOrientacaoTimerRef.current = window.setInterval(() => {
                 const player = videoOrientacaoPlayerRef.current;
                 if (!player) return;
-                const atual = Number(player.getCurrentTime?.() || 0);
-                const duracao = Number(player.getDuration?.() || 0);
-                if (duracao > 0) setDuracaoVideoOrientacao(duracao);
+                const atual = Number(player.getCurrentTime?.());
+                const duracao = Number(player.getDuration?.());
+                if (!Number.isFinite(atual) || atual < 0 || !Number.isFinite(duracao) || duracao <= 0) return;
+                setDuracaoVideoOrientacao(duracao);
 
                 const limite = maiorTempoPermitidoRef.current;
                 if (atual > limite + 1.5) {
@@ -153,7 +154,17 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
                   return;
                 }
                 if (atual > limite) maiorTempoPermitidoRef.current = atual;
-                setTempoAssistidoOrientacao(Math.max(tempo => tempo, maiorTempoPermitidoRef.current));
+                setTempoAssistidoOrientacao(tempo => Math.max(Number.isFinite(tempo) ? tempo : 0, maiorTempoPermitidoRef.current));
+                // A API do YouTube pode não emitir ENDED em alguns navegadores.
+                // Reconhecer o fim apenas após reprodução contínua até o trecho final.
+                if (atual >= duracao - 0.5 && limite >= duracao - 2) {
+                  setTempoAssistidoOrientacao(duracao);
+                  setVideoOrientacaoConcluido(true);
+                  if (videoOrientacaoTimerRef.current) {
+                    window.clearInterval(videoOrientacaoTimerRef.current);
+                    videoOrientacaoTimerRef.current = null;
+                  }
+                }
               }, 500);
             } else {
               if (videoOrientacaoTimerRef.current) {
@@ -162,9 +173,11 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
               }
               if (event.data === YT.PlayerState.ENDED) {
                 const duracao = Number(event.target.getDuration?.() || duracaoVideoOrientacao || 0);
-                maiorTempoPermitidoRef.current = Math.max(maiorTempoPermitidoRef.current, duracao);
-                setTempoAssistidoOrientacao(duracao);
-                setVideoOrientacaoConcluido(true);
+                if (Number.isFinite(duracao) && duracao > 0 && maiorTempoPermitidoRef.current >= duracao - 2) {
+                  maiorTempoPermitidoRef.current = Math.max(maiorTempoPermitidoRef.current, duracao);
+                  setTempoAssistidoOrientacao(duracao);
+                  setVideoOrientacaoConcluido(true);
+                }
               }
             }
           },
@@ -812,12 +825,12 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
                     <div className="mt-3">
                       <div className="mb-1 flex justify-between text-xs text-muted-foreground">
                         <span>Progresso da orientação</span>
-                        <span>{Math.min(100, Math.round((tempoAssistidoOrientacao / duracaoVideoOrientacao) * 100))}%</span>
+                        <span>{Math.min(100, Math.max(0, Math.round(((Number.isFinite(tempoAssistidoOrientacao) ? tempoAssistidoOrientacao : 0) / duracaoVideoOrientacao) * 100)))}%</span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-slate-200">
                         <div
                           className="h-full bg-slate-700 transition-all"
-                          style={{ width: `${Math.min(100, Math.round((tempoAssistidoOrientacao / duracaoVideoOrientacao) * 100))}%` }}
+                          style={{ width: `${Math.min(100, Math.max(0, Math.round(((Number.isFinite(tempoAssistidoOrientacao) ? tempoAssistidoOrientacao : 0) / duracaoVideoOrientacao) * 100)))}%` }}
                         />
                       </div>
                     </div>
