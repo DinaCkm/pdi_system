@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import * as XLSX from "xlsx";
-import { AlertCircle, ArrowDown, ArrowUp, Ban, CheckCircle2, Eye, FileSpreadsheet, History, Loader2, Pencil, PlayCircle, Plus, RotateCcw, Save, ShieldCheck, Trash2, Upload, X } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowUp, Ban, CheckCircle2, Eye, FileDown, FileSpreadsheet, History, Loader2, Pencil, PlayCircle, Plus, RotateCcw, Save, ShieldCheck, Trash2, Upload, X } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,6 +95,63 @@ function eixosDaProva(item: any) {
         .filter(Boolean),
     ),
   );
+}
+
+
+/**
+ * Abre um documento de impressão contendo apenas a prova completa que o
+ * administrador já consultou. O navegador permite escolher "Salvar como PDF".
+ * Não chama mutations nem altera prova, ciclo, gabaritos ou homologação.
+ */
+function abrirImpressaoProvaCompleta(provaId: number, nomeProva: string): boolean {
+  const origem = document.getElementById("prova-completa-" + provaId);
+  if (!origem) return false;
+
+  const janela = window.open("", "_blank", "width=980,height=800");
+  if (!janela) return false;
+
+  try {
+    janela.opener = null;
+    const documento = janela.document;
+    documento.documentElement.lang = "pt-BR";
+    documento.title = "Prova completa - " + nomeProva;
+
+    const estilos = documento.createElement("style");
+    estilos.textContent = [
+      "@page { size: A4; margin: 17mm; }",
+      "body { font: 11pt Arial, Helvetica, sans-serif; color: #202938; line-height: 1.45; margin: 0; }",
+      "h2 { font-size: 16pt; margin: 0 0 8px; }",
+      "h3 { font-size: 12pt; margin: 0 0 8px; }",
+      "p { margin: 0 0 8px; }",
+      "ul, ol { padding-left: 24px; margin: 6px 0 10px; }",
+      ".cabecalho-prova { border-bottom: 2px solid #334155; margin-bottom: 20px; padding-bottom: 14px; }",
+      ".metadados-prova { font-size: 9.5pt; margin: 4px 0; }",
+      ".questao-impressao { border: 1px solid #cbd5e1; padding: 12px; margin-bottom: 16px; break-inside: avoid-page; }",
+      ".enunciado-impressao { font-weight: 600; margin: 10px 0; }",
+      ".opcao-impressao { padding: 6px 0; border-bottom: 1px solid #e2e8f0; }",
+      ".opcao-impressao strong { display: inline-block; min-width: 23px; }",
+      ".alternativa-impressao { display: inline; font-weight: 400; }",
+      ".alternativa-impressao p { display: inline; }",
+      ".gabarito-impressao { margin-top: 10px; font-weight: 600; }",
+      ".eixos-impressao, .fonte-impressao { margin-top: 7px; font-size: 9.5pt; }",
+      ".enunciado-impressao span, .alternativa-impressao span { white-space: pre-wrap; }",
+      "[data-nao-imprimir] { display: none !important; }",
+      ".nota-interna { font-size: 9pt; color: #475569; margin-top: 18px; }",
+    ].join("\n");
+    documento.head.appendChild(estilos);
+
+    const copia = documento.importNode(origem, true);
+    copia.querySelectorAll("[data-nao-imprimir]").forEach(elemento => elemento.remove());
+    documento.body.replaceChildren(copia);
+
+    janela.addEventListener("afterprint", () => janela.close(), { once: true });
+    janela.focus();
+    janela.print();
+    return true;
+  } catch {
+    janela.close();
+    return false;
+  }
 }
 
 function localizarColunasAlternativas(cabecalhosOriginais: unknown[]): ColunaAlternativa[] {
@@ -226,6 +283,7 @@ export default function ImportarProvas() {
   const [filtroStatus, setFiltroStatus] = useState("");
   const [visualizandoId, setVisualizandoId] = useState<number | null>(null);
   const [previewIndice, setPreviewIndice] = useState(0);
+  const [visualizacaoCompleta, setVisualizacaoCompleta] = useState(false);
   const [historicoId, setHistoricoId] = useState<number | null>(null);
   const [ultimaAuditoria, setUltimaAuditoria] = useState<any[]>([]);
   const [homologacaoId, setHomologacaoId] = useState<number | null>(null);
@@ -550,8 +608,16 @@ export default function ImportarProvas() {
   const abrirPreview = (id: number) => {
     setEditandoId(null);
     setHistoricoId(null);
+    setVisualizacaoCompleta(false);
     setVisualizandoId(id);
     setPreviewIndice(0);
+  };
+
+  const abrirProvaCompleta = (id: number) => {
+    setEditandoId(null);
+    setHistoricoId(null);
+    setVisualizacaoCompleta(true);
+    setVisualizandoId(id);
   };
 
   const abrirHistorico = (id: number) => {
@@ -972,7 +1038,8 @@ export default function ImportarProvas() {
                                 <Button size="sm" variant="outline" onClick={() => reabrirProva(Number(item.id))} disabled={reabrindoId === Number(item.id)}>{reabrindoId === Number(item.id) ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Pencil className="mr-2 h-4 w-4" />}Reabrir</Button>
                               </> : null}
                               {["RASCUNHO", "VALIDADA"].includes(String(item.status)) && <Button size="sm" variant={invalidandoId === Number(item.id) ? "destructive" : "outline"} onClick={() => abrirInvalidacao(Number(item.id))}><Ban className="mr-2 h-4 w-4" />Invalidar prova</Button>}
-                              {item.status !== "INVALIDADA" && <Button size="sm" variant={visualizandoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirPreview(Number(item.id))}><Eye className="mr-2 h-4 w-4" />Visualizar como candidato</Button>}
+                              {item.status !== "INVALIDADA" && <Button size="sm" variant={visualizandoId === Number(item.id) && !visualizacaoCompleta ? "default" : "outline"} onClick={() => abrirPreview(Number(item.id))}><Eye className="mr-2 h-4 w-4" />Visualizar como candidato</Button>}
+                              <Button size="sm" variant={visualizandoId === Number(item.id) && visualizacaoCompleta ? "default" : "outline"} onClick={() => abrirProvaCompleta(Number(item.id))}><FileDown className="mr-2 h-4 w-4" />Ver prova completa / PDF</Button>
                               <Button size="sm" variant={historicoId === Number(item.id) ? "default" : "outline"} onClick={() => abrirHistorico(Number(item.id))}><History className="mr-2 h-4 w-4" />Histórico</Button>
                             </div>
                           </div>
@@ -1140,10 +1207,51 @@ export default function ImportarProvas() {
                           <td colSpan={8} className="p-4">
                             <div className="rounded-lg border border-blue-200 bg-white p-5 shadow-sm">
                               <div className="mb-4 flex items-start justify-between gap-3">
-                                <div><h3 className="text-lg font-semibold">Pré-visualização como candidato</h3><p className="text-sm text-muted-foreground">Esta prévia reproduz a ordem, enunciado e alternativas que o candidato verá.</p></div>
+                                <div><h3 className="text-lg font-semibold">{visualizacaoCompleta ? "Prova completa (somente leitura)" : "Pré-visualização como candidato"}</h3><p className="text-sm text-muted-foreground">{visualizacaoCompleta ? "Todas as questões, alternativas, gabaritos e eixos, sem alterar a avaliação." : "Esta prévia reproduz a ordem, enunciado e alternativas que o candidato verá."}</p></div>
                                 <Button variant="outline" size="sm" onClick={() => setVisualizandoId(null)}><X className="mr-2 h-4 w-4" />Fechar</Button>
                               </div>
-                              {previewQuery.isLoading ? <p className="text-sm text-muted-foreground">Carregando prévia...</p> : previewQuery.data?.prova ? (() => {
+                              {previewQuery.isLoading ? <p className="text-sm text-muted-foreground">Carregando prévia...</p> : previewQuery.data?.prova ? (visualizacaoCompleta ? (
+
+                                <div id={"prova-completa-" + item.id} className="mx-auto max-w-5xl space-y-4">
+                                  <div className="cabecalho-prova rounded-lg border bg-slate-50 p-4">
+                                    <h2 className="text-lg font-semibold">{previewQuery.data.prova.nome}</h2>
+                                    <p className="metadados-prova text-sm">Código: {previewQuery.data.prova.codigo} · Unidade: {previewQuery.data.prova.unidade}</p>
+                                    <p className="metadados-prova text-sm">Ano: {previewQuery.data.prova.ano} · Ciclo: {item.cicloNome || "Não informado"} · Status: {item.status} · Questões: {previewQuery.data.prova.questoes.length}</p>
+                                    {previewQuery.data.prova.descricao && <p className="metadados-prova text-sm">{previewQuery.data.prova.descricao}</p>}
+                                    <div data-nao-imprimir="true" className="mt-3 flex flex-wrap items-center gap-3">
+                                      <Button type="button" onClick={() => {
+                                        if (!abrirImpressaoProvaCompleta(Number(item.id), previewQuery.data.prova.nome)) {
+                                          window.alert("Não foi possível abrir a impressão. Verifique se o navegador está bloqueando janelas pop-up e tente novamente.");
+                                        }
+                                      }}><FileDown className="mr-2 h-4 w-4" />Imprimir / salvar como PDF</Button>
+                                      <span className="text-xs text-muted-foreground">Na janela de impressão, selecione “Salvar como PDF” como destino.</span>
+                                    </div>
+                                  </div>
+                                  {((previewQuery.data.prova.questoes ?? []) as Questao[]).map((questao, indice) => (
+                                    <section key={questao.id + "-" + indice} className="questao-impressao space-y-3 rounded-lg border bg-white p-4">
+                                      <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <h3 className="font-semibold">Questão {indice + 1}</h3>
+                                        {questao.id && <span className="text-xs text-muted-foreground">ID: {questao.id}</span>}
+                                      </div>
+                                      <div className="enunciado-impressao text-sm font-medium leading-relaxed">
+                                        <RichTextDisplay content={questao.enunciado} />
+                                      </div>
+                                      <div className="space-y-2">
+                                        {questao.opcoes.map((opcao, opcaoIndex) => (
+                                          <div key={opcao.letra + "-" + opcaoIndex} className="opcao-impressao flex items-start gap-2 border-b py-2 text-sm last:border-b-0">
+                                            <strong className="shrink-0">{opcao.letra})</strong>
+                                            <div className="alternativa-impressao min-w-0 flex-1"><RichTextDisplay content={opcao.texto} /></div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <div className="gabarito-impressao border-t pt-3 text-sm"><strong>Gabarito:</strong> {questao.gabarito || "Não informado"}</div>
+                                      <div className="eixos-impressao text-sm"><strong>Eixo(s) técnico(s):</strong> {questao.eixos?.map(eixo => eixo.nome).join(", ") || "Não informado"}</div>
+                                      {questao.tagFonte && <div className="fonte-impressao text-sm"><strong>Fonte / Tag:</strong> {questao.tagFonte}</div>}
+                                    </section>
+                                  ))}
+                                  <p className="nota-interna text-xs text-muted-foreground">Documento de uso administrativo. Contém gabaritos e não deve ser disponibilizado aos candidatos.</p>
+                                </div>
+                              ) : (() => {
                                 const questoesPreview = (previewQuery.data.prova.questoes ?? []) as Questao[];
                                 const q = questoesPreview[previewIndice];
                                 if (!q) return <p className="text-sm text-muted-foreground">Nenhuma questão disponível.</p>;
@@ -1167,7 +1275,7 @@ export default function ImportarProvas() {
                                     <Button disabled={previewIndice >= questoesPreview.length - 1} onClick={() => setPreviewIndice(v => Math.min(questoesPreview.length - 1, v + 1))}>Próxima</Button>
                                   </div>
                                 </div>;
-                              })() : <p className="text-sm text-red-700">Não foi possível carregar a prévia.</p>}
+                              })()) : <p className="text-sm text-red-700">Não foi possível carregar a prévia.</p>}
                             </div>
                           </td>
                         </tr>
