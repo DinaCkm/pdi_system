@@ -62,7 +62,18 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
 
   const provaQuery = trpc.aplicacoesProficiencia.estadoProva.useQuery(
     { aplicacaoId },
-    { refetchOnWindowFocus: false, retry: false },
+    {
+      refetchOnWindowFocus: false,
+      retry: false,
+      // Enquanto aguarda liberacao, atualizar o status sem exigir F5.
+      // Desativar as consultas automaticas quando a prova estiver liberada ou iniciada.
+      refetchInterval: query => {
+        const estado = query.state.data as any;
+        return estado?.orientacaoConcluida && !estado?.aplicacao?.liberada && !estado?.tentativaId
+          ? 5000
+          : false;
+      },
+    },
   );
   const identidadeQuery = trpc.aplicacoesProficiencia.estadoIdentidade.useQuery(
     { aplicacaoId },
