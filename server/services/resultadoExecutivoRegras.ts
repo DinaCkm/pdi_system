@@ -253,7 +253,7 @@ export function porqueDoItem(item: {
 
 export const LEGENDA_SITUACAO: Record<Situacao, { nome: string; regra: string; significa: string; recomenda: string }> = {
   MANTEVE: {
-    nome: "Já estava na expectativa e manteve",
+    nome: "Já estava na expectativa",
     regra: "Estava com 70% ou mais na medição anterior e continuou na medição atual.",
     significa: "Ponto forte consolidado. Não precisa de ação de desenvolvimento neste ciclo.",
     recomenda: "Usar essas pessoas como multiplicadoras ou mentoras para colegas abaixo da expectativa no mesmo ponto.",
@@ -362,7 +362,7 @@ export const LEGENDA_STATUS: Record<StatusEvolucao, { titulo: string; explicacao
 
 export const LEGENDA_MOTIVO: Record<Motivo, { titulo: string; explicacao: string }> = {
   CAIU_DA_EXPECTATIVA: {
-    titulo: "Estava na expectativa e caiu",
+    titulo: "Estava na expectativa; não houve evolução",
     explicacao: "Na medição anterior já alcançava a expectativa, então não havia por que planejar ação. Passa a ser ponto do próximo PDI.",
   },
   SEM_PDI: { titulo: "Sem PDI", explicacao: "A pessoa não tem PDI ativo no ciclo." },

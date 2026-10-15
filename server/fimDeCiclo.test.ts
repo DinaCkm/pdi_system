@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classificar, conceitoDe, contarPalavras, limitarSintese, movimento } from "../shared/fimDeCicloRegras";
+import { classificar, conceitoDe, contarPalavras, limitarSintese, motivoFoco, movimento, sinteseConhecimento } from "../shared/fimDeCicloRegras";
 import { montarMatrizEmpregados, montarRelatorio } from "./services/fimDeCiclo";
 
 describe("régua de conceitos", () => {
@@ -196,5 +196,30 @@ describe("relatório (blocos e seção 6)", () => {
 
   it("filtro por área", () => {
     expect(montarRelatorio(baseExemplo(), "Outra").recorte.pessoas).toBe(0);
+  });
+});
+
+describe("linguagem de evolução (RH)", () => {
+  // Quando o conceito fica igual ou menor, a leitura é sempre "não houve evolução", nunca "caiu"/"desceu".
+  const proibidas = /\b(caiu|caíram|desceu|desceram|redução|queda|piorou|perdeu|perderam)\b/i;
+  const eixos = [
+    { nome: "Comunicação", transversal: true, comparaveis: 10, subiram: 1, desceram: 6 },
+    { nome: "Gestão de Projetos", transversal: false, comparaveis: 8, subiram: 5, desceram: 0 },
+  ];
+
+  it("sínteses e motivos não usam palavras de queda", () => {
+    const textos = [
+      sinteseConhecimento(eixos, "TECNICO"),
+      sinteseConhecimento(eixos, "COMPORTAMENTAL"),
+      motivoFoco({ emDesenvolvimento: 3, desceram: 6, subiram: 1, pessoas: 10 }),
+      motivoFoco({ emDesenvolvimento: 0, desceram: 6, subiram: 1, pessoas: 10 }),
+      JSON.stringify(montarRelatorio(baseExemplo()).sinteses),
+    ];
+    for (const t of textos) expect(t).not.toMatch(proibidas);
+  });
+
+  it("usa evoluiu / não houve evolução", () => {
+    expect(sinteseConhecimento(eixos, "COMPORTAMENTAL")).toMatch(/não evoluiu/);
+    expect(motivoFoco({ emDesenvolvimento: 3, desceram: 6, subiram: 1, pessoas: 10 })).toMatch(/não houve evolução/);
   });
 });

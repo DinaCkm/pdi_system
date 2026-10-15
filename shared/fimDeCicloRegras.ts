@@ -82,7 +82,7 @@ export const GRUPO_DA_CLASSE: Record<Classe, Grupo> = {
 };
 
 export const ROTULO_GRUPO: Record<Grupo, string> = {
-  MANTEVE: "Já na expectativa e manteve",
+  MANTEVE: "Já estava na expectativa",
   CHEGOU: "Chegou à expectativa neste ciclo",
   ABAIXO: "Em Desenvolvimento",
   SEM_COMPARACAO: "Sem comparação",
@@ -171,7 +171,7 @@ export function sinteseResultado(eixos: ItemResultado[], competencias: ItemResul
     const menos = v.filter((e) => delta(e) < 0);
     const top = [...mais].sort((a, b) => delta(b) - delta(a))[0];
     const verbo = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
-    return `${v.length === 1 ? `${inicio === "Das" ? "Da única" : "Do único"} ${oQue[0]}` : `${inicio} ${v.length} ${oQue[1]}`}, ${verbo(mais.length, "ganhou", "ganharam")} empregados na expectativa e ${verbo(menos.length, "perdeu", "perderam")}${top ? `; o maior avanço foi em ${top.nome}` : ""}.`;
+    return `${v.length === 1 ? `${inicio === "Das" ? "Da única" : "Do único"} ${oQue[0]}` : `${inicio} ${v.length} ${oQue[1]}`}, ${verbo(mais.length, "ganhou", "ganharam")} empregados na expectativa${menos.length ? ` e em ${menos.length} não houve evolução` : ""}${top ? `; o maior avanço foi em ${top.nome}` : ""}.`;
   };
   const frases = [
     frase(competencias, ["competência", "competências"], "Das"),
@@ -183,7 +183,7 @@ export function sinteseResultado(eixos: ItemResultado[], competencias: ItemResul
 
 export function sinteseFechamento(t: ResumoInstrumento, c: ResumoInstrumento) {
   return limitarSintese([
-    `${t.grupos.MANTEVE + c.grupos.MANTEVE} resultados (empregado em um eixo ou competência) já estavam na expectativa e se mantiveram: ${t.grupos.MANTEVE} técnicos e ${c.grupos.MANTEVE} de competências.`,
+    `${t.grupos.MANTEVE + c.grupos.MANTEVE} resultados (empregado em um eixo ou competência) já estavam na expectativa e seguem nela: ${t.grupos.MANTEVE} técnicos e ${c.grupos.MANTEVE} de competências.`,
     `${t.grupos.CHEGOU + c.grupos.CHEGOU} resultados chegaram à expectativa neste ciclo.`,
     `${t.grupos.ABAIXO + c.grupos.ABAIXO} seguem no conceito Em Desenvolvimento e entram no foco do próximo ciclo.`,
   ]);
@@ -214,17 +214,17 @@ export function sinteseConhecimento(eixos: EixoResumo[], instrumento: Instrument
       if (!l.length) continue;
       const { sobe, cai } = leitura(l);
       const partes: string[] = [];
-      if (sobe.length) partes.push(`mais subidas de conceito em ${lista(sobe.map((e) => e.nome))}`);
-      if (cai.length) partes.push(`novo foco em ${lista(cai.map((e) => e.nome))}`);
-      if (!partes.length) partes.push("a maioria manteve o conceito");
+      if (sobe.length) partes.push(`mais pessoas evoluíram de conceito em ${lista(sobe.map((e) => e.nome))}`);
+      if (cai.length) partes.push(`novo foco em ${lista(cai.map((e) => e.nome))}, onde a maioria não evoluiu`);
+      if (!partes.length) partes.push("na maioria não houve evolução de conceito");
       frases.push(`${grupo}: ${partes.join("; ")}.`);
     }
     return limitarSintese(frases);
   }
   const { sobe, cai } = leitura(validos);
-  if (sobe.length) frases.push(`Mais pessoas subiram de conceito em ${lista(sobe.map((e) => `${e.nome} (${e.subiram} de ${e.comparaveis})`))}.`);
-  if (cai.length) frases.push(`Em ${lista(cai.map((e) => `${e.nome} (${e.desceram} de ${e.comparaveis} desceram)`))}, mais pessoas desceram do que subiram, o que pede novo foco.`);
-  if (!sobe.length && !cai.length) frases.push("A maior parte das pessoas manteve o conceito entre as duas medições.");
+  if (sobe.length) frases.push(`Mais pessoas evoluíram de conceito em ${lista(sobe.map((e) => `${e.nome} (${e.subiram} de ${e.comparaveis})`))}.`);
+  if (cai.length) frases.push(`Em ${lista(cai.map((e) => `${e.nome} (${e.comparaveis - e.subiram} de ${e.comparaveis} sem evolução)`))}, a maioria não evoluiu de conceito, o que pede novo foco.`);
+  if (!sobe.length && !cai.length) frases.push("Para a maior parte das pessoas não houve evolução de conceito entre as duas medições.");
   return limitarSintese(frases);
 }
 
@@ -265,18 +265,18 @@ export function sinteseInvestimento(linhas: LinhaInvestimento[]) {
   const frases: string[] = [];
   const acompanharam = itens.filter((l) => l.comAcao * 2 >= l.pessoas);
   const semInvest = itens.filter((l) => l.comAcao * 2 < l.pessoas);
-  if (acompanharam.length) frases.push(`O investimento acompanhou a subida de conceito em ${lista(acompanharam.map((l) => l.nome))}: metade ou mais dos empregados tinha ação concluída.`);
-  if (semInvest.length) frases.push(`Em ${lista(semInvest.map((l) => l.nome))}, os empregados subiram de conceito com poucas ações concluídas.`);
-  if (!itens.length) frases.push("Ainda não há eixo ou competência com pelo menos 5 empregados que subiram de conceito para relacionar com as ações do PDI.");
+  if (acompanharam.length) frases.push(`O investimento acompanhou a evolução de conceito em ${lista(acompanharam.map((l) => l.nome))}: metade ou mais dos empregados tinha ação concluída.`);
+  if (semInvest.length) frases.push(`Em ${lista(semInvest.map((l) => l.nome))}, os empregados evoluíram de conceito com poucas ações concluídas.`);
+  if (!itens.length) frases.push("Ainda não há eixo ou competência com pelo menos 5 empregados que evoluíram de conceito para relacionar com as ações do PDI.");
   return limitarSintese(frases);
 }
 
 // Motivo curto de um item de foco (bloco 6).
 export function motivoFoco(item: { emDesenvolvimento: number; desceram: number; subiram: number; pessoas: number }) {
   if (item.desceram > item.subiram && item.emDesenvolvimento > 0) {
-    return `${plural(item.desceram, "pessoa desceu", "pessoas desceram")} de conceito e ${item.emDesenvolvimento} ${item.emDesenvolvimento === 1 ? "está" : "estão"} no conceito Em Desenvolvimento. Recuperar quem caiu.`;
+    return `Para a maioria não houve evolução de conceito e ${item.emDesenvolvimento} ${item.emDesenvolvimento === 1 ? "está" : "estão"} no conceito Em Desenvolvimento. Retomar o desenvolvimento no próximo PDI.`;
   }
-  if (item.desceram > item.subiram) return `${plural(item.desceram, "pessoa desceu", "pessoas desceram")} de conceito, ainda na expectativa. Manter a força.`;
+  if (item.desceram > item.subiram) return "Para a maioria não houve evolução de conceito, mas seguem na expectativa. Manter a força.";
   if (item.emDesenvolvimento > 0) return `${item.emDesenvolvimento} de ${item.pessoas} no conceito Em Desenvolvimento. Incluir no próximo PDI.`;
   return "Acompanhar.";
 }

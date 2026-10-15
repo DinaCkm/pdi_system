@@ -27,8 +27,8 @@ function formatarVariacao(valor: number | null | undefined, unidade = "") {
 function situacaoVariacao(valor: number | null | undefined) {
   if (valor === null || valor === undefined) return { rotulo: "Aguardando nova medição", variant: "outline" as const };
   if (Number(valor) > 0) return { rotulo: "Evolução", variant: "default" as const };
-  if (Number(valor) < 0) return { rotulo: "Redução", variant: "destructive" as const };
-  return { rotulo: "Estabilidade", variant: "secondary" as const };
+  // Linguagem de RH: igual ou menor é sempre "Não houve evolução", nunca "Redução".
+  return { rotulo: "Não houve evolução", variant: "secondary" as const };
 }
 
 export default function Evolucao() {
