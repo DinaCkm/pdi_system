@@ -17,7 +17,7 @@ const COR_GRUPO: Record<string, string> = {
   SEM_COMPARACAO: C.neutro,
 };
 const ROTULO_GRUPO: Record<string, string> = {
-  MANTEVE: "Já na expectativa e manteve",
+  MANTEVE: "Já estava na expectativa",
   CHEGOU: "Chegou à expectativa neste ciclo",
   ABAIXO: "Em Desenvolvimento",
   SEM_COMPARACAO: "Sem comparação",
@@ -126,15 +126,15 @@ type Ordenacao = "PROPORCAO" | "QUANTIDADE" | "QUEDAS";
 const ROTULO_ORDENACAO: Record<Ordenacao, string> = {
   PROPORCAO: "Maior proporção em desenvolvimento",
   QUANTIDADE: "Maior quantidade em desenvolvimento",
-  QUEDAS: "Mais quedas de conceito",
+  QUEDAS: "Mais pessoas sem evolução",
 };
-function ordenarPrioridades<T extends { nome: string; emDesenvolvimento: number; pessoas: number; desceram?: number | null }>(l: T[], o: Ordenacao): T[] {
+function ordenarPrioridades<T extends { nome: string; emDesenvolvimento: number; pessoas: number; subiram?: number | null; comparaveis?: number | null }>(l: T[], o: Ordenacao): T[] {
   const prop = (x: T) => (x.pessoas ? x.emDesenvolvimento / x.pessoas : 0);
   return [...l].sort((a, b) =>
     o === "QUANTIDADE"
       ? b.emDesenvolvimento - a.emDesenvolvimento || prop(b) - prop(a)
       : o === "QUEDAS"
-        ? (b.desceram ?? -1) - (a.desceram ?? -1) || prop(b) - prop(a)
+        ? semEvolucao(b) - semEvolucao(a) || prop(b) - prop(a)
         : prop(b) - prop(a) || b.emDesenvolvimento - a.emDesenvolvimento || a.nome.localeCompare(b.nome, "pt-BR"),
   );
 }
@@ -148,19 +148,24 @@ function BarraProporcao({ parte, total, rotulo }: { parte: number; total: number
   );
 }
 
-function Evolucao({ subiram, desceram }: { subiram: number | null | undefined; desceram: number | null | undefined }) {
+// Linguagem de RH: só "evoluiu" ou "não houve evolução". Nunca "caiu", "desceu" ou "redução".
+function semEvolucao(i: { subiram?: number | null; comparaveis?: number | null }) {
+  if (i.subiram === null || i.subiram === undefined || !i.comparaveis) return -1;
+  return Math.max(0, i.comparaveis - i.subiram);
+}
+
+function Evolucao({ subiram, comparaveis }: { subiram: number | null | undefined; comparaveis: number | null | undefined }) {
   if (subiram === null || subiram === undefined) return <span style={{ fontSize: 13, color: C.secundario }}>evolução: poucas medições</span>;
+  const sem = Math.max(0, (comparaveis ?? 0) - subiram);
   return (
     <span style={{ display: "inline-flex", gap: 12, fontSize: 14, whiteSpace: "nowrap" }}>
-      <span style={{ color: C.positivo, fontWeight: 700 }}>▲ {subiram} {subiram === 1 ? "subiu" : "subiram"}</span>
-      <span style={{ color: (desceram ?? 0) > 0 ? C.atencao : C.secundario, fontWeight: (desceram ?? 0) > 0 ? 700 : 400 }}>
-        ▼ {desceram} {desceram === 1 ? "desceu" : "desceram"}
-      </span>
+      <span style={{ color: C.positivo, fontWeight: 700 }}>▲ {subiram} {subiram === 1 ? "evoluiu" : "evoluíram"}</span>
+      <span style={{ color: C.secundario }}>{sem} sem evolução</span>
     </span>
   );
 }
 
-// Lista compacta: nome · necessidade (barra + "X de Y em desenvolvimento") · evolução (▲ ▼). Mostra os primeiros e "Ver todos".
+// Lista compacta: nome · necessidade (barra + "X de Y em desenvolvimento") · evolução (evoluíram / sem evolução). Mostra os primeiros e "Ver todos".
 function ListaPrioridades({ itens, limite = 5, comEvolucao = true, comMotivo = false, vazio }: { itens: any[]; limite?: number; comEvolucao?: boolean; comMotivo?: boolean; vazio: string }) {
   const [todos, setTodos] = useState(false);
   if (!itens.length) return <div style={{ fontSize: 15, color: C.secundario, padding: "8px 0" }}>{vazio}</div>;
@@ -173,7 +178,7 @@ function ListaPrioridades({ itens, limite = 5, comEvolucao = true, comMotivo = f
             <div style={{ fontWeight: 600, fontSize: 15 }}>{i.nome}</div>
             {comMotivo && i.motivo && (
               // Só a recomendação: a contagem já aparece na barra ao lado.
-              <div style={{ fontSize: 13, color: (i.desceram ?? 0) > (i.subiram ?? 0) ? C.atencao : C.secundario, fontWeight: 600 }}>{String(i.motivo).split(". ").pop()}</div>
+              <div style={{ fontSize: 13, color: C.secundario, fontWeight: 600 }}>{String(i.motivo).split(". ").pop()}</div>
             )}
           </div>
           <div style={{ flex: "2 1 220px", display: "flex", flexDirection: "column", gap: 4 }}>
@@ -187,7 +192,7 @@ function ListaPrioridades({ itens, limite = 5, comEvolucao = true, comMotivo = f
           </div>
           {comEvolucao && (
             <div style={{ flex: "1 1 180px", textAlign: "right" }}>
-              <Evolucao subiram={i.subiram} desceram={i.desceram} />
+              <Evolucao subiram={i.subiram} comparaveis={i.comparaveis} />
             </div>
           )}
         </div>
@@ -268,17 +273,16 @@ function ListaResultado({ itens, limite = 99 }: { itens: any[]; limite?: number 
                   borderRadius: 999,
                   fontSize: 13,
                   fontWeight: 700,
-                  background: d > 0 ? C.tealFundo : d < 0 ? C.focoFundo : C.linhaSuave,
-                  color: d > 0 ? C.positivo : d < 0 ? C.atencao : C.secundario,
+                  background: d > 0 ? C.tealFundo : C.linhaSuave,
+                  color: d > 0 ? C.positivo : C.secundario,
                 }}
               >
-                {d > 0 ? `+${d}` : d < 0 ? `−${Math.abs(d)}` : "="}
+                {d > 0 ? `+${d}` : "="}
               </span>
             </div>
             <div style={{ flex: "0 0 auto", marginLeft: "auto", fontSize: 13, whiteSpace: "nowrap" }}>
-              <span style={{ color: C.positivo, fontWeight: 700 }}>▲ {e.subiram} subiram</span>{" "}
-              <span style={{ color: C.secundario }}>= {e.mantiveram} mantiveram</span>{" "}
-              <span style={{ color: e.desceram > 0 ? C.atencao : C.secundario, fontWeight: e.desceram > 0 ? 700 : 400 }}>▼ {e.desceram} desceram</span>
+              <span style={{ color: C.positivo, fontWeight: 700 }}>▲ {e.subiram} {e.subiram === 1 ? "evoluiu" : "evoluíram"}</span>{" "}
+              <span style={{ color: C.secundario }}>{e.mantiveram + e.desceram} sem evolução</span>
             </div>
           </div>
         );
@@ -375,9 +379,9 @@ export function RelatorioFimCiclo() {
   );
 
   const textoSobem = (destaques: any) =>
-    destaques.sobem.length ? destaques.sobem.map((d: any) => `${d.nome} (${d.subiram} de ${d.comparaveis} subiram)`).join(" e ") : null;
+    destaques.sobem.length ? destaques.sobem.map((d: any) => `${d.nome} (${d.subiram} de ${d.comparaveis} evoluíram)`).join(" e ") : null;
   const textoCaem = (destaques: any) =>
-    destaques.caem.length ? destaques.caem.map((d: any) => `${d.nome} (${d.desceram} de ${d.comparaveis} desceram)`).join(" e ") : null;
+    destaques.caem.length ? destaques.caem.map((d: any) => `${d.nome} (${d.comparaveis - (d.subiram ?? 0)} de ${d.comparaveis} sem evolução)`).join(" e ") : null;
 
   return (
     <div style={{ fontFamily: FONTE_TEXTO, color: C.texto, background: C.fundo, borderRadius: 20 }}>
@@ -588,7 +592,7 @@ export function RelatorioFimCiclo() {
         {/* Bloco 2 — Resultado geral: quanto evoluímos, onde evoluímos e o que desenvolver */}
         <Secao titulo="Resultado geral" subtitulo="Se cada eixo e cada competência cresceu, e as prioridades para o próximo ciclo." id="resultado">
           <p style={{ margin: 0, fontSize: 15, color: C.corpo }}>
-            Cada eixo e cada competência comparado com ele mesmo: <strong>empregados na expectativa de desenvolvimento antes → depois</strong>, de quantos têm as duas medições. Cada empregado subiu, manteve ou desceu de conceito: ▲ + = + ▼ somam o total.
+            Cada eixo e cada competência comparado com ele mesmo: <strong>empregados na expectativa de desenvolvimento antes → depois</strong>, de quantos têm as duas medições. Cada empregado evoluiu de conceito (▲) ou não houve evolução; os dois somam o total.
           </p>
           <Grade min={420} gap={16}>
             <article style={{ border: `1px solid ${C.borda}`, borderRadius: 16, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -687,12 +691,12 @@ export function RelatorioFimCiclo() {
                 ))}
               {textoSobem(comp.destaques) && (
                 <li>
-                  <strong>Competências que mais subiram:</strong> {textoSobem(comp.destaques)}.
+                  <strong>Competências com mais evolução:</strong> {textoSobem(comp.destaques)}.
                 </li>
               )}
               {textoCaem(comp.destaques) && (
                 <li>
-                  <strong>Competências que mais desceram:</strong> {textoCaem(comp.destaques)}.
+                  <strong>Competências em que a maioria não evoluiu:</strong> {textoCaem(comp.destaques)}.
                 </li>
               )}
             </ul>
@@ -719,9 +723,6 @@ export function RelatorioFimCiclo() {
                   <div style={{ fontSize: 14, color: C.secundario }}>
                     Técnico: {tec.grupos[g]} resultados · Comportamental: {comp.grupos[g]} resultados
                   </div>
-                  {g === "MANTEVE" && tec.classes.ATENCAO + comp.classes.ATENCAO > 0 && (
-                    <div style={{ fontSize: 13, color: C.secundario }}>{tec.classes.ATENCAO + comp.classes.ATENCAO} resultados com atenção: desceram de conceito, mas seguem na expectativa</div>
-                  )}
                   {g === "ABAIXO" && tec.classes.ABAIXO_NOVA + comp.classes.ABAIXO_NOVA > 0 && (
                     <div style={{ fontSize: 13, color: C.secundario }}>{tec.classes.ABAIXO_NOVA + comp.classes.ABAIXO_NOVA} resultados estavam na expectativa e pedem novo foco</div>
                   )}
@@ -840,8 +841,8 @@ export function RelatorioFimCiclo() {
                     <div style={{ flex: "0 0 190px", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, fontSize: 14 }}>
                       {e.comparaveis > 0 && (
                         <>
-                          <span style={{ color: C.positivo, fontWeight: 700 }}>{cont(e.subiram, "subiu", "subiram")} de conceito</span>
-                          <span style={{ color: e.desceram > 0 ? C.atencao : C.secundario, fontWeight: e.desceram > 0 ? 700 : 400 }}>{cont(e.desceram, "desceu", "desceram")}</span>
+                          <span style={{ color: C.positivo, fontWeight: 700 }}>{cont(e.subiram, "evoluiu", "evoluíram")} de conceito</span>
+                          <span style={{ color: C.secundario }}>{e.comparaveis - e.subiram} sem evolução</span>
                         </>
                       )}
                     </div>
@@ -1062,7 +1063,7 @@ export function RelatorioFimCiclo() {
         >
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", justifyContent: "space-between" }}>
             <p style={{ margin: 0, fontSize: 14, color: C.corpo, maxWidth: 680 }}>
-              <strong>Necessidade</strong>: quantas pessoas estão no conceito Em Desenvolvimento. <strong>Evolução</strong>: quantas subiram ou desceram de conceito entre as duas medições. Um item pode ter muitos avanços e ainda precisar de ações.
+              <strong>Necessidade</strong>: quantas pessoas estão no conceito Em Desenvolvimento. <strong>Evolução</strong>: quantas evoluíram de conceito entre as duas medições e em quantas não houve evolução. Um item pode ter muitos avanços e ainda precisar de ações.
             </p>
             <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, fontWeight: 600, color: C.secundario }}>
               Ordenar por
@@ -1110,7 +1111,7 @@ export function RelatorioFimCiclo() {
                     </div>
                   ) : (
                     <div key={g.titulo} style={{ padding: "12px 16px", borderRadius: 12, background: C.cinzaClaro, fontSize: 15, color: C.corpo }}>
-                      <strong>{g.titulo}:</strong> nenhum com pessoas no conceito Em Desenvolvimento ou com mais quedas do que avanços.
+                      <strong>{g.titulo}:</strong> nenhum com pessoas no conceito Em Desenvolvimento ou em que a maioria não evoluiu.
                     </div>
                   ),
                 )}
@@ -1142,12 +1143,12 @@ export function RelatorioFimCiclo() {
         </Secao>
 
         {/* Bloco 7 — Quanto investimos onde mais crescemos */}
-        <Secao titulo="Quanto investimos onde mais crescemos" subtitulo="Ações do PDI concluídas no ciclo, comparadas a quantos empregados subiram de conceito." id="investimento">
+        <Secao titulo="Quanto investimos onde mais crescemos" subtitulo="Ações do PDI concluídas no ciclo, comparadas a quantos empregados evoluíram de conceito." id="investimento">
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse", fontSize: 15, fontVariantNumeric: "tabular-nums" }}>
               <thead>
                 <tr style={{ textAlign: "left", color: C.secundario, fontSize: 13 }}>
-                  {["Eixo ou competência", "Empregados com as duas medições", "Subiram de conceito", "Desceram", "Com ação no PDI", "Concluíram a ação", "Ações concluídas"].map((h, i) => (
+                  {["Eixo ou competência", "Empregados com as duas medições", "Evoluíram de conceito", "Sem evolução", "Com ação no PDI", "Concluíram a ação", "Ações concluídas"].map((h, i) => (
                     <th key={h} style={{ padding: "10px 12px", fontWeight: 600, borderBottom: `1px solid ${C.borda}`, textAlign: i >= 2 ? "right" : "left" }}>
                       {h}
                     </th>
@@ -1167,7 +1168,7 @@ export function RelatorioFimCiclo() {
                       </td>
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}` }}>{l.pessoas}</td>
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right", fontWeight: 700, color: C.positivo }}>{l.subiram}</td>
-                      <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right", color: l.desceram > 0 ? C.atencao : C.secundario }}>{l.desceram}</td>
+                      <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right", color: C.secundario }}>{Math.max(0, l.pessoas - l.subiram)}</td>
                       <td style={{ padding: "14px 12px", borderBottom: `1px solid ${C.linhaSuave}`, textAlign: "right" }}>
                         {l.comPlano ?? "—"} de {l.pessoas}
                       </td>
@@ -1222,10 +1223,10 @@ export function RelatorioFimCiclo() {
               <strong>Ponto de partida</strong> é a primeira medição de cada avaliação. Só existe evolução quando há uma nova medição para comparar; a primeira medição não conta como evolução.
             </p>
             <p style={{ margin: 0 }}>
-              <strong>Subiu, manteve ou desceu</strong> compara o conceito anterior com o atual, sempre sobre as mesmas avaliações (as que têm as duas medições).
+              <strong>Evoluiu ou não houve evolução</strong> compara o conceito anterior com o atual, sempre sobre as mesmas avaliações (as que têm as duas medições). Quando o conceito é o mesmo ou menor, a leitura é sempre "não houve evolução".
             </p>
             <p style={{ margin: 0 }}>
-              <strong>Classificações:</strong> já na expectativa e manteve; atenção (desceu de conceito, mas segue na expectativa); chegou à expectativa neste ciclo; Em Desenvolvimento; primeira medição; aguardando medição.
+              <strong>Classificações:</strong> já estava na expectativa; chegou à expectativa neste ciclo; Em Desenvolvimento; primeira medição; aguardando medição.
             </p>
             <p style={{ margin: 0 }}>
               <strong>Amostra pequena</strong> marca eixos com menos de {r.parametros.amostraMinima} pessoas com as duas medições; esses resultados não entram em destaques nem sínteses.

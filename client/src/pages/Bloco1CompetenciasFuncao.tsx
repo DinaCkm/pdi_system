@@ -25,15 +25,15 @@ const relacaoLabel: Record<string, string> = {
 
 const evolucaoLabel: Record<string, string> = {
   EVOLUCAO: "Evolução",
-  ESTABILIDADE: "Estabilidade",
-  REDUCAO: "Redução",
+  ESTABILIDADE: "Não houve evolução",
+  REDUCAO: "Não houve evolução",
   SEM_COMPARACAO: "Sem comparação",
 };
 
 const evolucaoConceitualLabel: Record<string, string> = {
   EVOLUCAO: "Desenvolvimento relevante",
-  CONSOLIDACAO: "Conhecimento mantido",
-  OPORTUNIDADE_DESENVOLVIMENTO: "Oportunidade de desenvolvimento",
+  CONSOLIDACAO: "Não houve evolução",
+  OPORTUNIDADE_DESENVOLVIMENTO: "Não houve evolução",
   SEM_COMPARACAO: "Sem comparação",
 };
 
@@ -380,7 +380,7 @@ export default function Bloco1CompetenciasFuncao() {
           nome: item.eixoNome,
           tipo: "Técnica",
           intensidade: Math.max(12, Math.abs(delta ?? 0)),
-          motivo: "Houve redução suficiente para alterar o nível de conhecimento entre os ciclos.",
+          motivo: "Não houve evolução entre os ciclos; recomenda-se retomar o desenvolvimento deste conhecimento no próximo PDI.",
         });
       } else if (essencial && item.novaCompetencia && atual === null) {
         focos.push({
@@ -447,7 +447,7 @@ export default function Bloco1CompetenciasFuncao() {
           nome: item.competenciaNome,
           tipo: "Comportamental",
           intensidade: Math.max(12, Math.abs(deltaNorm ?? 0)),
-          motivo: "Houve redução suficiente para alterar o nível observado entre os ciclos.",
+          motivo: "Não houve evolução entre os ciclos; recomenda-se retomar o desenvolvimento desta competência no próximo PDI.",
         });
       }
     }
@@ -627,7 +627,7 @@ export default function Bloco1CompetenciasFuncao() {
             {sinteseAberta && (
               <div className="bg-gradient-to-b from-[#F8F6FC] via-white to-[#F2FBFC] p-4 md:p-7">
                 <div className="mb-5 rounded-2xl border border-violet-100 bg-white/80 p-4 text-sm text-slate-600">
-                  <strong className="text-slate-800">Como ler:</strong> os gráficos não apresentam notas ou percentuais. “Força da Evolução” destaca crescimentos relevantes. “Potencialidades” mostra conhecimentos demonstrados além dos Essenciais, mesmo quando não houve evolução entre ciclos. “Pontos de Foco” considera necessidades reais de desenvolvimento: conhecimento Essencial ainda não consolidado ou redução suficiente para mudar de nível. Manter um conhecimento já consolidado, avançado ou de referência não gera foco automaticamente.
+                  <strong className="text-slate-800">Como ler:</strong> os gráficos não apresentam notas ou percentuais. “Força da Evolução” destaca crescimentos relevantes. “Potencialidades” mostra conhecimentos demonstrados além dos Essenciais, mesmo quando não houve evolução entre ciclos. “Pontos de Foco” considera necessidades reais de desenvolvimento: conhecimento Essencial ainda não consolidado ou conhecimento em que não houve evolução e o nível atual pede desenvolvimento. Manter um conhecimento já consolidado, avançado ou de referência não gera foco automaticamente.
                 </div>
                 <div className="grid gap-5 xl:grid-cols-2">
                   <GraficoVisual
@@ -656,7 +656,7 @@ export default function Bloco1CompetenciasFuncao() {
                   />
                   <GraficoVisual
                     titulo="Pontos de Foco para o Próximo PDI"
-                    descricao="Conhecimentos e competências que ainda precisam ser fortalecidos ou que apresentaram uma redução relevante de nível."
+                    descricao="Conhecimentos e competências que ainda precisam ser fortalecidos ou em que não houve evolução entre os ciclos."
                     itens={sintese.focos}
                     accent={ECO.roxoClaro}
                     icon={Target}
@@ -1165,7 +1165,7 @@ export default function Bloco1CompetenciasFuncao() {
               <p><strong>Sinalização Umanni:</strong> os relatórios enviados utilizam luzes/barras por faixa. A leitura visual reproduz essa lógica: laranja abaixo de 50% da escala, amarelo de 50% até antes de 70% e verde a partir de 70%. Ao expandir a competência, empregado, gestor e administrador visualizam os resultados originais recebidos da Umanni.</p>
               <p><strong>Leitura:</strong> a interface prioriza conceitos de conhecimento e desenvolvimento. Os resultados originais da Umanni ficam disponíveis a todos os perfis na competência comportamental; a memória de cálculo técnica permanece restrita ao administrador.</p>
               <p><strong>Potencialidades:</strong> conhecimentos dos eixos Não essenciais aparecem quando há conhecimento demonstrado, independentemente de ter havido crescimento entre ciclos.</p>
-              <p><strong>Pontos de Foco:</strong> estabilidade, por si só, não gera foco. Nos conhecimentos técnicos, entram os Essenciais e Transversais ainda em desenvolvimento ou que tenham sofrido queda suficiente para mudar de nível. Nas competências comportamentais, o foco considera nível atual que ainda exige desenvolvimento ou queda conceitual relevante.</p>
+              <p><strong>Pontos de Foco:</strong> manter o mesmo nível, por si só, não gera foco. Nos conhecimentos técnicos, entram os Essenciais e Transversais ainda em desenvolvimento ou em que não houve evolução entre os ciclos. Nas competências comportamentais, o foco considera nível atual que ainda exige desenvolvimento ou em que não houve evolução entre os ciclos.</p>
               <p><strong>DISC:</strong> não participa do cálculo atual; fica reservado para funcionalidade futura.</p>
             </CardContent>
           </Card>

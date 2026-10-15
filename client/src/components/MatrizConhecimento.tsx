@@ -369,7 +369,7 @@ function Detalhe({ l, colunas, ad }: { l: any; colunas: any; ad: any }) {
 
 // ---------- Matriz Unidade × Eixo (aba só administradores) ----------
 // Célula = conceito que pelo menos metade da unidade alcançou no eixo (quem tem o eixo como
-// Essencial ou Transversal) + setas de quantos subiram e desceram de conceito. Clique abre as pessoas.
+// Essencial ou Transversal) + quantos evoluíram de conceito (nunca "desceu": só evoluiu ou não houve evolução). Clique abre as pessoas.
 
 const ROTULO_CURTO: Record<Conceito, string> = {
   EM_DESENVOLVIMENTO: "Em Desenv.",
@@ -427,7 +427,7 @@ const sigla = (u: string) => nomeArea(u).split(" · ")[0];
 
 type Celula =
   | { aplica: false; potencial: number }
-  | { aplica: true; n: number; medidas: number; conceito: Conceito | null; conceitoAntes: Conceito | null; subiram: number; desceram: number; naExpectativa: number; semPlano: number; potencial: number };
+  | { aplica: true; n: number; medidas: number; conceito: Conceito | null; conceitoAntes: Conceito | null; subiram: number; desceram: number; semEvolucao: number; naExpectativa: number; semPlano: number; potencial: number };
 
 export function MatrizEmpregados() {
   const [publico, setPublico] = useState<Publico>("TODOS");
@@ -460,6 +460,7 @@ export function MatrizEmpregados() {
         conceitoAntes: conceitoDaMetade(cs.filter((c) => c.antes).map((c) => c.antes)),
         subiram: ambos.filter((c) => nivel(c.depois) > nivel(c.antes)).length,
         desceram: ambos.filter((c) => nivel(c.depois) < nivel(c.antes)).length,
+        semEvolucao: ambos.filter((c) => nivel(c.depois) <= nivel(c.antes)).length,
         naExpectativa: med.filter((c) => c.depois !== "EM_DESENVOLVIMENTO").length,
         semPlano: cs.filter((c) => situacaoDe(c) === "SEM_PLANO").length,
         potencial,
@@ -489,7 +490,7 @@ export function MatrizEmpregados() {
     if (queda && queda.c.desceram + queda.c.semPlano > 0) {
       riscos.push({
         titulo: `${queda.eixo} · ${sigla(queda.unidade)}`,
-        texto: [queda.c.desceram ? `${queda.c.desceram} ${queda.c.desceram === 1 ? "desceu" : "desceram"} de conceito` : "", queda.c.semPlano ? `${queda.c.semPlano} sem plano` : ""].filter(Boolean).join(" e ") + ".",
+        texto: [queda.c.desceram ? `${queda.c.semEvolucao} sem evolução de conceito` : "", queda.c.semPlano ? `${queda.c.semPlano} sem plano` : ""].filter(Boolean).join(" e ") + ".",
         tipo: "alerta",
         alvo: { unidade: queda.unidade, eixo: queda.eixo },
       });
@@ -637,12 +638,8 @@ export function MatrizEmpregados() {
                               >
                                 <span style={{ fontSize: 13, fontWeight: 700 }}>{cel.conceito ? ROTULO_CURTO[cel.conceito] : "aguardando"}</span>
                                 <span style={{ fontSize: 11, fontWeight: 600 }}>
-                                  {cel.subiram || cel.desceram ? (
-                                    <>
-                                      {cel.subiram ? `▲ ${cel.subiram}` : ""}
-                                      {cel.subiram && cel.desceram ? "  " : ""}
-                                      {cel.desceram ? `▼ ${cel.desceram}` : ""}
-                                    </>
+                                  {cel.subiram ? (
+                                    `▲ ${cel.subiram} ${cel.subiram === 1 ? "evoluiu" : "evoluíram"}`
                                   ) : (
                                     `${cel.n} ${cel.n === 1 ? "pessoa" : "pessoas"}`
                                   )}
@@ -660,7 +657,7 @@ export function MatrizEmpregados() {
               <div style={{ fontSize: 15, color: C.secundario }}>Nenhum eixo deste tipo com esses filtros.</div>
             )}
             <p style={{ margin: 0, fontSize: 13, color: C.secundario }}>
-              Cada célula: conceito que pelo menos metade das pessoas da unidade com o {tipo === "COMP" ? "competência" : "eixo Essencial ou Transversal"} alcançou em {anoAtual}; ▲ quantas subiram e ▼ quantas desceram de conceito desde {anoBase}. Clique para ver as pessoas.
+              Cada célula: conceito que pelo menos metade das pessoas da unidade com o {tipo === "COMP" ? "competência" : "eixo Essencial ou Transversal"} alcançou em {anoAtual}; ▲ quantas evoluíram de conceito desde {anoBase}. Clique para ver as pessoas.
             </p>
           </section>
 
