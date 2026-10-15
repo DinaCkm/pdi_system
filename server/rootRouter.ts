@@ -10,6 +10,7 @@ import { aplicacoesProficienciaRouter } from "./routers/aplicacoesProficiencia";
 import { evolucaoProficienciaRouter } from "./routers/evolucaoProficiencia";
 import { homologacaoProvasRouter } from "./routers/homologacaoProvas";
 import { evolucaoCicloRouter } from "./routers/evolucaoCiclo";
+import { relatorioEmpregadoRouter } from "./routers/relatorioEmpregado";
 import { mergeRouters, router } from "./_core/customTrpc";
 
 const avaliacoesRootRouter = router({
@@ -24,6 +25,7 @@ const avaliacoesRootRouter = router({
   evolucaoProficiencia: evolucaoProficienciaRouter,
   homologacaoProvas: homologacaoProvasRouter,
   evolucaoCiclo: evolucaoCicloRouter,
+  relatorioEmpregado: relatorioEmpregadoRouter,
 });
 
 export const rootRouter = mergeRouters(appRouter, avaliacoesRootRouter);

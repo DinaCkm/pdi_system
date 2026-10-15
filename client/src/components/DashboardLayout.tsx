@@ -80,6 +80,7 @@ const getMenuItems = (userRole: string) => {
       { icon: Building2, label: "Departamentos", path: "/departamentos", section: "pessoas" },
       { icon: Target, label: "Funções Organizacionais", path: "/funcoes-organizacionais", section: "pessoas" },
       { icon: TrendingUp, label: "Evolução Individual", path: "/bloco1-competencias-funcao", section: "desenvolvimento" },
+      { icon: FileText, label: "Relatório do Empregado", path: "/relatorio-empregado", section: "desenvolvimento" },
       { icon: FileText, label: "Questionário de Atividades", path: "/questionario-atividades-funcao", section: "desenvolvimento" },
       { icon: Lock, label: "Controle de Execução do PDI", path: "/controle-execucao", section: "pessoas" },
 
@@ -108,6 +109,7 @@ const getMenuItems = (userRole: string) => {
       { icon: Send, label: "Minhas Solicitações de Ação", path: "/solicitacoes-acoes?aba=minhas" },
       { icon: Target, label: "PDIs da Equipe", path: "/pdis-equipe" },
       { icon: TrendingUp, label: "Evolução Individual", path: "/bloco1-competencias-funcao" },
+      { icon: FileText, label: "Relatório do Empregado", path: "/relatorio-empregado" },
       { icon: Target, label: "Meus Eixos Técnicos", path: "/meus-eixos-tecnicos" },
       { icon: CheckSquare, label: "Ações da Equipe", path: "/acoes-equipe" },
       { icon: MessageSquarePlus, label: "Solicitações de Ajustes nas Ações/Equipe", path: "/solicitacoes-equipe" },
@@ -123,6 +125,7 @@ const getMenuItems = (userRole: string) => {
       { icon: FileText, label: "PDIs", path: "/pdis" },
       { icon: CheckSquare, label: "Ações", path: "/acoes" },
       { icon: TrendingUp, label: "Evolução Individual", path: "/bloco1-competencias-funcao" },
+      { icon: FileText, label: "Relatório do Empregado", path: "/relatorio-empregado" },
       { icon: Target, label: "Meus Eixos Técnicos", path: "/meus-eixos-tecnicos" },
       { icon: ClipboardCheck, label: "Gestão de Ações e Evidências", path: "/gestao-gerente" },
       { icon: History, label: "Histórico de Alterações", path: "/solicitacoes-admin" },

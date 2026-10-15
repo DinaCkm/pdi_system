@@ -19,6 +19,7 @@ import Competencias from "./pages/Competencias";
 import Departamentos from "./pages/Departamentos";
 import FuncoesOrganizacionais from "./pages/FuncoesOrganizacionais";
 import Bloco1CompetenciasFuncao from "./pages/Bloco1CompetenciasFuncao";
+import RelatorioEmpregado, { RelatorioEmpregadoImprimir } from "./pages/RelatorioEmpregado";
 import QuestionarioAtividadesFuncao from "./pages/QuestionarioAtividadesFuncao";
 import MeuQuestionarioAtividades from "./pages/MeuQuestionarioAtividades";
 import Ciclos from "./pages/Ciclos";
@@ -97,6 +98,8 @@ function Router() {
       <Route path={"/departamentos"}><DashboardLayout><Departamentos /></DashboardLayout></Route>
       <Route path={"/funcoes-organizacionais"}><DashboardLayout><FuncoesOrganizacionais /></DashboardLayout></Route>
       <Route path={"/bloco1-competencias-funcao"}><DashboardLayout><Bloco1CompetenciasFuncao /></DashboardLayout></Route>
+      <Route path={"/relatorio-empregado"}><DashboardLayout><RelatorioEmpregado /></DashboardLayout></Route>
+      <Route path={"/relatorio-empregado/:id/imprimir"}>{(params) => <RelatorioEmpregadoImprimir id={params.id} />}</Route>
       <Route path={"/questionario-atividades-funcao"}><DashboardLayout><QuestionarioAtividadesFuncao /></DashboardLayout></Route>
       <Route path={"/meu-questionario-atividades"}><DashboardLayout><MeuQuestionarioAtividades /></DashboardLayout></Route>
       <Route path={"/ciclos"}><DashboardLayout><Ciclos /></DashboardLayout></Route>
