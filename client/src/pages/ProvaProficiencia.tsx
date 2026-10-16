@@ -19,6 +19,10 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const [, setLocation] = useLocation();
   const [indice, setIndice] = useState(0);
   const [confirmandoFinalizacao, setConfirmandoFinalizacao] = useState(false);
+  const [prazoFinalMs, setPrazoFinalMs] = useState<number | null>(null);
+  const [agoraMs, setAgoraMs] = useState(() => Date.now());
+  const avisosTempoRef = useRef<Set<number>>(new Set());
+  const encerrandoPorTempoRef = useRef(false);
   const [respostas, setRespostas] = useState<Record<string, string>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [finalizada, setFinalizada] = useState(false);
@@ -94,12 +98,19 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   });
 
   const finalizarMutation = trpc.aplicacoesProficiencia.finalizar.useMutation({
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       setFinalizada(true);
-      setMensagem(null);
+      setMensagem(data?.porTempo ? "O tempo máximo de 3 horas terminou. A avaliação foi encerrada com as respostas registradas." : null);
       void provaQuery.refetch();
     },
-    onError: error => setMensagem(error.message),
+    onError: error => {
+      setMensagem(error.message);
+      if (encerrandoPorTempoRef.current) {
+        // O relógio do servidor é a referência: ressincroniza o tempo restante.
+        encerrandoPorTempoRef.current = false;
+        void provaQuery.refetch();
+      }
+    },
   });
 
   useEffect(() => {
@@ -322,6 +333,9 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
     for (const item of provaQuery.data.respostas ?? []) existentes[String(item.questaoChave)] = String(item.resposta);
     setRespostas(existentes);
 
+    const restanteServidor = (provaQuery.data as any).tempoRestanteSegundos;
+    setPrazoFinalMs(typeof restanteServidor === "number" ? Date.now() + restanteServidor * 1000 : null);
+
     const statusTentativa = String(provaQuery.data.tentativaStatus ?? "");
     if (["FINALIZADA", "FINALIZADA_TEMPO"].includes(statusTentativa)) {
       setFinalizada(true);
@@ -471,6 +485,33 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const questoes = (provaQuery.data?.prova?.questoes ?? []) as Questao[];
   const questao = questoes[indice];
   const tentativaId = Number(provaQuery.data?.tentativaId ?? 0);
+
+  // Limite de 3 horas: o servidor informa o tempo restante e encerra por tempo; a tela só mostra e avisa.
+  useEffect(() => {
+    if (prazoFinalMs === null || finalizada || bloqueada) return;
+    const timer = window.setInterval(() => setAgoraMs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [prazoFinalMs, finalizada, bloqueada]);
+  const segundosRestantes = prazoFinalMs === null ? null : Math.max(0, Math.ceil((prazoFinalMs - agoraMs) / 1000));
+  useEffect(() => {
+    if (segundosRestantes === null || finalizada || bloqueada || !tentativaId) return;
+    for (const minutos of [30, 10, 5]) {
+      if (segundosRestantes <= minutos * 60 && segundosRestantes > 0 && !avisosTempoRef.current.has(minutos)) {
+        avisosTempoRef.current.add(minutos);
+        setMensagem(`Atenção: restam ${minutos} minutos para o fim do tempo máximo de 3 horas. Ao terminar o tempo, a avaliação será encerrada com as respostas registradas.`);
+      }
+    }
+    if (segundosRestantes === 0 && !encerrandoPorTempoRef.current) {
+      encerrandoPorTempoRef.current = true;
+      setConfirmandoFinalizacao(false);
+      finalizarMutation.mutate({ aplicacaoId, tentativaId });
+    }
+  }, [segundosRestantes, finalizada, bloqueada, tentativaId]);
+  const tempoFormatado = segundosRestantes === null ? null : [
+    Math.floor(segundosRestantes / 3600),
+    Math.floor((segundosRestantes % 3600) / 60),
+    segundosRestantes % 60,
+  ].map((parte, i) => (i === 0 ? String(parte) : String(parte).padStart(2, "0"))).join(":");
   const iniciou = tentativaId > 0;
   const totalRespondidas = useMemo(() => questoes.filter(item => Boolean(respostas[String(item.id)])).length, [questoes, respostas]);
   const percentual = questoes.length ? Math.round((totalRespondidas / questoes.length) * 100) : 0;
@@ -1073,7 +1114,8 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
                   <p><strong>5. Interrupções:</strong> interromper câmera, microfone ou compartilhamento de tela gera ocorrência para análise administrativa.</p>
                   <p><strong>6. Conteúdo protegido:</strong> é proibido copiar, imprimir, capturar ou fotografar as questões, inclusive com celular. A câmera permanece ativa e o registro fica disponível para auditoria.</p>
                   <p><strong>7. Auditoria:</strong> a fotografia de identidade, os aceites e as ocorrências ficam vinculados à tentativa para conferência administrativa.</p>
-                  <p><strong>8. Finalização:</strong> ao finalizar a avaliação, a tentativa é encerrada e as respostas registradas são preservadas.</p>
+                  <p><strong>8. Tempo:</strong> o tempo máximo é de <strong>3 horas</strong>, contadas a partir do início da avaliação. O tempo restante fica visível na tela. Ao terminar o tempo, a avaliação é encerrada automaticamente com as respostas registradas. Períodos de bloqueio aguardando o administrador não contam.</p>
+                  <p><strong>9. Finalização:</strong> depois de responder todas as questões, você pode revisar e alterar as respostas dentro do tempo. A avaliação só é encerrada quando você clicar em <strong>FINALIZAR AVALIAÇÃO</strong> e confirmar, ou quando o tempo terminar.</p>
                 </div>
                 <div className="rounded-lg border-2 border-red-300 bg-red-50 p-4">
                   <label className="flex cursor-pointer items-start gap-3">
@@ -1159,7 +1201,14 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
           <CardHeader className="space-y-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div><CardTitle className="flex items-center gap-2"><ClipboardCheck className="h-6 w-6 text-blue-700" />{provaQuery.data.aplicacao.titulo}</CardTitle><CardDescription>{provaQuery.data.prova.nome} — {provaQuery.data.prova.unidade}</CardDescription></div>
-              <Badge variant="outline">{totalRespondidas} de {questoes.length} respondidas</Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                {tempoFormatado !== null && (
+                  <Badge variant={segundosRestantes !== null && segundosRestantes <= 600 ? "destructive" : "secondary"} className="text-sm">
+                    Tempo restante: {tempoFormatado}
+                  </Badge>
+                )}
+                <Badge variant="outline">{totalRespondidas} de {questoes.length} respondidas</Badge>
+              </div>
             </div>
             <div className="space-y-1"><div className="h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full bg-slate-700" style={{ width: `${percentual}%` }} /></div><p className="text-xs text-muted-foreground">{percentual}% concluído</p></div>
           </CardHeader>

@@ -99,6 +99,17 @@ async function dbObrigatorio() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `));
   await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS proficiencia_tentativa_pausas (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      tentativa_id INT NOT NULL,
+      inicio DATETIME NOT NULL,
+      fim DATETIME NOT NULL,
+      segundos INT NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX prof_pausa_tentativa_idx (tentativa_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `));
+  await db.execute(sql.raw(`
     CREATE TABLE IF NOT EXISTS proficiencia_questoes_anuladas (
       id INT AUTO_INCREMENT PRIMARY KEY,
       aplicacao_id INT NOT NULL,
@@ -117,6 +128,58 @@ async function dbObrigatorio() {
   `));
   return db;
 }
+
+// Tempo máximo de realização: 3 horas, contadas a partir do início da tentativa.
+// Períodos em que a tentativa ficou bloqueada (aguardando o administrador) não contam.
+const DURACAO_PROFICIENCIA_SEGUNDOS = 3 * 60 * 60;
+
+async function tempoRestanteTentativa(db: any, tentativaId: number) {
+  const linha = rowsOf<any>(await db.execute(sql`
+    SELECT t.status,
+           TIMESTAMPDIFF(SECOND, t.iniciada_em, NOW()) AS decorridos,
+           (SELECT COALESCE(SUM(p.segundos), 0) FROM proficiencia_tentativa_pausas p WHERE p.tentativa_id = t.id) AS pausados,
+           CASE WHEN t.status = 'BLOQUEADA'
+                THEN GREATEST(0, TIMESTAMPDIFF(SECOND, COALESCE(t.bloqueada_em, t.ultima_atividade_em), NOW()))
+                ELSE 0 END AS bloqueadoAgora
+      FROM tentativas_proficiencia t
+     WHERE t.id = ${tentativaId}
+     LIMIT 1
+  `))[0];
+  if (!linha) return null;
+  const usados = Math.max(0, Number(linha.decorridos ?? 0) - Number(linha.pausados ?? 0) - Number(linha.bloqueadoAgora ?? 0));
+  return { status: String(linha.status), restante: Math.max(0, DURACAO_PROFICIENCIA_SEGUNDOS - usados) };
+}
+
+// Encerra por tempo uma tentativa em andamento cujo limite de 3 horas acabou.
+// Não se aplica às aplicações de teste de homologação. Retorna true se encerrou.
+async function encerrarPorTempoSeEsgotado(db: any, aplicacaoId: number, tentativaId: number) {
+  if (await obterTestePorAplicacao(db, aplicacaoId)) return false;
+  const tempo = await tempoRestanteTentativa(db, tentativaId);
+  if (!tempo || tempo.status !== "EM_ANDAMENTO" || tempo.restante > 0) return false;
+  const tentativa = rowsOf<any>(await db.execute(sql`
+    SELECT colaborador_id AS colaboradorId FROM tentativas_proficiencia WHERE id = ${tentativaId} LIMIT 1
+  `))[0];
+  await db.transaction(async (tx: any) => {
+    await tx.execute(sql`
+      UPDATE tentativas_proficiencia
+         SET status = 'FINALIZADA_TEMPO', finalizada_em = NOW(), ultima_atividade_em = NOW()
+       WHERE id = ${tentativaId} AND status = 'EM_ANDAMENTO'
+    `);
+    await tx.execute(sql`
+      UPDATE aplicacoes_proficiencia_participantes
+         SET situacao = 'FINALIZADO'
+       WHERE aplicacao_id = ${aplicacaoId} AND colaborador_id = ${Number(tentativa?.colaboradorId ?? 0)}
+    `);
+    await tx.execute(sql`
+      INSERT INTO proficiencia_ocorrencias (aplicacao_id, tentativa_id, colaborador_id, tipo, detalhe)
+      VALUES (${aplicacaoId}, ${tentativaId}, ${Number(tentativa?.colaboradorId ?? 0)}, 'FINALIZADA_TEMPO',
+              'Tempo máximo de 3 horas encerrado. As respostas registradas foram preservadas.')
+    `);
+  });
+  return true;
+}
+
+const MENSAGEM_TEMPO_ENCERRADO = "O tempo máximo de 3 horas desta avaliação terminou. A avaliação foi encerrada com as respostas registradas.";
 
 async function obterProvaValidada(db: any, provaId: number) {
   const result = await db.execute(sql`
@@ -807,6 +870,13 @@ export const aplicacoesProficienciaRouter = router({
         });
       }
 
+      // Quem já esgotou as 3 horas tem a tentativa encerrada por tempo (e não fica como ausente).
+      const tentativasAbertas = rowsOf<any>(await db.execute(sql`
+        SELECT id FROM tentativas_proficiencia
+         WHERE aplicacao_id = ${input.aplicacaoId} AND status = 'EM_ANDAMENTO'
+      `));
+      for (const item of tentativasAbertas) await encerrarPorTempoSeEsgotado(db, input.aplicacaoId, Number(item.id));
+
       const emAndamentoResult = await db.execute(sql`
         SELECT COUNT(*) AS total
           FROM tentativas_proficiencia
@@ -1111,9 +1181,10 @@ export const aplicacoesProficienciaRouter = router({
       await db.transaction(async (tx: any) => {
         await tx.execute(sql`
           UPDATE tentativas_proficiencia
-             SET status = 'BLOQUEADA', ultima_atividade_em = NOW()
+             SET status = 'BLOQUEADA', bloqueada_em = NOW(), ultima_atividade_em = NOW()
            WHERE id = ${input.tentativaId}
              AND colaborador_id = ${ctx.user.id}
+             AND status <> 'BLOQUEADA'
         `);
         await tx.execute(sql`
           INSERT INTO proficiencia_ocorrencias
@@ -1157,6 +1228,14 @@ export const aplicacoesProficienciaRouter = router({
         : "Continuidade liberada pelo administrador.";
 
       await db.transaction(async (tx: any) => {
+        // O período bloqueado não conta no limite de 3 horas.
+        await tx.execute(sql`
+          INSERT INTO proficiencia_tentativa_pausas (tentativa_id, inicio, fim, segundos)
+          SELECT id, COALESCE(bloqueada_em, ultima_atividade_em), NOW(),
+                 GREATEST(0, TIMESTAMPDIFF(SECOND, COALESCE(bloqueada_em, ultima_atividade_em), NOW()))
+            FROM tentativas_proficiencia
+           WHERE id = ${input.tentativaId} AND aplicacao_id = ${input.aplicacaoId} AND status = 'BLOQUEADA'
+        `);
         await tx.execute(sql`
           UPDATE tentativas_proficiencia
              SET status = 'EM_ANDAMENTO', ultima_atividade_em = NOW()
@@ -1307,9 +1386,17 @@ export const aplicacoesProficienciaRouter = router({
     .input(z.object({ aplicacaoId: z.number().int().positive() }))
     .query(async ({ input, ctx }) => {
       const db = await dbObrigatorio();
-      const vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
+      let vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
       if (!["AGENDADA", "LIBERADA"].includes(String(vinculo.status)) && !vinculo.tentativaId) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Esta avaliação não está disponível para orientação ou início." });
+      }
+      let tempoRestanteSegundos: number | null = null;
+      if (vinculo.tentativaId) {
+        if (await encerrarPorTempoSeEsgotado(db, input.aplicacaoId, Number(vinculo.tentativaId))) {
+          vinculo = await obterVinculoParticipante(db, input.aplicacaoId, ctx.user.id);
+        }
+        const tempo = await tempoRestanteTentativa(db, Number(vinculo.tentativaId));
+        tempoRestanteSegundos = tempo ? tempo.restante : null;
       }
       const respostas = vinculo.tentativaId
         ? rowsOf<any>(await db.execute(sql`
@@ -1344,6 +1431,8 @@ export const aplicacoesProficienciaRouter = router({
         modoTeste: Boolean(testeAdmin),
         tentativaId: vinculo.tentativaId ? Number(vinculo.tentativaId) : null,
         tentativaStatus: vinculo.tentativaStatus ?? null,
+        tempoRestanteSegundos: testeAdmin ? null : tempoRestanteSegundos,
+        duracaoTotalSegundos: testeAdmin ? null : DURACAO_PROFICIENCIA_SEGUNDOS,
         orientacaoConcluida,
         prova: provaParaParticipante(vinculo.prova),
         respostas,
@@ -1530,6 +1619,9 @@ export const aplicacoesProficienciaRouter = router({
       }
       if (vinculo.tentativaId) {
         const tentativaId = Number(vinculo.tentativaId);
+        if (await encerrarPorTempoSeEsgotado(db, input.aplicacaoId, tentativaId)) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: MENSAGEM_TEMPO_ENCERRADO });
+        }
         const respostasRecuperadas = await registrarRetomadaAvaliacao(
           db,
           input.aplicacaoId,
@@ -1586,6 +1678,9 @@ export const aplicacoesProficienciaRouter = router({
       if (!tentativa || tentativa.status !== "EM_ANDAMENTO") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Esta tentativa não está disponível para respostas." });
       }
+      if (await encerrarPorTempoSeEsgotado(db, input.aplicacaoId, input.tentativaId)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: MENSAGEM_TEMPO_ENCERRADO });
+      }
       const aplicacao = await obterAplicacao(db, input.aplicacaoId);
       const questao = aplicacao.prova.questoes.find((item: QuestaoImportada) => String(item.id) === input.questaoChave);
       if (!questao) throw new TRPCError({ code: "BAD_REQUEST", message: "Questão não encontrada nesta prova." });
@@ -1617,6 +1712,9 @@ export const aplicacoesProficienciaRouter = router({
       const tentativa = rowsOf<any>(tentativaResult)[0];
       if (!tentativa || tentativa.status !== "EM_ANDAMENTO") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Esta tentativa não pode ser finalizada." });
+      }
+      if (await encerrarPorTempoSeEsgotado(db, input.aplicacaoId, input.tentativaId)) {
+        return { finalizada: true, porTempo: true };
       }
       const aplicacao = await obterAplicacao(db, input.aplicacaoId);
       const countResult = await db.execute(sql`
