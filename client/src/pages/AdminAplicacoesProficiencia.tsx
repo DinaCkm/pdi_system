@@ -767,7 +767,7 @@ export default function AdminAplicacoesProficiencia() {
                                     }}>LIBERAR INDIVIDUALMENTE</Button>
                                 )
                               )}
-                              {Number(item.liberacaoIndividual) === 1 && <Badge variant="secondary">Liberada individualmente</Badge>
+                              {Number(item.liberacaoIndividual) === 1 && <Badge variant="secondary">Liberada individualmente</Badge>}
                               <Button
                                 size="sm"
                                 variant="outline"
