@@ -112,6 +112,9 @@ export default function AdminAplicacoesProficiencia() {
   });
   const [identidadeColaboradorId, setIdentidadeColaboradorId] = useState<number | null>(null);
   const [filtroStatus, setFiltroStatus] = useState<string>("ATIVAS");
+  const [filtroTitulo, setFiltroTitulo] = useState("");
+  const [filtroProva, setFiltroProva] = useState("TODAS");
+  const [filtroData, setFiltroData] = useState("");
   const [modalAdicionarAberto, setModalAdicionarAberto] = useState(false);
   const [buscaAdicionar, setBuscaAdicionar] = useState("");
   const [selecionadosAdicionar, setSelecionadosAdicionar] = useState<number[]>([]);
@@ -266,12 +269,35 @@ export default function AdminAplicacoesProficiencia() {
     setSelecionadosAdicionar(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
   };
 
+  const provasDasAplicacoes = useMemo(() => {
+    const mapa = new Map<string, string>();
+    for (const item of (aplicacoesQuery.data ?? []) as any[]) {
+      const codigo = String(item.provaCodigo ?? "");
+      if (codigo && !mapa.has(codigo)) mapa.set(codigo, `${codigo} — ${item.provaUnidade ?? ""}`);
+    }
+    return Array.from(mapa.entries()).sort((a, b) => a[1].localeCompare(b[1], "pt-BR"));
+  }, [aplicacoesQuery.data]);
+
   const aplicacoesFiltradas = useMemo(() => {
-    const todas = (aplicacoesQuery.data ?? []) as any[];
-    if (filtroStatus === "TODAS") return todas;
-    if (filtroStatus === "ATIVAS") return todas.filter((item: any) => String(item.status) !== "CANCELADA");
-    return todas.filter((item: any) => String(item.status) === filtroStatus);
-  }, [aplicacoesQuery.data, filtroStatus]);
+    const normalizar = (valor: unknown) => String(valor ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const diaLocal = (valor: unknown) => {
+      const data = new Date(String(valor ?? ""));
+      if (Number.isNaN(data.getTime())) return "";
+      const p = (n: number) => String(n).padStart(2, "0");
+      return `${data.getFullYear()}-${p(data.getMonth() + 1)}-${p(data.getDate())}`;
+    };
+    const termo = normalizar(filtroTitulo.trim());
+    return ((aplicacoesQuery.data ?? []) as any[]).filter((item: any) => {
+      const status = String(item.status);
+      if (filtroStatus === "ATIVAS" && status === "CANCELADA") return false;
+      if (filtroStatus !== "ATIVAS" && filtroStatus !== "TODAS" && status !== filtroStatus) return false;
+      if (termo && !normalizar(item.titulo).includes(termo)) return false;
+      if (filtroProva !== "TODAS" && String(item.provaCodigo ?? "") !== filtroProva) return false;
+      if (filtroData && diaLocal(item.agendadaPara) !== filtroData) return false;
+      return true;
+    });
+  }, [aplicacoesQuery.data, filtroStatus, filtroTitulo, filtroProva, filtroData]);
+  const filtrosAtivos = filtroTitulo.trim() !== "" || filtroProva !== "TODAS" || filtroData !== "" || filtroStatus !== "ATIVAS";
 
   const provasValidas = useMemo(
     () => ((provasQuery.data ?? []) as any[]).filter((prova: any) => cicloId && Number(prova.cicloId) === Number(cicloId)),
@@ -491,9 +517,33 @@ export default function AdminAplicacoesProficiencia() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div><CardTitle>Aplicações cadastradas</CardTitle><CardDescription>Abra uma aplicação para liberar, acompanhar e calcular os resultados.</CardDescription></div>
             <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="search"
+              value={filtroTitulo}
+              onChange={event => setFiltroTitulo(event.target.value)}
+              placeholder="Buscar aplicação"
+              className="h-10 w-56 rounded-md border bg-background px-3 text-sm"
+              aria-label="Filtrar aplicações pelo nome"
+            />
+            <select
+              value={filtroProva}
+              onChange={event => setFiltroProva(event.target.value)}
+              className="h-10 max-w-[18rem] rounded-md border bg-background px-3 text-sm"
+              aria-label="Filtrar aplicações por prova"
+            >
+              <option value="TODAS">Todas as provas</option>
+              {provasDasAplicacoes.map(([codigo, rotulo]) => <option key={codigo} value={codigo}>{rotulo}</option>)}
+            </select>
+            <input
+              type="date"
+              value={filtroData}
+              onChange={event => setFiltroData(event.target.value)}
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+              aria-label="Filtrar aplicações pela data do agendamento"
+            />
             <select
               value={filtroStatus}
               onChange={event => setFiltroStatus(event.target.value)}
@@ -508,6 +558,9 @@ export default function AdminAplicacoesProficiencia() {
               <option value="CANCELADA">Canceladas</option>
               <option value="TODAS">Todas</option>
             </select>
+            {filtrosAtivos && (
+              <Button variant="ghost" onClick={() => { setFiltroTitulo(""); setFiltroProva("TODAS"); setFiltroData(""); setFiltroStatus("ATIVAS"); }}>Limpar filtros</Button>
+            )}
             <Button variant="outline" onClick={() => aplicacoesQuery.refetch()} disabled={aplicacoesQuery.isFetching}><RefreshCw className={`mr-2 h-4 w-4 ${aplicacoesQuery.isFetching ? "animate-spin" : ""}`} />Atualizar</Button>
             </div>
           </div>
