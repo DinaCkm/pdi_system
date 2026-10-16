@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, Clock, MessageSquarePlus, Settings2, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, ClipboardList, Clock, MessageSquarePlus, Search, Settings2, XCircle } from "lucide-react";
+import { useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,6 +63,9 @@ export default function MeusEixosTecnicos() {
   const consulta = api.meusEixos.useQuery(undefined, { refetchOnWindowFocus: false });
   const solicitar = api.solicitarReclassificacao.useMutation();
   const confirmar = api.confirmarEixo.useMutation();
+  const identificar = api.analisarQuestionarioEmpregado.useMutation();
+  const [, setLocation] = useLocation();
+  const { user } = useAuth();
 
   const [abertoEixo, setAbertoEixo] = useState<string | null>(null);
   const [relacaoSolicitada, setRelacaoSolicitada] = useState<RelacaoEixo | "">("");
@@ -73,6 +78,24 @@ export default function MeusEixosTecnicos() {
   const solicitacoes: any[] = dados?.solicitacoes ?? [];
   const eixosClassificados = eixos.filter((eixo) => eixo.statusClassificacao !== "PENDENTE" && eixo.relacao);
   const totalManifestados = eixosClassificados.filter((eixo) => Boolean(eixo.manifestacao)).length;
+  const temQuestionario = Boolean(dados?.temQuestionario);
+  // Os eixos só aparecem depois de identificados: questionário respondido e nenhum eixo pendente de classificação.
+  const eixosIdentificados = temQuestionario && eixos.length > 0 && eixosClassificados.length === eixos.length;
+
+  const identificarEixos = async () => {
+    setErro("");
+    setSucesso("");
+    try {
+      await identificar.mutateAsync({ colaboradorId: Number(user?.id) });
+      const atualizado = await consulta.refetch();
+      const lista: any[] = atualizado.data?.eixos ?? [];
+      const pendentes = lista.filter((eixo) => eixo.statusClassificacao === "PENDENTE" || !eixo.relacao).length;
+      if (lista.length > 0 && pendentes === 0) setSucesso("Eixos identificados. Agora confirme cada classificação ou solicite alteração.");
+      else setErro("Não foi possível identificar todos os eixos agora. Tente novamente; se persistir, acione o administrador.");
+    } catch (error: any) {
+      setErro(error?.message || "Não foi possível identificar seus eixos.");
+    }
+  };
 
   // Última solicitação de cada eixo (a lista já vem da mais recente para a mais antiga, pendentes primeiro).
   const ultimaPorEixo = useMemo(() => {
@@ -129,7 +152,7 @@ export default function MeusEixosTecnicos() {
         </p>
       </div>
 
-      {eixosClassificados.length > 0 && (
+      {eixosIdentificados && (
         <Card className={totalManifestados >= eixosClassificados.length ? "border-green-200 bg-green-50" : "border-blue-200 bg-blue-50"}>
           <CardContent className="p-5 text-sm">
             <p className="font-semibold">
@@ -142,13 +165,13 @@ export default function MeusEixosTecnicos() {
         </Card>
       )}
 
-      <Card>
+      {eixosIdentificados && <Card>
         <CardContent className="grid gap-3 p-5 text-sm md:grid-cols-3">
           <div><span className="font-semibold text-blue-800">Essencial:</span> conhecimento central para executar as atividades principais da função.</div>
           <div><span className="font-semibold text-violet-800">Transversal:</span> conhecimento comum a todo o SEBRAE (alguns, a todos os gestores). É obrigatório, definido pela instituição e não pode ser alterado.</div>
           <div><span className="font-semibold text-slate-700">Não essencial:</span> conhecimento pouco presente nas atividades atuais da função.</div>
         </CardContent>
-      </Card>
+      </Card>}
 
       {sucesso && <div className="rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-900">{sucesso}</div>}
 
@@ -156,8 +179,47 @@ export default function MeusEixosTecnicos() {
         <Card><CardContent className="p-6 text-sm text-muted-foreground">Carregando seus eixos...</CardContent></Card>
       ) : consulta.error ? (
         <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">{consulta.error.message}</div>
-      ) : !dados?.matriz || eixos.length === 0 ? (
-        <Card><CardContent className="p-6 text-sm text-muted-foreground">Seus eixos técnicos ainda não foram cadastrados.</CardContent></Card>
+      ) : !temQuestionario ? (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 p-6">
+            <div className="flex items-start gap-3 text-blue-950">
+              <ClipboardList className="mt-0.5 h-5 w-5 shrink-0" />
+              <div>
+                <p className="font-semibold">Etapa 1 de 2 — Preencha o Questionário de Atividades</p>
+                <p className="mt-1 text-sm">
+                  Antes de ver seus eixos técnicos, responda o questionário sobre as atividades da sua função. É a partir dele que
+                  seus eixos são identificados como Essencial ou Não essencial.
+                </p>
+              </div>
+            </div>
+            <Button onClick={() => setLocation("/meu-questionario-atividades")}>
+              <ClipboardList className="mr-2 h-4 w-4" />
+              PREENCHER QUESTIONÁRIO
+            </Button>
+          </CardContent>
+        </Card>
+      ) : !eixosIdentificados ? (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="space-y-3 p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-start gap-3 text-blue-950">
+                <Search className="mt-0.5 h-5 w-5 shrink-0" />
+                <div>
+                  <p className="font-semibold">Etapa 2 de 2 — Identifique seus eixos</p>
+                  <p className="mt-1 text-sm">
+                    Seu questionário está respondido. Clique em Identificar meus eixos para ver a classificação de cada eixo técnico
+                    e verificar se está de acordo com as suas atividades.
+                  </p>
+                </div>
+              </div>
+              <Button onClick={identificarEixos} disabled={identificar.isPending}>
+                <Search className="mr-2 h-4 w-4" />
+                {identificar.isPending ? "IDENTIFICANDO..." : "IDENTIFICAR MEUS EIXOS"}
+              </Button>
+            </div>
+            {erro && <p className="flex items-center gap-2 text-sm text-red-700"><AlertCircle className="h-4 w-4" />{erro}</p>}
+          </CardContent>
+        </Card>
       ) : (
         <Card>
           <CardHeader>
@@ -212,7 +274,7 @@ export default function MeusEixosTecnicos() {
                           Confirmar este eixo
                         </Button>
                       ) : null}
-                      {!eixo.transversalFixo && (
+                      {!eixo.transversalFixo && classificado && (
                         <Button
                           variant="outline"
                           size="sm"
