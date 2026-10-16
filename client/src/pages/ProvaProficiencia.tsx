@@ -18,6 +18,7 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [indice, setIndice] = useState(0);
+  const [confirmandoFinalizacao, setConfirmandoFinalizacao] = useState(false);
   const [respostas, setRespostas] = useState<Record<string, string>>({});
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [finalizada, setFinalizada] = useState(false);
@@ -487,8 +488,8 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
         .filter(({ item }) => !novasRespostas[String(item.id)]);
 
       if (faltantes.length === 0) {
-        setMensagem("Todas as questões foram respondidas. Finalizando a avaliação...");
-        finalizarMutation.mutate({ aplicacaoId, tentativaId });
+        setRevisandoPendentes(false);
+        setMensagem("Todas as questões foram respondidas. Você pode revisar e alterar qualquer resposta usando Anterior e Próxima. Quando estiver seguro(a), clique em FINALIZAR AVALIAÇÃO.");
         return;
       }
 
@@ -625,7 +626,8 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
       .filter(({ item }) => !respostas[String(item.id)]);
 
     if (faltantes.length === 0) {
-      finalizarMutation.mutate({ aplicacaoId, tentativaId });
+      setRevisandoPendentes(false);
+      setConfirmandoFinalizacao(true);
       return;
     }
 
@@ -643,6 +645,12 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
       irParaPendentes();
       return;
     }
+    setConfirmandoFinalizacao(true);
+  };
+
+  const confirmarFinalizacao = () => {
+    if (!tentativaId) return;
+    setConfirmandoFinalizacao(false);
     finalizarMutation.mutate({ aplicacaoId, tentativaId });
   };
 
@@ -1209,12 +1217,31 @@ export default function ProvaProficiencia({ aplicacaoId }: { aplicacaoId: number
                     : `REVISAR ${questoes.length - totalRespondidas} PENDENTE(S)`}
               </Button>
             ) : (
-              <Button onClick={finalizar} disabled={finalizarMutation.isPending}>
-                {finalizarMutation.isPending ? "FINALIZANDO..." : "FINALIZAR AVALIAÇÃO"}
-              </Button>
+              <>
+                {indice < questoes.length - 1 && (
+                  <Button variant="outline" onClick={() => setIndice(value => Math.min(questoes.length - 1, value + 1))}>Próxima</Button>
+                )}
+                <Button onClick={finalizar} disabled={finalizarMutation.isPending}>
+                  {finalizarMutation.isPending ? "FINALIZANDO..." : "FINALIZAR AVALIAÇÃO"}
+                </Button>
+              </>
             )}
           </div>
         </div>
+        {confirmandoFinalizacao && (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" role="dialog" aria-modal="true">
+            <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+              <h2 className="text-xl font-bold text-slate-900">Finalizar a avaliação?</h2>
+              <p className="mt-3 text-sm leading-relaxed text-slate-700">
+                Todas as {questoes.length} questões estão respondidas. Depois de finalizar, não será possível rever nem alterar as respostas.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-end gap-2">
+                <Button variant="outline" onClick={() => setConfirmandoFinalizacao(false)}>VOLTAR E REVISAR</Button>
+                <Button onClick={confirmarFinalizacao} disabled={finalizarMutation.isPending}>FINALIZAR DEFINITIVAMENTE</Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
