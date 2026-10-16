@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 import { notifyOwner } from "./_core/notification";
+import { finalizarAcao } from "./services/finalizacaoAcao";
 import { router, publicProcedure, protectedProcedure, adminProcedure, adminOrLeaderProcedure, adminOrGerenteProcedure } from "./_core/customTrpc"; // <--- IMPORT CORRIGIDO
 import { TRPCError } from "@trpc/server";
 import * as db from "./db";
@@ -21,7 +22,7 @@ import { questionarioAtividadesRouter } from "./routers/questionarioAtividades";
 import { invokeLLM } from "./_core/llm";
 import { generatePasswordResetToken, generateTemporaryPassword, hashPassword } from "./_core/password";
 import { ENV } from "./_core/env";
-import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI, sendEmailParabensEvidenciaAprovada, sendEmailEvidenciaReprovada, sendEmailAcoesVencidasEmpregado, sendEmailAcoesVencidasLider, sendEmailResumoVarreduraAdmin, sendEmailEvidenciaEnviadaParaLider } from "./_core/email";
+import { sendEmailParecerCKMParaLider, sendEmailParecerLiderParaGerente, sendEmailAcaoAprovadaParaColaborador, sendEmailAcaoReprovadaParaColaborador, sendEmailRevisaoSolicitadaParaCKM, sendEmailRevisaoLiderParaCKM, sendEmailSolicitacaoVetada, sendEmailAcaoAprovadaParaLider, sendEmailRelatorioIncluidoNoPDI, sendEmailEvidenciaReprovada, sendEmailAcoesVencidasEmpregado, sendEmailAcoesVencidasLider, sendEmailResumoVarreduraAdmin, sendEmailEvidenciaEnviadaParaLider } from "./_core/email";
 import { sendPasswordResetEmail } from "./_core/email";
 
 // Mantendo os roteadores que já existiam
@@ -672,47 +673,16 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         if(ev) {
             await db.updateEvidenceStatus(input.id, { status: 'aprovada', evaluatedBy: ctx.user!.id, evaluatedAt: new Date() });
             
-            // Verificar se a ação existe antes de atualizar
-            const action = await db.getActionById(ev.actionId);
-            if(action) {
-                await db.updateAction(ev.actionId, { status: 'concluida' });
-                await notifyOwner({
+            await finalizarAcao({
+                actionId: ev.actionId,
+                colaboradorId: ev.colaboradorId,
+                origem: 'evidencia_admin',
+                usuarioId: ctx.user!.id,
+                aviso: (acao) => ({
                     title: '✅ Evidência Aprovada',
-                    content: `A evidência para a ação "${action.titulo}" foi aprovada pelo administrador.`
-                });
-
-                // Enviar e-mail de parabéns ao colaborador e cópia ao líder
-                try {
-                  const colaborador = await db.getUserById(ev.colaboradorId);
-                  if (colaborador && colaborador.email) {
-                    // Buscar o PDI da ação para incluir o título
-                    const [pdiRows]: any = await db.execute(sql`SELECT p.titulo FROM pdis p JOIN actions a ON a.pdiId = p.id WHERE a.id = ${ev.actionId} LIMIT 1`);
-                    const tituloPdi = pdiRows?.[0]?.titulo || 'PDI';
-
-                    // Buscar líder do colaborador
-                    let liderEmail: string | undefined;
-                    let liderName: string | undefined;
-                    if (colaborador.leaderId) {
-                      const lider = await db.getUserById(colaborador.leaderId);
-                      if (lider && lider.email) {
-                        liderEmail = lider.email;
-                        liderName = lider.name || 'Líder';
-                      }
-                    }
-
-                    await sendEmailParabensEvidenciaAprovada({
-                      colaboradorEmail: colaborador.email,
-                      colaboradorName: colaborador.name || 'Colaborador(a)',
-                      tituloAcao: action.titulo,
-                      tituloPdi,
-                      liderEmail,
-                      liderName,
-                    });
-                  }
-                } catch (emailErr) {
-                  console.warn('[evidences.approve] Erro ao enviar e-mail de parabéns:', emailErr);
-                }
-            }
+                    content: `A evidência para a ação "${acao.titulo}" foi aprovada pelo administrador.`
+                }),
+            });
         }
         return { success: true };
     }),
@@ -957,45 +927,16 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
         evaluatedAt: new Date() 
       });
       
-      // Verificar se a ação existe antes de atualizar
-      const action = await db.getActionById(ev.actionId);
-      if (action) {
-        await db.updateAction(ev.actionId, { status: 'concluida' });
-        await notifyOwner({
+      await finalizarAcao({
+        actionId: ev.actionId,
+        colaboradorId: ev.colaboradorId,
+        origem: 'evidencia_lider',
+        usuarioId: ctx.user!.id,
+        aviso: (acao) => ({
           title: '✅ Evidência Aprovada pelo Líder',
-          content: `A evidência para a ação "${action.titulo}" foi aprovada.`
-        });
-
-        // Enviar e-mail de parabéns ao colaborador
-        try {
-          const colaboradorAprov = await db.getUserById(ev.colaboradorId);
-          if (colaboradorAprov && colaboradorAprov.email) {
-            const [pdiRowsAprov]: any = await db.execute(sql`SELECT p.titulo FROM pdis p JOIN actions a ON a.pdiId = p.id WHERE a.id = ${ev.actionId} LIMIT 1`);
-            const tituloPdiAprov = pdiRowsAprov?.[0]?.titulo || 'PDI';
-
-            let liderEmailAprov: string | undefined;
-            let liderNameAprov: string | undefined;
-            if (colaboradorAprov.leaderId) {
-              const liderAprov = await db.getUserById(colaboradorAprov.leaderId);
-              if (liderAprov && liderAprov.email) {
-                liderEmailAprov = liderAprov.email;
-                liderNameAprov = liderAprov.name || 'Líder';
-              }
-            }
-
-            await sendEmailParabensEvidenciaAprovada({
-              colaboradorEmail: colaboradorAprov.email,
-              colaboradorName: colaboradorAprov.name || 'Colaborador(a)',
-              tituloAcao: action.titulo,
-              tituloPdi: tituloPdiAprov,
-              liderEmail: liderEmailAprov,
-              liderName: liderNameAprov,
-            });
-          }
-        } catch (emailErr) {
-          console.warn('[evidences.aprovar-lider] Erro ao enviar e-mail de parabéns:', emailErr);
-        }
-      }
+          content: `A evidência para a ação "${acao.titulo}" foi aprovada.`
+        }),
+      });
       
       return { success: true };
     }),
@@ -1170,18 +1111,12 @@ ${competenciaMicro ? `**Competência Micro (Específica):** ${competenciaMicro}`
               parecerImpacto = ${input.parecerImpacto || null}
           WHERE id = ${input.evidenceId}
         `);
-        const action = await db.getActionById(ev.actionId);
-        if (action) await db.updateAction(ev.actionId, { status: 'concluida' });
-
-        try {
-          const colaborador = await db.getUserById(ev.colaboradorId);
-          if (colaborador?.email) {
-            const [pdiRows]: any = await db.execute(sql`SELECT p.titulo FROM pdis p JOIN actions a ON a.pdiId = p.id WHERE a.id = ${ev.actionId} LIMIT 1`);
-            let liderEmail: string | undefined, liderName: string | undefined;
-            if (colaborador.leaderId) { const lider = await db.getUserById(colaborador.leaderId); if (lider?.email) { liderEmail = lider.email; liderName = lider.name || 'Líder'; } }
-            await sendEmailParabensEvidenciaAprovada({ colaboradorEmail: colaborador.email, colaboradorName: colaborador.name || 'Colaborador(a)', tituloAcao: action?.titulo || 'Ação', tituloPdi: pdiRows?.[0]?.titulo || 'PDI', liderEmail, liderName });
-          }
-        } catch (e) { console.warn('[validateImpact] Erro email:', e); }
+        await finalizarAcao({
+          actionId: ev.actionId,
+          colaboradorId: ev.colaboradorId,
+          origem: 'validacao_impacto',
+          usuarioId: ctx.user!.id,
+        });
         return { success: true, status: 'aprovada' as const, impactoValidado: input.impactoValidadoAdmin };
       }),
 
