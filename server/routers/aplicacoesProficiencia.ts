@@ -169,6 +169,13 @@ async function obterAplicacao(db: any, aplicacaoId: number) {
   return { ...linha, prova };
 }
 
+async function liberacaoIndividualAtiva(db: any, aplicacaoId: number, colaboradorId: number) {
+  const r = await db.execute(sql`
+    SELECT id FROM proficiencia_liberacoes_individuais
+     WHERE aplicacao_id=${aplicacaoId} AND colaborador_id=${colaboradorId} AND ativa=1 LIMIT 1
+  `);
+  return rowsOf<any>(r).length > 0;
+}
 async function obterVinculoParticipante(db: any, aplicacaoId: number, colaboradorId: number) {
   const result = await db.execute(sql`
     SELECT a.id, a.titulo, a.status, a.agendada_para AS agendadaPara,
@@ -186,7 +193,8 @@ async function obterVinculoParticipante(db: any, aplicacaoId: number, colaborado
   `);
   const item = rowsOf<any>(result)[0];
   if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Esta aplicação não está atribuída a este participante." });
-  return { ...item, prova: parseJson<ProvaSnapshot>(item.provaSnapshotJson) };
+  const individual = item.status === "AGENDADA" && await liberacaoIndividualAtiva(db, aplicacaoId, colaboradorId);
+  return { ...item, status: individual ? "LIBERADA" : item.status, liberacaoIndividual: individual, prova: parseJson<ProvaSnapshot>(item.provaSnapshotJson) };
 }
 
 async function registrarRetomadaAvaliacao(db: any, aplicacaoId: number, tentativaId: number, colaboradorId: number) {
@@ -753,6 +761,40 @@ export const aplicacoesProficienciaRouter = router({
       return { cancelada: true, status: "CANCELADA" as const, teste: Boolean(teste) };
     }),
 
+  liberarIndividual: adminProcedure
+    .input(z.object({ aplicacaoId: z.number().int().positive(), colaboradorId: z.number().int().positive(), confirmarAntecipacao: z.literal(true) }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const aplicacao = await obterAplicacao(db, input.aplicacaoId);
+      if (aplicacao.status !== "AGENDADA") throw new TRPCError({ code:"PRECONDITION_FAILED", message:"A aplicação precisa estar agendada." });
+      if (await obterTestePorAplicacao(db, input.aplicacaoId)) throw new TRPCError({ code:"PRECONDITION_FAILED", message:"Testes de homologação usam fluxo próprio." });
+      const prova = rowsOf<any>(await db.execute(sql`SELECT status FROM provas_importadas WHERE id=${Number(aplicacao.provaId)} LIMIT 1`))[0];
+      if (String(prova?.status) !== "VALIDADA") throw new TRPCError({ code:"PRECONDITION_FAILED", message:"Prova não validada." });
+      const homologacao = await obterHomologacaoAtual(db, Number(aplicacao.provaId));
+      if (homologacao && String(homologacao.status) !== "HOMOLOGADA") throw new TRPCError({ code:"PRECONDITION_FAILED", message:"Prova precisa de nova homologação." });
+      const pessoas = rowsOf<any>(await db.execute(sql`
+        SELECT u.name AS nome FROM aplicacoes_proficiencia_participantes ap
+        JOIN users u ON u.id=ap.colaborador_id
+        WHERE ap.aplicacao_id=${input.aplicacaoId} AND ap.colaborador_id=${input.colaboradorId} LIMIT 1`));
+      if (!pessoas.length) throw new TRPCError({ code:"NOT_FOUND", message:"Participante não pertence à aplicação." });
+      await db.execute(sql`
+        INSERT INTO proficiencia_liberacoes_individuais
+        (aplicacao_id,colaborador_id,ativa,liberada_por,liberada_em)
+        VALUES (${input.aplicacaoId},${input.colaboradorId},1,${ctx.user.id},NOW())
+        ON DUPLICATE KEY UPDATE ativa=1,liberada_por=VALUES(liberada_por),liberada_em=NOW(),revogada_por=NULL,revogada_em=NULL`);
+      return { liberada:true, nome:pessoas[0].nome };
+    }),
+  revogarLiberacaoIndividual: adminProcedure
+    .input(z.object({ aplicacaoId:z.number().int().positive(), colaboradorId:z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await dbObrigatorio();
+      const aplicacao = await obterAplicacao(db,input.aplicacaoId);
+      if (aplicacao.status !== "AGENDADA") throw new TRPCError({code:"PRECONDITION_FAILED",message:"Aplicação já liberada coletivamente."});
+      const tentativas = rowsOf<any>(await db.execute(sql`SELECT id FROM tentativas_proficiencia WHERE aplicacao_id=${input.aplicacaoId} AND colaborador_id=${input.colaboradorId} LIMIT 1`));
+      if (tentativas.length) throw new TRPCError({code:"PRECONDITION_FAILED",message:"Não revogar após início de tentativa."});
+      await db.execute(sql`UPDATE proficiencia_liberacoes_individuais SET ativa=0,revogada_por=${ctx.user.id},revogada_em=NOW() WHERE aplicacao_id=${input.aplicacaoId} AND colaborador_id=${input.colaboradorId} AND ativa=1`);
+      return { revogada:true };
+    }),
   liberar: adminProcedure
     .input(z.object({ aplicacaoId: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
@@ -972,6 +1014,8 @@ export const aplicacoesProficienciaRouter = router({
                t.iniciada_em AS iniciadaEm, t.ultima_atividade_em AS ultimaAtividadeEm,
                t.finalizada_em AS finalizadaEm, COUNT(r.id) AS respostasSalvas,
                MAX(CASE WHEN pi.id IS NOT NULL THEN 1 ELSE 0 END) AS identidadeConfirmada,
+                EXISTS(SELECT 1 FROM proficiencia_liberacoes_individuais li
+                       WHERE li.aplicacao_id=ap.aplicacao_id AND li.colaborador_id=ap.colaborador_id AND li.ativa=1) AS liberacaoIndividual,
                (SELECT COUNT(*) FROM proficiencia_ocorrencias po
                  WHERE po.aplicacao_id = ap.aplicacao_id
                    AND po.colaborador_id = ap.colaborador_id) AS totalOcorrencias
@@ -1268,6 +1312,8 @@ export const aplicacoesProficienciaRouter = router({
       SELECT a.id, a.titulo, a.agendada_para AS agendadaPara, a.status,
              a.liberada_em AS liberadaEm, a.prova_snapshot_json AS provaSnapshotJson,
              t.id AS tentativaId, t.status AS tentativaStatus, t.finalizada_em AS finalizadaEm,
+              EXISTS(SELECT 1 FROM proficiencia_liberacoes_individuais li
+                     WHERE li.aplicacao_id=a.id AND li.colaborador_id=ap.colaborador_id AND li.ativa=1) AS liberacaoIndividual,
              EXISTS(
                SELECT 1
                  FROM questionarios_atividades_funcao qaf
@@ -1299,7 +1345,7 @@ export const aplicacoesProficienciaRouter = router({
     `);
     return rowsOf<any>(result).map(item => {
       const prova = parseJson<ProvaSnapshot>(item.provaSnapshotJson);
-      return { ...item, provaNome: prova.nome, provaUnidade: prova.unidade, totalQuestoes: prova.totalQuestoes };
+      return { ...item, status: item.status === "AGENDADA" && Number(item.liberacaoIndividual) === 1 ? "LIBERADA" : item.status, provaNome: prova.nome, provaUnidade: prova.unidade, totalQuestoes: prova.totalQuestoes };
     });
   }),
 

@@ -210,6 +210,14 @@ export default function AdminAplicacoesProficiencia() {
     onError: error => setMensagem(error.message),
   });
 
+  const liberarIndividualMutation = trpc.aplicacoesProficiencia.liberarIndividual.useMutation({
+    onSuccess: async data => { setMensagem(`Prova liberada somente para ${data.nome}.`); await Promise.all([aplicacoesQuery.refetch(),monitoramentoQuery.refetch()]); },
+    onError: error => setMensagem(error.message),
+  });
+  const revogarIndividualMutation = trpc.aplicacoesProficiencia.revogarLiberacaoIndividual.useMutation({
+    onSuccess: async () => { setMensagem("Liberação individual revogada."); await Promise.all([aplicacoesQuery.refetch(),monitoramentoQuery.refetch()]); },
+    onError: error => setMensagem(error.message),
+  });
   const encerrarMutation = trpc.aplicacoesProficiencia.encerrar.useMutation({
     onSuccess: async data => {
       setMensagem(`Aplicação encerrada. ${data.ausentes} participante(s) ficaram registrados como ausentes. Agora os resultados podem ser calculados.`);
@@ -746,6 +754,20 @@ export default function AdminAplicacoesProficiencia() {
                           <td className="px-3 py-3 font-medium">
                             <div className="flex flex-wrap items-center gap-2">
                               <span>{item.colaboradorNome}</span>
+                              {String(aplicacaoMonitorada?.status) === "AGENDADA" && (
+                                Number(item.liberacaoIndividual) === 1 ? (
+                                  <Button size="sm" variant="outline" disabled={revogarIndividualMutation.isPending || Boolean(item.tentativaId)}
+                                    onClick={() => {
+                                      if (window.confirm(`Revogar liberação de ${item.colaboradorNome}?`)) revogarIndividualMutation.mutate({aplicacaoId:Number(aplicacaoSelecionada),colaboradorId:Number(item.colaboradorId)});
+                                    }}>REVOGAR LIBERAÇÃO</Button>
+                                ) : (
+                                  <Button size="sm" variant="outline" disabled={liberarIndividualMutation.isPending}
+                                    onClick={() => {
+                                      if (window.confirm(`Liberar antecipadamente SOMENTE para ${item.colaboradorNome}? Demais participantes permanecem bloqueados.`)) liberarIndividualMutation.mutate({aplicacaoId:Number(aplicacaoSelecionada),colaboradorId:Number(item.colaboradorId),confirmarAntecipacao:true});
+                                    }}>LIBERAR INDIVIDUALMENTE</Button>
+                                )
+                              )}
+                              {Number(item.liberacaoIndividual) === 1 && <Badge variant="secondary">Liberada individualmente</Badge>}
                               <Button
                                 size="sm"
                                 variant="outline"

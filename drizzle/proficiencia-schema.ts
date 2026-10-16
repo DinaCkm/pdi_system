@@ -187,3 +187,16 @@ export const resultadosProficiencia = mysqlTable(
     colaboradorIdx: index("resultados_prof_colaborador_idx").on(table.colaboradorId),
   }),
 );
+
+export const liberacoesIndividuaisProficiencia = mysqlTable("proficiencia_liberacoes_individuais", {
+  id: int().autoincrement().notNull().primaryKey(),
+  aplicacaoId: int("aplicacao_id").notNull().references(() => aplicacoesProficiencia.id, { onDelete: "cascade" }),
+  colaboradorId: int("colaborador_id").notNull().references(() => users.id, { onDelete: "restrict" }),
+  ativa: int("ativa").default(1).notNull(),
+  liberadaPor: int("liberada_por").notNull().references(() => users.id, { onDelete: "restrict" }),
+  liberadaEm: timestamp("liberada_em", { mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  revogadaPor: int("revogada_por").references(() => users.id, { onDelete: "set null" }),
+  revogadaEm: timestamp("revogada_em", { mode: "string" }),
+}, table => ({
+  unicaIdx: uniqueIndex("prof_liberacoes_individuais_unica_idx").on(table.aplicacaoId, table.colaboradorId),
+}));
