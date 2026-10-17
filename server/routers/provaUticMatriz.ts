@@ -357,6 +357,20 @@ export async function aplicarRegraTransversais(db: any, usuarioId: number) {
   return { transversaisAplicados, convertidosNaoEssencial, incluidos };
 }
 
+/** O empregado só vê e valida os eixos depois de responder o Questionário de Atividades/Função. */
+async function possuiQuestionarioRespondido(db: any, colaboradorId: number): Promise<boolean> {
+  const result = await db.execute(sql`
+    SELECT 1 AS ok
+      FROM questionarios_atividades_funcao q
+      JOIN questionario_atividades_respostas r ON r.questionario_id = q.id
+     WHERE q.colaborador_id = ${colaboradorId}
+       AND r.resposta IS NOT NULL
+       AND TRIM(r.resposta) <> ''
+     LIMIT 1
+  `);
+  return rowsOf<any>(result).length > 0;
+}
+
 export const provaUticMatrizRouter = router({
   listar: adminProcedure.query(async () => {
     const db = await ensureTechnicalMatrixTables();
@@ -704,7 +718,10 @@ export const provaUticMatrizRouter = router({
        LIMIT 1
     `);
     const matriz = rowsOf<any>(matrizResult)[0] ?? null;
-    if (!matriz) return { matriz: null, eixos: [], solicitacoes: [] };
+    // Sem Questionário de Atividades/Função o empregado não vê os eixos: primeiro preenche o questionário,
+    // depois identifica os eixos (análise do questionário) e só então valida as classificações.
+    const temQuestionario = await possuiQuestionarioRespondido(db, Number(ctx.user.id));
+    if (!matriz || !temQuestionario) return { matriz: null, eixos: [], solicitacoes: [], temQuestionario };
 
     const eixosResult = await db.execute(sql`
       SELECT e.eixo_id AS eixoId, e.eixo_nome AS eixo, e.relacao,
@@ -739,6 +756,7 @@ export const provaUticMatrizRouter = router({
         };
       }),
       solicitacoes: solicitacoes.map(({ colaboradorEmail, ...resto }: any) => resto),
+      temQuestionario,
     };
   }),
 
@@ -758,6 +776,9 @@ export const provaUticMatrizRouter = router({
       if (!eixo) throw new TRPCError({ code: "NOT_FOUND", message: "Eixo técnico não encontrado na sua matriz." });
       if (!eixo.relacao || eixo.statusClassificacao === "PENDENTE") {
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Este eixo ainda está pendente de classificação e não pode ser confirmado." });
+      }
+      if (!(await possuiQuestionarioRespondido(db, Number(ctx.user.id)))) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Preencha o Questionário de Atividades e identifique seus eixos antes de confirmar." });
       }
 
       await db.execute(sql`
@@ -782,7 +803,7 @@ export const provaUticMatrizRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await ensureTechnicalMatrixTables();
       const eixoResult = await db.execute(sql`
-        SELECT m.id AS matrizId, e.eixo_nome AS eixo, e.relacao,
+        SELECT m.id AS matrizId, e.eixo_nome AS eixo, e.relacao, e.status_classificacao AS statusClassificacao,
                u.name AS colaboradorNome, d.nome AS unidadeNome
           FROM prova_utic_matrizes m
           JOIN prova_utic_matriz_eixos e ON e.matriz_id = m.id
@@ -793,6 +814,12 @@ export const provaUticMatrizRouter = router({
       `);
       const eixo = rowsOf<any>(eixoResult)[0];
       if (!eixo) throw new TRPCError({ code: "NOT_FOUND", message: "Eixo técnico não encontrado na sua matriz." });
+      if (!(await possuiQuestionarioRespondido(db, Number(ctx.user.id)))) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Preencha o Questionário de Atividades e identifique seus eixos antes de solicitar alteração." });
+      }
+      if (!eixo.relacao || eixo.statusClassificacao === "PENDENTE") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Este eixo ainda não foi identificado. Clique em \"Identificar meus eixos\" antes de solicitar alteração." });
+      }
       if (ehTransversalPara(eixo.eixo, ehGestorPorPerfil(ctx.user?.role))) {
         throw new TRPCError({
           code: "FORBIDDEN",

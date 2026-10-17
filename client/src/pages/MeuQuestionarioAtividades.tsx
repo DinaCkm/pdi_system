@@ -92,10 +92,10 @@ export default function MeuQuestionarioAtividades() {
               <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
               <div>
                 <p className="font-semibold">Questionário registrado</p>
-                <p className="text-sm">Você pode revisar as respostas ou seguir para a validação dos seus eixos técnicos.</p>
+                <p className="text-sm">Você pode revisar as respostas ou clicar em Identificar meus eixos para ver e validar seus eixos técnicos.</p>
               </div>
             </div>
-            <Button onClick={() => setLocation("/meus-eixos-tecnicos")}>IR PARA MEUS EIXOS TÉCNICOS</Button>
+            <Button onClick={() => setLocation("/meus-eixos-tecnicos")}>IDENTIFICAR MEUS EIXOS</Button>
           </CardContent>
         </Card>
       )}
@@ -127,7 +127,7 @@ export default function MeuQuestionarioAtividades() {
           <Save className="mr-2 h-4 w-4" />
           {salvar.isPending ? "SALVANDO E ANALISANDO..." : "SALVAR E CONTINUAR"}
         </Button>
-        {concluido && <Button variant="outline" onClick={() => setLocation("/meus-eixos-tecnicos")}>IR PARA MEUS EIXOS TÉCNICOS</Button>}
+        {concluido && <Button variant="outline" onClick={() => setLocation("/meus-eixos-tecnicos")}>IDENTIFICAR MEUS EIXOS</Button>}
       </div>
     </div>
   );
