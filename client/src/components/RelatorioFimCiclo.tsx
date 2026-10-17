@@ -594,7 +594,7 @@ export function RelatorioFimCiclo() {
             const registros = (r.previaEvolucaoAlvos ?? []) as Array<{nome:string;instrumento:string;grupo:string;elegiveisComAcao:number;evoluiram:number;naoEvoluiram:number;percentual:number}>;
             const divisao = (item: typeof registros[number]) => item.instrumento === "COMPORTAMENTAL" ? "Competências comportamentais" : item.grupo === "L" ? "Eixos técnicos de liderança" : item.grupo === "T" ? "Eixos técnicos transversais" : "Eixos técnicos essenciais";
             const positivos = registros.filter((x) => x.evoluiram > 0);
-            const semEvolucao = registros.filter((x) => x.evoluiram === 0);
+            const semEvolucao = [...registros].sort((a, b) => b.naoEvoluiram / b.elegiveisComAcao - a.naoEvoluiram / a.elegiveisComAcao);
             const lista = (itens: typeof registros, comRegua: boolean) => (
               <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                 {["Competências comportamentais","Eixos técnicos transversais","Eixos técnicos de liderança","Eixos técnicos essenciais"].map((categoria) => {
@@ -609,7 +609,7 @@ export function RelatorioFimCiclo() {
                           <div style={{ height: "100%", width: `${Math.min(100, Math.max(0, x.percentual))}%`, borderRadius: 99, background: C.positivo }} />
                         </div>
                         <strong style={{ color: C.positivo, fontSize: 14, minWidth: 52, textAlign: "right" }}>{x.percentual.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</strong>
-                      </div> : <span style={{ fontSize: 13, color: C.secundario }}>Sem evolução identificada</span>}
+                      </div> : <span style={{ fontSize: 13, color: C.secundario }}>{(100 - x.percentual).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% dos empregados não apresentaram evolução</span>}
                       <span style={{ fontSize: 12, color: C.secundario }}>Base preliminar: {x.elegiveisComAcao} empregados com ações vinculadas e duas medições</span>
                     </div>)}
                   </div>;
@@ -624,7 +624,7 @@ export function RelatorioFimCiclo() {
               </article>
               <article style={{ border: `1px solid ${C.borda}`, borderRadius: 16, padding: 20 }}>
                 <h3 style={{ margin: "0 0 16px", fontSize: 17, fontFamily: FONTE_TITULO }}>Não apresentaram evolução</h3>
-                {semEvolucao.length ? lista(semEvolucao, false) : <p style={{ color: C.secundario }}>Nenhum alvo nesta classificação.</p>}
+                {semEvolucao.length ? lista(semEvolucao, false) : <p style={{ color: C.secundario }}>Nenhum alvo com duas medições nesta seleção.</p>}
               </article>
             </Grade>;
           })()}
