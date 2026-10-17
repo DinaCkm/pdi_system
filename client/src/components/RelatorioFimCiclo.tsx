@@ -585,43 +585,49 @@ export function RelatorioFimCiclo() {
           </p>
         </Secao>
 
-        {/* Bloco 2 — Resultado geral: quanto evoluímos, onde evoluímos e o que desenvolver */}
-        <Secao titulo="Resultado geral" subtitulo="Se cada eixo e cada competência cresceu, e as prioridades para o próximo ciclo." id="resultado">
-          <p style={{ margin: 0, fontSize: 15, color: C.corpo }}>
-            Cada eixo e cada competência comparado com ele mesmo: <strong>empregados na expectativa de desenvolvimento antes → depois</strong>, de quantos têm as duas medições. Cada empregado subiu, manteve ou desceu de conceito: ▲ + = + ▼ somam o total.
+        {/* Bloco 2 — Prévia do indicador de alvos do PDI. Publicar como definitivo somente após auditoria do ciclo e dos alvos sem ações. */}
+        <Secao titulo="Resultado geral" subtitulo="Evolução entre as duas medições dos empregados com ações vinculadas ao alvo de desenvolvimento." id="resultado">
+          <p style={{ margin: 0, fontSize: 14, color: C.secundario }}>
+            Prévia para conferência: esta visão considera apenas alvos identificados por ações cadastradas no PDI. A abrangência do ciclo anterior e os alvos sem ações ainda precisam de validação. Não utilizar como indicador oficial.
           </p>
-          <Grade min={420} gap={16}>
-            <article style={{ border: `1px solid ${C.borda}`, borderRadius: 16, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ fontSize: 17, fontWeight: 700 }}>Competências comportamentais</span>
-                <span style={{ fontSize: 14, color: C.secundario }}>
-                  Desempenho {adBase} × {adAtual} · {comp.eixos.length} competências
-                </span>
+          {(() => {
+            const registros = (r.previaEvolucaoAlvos ?? []) as Array<{nome:string;instrumento:string;grupo:string;elegiveisComAcao:number;evoluiram:number;naoEvoluiram:number;percentual:number}>;
+            const divisao = (item: typeof registros[number]) => item.instrumento === "COMPORTAMENTAL" ? "Competências comportamentais" : item.grupo === "L" ? "Eixos técnicos de liderança" : item.grupo === "T" ? "Eixos técnicos transversais" : "Eixos técnicos essenciais";
+            const positivos = registros.filter((x) => x.evoluiram > 0);
+            const semEvolucao = [...registros].sort((a, b) => b.naoEvoluiram / b.elegiveisComAcao - a.naoEvoluiram / a.elegiveisComAcao);
+            const lista = (itens: typeof registros, comRegua: boolean) => (
+              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                {["Competências comportamentais","Eixos técnicos transversais","Eixos técnicos de liderança","Eixos técnicos essenciais"].map((categoria) => {
+                  const itensCategoria = itens.filter((x) => divisao(x) === categoria);
+                  if (!itensCategoria.length) return null;
+                  return <div key={categoria} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <strong style={{ fontSize: 13, color: C.secundario }}>{categoria}</strong>
+                    {itensCategoria.map((x) => <div key={`${x.instrumento}|${x.grupo}|${x.nome}`} style={{ display: "flex", flexDirection: "column", gap: 5, paddingBottom: 9, borderBottom: `1px solid ${C.linhaSuave}` }}>
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>{x.nome}</span>
+                      {comRegua ? <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                        <div role="img" aria-label={`${x.percentual.toLocaleString("pt-BR")}% dos empregados comparáveis com ações nesse alvo apresentaram evolução`} style={{ flex: 1, height: 12, borderRadius: 99, overflow: "hidden", background: C.linhaSuave }}>
+                          <div style={{ height: "100%", width: `${Math.min(100, Math.max(0, x.percentual))}%`, borderRadius: 99, background: C.positivo }} />
+                        </div>
+                        <strong style={{ color: C.positivo, fontSize: 14, minWidth: 52, textAlign: "right" }}>{x.percentual.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</strong>
+                      </div> : <span style={{ fontSize: 13, color: C.secundario }}>{(100 - x.percentual).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% dos empregados não apresentaram evolução</span>}
+                      <span style={{ fontSize: 12, color: C.secundario }}>Base preliminar: {x.elegiveisComAcao} empregados com ações vinculadas e duas medições</span>
+                    </div>)}
+                  </div>;
+                })}
               </div>
-              <ListaResultado itens={comp.eixos} />
-            </article>
-            <article style={{ border: `1px solid ${C.borda}`, borderRadius: 16, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ fontSize: 17, fontWeight: 700 }}>Conhecimento técnico</span>
-                <span style={{ fontSize: 14, color: C.secundario }}>Proficiência 2025 × 2026</span>
-              </div>
-              {GRUPOS_EIXO.map((g) => {
-                const l = tec.eixos.filter(g.filtro);
-                return l.length ? (
-                  <div key={g.chave}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: C.corpo, paddingTop: 4 }}>
-                      {g.titulo} <span style={{ fontWeight: 400, color: C.secundario }}>· {g.alcance}</span>
-                    </div>
-                    <ListaResultado itens={l} limite={g.chave === "E" ? 5 : 99} />
-                  </div>
-                ) : null;
-              })}
-              {tec.aguardando > 0 && (
-                <div style={{ fontSize: 13, color: C.secundario }}>Leitura parcial: {tec.aguardando} medições técnicas ainda aguardam a Avaliação de Proficiência 2026.</div>
-              )}
-            </article>
-          </Grade>
-
+            );
+            return <Grade min={300} gap={20}>
+              <article style={{ border: `1px solid ${C.borda}`, borderRadius: 16, padding: 20 }}>
+                <h3 style={{ margin: "0 0 16px", fontSize: 17, fontFamily: FONTE_TITULO }}>Apresentaram evolução</h3>
+                {positivos.length ? lista(positivos, true) : <p style={{ color: C.secundario }}>Nenhum alvo com evolução e duas medições nesta seleção.</p>}
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, color: C.secundario, fontSize: 12 }}><span>0%</span><span>100%</span></div>
+              </article>
+              <article style={{ border: `1px solid ${C.borda}`, borderRadius: 16, padding: 20 }}>
+                <h3 style={{ margin: "0 0 16px", fontSize: 17, fontFamily: FONTE_TITULO }}>Não apresentaram evolução</h3>
+                {semEvolucao.length ? lista(semEvolucao, false) : <p style={{ color: C.secundario }}>Nenhum alvo com duas medições nesta seleção.</p>}
+              </article>
+            </Grade>;
+          })()}
           <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: 4 }}>
             <div>
               <h3 style={{ margin: 0, fontFamily: FONTE_TITULO, fontSize: 18, fontWeight: 600 }}>Evolução por dimensão</h3>
