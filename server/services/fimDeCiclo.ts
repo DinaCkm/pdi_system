@@ -367,6 +367,27 @@ export function montarRelatorio(base: Base, unidade?: string, publico: Publico =
   const eixosTec = eixos(tec, "TECNICO");
   const eixosComp = eixos(comp, "COMPORTAMENTAL");
 
+  // Prévia segura: ações registradas vinculadas ao item. Não confundir com o
+  // universo completo de alvos planejados até validar PDIs sem ações e ciclo.
+  const resultadoAlvos = (lista: Avaliacao[]) =>
+    Array.from(agrupar(lista.filter((a) => a.acoesAtivas > 0 && a.antes !== null && a.depois !== null),
+      (a) => `${a.instrumento}|${grupoAval(a)}|${normalizar(a.eixo)}`).values())
+      .map((grupo) => {
+        const evoluiram = grupo.filter((a) => movimento(a.antes, a.depois) === "SUBIU").length;
+        const total = grupo.length;
+        return {
+          nome: grupo[0].eixo,
+          instrumento: grupo[0].instrumento,
+          grupo: grupoAval(grupo[0]),
+          elegiveisComAcao: total,
+          evoluiram,
+          naoEvoluiram: total - evoluiram,
+          percentual: Math.round((evoluiram / total) * 1000) / 10,
+        };
+      })
+      .sort((a, b) => b.percentual - a.percentual || a.nome.localeCompare(b.nome, "pt-BR"));
+  const previaEvolucaoAlvos = resultadoAlvos(avals);
+
   const saldo = (e: ResumoEixo) => e.subiram - e.desceram;
   const destaques = (l: ResumoEixo[]) => {
     const validos = l.filter((e) => e.comparaveis >= MIN);
@@ -642,6 +663,9 @@ export function montarRelatorio(base: Base, unidade?: string, publico: Publico =
     conceitos: CONCEITOS,
     recorte: { unidade: unidade ?? null, publico, pessoas: pessoasRecorte.size, amostraPequena: pessoasRecorte.size < MIN },
     contexto,
+    // Prévia NÃO homologada: somente alvos identificados por ações existentes.
+    // Não publicar como universo definitivo até validar o ciclo e alvos sem ação.
+    previaEvolucaoAlvos,
     instrumentos: {
       TECNICO: {
         ...resumoTec,
