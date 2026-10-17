@@ -23,6 +23,9 @@ const RELACAO_COR: Record<RelacaoEixo, string> = {
 
 const rotuloRelacao = (valor: unknown) => RELACAO_LABEL[valor as RelacaoEixo] ?? "Pendente de análise";
 
+const AVISO_FALHA_IDENTIFICACAO =
+  "Não foi possível identificar seus eixos agora. Entre em contato pelo Fale Conosco da plataforma: a análise automática pode estar temporariamente indisponível (por exemplo, por falta de créditos de IA) e você não conseguirá concluir esta etapa sozinho.";
+
 function formatarData(valor: unknown) {
   if (!valor) return "";
   const data = new Date(String(valor));
@@ -91,9 +94,10 @@ export default function MeusEixosTecnicos() {
       const lista: any[] = atualizado.data?.eixos ?? [];
       const pendentes = lista.filter((eixo) => eixo.statusClassificacao === "PENDENTE" || !eixo.relacao).length;
       if (lista.length > 0 && pendentes === 0) setSucesso("Eixos identificados. Agora confirme cada classificação ou solicite alteração.");
-      else setErro("Não foi possível identificar todos os eixos agora. Tente novamente; se persistir, acione o administrador.");
+      else setErro(AVISO_FALHA_IDENTIFICACAO);
     } catch (error: any) {
-      setErro(error?.message || "Não foi possível identificar seus eixos.");
+      console.error("[Meus Eixos] Falha ao identificar eixos", error);
+      setErro(AVISO_FALHA_IDENTIFICACAO);
     }
   };
 
