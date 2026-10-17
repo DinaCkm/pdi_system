@@ -73,13 +73,9 @@ export const questionarioAtividadesRouter = router({
         await db
           .select()
           .from(questionariosAtividadesFuncao)
-          .where(
-            and(
-              eq(questionariosAtividadesFuncao.colaboradorId, Number(ctx.user!.id)),
-              eq(questionariosAtividadesFuncao.ano, input.ano),
-            ),
-          )
-          .orderBy(desc(questionariosAtividadesFuncao.versao), desc(questionariosAtividadesFuncao.id))
+          // Último questionário do empregado, de qualquer ano (há questionários respondidos registrados como 2025).
+          .where(eq(questionariosAtividadesFuncao.colaboradorId, Number(ctx.user!.id)))
+          .orderBy(desc(questionariosAtividadesFuncao.ano), desc(questionariosAtividadesFuncao.versao), desc(questionariosAtividadesFuncao.id))
           .limit(1)
       )[0] ?? null;
 
@@ -117,13 +113,9 @@ export const questionarioAtividadesRouter = router({
         await db
           .select()
           .from(questionariosAtividadesFuncao)
-          .where(
-            and(
-              eq(questionariosAtividadesFuncao.colaboradorId, colaboradorId),
-              eq(questionariosAtividadesFuncao.ano, input.ano),
-            ),
-          )
-          .orderBy(desc(questionariosAtividadesFuncao.versao), desc(questionariosAtividadesFuncao.id))
+          // Atualiza o último questionário do empregado (qualquer ano); só cria um novo se ele nunca respondeu.
+          .where(eq(questionariosAtividadesFuncao.colaboradorId, colaboradorId))
+          .orderBy(desc(questionariosAtividadesFuncao.ano), desc(questionariosAtividadesFuncao.versao), desc(questionariosAtividadesFuncao.id))
           .limit(1)
       )[0] ?? null;
 
