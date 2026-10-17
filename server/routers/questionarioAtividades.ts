@@ -215,7 +215,7 @@ export const questionarioAtividadesRouter = router({
         });
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: "O questionário foi salvo, mas a análise automática dos eixos pela IA não foi concluída. Tente salvar novamente ou acione o administrador.",
+          message: "Seu questionário foi salvo, mas a identificação dos eixos não foi concluída. Entre em contato pelo Fale Conosco da plataforma: a análise automática pode estar temporariamente indisponível (por exemplo, por falta de créditos de IA).",
           cause: error,
         });
       }
@@ -938,7 +938,7 @@ export const questionarioAtividadesRouter = router({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message:
-            "O questionário foi salvo, mas a análise automática dos eixos pela IA não foi concluída. Tente salvar novamente ou acione o administrador.",
+            "Seu questionário foi salvo, mas a identificação dos eixos não foi concluída. Entre em contato pelo Fale Conosco da plataforma: a análise automática pode estar temporariamente indisponível (por exemplo, por falta de créditos de IA).",
           cause: error,
         });
       }
